@@ -1,0 +1,16 @@
+openrouter:
+  api_key:    "YOUR_OPENROUTER_KEY"
+  api_base:   "https://openrouter.ai/api/v1"    # optional override
+
+openai:
+  api_key:          "YOUR_OPENAI_KEY"
+  embedding_model:  "text-embedding-ada-002"
+
+google_cse:
+  api_key:  "YOUR_GOOGLE_API_KEY"
+  cse_id:   "YOUR_GOOGLE_CSE_ID"
+
+pinecone:
+  api_key:     "YOUR_PINECONE_KEY"
+  environment: "YOUR_PINECONE_ENV"    # e.g. "us-east-1-aws"
+  index_name:  "legal-rag"

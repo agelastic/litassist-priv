@@ -1,0 +1,6 @@
+click
+openai
+pinecone-client
+PyPDF2
+google-api-python-client
+pyyaml
