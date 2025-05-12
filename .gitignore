@@ -1,0 +1,55 @@
+# --- Virtual environments ---
+.venv/
+env/
+venv/
+
+# --- Bytecode & caches ---
+__pycache__/
+*.py[cod]
+*.pyo
+.mypy_cache/
+.pytest_cache/
+
+# --- OS / editor junk ---
+.DS_Store
+Icon?
+Thumbs.db
+
+# --- VS Code ---
+# Share settings.json & extensions.json; ignore launch configurations
+.vscode/*
+!.vscode/settings.json
+!.vscode/extensions.json
+
+# --- Builds & packaging ---
+build/
+dist/
+*.egg-info/
+
+# --- Logs & runtime files ---
+*.log
+*.sqlite3
+*.tmp
+test_results_*.json
+
+# IDE personal bits
+.idea/**/workspace.xml
+.idea/**/tasks.xml
+
+# Secrets
+.env
+.env.*
+*.key
+
+# Generated documentation
+site/
+docs/_build/
+
+# --- Project specific ---
+
+
+# --- Testing & coverage ---
+.coverage
+htmlcov/
+coverage.xml
+nosetests.xml

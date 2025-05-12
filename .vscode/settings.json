@@ -1,0 +1,23 @@
+{
+  // interpreter
+  "python.defaultInterpreterPath": "${workspaceFolder}/.venv/bin/python",
+
+  // auto-activate venv in integrated terminal
+  "terminal.integrated.env.osx": {
+    "VIRTUAL_ENV": "${workspaceFolder}/.venv",
+    "PATH": "${workspaceFolder}/.venv/bin:${env:PATH}"
+  },
+
+  // format with Black on save
+  "[python]": {
+    "editor.defaultFormatter": "ms-python.black-formatter"
+  },
+  "editor.formatOnSave": true,
+
+  // Ruff linter
+  "ruff.lint.enable": true,
+
+  // Pytest discovery
+  "python.testing.pytestEnabled": true,
+  "python.testing.pytestArgs": ["tests"]
+}

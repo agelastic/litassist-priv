@@ -16,6 +16,9 @@ import time
 import argparse
 import yaml
 import json
+import openai
+import pinecone
+
 from datetime import datetime
 
 # Try importing required packages and report errors
@@ -32,9 +35,6 @@ if missing_packages:
     print(f"Error: Missing required packages: {', '.join(missing_packages)}")
     print("Please install with: pip install " + " ".join(missing_packages))
     sys.exit(1)
-
-import openai
-import pinecone
 
 # ─── Configuration ────────────────────────────────────────────────
 CONFIG_PATH = "config.yaml"

@@ -63,7 +63,6 @@ if PC_INDEX not in pinecone.list_indexes():
 pc_index = pinecone.Index(PC_INDEX)
 
 #── Startup API Connection Tests ───────────────────────────
-import click
 
 # Test OpenAI connectivity
 try:

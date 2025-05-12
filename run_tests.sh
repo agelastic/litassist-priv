@@ -14,7 +14,7 @@ fi
 
 # Check for required packages
 MISSING=""
-for pkg in openai pinecone-client pyyaml numpy; do
+for pkg in openai pinecone pyyaml numpy; do
     if ! python -c "import $pkg" &> /dev/null; then
         if [ -z "$MISSING" ]; then
             MISSING="$pkg"

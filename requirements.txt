@@ -1,6 +1,6 @@
 click
-openai
-pinecone-client
+openai==0.28.1
+pinecone-client==2.2.4
 PyPDF2
 google-api-python-client
 pyyaml
