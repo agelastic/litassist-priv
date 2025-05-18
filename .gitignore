@@ -54,5 +54,6 @@ docs/_build/
 htmlcov/
 coverage.xml
 nosetests.xml
+logs/
 
 **/.claude/settings.local.json
