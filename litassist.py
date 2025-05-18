@@ -14,6 +14,7 @@ import pinecone
 from googleapiclient.discovery import build
 from PyPDF2 import PdfReader
 import re
+from pinecone_config import get_pinecone_client
 
 # ── Configuration ───────────────────────────────────────
 CONFIG_PATH = "config.yaml"
@@ -28,7 +29,7 @@ try:
     OR_KEY = cfg["openrouter"]["api_key"]
     OR_BASE = cfg["openrouter"].get("api_base", "https://openrouter.ai/api/v1")
     OA_KEY = cfg["openai"]["api_key"]
-    EMB_MODEL = cfg["openai"]["embedding_model"]
+    EMB_MODEL = cfg["openai"].get("embedding_model", "text-embedding-3-small")
     G_KEY = cfg["google_cse"]["api_key"]
     CSE_ID = cfg["google_cse"]["cse_id"]
     PC_KEY = cfg["pinecone"]["api_key"]
@@ -55,42 +56,49 @@ for key, val in required_configs.items():
 
 # ── API Initialization ─────────────────────────────────
 openai.api_key = OA_KEY
-openai.api_base = OR_BASE
+# Don't set api_base unless we're using OpenRouter specifically
+# openai.api_base = OR_BASE
+
+# Create a mock Pinecone index for testing purposes
+class MockPineconeIndex:
+    def __init__(self, *args, **kwargs):
+        pass
+
+    def query(self, *args, **kwargs):
+        return {"matches": []}
+
+    def upsert(self, *args, **kwargs):
+        pass
+
+    def delete(self, *args, **kwargs):
+        pass
+
+    def describe_index_stats(self, *args, **kwargs):
+        class MockStats:
+            def __init__(self):
+                self.total_vector_count = 0
+
+        return MockStats()
 
 # Check if we're using placeholder values for Pinecone
 if "YOUR_PINECONE" in PC_KEY or "YOUR_PINECONE" in PC_ENV:
     print(
         "WARNING: Using placeholder Pinecone credentials. Some features will be limited."
     )
-
-    # Create a mock Pinecone index for testing purposes
-    class MockPineconeIndex:
-        def __init__(self, *args, **kwargs):
-            pass
-
-        def query(self, *args, **kwargs):
-            return {"matches": []}
-
-        def upsert(self, *args, **kwargs):
-            pass
-
-        def delete(self, *args, **kwargs):
-            pass
-
-        def describe_index_stats(self, *args, **kwargs):
-            class MockStats:
-                def __init__(self):
-                    self.total_vector_count = 0
-
-            return MockStats()
-
     pc_index = MockPineconeIndex()
 else:
-    # Normal initialization with real credentials
-    pinecone.init(api_key=PC_KEY, environment=PC_ENV)
-    if PC_INDEX not in pinecone.list_indexes():
-        pinecone.create_index(name=PC_INDEX, dimension=1536, metric="cosine")
-    pc_index = pinecone.Index(PC_INDEX)
+    # Use our wrapper to handle connection issues
+    pc_index = get_pinecone_client(PC_KEY, PC_ENV, PC_INDEX)
+    
+    # Test if we can access it
+    try:
+        stats = pc_index.describe_index_stats()
+        print(f"✓ Connected to index '{PC_INDEX}' (dimension: {stats.dimension}, vectors: {stats.total_vector_count})")
+    except Exception as e:
+        print(f"WARNING: Cannot access index '{PC_INDEX}'.")
+        print(f"Error: {e}")
+        print("Using mock index for testing.")
+        pc_index = MockPineconeIndex()
 
 # ── Startup API Connection Tests ───────────────────────────
 
@@ -315,6 +323,7 @@ def create_embeddings(texts: list[str]):
     Raises:
         Exception: If the embedding API call fails.
     """
+    # Use the model without custom dimensions since our index is 1536-dimensional
     return openai.Embedding.create(input=texts, model=EMB_MODEL).data
 
 
@@ -482,10 +491,32 @@ class LLMClient:
         """
         # Merge default and override parameters
         params = {**self.default_params, **overrides}
+        
+        # Set API base based on model type
+        original_api_base = openai.api_base
+        original_api_key = openai.api_key
+        
+        # Determine the correct model name
+        model_name = self.model
+        
+        # Use OpenRouter for non-OpenAI models
+        if "/" in self.model and not self.model.startswith("openai/"):
+            openai.api_base = OR_BASE
+            openai.api_key = OR_KEY
+        else:
+            # Extract just the model name for OpenAI models
+            if self.model.startswith("openai/"):
+                model_name = self.model.replace("openai/", "")
+            
         # Invoke the chat completion
-        response = openai.ChatCompletion.create(
-            model=self.model, messages=messages, **params
-        )
+        try:
+            response = openai.ChatCompletion.create(
+                model=model_name, messages=messages, **params
+            )
+        finally:
+            # Restore original settings
+            openai.api_base = original_api_base
+            openai.api_key = original_api_key
         # Extract content and usage
         content = response.choices[0].message.content
         usage = getattr(response, "usage", {})
@@ -518,9 +549,32 @@ class LLMClient:
         ]
         # Use deterministic settings for verification
         params = {"temperature": 0, "top_p": 0.2, "max_tokens": 800}
-        response = openai.ChatCompletion.create(
-            model=self.model, messages=critique_prompt, **params
-        )
+        
+        # Set API base based on model type
+        original_api_base = openai.api_base
+        original_api_key = openai.api_key
+        
+        # Determine the correct model name
+        model_name = self.model
+        
+        # Use OpenRouter for non-OpenAI models
+        if "/" in self.model and not self.model.startswith("openai/"):
+            openai.api_base = OR_BASE
+            openai.api_key = OR_KEY
+        else:
+            # Extract just the model name for OpenAI models
+            if self.model.startswith("openai/"):
+                model_name = self.model.replace("openai/", "")
+                
+        # Invoke the verification
+        try:
+            response = openai.ChatCompletion.create(
+                model=model_name, messages=critique_prompt, **params
+            )
+        finally:
+            # Restore original settings
+            openai.api_base = original_api_base
+            openai.api_key = original_api_key
         return response.choices[0].message.content
 
 
@@ -605,8 +659,8 @@ class Retriever:
         result = self.index.query(**query_kwargs)
         # Extract and return the text field from metadata
         passages = []
-        for match in result.get("matches", []):
-            metadata = match.get("metadata", {})
+        for match in result.matches:
+            metadata = match.metadata
             text = metadata.get("text")
             if text:
                 passages.append(text)
@@ -708,7 +762,7 @@ def lookup(question, mode, verify):
         overrides = {"temperature": 0.5, "top_p": 0.9, "max_tokens": 800}
 
     # Call the LLM
-    client = LLMClient("google/gemini-2.5-pro", temperature=0, top_p=0.2)
+    client = LLMClient("google/gemini-2.5-pro-preview", temperature=0, top_p=0.2)
     call_with_hb = heartbeat(30)(client.complete)
     try:
         content, usage = call_with_hb(
@@ -792,48 +846,47 @@ def digest(file, mode, verify):
     client = LLMClient("anthropic/claude-3-sonnet", **presets)
 
     # Process each chunk with a progress bar
-    for idx, chunk in enumerate(
-        click.progressbar(chunks, label="Processing chunks"), start=1
-    ):
-        prompt = (
-            "Provide a concise chronological summary:\n\n" + chunk
-            if mode == "summary"
-            else "Identify any potential legal issues:\n\n" + chunk
-        )
-        # Call the LLM
-        try:
-            content, usage = client.complete(
-                [
-                    {"role": "system", "content": "Australian law only."},
-                    {"role": "user", "content": prompt},
-                ]
+    with click.progressbar(chunks, label="Processing chunks") as chunks_bar:
+        for idx, chunk in enumerate(chunks_bar, start=1):
+            prompt = (
+                "Provide a concise chronological summary:\n\n" + chunk
+                if mode == "summary"
+                else "Identify any potential legal issues:\n\n" + chunk
             )
-        except Exception as e:
-            raise click.ClickException(f"LLM error in digest chunk {idx}: {e}")
-
-        # Optional self-critique verification
-        if verify:
+            # Call the LLM
             try:
-                correction = client.verify(content)
-                content = content + "\n\n--- Corrections ---\n" + correction
-            except Exception as e:
-                raise click.ClickException(
-                    f"Self-verification error in digest chunk {idx}: {e}"
+                content, usage = client.complete(
+                    [
+                        {"role": "system", "content": "Australian law only."},
+                        {"role": "user", "content": prompt},
+                    ]
                 )
+            except Exception as e:
+                raise click.ClickException(f"LLM error in digest chunk {idx}: {e}")
 
-        # Save audit log for this chunk
-        save_log(
-            f"digest_{mode}",
-            {
-                "file": file,
-                "chunk": idx,
-                "verify": verify,
-                "response": content,
-                "usage": usage,
-            },
-        )
-        # Output to user
-        click.echo(f"\n--- Chunk {idx} ---\n{content}")
+            # Optional self-critique verification
+            if verify:
+                try:
+                    correction = client.verify(content)
+                    content = content + "\n\n--- Corrections ---\n" + correction
+                except Exception as e:
+                    raise click.ClickException(
+                        f"Self-verification error in digest chunk {idx}: {e}"
+                    )
+
+            # Save audit log for this chunk
+            save_log(
+                f"digest_{mode}",
+                {
+                    "file": file,
+                    "chunk": idx,
+                    "verify": verify,
+                    "response": content,
+                    "usage": usage,
+                },
+            )
+            # Output to user
+            click.echo(f"\n--- Chunk {idx} ---\n{content}")
 
 
 # ── ideate ───────────────────────────────────────────────
@@ -859,7 +912,7 @@ def ideate(facts_file, verify):
     facts = read_document(facts_file)
 
     # Initialise the LLM for creative ideation
-    client = LLMClient("xai/grok-3-beta", temperature=0.9, top_p=0.95, max_tokens=1200)
+    client = LLMClient("x-ai/grok-3-beta", temperature=0.9, top_p=0.95, max_tokens=1200)
 
     # Build and send the prompt
     prompt = f"Facts:\n{facts}\n\nList ten unorthodox litigation arguments or remedies not commonly raised."
@@ -927,30 +980,31 @@ def extractfacts(file, verify):
 
     assembled = []
     # Process each chunk with a progress bar
-    for chunk in click.progressbar(chunks, label="Extracting facts"):
-        prompt = (
-            "Extract under these headings:\n"
-            "1. Jurisdiction & Forum\n"
-            "2. Parties & Roles\n"
-            "3. Procedural Posture\n"
-            "4. Chronology of Key Events\n"
-            "5. Factual Background\n"
-            "6. Legal Issues & Applicable Law\n"
-            "7. Client Objectives & Constraints\n"
-            "8. Key Evidence\n"
-            "9. Known Weaknesses or Gaps\n"
-            "10. Commercial or Policy Context\n\n" + chunk
-        )
-        try:
-            content, usage = client.complete(
-                [
-                    {"role": "system", "content": "Australian law only."},
-                    {"role": "user", "content": prompt},
-                ]
+    with click.progressbar(chunks, label="Extracting facts") as bar:
+        for chunk in bar:
+            prompt = (
+                "Extract under these headings:\n"
+                "1. Jurisdiction & Forum\n"
+                "2. Parties & Roles\n"
+                "3. Procedural Posture\n"
+                "4. Chronology of Key Events\n"
+                "5. Factual Background\n"
+                "6. Legal Issues & Applicable Law\n"
+                "7. Client Objectives & Constraints\n"
+                "8. Key Evidence\n"
+                "9. Known Weaknesses or Gaps\n"
+                "10. Commercial or Policy Context\n\n" + chunk
             )
-        except Exception as e:
-            raise click.ClickException(f"Error extracting facts in chunk: {e}")
-        assembled.append(content.strip())
+            try:
+                content, usage = client.complete(
+                    [
+                        {"role": "system", "content": "Australian law only."},
+                        {"role": "user", "content": prompt},
+                    ]
+                )
+            except Exception as e:
+                raise click.ClickException(f"Error extracting facts in chunk: {e}")
+            assembled.append(content.strip())
 
     # Combine all chunks into a single facts file
     combined = "\n\n".join(assembled)
