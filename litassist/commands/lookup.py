@@ -38,7 +38,10 @@ def lookup(question, mode, verify):
     """
     # Fetch AustLII links via Google Custom Search
     try:
-        service = build("customsearch", "v1", developerKey=CONFIG.g_key)
+        import warnings
+        with warnings.catch_warnings():
+            warnings.filterwarnings("ignore", message="file_cache is only supported with oauth2client<4.0.0")
+            service = build("customsearch", "v1", developerKey=CONFIG.g_key)
         res = (
             service.cse()
             .list(q=question, cx=CONFIG.cse_id, num=3, siteSearch="austlii.edu.au")

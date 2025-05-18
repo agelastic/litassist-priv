@@ -51,7 +51,7 @@ def cli(ctx, log_format, verbose):
     logging.debug(f"Log format set to: {log_format}")
 
 
-def validate_credentials():
+def validate_credentials(show_progress=True):
     """
     Test API connections with provided credentials.
 
@@ -59,39 +59,68 @@ def validate_credentials():
     by making test API calls. Invalid credentials will result in an early exit.
     """
     placeholder_checks = CONFIG.using_placeholders()
+    
+    if show_progress:
+        print("Verifying API connections...")
 
     # Test OpenAI connectivity (only if not using placeholders)
     if not placeholder_checks["openai"]:
         try:
+            if show_progress:
+                print("  - Testing OpenAI API... ", end="", flush=True)
             openai.Model.list()
+            if show_progress:
+                print("OK")
         except Exception as e:
+            if show_progress:
+                print("FAILED")
             sys.exit(f"Error: OpenAI API test failed: {e}")
     else:
-        print("Skipping OpenAI connectivity test due to placeholder credentials")
+        if show_progress:
+            print("  - Skipping OpenAI connectivity test (placeholder credentials)")
 
     # Test Pinecone connectivity (only if not using placeholders)
     if not placeholder_checks["pinecone"]:
         try:
+            if show_progress:
+                print("  - Testing Pinecone API... ", end="", flush=True)
             # Initialize Pinecone before testing
             pinecone.init(api_key=CONFIG.pc_key, environment=CONFIG.pc_env)
             _ = pinecone.list_indexes()
+            if show_progress:
+                print("OK")
         except Exception as e:
+            if show_progress:
+                print("FAILED")
             sys.exit(f"Error: Pinecone API test failed: {e}")
     else:
-        print("Skipping Pinecone connectivity test due to placeholder credentials")
+        if show_progress:
+            print("  - Skipping Pinecone connectivity test (placeholder credentials)")
 
     # Test Google CSE connectivity (only if not using placeholder values)
     if not placeholder_checks["google_cse"]:
         try:
+            if show_progress:
+                print("  - Testing Google CSE API... ", end="", flush=True)
             from googleapiclient.discovery import build
-
-            service = build("customsearch", "v1", developerKey=CONFIG.g_key)
+            import warnings
+            with warnings.catch_warnings():
+                warnings.filterwarnings("ignore", message="file_cache is only supported with oauth2client<4.0.0")
+                service = build("customsearch", "v1", developerKey=CONFIG.g_key)
             # Perform a lightweight test query (no logging)
             service.cse().list(q="test", cx=CONFIG.cse_id, num=1).execute()
+            if show_progress:
+                print("OK")
         except Exception as e:
+            if show_progress:
+                print("FAILED")
             sys.exit(f"Error: Google CSE API test failed: {e}")
     else:
-        print("Skipping Google CSE connectivity test due to placeholder credentials")
+        if show_progress:
+            print("  - Skipping Google CSE connectivity test (placeholder credentials)")
+    
+    if show_progress:
+        print("All API connections verified.\n")
 
 
 def main():
@@ -101,8 +130,15 @@ def main():
     This function validates API credentials, registers all commands with the CLI,
     and then invokes the CLI group.
     """
-    # Test API connections at startup
-    validate_credentials()
+    # Skip connectivity tests for help/version requests
+    if len(sys.argv) == 1 or any(arg in ["--help", "-h", "--version", "-v"] for arg in sys.argv):
+        show_progress = False
+    else:
+        show_progress = True
+    
+    # Test API connections only if not showing help/version
+    if show_progress:
+        validate_credentials(show_progress=True)
 
     # Register all commands
     register_commands(cli)
