@@ -119,7 +119,7 @@ Options:
 For the *Smith v Jones* case, we have received a lengthy affidavit from our client that needs to be broken down:
 
 ```bash
-python -m litassist.cli digest smith_affidavit.pdf --mode issues
+python -m litassist.cli digest examples/smith_affidavit.pdf --mode issues
 ```
 
 **Output Example**:
@@ -174,11 +174,11 @@ Options:
 Now we need to create a structured fact sheet for the *Smith v Jones* case:
 
 ```bash
-python -m litassist.cli extractfacts smith_jones_file.pdf
+python -m litassist.cli extractfacts examples/smith_jones_file.pdf
 ```
 
 **Output Example**:
-The command creates a `case_facts.txt` file with the following structured format:
+The command creates a `case_facts.txt` file (typically saved in the current directory or a specified output location) with the following structured format:
 
 ```
 1. Jurisdiction & Forum
@@ -231,7 +231,7 @@ The `ideate` command uses Grok's creative capabilities to generate ten unorthodo
 ### Command
 
 ```bash
-python -m litassist.cli ideate case_facts.txt [--verify]
+python -m litassist.cli ideate <case_facts_file> [--verify]
 ```
 
 Options:
@@ -242,7 +242,7 @@ Options:
 For the *Smith v Jones* case, we can use the structured facts to generate creative legal strategies:
 
 ```bash
-python -m litassist.cli ideate case_facts.txt
+python -m litassist.cli ideate examples/case_facts.txt
 ```
 
 **Output Example**:
@@ -296,7 +296,7 @@ Options:
 For our *Smith v Jones* case, we can now draft a submission on the relocation issue:
 
 ```bash
-python -m litassist.cli draft smith_bundle.pdf "outline of submissions regarding relocation of children in Smith v Jones"
+python -m litassist.cli draft examples/smith_bundle.pdf "outline of submissions regarding relocation of children in Smith v Jones"
 ```
 
 **Output Example**:
@@ -339,23 +339,23 @@ To demonstrate how these five workflows combine into a seamless end-to-end pipel
 
 2. **Analyse (Digest)**: Process and analyze case documents to identify key issues and chronology.
    ```bash
-   python -m litassist.cli digest smith_affidavit.pdf --mode issues
-   python -m litassist.cli digest jones_response.pdf --mode summary
+   python -m litassist.cli digest examples/smith_affidavit.pdf --mode issues
+   python -m litassist.cli digest examples/jones_response.pdf --mode summary
    ```
 
 3. **Structure (ExtractFacts)**: Extract and organize case facts into a structured format.
    ```bash
-   python -m litassist.cli extractfacts smith_jones_file.pdf
+   python -m litassist.cli extractfacts examples/smith_jones_file.pdf
    ```
 
 4. **Brainstorm (Ideate)**: Generate creative legal arguments and strategies based on case facts.
    ```bash
-   python -m litassist.cli ideate case_facts.txt
+   python -m litassist.cli ideate examples/case_facts.txt
    ```
 
 5. **Draft**: Create a well-supported legal submission incorporating citations from case documents.
    ```bash
-   python -m litassist.cli draft smith_bundle.pdf "outline of submissions regarding relocation of children in Smith v Jones"
+   python -m litassist.cli draft examples/smith_bundle.pdf "outline of submissions regarding relocation of children in Smith v Jones"
    ```
 
 ## Conclusion

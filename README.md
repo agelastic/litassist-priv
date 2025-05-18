@@ -10,6 +10,13 @@
 
 All processing is cloud-only: no local model downloads required.
 
+## 📁 Example Files
+
+The `examples/` directory contains sample files referenced in the documentation, including:
+- PDF documents for testing the `digest`, `extractfacts`, and `draft` commands
+- A sample `case_facts.txt` file for testing the `ideate` command
+- All examples are based on the fictional *Smith v Jones* family law case
+
 ---
 
 ## 🔧 Installation
