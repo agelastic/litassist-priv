@@ -40,6 +40,7 @@ test_results_*.json
 .env
 .env.*
 *.key
+config.yaml
 
 # Generated documentation
 site/
@@ -53,3 +54,5 @@ docs/_build/
 htmlcov/
 coverage.xml
 nosetests.xml
+
+**/.claude/settings.local.json
