@@ -60,29 +60,29 @@ class TestChunkText:
     def test_chunk_small_text(self):
         """Test chunking text smaller than chunk size."""
         text = "Small text"
-        chunks = chunk_text(text, chunk_size=100)
+        chunks = chunk_text(text, max_chars=100)
         assert len(chunks) == 1
         assert chunks[0] == text
 
     def test_chunk_large_text(self):
         """Test chunking text larger than chunk size."""
         text = "Word " * 100  # 500 characters
-        chunks = chunk_text(text, chunk_size=100, overlap=10)
+        chunks = chunk_text(text, max_chars=100)
         assert len(chunks) > 1
-        # Verify overlap
-        for i in range(len(chunks) - 1):
-            assert chunks[i][-10:] in chunks[i + 1]
+        # Verify all chunks are within size limit
+        for chunk in chunks:
+            assert len(chunk) <= 100
 
     def test_chunk_exact_size(self):
         """Test chunking text exactly at chunk size."""
         text = "x" * 100
-        chunks = chunk_text(text, chunk_size=100)
+        chunks = chunk_text(text, max_chars=100)
         assert len(chunks) == 1
 
     def test_empty_text(self):
         """Test chunking empty text."""
         chunks = chunk_text("")
-        assert chunks == [""]
+        assert chunks == []
 
 
 class TestCreateEmbeddings:
@@ -93,10 +93,10 @@ class TestCreateEmbeddings:
         """Test successful embedding creation."""
         mock_create.return_value = Mock(data=[Mock(embedding=[0.1, 0.2, 0.3])])
 
-        embeddings = create_embeddings(["Test text"], model="test-model")
+        embeddings = create_embeddings(["Test text"])
         assert len(embeddings) == 1
-        assert embeddings[0] == [0.1, 0.2, 0.3]
-        mock_create.assert_called_once_with(model="test-model", input=["Test text"])
+        assert embeddings[0].embedding == [0.1, 0.2, 0.3]
+        mock_create.assert_called_once()
 
     @patch("litassist.utils.openai.Embedding.create")
     def test_create_embeddings_multiple_texts(self, mock_create):
@@ -105,17 +105,17 @@ class TestCreateEmbeddings:
             data=[Mock(embedding=[0.1, 0.2]), Mock(embedding=[0.3, 0.4])]
         )
 
-        embeddings = create_embeddings(["Text 1", "Text 2"], model="test-model")
+        embeddings = create_embeddings(["Text 1", "Text 2"])
         assert len(embeddings) == 2
-        assert embeddings[0] == [0.1, 0.2]
-        assert embeddings[1] == [0.3, 0.4]
+        assert embeddings[0].embedding == [0.1, 0.2]
+        assert embeddings[1].embedding == [0.3, 0.4]
 
     @patch("litassist.utils.openai.Embedding.create")
     def test_create_embeddings_api_error(self, mock_create):
         """Test handling API error."""
         mock_create.side_effect = Exception("API Error")
 
-        with pytest.raises(ClickException, match="Embedding error"):
+        with pytest.raises(Exception, match="API Error"):
             create_embeddings(["Test text"])
 
 

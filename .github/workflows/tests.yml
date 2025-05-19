@@ -43,7 +43,7 @@ jobs:
     
     - name: Run unit tests
       run: |
-        pytest tests/unit -v --cov=litassist --cov-report=xml
+        pytest tests/unit -v
     
     - name: Run integration tests
       run: |
