@@ -44,13 +44,13 @@ jobs:
     - name: Run basic tests
       run: |
         # Run only basic tests that work
-        pytest tests/unit/test_basic.py -v
+        pytest tests/unit/test_basic.py -v --no-cov
     
     - name: Run all tests (allow failures)
       continue-on-error: true
       run: |
         # Run all tests but don't fail the build
-        pytest tests/unit -v --tb=short || echo "Some tests failed, but continuing"
+        pytest tests/unit -v --tb=short --no-cov || echo "Some tests failed, but continuing"
     
     - name: Show test summary
       if: always()
