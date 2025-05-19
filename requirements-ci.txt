@@ -7,3 +7,4 @@ openai==0.28.1
 pinecone-client==2.2.4
 requests>=2.32.0
 PyYAML
+PyPDF2
