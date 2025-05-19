@@ -71,6 +71,8 @@ class Config:
             self.pc_env = self.cfg["pinecone"]["environment"]
             self.pc_index = self.cfg["pinecone"]["index_name"]
 
+        # Jade API key is no longer used - functionality now uses public endpoint
+
         except KeyError as e:
             sys.exit(f"Error: config.yaml missing key {e}")
 
@@ -97,6 +99,18 @@ class Config:
         # Don't set api_base unless we're using OpenRouter specifically
         # openai.api_base = self.or_base
 
+    def get_jade_api_key(self) -> str:
+        """
+        Get the Jade API key if configured.
+
+        Note: This method is maintained for backward compatibility.
+        The Jade API is no longer used directly - functionality now uses public endpoint.
+
+        Returns:
+            Empty string as the API is no longer used.
+        """
+        return ""
+
     def using_placeholders(self) -> Dict[str, bool]:
         """
         Check which credential sets are using placeholder values.
@@ -109,6 +123,7 @@ class Config:
             "pinecone": "YOUR_PINECONE" in self.pc_key
             or "YOUR_PINECONE" in self.pc_env,
             "google_cse": "YOUR_GOOGLE" in self.g_key or "YOUR_GOOGLE" in self.cse_id,
+            "jade": False,  # Jade API is no longer used directly - switched to public endpoint
         }
 
 

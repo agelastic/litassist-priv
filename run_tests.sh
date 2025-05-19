@@ -14,12 +14,18 @@ fi
 
 # Check for required packages
 MISSING=""
-for pkg in openai pinecone pyyaml numpy; do
+for pkg in openai pinecone yaml numpy; do
+    # yaml package imports as 'yaml' not 'pyyaml'
     if ! python -c "import $pkg" &> /dev/null; then
+        # Map package names for display
+        display_name=$pkg
+        if [ "$pkg" = "yaml" ]; then
+            display_name="pyyaml"
+        fi
         if [ -z "$MISSING" ]; then
-            MISSING="$pkg"
+            MISSING="$display_name"
         else
-            MISSING="$MISSING, $pkg"
+            MISSING="$MISSING, $display_name"
         fi
     fi
 done
@@ -62,10 +68,12 @@ if [ $# -eq 0 ]; then
     echo "  --openai      Run OpenAI tests only"
     echo "  --pinecone    Run Pinecone tests only"
     echo "  --openrouter  Run OpenRouter tests only"
+    echo "  --jade        Run Jade public endpoint tests only"
     echo ""
     echo -e "\033[1mUsage examples:\033[0m"
     echo "  ./run_tests.sh --all"
     echo "  ./run_tests.sh --openai --pinecone"
+    echo "  ./run_tests.sh --jade"
     echo ""
     echo -e "\033[1mRunning all tests by default...\033[0m"
 fi

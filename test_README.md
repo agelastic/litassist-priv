@@ -5,6 +5,7 @@ This test suite validates the key external service integrations used by LitAssis
 1. **OpenAI API** - Testing embedding generation and completion capabilities
 2. **Pinecone Vector DB** - Testing vector storage and retrieval with MMR
 3. **OpenRouter** - Testing model access and completion via the OpenRouter gateway
+4. **Jade Public Endpoints** - Testing access to Australian case law via Jade's public website
 
 ## Why Test OpenRouter?
 
@@ -22,6 +23,7 @@ While we primarily focus on OpenAI and Pinecone as core dependencies, the OpenRo
 | OpenAI | Model Listing, Embedding Generation, Completion | Verify that API key works and all required functionality is accessible |
 | Pinecone | Connection, Vector Operations, MMR Search | Verify that vector storage, retrieval, and diversity-based search work properly |
 | OpenRouter | Connection, Basic Completion | Lightweight verification that completions flow through this critical endpoint |
+| Jade | Public Homepage Access, Specific Case Access | Verify that Jade's public endpoints are accessible for legal case retrieval |
 
 ## Running the Tests
 
@@ -37,6 +39,9 @@ python test_integrations.py --pinecone
 
 # Run OpenRouter tests
 python test_integrations.py --openrouter
+
+# Run Jade tests
+python test_integrations.py --jade
 
 # Run specific combinations
 python test_integrations.py --openai --pinecone

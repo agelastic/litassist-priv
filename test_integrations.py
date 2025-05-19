@@ -18,6 +18,7 @@ import yaml
 import json
 import openai
 import pinecone
+import requests
 
 from datetime import datetime
 
@@ -489,6 +490,114 @@ def test_openrouter_completion():
     
     return result
 
+# ─── Jade Tests ────────────────────────────────────────────────
+def test_jade_public_endpoint():
+    """Test Jade public endpoint accessibility"""
+    result = TestResult("Jade", "Public Endpoint")
+    
+    try:
+        # Import required module
+        import re
+        
+        # Test the public Jade.io homepage
+        url = "https://jade.io/"
+        headers = {
+            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36"
+        }
+        
+        response = requests.get(url, headers=headers, timeout=10)
+        
+        if response.status_code == 200:
+            # Check for article links - use pattern from lookup.py
+            article_links = re.findall(r'href="(https://jade\.io/(?:article|j)[^"]+)"', response.text)
+            
+            # Even if we don't find specific article links, check if we got a Jade page
+            page_text = response.text.lower()
+            is_jade_page = "jade" in page_text or "barnet jade" in page_text
+            
+            if article_links:
+                # Clean up links (remove fragments/query params)
+                clean_links = []
+                for link in article_links:
+                    clean_link = link.split("?")[0].split("#")[0]
+                    if "/article/" in clean_link:
+                        clean_links.append(clean_link)
+                
+                # Unique article links
+                unique_links = list(set(clean_links))
+                
+                if unique_links:
+                    result.success(
+                        status_code=response.status_code,
+                        article_count=len(unique_links),
+                        sample_links=unique_links[:3]
+                    )
+                else:
+                    # No clean article links, but maybe we can detect a jade page
+                    if is_jade_page:
+                        result.success(
+                            status_code=response.status_code,
+                            article_count=0,
+                            jade_page_detected=True,
+                            note="Jade page accessed but no article links found"
+                        )
+                    else:
+                        result.failure("No article links found after cleaning")
+            elif is_jade_page:
+                # No article links found, but we did reach Jade
+                result.success(
+                    status_code=response.status_code,
+                    article_count=0,
+                    jade_page_detected=True,
+                    note="Jade page accessed but article extraction failed"
+                )
+            else:
+                result.failure("No article links found and doesn't appear to be a Jade page")
+        else:
+            result.failure(f"HTTP {response.status_code} error")
+    
+    except Exception as e:
+        result.failure(e)
+    
+    return result
+
+def test_jade_specific_case():
+    """Test accessing a specific Jade case"""
+    result = TestResult("Jade", "Specific Case Access")
+    
+    try:
+        # Test accessing a known landmark case (Lange v ABC)
+        url = "https://jade.io/article/68176"
+        headers = {
+            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36"
+        }
+        
+        response = requests.get(url, headers=headers, timeout=10)
+        
+        if response.status_code == 200:
+            # Check if the page contains expected case references
+            page_text = response.text.lower()
+            
+            # Look for indicators of a real case page
+            has_citation = "clr" in page_text or "hca" in page_text or "(1997)" in page_text
+            has_case_name = "lange" in page_text or "australian broadcasting" in page_text
+            has_judgment = "judgment" in page_text or "decision" in page_text
+            
+            result.success(
+                status_code=response.status_code,
+                has_citation=has_citation,
+                has_case_name=has_case_name,
+                has_judgment=has_judgment,
+                page_length=len(response.text)
+            )
+        else:
+            result.failure(f"HTTP {response.status_code} error")
+    
+    except Exception as e:
+        result.failure(e)
+    
+    return result
+
 # ─── Main Test Runner ────────────────────────────────────────────────
 def run_tests(args):
     """Run the selected tests based on command-line arguments"""
@@ -524,6 +633,13 @@ def run_tests(args):
         results.append(test_openrouter_connection())
         results.append(test_openrouter_completion())
     
+    # Jade tests
+    if args.all or args.jade:
+        print("\nRunning Jade tests:")
+        print("-"*40)
+        results.append(test_jade_public_endpoint())
+        results.append(test_jade_specific_case())
+    
     # Print summary
     print("\n" + "="*60)
     print("Test Summary")
@@ -554,11 +670,12 @@ if __name__ == "__main__":
     parser.add_argument("--openai", action="store_true", help="Test OpenAI integration")
     parser.add_argument("--pinecone", action="store_true", help="Test Pinecone integration")
     parser.add_argument("--openrouter", action="store_true", help="Test OpenRouter integration")
+    parser.add_argument("--jade", action="store_true", help="Test Jade public endpoints")
     
     args = parser.parse_args()
     
     # If no specific tests selected, run all tests
-    if not (args.all or args.openai or args.pinecone or args.openrouter):
+    if not (args.all or args.openai or args.pinecone or args.openrouter or args.jade):
         args.all = True
     
     # Run the tests

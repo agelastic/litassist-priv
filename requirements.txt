@@ -4,3 +4,5 @@ pinecone-client==2.2.4
 PyPDF2
 google-api-python-client
 pyyaml
+requests>=2.32.0
+reportlab>=4.1.0  # For PDF generation

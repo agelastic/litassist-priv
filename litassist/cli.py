@@ -6,10 +6,16 @@ and serves as the entry point for the LitAssist application.
 """
 
 import sys
+import os
 import click
 import logging
 import openai
 import pinecone
+import warnings
+
+# Suppress Google API cache warning  
+os.environ['GOOGLE_API_USE_CLIENT_CERTIFICATE'] = 'false'
+warnings.filterwarnings("ignore", message=".*file_cache.*")
 
 from litassist.config import CONFIG
 from litassist.commands import register_commands
@@ -59,7 +65,7 @@ def validate_credentials(show_progress=True):
     by making test API calls. Invalid credentials will result in an early exit.
     """
     placeholder_checks = CONFIG.using_placeholders()
-    
+
     if show_progress:
         print("Verifying API connections...")
 
@@ -103,10 +109,8 @@ def validate_credentials(show_progress=True):
             if show_progress:
                 print("  - Testing Google CSE API... ", end="", flush=True)
             from googleapiclient.discovery import build
-            import warnings
-            with warnings.catch_warnings():
-                warnings.filterwarnings("ignore", message="file_cache is only supported with oauth2client<4.0.0")
-                service = build("customsearch", "v1", developerKey=CONFIG.g_key)
+            # Disable cache to avoid warning
+            service = build("customsearch", "v1", developerKey=CONFIG.g_key, cache_discovery=False)
             # Perform a lightweight test query (no logging)
             service.cse().list(q="test", cx=CONFIG.cse_id, num=1).execute()
             if show_progress:
@@ -118,7 +122,9 @@ def validate_credentials(show_progress=True):
     else:
         if show_progress:
             print("  - Skipping Google CSE connectivity test (placeholder credentials)")
-    
+
+    # Jade API direct validation removed - now uses public endpoints
+
     if show_progress:
         print("All API connections verified.\n")
 
@@ -131,11 +137,13 @@ def main():
     and then invokes the CLI group.
     """
     # Skip connectivity tests for help/version requests
-    if len(sys.argv) == 1 or any(arg in ["--help", "-h", "--version", "-v"] for arg in sys.argv):
+    if len(sys.argv) == 1 or any(
+        arg in ["--help", "-h", "--version", "-v"] for arg in sys.argv
+    ):
         show_progress = False
     else:
         show_progress = True
-    
+
     # Test API connections only if not showing help/version
     if show_progress:
         validate_credentials(show_progress=True)

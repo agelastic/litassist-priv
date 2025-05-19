@@ -14,3 +14,5 @@ pinecone:
   api_key:     "YOUR_PINECONE_KEY"
   environment: "YOUR_PINECONE_ENV"    # e.g. "us-east-1-aws"
   index_name:  "legal-rag"
+
+# Jade API configuration removed - now uses public endpoints directly
