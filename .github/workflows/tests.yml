@@ -41,16 +41,10 @@ jobs:
       run: |
         black --check litassist tests
     
-    - name: Run working tests
+    - name: Run all tests
       run: |
-        # Run tests that actually work
-        pytest tests/unit/test_basic.py tests/unit/test_real_functionality.py -v --no-cov
-    
-    - name: Run all tests (allow failures)
-      continue-on-error: true
-      run: |
-        # Run all tests but don't fail the build
-        pytest tests/unit -v --tb=short --no-cov || echo "Some tests failed, but continuing"
+        # Run all tests (only working ones remain)
+        pytest tests/unit -v --no-cov
     
     - name: Show test summary
       if: always()
