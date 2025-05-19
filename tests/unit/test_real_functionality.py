@@ -35,21 +35,25 @@ class TestActualFunctionality:
         assert CONFIG is not None
         assert hasattr(CONFIG, "openai_api_key")
 
-    @patch("litassist.utils.os.makedirs")
-    def test_save_log_creates_directory_properly(self, mock_makedirs):
-        """Test save_log with proper mocking."""
+
+    def test_save_log_creates_file(self):
+        """Test save_log creates actual files."""
         from litassist.utils import save_log
+        import os
+        import tempfile
 
-        # Mock os.path.exists to return False
-        with patch("litassist.utils.os.path.exists", return_value=False):
-            # Create a minimal payload
-            payload = {"input": "test input", "response": "test response"}
-
-            # Call save_log
-            save_log("test", payload)
-
-            # Verify makedirs was called
-            mock_makedirs.assert_called_once_with("logs", exist_ok=True)
+        # Create a temp directory
+        with tempfile.TemporaryDirectory() as temp_dir:
+            # Patch LOG_DIR to use temp directory
+            with patch("litassist.utils.LOG_DIR", temp_dir):
+                payload = {"input": "test", "response": "result"}
+                save_log("test", payload)
+                
+                # Check that a file was created
+                files = os.listdir(temp_dir)
+                assert len(files) == 1
+                assert files[0].startswith("test_")
+                assert files[0].endswith(".md")
 
     def test_real_file_operations(self):
         """Test file operations with real temp files."""
