@@ -43,16 +43,24 @@ jobs:
     
     - name: Run unit tests
       run: |
-        pytest tests/unit -v --cov=litassist --cov-report=xml || true
+        pytest tests/unit -v --cov=litassist --cov-report=xml
     
-    # Future: Add integration and e2e tests after unit tests pass
-    # - name: Run integration tests
-    #   run: |
-    #     pytest tests/integration -v
+    - name: Run integration tests
+      run: |
+        pytest tests/integration -v || true
     
-    # - name: Run e2e tests
-    #   run: |
-    #     pytest tests/e2e -v
+    - name: Run e2e tests
+      run: |
+        pytest tests/e2e -v || true
+    
+    - name: Upload coverage to Codecov
+      uses: codecov/codecov-action@v3
+      with:
+        file: ./coverage.xml
+        flags: unittests
+        env_vars: OS,PYTHON
+        name: codecov-umbrella
+        fail_ci_if_error: false
 
   # build:
   #   runs-on: ubuntu-latest
