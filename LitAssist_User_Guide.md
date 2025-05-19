@@ -220,53 +220,83 @@ Current communication between parties is minimal and strained
 
 With the structured case facts in place, you can now use the `brainstorm` workflow to generate novel legal arguments or remedies.
 
-## Workflow 4: Brainstorm - Creative Legal Strategy Generation
+## Workflow 4: Brainstorm - Comprehensive Legal Strategy Generation
 
 **Pipeline Phase**: Brainstorm
 
 ### Purpose
 
-The `brainstorm` command uses Grok's creative capabilities to generate ten unorthodox litigation arguments or remedies based on the facts provided. It's designed for creative exploration of alternative legal approaches.
+The `brainstorm` command uses Grok's creative capabilities to generate a comprehensive set of litigation strategies based on the facts provided, tailored to your specific party side and legal area. The command produces both orthodox and unorthodox strategies, along with an assessment of which are most likely to succeed.
 
 ### Command
 
 ```bash
-python -m litassist.cli brainstorm <case_facts_file> [--verify]
+python -m litassist.cli brainstorm <case_facts_file> --side <party_side> --area <legal_area> [--verify]
 ```
 
+Required parameters:
+- `--side`: Specify which side you are representing (plaintiff/defendant/accused/respondent)
+- `--area`: Specify the legal area of the matter (criminal/civil/family/commercial/administrative)
+
 Options:
-- `--verify`: Enable self-critique verification pass
+- `--verify`: Enable self-critique verification pass on generated strategies
 
 ### Example Usage
 
-For the *Smith v Jones* case, we can use the structured facts to generate creative legal strategies:
+For the *Smith v Jones* case, we can use the structured facts to generate comprehensive legal strategies:
 
 ```bash
-python -m litassist.cli brainstorm examples/case_facts.txt
+python -m litassist.cli brainstorm examples/case_facts.txt --side plaintiff --area family
 ```
 
 **Output Example**:
 ```
---- Ideas ---
+--- Family Law Strategies for Plaintiff ---
 
-Ten Unorthodox Litigation Arguments for Smith v Jones:
+## ORTHODOX STRATEGIES
+
+1. Best Interests Argument
+   Focus on how the relocation to Brisbane serves the best interests of the children under s60CC of the Family Law Act. Emphasize improved quality of life, educational opportunities, and financial security.
+   Key legal principles: Family Law Act 1975 (Cth) s60CA, s60CC; MRR v GR [2010] HCA 4.
+
+2. Children's Views Application
+   Present evidence of 12-year-old Emily's expressed desire to remain in Brisbane, arguing her views should be given substantial weight due to her age and maturity.
+   Key legal principles: Family Law Act 1975 (Cth) s60CC(3)(a); Bondelmonte v Bondelmonte [2017] HCA 8.
+
+3. Equal Shared Parental Responsibility Retention
+   Argue that relocation does not necessitate changing equal shared parental responsibility, as technological solutions enable joint decision-making despite distance.
+   Key legal principles: Family Law Act 1975 (Cth) s61DA; Goode & Goode [2006] FamCA 1346.
+
+[continues with 7 more orthodox strategies...]
+
+## UNORTHODOX STRATEGIES
 
 1. "Digital Domicile" Argument
-   Assert that the children's established online relationships with friends and extended family in Sydney constitute a digital domicile that should be recognized by the court as a factor in determining their best interests. Argue that geographic relocation is less disruptive in the digital age as the children maintain their social connections through technology.
+   Assert that children's established online relationships with friends and family in Sydney constitute a digital domicile that mitigates relocation impacts, as geographic moves are less disruptive in the digital age.
+   Key legal principles: Morgan & Miles [2007] FamCA 1230; emerging international jurisprudence on technology in family law.
 
 2. Educational Innovation Metric
-   Commission an educational assessment comparing innovative teaching methodologies between the Brisbane and Sydney schools, arguing that the Brisbane schools offer pedagogical approaches specifically beneficial for these children's learning styles. This shifts focus from mere relocation to educational opportunity specificity.
+   Commission specialized educational assessment comparing teaching methodologies between Brisbane and Sydney schools, establishing that Brisbane schools offer pedagogical approaches uniquely beneficial for these specific children.
+   Key legal principles: Rice v Asplund [1979] FamCA 84 (material change threshold); s60CC(3)(f) regarding educational needs.
 
-3. "Parental Development" Framework
-   Propose a novel legal framework where the court considers each parent's personal and professional development trajectory as integral to their parenting capacity. Argue that Ms. Smith's career advancement directly enhances her parenting abilities through greater financial security, professional fulfillment, and role modeling.
+[continues with 8 more unorthodox strategies...]
 
-4. Climate Change Adaptation Defense
-   Present evidence that Brisbane's climate and infrastructure are better positioned for climate resilience than Sydney, potentially offering the children a more stable future. This unusual argument connects relocation to long-term welfare considerations beyond conventional family law factors.
+## MOST LIKELY TO SUCCEED
 
-5. Indigenous Connection Consideration
-   If either parent or the children have any Indigenous heritage, explore whether the Brisbane location offers better connection to specific Country or cultural resources that would support the children's cultural identity development under UNDROC principles.
+1. Best Interests Argument
+   Provides the strongest foundation as courts consistently prioritize children's interests above all other considerations.
 
-...
+2. Meaningful Relationship Maintenance Plan
+   Practical and cooperative approach demonstrating willingness to facilitate father's relationship, addressing the court's primary concerns.
+
+3. Substantial & Significant Time Alternative
+   Realistic proposal that acknowledges the father's rights while adapting to the reality of distance.
+
+4. Expert Evidence Strategy
+   Independent expert opinion carries significant weight, particularly if a family consultant supports the current arrangements.
+
+5. Status Quo Continuation
+   Courts are often reluctant to disrupt settled arrangements where children are thriving.
 ```
 
 ### Next in Pipeline
@@ -348,9 +378,9 @@ To demonstrate how these five workflows combine into a seamless end-to-end pipel
    python -m litassist.cli extractfacts examples/smith_jones_file.pdf
    ```
 
-4. **Brainstorm**: Generate creative legal arguments and strategies based on case facts.
+4. **Brainstorm**: Generate comprehensive legal strategies tailored to party side and legal area.
    ```bash
-   python -m litassist.cli brainstorm examples/case_facts.txt
+   python -m litassist.cli brainstorm examples/case_facts.txt --side plaintiff --area family
    ```
 
 5. **Draft**: Create a well-supported legal submission incorporating citations from case documents.

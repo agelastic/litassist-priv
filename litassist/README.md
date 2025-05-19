@@ -37,7 +37,7 @@ The following commands are available:
 
 - `lookup`: Rapid case-law lookup via Google CSE + Gemini
 - `digest`: Mass-document digestion via Claude
-- `brainstorm`: Generate novel legal strategies via Grok
+- `brainstorm`: Generate comprehensive legal strategies via Grok (orthodox/unorthodox, tailored to party side and legal area)
 - `extractfacts`: Auto-generate case_facts.txt under structured headings
 - `draft`: Citation-rich drafting via RAG & GPT-4o
 

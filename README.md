@@ -129,20 +129,29 @@ Options:
 
 ---
 
-### 3. Creative brainstorming (brainstorm)
+### 3. Comprehensive legal strategy brainstorming (brainstorm)
 
-Uses Grok's creative capabilities to generate ten unorthodox litigation arguments or remedies based on the facts provided. The command leverages Grok-3-beta with higher temperature settings optimized for creative legal thinking.
+Uses Grok's creative capabilities to generate a comprehensive set of litigation strategies based on the facts provided, tailored to your specific party side and legal area. The command leverages Grok-3-beta with higher temperature settings optimized for creative legal thinking.
 
 ```bash
-./litassist.py brainstorm case_facts.txt
+./litassist.py brainstorm case_facts.txt --side plaintiff --area civil
 ```
+
+The command produces three sections:
+1. 10 orthodox legal strategies commonly used in the specified legal area
+2. 10 unorthodox but potentially effective strategies that could work
+3. A shortlist of 3-5 strategies (from either category) most likely to succeed
 
 Notes:
 - `case_facts.txt` must be a plain-text file containing structured case facts.
-- Facts are expected to include relevant details for creative argument generation.
+- Facts are expected to include relevant details for strategy generation.
+
+Required parameters:
+- `--side` specify which side you are representing (plaintiff/defendant/accused/respondent)
+- `--area` specify the legal area of the matter (criminal/civil/family/commercial/administrative)
 
 Options:
-- `--verify` (optional) run a self-critique verification pass on the generated ideas for legal accuracy
+- `--verify` (optional) run a self-critique verification pass on the generated strategies for legal accuracy
 
 
 ---
