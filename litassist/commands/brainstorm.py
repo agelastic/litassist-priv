@@ -47,6 +47,38 @@ def brainstorm(facts_file, side, area, verify):
     Raises:
         click.ClickException: If there are errors reading the facts file or with the LLM API call.
     """
+    # Check for potentially incompatible side/area combinations
+    valid_combinations = {
+        "criminal": ["accused"],
+        "civil": ["plaintiff", "defendant"],
+        "family": ["plaintiff", "defendant", "respondent"],
+        "commercial": ["plaintiff", "defendant"],
+        "administrative": ["plaintiff", "defendant", "respondent"]
+    }
+    
+    if area in valid_combinations and side not in valid_combinations[area]:
+        warning_msg = click.style(
+            f"Warning: '{side}' is not typically used in {area} matters. ",
+            fg="yellow", bold=True
+        )
+        suggestion = click.style(
+            f"Standard options for {area} are: {', '.join(valid_combinations[area])}\n",
+            fg="yellow"
+        )
+        click.echo(warning_msg + suggestion)
+        
+        # Add specific warnings for common mistakes
+        if side == "plaintiff" and area == "criminal":
+            click.echo(click.style(
+                "Note: Criminal cases use 'accused' instead of 'plaintiff/defendant'\n",
+                fg="yellow"
+            ))
+        elif side == "accused" and area != "criminal":
+            click.echo(click.style(
+                "Note: 'Accused' is typically only used in criminal matters\n",
+                fg="yellow"
+            ))
+    
     # Read the structured facts file
     facts = read_document(facts_file)
 

@@ -56,7 +56,7 @@ The `lookup` command performs rapid searches on AustLII for relevant case law us
 ### Command
 
 ```bash
-python -m litassist.cli lookup "your legal question" [--mode irac|broad] [--verify]
+./litassist.py lookup "your legal question" [--mode irac|broad] [--verify]
 ```
 
 Options:
@@ -68,7 +68,7 @@ Options:
 In our *Smith v Jones* case, we might need to quickly research the legal framework for parental alienation:
 
 ```bash
-python -m litassist.cli lookup "What is the legal framework for determining parental alienation in Australian family court cases?" --mode irac
+./litassist.py lookup "What is the legal framework for determining parental alienation in Australian family court cases?" --mode irac
 ```
 
 **Output Example**:
@@ -107,7 +107,7 @@ The `digest` command processes large documents by splitting them into manageable
 ### Command
 
 ```bash
-python -m litassist.cli digest <file> [--mode summary|issues] [--verify]
+./litassist.py digest <file> [--mode summary|issues] [--verify]
 ```
 
 Options:
@@ -119,7 +119,7 @@ Options:
 For the *Smith v Jones* case, we have received a lengthy affidavit from our client that needs to be broken down:
 
 ```bash
-python -m litassist.cli digest examples/smith_affidavit.pdf --mode issues
+./litassist.py digest examples/smith_affidavit.pdf --mode issues
 ```
 
 **Output Example**:
@@ -163,7 +163,7 @@ The `extractfacts` command processes a document to extract relevant case facts a
 ### Command
 
 ```bash
-python -m litassist.cli extractfacts <file> [--verify]
+./litassist.py extractfacts <file> [--verify]
 ```
 
 Options:
@@ -174,44 +174,48 @@ Options:
 Now we need to create a structured fact sheet for the *Smith v Jones* case:
 
 ```bash
-python -m litassist.cli extractfacts examples/smith_jones_file.pdf
+./litassist.py extractfacts examples/smith_jones_file.pdf
 ```
 
 **Output Example**:
-The command creates a `case_facts.txt` file (typically saved in the current directory or a specified output location) with the following structured format:
+The command creates a `case_facts.txt` file in the current directory with the following structured format.
+
+The command creates a `case_facts.txt` file in the current directory with a structured format that's compatible with both the `brainstorm` and `strategy` commands.
 
 ```
-1. Jurisdiction & Forum
-Federal Circuit and Family Court of Australia, Division 1
-Filed in Brisbane Registry (Queensland)
-Case subject to Family Law Act 1975 (Cth)
-
-2. Parties & Roles
+1. Parties
 Applicant: Jennifer Smith (mother, 38)
 Respondent: Michael Jones (father, 40)
 Children: Emily Jones (12) and Thomas Jones (8)
 
-3. Procedural Posture
-Application filed by Ms. Smith on March 15, 2025
-Interim parenting orders issued on April 2, 2025
-Parties participated in Family Dispute Resolution on April 30, 2025 (unsuccessful)
-Matter scheduled for final hearing on June 10, 2025
+2. Background
+Parties had jointly-owned property in Sydney.
+Ms. Smith accepted senior position in Brisbane hospital.
+Children enrolled in Brisbane schools since February 2025.
+Mr. Jones continues to reside in Sydney.
+Current communication between parties is minimal and strained.
 
-4. Chronology of Key Events
-2012 - Parties married in Sydney
-2013 - Emily born
-2017 - Thomas born
-2022 - Parties separated but continued living in Sydney home
-2023 - Consent parenting orders established (week-about arrangement)
-January 2025 - Ms. Smith relocated with children to Brisbane (citing job opportunity)
-February 2025 - Mr. Jones filed contravention application
+3. Key Events
+- 2012: Parties married in Sydney
+- 2013: Emily born
+- 2017: Thomas born
+- 2022: Parties separated but continued living in Sydney home
+- 2023: Consent parenting orders established (week-about arrangement)
+- January 2025: Ms. Smith relocated with children to Brisbane (citing job opportunity)
+- February 2025: Mr. Jones filed contravention application
 
-5. Factual Background
-Parties had jointly-owned property in Sydney
-Ms. Smith accepted senior position in Brisbane hospital
-Children enrolled in Brisbane schools since February 2025
-Mr. Jones continues to reside in Sydney
-Current communication between parties is minimal and strained
+4. Legal Issues
+1. Whether relocation constitutes breach of consent orders
+2. Best interests assessment under s60CC considerations
+3. Weight of children's views given their ages
+4. Allegations of parental alienation
+
+5. Evidence Available
+1. Consent orders dated August 2023
+2. School enrollment records
+3. Employment contract from Brisbane hospital
+4. Father's contravention application
+5. Email correspondence between parties
 
 ...
 ```
@@ -231,12 +235,17 @@ The `brainstorm` command uses Grok's creative capabilities to generate a compreh
 ### Command
 
 ```bash
-python -m litassist.cli brainstorm <case_facts_file> --side <party_side> --area <legal_area> [--verify]
+./litassist.py brainstorm <case_facts_file> --side <party_side> --area <legal_area> [--verify]
 ```
 
 Required parameters:
-- `--side`: Specify which side you are representing (plaintiff/defendant/accused/respondent)
-- `--area`: Specify the legal area of the matter (criminal/civil/family/commercial/administrative)
+- `--side`: Which side you are representing (options depend on area):
+  - Criminal cases: `accused` only
+  - Civil/Commercial cases: `plaintiff` or `defendant`
+  - Family/Administrative cases: `plaintiff`, `defendant`, or `respondent`
+- `--area`: Legal area of the matter - `criminal`, `civil`, `family`, `commercial`, or `administrative`
+
+**Note**: The command will warn you if you use incompatible side/area combinations (e.g., "plaintiff" in criminal cases) but will still generate strategies.
 
 Options:
 - `--verify`: Enable self-critique verification pass on generated strategies
@@ -246,7 +255,7 @@ Options:
 For the *Smith v Jones* case, we can use the structured facts to generate comprehensive legal strategies:
 
 ```bash
-python -m litassist.cli brainstorm examples/case_facts.txt --side plaintiff --area family
+./litassist.py brainstorm examples/case_facts.txt --side plaintiff --area family
 ```
 
 **Output Example**:
@@ -301,7 +310,7 @@ python -m litassist.cli brainstorm examples/case_facts.txt --side plaintiff --ar
 
 ### Next in Pipeline
 
-Finally, using the research, analysis, structured facts, and creative ideas from previous workflows, you can create a well-supported draft using the `draft` workflow.
+With comprehensive strategies generated, you can now prepare specific legal documents using the `strategy` workflow, or create a well-supported draft using the `draft` workflow.
 
 ## Workflow 5: Draft - Retrieval-Augmented Drafting
 
@@ -314,7 +323,7 @@ The `draft` command implements a Retrieval-Augmented Generation workflow to crea
 ### Command
 
 ```bash
-python -m litassist.cli draft <pdf> <query> [--verify] [--diversity FLOAT]
+./litassist.py draft <pdf> <query> [--verify] [--diversity FLOAT]
 ```
 
 Options:
@@ -326,7 +335,7 @@ Options:
 For our *Smith v Jones* case, we can now draft a submission on the relocation issue:
 
 ```bash
-python -m litassist.cli draft examples/smith_bundle.pdf "outline of submissions regarding relocation of children in Smith v Jones"
+./litassist.py draft examples/smith_bundle.pdf "outline of submissions regarding relocation of children in Smith v Jones"
 ```
 
 **Output Example**:
@@ -357,35 +366,150 @@ python -m litassist.cli draft examples/smith_bundle.pdf "outline of submissions 
 [Content continues with well-structured legal arguments incorporating citations from the document]
 ```
 
+## Workflow 6: Strategy - Generate Legal Options
+
+**Pipeline Phase**: Strategy
+
+### Purpose
+
+The `strategy` command analyzes case facts to generate strategic legal options, recommended actions, and draft documents tailored to achieving a specific outcome. It produces comprehensive analysis including probability assessments, critical hurdles, and prioritized next steps.
+
+### Command
+
+```bash
+./litassist.py strategy <case_facts_file> --outcome <desired_outcome>
+```
+
+Required parameters:
+- `--outcome`: A single sentence describing the desired outcome
+
+### Example Usage
+
+For the *Smith v Jones* case, we can generate strategic options for specific litigation outcomes:
+
+```bash
+./litassist.py strategy examples/case_facts.txt --outcome "Secure interim orders allowing children to remain in Brisbane"
+```
+
+**Output Example**:
+```
+# STRATEGIC OPTIONS FOR: SECURE INTERIM ORDERS ALLOWING CHILDREN TO REMAIN IN BRISBANE
+
+## OPTION 1: Application for Continuation of Interim Arrangements
+* **Probability of Success**: 75%
+
+* **Principal Hurdles**:
+  1. Overcoming presumption against changing established living arrangements — *Rice v Asplund (1979) FLC 90-725*
+  2. Addressing father's contravention application regarding unauthorized relocation — *Family Law Act 1975 s70NAE*
+
+* **Critical Missing Facts**:
+  - Evidence of children's adjustment to Brisbane schools
+  - Financial comparison of mother's earning capacity in each location
+
+
+## OPTION 2: Urgent Application based on Best Interests
+* **Probability of Success**: 70%
+
+* **Principal Hurdles**:
+  1. Establishing urgency justifying immediate determination — *Johns & Johns [2004] FamCA 348*
+  2. Demonstrating material change in circumstances — *Goode & Goode [2006] FamCA 1346*
+
+* **Critical Missing Facts**:
+  - Expert evidence regarding children's psychological wellbeing
+  - Documentation of father's capacity to maintain contact
+
+
+# RECOMMENDED NEXT STEPS
+
+1. Obtain urgent affidavit from children's school counselors regarding adjustment
+2. File Form 4 Application for Interim Orders within 7 days
+3. Arrange independent children's lawyer appointment per s68L
+4. Commission family report focusing on relocation impact
+5. Document all attempts to facilitate father's contact with children
+
+
+# DRAFT APPLICATION
+
+IN THE FEDERAL CIRCUIT AND FAMILY COURT OF AUSTRALIA
+FAMILY LAW DIVISION
+
+File No: SYD2025/0123
+
+### APPLICATION FOR INTERIM PARENTING ORDERS
+
+**BETWEEN:**
+JENNIFER SMITH
+Applicant
+
+**AND:**
+MICHAEL JONES
+Respondent
+
+The Applicant applies for the following orders:
+
+1. That pending final determination of these proceedings, the children Emily Jones (born 15/05/2013) and Thomas Jones (born 22/09/2017) live with the Applicant in Brisbane, Queensland.
+
+2. That the children spend time with the Respondent:
+   (a) Each alternate weekend from Friday after school to Sunday 6pm;
+   (b) For half of all school holiday periods;
+   (c) By electronic communication at times agreed between the parties.
+
+3. That the parties have equal shared parental responsibility for major long-term decisions concerning the children.
+
+**GROUNDS:**
+
+1. The children have resided in Brisbane since January 2025 and are enrolled in schools there.
+
+2. The Applicant's employment in Brisbane provides significantly enhanced financial security for the children.
+
+3. Both children have adjusted well to their new environment as evidenced by school reports and counselor assessments.
+
+4. The proposed orders facilitate meaningful time between the children and the Respondent while providing stability in the children's primary residence.
+
+5. The best interests of the children are served by maintaining their current living arrangements pending final determination.
+
+**Filed:** [Date]
+**Applicant's Solicitor:** [Details]
+```
+
+### Next in Pipeline
+
+With strategic options identified, you can now create comprehensive legal documents using the `draft` workflow.
+
 ## End-to-End Pipeline Example
 
 To demonstrate how these five workflows combine into a seamless end-to-end pipeline for the *Smith v Jones* case:
 
 1. **Ingest (Lookup)**: Research legal frameworks for parental alienation and relocation cases in Australian family law.
    ```bash
-   python -m litassist.cli lookup "What is the legal framework for determining parental alienation in Australian family court cases?"
-   python -m litassist.cli lookup "What factors do Australian courts consider in relocation cases?" --mode broad
+   ./litassist.py lookup "What is the legal framework for determining parental alienation in Australian family court cases?"
+   ./litassist.py lookup "What factors do Australian courts consider in relocation cases?" --mode broad
    ```
 
 2. **Analyse (Digest)**: Process and analyze case documents to identify key issues and chronology.
    ```bash
-   python -m litassist.cli digest examples/smith_affidavit.pdf --mode issues
-   python -m litassist.cli digest examples/jones_response.pdf --mode summary
+   ./litassist.py digest examples/smith_affidavit.pdf --mode issues
+   ./litassist.py digest examples/jones_response.pdf --mode summary
    ```
 
 3. **Structure (ExtractFacts)**: Extract and organize case facts into a structured format.
    ```bash
-   python -m litassist.cli extractfacts examples/smith_jones_file.pdf
+   ./litassist.py extractfacts examples/smith_jones_file.pdf
    ```
 
 4. **Brainstorm**: Generate comprehensive legal strategies tailored to party side and legal area.
    ```bash
-   python -m litassist.cli brainstorm examples/case_facts.txt --side plaintiff --area family
+   ./litassist.py brainstorm examples/case_facts.txt --side plaintiff --area family
    ```
 
-5. **Draft**: Create a well-supported legal submission incorporating citations from case documents.
+5. **Strategy**: Generate targeted strategic options and draft documents for specific outcomes.
    ```bash
-   python -m litassist.cli draft examples/smith_bundle.pdf "outline of submissions regarding relocation of children in Smith v Jones"
+   ./litassist.py strategy examples/case_facts.txt --outcome "Secure interim orders allowing children to remain in Brisbane"
+   ```
+
+6. **Draft**: Create a well-supported legal submission incorporating citations from case documents.
+   ```bash
+   ./litassist.py draft examples/smith_bundle.pdf "outline of submissions regarding relocation of children in Smith v Jones"
    ```
 
 ## Conclusion
@@ -397,7 +521,7 @@ LitAssist streamlines legal workflows by automating research, analysis, and draf
 Options available for all commands:
 
 ```bash
-python -m litassist.cli [GLOBAL OPTIONS] <command> [ARGS] [OPTIONS]
+./litassist.py [GLOBAL OPTIONS] <command> [ARGS] [OPTIONS]
 ```
 
 - `--log-format [json|markdown]` - Set audit log format (default: markdown)

@@ -6,16 +6,10 @@ and serves as the entry point for the LitAssist application.
 """
 
 import sys
-import os
 import click
 import logging
 import openai
 import pinecone
-import warnings
-
-# Suppress Google API cache warning  
-os.environ['GOOGLE_API_USE_CLIENT_CERTIFICATE'] = 'false'
-warnings.filterwarnings("ignore", message=".*file_cache.*")
 
 from litassist.config import CONFIG
 from litassist.commands import register_commands
@@ -108,7 +102,10 @@ def validate_credentials(show_progress=True):
         try:
             if show_progress:
                 print("  - Testing Google CSE API... ", end="", flush=True)
-            from googleapiclient.discovery import build
+            import warnings
+            with warnings.catch_warnings():
+                warnings.filterwarnings("ignore", message=".*file_cache.*")
+                from googleapiclient.discovery import build
             # Disable cache to avoid warning
             service = build("customsearch", "v1", developerKey=CONFIG.g_key, cache_discovery=False)
             # Perform a lightweight test query (no logging)

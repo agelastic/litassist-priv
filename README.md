@@ -7,6 +7,7 @@
 - **Creative brainstorming** (Unorthodox legal strategies via Grok)  
 - **Automatic extraction of case facts** into a structured file  
 - **Citation-rich drafting** (Retrieval-Augmented Generation with GPT-4o)  
+- **Strategic analysis** (Generate legal options and draft documents)  
 
 All processing is cloud-only: no local model downloads required.
 
@@ -35,10 +36,13 @@ The `examples/` directory contains sample files referenced in the documentation,
 
 3. **Install dependencies**:
    ```bash
-   pip install click openai pinecone-client PyPDF2 google-api-python-client pyyaml
+   pip install -r requirements.txt
    ```
    
-   This will install all required packages for LitAssist's functionality.
+   Or install packages individually:
+   ```bash
+   pip install click openai==0.28.1 pinecone-client==2.2.4 PyPDF2 google-api-python-client pyyaml requests reportlab
+   ```
 
 4. **Make the script executable**:
    ```bash
@@ -73,6 +77,8 @@ pinecone:
 
 The tool validates all required keys on startup and performs a lightweight connectivity check against each service.
 
+**Note**: If you see warnings about Google API file_cache during startup, these are automatically suppressed and won't affect functionality.
+
 
 ---
 
@@ -93,19 +99,20 @@ Global options:
 
 ### 1. Rapid case-law lookup (lookup)
 
-Fetch AustLII links via Google CSE and get an IRAC-style answer from Google Gemini. The tool searches for Australian legal information on AustLII via Google Custom Search, then processes the results with Google Gemini to produce a structured legal answer citing relevant cases.
+Search for legal information using either Google Custom Search (on AustLII) or Jade.io, then process the results with Google Gemini to produce a structured legal answer citing relevant cases.
 
 ```bash
-# IRAC-style answer
+# IRAC-style answer using Google CSE
 ./litassist.py lookup "What defences exist to adverse costs orders?"
 
-# Broader brainstorm
-./litassist.py lookup "What defences exist to adverse costs orders?" --mode broad
+# Broader exploration using Jade
+./litassist.py lookup "What defences exist to adverse costs orders?" --mode broad --engine jade
 ```
 
 Options:
-- `--mode irac|broad` (default: irac): Choose between structured IRAC format or a broader creative exploration
-- `--verify` (optional) run a self-critique pass on the answer for legal accuracy
+- `--mode [irac|broad]` (default: irac): Choose between structured IRAC format or broader creative exploration
+- `--verify`: Enable self-critique verification pass for legal accuracy
+- `--engine [google|jade]` (default: google): Search engine - 'google' for AustLII via CSE, 'jade' for Jade.io
 
 
 ---
@@ -131,10 +138,13 @@ Options:
 
 ### 3. Comprehensive legal strategy brainstorming (brainstorm)
 
-Uses Grok's creative capabilities to generate a comprehensive set of litigation strategies based on the facts provided, tailored to your specific party side and legal area. The command leverages Grok-3-beta with higher temperature settings optimized for creative legal thinking.
+Uses Grok's creative capabilities to generate a comprehensive set of litigation strategies based on the facts provided, tailored to your specific party side and legal area. The command leverages Grok with optimized temperature settings for creative legal thinking.
 
 ```bash
 ./litassist.py brainstorm case_facts.txt --side plaintiff --area civil
+
+# Example for family law
+./litassist.py brainstorm case_facts.txt --side respondent --area family --verify
 ```
 
 The command produces three sections:
@@ -142,16 +152,17 @@ The command produces three sections:
 2. 10 unorthodox but potentially effective strategies that could work
 3. A shortlist of 3-5 strategies (from either category) most likely to succeed
 
-Notes:
-- `case_facts.txt` must be a plain-text file containing structured case facts.
-- Facts are expected to include relevant details for strategy generation.
-
 Required parameters:
-- `--side` specify which side you are representing (plaintiff/defendant/accused/respondent)
-- `--area` specify the legal area of the matter (criminal/civil/family/commercial/administrative)
+- `--side`: Which side you are representing (options depend on area):
+  - Criminal cases: `accused` only
+  - Civil/Commercial cases: `plaintiff` or `defendant`
+  - Family/Administrative cases: `plaintiff`, `defendant`, or `respondent`
+- `--area`: Legal area - `criminal`, `civil`, `family`, `commercial`, or `administrative`
 
 Options:
-- `--verify` (optional) run a self-critique verification pass on the generated strategies for legal accuracy
+- `--verify`: Enable self-critique verification pass on generated strategies
+
+**Compatibility**: The command validates side/area combinations and will display a warning if you use uncommon pairings (e.g., "plaintiff" in criminal matters) but will still proceed with strategy generation.
 
 
 ---
@@ -160,21 +171,23 @@ Options:
 
 Processes a document to extract relevant case facts and organizes them into a structured format with ten standard headings. It uses Claude 3 Sonnet with deterministic settings (low temperature) to ensure consistent, factual extraction. The output is saved to a file named `case_facts.txt` that can be used with the `brainstorm` command.
 
+The output is saved to a file named `case_facts.txt` that can be used with both the `brainstorm` and `strategy` commands.
+
 ```bash
 ./litassist.py extractfacts police_ebrief.pdf
 ```
 
 The tool organizes facts under these headings:
-1. Jurisdiction & Forum
-2. Parties & Roles
-3. Procedural Posture
-4. Chronology of Key Events
-5. Factual Background
-6. Legal Issues & Applicable Law
-7. Client Objectives & Constraints
-8. Key Evidence
-9. Known Weaknesses or Gaps
-10. Commercial or Policy Context
+1. Parties
+2. Background
+3. Key Events
+4. Legal Issues
+5. Evidence Available
+6. Opposing Arguments
+7. Procedural History
+8. Jurisdiction
+9. Applicable Law
+10. Client Objectives
 
 Options:
 - `--verify` (optional) run a self-critique verification pass on the extracted facts
@@ -203,6 +216,33 @@ Options:
 
 ---
 
+### 6. Generate legal strategy (strategy)
+
+Generates comprehensive legal strategy options and draft documents tailored to Australian civil matters. The command analyzes case facts structured according to the LitAssist ten-heading format and produces strategic options with probability assessments, recommended next steps, and appropriate draft legal documents to achieve the desired outcome.
+
+```bash
+# Generate strategy options for specific outcome
+./litassist.py strategy case_facts.txt --outcome "Obtain interim injunction against defendant"
+
+# Another example
+./litassist.py strategy case_facts.txt --outcome "Resist enforcement of liquidated damages clause"
+```
+
+The command produces three sections:
+1. Strategic options with probability of success and critical hurdles
+2. Recommended next steps in priority order
+3. A draft legal document (claim, application, or affidavit) tailored to the outcome
+
+Required parameters:
+- `--outcome`: A single sentence describing the desired outcome
+
+Notes:
+- `case_facts.txt` must follow the ten-heading LitAssist structure (as produced by `extractfacts`)
+- The command uses GPT-4o for deterministic legal analysis and document generation
+
+
+---
+
 ## 📂 Audit Logging
 
 All commands write detailed logs under logs/:
@@ -210,6 +250,27 @@ All commands write detailed logs under logs/:
 - Contains metadata, inputs, prompts, responses and token usage
 - Persisted as `logs/<command>_YYYYMMDD-HHMMSS.{json|md}`
 
+
+---
+
+## 🔒 Additional Features
+
+### Progress Indicators
+- Long-running operations (LLM calls) display heartbeat messages every 30 seconds
+- Document processing shows progress bars for multi-chunk operations
+
+### Automatic Retries
+- The `lookup` command automatically retries once if citations are missing
+- Network errors are caught and displayed with user-friendly messages
+
+### Validation & Warnings
+- Configuration files are validated on startup with clear error messages
+- Placeholder API keys are detected and operations gracefully degrade
+- Parameter compatibility warnings help avoid terminology mistakes
+
+### Mock Mode
+- When using placeholder credentials, some commands enter mock mode
+- Allows testing the CLI without active API subscriptions
 
 ---
 

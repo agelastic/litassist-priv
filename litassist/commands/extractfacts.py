@@ -21,7 +21,7 @@ def extractfacts(file, verify):
 
     Processes a document to extract relevant case facts and organizes them
     into a structured format with ten standard headings. This provides a
-    foundation for other commands like 'brainstorm' which require structured facts.
+    foundation for other commands like 'brainstorm' and 'strategy' which require structured facts.
 
     Args:
         file: Path to the document (PDF or text) to extract facts from.
@@ -45,17 +45,17 @@ def extractfacts(file, verify):
     with click.progressbar(chunks, label="Extracting facts") as bar:
         for chunk in bar:
             prompt = (
-                "Extract under these headings:\n"
-                "1. Jurisdiction & Forum\n"
-                "2. Parties & Roles\n"
-                "3. Procedural Posture\n"
-                "4. Chronology of Key Events\n"
-                "5. Factual Background\n"
-                "6. Legal Issues & Applicable Law\n"
-                "7. Client Objectives & Constraints\n"
-                "8. Key Evidence\n"
-                "9. Known Weaknesses or Gaps\n"
-                "10. Commercial or Policy Context\n\n" + chunk
+                "Extract under these headings (include all relevant details):\n"
+                "1. Parties (include roles and relationships)\n"
+                "2. Background (include commercial/policy context if relevant)\n"
+                "3. Key Events (in chronological order)\n"
+                "4. Legal Issues\n"
+                "5. Evidence Available (prioritize key evidence)\n"
+                "6. Opposing Arguments (include known weaknesses/gaps)\n"
+                "7. Procedural History (current status and past proceedings)\n"
+                "8. Jurisdiction (include specific court/forum)\n"
+                "9. Applicable Law\n"
+                "10. Client Objectives (include any constraints/limitations)\n\n" + chunk
             )
             try:
                 content, usage = client.complete(
