@@ -18,7 +18,7 @@ litassist/
     ├── __init__.py         # Command registration
     ├── lookup.py           # Case-law lookup
     ├── digest.py           # Document digestion
-    ├── ideate.py           # Creative legal strategy generation
+    ├── brainstorm.py       # Creative legal strategy generation
     ├── extractfacts.py     # Case facts extraction
     └── draft.py            # Citation-rich drafting
 ```
@@ -37,7 +37,7 @@ The following commands are available:
 
 - `lookup`: Rapid case-law lookup via Google CSE + Gemini
 - `digest`: Mass-document digestion via Claude
-- `ideate`: Generate novel legal strategies via Grok
+- `brainstorm`: Generate novel legal strategies via Grok
 - `extractfacts`: Auto-generate case_facts.txt under structured headings
 - `draft`: Citation-rich drafting via RAG & GPT-4o
 

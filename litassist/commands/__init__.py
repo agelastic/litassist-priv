@@ -9,7 +9,7 @@ from typing import List
 import click
 
 # Import all command modules to make them available
-from litassist.commands import lookup, digest, ideate, extractfacts, draft
+from litassist.commands import lookup, digest, brainstorm, extractfacts, draft
 
 
 def register_commands(cli: click.Group) -> None:
@@ -21,6 +21,6 @@ def register_commands(cli: click.Group) -> None:
     """
     cli.add_command(lookup.lookup)
     cli.add_command(digest.digest)
-    cli.add_command(ideate.ideate)
+    cli.add_command(brainstorm.brainstorm)
     cli.add_command(extractfacts.extractfacts)
     cli.add_command(draft.draft)

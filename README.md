@@ -4,7 +4,7 @@
 
 - **Rapid case-law lookup** (Google Custom Search + Google Gemini)  
 - **Mass-document digestion** (Chronological summaries or issue-spotting via Claude)  
-- **Novel strategy ideation** (Creative legal arguments via Grok)  
+- **Creative brainstorming** (Unorthodox legal strategies via Grok)  
 - **Automatic extraction of case facts** into a structured file  
 - **Citation-rich drafting** (Retrieval-Augmented Generation with GPT-4o)  
 
@@ -14,7 +14,7 @@ All processing is cloud-only: no local model downloads required.
 
 The `examples/` directory contains sample files referenced in the documentation, including:
 - PDF documents for testing the `digest`, `extractfacts`, and `draft` commands
-- A sample `case_facts.txt` file for testing the `ideate` command
+- A sample `case_facts.txt` file for testing the `brainstorm` command
 - All examples are based on the fictional *Smith v Jones* family law case
 
 ---
@@ -129,12 +129,12 @@ Options:
 
 ---
 
-### 3. Novel strategy ideation (ideate)
+### 3. Creative brainstorming (brainstorm)
 
 Uses Grok's creative capabilities to generate ten unorthodox litigation arguments or remedies based on the facts provided. The command leverages Grok-3-beta with higher temperature settings optimized for creative legal thinking.
 
 ```bash
-./litassist.py ideate case_facts.txt
+./litassist.py brainstorm case_facts.txt
 ```
 
 Notes:
@@ -149,7 +149,7 @@ Options:
 
 ### 4. Auto-extract facts (extractfacts)
 
-Processes a document to extract relevant case facts and organizes them into a structured format with ten standard headings. It uses Claude 3 Sonnet with deterministic settings (low temperature) to ensure consistent, factual extraction. The output is saved to a file named `case_facts.txt` that can be used with the `ideate` command.
+Processes a document to extract relevant case facts and organizes them into a structured format with ten standard headings. It uses Claude 3 Sonnet with deterministic settings (low temperature) to ensure consistent, factual extraction. The output is saved to a file named `case_facts.txt` that can be used with the `brainstorm` command.
 
 ```bash
 ./litassist.py extractfacts police_ebrief.pdf

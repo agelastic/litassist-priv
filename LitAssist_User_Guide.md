@@ -218,20 +218,20 @@ Current communication between parties is minimal and strained
 
 ### Next in Pipeline
 
-With the structured case facts in place, you can now use the `ideate` workflow to generate novel legal arguments or remedies.
+With the structured case facts in place, you can now use the `brainstorm` workflow to generate novel legal arguments or remedies.
 
-## Workflow 4: Ideate - Creative Legal Strategy Generation
+## Workflow 4: Brainstorm - Creative Legal Strategy Generation
 
 **Pipeline Phase**: Brainstorm
 
 ### Purpose
 
-The `ideate` command uses Grok's creative capabilities to generate ten unorthodox litigation arguments or remedies based on the facts provided. It's particularly useful for brainstorming alternative legal approaches.
+The `brainstorm` command uses Grok's creative capabilities to generate ten unorthodox litigation arguments or remedies based on the facts provided. It's designed for creative exploration of alternative legal approaches.
 
 ### Command
 
 ```bash
-python -m litassist.cli ideate <case_facts_file> [--verify]
+python -m litassist.cli brainstorm <case_facts_file> [--verify]
 ```
 
 Options:
@@ -242,7 +242,7 @@ Options:
 For the *Smith v Jones* case, we can use the structured facts to generate creative legal strategies:
 
 ```bash
-python -m litassist.cli ideate examples/case_facts.txt
+python -m litassist.cli brainstorm examples/case_facts.txt
 ```
 
 **Output Example**:
@@ -348,9 +348,9 @@ To demonstrate how these five workflows combine into a seamless end-to-end pipel
    python -m litassist.cli extractfacts examples/smith_jones_file.pdf
    ```
 
-4. **Brainstorm (Ideate)**: Generate creative legal arguments and strategies based on case facts.
+4. **Brainstorm**: Generate creative legal arguments and strategies based on case facts.
    ```bash
-   python -m litassist.cli ideate examples/case_facts.txt
+   python -m litassist.cli brainstorm examples/case_facts.txt
    ```
 
 5. **Draft**: Create a well-supported legal submission incorporating citations from case documents.

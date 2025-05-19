@@ -1,7 +1,7 @@
 """
 Generate novel legal strategies via Grok.
 
-This module implements the 'ideate' command which uses Grok's creative capabilities
+This module implements the 'brainstorm' command which uses Grok's creative capabilities
 to generate unorthodox litigation arguments or remedies based on provided case facts.
 """
 
@@ -14,7 +14,7 @@ from litassist.llm import LLMClient
 @click.command()
 @click.argument("facts_file", type=click.Path(exists=True))
 @click.option("--verify", is_flag=True, help="Enable self-critique pass")
-def ideate(facts_file, verify):
+def brainstorm(facts_file, verify):
     """
     Generate novel legal strategies via Grok.
 
@@ -45,7 +45,7 @@ def ideate(facts_file, verify):
     try:
         content, usage = call_with_hb(messages)
     except Exception as e:
-        raise click.ClickException(f"Grok ideation error: {e}")
+        raise click.ClickException(f"Grok brainstorming error: {e}")
 
     # Optional self-critique verification
     if verify:
@@ -53,11 +53,11 @@ def ideate(facts_file, verify):
             correction = client.verify(content)
             content = content + "\n\n--- Corrections ---\n" + correction
         except Exception as e:
-            raise click.ClickException(f"Self-verification error during ideation: {e}")
+            raise click.ClickException(f"Self-verification error during brainstorming: {e}")
 
     # Save audit log
     save_log(
-        "ideate",
+        "brainstorm",
         {
             "inputs": {"facts_file": facts_file, "prompt": prompt},
             "params": f"verify={verify}",

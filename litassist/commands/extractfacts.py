@@ -21,7 +21,7 @@ def extractfacts(file, verify):
 
     Processes a document to extract relevant case facts and organizes them
     into a structured format with ten standard headings. This provides a
-    foundation for other commands like 'ideate' which require structured facts.
+    foundation for other commands like 'brainstorm' which require structured facts.
 
     Args:
         file: Path to the document (PDF or text) to extract facts from.
