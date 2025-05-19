@@ -32,6 +32,7 @@ class TestBasicFunctionality:
         """Test patch decorator works."""
         mock_exists.return_value = True
         import os
+
         assert os.path.exists("fake_file.txt") is True
         mock_exists.assert_called_once_with("fake_file.txt")
 
@@ -42,7 +43,7 @@ class TestMockConfig:
     def test_config_is_mocked(self):
         """Test that CONFIG is properly mocked."""
         from litassist.config import CONFIG
-        
+
         assert CONFIG is not None
         assert CONFIG.openai_api_key == "test-openai-key"
         assert CONFIG.get_openai_api_key() == "test-openai-key"
@@ -54,19 +55,23 @@ class TestModuleImports:
     def test_import_utils(self):
         """Test utils module imports."""
         from litassist import utils
+
         assert utils is not None
 
     def test_import_llm(self):
         """Test llm module imports."""
         from litassist import llm
+
         assert llm is not None
 
     def test_import_retriever(self):
         """Test retriever module imports."""
         from litassist import retriever
+
         assert retriever is not None
 
     def test_import_commands(self):
         """Test commands module imports."""
         from litassist import commands
+
         assert commands is not None

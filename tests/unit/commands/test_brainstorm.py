@@ -39,7 +39,7 @@ class TestBrainstormCommand:
             # Create test file
             with open("test_facts.txt", "w") as f:
                 f.write("Test facts")
-            
+
             result = self.runner.invoke(
                 brainstorm, ["test_facts.txt", "--side", "plaintiff", "--area", "civil"]
             )
