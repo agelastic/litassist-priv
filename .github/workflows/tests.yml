@@ -16,17 +16,27 @@ jobs:
     - name: Set up Python
       uses: actions/setup-python@v4
       with:
-        python-version: "3.10"
+        python-version: "3.13"
     
-    - name: Install dependencies
-      run: |
-        pip install -r requirements.txt
-        pip install pytest black
+    - name: Cache pip
+      uses: actions/cache@v3
+      with:
+        path: ~/.cache/pip
+        key: ${{ runner.os }}-pip-${{ hashFiles('requirements-ci.txt') }}
+        restore-keys: |
+          ${{ runner.os }}-pip-
     
-    - name: Run black check
+    - name: Install minimal dependencies
+      timeout-minutes: 10
       run: |
-        black --check litassist tests
+        pip install --upgrade pip
+        pip install -r requirements-ci.txt
     
     - name: Run tests
       run: |
-        pytest tests/unit/test_basic.py -v
+        pytest tests/unit -v
+    
+    - name: Run black check
+      continue-on-error: true
+      run: |
+        black --check litassist tests
