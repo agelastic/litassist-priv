@@ -44,7 +44,7 @@ jobs:
     - name: Run all tests
       run: |
         # Run all tests (only working ones remain)
-        pytest tests/unit -v --no-cov
+        pytest tests/unit -v
     
     - name: Show test summary
       if: always()
