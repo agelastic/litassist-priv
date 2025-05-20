@@ -44,7 +44,12 @@ The `examples/` directory contains sample files referenced in the documentation,
    pip install click openai==0.28.1 pinecone-client==2.2.4 PyPDF2 google-api-python-client pyyaml requests reportlab
    ```
 
-4. **Make the script executable**:
+4. **Setup configuration**:
+   ```bash
+   cp config.yaml.template config.yaml
+   ```
+
+5. **Make the script executable**:
    ```bash
    chmod +x litassist.py
    ```

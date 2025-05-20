@@ -42,8 +42,17 @@ pip install -r requirements.txt
 
 # Configure your API keys (copy from template first)
 cp config.yaml.template config.yaml
-# Edit config.yaml with your API keys
+# Edit config.yaml with your API keys for:
+# - OpenRouter API (for accessing Grok, Claude, GPT-4o)
+# - OpenAI API (for embeddings)
+# - Pinecone vector database
+# - Google Custom Search Engine
 ```
+
+## Critical Configuration Notes
+- The `config.yaml.template` contains placeholder values that you must replace with your actual API keys
+- Specific models are accessed through OpenRouter, with fallbacks in place
+- See the README file for complete configuration details
 
 ## Workflow 1: Lookup - Rapid Case-Law Search
 
@@ -56,12 +65,13 @@ The `lookup` command performs rapid searches on AustLII for relevant case law us
 ### Command
 
 ```bash
-./litassist.py lookup "your legal question" [--mode irac|broad] [--verify]
+./litassist.py lookup "your legal question" [--mode irac|broad] [--verify] [--engine google|jade]
 ```
 
 Options:
 - `--mode`: Choose between IRAC (Issue, Rule, Application, Conclusion) or a broader exploration
 - `--verify`: Enable self-critique verification pass
+- `--engine`: Choose search engine - 'google' for AustLII via CSE (default), 'jade' for Jade.io
 
 ### Example Usage
 
@@ -85,11 +95,11 @@ Application: When determining whether parental alienation has occurred, courts e
 Conclusion: Australian family courts address parental alienation through the best interests framework of the Family Law Act. Courts apply a thorough examination of evidence regarding parental behavior and expert testimony, weighing the importance of meaningful relationships with both parents against any genuine protective concerns. Courts can order various remedies including changes to parenting arrangements, therapy interventions, or in extreme cases, changes to the child's primary residence as demonstrated in Ralton & Ralton [2016] FCWA 65.
 
 Sources:
-- Family Law Act 1975 (Cth), sections 60B, 60CC, https://www8.austlii.edu.au/cgi-bin/viewdb/au/legis/cth/consol_act/fla1975114/
-- Karabes v Karabes [2019] FamCAFC 3, https://www8.austlii.edu.au/cgi-bin/viewdoc/au/cases/cth/FamCAFC/2019/3.html
-- Miles & Zanelli [2022] FedCFamC1A 20, https://www8.austlii.edu.au/cgi-bin/viewdoc/au/cases/cth/FedCFamC1A/2022/20.html
-- Kappas & Drakos [2018] FamCA 37, https://www8.austlii.edu.au/cgi-bin/viewdoc/au/cases/cth/FamCA/2018/37.html
-- Ralton & Ralton [2016] FCWA 65, https://www8.austlii.edu.au/cgi-bin/viewdoc/au/cases/wa/FCWA/2016/65.html
+- Family Law Act 1975 (Cth), sections 60B, 60CC, https://www.austlii.edu.au/cgi-bin/viewdb/au/legis/cth/consol_act/fla1975114/
+- Karabes v Karabes [2019] FamCAFC 3, https://www.austlii.edu.au/cgi-bin/viewdoc/au/cases/cth/FamCAFC/2019/3.html | https://jade.io/article/632302
+- Miles & Zanelli [2022] FedCFamC1A 20, https://www.austlii.edu.au/cgi-bin/viewdoc/au/cases/cth/FedCFamC1A/2022/20.html | https://jade.io/article/909183  
+- Kappas & Drakos [2018] FamCA 37, https://www.austlii.edu.au/cgi-bin/viewdoc/au/cases/cth/FamCA/2018/37.html | https://jade.io/article/572418
+- Ralton & Ralton [2016] FCWA 65, https://www.austlii.edu.au/cgi-bin/viewdoc/au/cases/wa/FCWA/2016/65.html | https://jade.io/article/460030
 ```
 
 ### Next in Pipeline
@@ -160,6 +170,8 @@ After analyzing the documents with `digest`, you need to extract key facts in a 
 
 The `extractfacts` command processes a document to extract relevant case facts and organizes them into a structured format with ten standard headings, providing a foundation for other commands that require structured facts.
 
+**Note**: Input documents must be text-searchable PDFs for optimal fact extraction.
+
 ### Command
 
 ```bash
@@ -178,7 +190,6 @@ Now we need to create a structured fact sheet for the *Smith v Jones* case:
 ```
 
 **Output Example**:
-The command creates a `case_facts.txt` file in the current directory with the following structured format.
 
 The command creates a `case_facts.txt` file in the current directory with a structured format that's compatible with both the `brainstorm` and `strategy` commands.
 
@@ -266,15 +277,15 @@ For the *Smith v Jones* case, we can use the structured facts to generate compre
 
 1. Best Interests Argument
    Focus on how the relocation to Brisbane serves the best interests of the children under s60CC of the Family Law Act. Emphasize improved quality of life, educational opportunities, and financial security.
-   Key legal principles: Family Law Act 1975 (Cth) s60CA, s60CC; MRR v GR [2010] HCA 4.
+   Key legal principles: Family Law Act 1975 (Cth) s60CA, s60CC; MRR v GR [2010] HCA 4, https://www.austlii.edu.au/cgi-bin/viewdoc/au/cases/cth/HCA/2010/4.html.
 
 2. Children's Views Application
    Present evidence of 12-year-old Emily's expressed desire to remain in Brisbane, arguing her views should be given substantial weight due to her age and maturity.
-   Key legal principles: Family Law Act 1975 (Cth) s60CC(3)(a); Bondelmonte v Bondelmonte [2017] HCA 8.
+   Key legal principles: Family Law Act 1975 (Cth) s60CC(3)(a); Bondelmonte v Bondelmonte [2017] HCA 8, https://www.austlii.edu.au/cgi-bin/viewdoc/au/cases/cth/HCA/2017/8.html | https://jade.io/article/522221.
 
 3. Equal Shared Parental Responsibility Retention
    Argue that relocation does not necessitate changing equal shared parental responsibility, as technological solutions enable joint decision-making despite distance.
-   Key legal principles: Family Law Act 1975 (Cth) s61DA; Goode & Goode [2006] FamCA 1346.
+   Key legal principles: Family Law Act 1975 (Cth) s61DA; Goode & Goode [2006] FamCA 1346, https://www.austlii.edu.au/cgi-bin/viewdoc/au/cases/cth/FamCA/2006/1346.html | https://jade.io/article/5859.
 
 [continues with 7 more orthodox strategies...]
 
@@ -282,7 +293,7 @@ For the *Smith v Jones* case, we can use the structured facts to generate compre
 
 1. "Digital Domicile" Argument
    Assert that children's established online relationships with friends and family in Sydney constitute a digital domicile that mitigates relocation impacts, as geographic moves are less disruptive in the digital age.
-   Key legal principles: Morgan & Miles [2007] FamCA 1230; emerging international jurisprudence on technology in family law.
+   Key legal principles: Morgan & Miles [2007] FamCA 1230, https://www.austlii.edu.au/cgi-bin/viewdoc/au/cases/cth/FamCA/2007/1230.html; emerging international jurisprudence on technology in family law.
 
 2. Educational Innovation Metric
    Commission specialized educational assessment comparing teaching methodologies between Brisbane and Sydney schools, establishing that Brisbane schools offer pedagogical approaches uniquely beneficial for these specific children.
@@ -525,7 +536,22 @@ Options available for all commands:
 ```
 
 - `--log-format [json|markdown]` - Set audit log format (default: markdown)
+  - JSON format: Structured format for programmatic analysis
+  - Markdown format: Human-readable format with clear sections
 - `--verbose` - Enable detailed debug logging
+
+## Testing with Mock Mode
+
+When using placeholder API keys in your config.yaml file:
+- Some commands will enter mock mode automatically
+- This allows testing the CLI without active API subscriptions
+- Mock mode provides sample responses to demonstrate functionality:
+  - `lookup`: Returns sample AustLII results
+  - `digest`: Uses local test document processing
+  - `brainstorm`: Generates theoretical strategies
+  - Other commands will indicate they require valid credentials
+
+To exit mock mode, update config.yaml with valid API keys.
 
 ## Audit Logging
 
@@ -533,6 +559,7 @@ All command executions are logged for audit purposes:
 - Logs stored in `logs/` directory
 - Format: `logs/<command>_YYYYMMDD-HHMMSS.{json|md}`
 - Contents include metadata, inputs, prompts, responses, and token usage
+- Logs contain sensitive data - ensure proper access controls and encryption at rest
 
 ## Legal Disclaimer
 
