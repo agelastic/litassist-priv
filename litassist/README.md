@@ -25,10 +25,10 @@ litassist/
 
 ## Running the Application
 
-The application can be run using the `litassist_cli.py` script in the parent directory:
+The application can be run using the `litassist.py` script in the parent directory:
 
 ```bash
-./litassist_cli.py [OPTIONS] COMMAND [ARGS]...
+./litassist.py [OPTIONS] COMMAND [ARGS]...
 ```
 
 ## Commands
