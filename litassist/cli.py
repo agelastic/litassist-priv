@@ -103,11 +103,14 @@ def validate_credentials(show_progress=True):
             if show_progress:
                 print("  - Testing Google CSE API... ", end="", flush=True)
             import warnings
+
             with warnings.catch_warnings():
                 warnings.filterwarnings("ignore", message=".*file_cache.*")
                 from googleapiclient.discovery import build
             # Disable cache to avoid warning
-            service = build("customsearch", "v1", developerKey=CONFIG.g_key, cache_discovery=False)
+            service = build(
+                "customsearch", "v1", developerKey=CONFIG.g_key, cache_discovery=False
+            )
             # Perform a lightweight test query (no logging)
             service.cse().list(q="test", cx=CONFIG.cse_id, num=1).execute()
             if show_progress:

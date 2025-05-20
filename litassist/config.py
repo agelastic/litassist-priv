@@ -14,7 +14,7 @@ from typing import Dict, Any
 class Config:
     """Configuration manager for LitAssist."""
 
-    def __init__(self, config_path="config.yaml"):
+    def __init__(self, config_path=None):
         """
         Initialize configuration from a YAML file.
 
@@ -24,6 +24,9 @@ class Config:
         Raises:
             SystemExit: If the configuration file is missing or has invalid entries.
         """
+        # Allow override from environment for testing
+        if config_path is None:
+            config_path = os.environ.get("LITASSIST_CONFIG", "config.yaml")
         self.config_path = config_path
         self.cfg = self._load_config()
         self._validate_config()
@@ -128,4 +131,11 @@ class Config:
 
 
 # Create default instance when module is imported
-CONFIG = Config()
+try:
+    CONFIG = Config()
+except SystemExit:
+    # During testing, CONFIG might be mocked
+    if os.environ.get("PYTEST_CURRENT_TEST"):
+        CONFIG = None
+    else:
+        raise

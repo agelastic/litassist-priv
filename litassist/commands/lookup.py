@@ -13,7 +13,7 @@ import warnings
 import os
 
 # Suppress Google API cache warning
-os.environ['GOOGLE_API_USE_CLIENT_CERTIFICATE'] = 'false'
+os.environ["GOOGLE_API_USE_CLIENT_CERTIFICATE"] = "false"
 warnings.filterwarnings("ignore", message=".*file_cache.*")
 
 from litassist.config import CONFIG
@@ -158,8 +158,11 @@ def lookup(question, mode, verify, engine):
         # Fetch AustLII links via Google Custom Search
         try:
             from googleapiclient.discovery import build
+
             # Disable cache to avoid warning
-            service = build("customsearch", "v1", developerKey=CONFIG.g_key, cache_discovery=False)
+            service = build(
+                "customsearch", "v1", developerKey=CONFIG.g_key, cache_discovery=False
+            )
             res = (
                 service.cse()
                 .list(q=question, cx=CONFIG.cse_id, num=3, siteSearch="austlii.edu.au")
