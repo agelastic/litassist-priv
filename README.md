@@ -138,6 +138,11 @@ Options:
 - `--mode summary|issues` (default: summary): Choose between chronological summary or issue identification
 - `--verify` (optional) run a self-critique verification pass on each chunk's output for legal accuracy
 
+**Note on non-legal documents**: While primarily designed for legal content, the `digest` command can process any text document:
+- For non-legal documents (like bank statements or purchase agreements), use `--mode summary` for better results
+- The system is optimized for legal analysis, so outputs for non-legal content may attempt to frame information in legal terms
+- Financial documents will receive chronological summaries but may have legal perspectives applied
+
 
 ---
 
@@ -194,6 +199,11 @@ The tool organizes facts under these headings:
 9. Applicable Law
 10. Client Objectives
 
+**Note on non-legal documents**: The `extractfacts` command is specifically designed for legal documents and will attempt to fit any input into the 10-heading legal framework. For non-legal documents:
+- Commercial agreements may map reasonably well to the structure
+- Financial documents or personal records will have forced categorization
+- Consider pre-processing non-legal documents with `digest --mode summary` first, then manually creating the case_facts.txt file
+
 Options:
 - `--verify` (optional) run a self-critique verification pass on the extracted facts
 
@@ -244,6 +254,12 @@ Required parameters:
 Notes:
 - `case_facts.txt` must follow the ten-heading LitAssist structure (as produced by `extractfacts`)
 - The command uses GPT-4o for deterministic legal analysis and document generation
+- **Important**: The `strategy` command strictly enforces the 10-heading format and will reject any input that doesn't contain all required headings
+
+**For mixed document sets**:
+1. Process each document using `digest` first
+2. Manually combine relevant information into a `case_facts.txt` file following the 10-heading structure
+3. Only then run the `strategy` command with your desired outcome
 
 
 ---

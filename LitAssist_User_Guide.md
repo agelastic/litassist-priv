@@ -124,6 +124,24 @@ Options:
 - `--mode`: Choose between chronological summary or issue-spotting (default: summary)
 - `--verify`: Enable self-critique verification pass
 
+### Handling Non-Legal Documents
+
+While designed for legal content, the `digest` command can process various document types:
+
+**Works well with**:
+- Bank statements → Produces chronological financial events (use `--mode summary`)
+- Commercial agreements → Extracts key terms and conditions
+- Medical reports → Summarizes findings chronologically
+
+**Limitations**:
+- The system prompt specifies "Australian law only" which may affect interpretation
+- Financial terms may be framed in legal contexts
+- `--mode issues` is less effective for non-legal content
+
+**Best practices**:
+- Always use `--mode summary` for non-legal documents
+- Use outputs as a starting point for further analysis
+
 ### Example Usage
 
 For the *Smith v Jones* case, we have received a lengthy affidavit from our client that needs to be broken down:
@@ -180,6 +198,25 @@ The `extractfacts` command processes a document to extract relevant case facts a
 
 Options:
 - `--verify`: Enable self-critique verification pass
+
+### Handling Non-Legal Documents
+
+The `extractfacts` command is specifically designed for legal documents and forces content into a rigid 10-heading structure:
+
+**Compatible document types**:
+- Legal proceedings (optimal use case)
+- Commercial contracts (reasonable fit with some adaptation)
+
+**Challenging document types**:
+- Bank statements (financial data forced into legal categories)
+- Personal documents (may produce stretched interpretations)
+- Medical records (terminology misalignments)
+
+**Workarounds for non-legal documents**:
+1. First use `digest --mode summary` to understand the document's content
+2. Manually create a `case_facts.txt` file following the 10-heading format
+3. Focus on relevant sections (leave others minimal but present)
+4. Ensure all 10 headings exist in the file even if some have minimal content
 
 ### Example Usage
 
@@ -393,6 +430,32 @@ The `strategy` command analyzes case facts to generate strategic legal options, 
 
 Required parameters:
 - `--outcome`: A single sentence describing the desired outcome
+
+### Strict Format Requirements
+
+The `strategy` command has strict input requirements:
+
+**Required structure**:
+- Input must contain all 10 LitAssist headings exactly as listed
+- Validation checks for each heading ("Parties", "Background", etc.)
+- Command will fail if any heading is missing
+
+**Processing mixed document sets**:
+1. For multiple related documents (e.g., contract, financial statements, correspondence):
+   - Process each document using `digest` first
+   - Extract key information relevant to each heading
+   - Manually create a consolidated `case_facts.txt` file
+   - Ensure all 10 headings are present
+
+**Benefits of rigid structure**:
+- Enables structured data extraction (like legal issues extraction)
+- Forces comprehensive analysis across all aspects
+- Ensures consistent input for strategic analysis
+
+**Limitations**:
+- Less flexible for non-litigation contexts
+- Requires preprocessing for non-standard documents
+- May require manual reformatting
 
 ### Example Usage
 
