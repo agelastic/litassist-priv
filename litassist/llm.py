@@ -58,6 +58,15 @@ class LLMClient:
     def complete(
         self, messages: List[Dict[str, str]], **overrides
     ) -> Tuple[str, Dict[str, Any]]:
+        # Enforce Australian English in system prompts if not already specified
+        has_system_message = any(msg.get("role") == "system" for msg in messages)
+        if has_system_message:
+            for msg in messages:
+                if msg.get("role") == "system" and "Australian English" not in msg.get("content", ""):
+                    msg["content"] += "\nUse Australian English spellings and terminology."
+        else:
+            # Add system message if none exists
+            messages.insert(0, {"role": "system", "content": "Use Australian English spellings and terminology."})
         """
         Run a single chat completion with the configured model.
 
@@ -126,11 +135,11 @@ class LLMClient:
             Exception: If the verification API call fails.
         """
         critique_prompt = [
-            {"role": "system", "content": "Australian law only."},
+            {"role": "system", "content": "Australian law only. Use Australian English spellings and terminology (e.g., 'judgement' not 'judgment', 'defence' not 'defense')."},
             {
                 "role": "user",
                 "content": primary_text
-                + "\n\nIdentify and correct any legal inaccuracies above, and provide the corrected text only.",
+                + "\n\nIdentify and correct any legal inaccuracies above, and provide the corrected text only. Ensure all spellings follow Australian English conventions.",
             },
         ]
         # Use deterministic settings for verification
