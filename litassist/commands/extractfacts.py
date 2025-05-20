@@ -55,7 +55,8 @@ def extractfacts(file, verify):
                 "7. Procedural History (current status and past proceedings)\n"
                 "8. Jurisdiction (include specific court/forum)\n"
                 "9. Applicable Law\n"
-                "10. Client Objectives (include any constraints/limitations)\n\n" + chunk
+                "10. Client Objectives (include any constraints/limitations)\n\n"
+                + chunk
             )
             try:
                 content, usage = client.complete(

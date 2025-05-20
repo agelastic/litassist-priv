@@ -1,0 +1,28 @@
+# Testing requirements for LitAssist
+
+# Core test framework
+pytest>=7.0.0
+pytest-cov>=4.0.0
+pytest-mock>=3.10.0
+pytest-timeout>=2.1.0
+pytest-env>=0.8.0
+
+# Property-based testing
+hypothesis>=6.0.0
+
+# Async testing support
+pytest-asyncio>=0.20.0
+
+# Test utilities
+factory-boy>=3.2.0
+faker>=18.0.0
+
+# Code quality
+black>=23.0.0
+isort>=5.12.0
+flake8>=6.0.0
+mypy>=1.0.0
+
+# Security scanning
+bandit>=1.7.0
+safety>=2.3.0

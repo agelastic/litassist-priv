@@ -1,0 +1,52 @@
+Parties:
+Plaintiff: Sarah Mitchell, 42, property owner
+Defendant: Greenfield Development Pty Ltd, construction company
+
+Background:
+The plaintiff is the owner of a residential property in Lane Cove, Sydney. In January 2024, she contracted with the defendant to renovate her home for $385,000. The contract specified completion within 6 months and included liquidated damages of $1,500 per week for delays.
+
+Key Events:
+1. Contract signed on 15 January 2024
+2. Work commenced on 1 February 2024
+3. On 15 March 2024, defendant requested variation to price (+$45,000) citing unforeseen structural issues
+4. Plaintiff rejected variation on 20 March 2024
+5. Work stopped on 25 March 2024
+6. Defendant issued termination notice on 10 April 2024 alleging plaintiff's rejection constituted repudiation
+7. As of May 2024, property remains partially demolished and uninhabitable
+
+Legal Issues:
+1. Whether defendant's termination was valid or constituted repudiatory breach
+2. Entitlement to specific performance or damages
+3. Quantum of damages (cost of completion vs diminution in value)
+4. Validity of liquidated damages clause
+5. Whether structural issues constituted latent conditions under the contract
+
+Evidence Available:
+1. Signed contract with specifications
+2. Email correspondence between parties
+3. Independent engineer's report confirming structural issues ($28,000 to remedy)
+4. Photographs of current state of property
+5. Quotes from three alternative builders ($420,000-$465,000 to complete)
+6. Plaintiff's rental costs for alternative accommodation ($650/week)
+
+Opposing Arguments:
+1. Defendant claims variation was necessary due to latent defects not reasonably foreseeable
+2. Defendant argues plaintiff's rejection of variation was unreasonable and constituted repudiation
+3. Defendant claims liquidated damages clause is a penalty and unenforceable
+4. Defendant disputes causation between breach and full rental costs
+
+Procedural History:
+No proceedings have yet been commenced. Defendant has rejected pre-action correspondence.
+
+Jurisdiction:
+Supreme Court of New South Wales
+
+Applicable Law:
+1. Building and Construction Industry Security of Payment Act 1999 (NSW)
+2. Home Building Act 1989 (NSW)
+3. Contract law principles regarding repudiation (Koompahtoo Local Aboriginal Land Council v Sanpine Pty Ltd (2007) 233 CLR 115)
+4. Principles for liquidated damages (Paciocco v Australia and New Zealand Banking Group Ltd (2016) 258 CLR 525)
+5. Latent conditions (Spiers Earthworks Pty Ltd v Landtec Projects Corporation Pty Ltd (No 2) [2012] WASCA 53)
+
+Client Objectives:
+Primary objective is to have the property completed as soon as possible. Client is willing to seek specific performance or damages sufficient to engage alternative builders. Client also seeks compensation for alternative accommodation costs and delay.
