@@ -1,0 +1,23 @@
+# Include template and documentation files
+include config.yaml.template
+include README.md
+include LICENSE
+include *.md
+
+# Include example files
+recursive-include examples *.txt *.pdf
+
+# Include documentation
+recursive-include article *.pdf *.tex
+
+# Exclude test and development files
+exclude test_*.py
+exclude run_tests.sh
+exclude cleanup.zsh
+
+# Exclude logs and temporary files
+global-exclude *.log
+global-exclude *.tmp
+global-exclude *_results_*.json
+global-exclude __pycache__
+global-exclude *.py[co]

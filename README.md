@@ -26,25 +26,29 @@ For detailed usage guidance, see [LitAssist_User_Guide.md](LitAssist_User_Guide.
 
 ## 🔧 Installation
 
+### Quick Start
+
 ```bash
-# Clone repository
+# 1. Clone repository
 git clone https://github.com/your-org/litassist.git
 cd litassist
 
-# Create and activate virtual environment
-python3 -m venv .venv
-source .venv/bin/activate
+# 2. Install globally with pipx (recommended)
+brew install pipx
+pipx install -e .
+pipx ensurepath
+source ~/.zshrc
 
-# Install dependencies
-pip install -r requirements.txt
-
-# Setup configuration
+# 3. Setup configuration
 cp config.yaml.template config.yaml
 # Edit config.yaml with your API keys
 
-# Make script executable
-chmod +x litassist.py
+# 4. Use from anywhere
+cd ~/any-directory/
+litassist digest document.pdf
 ```
+
+**📖 For detailed installation options, troubleshooting, and advanced setup, see [INSTALLATION.md](INSTALLATION.md)**
 
 ## ⚙️ Configuration
 

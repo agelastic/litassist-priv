@@ -45,27 +45,54 @@ To illustrate each workflow in a practical context, we'll use a fictional family
 
 This running example provides context for understanding how each LitAssist workflow contributes to managing a complex family law matter from initial research through to final submissions.
 
+## Key Features
+
+**Global Installation Benefits:**
+- ✅ **Use from anywhere** - `litassist` command available in any directory
+- ✅ **Local outputs** - All files created in your current working directory
+- ✅ **Single configuration** - One global config with all your API keys
+- ✅ **Project isolation** - Each case directory gets its own logs and outputs
+
+**Security & Organization:**
+- ✅ **API keys in one secure location** - No duplication across projects
+- ✅ **Automatic logging** - Every operation creates detailed audit logs
+- ✅ **Australian English** - All outputs use Australian legal terminology
+
 ## Installation and Setup
 
-Ensure you have Python installed, then install LitAssist and set up your configuration:
-
+**Quick Installation:**
 ```bash
-# Install dependencies
-pip install -r requirements.txt
+# Install with pipx (see INSTALLATION.md for detailed instructions)
+brew install pipx
+pipx install -e /path/to/litassist
+pipx ensurepath && source ~/.zshrc
 
-# Configure your API keys (copy from template first)
+# Setup configuration
+cd /path/to/litassist
 cp config.yaml.template config.yaml
-# Edit config.yaml with your API keys for:
-# - OpenRouter API (for accessing Grok, Claude, GPT-4o)
-# - OpenAI API (for embeddings)
-# - Pinecone vector database
-# - Google Custom Search Engine
+# Edit config.yaml with your API keys
 ```
 
-## Critical Configuration Notes
-- The `config.yaml.template` contains placeholder values that you must replace with your actual API keys
-- Specific models are accessed through OpenRouter, with fallbacks in place
-- See the README file for complete configuration details
+**Verify Installation:**
+```bash
+litassist --help
+litassist test  # Test API connectivity
+```
+
+For complete installation instructions, troubleshooting, and alternative methods, see [INSTALLATION.md](INSTALLATION.md).
+
+## Working Directory Setup
+
+LitAssist works from any directory and creates outputs locally:
+
+```bash
+# Create project directory for Smith v Jones case
+mkdir ~/legal-cases/smith-v-jones-2025
+cd ~/legal-cases/smith-v-jones-2025
+
+# LitAssist will create logs/ directory and case_facts.txt here
+# All commands use global config but create outputs locally
+```
 
 ## Workflow 1: Lookup - Rapid Case-Law Search
 

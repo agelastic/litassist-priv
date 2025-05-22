@@ -11,8 +11,10 @@ import logging
 import openai
 import pinecone
 
-from litassist.config import CONFIG
 from litassist.commands import register_commands
+
+# Load global configuration
+from litassist.config import CONFIG
 
 
 @click.group()

@@ -26,11 +26,50 @@ class Config:
         """
         # Allow override from environment for testing
         if config_path is None:
-            config_path = os.environ.get("LITASSIST_CONFIG", "config.yaml")
+            config_path = os.environ.get("LITASSIST_CONFIG")
+            if config_path is None:
+                config_path = self._find_config_file()
         self.config_path = config_path
         self.cfg = self._load_config()
         self._validate_config()
         self._setup_api_keys()
+
+    def _find_config_file(self) -> str:
+        """
+        Find config.yaml in the package directory (global configuration only).
+        
+        This enforces a single global configuration to prevent secret duplication.
+        
+        Returns:
+            Path to the global configuration file.
+            
+        Raises:
+            SystemExit: If no configuration file is found.
+        """
+        from pathlib import Path
+        
+        # Only use package directory for global configuration
+        package_dir = Path(__file__).parent.parent
+        package_config = package_dir / "config.yaml"
+        
+        if package_config.exists():
+            return str(package_config)
+            
+        # If config doesn't exist, suggest creating it from template
+        template_path = package_dir / "config.yaml.template"
+        if template_path.exists():
+            sys.exit(
+                f"Error: Global config.yaml not found.\n"
+                f"Copy the template to get started:\n"
+                f"  cp {template_path} {package_config}\n"
+                f"Then edit {package_config} with your API keys.\n"
+                f"\nGlobal config location: {package_config}"
+            )
+        else:
+            sys.exit(
+                f"Error: config.yaml not found in {package_dir}.\n"
+                f"Create a config.yaml file with your API keys in the LitAssist directory."
+            )
 
     def _load_config(self) -> Dict[str, Any]:
         """
@@ -40,10 +79,10 @@ class Config:
             Dictionary containing the configuration values.
 
         Raises:
-            SystemExit: If the configuration file is missing.
+            SystemExit: If the configuration file is missing or invalid.
         """
         if not os.path.exists(self.config_path):
-            sys.exit(f"Error: Missing {self.config_path}")
+            sys.exit(f"Error: Configuration file not found: {self.config_path}")
 
         with open(self.config_path) as f:
             try:

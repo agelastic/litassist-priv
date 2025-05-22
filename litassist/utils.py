@@ -19,7 +19,9 @@ import openai
 from PyPDF2 import PdfReader
 
 # ── Logging Setup ─────────────────────────────────────────
-LOG_DIR = "logs"
+# Use current working directory for logs when running as global command
+WORKING_DIR = os.getcwd()
+LOG_DIR = os.path.join(WORKING_DIR, "logs")
 os.makedirs(LOG_DIR, exist_ok=True)
 logging.basicConfig(level=logging.INFO, format="%(message)s")
 
