@@ -1,0 +1,29 @@
+Parties: 
+[Identify all parties involved in the matter]
+
+Background: 
+[Provide context including relationship between parties, relevant history, etc.]
+
+Key Events: 
+[List significant events in chronological order with dates]
+
+Legal Issues: 
+[Enumerate the legal questions to be addressed]
+
+Evidence Available: 
+[Catalog all available evidence, documents, and testimony]
+
+Opposing Arguments: 
+[Summarize the counterparty's position and arguments]
+
+Procedural History: 
+[Detail the procedural steps taken to date]
+
+Jurisdiction: 
+[Specify the relevant court/tribunal and jurisdiction]
+
+Applicable Law: 
+[List statutes, regulations, and common law principles that apply]
+
+Client Objectives: 
+[State what the client aims to achieve through legal action]

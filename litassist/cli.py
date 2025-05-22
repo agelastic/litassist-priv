@@ -129,25 +129,23 @@ def validate_credentials(show_progress=True):
         print("All API connections verified.\n")
 
 
+@cli.command()
+def test():
+    """
+    Test API connectivity.
+
+    This command validates credentials for OpenAI, Pinecone, and Google CSE
+    by making test API calls and reports success or failure.
+    """
+    validate_credentials(show_progress=True)
+
+
 def main():
     """
     Main entry point function for the LitAssist CLI application.
 
-    This function validates API credentials, registers all commands with the CLI,
-    and then invokes the CLI group.
+    This function registers all commands with the CLI and invokes the CLI group.
     """
-    # Skip connectivity tests for help/version requests
-    if len(sys.argv) == 1 or any(
-        arg in ["--help", "-h", "--version", "-v"] for arg in sys.argv
-    ):
-        show_progress = False
-    else:
-        show_progress = True
-
-    # Test API connections only if not showing help/version
-    if show_progress:
-        validate_credentials(show_progress=True)
-
     # Register all commands
     register_commands(cli)
 

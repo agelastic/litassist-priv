@@ -14,7 +14,7 @@ from litassist.llm import LLMClient
 
 @click.command()
 @click.argument("file", type=click.Path(exists=True))
-@click.option("--verify", is_flag=True, help="Enable self-critique pass")
+@click.option("--verify", is_flag=True, help="Enable self-critique pass (default: auto-enabled)")
 def extractfacts(file, verify):
     """
     Auto-generate case_facts.txt under ten structured headings.
@@ -36,9 +36,11 @@ def extractfacts(file, verify):
     chunks = chunk_text(text)
 
     # Initialize the LLM client with deterministic settings
-    client = LLMClient(
-        "anthropic/claude-3-sonnet", temperature=0, top_p=0.15, max_tokens=2000
-    )
+    client = LLMClient("anthropic/claude-3-sonnet", temperature=0, top_p=0.15)
+    client.command_context = "extractfacts"  # Set command context for auto-verification
+    
+    # extractfacts always needs verification as it creates foundational documents
+    verify = True  # Force verification for critical accuracy
 
     assembled = []
     # Process each chunk with a progress bar
@@ -61,7 +63,10 @@ def extractfacts(file, verify):
             try:
                 content, usage = client.complete(
                     [
-                        {"role": "system", "content": "Australian law only."},
+                        {
+                            "role": "system",
+                            "content": "Australian law only. Extract factual information precisely under the requested headings. Focus on being comprehensive, accurate, and well-organized. Use clear paragraph structure and bullet points where appropriate. Maintain a neutral, factual tone throughout. Ensure all extracted information follows Australian legal terminology and conventions.",
+                        },
                         {"role": "user", "content": prompt},
                     ]
                 )
@@ -72,15 +77,22 @@ def extractfacts(file, verify):
     # Combine all chunks into a single facts file
     combined = "\n\n".join(assembled)
 
-    # Optional self-critique verification
-    if verify:
-        try:
-            correction = client.verify(combined)
-            combined = combined + "\n\n--- Corrections ---\n" + correction
-        except Exception as e:
-            raise click.ClickException(
-                f"Self-verification error during fact extraction: {e}"
-            )
+    # Mandatory heavy verification for extractfacts (creates foundational documents)
+    try:
+        # Use heavy verification to ensure legal accuracy and proper structure
+        correction = client.verify_with_level(combined, "heavy")
+        if correction.strip():  # Only append if there are actual corrections
+            combined = combined + "\n\n--- Legal Accuracy Review ---\n" + correction
+        
+        # Also run citation validation
+        citation_issues = client.validate_citations(combined)
+        if citation_issues:
+            combined += "\n\n--- Citation Warnings ---\n" + "\n".join(citation_issues)
+            
+    except Exception as e:
+        raise click.ClickException(
+            f"Verification error during fact extraction: {e}"
+        )
 
     with open("case_facts.txt", "w", encoding="utf-8") as f:
         f.write(combined)
@@ -90,8 +102,8 @@ def extractfacts(file, verify):
         "extractfacts",
         {
             "inputs": {"source_file": file, "chunks": len(chunks)},
-            "params": f"verify={verify}",
+            "params": "verify=True (auto-enabled)",
             "response": combined,
         },
     )
-    click.echo("case_facts.txt created successfully.")
+    click.echo("case_facts.txt created successfully with legal accuracy verification.")

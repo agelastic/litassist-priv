@@ -15,8 +15,7 @@ from litassist.llm import LLMClient
 @click.command()
 @click.argument("file", type=click.Path(exists=True))
 @click.option("--mode", type=click.Choice(["summary", "issues"]), default="summary")
-@click.option("--verify", is_flag=True, help="Enable self-critique pass")
-def digest(file, mode, verify):
+def digest(file, mode):
     """
     Mass-document digestion via Claude.
 
@@ -24,11 +23,12 @@ def digest(file, mode, verify):
     and using Claude to either summarize content chronologically or
     identify potential legal issues in each section.
 
+    Note: Verification removed as this is low-stakes content summarization.
+
     Args:
         file: Path to the document (PDF or text) to analyze.
         mode: Type of analysis to perform - 'summary' for chronological summaries
               or 'issues' to identify potential legal problems.
-        verify: Whether to perform a self-critique verification pass on each chunk's output.
 
     Raises:
         click.ClickException: If there are errors with file reading, processing,
@@ -39,8 +39,8 @@ def digest(file, mode, verify):
     chunks = chunk_text(text)
     # Select parameter presets based on mode
     presets = {
-        "summary": {"temperature": 0, "top_p": 0, "max_tokens": 2000},
-        "issues": {"temperature": 0.2, "top_p": 0.5, "max_tokens": 1500},
+        "summary": {"temperature": 0, "top_p": 0},
+        "issues": {"temperature": 0.2, "top_p": 0.5},
     }[mode]
     client = LLMClient("anthropic/claude-3-sonnet", **presets)
 
@@ -56,22 +56,17 @@ def digest(file, mode, verify):
             try:
                 content, usage = client.complete(
                     [
-                        {"role": "system", "content": "Australian law only."},
+                        {
+                            "role": "system",
+                            "content": "Australian law only. Structure your response logically with clear headings, bullet points for key facts, and proper paragraph breaks. Focus on legal accuracy over comprehensiveness, and cite relevant legislation or cases when identified. Conclude each section with a definitive statement rather than open-ended observations.",
+                        },
                         {"role": "user", "content": prompt},
                     ]
                 )
             except Exception as e:
                 raise click.ClickException(f"LLM error in digest chunk {idx}: {e}")
 
-            # Optional self-critique verification
-            if verify:
-                try:
-                    correction = client.verify(content)
-                    content = content + "\n\n--- Corrections ---\n" + correction
-                except Exception as e:
-                    raise click.ClickException(
-                        f"Self-verification error in digest chunk {idx}: {e}"
-                    )
+            # Note: digest removed verification as it's low-stakes content summarization
 
             # Save audit log for this chunk
             save_log(
@@ -79,7 +74,6 @@ def digest(file, mode, verify):
                 {
                     "file": file,
                     "chunk": idx,
-                    "verify": verify,
                     "response": content,
                     "usage": usage,
                 },

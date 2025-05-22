@@ -233,7 +233,8 @@ def format_draft_document(doc_type: str, content: Dict[str, Any]) -> str:
 @click.command()
 @click.argument("case_facts", type=click.File("r"))
 @click.option("--outcome", required=True, help="Desired outcome (single sentence)")
-def strategy(case_facts, outcome):
+@click.option("--verify", is_flag=True, help="Enable self-critique pass (default: auto-enabled)")
+def strategy(case_facts, outcome, verify):
     """
     Generate legal strategy options and draft documents for Australian civil matters.
 
@@ -270,8 +271,11 @@ def strategy(case_facts, outcome):
         top_p=0.9,
         presence_penalty=0.0,
         frequency_penalty=0.0,
-        max_tokens=4000,
     )
+    llm_client.command_context = "strategy"  # Set command context
+    
+    # strategy always needs verification as it creates foundational strategic documents
+    verify = True  # Force verification for critical accuracy
 
     # Jade API is no longer used directly - functionality now uses public endpoint
 
@@ -292,6 +296,14 @@ def strategy(case_facts, outcome):
     - At least one authority per issue
     - Do not introduce new facts not in the case materials
     - Provide 3-5 distinct strategic options
+    
+    Response Guidelines:
+    - Use clear headings and numbered paragraphs for structure
+    - Write concisely but thoroughly, avoiding repetition or filler
+    - Maintain logical flow between sections with appropriate transitions
+    - Cite case law with pinpoint references to specific paragraphs or pages
+    - End each section with a definitive conclusion rather than open questions
+    - Ensure consistency in terminology and formatting throughout
     """
 
     user_prompt = f"""
@@ -509,6 +521,21 @@ def strategy(case_facts, outcome):
     output = format_strategic_options(strategic_options, outcome)
     output += format_next_steps(next_steps)
     output += format_draft_document(doc_type, document)
+    
+    # Mandatory verification for strategy (creates critical strategic guidance)
+    try:
+        # Use heavy verification for strategic legal advice
+        correction = llm_client.verify_with_level(output, "heavy")
+        if correction.strip():  # Only append if there are actual corrections
+            output = output + "\n\n--- Strategic Legal Review ---\n" + correction
+        
+        # Run citation validation
+        citation_issues = llm_client.validate_citations(output)
+        if citation_issues:
+            output += "\n\n--- Citation Warnings ---\n" + "\n".join(citation_issues)
+            
+    except Exception as e:
+        raise click.ClickException(f"Verification error during strategy generation: {e}")
 
     # Save audit log
     save_log(
@@ -519,6 +546,8 @@ def strategy(case_facts, outcome):
             "next_steps": next_steps,
             "document": {"type": doc_type, "content": document},
             "usage": usage,
+            "response": output,  # Include the output in the log
+            "verification": "auto-enabled (heavy)",
         },
     )
 

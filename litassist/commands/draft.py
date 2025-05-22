@@ -92,10 +92,13 @@ def draft(pdf, query, verify, diversity):
         top_p=0.8,
         presence_penalty=0.1,
         frequency_penalty=0.1,
-        max_tokens=2000,
     )
+    client.command_context = "draft"  # Set command context
     messages = [
-        {"role": "system", "content": "Australian law only."},
+        {
+            "role": "system",
+            "content": "Australian law only. Draft a legally precise document with proper citations and structure. Be thorough but concise. Focus on legal accuracy, relevant precedents, and clear organization. Use section headings, numbered paragraphs, and proper legal citation format. Maintain internal consistency throughout and ensure all claims are supported by the provided context. Avoid speculation beyond the provided information.",
+        },
         {"role": "user", "content": f"Context:\n{context}\n\nDraft {query}"},
     ]
     call_with_hb = heartbeat(30)(client.complete)
@@ -104,13 +107,23 @@ def draft(pdf, query, verify, diversity):
     except Exception as e:
         raise click.ClickException(f"LLM draft error: {e}")
 
-    # Optional self-critique verification
-    if verify:
+    # Smart verification with conditional depth
+    needs_verification = verify or client.should_auto_verify(content, "draft")
+    
+    if needs_verification:
         try:
-            correction = client.verify(content)
+            # Use heavy verification for legal drafting (high stakes)
+            correction = client.verify_with_level(content, "heavy")
+            if correction.strip():  # Only append if there are actual corrections
+                content = content + "\n\n--- Legal Draft Review ---\n" + correction
+                
+            # Run comprehensive citation validation for drafts
+            citation_issues = client.validate_citations(content)
+            if citation_issues:
+                content += "\n\n--- Citation Warnings ---\n" + "\n".join(citation_issues)
+                
         except Exception as e:
-            raise click.ClickException(f"Self-verification error: {e}")
-        content = content + "\n\n--- Corrections ---\n" + correction
+            raise click.ClickException(f"Verification error during drafting: {e}")
 
     # Save audit log and echo response
     save_log(
@@ -119,6 +132,7 @@ def draft(pdf, query, verify, diversity):
             "inputs": {"pdf": pdf, "query": query, "context": context},
             "response": content,
             "usage": usage,
+            "verification": f"enabled={needs_verification}, level=heavy" if needs_verification else "disabled",
         },
     )
     click.echo(content)

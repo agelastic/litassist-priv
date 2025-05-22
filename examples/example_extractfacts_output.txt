@@ -1,0 +1,59 @@
+Parties: Smith v Jones Constructions
+Smith is the plaintiff, a former site manager employed from 2018-2023.
+Jones Constructions is the defendant company, a medium-sized construction firm.
+
+Background: The plaintiff was employed by the defendant as a site manager responsible for workplace safety compliance and project supervision. The employment relationship deteriorated after Smith raised safety concerns in 2022. Smith alleges the company failed to adequately address known safety issues which ultimately led to his injury.
+
+Key Events: 
+- January 2018: Smith hired as site manager (contract signed January 15, 2018)
+- March 2022: Smith sent formal email to management documenting safety concerns on the Westfield project
+- November 2023: Workplace safety inspection conducted, resulting in minor violations noted but no major citations
+- March 15, 2024: Smith suffered serious back injury when scaffolding collapsed at the Riverside project site
+- April 2, 2024: Workers compensation claim filed
+- April 28, 2024: Workers compensation claim partially approved for medical expenses but denied for lost income
+
+Legal Issues:
+1. Whether defendant breached duty of care under Civil Liability Act 2002 (NSW)
+2. Whether defendant failed to provide safe system of work under Work Health and Safety Act 2011 (NSW)
+3. Whether there is causation between alleged safety failures and plaintiff's injury
+4. Whether plaintiff contributed to his injury through his own negligence
+5. Quantification of damages including future economic loss
+
+Evidence Available:
+1. Email correspondence regarding safety concerns (dated March 10, 2022 and follow-ups)
+2. Workplace inspection reports from SafeWork NSW (November 2023)
+3. Medical records from Sydney Hospital and specialist orthopedic assessment
+4. Witness statements from three co-workers present during the incident
+5. Incident report filed by site supervisor (dated March 15, 2024)
+6. Photos of the collapsed scaffolding and accident scene
+
+Opposing Arguments:
+1. Plaintiff failed to follow established safety protocols in setting up the scaffolding
+2. Plaintiff's injury was primarily caused by his own negligence and failure to wear proper safety equipment
+3. Safety concerns raised in 2022 were adequately addressed following the November 2023 inspection
+4. The scaffolding collapse was due to an unforeseeable equipment failure rather than negligence
+5. Plaintiff had pre-existing back condition that contributed to the severity of injuries
+
+Procedural History:
+1. Workers compensation claim partially approved April 2024
+2. Compulsory mediation attempted May 15, 2024 but unsuccessful
+3. Statement of claim filed May 30, 2024
+4. Defence filed June 25, 2024
+5. Case scheduled for directions hearing August 2024
+
+Jurisdiction: Supreme Court of New South Wales
+The case falls within the civil jurisdiction of the Supreme Court due to the claim amount exceeding $750,000.
+
+Applicable Law:
+1. Civil Liability Act 2002 (NSW)
+2. Work Health and Safety Act 2011 (NSW)
+3. Workers Compensation Act 1987 (NSW)
+4. Workplace Injury Management and Workers Compensation Act 1998 (NSW)
+5. Common law principles relating to negligence and employer liability
+
+Client Objectives:
+1. Secure compensation for lost income ($450,000) and medical expenses ($320,000)
+2. Obtain formal acknowledgment of safety failures and workplace practices
+3. Return to suitable employment with accommodations for injury
+4. Ensure reasonable financial security during recovery period
+5. Resolve matter expeditiously to minimize ongoing stress

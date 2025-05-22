@@ -125,14 +125,13 @@ def fetch_jade_links(question):
 @click.command()
 @click.argument("question")
 @click.option("--mode", type=click.Choice(["irac", "broad"]), default="irac")
-@click.option("--verify", is_flag=True, help="Enable self-critique pass")
 @click.option(
     "--engine",
     type=click.Choice(["google", "jade"]),
     default="google",
     help="Search engine to use (google for AustLII via CSE, jade for Jade.io)",
 )
-def lookup(question, mode, verify, engine):
+def lookup(question, mode, engine):
     """
     Rapid case-law lookup via Google CSE or Jade + Gemini.
 
@@ -182,11 +181,13 @@ def lookup(question, mode, verify, engine):
 
     # Prepare prompt
     prompt = f"Question: {question}\nLinks:\n" + "\n".join(links)
-    # Select parameters based on mode
+    # Set parameters based on mode
+    # IRAC mode uses lower temperature for more precise, deterministic answers
+    # Broad mode uses higher temperature for more creative exploration
     if mode == "irac":
-        overrides = {"temperature": 0, "top_p": 0.1, "max_tokens": 512}
+        overrides = {"temperature": 0, "top_p": 0.1}
     else:
-        overrides = {"temperature": 0.5, "top_p": 0.9, "max_tokens": 800}
+        overrides = {"temperature": 0.5, "top_p": 0.9}
 
     # Call the LLM
     client = LLMClient("google/gemini-2.5-pro-preview", temperature=0, top_p=0.2)
@@ -194,7 +195,10 @@ def lookup(question, mode, verify, engine):
     try:
         content, usage = call_with_hb(
             [
-                {"role": "system", "content": "Australian law only. Cite sources."},
+                {
+                    "role": "system",
+                    "content": "Australian law only. Cite sources. Provide well-structured, concise responses with clear sections. Begin with a summary, then provide analysis with supporting case law, and end with a definitive conclusion. Avoid repeating yourself and maintain coherence throughout the response.",
+                },
                 {"role": "user", "content": prompt},
             ],
             **overrides,
@@ -215,19 +219,13 @@ def lookup(question, mode, verify, engine):
         except Exception as e:
             raise click.ClickException(f"LLM retry error during lookup: {e}")
 
-    # Optional self-critique verification
-    if verify:
-        try:
-            correction = client.verify(content)
-            content = content + "\n\n--- Corrections ---\n" + correction
-        except Exception as e:
-            raise click.ClickException(f"Self-verification error during lookup: {e}")
+    # Note: lookup verification removed as citation retry logic already ensures accuracy
 
     # Save audit log and output
     save_log(
         "lookup",
         {
-            "params": f"mode={mode}, verify={verify}, engine={engine}",
+            "params": f"mode={mode}, engine={engine}",
             "inputs": {
                 "question": question,
                 "links": "\n".join(links),

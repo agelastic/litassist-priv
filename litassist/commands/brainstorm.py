@@ -26,7 +26,7 @@ from litassist.llm import LLMClient
     required=True,
     help="Specify the legal area of the matter",
 )
-@click.option("--verify", is_flag=True, help="Enable self-critique pass")
+@click.option("--verify", is_flag=True, help="Enable self-critique pass (auto-enabled for Grok models)")
 def brainstorm(facts_file, side, area, verify):
     """
     Generate comprehensive legal strategies via Grok.
@@ -88,7 +88,12 @@ def brainstorm(facts_file, side, area, verify):
     facts = read_document(facts_file)
 
     # Initialize the LLM for creative ideation
-    client = LLMClient("x-ai/grok-3-beta", temperature=0.9, top_p=0.95, max_tokens=2500)
+    client = LLMClient("x-ai/grok-3-beta", temperature=0.9, top_p=0.95)
+    client.command_context = "brainstorm"  # Set command context
+    
+    # Auto-verify for Grok due to hallucination tendency
+    if "grok" in client.model.lower():
+        verify = True  # Force verification for Grok models
 
     # Build and send the prompt
     prompt = f"""Facts:
@@ -109,7 +114,7 @@ For each strategy, provide:
     messages = [
         {
             "role": "system",
-            "content": "Australian law only. Provide practical, actionable legal strategies.",
+            "content": "Australian law only. Provide practical, actionable legal strategies. Balance creativity with factual accuracy. When suggesting strategies, clearly distinguish between established legal approaches and more innovative options. For orthodox strategies, cite relevant case law or legislation. For unorthodox strategies, acknowledge any legal uncertainties or risks. Maintain logical structure throughout your response. End with a clear, definitive recommendation section without open-ended statements.",
         },
         {"role": "user", "content": prompt},
     ]
@@ -119,14 +124,22 @@ For each strategy, provide:
     except Exception as e:
         raise click.ClickException(f"Grok brainstorming error: {e}")
 
-    # Optional self-critique verification
-    if verify:
+    # Smart verification - auto-enabled for Grok or when requested
+    if verify or client.should_auto_verify(content, "brainstorm"):
         try:
-            correction = client.verify(content)
-            content = content + "\n\n--- Corrections ---\n" + correction
+            # Use medium verification for creative brainstorming
+            correction = client.verify_with_level(content, "medium")
+            if correction.strip():  # Only append if there are actual corrections
+                content = content + "\n\n--- Strategic Review ---\n" + correction
+                
+            # Run citation validation for any legal references
+            citation_issues = client.validate_citations(content)
+            if citation_issues:
+                content += "\n\n--- Citation Warnings ---\n" + "\n".join(citation_issues)
+                
         except Exception as e:
             raise click.ClickException(
-                f"Self-verification error during brainstorming: {e}"
+                f"Verification error during brainstorming: {e}"
             )
 
     # Save audit log
@@ -134,7 +147,7 @@ For each strategy, provide:
         "brainstorm",
         {
             "inputs": {"facts_file": facts_file, "prompt": prompt},
-            "params": f"verify={verify}",
+            "params": f"verify={verify} (auto-enabled for Grok)",
             "response": content,
             "usage": usage,
         },
