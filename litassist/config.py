@@ -74,6 +74,11 @@ class Config:
             self.pc_env = self.cfg["pinecone"]["environment"]
             self.pc_index = self.cfg["pinecone"]["index_name"]
 
+            # Extract optional LLM settings with defaults
+            self.use_token_limits = self.cfg.get("llm", {}).get(
+                "use_token_limits", False
+            )
+
         # Jade API key is no longer used - functionality now uses public endpoint
 
         except KeyError as e:
