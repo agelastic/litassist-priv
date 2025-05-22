@@ -1,25 +1,43 @@
 # Test Status
 
-## Current State
+## Current Test Architecture
 
-All broken tests have been removed. Only working tests remain.
+The test suite consists of several layers of tests:
 
-## Working Tests ✅
+## Unit Tests ✅
+Located in `tests/unit/`:
 - `test_basic.py` - Basic infrastructure tests
-- `test_real_functionality.py` - Real function tests with proper examples
+- `test_real_functionality.py` - Real function tests with proper examples 
+- `test_simple.py` - Simple functionality tests
 
-## Deleted Tests (Were Broken)
-- All command tests (brainstorm, extractfacts, strategy, etc.)
-- Module tests (llm, retriever, utils)
-- Integration tests
-- E2E tests
+## Integration Tests ✅
+Located in project root:
+- `test_connectivity.py` - Tests basic connectivity to external services
+- `test_integrations.py` - Tests integration with external APIs (OpenAI, Pinecone, OpenRouter)
+- `test_quality.py` - Tests response quality from various commands
 
-## Next Steps
+## Running Tests
 
-1. Add new tests based on `test_real_functionality.py` template
-2. Test one function/feature at a time
-3. Ensure tests work locally before committing
-4. Keep tests simple and focused
+Integration tests can be run using:
+```bash
+./run_tests.sh --all
+# Or for specific services
+./run_tests.sh --openai --pinecone
+```
+
+Unit tests can be run using:
+```bash
+python -m pytest
+```
+
+## Test Design Philosophy
+
+Tests are designed to be:
+1. **Lightweight** - Minimizing resource usage, API calls, and costs
+2. **Thorough** - Covering essential functionality
+3. **Non-destructive** - Cleaning up after themselves
+4. **Informative** - Providing clear output about success/failure
+5. **Modular** - Supporting running specific test subsets when needed
 
 ## Test Template
 
@@ -27,3 +45,5 @@ See `test_real_functionality.py` for examples of:
 - Proper file handling with `isolated_filesystem()`
 - Correct mocking patterns
 - Real functionality testing
+
+For integration test approach details, see [integration_testing_approach.md](integration_testing_approach.md).

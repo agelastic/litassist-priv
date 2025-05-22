@@ -5,10 +5,23 @@
 LitAssist is a comprehensive legal workflow automation tool designed for Australian legal practice. It provides a structured end-to-end pipeline for litigation support:
 
 ```
-ingest → analyse → structure → brainstorm → draft
+ingest → analyse → structure → brainstorm → strategy → draft
 ```
 
 This guide demonstrates how to use each workflow through a running example of a family court case, *Smith v Jones*, involving a complex child custody dispute with issues of interstate relocation and allegations of parental alienation.
+
+```mermaid
+graph TD
+    A[1. Lookup - Research] --> B[2. Digest - Analyse]
+    B --> C[3. ExtractFacts - Structure]
+    C --> D[4. Brainstorm - Generate Options]
+    D --> E[5. Strategy - Plan Approach]
+    E --> F[6. Draft - Create Documents]
+    
+    G[Utilities] --> H[Test - API Connectivity]
+    G --> I[Audit Logging]
+    G --> J[Mock Mode]
+```
 
 ## Running Example: Smith v Jones
 
@@ -199,6 +212,28 @@ The `extractfacts` command processes a document to extract relevant case facts a
 Options:
 - `--verify`: Enable self-critique verification pass
 
+### Required Output Format
+
+The `extractfacts` command produces a `case_facts.txt` file with EXACTLY these 10 required headings:
+
+1. **Parties**: Identify all parties involved in the matter
+2. **Background**: Provide context including relationship between parties
+3. **Key Events**: List significant events in chronological order with dates
+4. **Legal Issues**: Enumerate the legal questions to be addressed
+5. **Evidence Available**: Catalog all available evidence and documents
+6. **Opposing Arguments**: Summarize the counterparty's position
+7. **Procedural History**: Detail the procedural steps taken to date
+8. **Jurisdiction**: Specify the relevant court/tribunal
+9. **Applicable Law**: List statutes, regulations, and principles that apply
+10. **Client Objectives**: State what the client aims to achieve
+
+This structured format is used by both the `brainstorm` and `strategy` commands. The `strategy` command in particular performs strict validation requiring ALL headings to be present exactly as listed above.
+
+Example files are available in the `/examples` directory:
+- `example_strategy_headers.txt` - Template with all required headings
+- `example_extractfacts_output.txt` - Sample output from extractfacts 
+- `example_case_facts.txt` - Complete example with all headings populated
+
 ### Handling Non-Legal Documents
 
 The `extractfacts` command is specifically designed for legal documents and forces content into a rigid 10-heading structure:
@@ -358,63 +393,9 @@ For the *Smith v Jones* case, we can use the structured facts to generate compre
 
 ### Next in Pipeline
 
-With comprehensive strategies generated, you can now prepare specific legal documents using the `strategy` workflow, or create a well-supported draft using the `draft` workflow.
+With comprehensive strategies generated, you can now use the `strategy` workflow to develop targeted legal options for achieving specific outcomes.
 
-## Workflow 5: Draft - Retrieval-Augmented Drafting
-
-**Pipeline Phase**: Draft
-
-### Purpose
-
-The `draft` command implements a Retrieval-Augmented Generation workflow to create well-supported legal drafts. The process embeds document chunks, stores them in Pinecone, retrieves relevant passages using MMR re-ranking, and generates a draft with GPT-4o that incorporates these citations.
-
-### Command
-
-```bash
-./litassist.py draft <pdf> <query> [--verify] [--diversity FLOAT]
-```
-
-Options:
-- `--verify`: Enable self-critique verification pass
-- `--diversity`: Control diversity of search results (0.0-1.0)
-
-### Example Usage
-
-For our *Smith v Jones* case, we can now draft a submission on the relocation issue:
-
-```bash
-./litassist.py draft examples/smith_bundle.pdf "outline of submissions regarding relocation of children in Smith v Jones"
-```
-
-**Output Example**:
-```
-# OUTLINE OF SUBMISSIONS
-## SMITH v JONES (SYD2025/0123)
-### ISSUE OF RELOCATION OF CHILDREN
-
-1. INTRODUCTION
-
-1.1 These submissions are made on behalf of the Applicant mother, Ms. Jennifer Smith, who seeks final parenting orders permitting her and the children, Emily (12) and Thomas (8), to remain in Brisbane.
-
-1.2 The relocation occurred in January 2025 due to Ms. Smith's acceptance of a senior position at Brisbane Children's Hospital, which represents a significant career advancement and provides enhanced financial security for the children.
-
-2. LEGAL FRAMEWORK
-
-2.1 The paramount consideration is the best interests of the children (s60CA, Family Law Act 1975).
-
-2.2 As noted in MRR v GR [2010] HCA 4 at [15]: "a court cannot order a person to live in a particular place. But it can, consistent with the terms of the Act, frame parenting orders in a way which could have the practical effect of requiring a parent to reside in a particular location if that parent wishes to have the child reside with or spend time with him or her."
-
-2.3 In Morgan & Miles [2007] FamCA 1230, the Court emphasized that relocation cases are not a separate category of case but must be determined according to the same principles as all parenting cases, with the best interests of the children as the paramount consideration.
-
-3. PRIMARY CONSIDERATIONS (s60CC(2))
-
-3.1 Benefit to children of meaningful relationship with both parents
-...
-
-[Content continues with well-structured legal arguments incorporating citations from the document]
-```
-
-## Workflow 6: Strategy - Generate Legal Options
+## Workflow 5: Strategy - Generate Legal Options
 
 **Pipeline Phase**: Strategy
 
@@ -435,10 +416,27 @@ Required parameters:
 
 The `strategy` command has strict input requirements:
 
-**Required structure**:
-- Input must contain all 10 LitAssist headings exactly as listed
-- Validation checks for each heading ("Parties", "Background", etc.)
-- Command will fail if any heading is missing
+**Required headings structure**:
+The input file must contain EXACTLY these 10 headings in this order:
+
+1. **Parties**
+2. **Background** 
+3. **Key Events**
+4. **Legal Issues**
+5. **Evidence Available**
+6. **Opposing Arguments**
+7. **Procedural History**
+8. **Jurisdiction**
+9. **Applicable Law**
+10. **Client Objectives**
+
+These headings must exactly match those created by the `extractfacts` command. The command performs strict validation and will fail with an error if any heading is missing or named differently.
+
+**Required input format notes**:
+- Validation explicitly checks for each heading ("Parties:", "Background:", etc.)
+- Using different capitalization or wording will cause validation to fail
+- Command will terminate with "Case facts file does not follow the required 10-heading structure" error if format requirements aren't met
+- For example files showing the correct format, see `/examples/example_strategy_headers.txt`
 
 **Processing mixed document sets**:
 1. For multiple related documents (e.g., contract, financial statements, correspondence):
@@ -549,6 +547,124 @@ The Applicant applies for the following orders:
 ### Next in Pipeline
 
 With strategic options identified, you can now create comprehensive legal documents using the `draft` workflow.
+
+```mermaid
+gantt
+    title Smith v Jones Case Progression Timeline
+    dateFormat  YYYY-MM-DD
+    axisFormat %d/%m
+    
+    section Research
+    Lookup parental alienation law     :done, r1, 2025-05-01, 1d
+    Lookup relocation precedents       :done, r2, 2025-05-02, 1d
+    
+    section Analysis
+    Digest affidavit                   :done, a1, after r2, 2d
+    Digest response                    :done, a2, after a1, 1d
+    Extract structured facts           :done, a3, after a2, 1d
+    
+    section Strategy
+    Brainstorm legal strategies        :done, s1, after a3, 2d
+    Select winning arguments           :done, s2, after s1, 1d
+    Generate strategic options         :done, s3, after s2, 2d
+    Prepare draft application          :done, s4, after s3, 1d
+    
+    section Drafting
+    Create submissions outline         :active, d1, after s4, 3d
+    Final document preparation         :d2, after d1, 2d
+```
+
+## Workflow 6: Draft - Retrieval-Augmented Drafting
+
+**Pipeline Phase**: Draft
+
+### Purpose
+
+The `draft` command implements a Retrieval-Augmented Generation workflow to create well-supported legal drafts. The process embeds document chunks, stores them in Pinecone, retrieves relevant passages using MMR re-ranking, and generates a draft with GPT-4o that incorporates these citations.
+
+### Command
+
+```bash
+./litassist.py draft <pdf> <query> [--verify] [--diversity FLOAT]
+```
+
+Options:
+- `--verify`: Enable self-critique verification pass
+- `--diversity`: Control diversity of search results (0.0-1.0)
+
+### Example Usage
+
+For our *Smith v Jones* case, we can now draft a submission on the relocation issue:
+
+```bash
+./litassist.py draft examples/smith_bundle.pdf "outline of submissions regarding relocation of children in Smith v Jones"
+```
+
+**Output Example**:
+```
+# OUTLINE OF SUBMISSIONS
+## SMITH v JONES (SYD2025/0123)
+### ISSUE OF RELOCATION OF CHILDREN
+
+1. INTRODUCTION
+
+1.1 These submissions are made on behalf of the Applicant mother, Ms. Jennifer Smith, who seeks final parenting orders permitting her and the children, Emily (12) and Thomas (8), to remain in Brisbane.
+
+1.2 The relocation occurred in January 2025 due to Ms. Smith's acceptance of a senior position at Brisbane Children's Hospital, which represents a significant career advancement and provides enhanced financial security for the children.
+
+2. LEGAL FRAMEWORK
+
+2.1 The paramount consideration is the best interests of the children (s60CA, Family Law Act 1975).
+
+2.2 As noted in MRR v GR [2010] HCA 4 at [15]: "a court cannot order a person to live in a particular place. But it can, consistent with the terms of the Act, frame parenting orders in a way which could have the practical effect of requiring a parent to reside in a particular location if that parent wishes to have the child reside with or spend time with him or her."
+
+2.3 In Morgan & Miles [2007] FamCA 1230, the Court emphasized that relocation cases are not a separate category of case but must be determined according to the same principles as all parenting cases, with the best interests of the children as the paramount consideration.
+
+3. PRIMARY CONSIDERATIONS (s60CC(2))
+
+3.1 Benefit to children of meaningful relationship with both parents
+...
+
+[Content continues with well-structured legal arguments incorporating citations from the document]
+```
+
+
+## Workflow 7: Test - API Connectivity Verification
+
+**Pipeline Phase**: Utility
+
+### Purpose
+
+The `test` command verifies API connectivity with all external services used by LitAssist. It attempts to validate credentials for OpenAI, Pinecone, and Google CSE by making test API calls and reports success or failure for each service.
+
+### Command
+
+```bash
+./litassist.py test
+```
+
+### Example Usage
+
+Before beginning work on the *Smith v Jones* case, you can verify that all API connections are working properly:
+
+```bash
+./litassist.py test
+```
+
+**Output Example**:
+```
+Verifying API connections...
+  - Testing OpenAI API... OK
+  - Testing Pinecone API... OK
+  - Testing Google CSE API... OK
+All API connections verified.
+```
+
+This command is particularly useful when:
+- Setting up LitAssist for the first time
+- Troubleshooting connectivity issues
+- After updating API keys in your config.yaml
+- Before beginning important work to ensure all services are available
 
 ## End-to-End Pipeline Example
 
