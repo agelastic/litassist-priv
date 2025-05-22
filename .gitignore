@@ -32,6 +32,13 @@ dist/
 *.tmp
 test_results_*.json
 
+# --- Quality test results (timestamped) ---
+quality_results_*.json
+
+# --- Temporary debugging files ---
+temp_*.py
+debug_*.txt
+
 # IDE personal bits
 .idea/**/workspace.xml
 .idea/**/tasks.xml
@@ -47,6 +54,27 @@ site/
 docs/_build/
 
 # --- Project specific ---
+# LaTeX auxiliary files
+*.aux
+*.lof
+*.log
+*.lot
+*.fls
+*.out
+*.toc
+*.fmt
+*.fot
+*.cb
+*.cb2
+*.dvi
+*.xdv
+*.synctex.gz
+*.synctex(busy)
+*.bbl
+*.bcf
+*.blg
+*.run.xml
+*.fdb_latexmk
 
 
 # --- Testing & coverage ---
@@ -55,6 +83,9 @@ htmlcov/
 coverage.xml
 nosetests.xml
 logs/
+
+real_test/
+case_facts.txt
 
 **/.claude/settings.local.json
 CLAUDE.md

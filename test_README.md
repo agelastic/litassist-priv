@@ -21,8 +21,9 @@ While we primarily focus on OpenAI and Pinecone as core dependencies, the OpenRo
 | Service | Test Types | Purpose |
 |---------|------------|---------|
 | OpenAI | Model Listing, Embedding Generation, Completion | Verify that API key works and all required functionality is accessible |
-| Pinecone | Connection, Vector Operations, MMR Search | Verify that vector storage, retrieval, and diversity-based search work properly |
+| Pinecone | Connection, Basic Operations | Verify that vector storage and basic operations work |
 | OpenRouter | Connection, Basic Completion | Lightweight verification that completions flow through this critical endpoint |
+| Google CSE | Basic Connectivity | Verify that Google Custom Search API is accessible for case law lookup |
 | Jade | Public Homepage Access, Specific Case Access | Verify that Jade's public endpoints are accessible for legal case retrieval |
 
 ## Running the Tests
@@ -39,6 +40,9 @@ python test_integrations.py --pinecone
 
 # Run OpenRouter tests
 python test_integrations.py --openrouter
+
+# Run Google CSE tests
+python test_integrations.py --google
 
 # Run Jade tests
 python test_integrations.py --jade

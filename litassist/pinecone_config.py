@@ -31,7 +31,7 @@ class PineconeWrapper:
         
         return Stats(data)
     
-    def upsert(self, vectors):
+    def upsert(self, vectors, namespace=None, **kwargs):
         """Upsert vectors to the index"""
         # Convert tuples to proper format
         formatted_vectors = []
@@ -46,10 +46,20 @@ class PineconeWrapper:
                 })
         
         data = {"vectors": formatted_vectors}
+        if namespace:
+            data["namespace"] = namespace
         response = requests.post(f"{self.host}/vectors/upsert", headers=self.headers, json=data)
         if response.status_code != 200:
             raise Exception(f"Upsert failed: {response.status_code} - {response.text}")
-        return response.json()
+        
+        result = response.json()
+        
+        # Convert to expected format with upserted_count
+        class UpsertResponse:
+            def __init__(self, data):
+                self.upserted_count = data.get('upsertedCount', len(formatted_vectors))
+        
+        return UpsertResponse(result)
     
     def query(self, vector, top_k=5, include_metadata=True, **kwargs):
         """Query the index"""
@@ -60,8 +70,12 @@ class PineconeWrapper:
         }
         if "namespace" in kwargs:
             data["namespace"] = kwargs["namespace"]
+        if "filter" in kwargs:
+            data["filter"] = kwargs["filter"]
         
         response = requests.post(f"{self.host}/query", headers=self.headers, json=data)
+        if response.status_code != 200:
+            raise Exception(f"Query failed: {response.status_code} - {response.text}")
         result = response.json()
         
         # Convert to Pinecone-like response
@@ -77,9 +91,11 @@ class PineconeWrapper:
         
         return QueryResult(result)
     
-    def delete(self, ids):
+    def delete(self, ids, namespace=None, **kwargs):
         """Delete vectors by ID"""
         data = {"ids": ids}
+        if namespace:
+            data["namespace"] = namespace
         response = requests.post(f"{self.host}/vectors/delete", headers=self.headers, json=data)
         return response.json()
 
