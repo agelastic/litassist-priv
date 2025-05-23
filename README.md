@@ -74,6 +74,8 @@ pinecone:
 
 general:
   heartbeat_interval: 10  # Progress indicator interval in seconds (default: 10)
+  max_chars: 20000        # Maximum characters per chunk for document processing (default: 20000)
+  rag_max_chars: 8000     # Maximum characters per chunk for RAG retrieval (default: 8000)
 ```
 
 ## 🚀 Command Reference
@@ -84,7 +86,7 @@ Basic usage:
 ```
 
 Global options:
-- `--log-format [json|markdown]`: Choose audit-log format (default: markdown)
+- `--log-format [json|markdown]`: Choose audit-log format (default: json)
 - `--verbose`: Enable debug-level logging
 
 ### Core Pipeline Commands
@@ -103,11 +105,15 @@ Global options:
 3. **extractfacts** - Extract structured case facts from documents
    ```bash
    ./litassist.py extractfacts document.pdf
+   # Creates: extractfacts_document_YYYYMMDD_HHMMSS.txt
+   # Note: case_facts.txt must be created/edited manually
    ```
 
-4. **brainstorm** - Generate comprehensive legal strategies (saves to strategies.txt)
+4. **brainstorm** - Generate comprehensive legal strategies
    ```bash
    ./litassist.py brainstorm case_facts.txt --side [plaintiff|defendant|accused] --area [criminal|civil|family|commercial|administrative]
+   # Creates: brainstorm_[area]_[side]_YYYYMMDD_HHMMSS.txt
+   # Note: strategies.txt must be created/edited manually
    ```
 
 5. **strategy** - Generate targeted legal options and draft documents
@@ -145,14 +151,15 @@ All commands now save their output to timestamped text files without overwriting
 
 - **lookup**: `lookup_[query_slug]_YYYYMMDD_HHMMSS.txt`
 - **digest**: `digest_[mode]_[filename_slug]_YYYYMMDD_HHMMSS.txt`
-- **brainstorm**: `strategies.txt` (current) + `brainstorm_[area]_[side]_YYYYMMDD_HHMMSS.txt` (archive)
-- **extractfacts**: `case_facts.txt` (current) + `extractfacts_[filename_slug]_YYYYMMDD_HHMMSS.txt` (archive)
+- **brainstorm**: `brainstorm_[area]_[side]_YYYYMMDD_HHMMSS.txt`
+- **extractfacts**: `extractfacts_[filename_slug]_YYYYMMDD_HHMMSS.txt`
 - **strategy**: `strategy_[outcome_slug]_YYYYMMDD_HHMMSS.txt`
 - **draft**: `draft_[query_slug]_YYYYMMDD_HHMMSS.txt`
 
 Each output file includes metadata headers with command parameters and timestamps.
 
-### Audit Logging
+### Output Organization
+- Command outputs stored in `outputs/` directory
 - Detailed logs stored in `logs/<command>_YYYYMMDD-HHMMSS.{json|md}`
 - Progress indicators for long-running operations (configurable heartbeat interval)
 - Network errors are caught with user-friendly messages

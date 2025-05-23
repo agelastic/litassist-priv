@@ -122,6 +122,12 @@ class Config:
             self.heartbeat_interval = self.cfg.get("general", {}).get(
                 "heartbeat_interval", 10
             )
+            self.max_chars = self.cfg.get("general", {}).get(
+                "max_chars", 20000
+            )
+            self.rag_max_chars = self.cfg.get("general", {}).get(
+                "rag_max_chars", 8000
+            )
 
         # Jade API key is no longer used - functionality now uses public endpoint
 

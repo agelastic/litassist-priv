@@ -21,7 +21,7 @@ mock_config.google_cse_id = "test-cse-id"
 mock_config.pinecone_api_key = "test-pinecone-key"
 mock_config.pinecone_environment = "test-env"
 mock_config.pinecone_index = "test-index"
-mock_config.log_format = "markdown"
+mock_config.log_format = "json"
 
 # Replace the CONFIG in sys.modules before litassist is imported
 config_module = Mock()

@@ -11,7 +11,8 @@ import os
 import re
 import time
 
-from litassist.utils import read_document, chunk_text, save_log
+from litassist.config import CONFIG
+from litassist.utils import read_document, chunk_text, save_log, OUTPUT_DIR
 from litassist.llm import LLMClient
 
 
@@ -39,7 +40,7 @@ def digest(file, mode):
     """
     # Read and split the document
     text = read_document(file)
-    chunks = chunk_text(text)
+    chunks = chunk_text(text, max_chars=CONFIG.max_chars)
     # Select parameter presets based on mode
     presets = {
         "summary": {"temperature": 0, "top_p": 0},
@@ -57,7 +58,7 @@ def digest(file, mode):
     filename_slug = filename_slug[:30].strip('_') or 'document'
     
     timestamp = time.strftime("%Y%m%d_%H%M%S")
-    output_file = f"digest_{mode}_{filename_slug}_{timestamp}.txt"
+    output_file = os.path.join(OUTPUT_DIR, f"digest_{mode}_{filename_slug}_{timestamp}.txt")
     
     # Collect all output
     all_output = []

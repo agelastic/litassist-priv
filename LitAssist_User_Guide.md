@@ -51,7 +51,7 @@ This running example provides context for understanding how each LitAssist workf
 - ✅ **Use from anywhere** - `litassist` command available in any directory
 - ✅ **Local outputs** - All files created in your current working directory
 - ✅ **Single configuration** - One global config with all your API keys
-- ✅ **Project isolation** - Each case directory gets its own logs and outputs
+- ✅ **Project isolation** - Each case directory gets its own outputs/ and logs/ subdirectories
 
 **File Management & Organization:**
 - ✅ **Timestamped outputs** - All commands save to unique timestamped files (never overwrites)
@@ -92,36 +92,37 @@ LitAssist works from any directory and creates outputs locally:
 mkdir ~/legal-cases/smith-v-jones-2025
 cd ~/legal-cases/smith-v-jones-2025
 
-# LitAssist will create timestamped output files and logs/ directory here
+# LitAssist will create outputs/ and logs/ directories here
 # All commands use global config but create outputs locally
 ```
 
 ## Output File Management
 
 ### Timestamped Output Files
-All LitAssist commands now save their results to timestamped text files, ensuring no output is ever lost:
+All LitAssist commands save their results to timestamped text files in the `outputs/` directory, ensuring no output is ever lost:
 
-**Current Working Files** (maintained for pipeline compatibility):
-- `case_facts.txt` - Current extracted facts (from extractfacts command)
-- `strategies.txt` - Current brainstormed strategies (from brainstorm command)
+**Manual Working Files** (created and edited by user):
+- `case_facts.txt` - Manually maintained case facts file
+- `strategies.txt` - Manually maintained strategies file
 
 **Timestamped Archive Files** (never overwritten):
 - `lookup_[query_slug]_YYYYMMDD_HHMMSS.txt` - Search results
 - `digest_[mode]_[filename_slug]_YYYYMMDD_HHMMSS.txt` - Document analysis
-- `extractfacts_[filename_slug]_YYYYMMDD_HHMMSS.txt` - Archive copy of extracted facts
-- `brainstorm_[area]_[side]_YYYYMMDD_HHMMSS.txt` - Archive copy of strategies
+- `extractfacts_[filename_slug]_YYYYMMDD_HHMMSS.txt` - Extracted facts from documents
+- `brainstorm_[area]_[side]_YYYYMMDD_HHMMSS.txt` - Generated legal strategies
 - `strategy_[outcome_slug]_YYYYMMDD_HHMMSS.txt` - Strategic analysis and draft documents
 - `draft_[query_slug]_YYYYMMDD_HHMMSS.txt` - Generated legal drafts
 
 **Example output after running commands:**
 ```
 smith-v-jones-2025/
-├── case_facts.txt                                    # Current facts
-├── strategies.txt                                    # Current strategies
-├── extractfacts_smith_jones_file_20250523_143022.txt # Archive copy
-├── brainstorm_family_plaintiff_20250523_144501.txt   # Archive copy
-├── strategy_interim_orders_20250523_150245.txt       # Strategic analysis
-├── draft_outline_submissions_20250523_151030.txt     # Legal draft
+├── case_facts.txt                                    # Manually created/edited
+├── strategies.txt                                    # Manually created/edited
+├── outputs/                                          # All command outputs
+│   ├── extractfacts_smith_jones_file_20250523_143022.txt
+│   ├── brainstorm_family_plaintiff_20250523_144501.txt
+│   ├── strategy_interim_orders_20250523_150245.txt
+│   └── draft_outline_submissions_20250523_151030.txt
 └── logs/                                             # Detailed audit logs
     ├── extractfacts_20250523-143022.md
     ├── brainstorm_20250523-144501.md
@@ -132,7 +133,7 @@ smith-v-jones-2025/
 - **No data loss** - Previous outputs are never overwritten
 - **Version history** - Track evolution of strategies and arguments
 - **Easy sharing** - Send specific timestamped files to colleagues
-- **Pipeline compatibility** - Current working files (case_facts.txt, strategies.txt) maintain workflow
+- **Manual control** - Working files (case_facts.txt, strategies.txt) remain under user control
 
 ## Workflow 1: Lookup - Rapid Case-Law Search
 
@@ -331,8 +332,8 @@ Now we need to create a structured fact sheet for the *Smith v Jones* case:
 **Output Example**:
 
 The command creates:
-- `case_facts.txt` - Current working file in the structured format compatible with both the `brainstorm` and `strategy` commands
-- `extractfacts_[filename_slug]_YYYYMMDD_HHMMSS.txt` - Timestamped archive copy that never gets overwritten
+- `extractfacts_[filename_slug]_YYYYMMDD_HHMMSS.txt` - Timestamped output file with structured facts
+- Note: To use with other commands, manually create/update `case_facts.txt`
 
 ```
 1. Parties
@@ -384,9 +385,9 @@ With the structured case facts in place, you can now use the `brainstorm` workfl
 
 The `brainstorm` command uses Grok's creative capabilities to generate a comprehensive set of litigation strategies based on the facts provided, tailored to your specific party side and legal area. The command produces both orthodox and unorthodox strategies, along with an assessment of which are most likely to succeed.
 
-**Output**: The brainstormed strategies are automatically saved to:
-- `strategies.txt` - Current working file for use in subsequent commands like `strategy` and `draft`
-- `brainstorm_[area]_[side]_YYYYMMDD_HHMMSS.txt` - Timestamped archive copy that never gets overwritten
+**Output**: The brainstormed strategies are saved to:
+- `brainstorm_[area]_[side]_YYYYMMDD_HHMMSS.txt` - Timestamped output file
+- Note: To use with other commands, manually create/update `strategies.txt`
 
 ### Command
 
@@ -820,7 +821,7 @@ Options available for all commands:
 ./litassist.py [GLOBAL OPTIONS] <command> [ARGS] [OPTIONS]
 ```
 
-- `--log-format [json|markdown]` - Set audit log format (default: markdown)
+- `--log-format [json|markdown]` - Set audit log format (default: json)
   - JSON format: Structured format for programmatic analysis
   - Markdown format: Human-readable format with clear sections
 - `--verbose` - Enable detailed debug logging

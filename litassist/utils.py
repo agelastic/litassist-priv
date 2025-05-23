@@ -12,17 +12,19 @@ import logging
 import threading
 import functools
 import re
-from typing import List, Dict, Any, Callable, Tuple, Optional, Union
+from typing import List, Any, Callable
 
 import click
 import openai
-from PyPDF2 import PdfReader
+from pypdf import PdfReader
 
-# ── Logging Setup ─────────────────────────────────────────
-# Use current working directory for logs when running as global command
+# ── Directory Setup ─────────────────────────────────────────
+# Use current working directory for logs and outputs when running as global command
 WORKING_DIR = os.getcwd()
 LOG_DIR = os.path.join(WORKING_DIR, "logs")
+OUTPUT_DIR = os.path.join(WORKING_DIR, "outputs")
 os.makedirs(LOG_DIR, exist_ok=True)
+os.makedirs(OUTPUT_DIR, exist_ok=True)
 logging.basicConfig(level=logging.INFO, format="%(message)s")
 
 
@@ -108,9 +110,7 @@ def save_log(tag: str, payload: dict):
 
     ts = time.strftime("%Y%m%d-%H%M%S")
     ctx = get_current_context(silent=True)
-    log_format = (
-        ctx.obj.get("log_format", "markdown") if ctx and ctx.obj else "markdown"
-    )
+    log_format = ctx.obj.get("log_format", "json") if ctx and ctx.obj else "json"
 
     # JSON logging
     if log_format == "json":
@@ -224,20 +224,24 @@ def create_embeddings(texts: List[str]) -> List[Any]:
                 f"Maximum is approximately {MAX_CHARS} characters. "
                 f"Use smaller chunks with chunk_text(text, max_chars=8000)."
             )
-    
+
     # Use the model without custom dimensions since our index is 1536-dimensional
     return openai.Embedding.create(input=texts, model=CONFIG.emb_model).data
 
 
 @timed
-def chunk_text(text: str, max_chars: int = 60000) -> List[str]:
+def chunk_text(text: str, max_chars: int = 20000) -> List[str]:
     """
-    Split text into chunks of up to max_chars characters, attempting to break at sentence boundaries
-    to avoid cutting sentences in half.
+    Enhanced text chunking that handles OCR artifacts and provides better granularity.
+
+    Uses multiple splitting strategies to create more manageable chunks:
+    1. Split by paragraph breaks (double newlines)
+    2. Split by enhanced sentence detection (handles OCR issues)
+    3. Character-based splitting as fallback
 
     Args:
         text: The text to split into chunks.
-        max_chars: Maximum characters per chunk. Must be a positive integer.
+        max_chars: Maximum characters per chunk (default: 20000 for better granularity).
 
     Returns:
         A list of text chunks, each up to max_chars in length.
@@ -255,37 +259,113 @@ def chunk_text(text: str, max_chars: int = 60000) -> List[str]:
         raise ValueError("max_chars must be a positive integer")
 
     # Handle empty input case
-    if not text:
+    if not text or not text.strip():
         return []
 
     try:
-        # Split into sentences by punctuation followed by whitespace
-        sentences = re.split(r"(?<=[\.\?\!]\s)", text)
+        # Normalize whitespace first (OCR often has inconsistent spacing)
+        normalized_text = re.sub(r"\s+", " ", text.strip())
+
         chunks = []
         current_chunk = ""
 
-        for sentence in sentences:
-            if len(current_chunk) + len(sentence) <= max_chars:
-                current_chunk += sentence
+        # Strategy 1: Split by paragraph breaks (preserve original structure where possible)
+        paragraphs = re.split(r"\n\s*\n", normalized_text)
+
+        for paragraph in paragraphs:
+            paragraph = paragraph.strip()
+            if not paragraph:
+                continue
+
+            # If paragraph fits in current chunk, add it
+            if len(current_chunk) + len(paragraph) + 2 <= max_chars:  # +2 for spacing
+                if current_chunk:
+                    current_chunk += "\n\n" + paragraph
+                else:
+                    current_chunk = paragraph
             else:
+                # Save current chunk if it exists
                 if current_chunk:
                     chunks.append(current_chunk)
-                # Handle sentences longer than max_chars by splitting directly
-                while len(sentence) > max_chars:
-                    chunks.append(sentence[:max_chars])
-                    sentence = sentence[max_chars:]
-                current_chunk = sentence
+                    current_chunk = ""
 
+                # If paragraph is too long, split it by sentences
+                if len(paragraph) > max_chars:
+                    sentences = _split_into_sentences(paragraph)
+
+                    for sentence in sentences:
+                        if len(current_chunk) + len(sentence) + 1 <= max_chars:
+                            if current_chunk:
+                                current_chunk += " " + sentence
+                            else:
+                                current_chunk = sentence
+                        else:
+                            if current_chunk:
+                                chunks.append(current_chunk)
+                                current_chunk = ""
+
+                            # If sentence is still too long, split by character
+                            if len(sentence) > max_chars:
+                                for i in range(0, len(sentence), max_chars):
+                                    chunk_part = sentence[i : i + max_chars]
+                                    if (
+                                        current_chunk
+                                        and len(current_chunk) + len(chunk_part)
+                                        <= max_chars
+                                    ):
+                                        current_chunk += chunk_part
+                                    else:
+                                        if current_chunk:
+                                            chunks.append(current_chunk)
+                                        current_chunk = chunk_part
+                            else:
+                                current_chunk = sentence
+                else:
+                    current_chunk = paragraph
+
+        # Add final chunk
         if current_chunk:
             chunks.append(current_chunk)
 
         return chunks
+
     except re.error as e:
         raise ValueError(f"Error in regex pattern during text chunking: {e}")
     except MemoryError:
         raise ValueError("Text is too large to process with the given chunk size")
     except Exception as e:
         raise ValueError(f"Error during text chunking: {e}")
+
+
+def _split_into_sentences(text: str) -> List[str]:
+    """
+    Enhanced sentence splitting that handles OCR artifacts.
+
+    Args:
+        text: Text to split into sentences.
+
+    Returns:
+        List of sentences.
+    """
+    # Multiple patterns to catch different sentence endings common in OCR text
+    patterns = [
+        r"(?<=[.!?])\s+(?=[A-Z])",  # Standard: punctuation + space + capital
+        r"(?<=[.!?])\s*\n+\s*(?=[A-Z])",  # punctuation + newline(s) + capital
+        r"(?<=[.!?])\s*(?=\d+\.)",  # punctuation + numbered list
+        r"(?<=\.)\s*(?=[A-Z][a-z])",  # period + capital + lowercase (common in OCR)
+        r"(?<=[.!?])\s*(?=[A-Z][A-Z])",  # punctuation + all caps (headers)
+    ]
+
+    sentences = [text]
+
+    for pattern in patterns:
+        new_sentences = []
+        for sentence in sentences:
+            split_parts = re.split(pattern, sentence)
+            new_sentences.extend(split_parts)
+        sentences = [s.strip() for s in new_sentences if s.strip()]
+
+    return sentences
 
 
 def heartbeat(interval: int = 30):

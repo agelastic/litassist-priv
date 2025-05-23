@@ -1,7 +1,7 @@
 click
 openai==0.28.1
 pinecone-client==2.2.4
-PyPDF2
+pypdf
 google-api-python-client
 pyyaml
 requests>=2.32.0

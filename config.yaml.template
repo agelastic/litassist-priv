@@ -20,5 +20,7 @@ llm:
 
 general:
   heartbeat_interval: 10    # Seconds between progress messages (default: 10)
+  max_chars: 20000          # Maximum characters per chunk for document processing (default: 20000)
+  rag_max_chars: 8000       # Maximum characters per chunk for RAG retrieval (default: 8000)
 
 # Jade API configuration removed - now uses public endpoints directly

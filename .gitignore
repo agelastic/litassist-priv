@@ -38,6 +38,7 @@ quality_results_*.json
 # --- Temporary debugging files ---
 temp_*.py
 debug_*.txt
+debug_*.py
 
 # IDE personal bits
 .idea/**/workspace.xml
@@ -84,12 +85,21 @@ coverage.xml
 nosetests.xml
 logs/
 
+# Command outputs
+outputs/
+
 real_test/
 case_facts.txt
-case_facts_*.txt
 strategies.txt
-strategies_*.txt
 strategies_verification.txt
+
+# Timestamped output files from commands
+lookup_*.txt
+digest_*.txt
+brainstorm_*.txt
+extractfacts_*.txt
+strategy_*.txt
+draft_*.txt
 
 **/.claude/settings.local.json
 CLAUDE.md

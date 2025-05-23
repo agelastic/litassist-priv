@@ -18,7 +18,7 @@ os.environ["GOOGLE_API_USE_CLIENT_CERTIFICATE"] = "false"
 warnings.filterwarnings("ignore", message=".*file_cache.*")
 
 from litassist.config import CONFIG
-from litassist.utils import save_log, heartbeat
+from litassist.utils import save_log, heartbeat, OUTPUT_DIR
 from litassist.llm import LLMClient
 
 
@@ -229,7 +229,7 @@ def lookup(question, mode, engine):
     question_slug = question_slug[:50].strip('_') or 'query'
     
     timestamp = time.strftime("%Y%m%d_%H%M%S")
-    output_file = f"lookup_{question_slug}_{timestamp}.txt"
+    output_file = os.path.join(OUTPUT_DIR, f"lookup_{question_slug}_{timestamp}.txt")
     
     with open(output_file, 'w', encoding='utf-8') as f:
         f.write(f"Lookup Query: {question}\n")

@@ -21,7 +21,7 @@ from litassist.config import CONFIG
 @click.option(
     "--log-format",
     type=click.Choice(["json", "markdown"]),
-    default="markdown",
+    default="json",
     show_default=True,
     help="Format for audit logs.",
 )

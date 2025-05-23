@@ -11,7 +11,7 @@ import os
 import time
 
 from litassist.config import CONFIG
-from litassist.utils import read_document, save_log, heartbeat
+from litassist.utils import read_document, save_log, heartbeat, OUTPUT_DIR
 from litassist.llm import LLMClient
 
 
@@ -191,30 +191,10 @@ Please provide output in EXACTLY this format:
         },
     )
     
-    # Save strategies to file (with backup if exists)
-    output_file = "strategies.txt"
-    if os.path.exists(output_file):
-        # Create a timestamp for the backup
-        timestamp = time.strftime("%Y%m%d_%H%M%S")
-        backup_file = f"strategies_{timestamp}.txt"
-        os.rename(output_file, backup_file)
-        click.echo(f"Existing strategies.txt renamed to {backup_file}")
-    
-    # Write the strategies with metadata (original content only)
-    with open(output_file, "w", encoding="utf-8") as f:
-        f.write(f"# Legal Strategies\n")
-        f.write(f"# Generated: {time.strftime('%Y-%m-%d %H:%M:%S')}\n")
-        f.write(f"# Side: {side.capitalize()}\n")
-        f.write(f"# Area: {area.capitalize()}\n")
-        f.write(f"# Source: {facts_file}\n\n")
-        f.write(original_content)  # Save original content without verification
-    
-    click.echo(f"Strategies saved to {output_file}")
-    
-    # Also save a timestamped copy for archival
+    # Save to timestamped file only
     timestamp = time.strftime("%Y%m%d_%H%M%S")
-    archive_file = f"brainstorm_{area}_{side}_{timestamp}.txt"
-    with open(archive_file, "w", encoding="utf-8") as f:
+    output_file = os.path.join(OUTPUT_DIR, f"brainstorm_{area}_{side}_{timestamp}.txt")
+    with open(output_file, "w", encoding="utf-8") as f:
         f.write(f"# Legal Strategies\n")
         f.write(f"# Generated: {time.strftime('%Y-%m-%d %H:%M:%S')}\n")
         f.write(f"# Side: {side.capitalize()}\n")
@@ -222,7 +202,8 @@ Please provide output in EXACTLY this format:
         f.write(f"# Source: {facts_file}\n\n")
         f.write(original_content)
     
-    click.echo(f"Archive copy saved to {archive_file}")
+    click.echo(f"Strategies saved to: {output_file}")
+    click.echo("\nTo use these strategies with other commands, manually create or update strategies.txt")
     
     # Save verification notes separately if any exist
     if verification_notes:

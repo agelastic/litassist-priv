@@ -10,6 +10,7 @@ with GPT-4o that incorporates these citations.
 import click
 import re
 import time
+import os
 
 from litassist.config import CONFIG
 from litassist.utils import (
@@ -18,6 +19,7 @@ from litassist.utils import (
     create_embeddings,
     save_log,
     heartbeat,
+    OUTPUT_DIR,
 )
 from litassist.llm import LLMClient
 from litassist.retriever import Retriever, get_pinecone_client
@@ -115,7 +117,7 @@ def draft(documents, query, verify, diversity):
         
         for doc_path, text in structured_content["pdf_documents"]:
             # Chunk each document
-            chunks = chunk_text(text, max_chars=8000)
+            chunks = chunk_text(text, max_chars=CONFIG.rag_max_chars)
             for chunk in chunks:
                 doc_counter += 1
                 all_chunks.append((f"d{doc_counter}", chunk, doc_path))
@@ -217,7 +219,7 @@ def draft(documents, query, verify, diversity):
     query_slug = query_slug[:40].strip('_') or 'draft'
     
     timestamp = time.strftime("%Y%m%d_%H%M%S")
-    output_file = f"draft_{query_slug}_{timestamp}.txt"
+    output_file = os.path.join(OUTPUT_DIR, f"draft_{query_slug}_{timestamp}.txt")
     
     with open(output_file, 'w', encoding='utf-8') as f:
         f.write(f"Draft Generation\n")
