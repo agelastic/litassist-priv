@@ -117,6 +117,11 @@ class Config:
             self.use_token_limits = self.cfg.get("llm", {}).get(
                 "use_token_limits", False
             )
+            
+            # Extract optional general settings with defaults
+            self.heartbeat_interval = self.cfg.get("general", {}).get(
+                "heartbeat_interval", 10
+            )
 
         # Jade API key is no longer used - functionality now uses public endpoint
 

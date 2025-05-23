@@ -18,4 +18,7 @@ pinecone:
 llm:
   use_token_limits: false    # Set to true to enable model-specific token limits for responses
 
+general:
+  heartbeat_interval: 10    # Seconds between progress messages (default: 10)
+
 # Jade API configuration removed - now uses public endpoints directly

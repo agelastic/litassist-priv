@@ -8,6 +8,7 @@ tailored to the specified party (plaintiff/defendant) and legal area.
 
 import click
 
+from litassist.config import CONFIG
 from litassist.utils import read_document, save_log, heartbeat
 from litassist.llm import LLMClient
 
@@ -118,7 +119,7 @@ For each strategy, provide:
         },
         {"role": "user", "content": prompt},
     ]
-    call_with_hb = heartbeat(30)(client.complete)
+    call_with_hb = heartbeat(CONFIG.heartbeat_interval)(client.complete)
     try:
         content, usage = call_with_hb(messages)
     except Exception as e:

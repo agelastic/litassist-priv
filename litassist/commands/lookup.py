@@ -191,7 +191,7 @@ def lookup(question, mode, engine):
 
     # Call the LLM
     client = LLMClient("google/gemini-2.5-pro-preview", temperature=0, top_p=0.2)
-    call_with_hb = heartbeat(30)(client.complete)
+    call_with_hb = heartbeat(CONFIG.heartbeat_interval)(client.complete)
     try:
         content, usage = call_with_hb(
             [

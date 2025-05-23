@@ -10,6 +10,7 @@ import click
 from typing import Dict, List, Any
 import re
 
+from litassist.config import CONFIG
 from litassist.utils import save_log, heartbeat
 from litassist.llm import LLMClient
 
@@ -78,158 +79,6 @@ def extract_legal_issues(case_text: str) -> List[str]:
     return issues
 
 
-def calculate_probability(
-    precedents: List[Dict[str, Any]], issue_alignment: float
-) -> int:
-    """
-    Calculate probability of success based on precedents and issue alignment.
-
-    Args:
-        precedents: List of precedent cases relevant to the issue.
-        issue_alignment: Value from 0-1 indicating how closely the current case
-                         aligns with favorable precedents.
-
-    Returns:
-        Probability percentage (0-100).
-    """
-    if not precedents:
-        return 50  # Default without precedents
-
-    # Calculate base probability from precedent outcomes
-    favorable = sum(1 for p in precedents if p.get("outcome") == "favorable")
-    base_prob = (favorable / len(precedents)) * 100 if precedents else 50
-
-    # Apply issue alignment modifier (±20%)
-    alignment_factor = 0.8 + (issue_alignment * 0.4)  # Range from 0.8 to 1.2
-
-    # Calculate final probability
-    final_prob = min(round(base_prob * alignment_factor), 100)
-
-    return final_prob
-
-
-def format_strategic_options(options: List[Dict[str, Any]], outcome: str) -> str:
-    """
-    Format the strategic options section of the output.
-
-    Args:
-        options: List of strategic option dictionaries.
-        outcome: The desired outcome.
-
-    Returns:
-        Formatted strategic options text.
-    """
-    text = f"# STRATEGIC OPTIONS FOR: {outcome.upper()}\n\n"
-
-    for i, option in enumerate(options, 1):
-        text += f"## OPTION {i}: {option['title']}\n"
-        text += f"* **Probability of Success**: {option['probability']}%\n"
-
-        text += "\n* **Principal Hurdles**:\n"
-        for hurdle in option["hurdles"]:
-            text += f"  1. {hurdle['description']} — *{hurdle['citation']}*\n"
-
-        if option.get("missing_facts"):
-            text += "\n* **Critical Missing Facts**:\n"
-            for fact in option["missing_facts"]:
-                text += f"  - {fact}\n"
-
-        text += "\n\n"
-
-    return text
-
-
-def format_next_steps(steps: List[str]) -> str:
-    """
-    Format the recommended next steps section.
-
-    Args:
-        steps: List of recommended next steps.
-
-    Returns:
-        Formatted next steps text.
-    """
-    text = "# RECOMMENDED NEXT STEPS\n\n"
-
-    for i, step in enumerate(steps, 1):
-        text += f"{i}. {step}\n"
-
-    return text + "\n\n"
-
-
-def format_draft_document(doc_type: str, content: Dict[str, Any]) -> str:
-    """
-    Format the draft document section based on document type.
-
-    Args:
-        doc_type: Type of document (claim, application, or affidavit).
-        content: Dictionary containing document content.
-
-    Returns:
-        Formatted document text.
-    """
-    text = f"# DRAFT {doc_type.upper()}\n\n"
-
-    if doc_type == "claim":
-        text += "## STATEMENT OF CLAIM\n\n"
-
-        # Parties section
-        text += "### PARTIES\n"
-        for party in content.get("parties", []):
-            text += f"{party['number']}. {party['description']}\n\n"
-
-        # Facts relied upon
-        text += "### FACTS RELIED UPON\n"
-        for fact in content.get("facts", []):
-            text += f"{fact['number']}. {fact['description']}\n\n"
-
-        # Causes of action
-        text += "### CAUSES OF ACTION\n"
-        for cause in content.get("causes", []):
-            text += f"{cause['number']}. {cause['description']}\n"
-            if cause.get("authority"):
-                text += f"   *{cause['authority']}*\n\n"
-
-        # Relief sought
-        text += "### RELIEF SOUGHT\n"
-        for relief in content.get("relief", []):
-            text += f"{relief['number']}. {relief['description']}\n\n"
-
-    elif doc_type == "application":
-        text += "## ORIGINATING APPLICATION\n\n"
-
-        # Applicant and respondent
-        text += f"**Applicant**: {content.get('applicant', '')}\n"
-        text += f"**Respondent**: {content.get('respondent', '')}\n\n"
-
-        # Application details
-        text += "### THE APPLICANT APPLIES FOR:\n"
-        for item in content.get("applications", []):
-            text += f"{item['number']}. {item['description']}\n\n"
-
-        # Grounds
-        text += "### GROUNDS OF APPLICATION:\n"
-        for ground in content.get("grounds", []):
-            text += f"{ground['number']}. {ground['description']}\n"
-            if ground.get("authority"):
-                text += f"   *{ground['authority']}*\n\n"
-
-    elif doc_type == "affidavit":
-        text += "## AFFIDAVIT OUTLINE\n\n"
-
-        # Deponent details
-        text += f"**Deponent**: {content.get('deponent', '')}\n"
-        text += f"**Position**: {content.get('position', '')}\n"
-        text += f"**Date**: {content.get('date', '')}\n\n"
-
-        # Paragraphs
-        text += "### STATEMENT\n"
-        for para in content.get("paragraphs", []):
-            text += f"{para['number']}. {para['content']}\n\n"
-
-    return text
-
-
 @click.command()
 @click.argument("case_facts", type=click.File("r"))
 @click.option("--outcome", required=True, help="Desired outcome (single sentence)")
@@ -277,50 +126,50 @@ def strategy(case_facts, outcome, verify):
     # strategy always needs verification as it creates foundational strategic documents
     verify = True  # Force verification for critical accuracy
 
-    # Jade API is no longer used directly - functionality now uses public endpoint
-
     # Generate strategic options
-    system_prompt = """
-    You are an Australian legal expert specializing in civil litigation strategy.
-    You must analyze case facts and produce strategic options for achieving a specific outcome.
-    
-    For each strategy option:
-    1. Provide a title and procedural pathway
-    2. Estimate probability of success (0-100%)
-    3. Identify two principal legal hurdles with precise citations (e.g., Smith v Jones [2015] HCA 5 [27])
-    4. Note any critical missing facts that could affect the probability
-    
-    Follow these constraints:
-    - Australian law only
-    - Formal legal language
-    - At least one authority per issue
-    - Do not introduce new facts not in the case materials
-    - Provide 3-5 distinct strategic options
-    
-    Response Guidelines:
-    - Use clear headings and numbered paragraphs for structure
-    - Write concisely but thoroughly, avoiding repetition or filler
-    - Maintain logical flow between sections with appropriate transitions
-    - Cite case law with pinpoint references to specific paragraphs or pages
-    - End each section with a definitive conclusion rather than open questions
-    - Ensure consistency in terminology and formatting throughout
-    """
+    system_prompt = """You are an Australian legal expert specializing in civil litigation strategy.
+You must analyze case facts and produce strategic options for achieving a specific outcome.
 
-    user_prompt = f"""
-    CASE FACTS:
-    {facts_content}
-    
-    DESIRED OUTCOME:
-    {outcome}
-    
-    IDENTIFIED LEGAL ISSUES:
-    {', '.join(legal_issues)}
-    
-    Please generate 3-5 distinct strategic options to achieve the desired outcome.
-    """
+For the strategic options section, use EXACTLY this format:
+
+# STRATEGIC OPTIONS FOR: [OUTCOME IN CAPS]
+
+## OPTION 1: [Title of Strategy]
+* **Probability of Success**: [X]%
+* **Principal Hurdles**:
+  1. [Description of hurdle] — *[Case citation with pinpoint reference]*
+  2. [Description of hurdle] — *[Case citation with pinpoint reference]*
+* **Critical Missing Facts**:
+  - [Missing fact 1]
+  - [Missing fact 2]
+
+## OPTION 2: [Title of Strategy]
+[Same format as above]
+
+[Continue for 3-5 options total]
+
+Requirements:
+- Australian law only
+- Use real case citations with pinpoint references (e.g., Smith v Jones [2015] HCA 5 [27])
+- Be specific about probability percentages based on precedents
+- Identify genuine hurdles based on the case facts provided
+- Note actual missing facts from the case materials
+- Do not introduce facts not in the case materials
+"""
+
+    user_prompt = f"""CASE FACTS:
+{facts_content}
+
+DESIRED OUTCOME:
+{outcome}
+
+IDENTIFIED LEGAL ISSUES:
+{', '.join(legal_issues)}
+
+Generate 3-5 distinct strategic options to achieve the desired outcome using the exact format specified."""
 
     # Call LLM with heartbeat to show progress
-    call_with_hb = heartbeat(30)(llm_client.complete)
+    call_with_hb = heartbeat(CONFIG.heartbeat_interval)(llm_client.complete)
     try:
         strategy_content, usage = call_with_hb(
             [
@@ -331,55 +180,20 @@ def strategy(case_facts, outcome, verify):
     except Exception as e:
         raise click.ClickException(f"LLM strategy generation error: {e}")
 
-    # Parse LLM-generated strategic options
-    # In a real implementation, this would parse the LLM output into structured data
-    # For simplicity, we'll mock some structured data here
-
-    # Mock data for demonstration - in real implementation, parse from strategy_content
-    strategic_options = [
-        {
-            "title": "Application for Summary Judgment",
-            "probability": 75,
-            "hurdles": [
-                {
-                    "description": "Demonstrating no reasonable prospect of defense",
-                    "citation": "Spencer v Commonwealth (2010) 241 CLR 118 [24]",
-                },
-                {
-                    "description": "Overcoming contrary affidavit evidence",
-                    "citation": "Fancourt v Mercantile Credits Ltd (1983) 154 CLR 87 [12]",
-                },
-            ],
-            "missing_facts": [
-                "Prior correspondence showing admission of liability",
-                "Evidence of attempts to resolve dispute",
-            ],
-        },
-        {
-            "title": "Application for Interim Injunction",
-            "probability": 65,
-            "hurdles": [
-                {
-                    "description": "Establishing serious question to be tried",
-                    "citation": "Australian Broadcasting Corp v O'Neill (2006) 227 CLR 57 [65-70]",
-                },
-                {
-                    "description": "Balance of convenience favoring injunction",
-                    "citation": "Beecham Group Ltd v Bristol Laboratories Pty Ltd (1968) 118 CLR 618 [25]",
-                },
-            ],
-            "missing_facts": ["Evidence of irreparable harm without injunction"],
-        },
-    ]
-
     # Generate recommended next steps
-    next_steps_prompt = f"""
-    Based on the strategic options for achieving "{outcome}", what are the 
-    5 most important immediate next steps that should be taken before filing?
-    
-    Focus on evidence gathering, required notices, preliminary applications, or
-    other procedural steps required by Australian court rules.
-    """
+    next_steps_prompt = """Based on the strategic options above, provide EXACTLY 5 immediate next steps.
+
+Format your response as:
+
+# RECOMMENDED NEXT STEPS
+
+1. [Specific action with reference to relevant rules/requirements]
+2. [Specific action with reference to relevant rules/requirements]
+3. [Specific action with reference to relevant rules/requirements]
+4. [Specific action with reference to relevant rules/requirements]
+5. [Specific action with reference to relevant rules/requirements]
+
+Focus on evidence gathering, required notices, preliminary applications, or other procedural steps required by Australian court rules. Be specific to this case."""
 
     try:
         next_steps_content, _ = llm_client.complete(
@@ -393,34 +207,139 @@ def strategy(case_facts, outcome, verify):
     except Exception as e:
         raise click.ClickException(f"LLM next steps generation error: {e}")
 
-    # Mock data for demonstration - in real implementation, parse from next_steps_content
-    next_steps = [
-        "Obtain sworn affidavits from key witnesses X and Y addressing elements of claim",
-        "Prepare and serve Form 1 Notice of Intention to Commence Proceedings",
-        "Conduct Land Titles Office search to verify current registered interests",
-        "Draft letter of demand with 14-day compliance deadline per UCPR r.5.03",
-        "Consult with expert witness regarding technical aspects of causation",
-    ]
-
-    # Determine appropriate document type
+    # Determine appropriate document type based on outcome
     doc_type = "claim"  # Default
-    if "injunction" in outcome.lower() or "order" in outcome.lower():
+    if any(term in outcome.lower() for term in ["injunction", "order", "interim", "stay", "restraint"]):
         doc_type = "application"
-    elif "affidavit" in outcome.lower() or "evidence" in outcome.lower():
+    elif any(term in outcome.lower() for term in ["affidavit", "evidence", "witness", "sworn"]):
         doc_type = "affidavit"
 
     # Generate draft document
-    doc_prompt = f"""
-    Based on the case facts and strategic options, draft a {doc_type} document
-    to achieve the outcome: "{outcome}"
-    
-    Follow Australian court formatting and pleading standards. Include:
-    1. All required structural elements for this document type
-    2. Properly formatted citations to relevant authorities
-    3. Clear articulation of legal grounds
-    
-    Use formal pleading language throughout.
-    """
+    doc_formats = {
+        "claim": """Draft a STATEMENT OF CLAIM using this exact format:
+
+# DRAFT STATEMENT OF CLAIM
+
+## PARTIES
+
+1. [Description of plaintiff including relevant characteristics]
+
+2. [Description of defendant including relevant characteristics]
+
+## FACTS RELIED UPON
+
+1. [Chronological fact 1]
+
+2. [Chronological fact 2]
+
+[Continue numbering for all relevant facts]
+
+## CAUSES OF ACTION
+
+### FIRST CAUSE OF ACTION - [Name]
+[X]. [Description of cause of action]
+     *[Authority with pinpoint reference]*
+
+### SECOND CAUSE OF ACTION - [Name]
+[Y]. [Description of cause of action]
+     *[Authority with pinpoint reference]*
+
+[Continue for all causes of action]
+
+## RELIEF SOUGHT
+
+The plaintiff claims:
+
+1. [Specific relief sought]
+
+2. [Specific relief sought]
+
+3. Interest pursuant to [relevant statutory provision]
+
+4. Costs
+
+5. Such further or other relief as the Court deems just""",
+
+        "application": """Draft an ORIGINATING APPLICATION using this exact format:
+
+# DRAFT ORIGINATING APPLICATION
+
+**IN THE [COURT NAME]**
+**[DIVISION IF APPLICABLE]**
+
+**File No:**
+
+**Applicant**: [Full name and description]
+
+**Respondent**: [Full name and description]
+
+## THE APPLICANT APPLIES FOR:
+
+1. [Specific order sought with reference to enabling provision]
+
+2. [Additional order if applicable]
+
+3. Such further or other orders as the Court deems just
+
+4. Costs
+
+## GROUNDS OF APPLICATION:
+
+The grounds on which the application is made are:
+
+1. [First ground with factual basis]
+   *[Authority with pinpoint reference]*
+
+2. [Second ground with factual basis]
+   *[Authority with pinpoint reference]*
+
+[Continue for all grounds]
+
+## AFFIDAVIT EVIDENCE:
+
+This application is supported by the affidavit of [name] sworn/affirmed [date]""",
+
+        "affidavit": """Draft an AFFIDAVIT OUTLINE using this exact format:
+
+# DRAFT AFFIDAVIT
+
+**[COURT NAME]**
+**[DIVISION IF APPLICABLE]**
+
+**File No:**
+
+**AFFIDAVIT OF [FULL NAME]**
+
+I, [Full Name], of [Address], [Occupation], state on oath/affirm:
+
+1. I am [position/relationship to proceedings] and have personal knowledge of the matters deposed to herein except where otherwise stated.
+
+2. [Factual paragraph - one fact per paragraph]
+
+3. [Factual paragraph - one fact per paragraph]
+
+[Continue numbering for all relevant facts]
+
+**Exhibits:**
+[List any documents to be exhibited]
+
+**Sworn/Affirmed at:** [Location]
+**Date:** [Date]
+**Before me:** [Commissioner for Affidavits/Solicitor]
+
+**Deponent's signature:** _______________"""
+    }
+
+    doc_prompt = f"""Based on the case facts and strategic options, draft a {doc_type.upper()} to achieve the outcome: "{outcome}"
+
+{doc_formats.get(doc_type, doc_formats['claim'])}
+
+Requirements:
+- Use formal Australian legal drafting style
+- Include specific facts from the case materials
+- Reference actual parties and dates from the case facts
+- Cite relevant authorities with pinpoint references
+- Do not invent facts not in the case materials"""
 
     try:
         document_content, _ = llm_client.complete(
@@ -434,99 +353,14 @@ def strategy(case_facts, outcome, verify):
     except Exception as e:
         raise click.ClickException(f"LLM document generation error: {e}")
 
-    # Mock data for demonstration - in real implementation, parse from document_content
-    if doc_type == "claim":
-        document = {
-            "parties": [
-                {
-                    "number": 1,
-                    "description": "The plaintiff is a natural person residing in New South Wales.",
-                },
-                {
-                    "number": 2,
-                    "description": "The defendant is a corporation registered under the Corporations Act 2001 (Cth).",
-                },
-            ],
-            "facts": [
-                {
-                    "number": 1,
-                    "description": "On 1 January 2022, the plaintiff and defendant entered into a written contract.",
-                },
-                {
-                    "number": 2,
-                    "description": "The defendant failed to perform their obligations under the contract.",
-                },
-            ],
-            "causes": [
-                {
-                    "number": 1,
-                    "description": "Breach of contract by the defendant.",
-                    "authority": "Luna Park (NSW) Ltd v Tramways Advertising Pty Ltd (1938) 61 CLR 286",
-                }
-            ],
-            "relief": [
-                {"number": 1, "description": "Damages in the sum of $150,000."},
-                {
-                    "number": 2,
-                    "description": "Interest pursuant to s 100 of the Civil Procedure Act 2005 (NSW).",
-                },
-                {"number": 3, "description": "Costs."},
-            ],
-        }
-    elif doc_type == "application":
-        document = {
-            "applicant": "John Smith",
-            "respondent": "ABC Corporation Pty Ltd",
-            "applications": [
-                {
-                    "number": 1,
-                    "description": "An order pursuant to s 37(1) of the Federal Court of Australia Act 1976 (Cth) restraining the respondent from disclosing the applicant's confidential information.",
-                }
-            ],
-            "grounds": [
-                {
-                    "number": 1,
-                    "description": "The applicant has a prima facie case that the information is confidential.",
-                    "authority": "Saltman Engineering Co Ltd v Campbell Engineering Co Ltd (1948) 65 RPC 203",
-                },
-                {
-                    "number": 2,
-                    "description": "The balance of convenience favors granting the injunction.",
-                    "authority": "Australian Broadcasting Corporation v O'Neill (2006) 227 CLR 57 at [65]",
-                },
-            ],
-        }
-    else:  # affidavit
-        document = {
-            "deponent": "Jane Smith",
-            "position": "Director of Operations, XYZ Pty Ltd",
-            "date": "1 May 2025",
-            "paragraphs": [
-                {
-                    "number": 1,
-                    "content": "I am the Director of Operations of XYZ Pty Ltd and am authorized to make this affidavit on its behalf.",
-                },
-                {
-                    "number": 2,
-                    "content": "On 15 March 2025, I attended a meeting with John Doe, the Chief Executive Officer of ABC Corporation.",
-                },
-                {
-                    "number": 3,
-                    "content": "During this meeting, Mr. Doe stated that ABC Corporation would not be fulfilling its contractual obligations.",
-                },
-            ],
-        }
-
-    # Format the complete output
-    output = format_strategic_options(strategic_options, outcome)
-    output += format_next_steps(next_steps)
-    output += format_draft_document(doc_type, document)
+    # Combine all outputs
+    output = strategy_content + "\n\n" + next_steps_content + "\n\n" + document_content
     
     # Mandatory verification for strategy (creates critical strategic guidance)
     try:
         # Use heavy verification for strategic legal advice
         correction = llm_client.verify_with_level(output, "heavy")
-        if correction.strip():  # Only append if there are actual corrections
+        if correction.strip() and not correction.lower().startswith("no corrections needed"):
             output = output + "\n\n--- Strategic Legal Review ---\n" + correction
         
         # Run citation validation
@@ -542,12 +376,14 @@ def strategy(case_facts, outcome, verify):
         "strategy",
         {
             "inputs": {"case_facts": facts_content, "outcome": outcome},
-            "strategic_options": strategic_options,
-            "next_steps": next_steps,
-            "document": {"type": doc_type, "content": document},
+            "params": {
+                "model": "openai/gpt-4o",
+                "temperature": 0.2,
+                "top_p": 0.9,
+                "verification": "auto-enabled (heavy)"
+            },
             "usage": usage,
-            "response": output,  # Include the output in the log
-            "verification": "auto-enabled (heavy)",
+            "response": output,
         },
     )
 

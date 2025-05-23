@@ -9,6 +9,7 @@ with GPT-4o that incorporates these citations.
 
 import click
 
+from litassist.config import CONFIG
 from litassist.utils import (
     read_document,
     chunk_text,
@@ -101,7 +102,7 @@ def draft(pdf, query, verify, diversity):
         },
         {"role": "user", "content": f"Context:\n{context}\n\nDraft {query}"},
     ]
-    call_with_hb = heartbeat(30)(client.complete)
+    call_with_hb = heartbeat(CONFIG.heartbeat_interval)(client.complete)
     try:
         content, usage = call_with_hb(messages)
     except Exception as e:
