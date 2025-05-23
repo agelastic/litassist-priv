@@ -72,10 +72,13 @@ pinecone:
   environment: "YOUR_PINECONE_ENV"   # e.g. "us-east-1-aws"
   index_name:  "legal-rag"
 
+llm:
+  use_token_limits: false    # Enable conservative token limits for AI responses (default: false = use model defaults)
+
 general:
   heartbeat_interval: 10  # Progress indicator interval in seconds (default: 10)
-  max_chars: 20000        # Maximum characters per chunk for document processing (default: 20000)
-  rag_max_chars: 8000     # Maximum characters per chunk for RAG retrieval (default: 8000)
+  max_chars: 20000        # Document chunking: characters per chunk for digest/extractfacts (default: 20000 ≈ 4000 words)
+  rag_max_chars: 8000     # Document chunking: characters per chunk for draft command embeddings (default: 8000 ≈ 1600 words)
 ```
 
 ## 🚀 Command Reference
@@ -163,6 +166,14 @@ Each output file includes metadata headers with command parameters and timestamp
 - Detailed logs stored in `logs/<command>_YYYYMMDD-HHMMSS.{json|md}`
 - Progress indicators for long-running operations (configurable heartbeat interval)
 - Network errors are caught with user-friendly messages
+
+### Model Configuration
+Each command uses optimized LLM models and parameters:
+- **Factual tasks** (lookup, extractfacts): `temperature=0` for accuracy
+- **Creative tasks** (brainstorm, draft): `temperature=0.5-0.9` for innovation
+- **Verification**: Always uses `temperature=0` for consistency
+
+**Note**: Document chunking (`max_chars`) and AI output limits (`use_token_limits`) are separate systems. See [LitAssist_User_Guide.md](LitAssist_User_Guide.md#llm-models-and-parameter-configuration) for details.
 
 ## ⚖️ Disclaimer
 

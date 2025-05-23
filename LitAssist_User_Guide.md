@@ -275,10 +275,11 @@ The `extractfacts` command processes a document to extract relevant case facts a
 ### Command
 
 ```bash
-./litassist.py extractfacts <file>
+./litassist.py extractfacts <file> [--verify]
 ```
 
-**Note**: Verification is automatically enabled for this command to ensure accuracy of extracted facts.
+**Options:**
+- `--verify` - Run AI verification to critique the extracted facts for completeness and accuracy (see [Using the --verify Switch](#using-the--verify-switch))
 
 ### Required Output Format
 
@@ -392,7 +393,7 @@ The `brainstorm` command uses Grok's creative capabilities to generate a compreh
 ### Command
 
 ```bash
-./litassist.py brainstorm <case_facts_file> --side <party_side> --area <legal_area>
+./litassist.py brainstorm <case_facts_file> --side <party_side> --area <legal_area> [--verify]
 ```
 
 Required parameters:
@@ -401,10 +402,9 @@ Required parameters:
   - Civil/Commercial cases: `plaintiff` or `defendant`
   - Family/Administrative cases: `plaintiff`, `defendant`, or `respondent`
 - `--area`: Legal area of the matter - `criminal`, `civil`, `family`, `commercial`, or `administrative`
+- `--verify` (optional): Run AI verification to review strategy viability and identify risks (see [Using the --verify Switch](#using-the--verify-switch))
 
 **Note**: The command will warn you if you use incompatible side/area combinations (e.g., "plaintiff" in criminal cases) but will still generate strategies.
-
-**Note**: Verification is automatically enabled for Grok models to ensure quality of generated strategies.
 
 ### Example Usage
 
@@ -481,7 +481,7 @@ The `strategy` command analyzes case facts to generate strategic legal options, 
 ### Command
 
 ```bash
-./litassist.py strategy <case_facts_file> --outcome <desired_outcome> [--strategies <strategies_file>]
+./litassist.py strategy <case_facts_file> --outcome <desired_outcome> [--strategies <strategies_file>] [--verify]
 ```
 
 Required parameters:
@@ -489,6 +489,7 @@ Required parameters:
 
 Optional parameters:
 - `--strategies`: Path to strategies.txt from brainstorm command. When provided, the strategy command will consider the brainstormed strategies, particularly those marked as "most likely to succeed"
+- `--verify`: Run AI verification to validate recommendations and identify procedural risks (see [Using the --verify Switch](#using-the--verify-switch))
 
 ### Strict Format Requirements
 
@@ -675,7 +676,7 @@ The `draft` command creates well-supported legal drafts with intelligent documen
 ### Command
 
 ```bash
-./litassist.py draft <document> [<document> ...] <query> [--diversity FLOAT]
+./litassist.py draft <document> [<document> ...] <query> [--diversity FLOAT] [--verify]
 ```
 
 Arguments:
@@ -687,6 +688,7 @@ Arguments:
 
 Options:
 - `--diversity`: Control diversity of search results (0.0-1.0) - only applies to PDF/large file processing
+- `--verify`: Run AI verification to check citations, arguments, and compliance (see [Using the --verify Switch](#using-the--verify-switch))
 
 ### Example Usage
 
@@ -825,6 +827,366 @@ Options available for all commands:
   - JSON format: Structured format for programmatic analysis
   - Markdown format: Human-readable format with clear sections
 - `--verbose` - Enable detailed debug logging
+
+## Using the --verify Switch
+
+### Overview
+The `--verify` switch is available for commands that generate substantive legal content. It runs a second AI model to critique and review the primary output, helping identify potential issues, gaps, or areas for improvement.
+
+### Commands with --verify Support
+
+| Command | Has --verify | Purpose of Verification |
+|---------|--------------|------------------------|
+| lookup | ❌ No | Simple search results don't need verification |
+| digest | ❌ No | Summaries are straightforward factual extracts |
+| extractfacts | ✅ Yes | Ensures all facts are captured with proper structure |
+| brainstorm | ✅ Yes | Reviews strategies for completeness and viability |
+| strategy | ✅ Yes | Validates recommendations and identifies risks |
+| draft | ✅ Yes | Checks citations, arguments, and persuasiveness |
+
+### When to Use --verify
+
+**Always use for:**
+- 🏛️ Court filings and formal submissions
+- 📋 Final case fact extractions before strategy sessions
+- 💡 Novel or high-risk legal strategies
+- 📄 Documents that will be relied upon by others
+- 🎯 High-stakes matters with significant consequences
+
+**Optional for:**
+- 🔍 Initial research and exploration
+- 📝 Early drafts and brainstorming
+- 🔄 Iterative work where you'll manually review
+- 💰 Cost-sensitive projects (verification doubles API costs)
+- ⏱️ Time-critical tasks (adds 10-30+ seconds)
+
+### Understanding Verification Results
+
+#### extractfacts --verify
+**Output location:** Appended to main output file after "VERIFICATION NOTES:"
+
+**What it reviews:**
+- Presence of all 10 required headings
+- Completeness of information under each heading
+- Factual consistency across sections
+- Missing context or important details
+
+**How to use results:**
+1. Read the verification critique carefully
+2. Open your `case_facts.txt` file
+3. Add any missing information identified
+4. Restructure sections if formatting issues noted
+5. Cross-reference with source documents for gaps
+
+**Example verification:**
+```
+VERIFICATION NOTES:
+- "Key Dates" section missing specific filing deadlines mentioned in para 45
+- "Remedy Sought" could include alternative relief options
+- Consider adding witness availability to "Witnesses" section
+```
+
+#### brainstorm --verify
+**Output location:** Separate file `strategies_verification.txt`
+
+**What it reviews:**
+- Legal viability of proposed strategies
+- Missing strategic angles
+- Risk assessment of each approach
+- Creative alternatives not considered
+- Practical implementation challenges
+
+**How to use results:**
+1. Open both `brainstorm_*.txt` and `strategies_verification.txt`
+2. Create or update your `strategies.txt` file
+3. Incorporate suggested additional strategies
+4. Add risk warnings for flagged approaches
+4. Note implementation challenges for client discussions
+
+**Example verification:**
+```
+VERIFICATION NOTES on Strategy #3:
+- High risk of costs order if unsuccessful
+- Consider protective costs order application first
+- Alternative approach: seek leave for limited discovery
+```
+
+#### strategy --verify
+**Output location:** End of output file under "VERIFICATION NOTES:"
+
+**What it reviews:**
+- Feasibility of recommended approaches
+- Procedural requirements and timelines
+- Missing precedents or authorities
+- Cost-benefit analysis accuracy
+- Alternative strategic options
+
+**How to use results:**
+1. Review verification notes before presenting to client
+2. Research any additional authorities mentioned
+3. Add procedural steps that were missed
+4. Adjust probability assessments if warranted
+5. Prepare responses to identified weaknesses
+
+**Example verification:**
+```
+VERIFICATION NOTES:
+- Interim injunction requires undertaking as to damages
+- Consider defendant's likely cross-application
+- Review recent Full Court authority in Chen v State [2024]
+```
+
+#### draft --verify
+**Output location:** Appended to draft after clear separator
+
+**What it reviews:**
+- Citation accuracy and relevance
+- Argument structure and logic flow
+- Persuasiveness and tone
+- Missing authorities or precedents
+- Compliance with court rules
+- Australian legal writing conventions
+
+**How to use results:**
+1. Treat as editorial review from senior counsel
+2. Verify all flagged citations
+3. Strengthen weak arguments identified
+4. Add missing authorities to footnotes
+5. Refine language and structure
+6. Ensure compliance issues are addressed
+
+**Example verification:**
+```
+VERIFICATION NOTES:
+- Para 12: Citation format should be (2019) 266 CLR 1, not [2019] HCA 23
+- Para 18-20: Argument lacks transitional logic between negligence and causation
+- Consider adding High Court authority on proportionality test
+- Tone in para 31 may be too adversarial for interlocutory application
+```
+
+### Cost and Performance Impact
+
+| Aspect | Without --verify | With --verify |
+|--------|-----------------|---------------|
+| API Calls | 1 | 2 |
+| Cost | Base cost | ~2x base cost |
+| Time | 5-15 seconds | 15-45 seconds |
+| Output Files | 1 | 1-2 files |
+
+### Best Practices
+
+1. **Development workflow:** Run without --verify during development, add it for final versions
+2. **Collaborative review:** Share both main output and verification notes with colleagues
+3. **Documentation:** Save verification results as part of your case file
+4. **Iterative improvement:** Use verification feedback to refine your prompts and inputs
+5. **Quality tracking:** Periodically run with --verify to monitor output quality
+
+### Important Notes
+
+- **Not automatic corrections:** Verification provides suggestions, not fixes
+- **Human judgment required:** All suggestions must be evaluated by qualified counsel
+- **Different models:** Verification often uses different AI models for diverse perspectives
+- **No verification loops:** Running --verify multiple times on same content provides diminishing returns
+
+## LLM Models and Parameter Configuration
+
+### Model Selection by Command
+
+Each LitAssist command uses a specific LLM model chosen for its strengths:
+
+| Command | Model | Primary Purpose |
+|---------|-------|-----------------|
+| lookup | `google/gemini-2.5-pro-preview` | Fast, accurate legal research |
+| digest | `anthropic/claude-3-sonnet` | Reliable document summarization |
+| extractfacts | `anthropic/claude-3-sonnet` | Precise fact extraction |
+| brainstorm | `x-ai/grok-3-beta` | Creative strategy generation |
+| strategy | `openai/gpt-4o` | Balanced strategic analysis |
+| draft | `openai/gpt-4o` | Persuasive legal writing |
+
+### Temperature and Sampling Parameters
+
+LitAssist uses carefully tuned parameters for each command to balance accuracy with appropriate creativity:
+
+#### Factual/Deterministic Commands
+
+**lookup** (`google/gemini-2.5-pro-preview`):
+```python
+temperature=0, top_p=0.2
+```
+- **Purpose**: Case law search requires maximum accuracy
+- **Effect**: Near-deterministic responses with minimal variation
+- **Why**: Legal citations and case summaries must be consistent
+
+**extractfacts** (`anthropic/claude-3-sonnet`):
+```python
+temperature=0, top_p=0.15
+```
+- **Purpose**: Structured fact extraction demands precision
+- **Effect**: Highly deterministic with virtually no randomness
+- **Why**: Facts must be extracted consistently across runs
+
+**digest - Summary Mode** (`anthropic/claude-3-sonnet`):
+```python
+temperature=0, top_p=0
+```
+- **Purpose**: Chronological summaries need complete consistency
+- **Effect**: Fully deterministic output
+- **Why**: Document summaries should not vary between runs
+
+#### Analytical Commands
+
+**digest - Issues Mode** (`anthropic/claude-3-sonnet`):
+```python
+temperature=0.2, top_p=0.5
+```
+- **Purpose**: Issue-spotting benefits from slight variation
+- **Effect**: Mostly consistent with minor creative elements
+- **Why**: Different perspectives can reveal different issues
+
+**strategy** (`openai/gpt-4o`):
+```python
+temperature=0.2, top_p=0.9, presence_penalty=0.0, frequency_penalty=0.0
+```
+- **Purpose**: Strategic analysis needs reliability with insight
+- **Effect**: Consistent core analysis with room for strategic creativity
+- **Why**: Legal strategies require both precedent and innovation
+
+#### Creative Commands
+
+**draft** (`openai/gpt-4o`):
+```python
+temperature=0.5, top_p=0.8, presence_penalty=0.1, frequency_penalty=0.1
+```
+- **Purpose**: Persuasive writing requires eloquence
+- **Effect**: Balanced creativity with coherent arguments
+- **Why**: Legal drafts need varied language while maintaining precision
+- **Penalties**: Reduce repetitive phrases and improve readability
+
+**brainstorm** (`x-ai/grok-3-beta`):
+```python
+temperature=0.9, top_p=0.95
+```
+- **Purpose**: Generate novel and unorthodox strategies
+- **Effect**: High creativity and diverse outputs
+- **Why**: Brainstorming benefits from thinking outside conventional approaches
+
+#### Verification Parameters
+
+All models when used for `--verify`:
+```python
+temperature=0, top_p=0.2
+```
+- **Purpose**: Critique and error-checking must be consistent
+- **Effect**: Deterministic verification results
+- **Why**: Verification feedback should not vary
+
+### Understanding the Parameters
+
+**temperature** (0.0 to 1.0+):
+- Controls randomness in token selection
+- 0 = deterministic (always pick most likely token)
+- 0.5 = balanced creativity
+- 1.0+ = high creativity/randomness
+
+**top_p** (0.0 to 1.0):
+- Controls nucleus sampling (cumulative probability)
+- 0.1 = only most likely tokens
+- 0.5 = moderate token variety
+- 0.95 = wide token selection
+
+**presence_penalty** (-2.0 to 2.0):
+- Penalizes tokens based on presence in text
+- Positive values reduce repetition of ideas
+- Used in drafting to improve variety
+
+**frequency_penalty** (-2.0 to 2.0):
+- Penalizes tokens based on frequency
+- Positive values reduce word repetition
+- Used in drafting for better flow
+
+### Token Limits
+
+When `use_token_limits: false` (default), models use their default token limits (typically 4096+).
+
+When `use_token_limits: true` in the `llm` section of config.yaml, LitAssist applies conservative token limits:
+
+| Model | Completion Tokens | Verification Tokens |
+|-------|-------------------|---------------------|
+| `google/gemini-*` | 2048 | 1024 |
+| `anthropic/claude-*` | 4096 | 1536 |
+| `openai/gpt-4*` | 3072 | 1024 |
+| `x-ai/grok-*` | 1536 | 800 |
+| Others | 2048 | 1024 |
+
+These limits balance comprehensive responses with model reliability and cost control.
+
+**Note**: Token limits are not directly configurable. You can only enable/disable the conservative limits via `use_token_limits`. Custom token limits would require modifying the source code.
+
+### Document Chunking vs Token Limits
+
+LitAssist has two separate systems for managing text size:
+
+#### 1. Document Chunking (Input Processing)
+
+Controls how large documents are split before sending to the AI:
+
+```yaml
+general:
+  max_chars: 20000       # For digest/extractfacts (default: 20000 ≈ 4000 words)
+  rag_max_chars: 8000    # For draft embeddings (default: 8000 ≈ 1600 words)
+```
+
+**When documents exceed these limits:**
+- `digest`: Processes each chunk separately, then combines results
+- `extractfacts`: Analyzes chunks sequentially to build complete fact list
+- `draft`: Creates separate embeddings for each chunk in Pinecone
+
+**Example with 100-page PDF:**
+- With `max_chars: 20000`: Creates ~15-20 chunks
+- With `max_chars: 10000`: Creates ~30-40 chunks (more API calls, more focused processing)
+
+#### 2. Token Limits (Output Generation)
+
+Controls how much text the AI can generate in responses:
+
+```yaml
+llm:
+  use_token_limits: false    # Default: let models use their natural limits
+```
+
+- `false`: Models use their default limits (usually 4096+ tokens)
+- `true`: Applies conservative limits (1536-4096 tokens depending on model)
+
+**Key differences:**
+| Aspect | Document Chunking | Token Limits |
+|--------|------------------|--------------|
+| **Purpose** | Split large inputs | Control output length |
+| **Units** | Characters (≈ 5 chars/word) | Tokens (≈ 1.3 tokens/word) |
+| **Applies to** | Documents being processed | AI responses |
+| **Config location** | `general` section | `llm` section |
+| **Customizable** | Yes, via config | Only on/off via config |
+
+### When to Adjust These Settings
+
+**Document Chunking (`max_chars`, `rag_max_chars`):**
+- **Decrease** (e.g., 10000) if documents have distinct sections that shouldn't be mixed
+- **Increase** (e.g., 40000) if documents have long continuous narratives
+- **Trade-off**: Smaller chunks = more API calls but more focused analysis
+
+**Token Limits (`use_token_limits`):**
+- **Enable** (`true`) if responses are too verbose or meandering
+- **Disable** (`false`) if you need comprehensive, detailed outputs
+- **Trade-off**: Limited tokens = concise but potentially incomplete responses
+
+### Customization Notes
+
+While LitAssist's parameters are optimized for legal work, advanced users can:
+1. Modify parameters in the source code for different use cases
+2. Enable/disable token limits via `use_token_limits` in config.yaml
+3. Adjust document chunking via `max_chars` and `rag_max_chars` in config.yaml
+4. Use different models by changing model strings (requires API support)
+
+**Warning**: Changing parameters may significantly affect output quality and consistency. The default values represent extensive testing for Australian legal contexts.
 
 ## Testing with Mock Mode
 
