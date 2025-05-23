@@ -7,6 +7,8 @@ tailored to the specified party (plaintiff/defendant) and legal area.
 """
 
 import click
+import os
+import time
 
 from litassist.config import CONFIG
 from litassist.utils import read_document, save_log, heartbeat
@@ -38,6 +40,7 @@ def brainstorm(facts_file, side, area, verify):
     - A list of strategies most likely to succeed
 
     All strategies are tailored to your specified party side and legal area.
+    The output is automatically saved to strategies.txt for use in other commands.
 
     Args:
         facts_file: Path to a text file containing structured case facts.
@@ -102,15 +105,41 @@ def brainstorm(facts_file, side, area, verify):
 
 I am representing the {side} in this {area} law matter.
 
-Please provide THREE distinct sections:
-1. List 10 "orthodox" litigation strategies commonly used in this type of case.
-2. List 10 "unorthodox but potentially effective" strategies that are not commonly raised but could work.
-3. Identify which 3-5 strategies (from either list) are most likely to succeed given the facts.
+Please provide output in EXACTLY this format:
 
-For each strategy, provide:
-- A clear title
-- Brief explanation (1-2 sentences)
-- Key legal principles or precedents that support it
+## ORTHODOX STRATEGIES
+
+1. [Strategy Title]
+   [Brief explanation (1-2 sentences)]
+   Key principles: [Legal principles or precedents]
+
+2. [Strategy Title]
+   [Brief explanation]
+   Key principles: [Legal principles]
+
+[Continue for 10 orthodox strategies]
+
+## UNORTHODOX STRATEGIES
+
+1. [Strategy Title]
+   [Brief explanation (1-2 sentences)]
+   Key principles: [Legal principles or precedents]
+
+2. [Strategy Title]
+   [Brief explanation]
+   Key principles: [Legal principles]
+
+[Continue for 10 unorthodox strategies]
+
+## MOST LIKELY TO SUCCEED
+
+1. [Strategy Title from above]
+   [Why this strategy is most likely to succeed]
+
+2. [Strategy Title from above]
+   [Why this strategy is most likely to succeed]
+
+[List 3-5 strategies total that are most likely to succeed]
 """
     messages = [
         {
@@ -125,36 +154,90 @@ For each strategy, provide:
     except Exception as e:
         raise click.ClickException(f"Grok brainstorming error: {e}")
 
+    # Store original content before verification
+    original_content = content
+    verification_notes = []
+    
     # Smart verification - auto-enabled for Grok or when requested
     if verify or client.should_auto_verify(content, "brainstorm"):
         try:
             # Use medium verification for creative brainstorming
             correction = client.verify_with_level(content, "medium")
             if correction.strip():  # Only append if there are actual corrections
-                content = content + "\n\n--- Strategic Review ---\n" + correction
+                verification_notes.append("--- Strategic Review ---\n" + correction)
                 
             # Run citation validation for any legal references
             citation_issues = client.validate_citations(content)
             if citation_issues:
-                content += "\n\n--- Citation Warnings ---\n" + "\n".join(citation_issues)
+                verification_notes.append("--- Citation Warnings ---\n" + "\n".join(citation_issues))
                 
         except Exception as e:
             raise click.ClickException(
                 f"Verification error during brainstorming: {e}"
             )
 
-    # Save audit log
+    # Save audit log (with full content including verification)
+    full_content = original_content
+    if verification_notes:
+        full_content += "\n\n" + "\n\n".join(verification_notes)
+    
     save_log(
         "brainstorm",
         {
             "inputs": {"facts_file": facts_file, "prompt": prompt},
             "params": f"verify={verify} (auto-enabled for Grok)",
-            "response": content,
+            "response": full_content,
             "usage": usage,
         },
     )
+    
+    # Save strategies to file (with backup if exists)
+    output_file = "strategies.txt"
+    if os.path.exists(output_file):
+        # Create a timestamp for the backup
+        timestamp = time.strftime("%Y%m%d_%H%M%S")
+        backup_file = f"strategies_{timestamp}.txt"
+        os.rename(output_file, backup_file)
+        click.echo(f"Existing strategies.txt renamed to {backup_file}")
+    
+    # Write the strategies with metadata (original content only)
+    with open(output_file, "w", encoding="utf-8") as f:
+        f.write(f"# Legal Strategies\n")
+        f.write(f"# Generated: {time.strftime('%Y-%m-%d %H:%M:%S')}\n")
+        f.write(f"# Side: {side.capitalize()}\n")
+        f.write(f"# Area: {area.capitalize()}\n")
+        f.write(f"# Source: {facts_file}\n\n")
+        f.write(original_content)  # Save original content without verification
+    
+    click.echo(f"Strategies saved to {output_file}")
+    
+    # Also save a timestamped copy for archival
+    timestamp = time.strftime("%Y%m%d_%H%M%S")
+    archive_file = f"brainstorm_{area}_{side}_{timestamp}.txt"
+    with open(archive_file, "w", encoding="utf-8") as f:
+        f.write(f"# Legal Strategies\n")
+        f.write(f"# Generated: {time.strftime('%Y-%m-%d %H:%M:%S')}\n")
+        f.write(f"# Side: {side.capitalize()}\n")
+        f.write(f"# Area: {area.capitalize()}\n")
+        f.write(f"# Source: {facts_file}\n\n")
+        f.write(original_content)
+    
+    click.echo(f"Archive copy saved to {archive_file}")
+    
+    # Save verification notes separately if any exist
+    if verification_notes:
+        verification_file = "strategies_verification.txt"
+        with open(verification_file, "w", encoding="utf-8") as f:
+            f.write(f"# Verification Notes for Strategies\n")
+            f.write(f"# Generated: {time.strftime('%Y-%m-%d %H:%M:%S')}\n\n")
+            f.write("\n\n".join(verification_notes))
+        click.echo(f"Verification notes saved to {verification_file}")
 
-    # Display the ideas
+    # Display the ideas with verification
+    display_content = original_content
+    if verification_notes:
+        display_content += "\n\n" + "\n\n".join(verification_notes)
+    
     click.echo(
-        f"--- {area.capitalize()} Law Strategies for {side.capitalize()} ---\n{content}"
+        f"\n--- {area.capitalize()} Law Strategies for {side.capitalize()} ---\n{display_content}"
     )

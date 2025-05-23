@@ -210,10 +210,21 @@ def create_embeddings(texts: List[str]) -> List[Any]:
 
     Raises:
         Exception: If the embedding API call fails.
+        ValueError: If any text exceeds the model's token limit.
     """
     # Import here to avoid circular imports
     from litassist.config import CONFIG
 
+    # Validate text lengths (8191 tokens ≈ 32000 chars for safety)
+    MAX_CHARS = 32000
+    for i, text in enumerate(texts):
+        if len(text) > MAX_CHARS:
+            raise ValueError(
+                f"Text at index {i} is too long ({len(text)} chars). "
+                f"Maximum is approximately {MAX_CHARS} characters. "
+                f"Use smaller chunks with chunk_text(text, max_chars=8000)."
+            )
+    
     # Use the model without custom dimensions since our index is 1536-dimensional
     return openai.Embedding.create(input=texts, model=CONFIG.emb_model).data
 

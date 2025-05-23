@@ -9,6 +9,7 @@ documents for Australian civil litigation matters.
 import click
 from typing import Dict, List, Any
 import re
+import time
 
 from litassist.config import CONFIG
 from litassist.utils import save_log, heartbeat
@@ -38,14 +39,138 @@ def validate_case_facts_format(text: str) -> bool:
         "Client Objectives",
     ]
 
-    # Check if all required headings exist in the text
+    missing_headings = []
+    
+    # Check if all required headings exist in the text (less restrictive)
     for heading in required_headings:
-        if not re.search(
-            r"^\s*" + re.escape(heading) + r"\s*:?\s*$", text, re.MULTILINE
-        ):
-            return False
+        # Look for heading with flexible formatting:
+        # - Can have non-alphabetical chars before/after
+        # - Case insensitive
+        # - Must be on its own line (but can have punctuation)
+        pattern = r"^\s*[^a-zA-Z]*" + re.escape(heading) + r"[^a-zA-Z]*\s*$"
+        if not re.search(pattern, text, re.MULTILINE | re.IGNORECASE):
+            missing_headings.append(heading)
+    
+    if missing_headings:
+        import click
+        click.echo(f"Missing required headings: {', '.join(missing_headings)}")
+        click.echo("Note: Headings are now case-insensitive and can have punctuation.")
+        return False
 
     return True
+
+
+def parse_strategies_file(strategies_text: str) -> Dict[str, Any]:
+    """
+    Parse the strategies.txt file to extract structured information.
+    
+    Args:
+        strategies_text: Content of the strategies.txt file.
+        
+    Returns:
+        Dictionary containing parsed strategies information.
+    """
+    parsed = {
+        "metadata": {},
+        "orthodox_strategies": [],
+        "unorthodox_strategies": [],
+        "most_likely_to_succeed": [],
+        "raw_content": strategies_text
+    }
+    
+    # Extract metadata from header comments
+    metadata_match = re.search(r"# Side: (.+)\n# Area: (.+)", strategies_text)
+    if metadata_match:
+        parsed["metadata"]["side"] = metadata_match.group(1).strip()
+        parsed["metadata"]["area"] = metadata_match.group(2).strip()
+    
+    # More flexible parsing approach
+    lines = strategies_text.split('\n')
+    current_section = None
+    current_strategy = None
+    
+    for i, line in enumerate(lines):
+        # Check for section headers (more flexible matching)
+        line_upper = line.upper()
+        if "ORTHODOX" in line_upper and "STRATEG" in line_upper and not "UNORTHODOX" in line_upper:
+            current_section = "orthodox"
+            current_strategy = None  # Reset when entering new section
+            continue
+        elif "UNORTHODOX" in line_upper and "STRATEG" in line_upper:
+            current_section = "unorthodox"
+            current_strategy = None  # Reset when entering new section
+            continue
+        elif "MOST LIKELY" in line_upper and "SUCCEED" in line_upper:
+            current_section = "likely"
+            current_strategy = None  # Reset when entering new section
+            continue
+        
+        # Look for numbered items (e.g., "1. Strategy Title")
+        num_match = re.match(r'^(\d+)\.\s+(.+)$', line.strip())
+        
+        # Also look for bullet points or dashes for "most likely" section
+        bullet_match = re.match(r'^[-•*]\s+(.+)$', line.strip()) if current_section == "likely" else None
+        
+        if (num_match and current_section) or (bullet_match and current_section == "likely"):
+            # Save previous strategy if exists
+            if current_strategy:
+                if current_section == "orthodox":
+                    parsed["orthodox_strategies"].append(current_strategy)
+                elif current_section == "unorthodox":
+                    parsed["unorthodox_strategies"].append(current_strategy)
+                elif current_section == "likely":
+                    parsed["most_likely_to_succeed"].append(current_strategy)
+            
+            # Start new strategy
+            if current_section == "likely":
+                if bullet_match:
+                    # For bullet points, use sequential numbering
+                    current_num = len(parsed["most_likely_to_succeed"]) + 1
+                    current_strategy = {
+                        "number": current_num,
+                        "title": bullet_match.group(1).strip(),
+                        "reason": ""
+                    }
+                else:
+                    current_strategy = {
+                        "number": int(num_match.group(1)),
+                        "title": num_match.group(2).strip(),
+                        "reason": ""
+                    }
+            else:
+                current_strategy = {
+                    "number": int(num_match.group(1)),
+                    "title": num_match.group(2).strip(),
+                    "description": ""
+                }
+        
+        # Collect description lines (indented or following a numbered item)
+        elif current_strategy and line.strip() and not line.strip().startswith('#'):
+            # Add to description/reason
+            if current_section == "likely":
+                current_strategy["reason"] += " " + line.strip()
+            else:
+                current_strategy["description"] += " " + line.strip()
+    
+    # Don't forget the last strategy
+    if current_strategy:
+        if current_section == "orthodox":
+            parsed["orthodox_strategies"].append(current_strategy)
+        elif current_section == "unorthodox":
+            parsed["unorthodox_strategies"].append(current_strategy)
+        elif current_section == "likely":
+            parsed["most_likely_to_succeed"].append(current_strategy)
+    
+    # Clean up descriptions/reasons
+    for strategy in parsed["orthodox_strategies"] + parsed["unorthodox_strategies"]:
+        strategy["description"] = strategy["description"].strip()
+    for strategy in parsed["most_likely_to_succeed"]:
+        if "reason" in strategy:
+            strategy["reason"] = strategy["reason"].strip()
+        else:
+            strategy["reason"] = ""
+    
+    return parsed
 
 
 def extract_legal_issues(case_text: str) -> List[str]:
@@ -58,11 +183,12 @@ def extract_legal_issues(case_text: str) -> List[str]:
     Returns:
         List of identified legal issues.
     """
-    # Extract the "Legal Issues" section
+    # Extract the "Legal Issues" section (less restrictive)
+    # Look for "Legal Issues" with flexible formatting
     match = re.search(
-        r"Legal Issues\s*:?\s*\n(.*?)(?:\n\s*(?:Evidence Available|Opposing Arguments)\s*:?\s*\n)",
+        r"[^a-zA-Z]*Legal\s+Issues[^a-zA-Z]*\s*\n(.*?)(?:\n\s*[^a-zA-Z]*(?:Evidence\s+Available|Opposing\s+Arguments)[^a-zA-Z]*)",
         case_text,
-        re.DOTALL,
+        re.DOTALL | re.IGNORECASE,
     )
 
     if not match:
@@ -82,8 +208,9 @@ def extract_legal_issues(case_text: str) -> List[str]:
 @click.command()
 @click.argument("case_facts", type=click.File("r"))
 @click.option("--outcome", required=True, help="Desired outcome (single sentence)")
+@click.option("--strategies", type=click.File("r"), help="Optional strategies file from brainstorm command")
 @click.option("--verify", is_flag=True, help="Enable self-critique pass (default: auto-enabled)")
-def strategy(case_facts, outcome, verify):
+def strategy(case_facts, outcome, strategies, verify):
     """
     Generate legal strategy options and draft documents for Australian civil matters.
 
@@ -123,12 +250,56 @@ def strategy(case_facts, outcome, verify):
     )
     llm_client.command_context = "strategy"  # Set command context
     
+    # Read and parse strategies file if provided
+    strategies_content = ""
+    parsed_strategies = None
+    if strategies:
+        strategies_content = strategies.read()
+        parsed_strategies = parse_strategies_file(strategies_content)
+        
+        # Display what was found
+        click.echo(f"Using strategies from brainstorm:")
+        click.echo(f"  - {len(parsed_strategies['orthodox_strategies'])} orthodox strategies")
+        click.echo(f"  - {len(parsed_strategies['unorthodox_strategies'])} unorthodox strategies")
+        click.echo(f"  - {len(parsed_strategies['most_likely_to_succeed'])} marked as most likely to succeed")
+        
+        if parsed_strategies['metadata']:
+            click.echo(f"  - Generated for: {parsed_strategies['metadata'].get('side', 'unknown')} in {parsed_strategies['metadata'].get('area', 'unknown')} law")
+        
+        # Debug: Show info about parsing if no "most likely to succeed" found
+        if len(parsed_strategies['most_likely_to_succeed']) == 0:
+            # Look for the section in the content
+            lines = strategies_content.split('\n')
+            click.echo("\nDebug: Searching for 'most likely to succeed' section...")
+            found_section = False
+            for i, line in enumerate(lines):
+                if "most likely" in line.lower() and "succeed" in line.lower():
+                    found_section = True
+                    click.echo(f"  Found at line {i}: {repr(line)}")
+                    # Show next few lines
+                    for j in range(i, min(i+10, len(lines))):
+                        click.echo(f"    {j}: {repr(lines[j])}")
+                    break
+            if not found_section:
+                click.echo("  'Most likely to succeed' section not found in file")
+    
     # strategy always needs verification as it creates foundational strategic documents
     verify = True  # Force verification for critical accuracy
 
     # Generate strategic options
     system_prompt = """You are an Australian legal expert specializing in civil litigation strategy.
-You must analyze case facts and produce strategic options for achieving a specific outcome.
+You must analyze case facts and produce strategic options for achieving a specific outcome."""
+    
+    # Enhance prompt if strategies are provided
+    if parsed_strategies and parsed_strategies['most_likely_to_succeed']:
+        system_prompt += "\n\nYou have been provided with brainstormed strategies. Pay particular attention to:"
+        for idx, strategy in enumerate(parsed_strategies['most_likely_to_succeed'], 1):
+            system_prompt += f"\n- Strategy marked most likely to succeed #{idx}: {strategy['title']}"
+        system_prompt += "\n\nBuild upon these promising strategies when developing your strategic options."
+    elif parsed_strategies:
+        system_prompt += "\n\nYou have been provided with brainstormed strategies including orthodox and unorthodox approaches. Consider these when developing your strategic options, but focus on those most relevant to the specific outcome requested."
+    
+    system_prompt += """
 
 For the strategic options section, use EXACTLY this format:
 
@@ -165,8 +336,29 @@ DESIRED OUTCOME:
 
 IDENTIFIED LEGAL ISSUES:
 {', '.join(legal_issues)}
-
-Generate 3-5 distinct strategic options to achieve the desired outcome using the exact format specified."""
+"""
+    
+    # Add structured strategies summary if parsed
+    if parsed_strategies:
+        user_prompt += "\nBRAINSTORMED STRATEGIES SUMMARY:\n"
+        
+        if parsed_strategies['most_likely_to_succeed']:
+            user_prompt += "\nStrategies marked MOST LIKELY TO SUCCEED:\n"
+            for strategy in parsed_strategies['most_likely_to_succeed']:
+                user_prompt += f"- {strategy['title']}\n"
+        
+        user_prompt += f"\nTotal strategies available: {len(parsed_strategies['orthodox_strategies'])} orthodox, {len(parsed_strategies['unorthodox_strategies'])} unorthodox\n"
+        
+        # Include top 3 orthodox strategies by title
+        if parsed_strategies['orthodox_strategies']:
+            user_prompt += "\nTop orthodox strategies:\n"
+            for strategy in parsed_strategies['orthodox_strategies'][:3]:
+                user_prompt += f"- #{strategy['number']}: {strategy['title']}\n"
+        
+        user_prompt += f"\nFULL BRAINSTORMED CONTENT:\n{strategies_content}\n"
+        user_prompt += "\nBuild upon the strategies marked as most likely to succeed, and consider how the orthodox strategies can be refined for the specific outcome requested.\n"
+    
+    user_prompt += "\nGenerate 3-5 distinct strategic options to achieve the desired outcome using the exact format specified."""
 
     # Call LLM with heartbeat to show progress
     call_with_hb = heartbeat(CONFIG.heartbeat_interval)(llm_client.complete)
@@ -371,6 +563,28 @@ Requirements:
     except Exception as e:
         raise click.ClickException(f"Verification error during strategy generation: {e}")
 
+    # Save output to timestamped file
+    # Create a slug from the outcome for the filename
+    outcome_slug = re.sub(r'[^\w\s-]', '', outcome.lower())
+    outcome_slug = re.sub(r'[-\s]+', '_', outcome_slug)
+    # Limit slug length and ensure it's not empty
+    outcome_slug = outcome_slug[:40].strip('_') or 'strategy'
+    
+    timestamp = time.strftime("%Y%m%d_%H%M%S")
+    output_file = f"strategy_{outcome_slug}_{timestamp}.txt"
+    
+    with open(output_file, 'w', encoding='utf-8') as f:
+        f.write(f"Strategy Generation\n")
+        f.write(f"Desired Outcome: {outcome}\n")
+        f.write(f"Case Facts File: {case_facts_file}\n")
+        if strategies_file:
+            f.write(f"Strategies File: {strategies_file}\n")
+        f.write(f"Timestamp: {time.strftime('%Y-%m-%d %H:%M:%S')}\n")
+        f.write("-" * 80 + "\n\n")
+        f.write(output)
+    
+    click.echo(f"\nOutput saved to: {output_file}")
+
     # Save audit log
     save_log(
         "strategy",
@@ -384,6 +598,7 @@ Requirements:
             },
             "usage": usage,
             "response": output,
+            "output_file": output_file,
         },
     )
 

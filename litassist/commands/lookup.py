@@ -11,6 +11,7 @@ import re
 import requests
 import warnings
 import os
+import time
 
 # Suppress Google API cache warning
 os.environ["GOOGLE_API_USE_CLIENT_CERTIFICATE"] = "false"
@@ -146,7 +147,6 @@ def lookup(question, mode, engine):
         question: The legal question to search for.
         mode: Answer format - 'irac' (Issue, Rule, Application, Conclusion) for
               structured analysis, or 'broad' for more creative exploration.
-        verify: Whether to run a self-critique verification pass on the answer.
         engine: The search engine to use - 'google' for AustLII via CSE, or 'jade' for Jade.io.
 
     Raises:
@@ -221,7 +221,27 @@ def lookup(question, mode, engine):
 
     # Note: lookup verification removed as citation retry logic already ensures accuracy
 
-    # Save audit log and output
+    # Save output to timestamped file
+    # Create a slug from the question for the filename
+    question_slug = re.sub(r'[^\w\s-]', '', question.lower())
+    question_slug = re.sub(r'[-\s]+', '_', question_slug)
+    # Limit slug length and ensure it's not empty
+    question_slug = question_slug[:50].strip('_') or 'query'
+    
+    timestamp = time.strftime("%Y%m%d_%H%M%S")
+    output_file = f"lookup_{question_slug}_{timestamp}.txt"
+    
+    with open(output_file, 'w', encoding='utf-8') as f:
+        f.write(f"Lookup Query: {question}\n")
+        f.write(f"Mode: {mode}\n")
+        f.write(f"Engine: {engine}\n")
+        f.write(f"Timestamp: {time.strftime('%Y-%m-%d %H:%M:%S')}\n")
+        f.write("-" * 80 + "\n\n")
+        f.write(content)
+    
+    click.echo(f"\nOutput saved to: {output_file}")
+
+    # Save audit log
     save_log(
         "lookup",
         {
@@ -233,6 +253,7 @@ def lookup(question, mode, engine):
             },
             "response": content,
             "usage": usage,
+            "output_file": output_file,
         },
     )
     click.echo(content)

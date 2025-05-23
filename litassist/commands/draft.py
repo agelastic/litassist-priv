@@ -8,6 +8,8 @@ with GPT-4o that incorporates these citations.
 """
 
 import click
+import re
+import time
 
 from litassist.config import CONFIG
 from litassist.utils import (
@@ -22,7 +24,7 @@ from litassist.retriever import Retriever, get_pinecone_client
 
 
 @click.command()
-@click.argument("pdf", type=click.Path(exists=True))
+@click.argument("documents", nargs=-1, required=True, type=click.Path(exists=True))
 @click.argument("query")
 @click.option("--verify", is_flag=True, help="Enable self-critique pass")
 @click.option(
@@ -31,60 +33,132 @@ from litassist.retriever import Retriever, get_pinecone_client
     help="Control diversity of search results (0.0-1.0)",
     default=None,
 )
-def draft(pdf, query, verify, diversity):
+def draft(documents, query, verify, diversity):
     """
     Citation-rich drafting via RAG & GPT-4o.
 
-    Implements a Retrieval-Augmented Generation workflow to create well-supported
-    legal drafts. The process embeds document chunks, stores them in Pinecone,
-    retrieves relevant passages using MMR re-ranking, and generates a draft
-    with GPT-4o that incorporates these citations.
+    For text files under 50KB (like case_facts.txt), passes the entire content 
+    directly to the LLM for comprehensive drafting. For PDFs or larger files,
+    implements a Retrieval-Augmented Generation workflow that embeds document 
+    chunks, stores them in Pinecone, and retrieves relevant passages using 
+    MMR re-ranking.
+    
+    Accepts multiple documents to combine knowledge from different sources
+    (e.g., case_facts.txt and strategies.txt).
 
     Args:
-        pdf: Path to the PDF document to use as a knowledge base.
+        documents: One or more paths to documents (PDF or text files) to use as knowledge base.
+                  Examples:
+                  - litassist draft case_facts.txt "query"
+                  - litassist draft case_facts.txt strategies.txt "query"
+                  - litassist draft bundle.pdf case_facts.txt "query"
         query: The specific legal topic or argument to draft.
         verify: Whether to run a self-critique verification pass on the draft.
         diversity: Optional float (0.0-1.0) controlling the balance between
                   relevance and diversity in retrieved passages. Higher values
-                  prioritize diversity over relevance.
+                  prioritize diversity over relevance. (Only used for PDFs/large files)
 
     Raises:
         click.ClickException: If there are errors with file reading, embedding,
                              vector storage, retrieval, or LLM API calls.
     """
-    # Read and chunk the document
-    text = read_document(pdf)
-    chunks = chunk_text(text)
+    # Process all documents
+    structured_content = {
+        "case_facts": "",
+        "strategies": "",
+        "other_text": [],
+        "pdf_documents": []
+    }
+    
+    for doc_path in documents:
+        text = read_document(doc_path)
+        
+        # Categorize documents by type
+        if doc_path.lower().endswith('.txt') and len(text) < 50000:
+            # Identify document type based on filename or content
+            if "case_facts" in doc_path.lower():
+                structured_content["case_facts"] = text
+                click.echo(f"Using {doc_path} as CASE FACTS ({len(text)} characters)")
+            elif "strategies" in doc_path.lower() or "# Legal Strategies" in text:
+                structured_content["strategies"] = text
+                click.echo(f"Using {doc_path} as LEGAL STRATEGIES ({len(text)} characters)")
+            else:
+                structured_content["other_text"].append((doc_path, text))
+                click.echo(f"Using {doc_path} as supporting document ({len(text)} characters)")
+        else:
+            structured_content["pdf_documents"].append((doc_path, text))
+            click.echo(f"Will use embedding/retrieval for {doc_path}")
+    
+    # Build structured context for the LLM
+    context_parts = []
+    
+    if structured_content["case_facts"]:
+        context_parts.append("=== CASE FACTS ===\n" + structured_content["case_facts"])
+    
+    if structured_content["strategies"]:
+        context_parts.append("=== LEGAL STRATEGIES FROM BRAINSTORMING ===\n" + structured_content["strategies"])
+    
+    for doc_path, text in structured_content["other_text"]:
+        context_parts.append(f"=== SUPPORTING DOCUMENT: {doc_path} ===\n{text}")
+    
+    combined_text_context = "\n\n".join(context_parts) if context_parts else ""
+    
+    # Process PDFs with embedding/retrieval if any
+    retrieved_context = ""
+    if structured_content["pdf_documents"]:
+        # Get Pinecone client
+        pc_index = get_pinecone_client()
+        
+        # Process all PDFs
+        all_chunks = []
+        doc_counter = 0
+        
+        for doc_path, text in structured_content["pdf_documents"]:
+            # Chunk each document
+            chunks = chunk_text(text, max_chars=8000)
+            for chunk in chunks:
+                doc_counter += 1
+                all_chunks.append((f"d{doc_counter}", chunk, doc_path))
+        
+        # Embed all chunks
+        try:
+            embeddings = create_embeddings([chunk[1] for chunk in all_chunks])
+        except Exception as e:
+            raise click.ClickException(f"Embedding error: {e}")
+            
+        # Create vectors with metadata
+        vectors = []
+        for i, (chunk_id, chunk_text, source_doc) in enumerate(all_chunks):
+            vectors.append((
+                chunk_id,
+                embeddings[i].embedding,
+                {"text": chunk_text, "source": source_doc}
+            ))
+        
+        # Upsert to Pinecone
+        try:
+            pc_index.upsert(vectors=vectors)
+        except Exception as e:
+            raise click.ClickException(f"Pinecone upsert error: {e}")
 
-    # Get Pinecone client
-    pc_index = get_pinecone_client()
-
-    # Embed and upsert document chunks
-    docs = [(f"d{i}", chunk) for i, chunk in enumerate(chunks, start=1)]
-    try:
-        embeddings = create_embeddings([d[1] for d in docs])
-    except Exception as e:
-        raise click.ClickException(f"Embedding error: {e}")
-    vectors = [
-        (docs[i][0], embeddings[i].embedding, {"text": docs[i][1]})
-        for i in range(len(docs))
-    ]
-    try:
-        pc_index.upsert(vectors=vectors)
-    except Exception as e:
-        raise click.ClickException(f"Pinecone upsert error: {e}")
-
-    # Retrieve relevant context with MMR
-    try:
-        qemb = create_embeddings([query])[0].embedding
-    except Exception as e:
-        raise click.ClickException(f"Embedding error for query: {e}")
-    retriever = Retriever(pc_index, use_mmr=True)
-    try:
-        context_list = retriever.retrieve(qemb, top_k=5, diversity_level=diversity)
-    except Exception as e:
-        raise click.ClickException(f"Pinecone retrieval error: {e}")
-    context = "\n\n".join(context_list)
+        # Retrieve relevant context with MMR
+        try:
+            qemb = create_embeddings([query])[0].embedding
+        except Exception as e:
+            raise click.ClickException(f"Embedding error for query: {e}")
+            
+        retriever = Retriever(pc_index, use_mmr=True)
+        try:
+            context_list = retriever.retrieve(qemb, top_k=7, diversity_level=diversity)
+        except Exception as e:
+            raise click.ClickException(f"Pinecone retrieval error: {e}")
+        
+        retrieved_context = "\n\n=== Retrieved Context ===\n" + "\n\n".join(context_list)
+    
+    # Combine all context
+    context = combined_text_context
+    if retrieved_context:
+        context = (context + "\n\n" + retrieved_context) if context else retrieved_context
 
     # Generate draft with GPT-4o
     client = LLMClient(
@@ -95,11 +169,20 @@ def draft(pdf, query, verify, diversity):
         frequency_penalty=0.1,
     )
     client.command_context = "draft"  # Set command context
+    # Build system prompt based on available content
+    system_prompt = "Australian law only. Draft a legally precise document with proper citations and structure."
+    
+    if structured_content["case_facts"] and structured_content["strategies"]:
+        system_prompt += " You have been provided with structured case facts and legal strategies from brainstorming. Use the case facts as the factual foundation and consider the strategies when developing your arguments, particularly any marked as 'most likely to succeed'."
+    elif structured_content["case_facts"]:
+        system_prompt += " You have been provided with structured case facts. Use these as the factual foundation for your draft."
+    elif structured_content["strategies"]:
+        system_prompt += " You have been provided with legal strategies from brainstorming. Consider these strategies, particularly any marked as 'most likely to succeed'."
+    
+    system_prompt += " Be thorough but concise. Focus on legal accuracy, relevant precedents, and clear organization. Use section headings, numbered paragraphs, and proper legal citation format. Maintain internal consistency throughout and ensure all claims are supported by the provided context. Avoid speculation beyond the provided information."
+    
     messages = [
-        {
-            "role": "system",
-            "content": "Australian law only. Draft a legally precise document with proper citations and structure. Be thorough but concise. Focus on legal accuracy, relevant precedents, and clear organization. Use section headings, numbered paragraphs, and proper legal citation format. Maintain internal consistency throughout and ensure all claims are supported by the provided context. Avoid speculation beyond the provided information.",
-        },
+        {"role": "system", "content": system_prompt},
         {"role": "user", "content": f"Context:\n{context}\n\nDraft {query}"},
     ]
     call_with_hb = heartbeat(CONFIG.heartbeat_interval)(client.complete)
@@ -126,14 +209,35 @@ def draft(pdf, query, verify, diversity):
         except Exception as e:
             raise click.ClickException(f"Verification error during drafting: {e}")
 
+    # Save output to timestamped file
+    # Create a slug from the query for the filename
+    query_slug = re.sub(r'[^\w\s-]', '', query.lower())
+    query_slug = re.sub(r'[-\s]+', '_', query_slug)
+    # Limit slug length and ensure it's not empty
+    query_slug = query_slug[:40].strip('_') or 'draft'
+    
+    timestamp = time.strftime("%Y%m%d_%H%M%S")
+    output_file = f"draft_{query_slug}_{timestamp}.txt"
+    
+    with open(output_file, 'w', encoding='utf-8') as f:
+        f.write(f"Draft Generation\n")
+        f.write(f"Query: {query}\n")
+        f.write(f"Documents: {', '.join(documents)}\n")
+        f.write(f"Timestamp: {time.strftime('%Y-%m-%d %H:%M:%S')}\n")
+        f.write("-" * 80 + "\n\n")
+        f.write(content)
+    
+    click.echo(f"\nOutput saved to: {output_file}")
+
     # Save audit log and echo response
     save_log(
         "draft",
         {
-            "inputs": {"pdf": pdf, "query": query, "context": context},
+            "inputs": {"documents": list(documents), "query": query, "context": context},
             "response": content,
             "usage": usage,
             "verification": f"enabled={needs_verification}, level=heavy" if needs_verification else "disabled",
+            "output_file": output_file,
         },
     )
     click.echo(content)

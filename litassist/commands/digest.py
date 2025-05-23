@@ -7,6 +7,9 @@ or identify potential legal issues in each section.
 """
 
 import click
+import os
+import re
+import time
 
 from litassist.utils import read_document, chunk_text, save_log
 from litassist.llm import LLMClient
@@ -44,6 +47,25 @@ def digest(file, mode):
     }[mode]
     client = LLMClient("anthropic/claude-3-sonnet", **presets)
 
+    # Prepare output file
+    # Extract base filename without extension
+    base_filename = os.path.splitext(os.path.basename(file))[0]
+    # Create a slug from the filename
+    filename_slug = re.sub(r'[^\w\s-]', '', base_filename.lower())
+    filename_slug = re.sub(r'[-\s]+', '_', filename_slug)
+    # Limit slug length
+    filename_slug = filename_slug[:30].strip('_') or 'document'
+    
+    timestamp = time.strftime("%Y%m%d_%H%M%S")
+    output_file = f"digest_{mode}_{filename_slug}_{timestamp}.txt"
+    
+    # Collect all output
+    all_output = []
+    all_output.append(f"Document Digest: {file}")
+    all_output.append(f"Mode: {mode}")
+    all_output.append(f"Timestamp: {time.strftime('%Y-%m-%d %H:%M:%S')}")
+    all_output.append("-" * 80 + "\n")
+
     # Process each chunk with a progress bar
     with click.progressbar(chunks, label="Processing chunks") as chunks_bar:
         for idx, chunk in enumerate(chunks_bar, start=1):
@@ -78,5 +100,14 @@ def digest(file, mode):
                     "usage": usage,
                 },
             )
+            # Collect output
+            chunk_output = f"\n--- Chunk {idx} ---\n{content}"
+            all_output.append(chunk_output)
             # Output to user
-            click.echo(f"\n--- Chunk {idx} ---\n{content}")
+            click.echo(chunk_output)
+    
+    # Write all output to file
+    with open(output_file, 'w', encoding='utf-8') as f:
+        f.write('\n'.join(all_output))
+    
+    click.echo(f"\n\nOutput saved to: {output_file}")

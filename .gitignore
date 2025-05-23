@@ -86,6 +86,10 @@ logs/
 
 real_test/
 case_facts.txt
+case_facts_*.txt
+strategies.txt
+strategies_*.txt
+strategies_verification.txt
 
 **/.claude/settings.local.json
 CLAUDE.md

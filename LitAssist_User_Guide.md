@@ -53,7 +53,9 @@ This running example provides context for understanding how each LitAssist workf
 - ✅ **Single configuration** - One global config with all your API keys
 - ✅ **Project isolation** - Each case directory gets its own logs and outputs
 
-**Security & Organization:**
+**File Management & Organization:**
+- ✅ **Timestamped outputs** - All commands save to unique timestamped files (never overwrites)
+- ✅ **Archive preservation** - Commands like extractfacts and brainstorm maintain both current files and timestamped archives
 - ✅ **API keys in one secure location** - No duplication across projects
 - ✅ **Automatic logging** - Every operation creates detailed audit logs
 - ✅ **Australian English** - All outputs use Australian legal terminology
@@ -90,9 +92,47 @@ LitAssist works from any directory and creates outputs locally:
 mkdir ~/legal-cases/smith-v-jones-2025
 cd ~/legal-cases/smith-v-jones-2025
 
-# LitAssist will create logs/ directory and case_facts.txt here
+# LitAssist will create timestamped output files and logs/ directory here
 # All commands use global config but create outputs locally
 ```
+
+## Output File Management
+
+### Timestamped Output Files
+All LitAssist commands now save their results to timestamped text files, ensuring no output is ever lost:
+
+**Current Working Files** (maintained for pipeline compatibility):
+- `case_facts.txt` - Current extracted facts (from extractfacts command)
+- `strategies.txt` - Current brainstormed strategies (from brainstorm command)
+
+**Timestamped Archive Files** (never overwritten):
+- `lookup_[query_slug]_YYYYMMDD_HHMMSS.txt` - Search results
+- `digest_[mode]_[filename_slug]_YYYYMMDD_HHMMSS.txt` - Document analysis
+- `extractfacts_[filename_slug]_YYYYMMDD_HHMMSS.txt` - Archive copy of extracted facts
+- `brainstorm_[area]_[side]_YYYYMMDD_HHMMSS.txt` - Archive copy of strategies
+- `strategy_[outcome_slug]_YYYYMMDD_HHMMSS.txt` - Strategic analysis and draft documents
+- `draft_[query_slug]_YYYYMMDD_HHMMSS.txt` - Generated legal drafts
+
+**Example output after running commands:**
+```
+smith-v-jones-2025/
+├── case_facts.txt                                    # Current facts
+├── strategies.txt                                    # Current strategies
+├── extractfacts_smith_jones_file_20250523_143022.txt # Archive copy
+├── brainstorm_family_plaintiff_20250523_144501.txt   # Archive copy
+├── strategy_interim_orders_20250523_150245.txt       # Strategic analysis
+├── draft_outline_submissions_20250523_151030.txt     # Legal draft
+└── logs/                                             # Detailed audit logs
+    ├── extractfacts_20250523-143022.md
+    ├── brainstorm_20250523-144501.md
+    └── strategy_20250523-150245.md
+```
+
+### Benefits of Timestamped Files
+- **No data loss** - Previous outputs are never overwritten
+- **Version history** - Track evolution of strategies and arguments
+- **Easy sharing** - Send specific timestamped files to colleagues
+- **Pipeline compatibility** - Current working files (case_facts.txt, strategies.txt) maintain workflow
 
 ## Workflow 1: Lookup - Rapid Case-Law Search
 
@@ -105,12 +145,11 @@ The `lookup` command performs rapid searches on AustLII for relevant case law us
 ### Command
 
 ```bash
-./litassist.py lookup "your legal question" [--mode irac|broad] [--verify] [--engine google|jade]
+./litassist.py lookup "your legal question" [--mode irac|broad] [--engine google|jade]
 ```
 
 Options:
 - `--mode`: Choose between IRAC (Issue, Rule, Application, Conclusion) or a broader exploration
-- `--verify`: Enable self-critique verification pass
 - `--engine`: Choose search engine - 'google' for AustLII via CSE (default), 'jade' for Jade.io
 
 ### Example Usage
@@ -157,12 +196,13 @@ The `digest` command processes large documents by splitting them into manageable
 ### Command
 
 ```bash
-./litassist.py digest <file> [--mode summary|issues] [--verify]
+./litassist.py digest <file> [--mode summary|issues]
 ```
 
 Options:
 - `--mode`: Choose between chronological summary or issue-spotting (default: summary)
-- `--verify`: Enable self-critique verification pass
+
+**Output**: All analysis saved to timestamped files: `digest_[mode]_[filename_slug]_YYYYMMDD_HHMMSS.txt`
 
 ### Handling Non-Legal Documents
 
@@ -181,6 +221,7 @@ While designed for legal content, the `digest` command can process various docum
 **Best practices**:
 - Always use `--mode summary` for non-legal documents
 - Use outputs as a starting point for further analysis
+- All results saved to timestamped files: `lookup_[query_slug]_YYYYMMDD_HHMMSS.txt`
 
 ### Example Usage
 
@@ -233,11 +274,10 @@ The `extractfacts` command processes a document to extract relevant case facts a
 ### Command
 
 ```bash
-./litassist.py extractfacts <file> [--verify]
+./litassist.py extractfacts <file>
 ```
 
-Options:
-- `--verify`: Enable self-critique verification pass
+**Note**: Verification is automatically enabled for this command to ensure accuracy of extracted facts.
 
 ### Required Output Format
 
@@ -290,7 +330,9 @@ Now we need to create a structured fact sheet for the *Smith v Jones* case:
 
 **Output Example**:
 
-The command creates a `case_facts.txt` file in the current directory with a structured format that's compatible with both the `brainstorm` and `strategy` commands.
+The command creates:
+- `case_facts.txt` - Current working file in the structured format compatible with both the `brainstorm` and `strategy` commands
+- `extractfacts_[filename_slug]_YYYYMMDD_HHMMSS.txt` - Timestamped archive copy that never gets overwritten
 
 ```
 1. Parties
@@ -342,10 +384,14 @@ With the structured case facts in place, you can now use the `brainstorm` workfl
 
 The `brainstorm` command uses Grok's creative capabilities to generate a comprehensive set of litigation strategies based on the facts provided, tailored to your specific party side and legal area. The command produces both orthodox and unorthodox strategies, along with an assessment of which are most likely to succeed.
 
+**Output**: The brainstormed strategies are automatically saved to:
+- `strategies.txt` - Current working file for use in subsequent commands like `strategy` and `draft`
+- `brainstorm_[area]_[side]_YYYYMMDD_HHMMSS.txt` - Timestamped archive copy that never gets overwritten
+
 ### Command
 
 ```bash
-./litassist.py brainstorm <case_facts_file> --side <party_side> --area <legal_area> [--verify]
+./litassist.py brainstorm <case_facts_file> --side <party_side> --area <legal_area>
 ```
 
 Required parameters:
@@ -357,8 +403,7 @@ Required parameters:
 
 **Note**: The command will warn you if you use incompatible side/area combinations (e.g., "plaintiff" in criminal cases) but will still generate strategies.
 
-Options:
-- `--verify`: Enable self-critique verification pass on generated strategies
+**Note**: Verification is automatically enabled for Grok models to ensure quality of generated strategies.
 
 ### Example Usage
 
@@ -430,14 +475,19 @@ With comprehensive strategies generated, you can now use the `strategy` workflow
 
 The `strategy` command analyzes case facts to generate strategic legal options, recommended actions, and draft documents tailored to achieving a specific outcome. It produces comprehensive analysis including probability assessments, critical hurdles, and prioritized next steps.
 
+**Output**: All analysis saved to timestamped files: `strategy_[outcome_slug]_YYYYMMDD_HHMMSS.txt`
+
 ### Command
 
 ```bash
-./litassist.py strategy <case_facts_file> --outcome <desired_outcome>
+./litassist.py strategy <case_facts_file> --outcome <desired_outcome> [--strategies <strategies_file>]
 ```
 
 Required parameters:
 - `--outcome`: A single sentence describing the desired outcome
+
+Optional parameters:
+- `--strategies`: Path to strategies.txt from brainstorm command. When provided, the strategy command will consider the brainstormed strategies, particularly those marked as "most likely to succeed"
 
 ### Strict Format Requirements
 
@@ -607,24 +657,49 @@ gantt
 
 ### Purpose
 
-The `draft` command implements a Retrieval-Augmented Generation workflow to create well-supported legal drafts. The process embeds document chunks, stores them in Pinecone, retrieves relevant passages using MMR re-ranking, and generates a draft with GPT-4o that incorporates these citations.
+The `draft` command creates well-supported legal drafts with intelligent document recognition:
+
+- **Automatic Document Type Detection**:
+  - `case_facts.txt` → Recognized as structured case facts
+  - `strategies.txt` → Recognized as brainstormed legal strategies
+  - Other text files → Treated as supporting documents
+  - PDFs → Use embedding/retrieval for relevant passages
+
+- **Smart Context Building**: The command structures different document types with clear headers, helping the LLM understand each document's role
+
+- **Adaptive Prompting**: System instructions change based on which document types are provided, ensuring optimal use of case facts and strategies
+
+**Output**: All drafts saved to timestamped files: `draft_[query_slug]_YYYYMMDD_HHMMSS.txt`
 
 ### Command
 
 ```bash
-./litassist.py draft <pdf> <query> [--verify] [--diversity FLOAT]
+./litassist.py draft <document> [<document> ...] <query> [--diversity FLOAT]
 ```
 
+Arguments:
+- `<document>`: One or more paths to knowledge base documents (PDF or text files)
+  - Can combine multiple sources: `case_facts.txt strategies.txt`
+  - Text files are passed entirely to the LLM
+  - PDFs use embedding/retrieval for relevant chunks
+- `<query>`: The legal topic or argument to draft (must be the last argument)
+
 Options:
-- `--verify`: Enable self-critique verification pass
-- `--diversity`: Control diversity of search results (0.0-1.0)
+- `--diversity`: Control diversity of search results (0.0-1.0) - only applies to PDF/large file processing
 
 ### Example Usage
 
-For our *Smith v Jones* case, we can now draft a submission on the relocation issue:
+For our *Smith v Jones* case, we can now draft a submission on the relocation issue using either the extracted facts or the original bundle:
 
 ```bash
-./litassist.py draft examples/smith_bundle.pdf "outline of submissions regarding relocation of children in Smith v Jones"
+# Using just the case facts
+./litassist.py draft case_facts.txt "outline of submissions regarding relocation of children in Smith v Jones"
+
+# Combining case facts with brainstormed strategies
+./litassist.py draft case_facts.txt strategies.txt "draft argument focusing on strategy #3 from brainstorm"
+
+# Using multiple sources including PDFs
+./litassist.py draft case_facts.txt examples/smith_bundle.pdf "comprehensive submission on relocation"
 ```
 
 **Output Example**:
@@ -726,6 +801,10 @@ To demonstrate how these five workflows combine into a seamless end-to-end pipel
 
 6. **Draft**: Create a well-supported legal submission incorporating citations from case documents.
    ```bash
+   # Using extracted case facts from the pipeline
+   ./litassist.py draft case_facts.txt "outline of submissions regarding relocation of children in Smith v Jones"
+   
+   # Or using the original bundle directly
    ./litassist.py draft examples/smith_bundle.pdf "outline of submissions regarding relocation of children in Smith v Jones"
    ```
 

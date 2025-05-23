@@ -71,6 +71,9 @@ pinecone:
   api_key:     "YOUR_PINECONE_KEY"
   environment: "YOUR_PINECONE_ENV"   # e.g. "us-east-1-aws"
   index_name:  "legal-rag"
+
+general:
+  heartbeat_interval: 10  # Progress indicator interval in seconds (default: 10)
 ```
 
 ## 🚀 Command Reference
@@ -89,32 +92,39 @@ Global options:
 1. **lookup** - Rapid case-law search with automatic citation
    ```bash
    ./litassist.py lookup "What defences exist to adverse costs orders?"
-   ./litassist.py lookup "Question?" --mode broad --engine jade --verify
+   ./litassist.py lookup "Question?" --mode broad --engine jade
    ```
 
 2. **digest** - Process large documents for summaries or issues
    ```bash
-   ./litassist.py digest bundle.pdf --mode [summary|issues] --verify
+   ./litassist.py digest bundle.pdf --mode [summary|issues]
    ```
 
 3. **extractfacts** - Extract structured case facts from documents
    ```bash
-   ./litassist.py extractfacts document.pdf --verify
+   ./litassist.py extractfacts document.pdf
    ```
 
-4. **brainstorm** - Generate comprehensive legal strategies
+4. **brainstorm** - Generate comprehensive legal strategies (saves to strategies.txt)
    ```bash
-   ./litassist.py brainstorm case_facts.txt --side [plaintiff|defendant|accused] --area [criminal|civil|family|commercial|administrative] --verify
+   ./litassist.py brainstorm case_facts.txt --side [plaintiff|defendant|accused] --area [criminal|civil|family|commercial|administrative]
    ```
 
 5. **strategy** - Generate targeted legal options and draft documents
    ```bash
    ./litassist.py strategy case_facts.txt --outcome "Obtain interim injunction against defendant"
+   # Or incorporate brainstormed strategies
+   ./litassist.py strategy case_facts.txt --outcome "..." --strategies strategies.txt
    ```
 
-6. **draft** - Create citation-rich legal drafts
+6. **draft** - Create citation-rich legal drafts with intelligent document recognition
    ```bash
-   ./litassist.py draft bundle.pdf "skeleton argument on jurisdictional error" --verify --diversity 0.3
+   # Single document
+   ./litassist.py draft case_facts.txt "skeleton argument on jurisdictional error"
+   # Multiple documents (automatically recognizes case_facts.txt and strategies.txt)
+   ./litassist.py draft case_facts.txt strategies.txt "argument based on strategy #3"
+   # Mix text files and PDFs
+   ./litassist.py draft case_facts.txt bundle.pdf "comprehensive submission"
    ```
 
 ### Utility Commands
@@ -128,10 +138,23 @@ Global options:
 
 The `examples/` directory contains sample files for testing all commands, based on the fictional *Smith v Jones* family law case.
 
-## 📂 Logging & Monitoring
+## 📂 Output Files & Logging
 
-- Logs stored in `logs/<command>_YYYYMMDD-HHMMSS.{json|md}`
-- Progress indicators for long-running operations
+### Command Output Files
+All commands now save their output to timestamped text files without overwriting existing files:
+
+- **lookup**: `lookup_[query_slug]_YYYYMMDD_HHMMSS.txt`
+- **digest**: `digest_[mode]_[filename_slug]_YYYYMMDD_HHMMSS.txt`
+- **brainstorm**: `strategies.txt` (current) + `brainstorm_[area]_[side]_YYYYMMDD_HHMMSS.txt` (archive)
+- **extractfacts**: `case_facts.txt` (current) + `extractfacts_[filename_slug]_YYYYMMDD_HHMMSS.txt` (archive)
+- **strategy**: `strategy_[outcome_slug]_YYYYMMDD_HHMMSS.txt`
+- **draft**: `draft_[query_slug]_YYYYMMDD_HHMMSS.txt`
+
+Each output file includes metadata headers with command parameters and timestamps.
+
+### Audit Logging
+- Detailed logs stored in `logs/<command>_YYYYMMDD-HHMMSS.{json|md}`
+- Progress indicators for long-running operations (configurable heartbeat interval)
 - Network errors are caught with user-friendly messages
 
 ## ⚖️ Disclaimer

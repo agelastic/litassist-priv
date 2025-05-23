@@ -7,6 +7,8 @@ with ten standard headings.
 """
 
 import click
+import os
+import time
 
 from litassist.utils import read_document, chunk_text, save_log
 from litassist.llm import LLMClient
@@ -94,8 +96,33 @@ def extractfacts(file, verify):
             f"Verification error during fact extraction: {e}"
         )
 
-    with open("case_facts.txt", "w", encoding="utf-8") as f:
+    # Check if case_facts.txt already exists and preserve it
+    output_file = "case_facts.txt"
+    if os.path.exists(output_file):
+        # Create a timestamp for the backup
+        timestamp = time.strftime("%Y%m%d_%H%M%S")
+        backup_file = f"case_facts_{timestamp}.txt"
+        os.rename(output_file, backup_file)
+        click.echo(f"Existing case_facts.txt renamed to {backup_file}")
+    
+    with open(output_file, "w", encoding="utf-8") as f:
         f.write(combined)
+
+    # Also save a timestamped archive copy
+    timestamp = time.strftime("%Y%m%d_%H%M%S")
+    # Extract base filename without extension for the archive name
+    base_filename = os.path.splitext(os.path.basename(file))[0]
+    # Create a slug from the filename
+    filename_slug = base_filename.lower().replace(' ', '_')[:30]
+    archive_file = f"extractfacts_{filename_slug}_{timestamp}.txt"
+    
+    with open(archive_file, "w", encoding="utf-8") as f:
+        f.write(f"# Extracted Facts from: {file}\n")
+        f.write(f"# Generated: {time.strftime('%Y-%m-%d %H:%M:%S')}\n")
+        f.write("-" * 80 + "\n\n")
+        f.write(combined)
+    
+    click.echo(f"Archive copy saved to {archive_file}")
 
     # Audit log
     save_log(
@@ -104,6 +131,7 @@ def extractfacts(file, verify):
             "inputs": {"source_file": file, "chunks": len(chunks)},
             "params": "verify=True (auto-enabled)",
             "response": combined,
+            "output_files": [output_file, archive_file],
         },
     )
     click.echo("case_facts.txt created successfully with legal accuracy verification.")
