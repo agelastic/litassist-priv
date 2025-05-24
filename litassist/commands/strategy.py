@@ -170,6 +170,15 @@ def strategy(case_facts, outcome, strategies, verify):
     """
     # Read and validate case facts
     facts_content = case_facts.read()
+    
+    # Check file size to prevent token limit issues
+    if len(facts_content) > 50000:  # ~10,000 words
+        raise click.ClickException(
+            f"Case facts file too large ({len(facts_content):,} characters). "
+            "Please provide a structured summary under 50,000 characters (~10,000 words). "
+            "The strategy command expects concise, well-organized facts under 10 headings."
+        )
+    
     if not validate_case_facts_format(facts_content):
         raise click.ClickException(
             "Case facts file does not follow the required 10-heading structure."
@@ -197,6 +206,14 @@ def strategy(case_facts, outcome, strategies, verify):
     parsed_strategies = None
     if strategies:
         strategies_content = strategies.read()
+        
+        # Check strategies file size
+        if len(strategies_content) > 100000:  # ~20,000 words, larger limit for strategies
+            raise click.ClickException(
+                f"Strategies file too large ({len(strategies_content):,} characters). "
+                "Please provide a file under 100,000 characters (~20,000 words)."
+            )
+        
         parsed_strategies = parse_strategies_file(strategies_content)
         
         # Display what was found

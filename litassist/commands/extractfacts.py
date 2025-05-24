@@ -45,40 +45,108 @@ def extractfacts(file, verify):
     # extractfacts always needs verification as it creates foundational documents
     verify = True  # Force verification for critical accuracy
 
-    assembled = []
-    # Process each chunk with a progress bar
-    with click.progressbar(chunks, label="Extracting facts") as bar:
-        for chunk in bar:
-            prompt = (
-                "Extract under these headings (include all relevant details):\n"
-                "1. Parties (include roles and relationships)\n"
-                "2. Background (include commercial/policy context if relevant)\n"
-                "3. Key Events (in chronological order)\n"
-                "4. Legal Issues\n"
-                "5. Evidence Available (prioritize key evidence)\n"
-                "6. Opposing Arguments (include known weaknesses/gaps)\n"
-                "7. Procedural History (current status and past proceedings)\n"
-                "8. Jurisdiction (include specific court/forum)\n"
-                "9. Applicable Law\n"
-                "10. Client Objectives (include any constraints/limitations)\n\n"
-                + chunk
+    # For single chunk, use original approach
+    if len(chunks) == 1:
+        prompt = (
+            "Extract under these headings (include all relevant details):\n"
+            "1. Parties (include roles and relationships)\n"
+            "2. Background (include commercial/policy context if relevant)\n"
+            "3. Key Events (in chronological order)\n"
+            "4. Legal Issues\n"
+            "5. Evidence Available (prioritize key evidence)\n"
+            "6. Opposing Arguments (include known weaknesses/gaps)\n"
+            "7. Procedural History (current status and past proceedings)\n"
+            "8. Jurisdiction (include specific court/forum)\n"
+            "9. Applicable Law\n"
+            "10. Client Objectives (include any constraints/limitations)\n\n"
+            + chunks[0]
+        )
+        try:
+            combined, usage = client.complete(
+                [
+                    {
+                        "role": "system",
+                        "content": "Australian law only. Extract factual information precisely under the requested headings. Focus on being comprehensive, accurate, and well-organized. Use clear paragraph structure and bullet points where appropriate. Maintain a neutral, factual tone throughout. Ensure all extracted information follows Australian legal terminology and conventions.",
+                    },
+                    {"role": "user", "content": prompt},
+                ]
             )
-            try:
-                content, usage = client.complete(
-                    [
-                        {
-                            "role": "system",
-                            "content": "Australian law only. Extract factual information precisely under the requested headings. Focus on being comprehensive, accurate, and well-organized. Use clear paragraph structure and bullet points where appropriate. Maintain a neutral, factual tone throughout. Ensure all extracted information follows Australian legal terminology and conventions.",
-                        },
-                        {"role": "user", "content": prompt},
-                    ]
-                )
-            except Exception as e:
-                raise click.ClickException(f"Error extracting facts in chunk: {e}")
-            assembled.append(content.strip())
+        except Exception as e:
+            raise click.ClickException(f"Error extracting facts: {e}")
+    
+    else:
+        # For multiple chunks, accumulate facts then organize
+        accumulated_facts = []
+        
+        # First, extract relevant facts from each chunk
+        with click.progressbar(chunks, label="Processing document chunks") as bar:
+            for idx, chunk in enumerate(bar, 1):
+                prompt = f"""From this excerpt (part {idx} of {len(chunks)}), extract any facts relevant to:
+- Parties involved
+- Background/context
+- Key events with dates
+- Legal issues raised
+- Evidence mentioned
+- Arguments made
+- Procedural matters
+- Jurisdictional details
+- Applicable laws
+- Client objectives
 
-    # Combine all chunks into a single facts file
-    combined = "\n\n".join(assembled)
+Just extract the raw facts found in this excerpt:
+
+{chunk}"""
+                
+                try:
+                    content, usage = client.complete(
+                        [
+                            {
+                                "role": "system",
+                                "content": "Extract facts from this document excerpt. Be comprehensive but only include information actually present in this excerpt.",
+                            },
+                            {"role": "user", "content": prompt},
+                        ]
+                    )
+                except Exception as e:
+                    raise click.ClickException(f"Error processing chunk {idx}: {e}")
+                accumulated_facts.append(content.strip())
+        
+        # Now organize all accumulated facts into the required structure
+        all_facts = "\n\n".join(accumulated_facts)
+        organize_prompt = f"""Organize the following extracted facts into these 10 headings:
+
+1. **Parties**: Identify all parties involved in the matter, including their roles and relevant characteristics
+2. **Background**: Provide context about the relationship between parties and circumstances leading to the dispute
+3. **Key Events**: List significant events in chronological order with dates where available
+4. **Legal Issues**: Enumerate the legal questions that need to be addressed
+5. **Evidence Available**: Catalog all available evidence, documents, and potential witnesses
+6. **Opposing Arguments**: Summarize the other party's position and claims
+7. **Procedural History**: Detail any court proceedings, orders, or legal steps taken to date
+8. **Jurisdiction**: Specify the relevant court or tribunal and basis for jurisdiction
+9. **Applicable Law**: List relevant statutes, regulations, and legal principles
+10. **Client Objectives**: State what the client hopes to achieve
+
+Raw facts to organize:
+{all_facts}
+
+Important: 
+- Only include information that was actually in the document
+- If information for a heading is not available, write "Not specified in the document"
+- Maintain chronological order for events
+- Be comprehensive but factual"""
+
+        try:
+            combined, usage = client.complete(
+                [
+                    {
+                        "role": "system",
+                        "content": "Australian law only. Organize the extracted facts precisely under the requested headings. Ensure consistency and avoid duplication.",
+                    },
+                    {"role": "user", "content": organize_prompt},
+                ]
+            )
+        except Exception as e:
+            raise click.ClickException(f"Error organizing facts: {e}")
 
     # Mandatory heavy verification for extractfacts (creates foundational documents)
     try:

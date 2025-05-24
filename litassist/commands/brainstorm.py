@@ -90,6 +90,14 @@ def brainstorm(facts_file, side, area, verify):
 
     # Read the structured facts file
     facts = read_document(facts_file)
+    
+    # Check file size to prevent token limit issues
+    if len(facts) > 50000:  # ~10,000 words
+        raise click.ClickException(
+            f"Case facts file too large ({len(facts):,} characters). "
+            "Please provide a concise summary under 50,000 characters (~10,000 words). "
+            "Consider using 'extractfacts' command to create a structured summary first."
+        )
 
     # Initialize the LLM for creative ideation
     client = LLMClient("x-ai/grok-3-beta", temperature=0.9, top_p=0.95)
