@@ -37,38 +37,59 @@ class Config:
     def _find_config_file(self) -> str:
         """
         Find config.yaml in the package directory (global configuration only).
-        
+
         This enforces a single global configuration to prevent secret duplication.
-        
+
         Returns:
             Path to the global configuration file.
-            
+
         Raises:
             SystemExit: If no configuration file is found.
         """
         from pathlib import Path
-        
-        # Only use package directory for global configuration
+
+        # For development installs (-e flag), use the actual source directory
         package_dir = Path(__file__).parent.parent
-        package_config = package_dir / "config.yaml"
-        
-        if package_config.exists():
-            return str(package_config)
-            
-        # If config doesn't exist, suggest creating it from template
+
+        # Check if this is an editable install by looking for config.yaml in source
+        if (package_dir / "config.yaml").exists():
+            return str(package_dir / "config.yaml")
+
+        # For pipx/pip installs, check common global locations
+        possible_locations = [
+            Path.home() / ".config" / "litassist" / "config.yaml",  # XDG config
+            Path.home() / ".litassist" / "config.yaml",  # Home directory
+            Path("/etc/litassist/config.yaml"),  # System-wide
+        ]
+
+        for config_path in possible_locations:
+            if config_path.exists():
+                return str(config_path)
+
+        # If no config found, provide helpful message
+        config_dir = Path.home() / ".config" / "litassist"
+        config_path = config_dir / "config.yaml"
         template_path = package_dir / "config.yaml.template"
+
         if template_path.exists():
             sys.exit(
-                f"Error: Global config.yaml not found.\n"
-                f"Copy the template to get started:\n"
-                f"  cp {template_path} {package_config}\n"
-                f"Then edit {package_config} with your API keys.\n"
-                f"\nGlobal config location: {package_config}"
+                f"Error: No config.yaml found.\n"
+                f"To set up LitAssist:\n"
+                f"  mkdir -p {config_dir}\n"
+                f"  cp {template_path} {config_path}\n"
+                f"  # Edit {config_path} with your API keys\n"
+                f"\nLitAssist will look for config.yaml in:\n"
+                f"  1. {config_dir}/config.yaml (recommended)\n"
+                f"  2. ~/.litassist/config.yaml\n"
+                f"  3. /etc/litassist/config.yaml"
             )
         else:
             sys.exit(
-                f"Error: config.yaml not found in {package_dir}.\n"
-                f"Create a config.yaml file with your API keys in the LitAssist directory."
+                f"Error: config.yaml not found.\n"
+                f"Create a config.yaml file with your API keys in one of:\n"
+                f"  1. {config_dir}/config.yaml (recommended)\n"
+                f"  2. ~/.litassist/config.yaml\n"
+                f"  3. /etc/litassist/config.yaml"
             )
 
     def _load_config(self) -> Dict[str, Any]:
@@ -117,17 +138,13 @@ class Config:
             self.use_token_limits = self.cfg.get("llm", {}).get(
                 "use_token_limits", False
             )
-            
+
             # Extract optional general settings with defaults
             self.heartbeat_interval = self.cfg.get("general", {}).get(
                 "heartbeat_interval", 10
             )
-            self.max_chars = self.cfg.get("general", {}).get(
-                "max_chars", 20000
-            )
-            self.rag_max_chars = self.cfg.get("general", {}).get(
-                "rag_max_chars", 8000
-            )
+            self.max_chars = self.cfg.get("general", {}).get("max_chars", 20000)
+            self.rag_max_chars = self.cfg.get("general", {}).get("rag_max_chars", 8000)
 
         # Jade API key is no longer used - functionality now uses public endpoint
 

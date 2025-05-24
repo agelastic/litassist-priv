@@ -128,13 +128,23 @@ nano config.yaml
 
 ### Configuration Location
 
-**Critical:** Your `config.yaml` file with real API keys must be located at:
+For global usage after pipx installation, copy your config to a standard location:
 
-```
-/Users/USERNAME/Projects/litassist/config.yaml
+```bash
+# Create config directory
+mkdir -p ~/.config/litassist
+
+# Copy your configured config.yaml
+cp config.yaml ~/.config/litassist/
+
+# Now you can use litassist from any directory!
 ```
 
-This is the **only location** LitAssist checks for configuration. Do not create config files in project directories.
+LitAssist looks for config.yaml in these locations (in order):
+1. `~/.config/litassist/config.yaml` (recommended for global install)
+2. `~/.litassist/config.yaml` (alternative location)
+3. `/etc/litassist/config.yaml` (system-wide)
+4. Development directory (for editable installs)
 
 ### Verify Configuration
 

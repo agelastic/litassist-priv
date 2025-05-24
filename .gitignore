@@ -90,7 +90,9 @@ outputs/
 
 real_test/
 case_facts.txt
+case_facts_*.txt
 strategies.txt
+strategies_*.txt
 strategies_verification.txt
 
 # Timestamped output files from commands
@@ -100,6 +102,15 @@ brainstorm_*.txt
 extractfacts_*.txt
 strategy_*.txt
 draft_*.txt
+
+# Test outputs and temporary files
+test_*.txt
+test_*.json
+test_*.pdf
+temp_*.py
+temp_*.txt
+mock_*.txt
+sample_*.txt
 
 **/.claude/settings.local.json
 CLAUDE.md

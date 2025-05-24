@@ -43,7 +43,11 @@ source ~/.zshrc
 cp config.yaml.template config.yaml
 # Edit config.yaml with your API keys
 
-# 4. Use from anywhere
+# 4. Copy config to global location
+mkdir -p ~/.config/litassist
+cp config.yaml ~/.config/litassist/
+
+# 5. Use from anywhere
 cd ~/any-directory/
 litassist digest document.pdf
 ```
