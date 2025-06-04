@@ -12,15 +12,15 @@ This guide demonstrates how to use each workflow through a running example of a 
 
 ```mermaid
 graph TD
-    A[1. Lookup - Research] --> B[2. Digest - Analyse]
-    B --> C[3. ExtractFacts - Structure]
-    C --> D[4. Brainstorm - Generate Options]
-    D --> E[5. Strategy - Plan Approach]
-    E --> F[6. Draft - Create Documents]
+    A["Lookup - Research"] --> B["Digest - Analyse"]
+    B --> C["ExtractFacts - Structure"]
+    C --> D["Brainstorm - Generate Options"]
+    D --> E["Strategy - Plan Approach"]
+    E --> F["Draft - Create Documents"]
     
-    G[Utilities] --> H[Test - API Connectivity]
-    G --> I[Audit Logging]
-    G --> J[Mock Mode]
+    G[Utilities] --> H["Test - API Connectivity"]
+    G --> I["Audit Logging"]
+    G --> J["Mock Mode"]
 ```
 
 ## Running Example: Smith v Jones
@@ -146,19 +146,93 @@ The `lookup` command performs rapid searches on AustLII for relevant case law us
 ### Command
 
 ```bash
-./litassist.py lookup "your legal question" [--mode irac|broad] [--engine google|jade]
+./litassist.py lookup "your legal question" [--mode irac|broad] [--engine google|jade] [--extract citations|principles|checklist]
 ```
 
 Options:
 - `--mode`: Choose between IRAC (Issue, Rule, Application, Conclusion) or a broader exploration
 - `--engine`: Choose search engine - 'google' for AustLII via CSE (default), 'jade' for Jade.io
+- `--extract`: Extract specific information in a structured format for workflow efficiency
+
+#### Search Engine and Mode Combinations
+
+**Search Engines:**
+- **Google CSE** (default): Searches AustLII (austlii.edu.au) via Google Custom Search for comprehensive Australian legal database coverage
+- **Jade**: Uses Jade.io for recent cases and landmark decisions, with fallback to curated topic-specific cases
+
+**Analysis Modes:**
+- **IRAC** (default): Structured legal analysis (Issue, Rule, Application, Conclusion) with precise, deterministic answers
+- **Broad**: Creative exploration for more expansive legal thinking
+
+**Recommended Combinations:**
+- **Google + IRAC**: Standard research for structured case law analysis from comprehensive AustLII database
+- **Google + Broad**: Creative legal research using full AustLII coverage 
+- **Jade + IRAC**: Focused analysis using recent/landmark cases when AustLII access is limited
+- **Jade + Broad**: Exploratory research with curated high-quality cases
+
+#### Extract Options for Workflow Efficiency
+
+The `--extract` option formats output for specific professional workflows:
+
+**Extract Citations (`--extract citations`)**
+- **Purpose**: Generate clean citation lists for court documents and research databases
+- **Output**: Formatted list of case citations and legislation references
+- **Use Cases**:
+  - Building a "Cases Cited" section for court briefs
+  - Adding citations to advice letters and legal opinions
+  - Creating research databases for complex matters
+  - Quick reference lists for oral arguments
+
+**Extract Principles (`--extract principles`)**
+- **Purpose**: Extract legal rules and principles in structured format for client communications
+- **Output**: Bullet-pointed legal principles suitable for advice letters
+- **Use Cases**:
+  - Client advice letters requiring clear legal explanations
+  - Training materials for junior lawyers
+  - Settlement negotiations explaining legal positions
+  - Mediation briefs summarizing applicable law
+
+**Extract Checklist (`--extract checklist`)**
+- **Purpose**: Generate actionable requirements and practical steps
+- **Output**: Checkbox format listing evidence needed and steps to take
+- **Use Cases**:
+  - Pre-trial preparation ensuring complete coverage
+  - File review checklists for complex matters
+  - Due diligence processes
+  - Client intake procedures for specific legal areas
+  - Junior lawyer training and supervision
+
+**Benefits of Extract Options:**
+- **Copy-paste ready**: Clean, structured output eliminates manual formatting
+- **Context switching reduction**: Get exactly what you need without parsing walls of text
+- **Professional output**: Client-ready formatting for immediate use
+- **Quality assurance**: Structured checklists ensure nothing is missed
 
 ### Example Usage
+
+#### Standard Lookup
 
 In our *Smith v Jones* case, we might need to quickly research the legal framework for parental alienation:
 
 ```bash
 ./litassist.py lookup "What is the legal framework for determining parental alienation in Australian family court cases?" --mode irac
+```
+
+#### Using Extract Options
+
+**For court brief preparation (citations needed):**
+```bash
+./litassist.py lookup "self defence assault requirements" --extract citations
+```
+
+**For client advice letter (principles needed):**
+```bash
+./litassist.py lookup "negligence medical malpractice elements" --extract principles
+```
+
+**For case preparation (checklist needed):**
+```bash
+./litassist.py lookup "unfair dismissal evidence requirements" --extract checklist
 ```
 
 **Output Example**:
@@ -181,6 +255,175 @@ Sources:
 - Kappas & Drakos [2018] FamCA 37, https://www.austlii.edu.au/cgi-bin/viewdoc/au/cases/cth/FamCA/2018/37.html | https://jade.io/article/572418
 - Ralton & Ralton [2016] FCWA 65, https://www.austlii.edu.au/cgi-bin/viewdoc/au/cases/wa/FCWA/2016/65.html | https://jade.io/article/460030
 ```
+
+**Extract Examples:**
+
+**Citations Output** (using `--extract citations`):
+```
+CITATIONS FOUND:
+Crimes Act 1900 (NSW) s 418
+R v Brown [2019] NSWCCA 123
+R v Katarzynski [2002] NSWSC 613
+R v Smith [2020] NSWDC 45
+```
+
+**Principles Output** (using `--extract principles`):
+```
+LEGAL PRINCIPLES:
+• Self-defence requires reasonable belief of imminent threat to person or property
+• Force used must be proportionate to the perceived threat
+• Defendant's subjective belief is critical, not objective reasonableness
+• No duty to retreat if threat is imminent and escape not safely possible
+• Burden of proof shifts to prosecution to disprove self-defence beyond reasonable doubt
+```
+
+**Checklist Output** (using `--extract checklist`):
+```
+PRACTICAL CHECKLIST:
+□ Evidence of threat made against defendant
+□ Defendant's subjective belief documented
+□ Proportionality of response to threat level
+□ Witness statements supporting threat perception
+□ No available avenue of safe retreat
+□ Medical evidence of injuries sustained
+□ Police statements and reports
+□ Character evidence supporting credibility
+```
+
+### Advanced Usage and Workflow Integration
+
+#### Combining Extract Options with Other Parameters
+
+**Strategic Research Combinations:**
+```bash
+# For complex constitutional matters - use Jade for landmark cases + broad analysis
+./litassist.py lookup "implied freedom of political communication" --engine jade --mode broad --extract principles
+
+# For urgent court prep - use Google for comprehensive coverage + structured analysis  
+./litassist.py lookup "summary judgment applications" --engine google --mode irac --extract checklist
+
+# For client communications - extract principles in accessible format
+./litassist.py lookup "unfair contract terms consumer law" --mode broad --extract principles
+```
+
+#### File Organization and Naming
+
+**Output Structure:**
+```
+outputs/
+├── lookup_citations_contract_breach_20250406_143022.txt
+├── lookup_principles_negligence_20250406_143156.txt
+├── lookup_checklist_defamation_20250406_143340.txt
+└── lookup_constitutional_law_20250406_143445.txt (default format)
+```
+
+**File Naming Convention:**
+- `lookup_[extract]_[question_slug]_[timestamp].txt` (with extract option)
+- `lookup_[question_slug]_[timestamp].txt` (default format)
+- Question slug: First 50 chars, special chars removed, spaces as underscores
+
+#### Integration with LitAssist Command Pipeline
+
+**End-to-End Workflow Examples:**
+
+**1. Court Brief Preparation Workflow**
+```bash
+# Step 1: Research legal framework and collect citations
+./litassist.py lookup "negligence medical malpractice" --extract citations
+
+# Step 2: Analyze case documents for facts
+./litassist.py digest case_bundle.pdf --mode issues
+
+# Step 3: Extract structured facts for strategy
+./litassist.py extractfacts medical_reports.pdf
+
+# Step 4: Draft argument using research and facts
+./litassist.py draft case_facts.txt "negligence argument medical malpractice"
+```
+
+**2. Client Advice Letter Workflow**
+```bash
+# Step 1: Research principles in client-friendly format
+./litassist.py lookup "employment termination unfair dismissal" --extract principles
+
+# Step 2: Analyze employment documents
+./litassist.py digest employment_file.pdf --mode summary
+
+# Step 3: Create advice structure using principles from lookup output
+# Copy principles from outputs/lookup_principles_employment_*.txt into advice letter template
+```
+
+**3. Due Diligence Workflow**
+```bash
+# Step 1: Create compliance checklist
+./litassist.py lookup "corporate governance ASX requirements" --extract checklist
+
+# Step 2: Analyze corporate documents against checklist
+./litassist.py digest board_minutes.pdf --mode issues
+
+# Step 3: Cross-reference findings with compliance requirements
+# Use checklist from outputs/lookup_checklist_corporate_*.txt as review framework
+```
+
+#### Real-World Integration Patterns
+
+**Pattern 1: Research → Analysis → Action**
+- **Lookup (extract citations)** → **Digest (mode issues)** → **Draft argument**
+- Establishes legal authority, identifies case issues, creates persuasive document
+
+**Pattern 2: Principles → Facts → Strategy** 
+- **Lookup (extract principles)** → **Extractfacts** → **Brainstorm strategies**
+- Understands law, structures facts, develops arguments
+
+**Pattern 3: Checklist → Review → Compliance**
+- **Lookup (extract checklist)** → **Digest documents** → **Manual compliance review**
+- Creates framework, analyzes documents, ensures completeness
+
+#### Workflow Efficiency Tips
+
+**Copying Output Between Commands:**
+```bash
+# Extract citations for court brief
+./litassist.py lookup "contract formation requirements" --extract citations
+
+# Copy citations from outputs/lookup_citations_contract_*.txt
+# Paste into draft command input file for automatic citation inclusion
+
+./litassist.py draft case_facts.txt "contract formation argument" 
+# LitAssist will incorporate the existing research into the draft
+```
+
+**File Management for Complex Matters:**
+```bash
+# Organize lookup results by legal area
+mkdir research_negligence research_contract research_defamation
+
+# Move relevant lookup outputs to topic folders
+mv outputs/lookup_*negligence* research_negligence/
+mv outputs/lookup_*contract* research_contract/
+```
+
+**Iterative Research Refinement:**
+```bash
+# Start broad, then narrow focus
+./litassist.py lookup "contract law" --mode broad --extract principles
+./litassist.py lookup "specific performance remedies" --mode irac --extract citations  
+./litassist.py lookup "equity specific performance discretion" --engine jade --extract checklist
+```
+
+#### Performance and Cost Considerations
+
+**Efficient Research Strategies:**
+- Use `--extract citations` when you only need case references (faster processing)
+- Use `--engine jade` for specific topic areas with known landmark cases
+- Use `--mode irac` for structured legal analysis, `--mode broad` for creative approaches
+- Combine extract options with targeted questions rather than broad topics
+
+**Output Reuse:**
+- Extract outputs are designed for copy-paste into other documents
+- Citations lists can be directly included in court briefs
+- Principles sections can be incorporated into advice letters
+- Checklists can serve as templates for multiple similar matters
 
 ### Next in Pipeline
 
@@ -630,8 +873,7 @@ With strategic options identified, you can now create comprehensive legal docume
 ```mermaid
 gantt
     title Smith v Jones Case Progression Timeline
-    dateFormat  YYYY-MM-DD
-    axisFormat %d/%m
+    dateFormat YYYY-MM-DD
     
     section Research
     Lookup parental alienation law     :done, r1, 2025-05-01, 1d

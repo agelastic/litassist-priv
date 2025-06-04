@@ -4,15 +4,15 @@
 
 ```mermaid
 graph TD
-    A[1. Lookup - Research] --> B[2. Digest - Analyse]
-    B --> C[3. ExtractFacts - Structure]
-    C --> D[4. Brainstorm - Generate Options]
-    D --> E[5. Strategy - Plan Approach]
-    E --> F[6. Draft - Create Documents]
+    A["Lookup - Research"] --> B["Digest - Analyse"]
+    B --> C["ExtractFacts - Structure"]
+    C --> D["Brainstorm - Generate Options"]
+    D --> E["Strategy - Plan Approach"]
+    E --> F["Draft - Create Documents"]
     
-    G[Utilities] --> H[Test - API Connectivity]
-    G --> I[Audit Logging]
-    G --> J[Mock Mode]
+    G[Utilities] --> H["Test - API Connectivity"]
+    G --> I["Audit Logging"]
+    G --> J["Mock Mode"]
 ```
 
 - **Lookup**: Rapid case-law research (Google Custom Search + Google Gemini)  
