@@ -215,7 +215,7 @@ Please provide output in EXACTLY this format:
     
     # Save verification notes separately if any exist
     if verification_notes:
-        verification_file = "strategies_verification.txt"
+        verification_file = os.path.join(OUTPUT_DIR, f"brainstorm_verification_{area}_{side}_{timestamp}.txt")
         with open(verification_file, "w", encoding="utf-8") as f:
             f.write(f"# Verification Notes for Strategies\n")
             f.write(f"# Generated: {time.strftime('%Y-%m-%d %H:%M:%S')}\n\n")

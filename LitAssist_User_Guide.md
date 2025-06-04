@@ -518,11 +518,10 @@ The `extractfacts` command processes a document to extract relevant case facts a
 ### Command
 
 ```bash
-./litassist.py extractfacts <file> [--verify]
+./litassist.py extractfacts <file>
 ```
 
-**Options:**
-- `--verify` - Run AI verification to critique the extracted facts for completeness and accuracy (see [Using the --verify Switch](#using-the--verify-switch))
+**Note:** This command includes automatic verification for accuracy and completeness - no additional flag needed.
 
 ### Required Output Format
 
@@ -645,7 +644,7 @@ Required parameters:
   - Civil/Commercial cases: `plaintiff` or `defendant`
   - Family/Administrative cases: `plaintiff`, `defendant`, or `respondent`
 - `--area`: Legal area of the matter - `criminal`, `civil`, `family`, `commercial`, or `administrative`
-- `--verify` (optional): Run AI verification to review strategy viability and identify risks (see [Using the --verify Switch](#using-the--verify-switch))
+- `--verify` (optional): Run AI verification to review strategy viability and identify risks. Automatically enabled when using Grok models (see [Using the --verify Switch](#using-the--verify-switch))
 
 **Note**: The command will warn you if you use incompatible side/area combinations (e.g., "plaintiff" in criminal cases) but will still generate strategies.
 
@@ -724,7 +723,7 @@ The `strategy` command analyzes case facts to generate strategic legal options, 
 ### Command
 
 ```bash
-./litassist.py strategy <case_facts_file> --outcome <desired_outcome> [--strategies <strategies_file>] [--verify]
+./litassist.py strategy <case_facts_file> --outcome <desired_outcome> [--strategies <strategies_file>]
 ```
 
 Required parameters:
@@ -732,7 +731,8 @@ Required parameters:
 
 Optional parameters:
 - `--strategies`: Path to strategies.txt from brainstorm command. When provided, the strategy command will consider the brainstormed strategies, particularly those marked as "most likely to succeed"
-- `--verify`: Run AI verification to validate recommendations and identify procedural risks (see [Using the --verify Switch](#using-the--verify-switch))
+
+**Note:** This command includes automatic verification for accuracy - no additional flag needed.
 
 ### Strict Format Requirements
 
@@ -930,7 +930,7 @@ Arguments:
 
 Options:
 - `--diversity`: Control diversity of search results (0.0-1.0) - only applies to PDF/large file processing
-- `--verify`: Run AI verification to check citations, arguments, and compliance (see [Using the --verify Switch](#using-the--verify-switch))
+- `--verify`: Optional AI verification to check citations, arguments, and compliance. Automatically triggered when content contains case citations, statutory references, percentage claims, or strong legal conclusions (see [Using the --verify Switch](#using-the--verify-switch))
 
 ### Example Usage
 
@@ -1081,17 +1081,20 @@ The `--verify` switch is available for commands that generate substantive legal 
 |---------|--------------|------------------------|
 | lookup | ❌ No | Simple search results don't need verification |
 | digest | ❌ No | Summaries are straightforward factual extracts |
-| extractfacts | ✅ Yes | Ensures all facts are captured with proper structure |
-| brainstorm | ✅ Yes | Reviews strategies for completeness and viability |
-| strategy | ✅ Yes | Validates recommendations and identifies risks |
-| draft | ✅ Yes | Checks citations, arguments, and persuasiveness |
+| extractfacts | ❌ No* | Automatic verification enabled (flag ignored) |
+| brainstorm | ✅ Yes | Optional verification, auto-enabled for Grok models |
+| strategy | ❌ No* | Automatic verification enabled (flag ignored) |
+| draft | ✅ Yes | Optional verification, auto-triggered for citations/statutory refs |
+
+*Commands marked with * include automatic verification regardless of the flag.
 
 ### When to Use --verify
 
+**For commands that support --verify (brainstorm, draft):**
+
 **Always use for:**
-- 🏛️ Court filings and formal submissions
-- 📋 Final case fact extractions before strategy sessions
-- 💡 Novel or high-risk legal strategies
+- 🏛️ Court filings and formal submissions (draft)
+- 💡 Novel or high-risk legal strategies (brainstorm)
 - 📄 Documents that will be relied upon by others
 - 🎯 High-stakes matters with significant consequences
 
@@ -1102,9 +1105,27 @@ The `--verify` switch is available for commands that generate substantive legal 
 - 💰 Cost-sensitive projects (verification doubles API costs)
 - ⏱️ Time-critical tasks (adds 10-30+ seconds)
 
+**Note:** Some commands (extractfacts, strategy) include automatic verification regardless of this flag.
+
+### Automatic Verification Triggers
+
+**Commands with automatic verification (always enabled):**
+- `extractfacts` - Critical fact accuracy required
+- `strategy` - High-stakes strategic recommendations
+
+**Commands with conditional auto-verification:**
+- `brainstorm` - Automatically enabled when using Grok models (prone to hallucination)  
+- `draft` - Automatically triggered when content contains:
+  - Case citations (e.g., `[2020] HCA 5`, `Smith v Jones`)
+  - Percentage claims (e.g., "75% likely", "90% chance")
+  - Strong legal conclusions ("must", "cannot", "will")
+  - Statutory references (e.g., "section 5", "s 42")
+  - Court rules (e.g., "rule 15")
+  - Paragraph references (e.g., "paragraph 12")
+
 ### Understanding Verification Results
 
-#### extractfacts --verify
+#### extractfacts (automatic verification)
 **Output location:** Appended to main output file after "VERIFICATION NOTES:"
 
 **What it reviews:**
@@ -1128,8 +1149,8 @@ VERIFICATION NOTES:
 - Consider adding witness availability to "Witnesses" section
 ```
 
-#### brainstorm --verify
-**Output location:** Separate file `strategies_verification.txt`
+#### brainstorm --verify (optional, auto for Grok)
+**Output location:** Separate file `outputs/brainstorm_verification_[area]_[side]_[timestamp].txt`
 
 **What it reviews:**
 - Legal viability of proposed strategies
@@ -1139,7 +1160,7 @@ VERIFICATION NOTES:
 - Practical implementation challenges
 
 **How to use results:**
-1. Open both `brainstorm_*.txt` and `strategies_verification.txt`
+1. Open both `brainstorm_*.txt` and `brainstorm_verification_*.txt` files in outputs/
 2. Create or update your `strategies.txt` file
 3. Incorporate suggested additional strategies
 4. Add risk warnings for flagged approaches
@@ -1153,7 +1174,7 @@ VERIFICATION NOTES on Strategy #3:
 - Alternative approach: seek leave for limited discovery
 ```
 
-#### strategy --verify
+#### strategy (automatic verification)
 **Output location:** End of output file under "VERIFICATION NOTES:"
 
 **What it reviews:**
@@ -1178,7 +1199,7 @@ VERIFICATION NOTES:
 - Review recent Full Court authority in Chen v State [2024]
 ```
 
-#### draft --verify
+#### draft --verify (optional, auto-triggered for citations/statutory references)
 **Output location:** Appended to draft after clear separator
 
 **What it reviews:**
@@ -1208,6 +1229,8 @@ VERIFICATION NOTES:
 
 ### Cost and Performance Impact
 
+**For optional verification (brainstorm, draft):**
+
 | Aspect | Without --verify | With --verify |
 |--------|-----------------|---------------|
 | API Calls | 1 | 2 |
@@ -1215,13 +1238,15 @@ VERIFICATION NOTES:
 | Time | 5-15 seconds | 15-45 seconds |
 | Output Files | 1 | 1-2 files |
 
+**Note:** Commands with automatic verification (extractfacts, strategy) always include verification costs.
+
 ### Best Practices
 
-1. **Development workflow:** Run without --verify during development, add it for final versions
+1. **Development workflow:** Run without --verify during development, add it for final versions (brainstorm, draft)
 2. **Collaborative review:** Share both main output and verification notes with colleagues
 3. **Documentation:** Save verification results as part of your case file
 4. **Iterative improvement:** Use verification feedback to refine your prompts and inputs
-5. **Quality tracking:** Periodically run with --verify to monitor output quality
+5. **Quality tracking:** Periodically run with --verify to monitor output quality (where optional)
 
 ### Important Notes
 
