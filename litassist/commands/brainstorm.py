@@ -11,7 +11,10 @@ import os
 import time
 
 from litassist.config import CONFIG
-from litassist.utils import read_document, save_log, heartbeat, OUTPUT_DIR
+from litassist.utils import (
+    read_document, save_log, heartbeat, OUTPUT_DIR,
+    create_reasoning_prompt, extract_reasoning_trace, save_reasoning_trace
+)
 from litassist.llm import LLMClient
 
 
@@ -99,19 +102,21 @@ def brainstorm(facts_file, side, area, verify):
             "Consider using 'extractfacts' command to create a structured summary first."
         )
 
-    # Initialize the LLM for creative ideation
-    client = LLMClient("x-ai/grok-3-beta", temperature=0.9, top_p=0.95)
-    client.command_context = "brainstorm"  # Set command context
-    
     # Auto-verify for Grok due to hallucination tendency
-    if "grok" in client.model.lower():
+    if "grok" in "x-ai/grok-3-beta".lower():
         verify = True  # Force verification for Grok models
 
-    # Build and send the prompt
-    prompt = f"""Facts:
+    # Generate Orthodox Strategies (conservative approach)
+    click.echo("Generating orthodox strategies...")
+    orthodox_client = LLMClient("x-ai/grok-3-beta", temperature=0.3, top_p=0.7)
+    orthodox_client.command_context = "brainstorm-orthodox"
+    
+    orthodox_base_prompt = f"""Facts:
 {facts}
 
 I am representing the {side} in this {area} law matter.
+
+Generate 10 ORTHODOX legal strategies - established, conservative approaches with strong legal precedent.
 
 Please provide output in EXACTLY this format:
 
@@ -119,25 +124,92 @@ Please provide output in EXACTLY this format:
 
 1. [Strategy Title]
    [Brief explanation (1-2 sentences)]
-   Key principles: [Legal principles or precedents]
+   Key principles: [Legal principles or precedents with citations]
 
 2. [Strategy Title]
    [Brief explanation]
-   Key principles: [Legal principles]
+   Key principles: [Legal principles with citations]
 
 [Continue for 10 orthodox strategies]
+
+Focus on well-established legal approaches with clear precedential support."""
+
+    orthodox_prompt = create_reasoning_prompt(orthodox_base_prompt, "brainstorm-orthodox")
+    orthodox_messages = [
+        {
+            "role": "system",
+            "content": "Australian law only. Provide conservative, well-established legal strategies with strong precedential support. Cite relevant case law or legislation for each strategy. Focus on proven approaches with minimal legal risk.",
+        },
+        {"role": "user", "content": orthodox_prompt},
+    ]
+    
+    call_with_hb = heartbeat(CONFIG.heartbeat_interval)(orthodox_client.complete)
+    try:
+        orthodox_content, orthodox_usage = call_with_hb(orthodox_messages)
+    except Exception as e:
+        raise click.ClickException(f"Error generating orthodox strategies: {e}")
+
+    # Generate Unorthodox Strategies (creative approach)
+    click.echo("Generating unorthodox strategies...")
+    unorthodox_client = LLMClient("x-ai/grok-3-beta", temperature=0.9, top_p=0.95)
+    unorthodox_client.command_context = "brainstorm-unorthodox"
+    
+    unorthodox_base_prompt = f"""Facts:
+{facts}
+
+I am representing the {side} in this {area} law matter.
+
+Generate 10 UNORTHODOX legal strategies - creative, innovative approaches that push legal boundaries.
+
+Please provide output in EXACTLY this format:
 
 ## UNORTHODOX STRATEGIES
 
 1. [Strategy Title]
    [Brief explanation (1-2 sentences)]
-   Key principles: [Legal principles or precedents]
+   Key principles: [Legal principles or novel arguments]
 
 2. [Strategy Title]
    [Brief explanation]
-   Key principles: [Legal principles]
+   Key principles: [Legal principles or innovative theories]
 
 [Continue for 10 unorthodox strategies]
+
+Be creative and innovative while acknowledging any legal uncertainties or risks."""
+
+    unorthodox_prompt = create_reasoning_prompt(unorthodox_base_prompt, "brainstorm-unorthodox")
+    unorthodox_messages = [
+        {
+            "role": "system",
+            "content": "Australian law only. Provide creative, innovative legal strategies that push boundaries. Acknowledge legal uncertainties and risks. Suggest novel approaches while maintaining ethical boundaries.",
+        },
+        {"role": "user", "content": unorthodox_prompt},
+    ]
+    
+    try:
+        unorthodox_content, unorthodox_usage = call_with_hb(unorthodox_messages)
+    except Exception as e:
+        raise click.ClickException(f"Error generating unorthodox strategies: {e}")
+
+    # Generate Most Likely to Succeed analysis
+    click.echo("Analyzing most promising strategies...")
+    analysis_client = LLMClient("x-ai/grok-3-beta", temperature=0.4, top_p=0.8)
+    analysis_client.command_context = "brainstorm-analysis"
+    
+    analysis_base_prompt = f"""Facts:
+{facts}
+
+I am representing the {side} in this {area} law matter.
+
+ORTHODOX STRATEGIES GENERATED:
+{orthodox_content}
+
+UNORTHODOX STRATEGIES GENERATED:
+{unorthodox_content}
+
+Analyze ALL the strategies above and select the 3-5 most likely to succeed.
+
+Please provide output in EXACTLY this format:
 
 ## MOST LIKELY TO SUCCEED
 
@@ -148,34 +220,53 @@ Please provide output in EXACTLY this format:
    [Why this strategy is most likely to succeed]
 
 [List 3-5 strategies total that are most likely to succeed]
-"""
-    messages = [
+
+Consider both orthodox and unorthodox options. Base selections on legal merit, factual support, and likelihood of judicial acceptance."""
+
+    analysis_prompt = create_reasoning_prompt(analysis_base_prompt, "brainstorm-analysis")
+    analysis_messages = [
         {
             "role": "system",
-            "content": "Australian law only. Provide practical, actionable legal strategies. Balance creativity with factual accuracy. When suggesting strategies, clearly distinguish between established legal approaches and more innovative options. For orthodox strategies, cite relevant case law or legislation. For unorthodox strategies, acknowledge any legal uncertainties or risks. Maintain logical structure throughout your response. End with a clear, definitive recommendation section without open-ended statements.",
+            "content": "Australian law only. Analyze strategies objectively. Consider legal merit, factual support, precedential strength, and judicial likelihood. Provide clear reasoning for selections.",
         },
-        {"role": "user", "content": prompt},
+        {"role": "user", "content": analysis_prompt},
     ]
-    call_with_hb = heartbeat(CONFIG.heartbeat_interval)(client.complete)
+    
     try:
-        content, usage = call_with_hb(messages)
+        analysis_content, analysis_usage = call_with_hb(analysis_messages)
     except Exception as e:
-        raise click.ClickException(f"Grok brainstorming error: {e}")
+        raise click.ClickException(f"Error analyzing strategies: {e}")
 
+    # Combine all content
+    combined_content = f"""{orthodox_content}
+
+{unorthodox_content}
+
+{analysis_content}"""
+
+    # Combine usage statistics
+    total_usage = {
+        'prompt_tokens': orthodox_usage.get('prompt_tokens', 0) + unorthodox_usage.get('prompt_tokens', 0) + analysis_usage.get('prompt_tokens', 0),
+        'completion_tokens': orthodox_usage.get('completion_tokens', 0) + unorthodox_usage.get('completion_tokens', 0) + analysis_usage.get('completion_tokens', 0),
+        'total_tokens': orthodox_usage.get('total_tokens', 0) + unorthodox_usage.get('total_tokens', 0) + analysis_usage.get('total_tokens', 0)
+    }
+    
     # Store original content before verification
-    original_content = content
+    original_content = combined_content
+    usage = total_usage
     verification_notes = []
     
     # Smart verification - auto-enabled for Grok or when requested
-    if verify or client.should_auto_verify(content, "brainstorm"):
+    # Use analysis_client for verification since it has balanced settings
+    if verify or analysis_client.should_auto_verify(original_content, "brainstorm"):
         try:
             # Use medium verification for creative brainstorming
-            correction = client.verify_with_level(content, "medium")
+            correction = analysis_client.verify_with_level(original_content, "medium")
             if correction.strip():  # Only append if there are actual corrections
                 verification_notes.append("--- Strategic Review ---\n" + correction)
                 
             # Run citation validation for any legal references
-            citation_issues = client.validate_citations(content)
+            citation_issues = analysis_client.validate_citations(original_content)
             if citation_issues:
                 verification_notes.append("--- Citation Warnings ---\n" + "\n".join(citation_issues))
                 
@@ -183,6 +274,9 @@ Please provide output in EXACTLY this format:
             raise click.ClickException(
                 f"Verification error during brainstorming: {e}"
             )
+
+    # Extract reasoning trace before saving
+    reasoning_trace = extract_reasoning_trace(original_content, "brainstorm")
 
     # Save audit log (with full content including verification)
     full_content = original_content
@@ -192,10 +286,15 @@ Please provide output in EXACTLY this format:
     save_log(
         "brainstorm",
         {
-            "inputs": {"facts_file": facts_file, "prompt": prompt},
-            "params": f"verify={verify} (auto-enabled for Grok)",
+            "inputs": {"facts_file": facts_file, "method": "three-stage approach"},
+            "params": f"verify={verify} (auto-enabled for Grok), orthodox_temp=0.3, unorthodox_temp=0.9, analysis_temp=0.4",
             "response": full_content,
             "usage": usage,
+            "stages": {
+                "orthodox": {"usage": orthodox_usage, "temperature": 0.3},
+                "unorthodox": {"usage": unorthodox_usage, "temperature": 0.9}, 
+                "analysis": {"usage": analysis_usage, "temperature": 0.4}
+            }
         },
     )
     
@@ -211,6 +310,12 @@ Please provide output in EXACTLY this format:
         f.write(original_content)
     
     click.echo(f"Strategies saved to: {output_file}")
+    
+    # Save reasoning trace if extracted
+    if reasoning_trace:
+        reasoning_file = save_reasoning_trace(reasoning_trace, output_file)
+        click.echo(f"Legal reasoning trace saved to: {reasoning_file}")
+    
     click.echo("\nTo use these strategies with other commands, manually create or update strategies.txt")
     
     # Save verification notes separately if any exist

@@ -11,7 +11,10 @@ import os
 import time
 
 from litassist.config import CONFIG
-from litassist.utils import read_document, chunk_text, save_log, OUTPUT_DIR
+from litassist.utils import (
+    read_document, chunk_text, save_log, OUTPUT_DIR,
+    create_reasoning_prompt, extract_reasoning_trace, save_reasoning_trace
+)
 from litassist.llm import LLMClient
 
 
@@ -47,7 +50,7 @@ def extractfacts(file, verify):
 
     # For single chunk, use original approach
     if len(chunks) == 1:
-        prompt = (
+        base_prompt = (
             "Extract under these headings (include all relevant details):\n"
             "1. Parties (include roles and relationships)\n"
             "2. Background (include commercial/policy context if relevant)\n"
@@ -61,6 +64,9 @@ def extractfacts(file, verify):
             "10. Client Objectives (include any constraints/limitations)\n\n"
             + chunks[0]
         )
+        
+        # Add reasoning trace to prompt
+        prompt = create_reasoning_prompt(base_prompt, "extractfacts")
         try:
             combined, usage = client.complete(
                 [
@@ -113,7 +119,7 @@ Just extract the raw facts found in this excerpt:
         
         # Now organize all accumulated facts into the required structure
         all_facts = "\n\n".join(accumulated_facts)
-        organize_prompt = f"""Organize the following extracted facts into these 10 headings:
+        base_organize_prompt = f"""Organize the following extracted facts into these 10 headings:
 
 1. **Parties**: Identify all parties involved in the matter, including their roles and relevant characteristics
 2. **Background**: Provide context about the relationship between parties and circumstances leading to the dispute
@@ -134,6 +140,9 @@ Important:
 - If information for a heading is not available, write "Not specified in the document"
 - Maintain chronological order for events
 - Be comprehensive but factual"""
+
+        # Add reasoning trace to organize prompt
+        organize_prompt = create_reasoning_prompt(base_organize_prompt, "extractfacts")
 
         try:
             combined, usage = client.complete(
@@ -165,6 +174,9 @@ Important:
             f"Verification error during fact extraction: {e}"
         )
 
+    # Extract reasoning trace before saving
+    reasoning_trace = extract_reasoning_trace(combined, "extractfacts")
+
     # Save to timestamped file only
     timestamp = time.strftime("%Y%m%d_%H%M%S")
     # Extract base filename without extension for the output name
@@ -180,6 +192,12 @@ Important:
         f.write(combined)
     
     click.echo(f"Extraction saved to: {output_file}")
+    
+    # Save reasoning trace if extracted
+    if reasoning_trace:
+        reasoning_file = save_reasoning_trace(reasoning_trace, output_file)
+        click.echo(f"Legal reasoning trace saved to: {reasoning_file}")
+    
     click.echo("\nTo use these facts with other commands, manually create or update case_facts.txt")
 
     # Audit log

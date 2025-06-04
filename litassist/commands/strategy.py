@@ -13,7 +13,10 @@ import time
 import os
 
 from litassist.config import CONFIG
-from litassist.utils import save_log, heartbeat, OUTPUT_DIR
+from litassist.utils import (
+    save_log, heartbeat, OUTPUT_DIR,
+    create_reasoning_prompt, extract_reasoning_trace, save_reasoning_trace
+)
 from litassist.llm import LLMClient
 
 
@@ -271,7 +274,7 @@ Requirements:
 - Do not introduce facts not in the case materials
 """
 
-    user_prompt = f"""CASE FACTS:
+    base_user_prompt = f"""CASE FACTS:
 {facts_content}
 
 DESIRED OUTCOME:
@@ -283,12 +286,15 @@ IDENTIFIED LEGAL ISSUES:
     
     # Add strategies content if provided
     if parsed_strategies:
-        user_prompt += f"\nBRAINSTORMED STRATEGIES PROVIDED:\n"
-        user_prompt += f"- {parsed_strategies['orthodox_count']} orthodox strategies\n"
-        user_prompt += f"- {parsed_strategies['unorthodox_count']} unorthodox strategies\n"
-        user_prompt += f"- {parsed_strategies['most_likely_count']} marked as most likely to succeed\n"
-        user_prompt += f"\nFULL BRAINSTORMED CONTENT:\n{strategies_content}\n"
-        user_prompt += "\nBuild upon the strategies marked as most likely to succeed, and consider how the orthodox strategies can be refined for the specific outcome requested.\n"
+        base_user_prompt += f"\nBRAINSTORMED STRATEGIES PROVIDED:\n"
+        base_user_prompt += f"- {parsed_strategies['orthodox_count']} orthodox strategies\n"
+        base_user_prompt += f"- {parsed_strategies['unorthodox_count']} unorthodox strategies\n"
+        base_user_prompt += f"- {parsed_strategies['most_likely_count']} marked as most likely to succeed\n"
+        base_user_prompt += f"\nFULL BRAINSTORMED CONTENT:\n{strategies_content}\n"
+        base_user_prompt += "\nBuild upon the strategies marked as most likely to succeed, and consider how the orthodox strategies can be refined for the specific outcome requested.\n"
+    
+    # Add reasoning trace to the prompt
+    user_prompt = create_reasoning_prompt(base_user_prompt, "strategy")
     
     user_prompt += "\nGenerate 3-5 distinct strategic options to achieve the desired outcome using the exact format specified."""
 
@@ -495,6 +501,9 @@ Requirements:
     except Exception as e:
         raise click.ClickException(f"Verification error during strategy generation: {e}")
 
+    # Extract reasoning trace before saving
+    reasoning_trace = extract_reasoning_trace(output, "strategy")
+
     # Save output to timestamped file
     # Create a slug from the outcome for the filename
     outcome_slug = re.sub(r'[^\w\s-]', '', outcome.lower())
@@ -516,6 +525,11 @@ Requirements:
         f.write(output)
     
     click.echo(f"\nOutput saved to: {output_file}")
+    
+    # Save reasoning trace if extracted
+    if reasoning_trace:
+        reasoning_file = save_reasoning_trace(reasoning_trace, output_file)
+        click.echo(f"Legal reasoning trace saved to: {reasoning_file}")
 
     # Save audit log
     save_log(
