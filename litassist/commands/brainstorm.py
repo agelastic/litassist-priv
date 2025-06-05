@@ -158,7 +158,10 @@ Focus on well-established legal approaches with clear precedential support."""
     except Exception as e:
         raise click.ClickException(f"Error generating orthodox strategies: {e}")
 
-    # Note: Citation verification now handled automatically in LLMClient.complete()
+    # Validate orthodox citations immediately
+    orthodox_citation_issues = orthodox_client.validate_citations(orthodox_content)
+    if orthodox_citation_issues:
+        click.echo(f"  ⚠️  Found {len(orthodox_citation_issues)-1} citation issues in orthodox strategies")
 
     # Generate Unorthodox Strategies (creative approach)
     click.echo("Generating unorthodox strategies...")
@@ -202,7 +205,10 @@ Be creative and innovative while acknowledging any legal uncertainties or risks.
     except Exception as e:
         raise click.ClickException(f"Error generating unorthodox strategies: {e}")
 
-    # Note: Citation verification now handled automatically in LLMClient.complete()
+    # Validate unorthodox citations immediately
+    unorthodox_citation_issues = unorthodox_client.validate_citations(unorthodox_content)
+    if unorthodox_citation_issues:
+        click.echo(f"  ⚠️  Found {len(unorthodox_citation_issues)-1} citation issues in unorthodox strategies")
 
     # Generate Most Likely to Succeed analysis
     click.echo("Analyzing most promising strategies...")
