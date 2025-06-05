@@ -98,56 +98,277 @@ def is_core_citation(text_section: str, citation: str) -> bool
 - Checks publication years against series establishment dates
 - Flags impossible volume/page combinations
 
-### 4. Command Integration
+### 4. Command Integration & Citation Issue Handling
 
-**✅ IMPLEMENTED**: All commands updated with automatic verification:
+**✅ IMPLEMENTED**: All commands updated with automatic verification, user feedback, and specific handling for citation issues:
 
 #### lookup Command
 ```python
-# Note: Citation verification now handled automatically in LLMClient.complete()
+citation_issues = client.validate_citations(content)
+if citation_issues:
+    # Prepend warnings to content so they appear prominently
+    citation_warning = "--- CITATION VALIDATION WARNINGS ---\n"
+    citation_warning += "\n".join(citation_issues)
+    citation_warning += "\n" + "-" * 40 + "\n\n"
+    content = citation_warning + content
 ```
-- Automatic verification of search results
-- No manual validation needed
-- Clean output with verified citations only
+**Behavior when bad citations found:**
+- ⚠️ **WARNING DISPLAY**: Validation warnings appear prominently at the top of output
+- ✅ **CONTINUES EXECUTION**: Output is still provided but flagged for review
+- 📝 **FULL PRESERVATION**: Original content preserved with warnings prepended
+- 🎯 **USER AWARENESS**: Clear visual separation with dashed lines
 
-#### brainstorm Command
+#### brainstorm Command (Selective Regeneration - OPTION B)
 ```python
-orthodox_client = LLMClient("x-ai/grok-3-beta", temperature=0.3, top_p=0.7)
-# Grok outputs automatically verified due to hallucination tendency
-```
-- Automatic verification for all 20+ generated strategies
-- Special handling for Grok model (auto-verification enabled)
-- Clean strategy output with verified citations only
+# Orthodox strategies - selective regeneration
+orthodox_citation_issues = orthodox_client.validate_citations(orthodox_content)
+if orthodox_citation_issues:
+    click.echo(f"  🔄 Found {len(orthodox_citation_issues)-1} citation issues in orthodox strategies - fixing...")
+    orthodox_content = regenerate_bad_strategies(
+        orthodox_client, orthodox_content, orthodox_base_prompt, "orthodox"
+    )
 
-#### strategy Command
-```python
-# strategy always needs verification as it creates foundational strategic documents
-verify = True  # Force verification for critical accuracy
+# Unorthodox strategies - selective regeneration  
+unorthodox_citation_issues = unorthodox_client.validate_citations(unorthodox_content)
+if unorthodox_citation_issues:
+    click.echo(f"  🔄 Found {len(unorthodox_citation_issues)-1} citation issues in unorthodox strategies - fixing...")
+    unorthodox_content = regenerate_bad_strategies(
+        unorthodox_client, unorthodox_content, unorthodx_base_prompt, "unorthodox"
+    )
 ```
-- Mandatory verification for strategic legal guidance
-- Heavy verification level for high-stakes content
-- Blocks unverified citations in strategic options
+**Behavior when bad citations found (NEW - OPTION B):**
+- 🎯 **SURGICAL REGENERATION**: Only regenerates individual strategies with citation issues
+- ✂️ **PRESERVES GOOD CONTENT**: Keeps strategies that pass validation unchanged
+- 🔄 **MAX RETRY LIMIT**: Prevents infinite loops with configurable retry limit (default: 2)
+- 📊 **QUALITY FOCUS**: Produces fewer, higher-quality strategies rather than quantity with warnings
+- 🚫 **EXCLUDES BAD STRATEGIES**: Strategies that can't be fixed are excluded entirely
+- 📈 **RENUMBERING**: Remaining strategies are renumbered sequentially for clean output
+
+#### strategy Command (Individual Generation - OPTION B)
+```python
+# Generate strategic options individually for better quality control
+for attempt in range(1, max_attempts + 1):
+    if len(valid_options) >= target_options:
+        break
+        
+    # Generate individual option
+    option_content, option_usage = llm_client.complete([...])
+    
+    # Validate citations immediately
+    citation_issues = llm_client.validate_citations(option_content)
+    if citation_issues:
+        click.echo(f"    ❌ Option {attempt}: Found {len(citation_issues)-1} citation issues - discarding")
+        continue
+    else:
+        click.echo(f"    ✅ Option {attempt}: Citations verified - keeping")
+        valid_options.append(option_content.strip())
+```
+**Behavior when bad citations found (NEW - OPTION B):**
+- 🔄 **INDIVIDUAL GENERATION**: Each strategic option generated and validated separately
+- 🚫 **IMMEDIATE DISCARD**: Options with citation issues discarded immediately, no warnings
+- 🎯 **QUALITY OVER QUANTITY**: Targets 4 options but ensures all are citation-clean
+- 📈 **ADAPTIVE ATTEMPTS**: Up to 7 generation attempts to achieve target of verified options
+- ✅ **CLEAN OUTPUT**: Only presents options with verified citations to users
+- 🔀 **NO FALSE CHOICES**: Users never see strategic options known to have bad citations
 
 #### draft Command
 ```python
-client.command_context = "draft"  # Set command context
-# Smart verification with conditional depth
-needs_verification = verify or client.should_auto_verify(content, "draft")
+citation_issues = client.validate_citations(content)
+if citation_issues:
+    content += "\n\n--- Citation Warnings ---\n" + "\n".join(citation_issues)
 ```
-- Automatic verification triggered by citations/statutory references
-- Heavy verification for legal drafting
-- Clean drafts with verified citations only
+**Behavior when bad citations found:**
+- 📄 **APPENDED WARNINGS**: Citation issues added to end of draft document
+- ✍️ **DRAFT PRESERVATION**: Original draft content maintained unchanged
+- ⚖️ **LEGAL CONTEXT**: Clear separation between draft and warnings
+- 🔍 **REVIEW FLAGGING**: Issues clearly marked for legal review
 
 #### extractfacts Command
 ```python
-verify = True  # Force verification for critical accuracy
-# Mandatory heavy verification for extractfacts (creates foundational documents)
+citation_issues = client.validate_citations(combined)
+if citation_issues:
+    combined += "\n\n--- Citation Warnings ---\n" + "\n".join(citation_issues)
 ```
-- Always verified (creates foundational documents)
-- Heavy verification for legal accuracy
-- Ensures clean fact extraction
+**Behavior when bad citations found:**
+- 📋 **FACT INTEGRITY**: Core extracted facts preserved unchanged
+- ⚠️ **BOTTOM WARNINGS**: Citation issues appended after facts
+- 🏗️ **FOUNDATION SAFETY**: Ensures foundational documents remain usable
+- 🔬 **AUDIT TRAIL**: Clear record of any citation concerns
 
-### 5. Performance Optimization
+#### digest Command (Per-Chunk Validation)
+```python
+citation_issues = client.validate_citations(content)
+if citation_issues:
+    citation_warning = "--- CITATION WARNINGS FOR THIS CHUNK ---\n"
+    citation_warning += "\n".join(citation_issues)
+    citation_warning += "\n" + "-" * 40 + "\n\n"
+    content = citation_warning + content
+```
+**Behavior when bad citations found:**
+- 📑 **CHUNK-LEVEL WARNINGS**: Citation issues identified per document chunk
+- 🎯 **SPECIFIC TARGETING**: Warnings tied to exact content sections
+- 📈 **GRANULAR TRACKING**: Precise identification of problematic sections
+- 🔄 **PROCESS CONTINUATION**: Digestion continues despite citation issues
+
+### Common Citation Issue Patterns Across All Commands
+
+#### Enhanced Error Messages (NEW)
+```
+CITATION VALIDATION FAILURE (high risk): 3 issues detected.
+→ PATTERN ANALYSIS: 2 citations flagged for suspicious patterns
+→ AUSTLII VERIFICATION: 1 citation not found in legal database
+→ ACTION TAKEN: Flagging questionable citations for manual review
+→ RECOMMENDATION: Verify all citations independently before use
+
+GENERIC CASE NAME: Smith v Jones
+  → FAILURE: Both parties use common surnames (possible AI hallucination)
+  → ACTION: Flagging for manual verification
+
+FUTURE CITATION: [2027] HCA 999
+  → FAILURE: Citation dated in the future (after 2025)
+  → ACTION: Excluding impossible future case
+```
+
+#### Option B Implementation Philosophy (NEW)
+
+**CORE PRINCIPLE: Generate as much CORRECT information as possible, not a fixed number of items where some are wrong.**
+
+##### Strategy-Generating Commands (brainstorm, strategy)
+These commands now implement **"Quality over Quantity with Surgical Correction"**:
+
+1. **🎯 SELECTIVE REGENERATION**: Only regenerate/discard individual items with citation issues
+2. **✂️ PRESERVE GOOD CONTENT**: Keep all strategies/options that pass validation unchanged  
+3. **🚫 EXCLUDE BAD OPTIONS**: Remove options with unfixable citation issues entirely
+4. **📊 ADAPTIVE OUTPUT**: Better to have 2 verified strategies than 5 with warnings
+5. **🔄 CONTROLLED ATTEMPTS**: Limited retries prevent infinite loops while maximizing success
+
+##### Research/Analysis Commands (lookup, digest, draft, extractfacts)
+These commands maintain **"Transparent with Warnings"** approach:
+
+1. **⚠️ PROMINENT FLAGGING**: Citation issues clearly marked for user attention
+2. **📄 CONTENT PRESERVATION**: Original AI output always preserved
+3. **🎯 CONTEXT-APPROPRIATE**: Warning placement varies by command purpose
+4. **🔍 DETAILED DIAGNOSTICS**: Specific failure reasons and actions explained
+
+##### Rationale for Different Approaches
+
+**Why Strategy Commands Use Option B:**
+- Users expect high-quality strategic advice, not warnings to manually filter
+- False strategic options with known bad citations create professional liability risks
+- Better UX: clean verified options vs. mixed output requiring manual review
+- Lawyers need reliable foundation documents for case planning
+
+**Why Research Commands Keep Warnings:**
+- Research inherently involves evaluating source quality
+- Users may want to see what the AI generated even if citations are questionable  
+- Content may be valuable even with citation issues (concepts, analysis frameworks)
+- Transparency allows lawyers to make informed judgments about content reliability
+
+### 5. Verification Status Messaging (NEW)
+
+**✅ IMPLEMENTED**: All commands now provide clear user feedback about verification status:
+
+#### Verification Status Messages
+
+**draft Command** (respects --verify flag):
+```
+🔍 Running verification (--verify flag + auto-verification triggered)  # Both manual and auto
+🔍 Running verification (--verify flag enabled)                       # Manual verification only  
+🔍 Running auto-verification (high-risk content detected)              # Auto-verification only
+ℹ️  No verification performed                                         # No verification
+```
+
+**brainstorm Command** (auto-enables for Grok models):
+```
+ℹ️  Note: --verify flag auto-enabled for Grok models due to hallucination tendency  # When forcing
+🔍 Running verification (--verify flag + auto-verification triggered)               # Both manual and auto
+🔍 Running verification (--verify flag enabled)                                    # Manual verification only
+🔍 Running auto-verification (Grok model or high-risk content detected)            # Auto-verification only
+ℹ️  No verification performed                                                      # No verification
+```
+
+**strategy Command** (always uses verification):
+```
+ℹ️  Note: --verify flag ignored - strategy command always uses verification for accuracy  # When flag ignored
+🔍 Running verification (mandatory for strategy command)                                  # Always shown
+```
+
+**extractfacts Command** (always uses verification):
+```
+ℹ️  Note: --verify flag ignored - extractfacts command always uses verification for accuracy  # When flag ignored
+🔍 Running verification (mandatory for extractfacts command)                                  # Always shown
+```
+
+#### User Experience Benefits
+
+1. **👁️ COMPLETE VISIBILITY**: Users always know if verification is running
+2. **🎯 CLEAR REASONING**: Messages explain why verification is triggered (flag, auto-detection, mandatory)
+3. **⚠️ FLAG STATUS**: Clear feedback when --verify flag is ignored or overridden
+4. **🤝 NO SURPRISES**: No silent auto-verification - everything is communicated
+5. **📊 INFORMED DECISIONS**: Users understand the reliability level of their output
+
+### 6. Strategic Command Enhancements (NEW)
+
+**✅ IMPLEMENTED**: Strategy-generating commands now use "Option B" approach:
+
+#### Individual Generation with Quality Control
+
+**brainstorm Command**:
+- **🎯 SELECTIVE REGENERATION**: Only regenerates individual strategies with citation issues
+- **✂️ PRESERVES GOOD CONTENT**: Keeps strategies that pass validation unchanged  
+- **🚫 EXCLUDES BAD STRATEGIES**: Strategies that can't be fixed are excluded entirely
+- **📊 ADAPTIVE OUTPUT**: Better to have fewer verified strategies than more with warnings
+- **🔄 CONTROLLED ATTEMPTS**: Limited retries (max 2) prevent infinite loops
+
+**strategy Command**:
+- **🧠 INTELLIGENT STRATEGY PRIORITIZATION**: Uses Claude 3.5 Sonnet to rank all available brainstormed strategies for the specific outcome
+- **📋 BUILDS ON BRAINSTORMED WORK**: Transforms "most likely to succeed" strategies into detailed strategic options
+- **🎯 OUTCOME-SPECIFIC ANALYSIS**: Evaluates strategies specifically for achieving the desired result
+- **🔄 INDIVIDUAL GENERATION**: Each strategic option generated and validated separately
+- **🚫 IMMEDIATE DISCARD**: Options with citation issues discarded immediately
+- **✅ CLEAN OUTPUT**: Only presents options with verified citations
+- **🗂️ SEPARATE REASONING**: Legal reasoning traces saved to separate `*_reasoning.txt` files
+
+#### Intelligent Strategy Prioritization Process
+
+**Intelligent Strategy Prioritization (NEW)**: 
+1. **🔍 EXTRACT ALL STRATEGIES**: Collects strategies from "most likely", orthodox, unorthodox, and unstructured sections
+2. **🚀 EFFICIENCY-FIRST APPROACH**: Avoids duplicate analysis when possible:
+   - **If "most likely" available**: Uses pre-analyzed strategies directly (no re-analysis)
+   - **If insufficient "most likely"**: Intelligently analyzes remaining strategies to fill gaps
+   - **If no "most likely"**: Claude 3.5 Sonnet ranks all available strategies for the outcome
+3. **🧠 TARGETED ANALYSIS**: When analysis is needed, uses consistent criteria:
+   - Legal merit and strength of legal foundation
+   - Factual support from case materials
+   - Precedential strength and established principles
+   - Likelihood of judicial acceptance in Australian courts
+   - Direct relevance to specific desired outcome
+4. **📊 SMART GAP-FILLING**: When "most likely" strategies are insufficient, analyzes remaining pool specifically for the outcome
+5. **🎯 TARGETED DEVELOPMENT**: Top-ranked strategies become foundation for strategic options
+
+**Priority Hierarchy (Efficiency-Optimized)**:
+- **1st Priority**: Use pre-analyzed "most likely to succeed" strategies (no additional analysis)
+- **2nd Priority**: If insufficient, intelligently rank remaining strategies to fill gaps
+- **3rd Priority**: If no "most likely" available, rank all orthodox strategies for the outcome
+- **4th Priority**: If no orthodox available, rank all unorthodox strategies for the outcome  
+- **5th Priority**: If no structured content, rank any numbered strategies found
+- **6th Priority**: Generate fresh strategic options
+
+#### Strategy Output Organization
+
+**Main Strategy File**: Clean strategic options without verbose reasoning traces
+- Strategic options with probability assessments
+- Principal hurdles and legal principles
+- Recommended next steps
+- Draft document suggestions
+
+**Separate Reasoning File** (`*_reasoning.txt`): Detailed legal analysis
+- **Option-Specific Traces**: Each strategic option's reasoning clearly marked
+- **Consolidated Format**: All reasoning traces in one organized file
+- **Legal Analysis**: Issue, applicable law, application to facts, conclusion, confidence, sources
+- **Transparency**: Complete legal reasoning process documented separately
+
+### 7. Performance Optimization
 
 **✅ IMPLEMENTED**: Efficient caching and threading:
 

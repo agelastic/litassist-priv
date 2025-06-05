@@ -236,7 +236,18 @@ def draft(documents, query, verify, diversity):
     # Note: Citation verification now handled automatically in LLMClient.complete()
 
     # Smart verification with conditional depth
-    needs_verification = verify or client.should_auto_verify(content, "draft")
+    auto_verify = client.should_auto_verify(content, "draft")
+    needs_verification = verify or auto_verify
+
+    # Inform user about verification status
+    if verify and auto_verify:
+        click.echo("🔍 Running verification (--verify flag + auto-verification triggered)")
+    elif verify:
+        click.echo("🔍 Running verification (--verify flag enabled)")
+    elif auto_verify:
+        click.echo("🔍 Running auto-verification (high-risk content detected)")
+    else:
+        click.echo("ℹ️  No verification performed")
 
     if needs_verification:
         try:

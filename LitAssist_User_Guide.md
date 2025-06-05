@@ -60,6 +60,14 @@ This running example provides context for understanding how each LitAssist workf
 - ✅ **Automatic logging** - Every operation creates detailed audit logs
 - ✅ **Australian English** - All outputs use Australian legal terminology
 
+**Citation Verification & Quality Control:**
+- ✅ **Zero-tolerance citation verification** - All legal references validated against AustLII database
+- ✅ **Real-time online validation** - HEAD requests verify case existence during generation
+- ✅ **Intelligent regeneration** - Commands automatically fix citation issues where possible
+- ✅ **Quality over quantity** - Strategy commands discard options with unfixable citation problems
+- ✅ **Enhanced error messages** - Clear explanations of citation failures with specific actions taken
+- ✅ **Verification status transparency** - Always informed when verification runs and why
+
 ## Installation and Setup
 
 **Quick Installation:**
@@ -448,6 +456,8 @@ Options:
 
 **Output**: All analysis saved to timestamped files: `digest_[mode]_[filename_slug]_YYYYMMDD_HHMMSS.txt`
 
+**Citation Quality Control**: All digest outputs undergo automatic citation verification. If any citations are found to be invalid or unverifiable, clear warnings are displayed at the top of each chunk's output explaining the specific issues and actions taken.
+
 ### Handling Non-Legal Documents
 
 While designed for legal content, the `digest` command can process various document types:
@@ -515,13 +525,15 @@ The `extractfacts` command processes a document to extract relevant case facts a
 
 **Note**: Input documents must be text-searchable PDFs for optimal fact extraction.
 
+**Citation Quality Control**: ExtractFacts includes mandatory citation verification with enhanced error messages. Any problematic citations are flagged with specific failure reasons (e.g., "GENERIC CASE NAME", "FUTURE CITATION") and clear actions taken (e.g., "Flagging for manual verification", "Excluding impossible future case"). This ensures the extracted facts provide a reliable foundation for subsequent strategic analysis.
+
 ### Command
 
 ```bash
 ./litassist.py extractfacts <file>
 ```
 
-**Note:** This command includes automatic verification for accuracy and completeness - no additional flag needed.
+**Note:** This command includes automatic verification for accuracy and completeness - no additional flag needed. The --verify flag is ignored as verification is mandatory for this foundational command.
 
 ### Required Output Format
 
@@ -632,6 +644,8 @@ The `brainstorm` command uses Grok's creative capabilities to generate a compreh
 - `brainstorm_[area]_[side]_YYYYMMDD_HHMMSS.txt` - Timestamped output file
 - Note: To use with other commands, manually create/update `strategies.txt`
 
+**Quality Control ("Option B" Implementation)**: When citation issues are detected, brainstorm uses selective regeneration - only individual strategies with citation problems are regenerated, while verified strategies are preserved unchanged. This "quality over quantity" approach ensures users receive fewer but higher-quality strategies rather than many options requiring manual review for citation issues.
+
 ### Command
 
 ```bash
@@ -644,7 +658,7 @@ Required parameters:
   - Civil/Commercial cases: `plaintiff` or `defendant`
   - Family/Administrative cases: `plaintiff`, `defendant`, or `respondent`
 - `--area`: Legal area of the matter - `criminal`, `civil`, `family`, `commercial`, or `administrative`
-- `--verify` (optional): Run AI verification to review strategy viability and identify risks. Automatically enabled when using Grok models (see [Using the --verify Switch](#using-the--verify-switch))
+- `--verify` (optional): Run AI verification to review strategy viability and identify risks. Automatically enabled when using Grok models due to hallucination tendencies (see [Using the --verify Switch](#using-the--verify-switch))
 
 **Note**: The command will warn you if you use incompatible side/area combinations (e.g., "plaintiff" in criminal cases) but will still generate strategies.
 
@@ -718,7 +732,9 @@ With comprehensive strategies generated, you can now use the `strategy` workflow
 
 The `strategy` command analyzes case facts to generate strategic legal options, recommended actions, and draft documents tailored to achieving a specific outcome. It produces comprehensive analysis including probability assessments, critical hurdles, and prioritized next steps.
 
-**Output**: All analysis saved to timestamped files: `strategy_[outcome_slug]_YYYYMMDD_HHMMSS.txt`
+**Output**: All analysis saved to timestamped files: 
+- `strategy_[outcome_slug]_YYYYMMDD_HHMMSS.txt` - Main strategic options and recommendations
+- `strategy_[outcome_slug]_YYYYMMDD_HHMMSS_reasoning.txt` - Detailed legal reasoning traces for each option
 
 ### Command
 
@@ -730,9 +746,19 @@ Required parameters:
 - `--outcome`: A single sentence describing the desired outcome
 
 Optional parameters:
-- `--strategies`: Path to strategies.txt from brainstorm command. When provided, the strategy command will consider the brainstormed strategies, particularly those marked as "most likely to succeed"
+- `--strategies`: Path to strategies.txt from brainstorm command. When provided, the command efficiently uses pre-analyzed "most likely to succeed" strategies, with intelligent gap-filling analysis only when needed
 
-**Note:** This command includes automatic verification for accuracy - no additional flag needed.
+**Note:** This command includes automatic verification for accuracy - no additional flag needed. The --verify flag is ignored as verification is mandatory for strategic analysis.
+
+**Intelligent Strategy Prioritization**: Strategy now efficiently uses brainstormed strategies as foundations for strategic options. When strategies.txt is provided:
+
+- **If "most likely to succeed" strategies exist**: Uses them directly without re-analysis (maximum efficiency)
+- **If insufficient "most likely" strategies**: Intelligently analyzes remaining strategies to fill gaps using Claude 3.5 Sonnet
+- **If no "most likely" section**: Analyzes all available strategies and ranks them specifically for the desired outcome
+
+This efficiency-first approach avoids duplicate analysis while ensuring brainstormed work directly feeds into strategic planning with intelligent gap-filling when needed.
+
+**Quality Control ("Option B" Implementation)**: Strategy uses individual generation with immediate validation - each strategic option is generated and verified separately. Options with citation issues are immediately discarded rather than presented with warnings. This ensures users only see strategic options with verified citations, preventing professional liability risks from relying on options with known citation problems. Additionally, reasoning traces are saved to separate `*_reasoning.txt` files for transparency while keeping the main strategy file focused and actionable.
 
 ### Strict Format Requirements
 
@@ -782,8 +808,35 @@ These headings must exactly match those created by the `extractfacts` command. T
 For the *Smith v Jones* case, we can generate strategic options for specific litigation outcomes:
 
 ```bash
+# Using case facts only
 ./litassist.py strategy examples/case_facts.txt --outcome "Secure interim orders allowing children to remain in Brisbane"
+
+# Using case facts + brainstormed strategies (recommended workflow)
+./litassist.py strategy examples/case_facts.txt --outcome "Secure interim orders allowing children to remain in Brisbane" --strategies strategies.txt
 ```
+
+**When using --strategies option**: The command uses an efficiency-first approach:
+
+**Scenario 1 - Complete "Most Likely" Available (Best Case)**:
+```
+📋 Using 3 pre-analyzed 'most likely to succeed' strategies
+```
+No additional analysis needed - maximum time and cost savings.
+
+**Scenario 2 - Insufficient "Most Likely" (Smart Gap-Filling)**:
+```
+📋 Using 2 pre-analyzed 'most likely to succeed' strategies
+🧠 Analyzing remaining 15 strategies to fill 2 slots...
+📊 Intelligently selected 2 additional strategies
+```
+Minimal additional analysis to complete the strategic options.
+
+**Scenario 3 - No "Most Likely" Section (Full Analysis)**:
+```
+🧠 No 'most likely' strategies found - analyzing 17 strategies for 'interim orders'...
+📊 Selected top 4 strategies based on legal analysis
+```
+Comprehensive analysis only when pre-analysis isn't available.
 
 **Output Example**:
 ```
@@ -915,6 +968,8 @@ The `draft` command creates well-supported legal drafts with intelligent documen
 
 **Output**: All drafts saved to timestamped files: `draft_[query_slug]_YYYYMMDD_HHMMSS.txt`
 
+**Citation Quality Control**: Draft outputs undergo comprehensive citation verification. Any unverifiable legal references are flagged with detailed warnings appended to the draft, including specific failure types and recommended actions. Auto-verification is triggered when content contains case citations, statutory references, or strong legal conclusions.
+
 ### Command
 
 ```bash
@@ -930,7 +985,7 @@ Arguments:
 
 Options:
 - `--diversity`: Control diversity of search results (0.0-1.0) - only applies to PDF/large file processing
-- `--verify`: Optional AI verification to check citations, arguments, and compliance. Automatically triggered when content contains case citations, statutory references, percentage claims, or strong legal conclusions (see [Using the --verify Switch](#using-the--verify-switch))
+- `--verify`: Optional AI verification to check citations, arguments, and compliance. Automatically triggered when content contains case citations, statutory references, percentage claims, or strong legal conclusions to ensure accuracy in high-stakes legal drafting (see [Using the --verify Switch](#using-the--verify-switch))
 
 ### Example Usage
 
@@ -1081,10 +1136,10 @@ The `--verify` switch is available for commands that generate substantive legal 
 |---------|--------------|------------------------|
 | lookup | ❌ No | Simple search results don't need verification |
 | digest | ❌ No | Summaries are straightforward factual extracts |
-| extractfacts | ❌ No* | Automatic verification enabled (flag ignored) |
-| brainstorm | ✅ Yes | Optional verification, auto-enabled for Grok models |
-| strategy | ❌ No* | Automatic verification enabled (flag ignored) |
-| draft | ✅ Yes | Optional verification, auto-triggered for citations/statutory refs |
+| extractfacts | ❌ No* | Automatic heavy verification enabled for foundational accuracy (flag ignored) |
+| brainstorm | ✅ Yes | Optional verification, auto-enabled for Grok models due to hallucination tendency |
+| strategy | ❌ No* | Automatic heavy verification enabled for strategic accuracy (flag ignored) |
+| draft | ✅ Yes | Optional verification, auto-triggered for legal citations/references |
 
 *Commands marked with * include automatic verification regardless of the flag.
 
@@ -1110,11 +1165,11 @@ The `--verify` switch is available for commands that generate substantive legal 
 ### Automatic Verification Triggers
 
 **Commands with automatic verification (always enabled):**
-- `extractfacts` - Critical fact accuracy required
-- `strategy` - High-stakes strategic recommendations
+- `extractfacts` - Critical fact accuracy required for foundational documents
+- `strategy` - High-stakes strategic recommendations require mandatory verification
 
 **Commands with conditional auto-verification:**
-- `brainstorm` - Automatically enabled when using Grok models (prone to hallucination)  
+- `brainstorm` - Automatically enabled when using Grok models due to hallucination tendencies
 - `draft` - Automatically triggered when content contains:
   - Case citations (e.g., `[2020] HCA 5`, `Smith v Jones`)
   - Percentage claims (e.g., "75% likely", "90% chance")
@@ -1122,6 +1177,13 @@ The `--verify` switch is available for commands that generate substantive legal 
   - Statutory references (e.g., "section 5", "s 42")
   - Court rules (e.g., "rule 15")
   - Paragraph references (e.g., "paragraph 12")
+
+**Real-Time Citation Verification (All Commands):**
+Beyond AI verification, all commands now include automatic citation verification that:
+- Validates every legal citation against the AustLII database
+- Flags problematic patterns (generic names, future dates, impossible citations)
+- Provides specific error messages explaining failure types and actions taken
+- Automatically regenerates content when possible (brainstorm) or provides clear warnings (other commands)
 
 ### Understanding Verification Results
 
@@ -1159,12 +1221,19 @@ VERIFICATION NOTES:
 - Creative alternatives not considered
 - Practical implementation challenges
 
+**Citation Quality Control:** In addition to AI verification, brainstorm automatically:
+- Validates all legal citations against AustLII database
+- Regenerates only strategies with citation issues (selective regeneration)
+- Preserves verified strategies unchanged
+- Provides enhanced error messages for any remaining citation problems
+
 **How to use results:**
 1. Open both `brainstorm_*.txt` and `brainstorm_verification_*.txt` files in outputs/
 2. Create or update your `strategies.txt` file
 3. Incorporate suggested additional strategies
 4. Add risk warnings for flagged approaches
 4. Note implementation challenges for client discussions
+5. All citation issues are automatically handled - no manual verification needed
 
 **Example verification:**
 ```
@@ -1175,7 +1244,7 @@ VERIFICATION NOTES on Strategy #3:
 ```
 
 #### strategy (automatic verification)
-**Output location:** End of output file under "VERIFICATION NOTES:"
+**Output location:** End of main output file under "Strategic Legal Review" and separate reasoning file
 
 **What it reviews:**
 - Feasibility of recommended approaches
@@ -1184,12 +1253,19 @@ VERIFICATION NOTES on Strategy #3:
 - Cost-benefit analysis accuracy
 - Alternative strategic options
 
+**Citation Quality Control:** Strategy includes mandatory:
+- Individual generation and validation of each strategic option
+- Immediate discard of options with citation issues
+- Detailed legal reasoning traces saved to separate `*_reasoning.txt` file
+- Zero tolerance for unverified citations in strategic recommendations
+
 **How to use results:**
 1. Review verification notes before presenting to client
 2. Research any additional authorities mentioned
 3. Add procedural steps that were missed
 4. Adjust probability assessments if warranted
 5. Prepare responses to identified weaknesses
+6. Consult reasoning file for detailed legal analysis behind each option
 
 **Example verification:**
 ```
@@ -1210,13 +1286,20 @@ VERIFICATION NOTES:
 - Compliance with court rules
 - Australian legal writing conventions
 
+**Citation Quality Control:** Draft includes comprehensive:
+- Real-time validation of all legal citations against AustLII
+- Enhanced error messages for unverifiable references
+- Automatic flagging of problematic citation patterns
+- Clear warnings appended to draft with specific failure types and actions
+
 **How to use results:**
 1. Treat as editorial review from senior counsel
-2. Verify all flagged citations
+2. Address any citation warnings immediately - these indicate real verification failures
 3. Strengthen weak arguments identified
 4. Add missing authorities to footnotes
 5. Refine language and structure
 6. Ensure compliance issues are addressed
+7. Citation verification warnings require immediate attention before use
 
 **Example verification:**
 ```
@@ -1238,7 +1321,15 @@ VERIFICATION NOTES:
 | Time | 5-15 seconds | 15-45 seconds |
 | Output Files | 1 | 1-2 files |
 
-**Note:** Commands with automatic verification (extractfacts, strategy) always include verification costs.
+**For strategy command with --strategies option:**
+
+| Scenario | Analysis Calls | Cost Impact | Time Savings |
+|----------|---------------|-------------|--------------|
+| Complete "Most Likely" (3-4 strategies) | 0 additional | Minimal | Maximum |
+| Insufficient "Most Likely" (1-2 strategies) | 1 partial analysis | ~25-50% of full | Significant |
+| No "Most Likely" section | 1 full analysis | Full analysis cost | Moderate |
+
+**Note:** Commands with automatic verification (extractfacts, strategy) always include verification costs, but strategy now minimizes duplicate analysis costs.
 
 ### Best Practices
 
@@ -1250,10 +1341,13 @@ VERIFICATION NOTES:
 
 ### Important Notes
 
-- **Not automatic corrections:** Verification provides suggestions, not fixes
+- **Not automatic corrections:** AI verification provides suggestions, not fixes
 - **Human judgment required:** All suggestions must be evaluated by qualified counsel
 - **Different models:** Verification often uses different AI models for diverse perspectives
 - **No verification loops:** Running --verify multiple times on same content provides diminishing returns
+- **Citation verification is automatic:** Real-time citation verification against AustLII runs on all commands regardless of --verify flag
+- **Zero tolerance for bad citations:** Strategic commands (brainstorm, strategy) automatically regenerate or discard content with citation issues
+- **Enhanced error messages:** Citation failures include specific explanations (e.g., "GENERIC CASE NAME", "FUTURE CITATION") and actions taken
 
 ## LLM Models and Parameter Configuration
 
@@ -1261,14 +1355,14 @@ VERIFICATION NOTES:
 
 Each LitAssist command uses a specific LLM model chosen for its strengths:
 
-| Command | Model | Primary Purpose |
-|---------|-------|-----------------|
-| lookup | `google/gemini-2.5-pro-preview` | Fast, accurate legal research |
-| digest | `anthropic/claude-3-sonnet` | Reliable document summarization |
-| extractfacts | `anthropic/claude-3-sonnet` | Precise fact extraction |
-| brainstorm | `x-ai/grok-3-beta` | Creative strategy generation |
-| strategy | `openai/gpt-4o` | Balanced strategic analysis |
-| draft | `openai/gpt-4o` | Persuasive legal writing |
+| Command | Generation Model | Analysis Model | Primary Purpose |
+|---------|------------------|----------------|-----------------|
+| lookup | `google/gemini-2.5-pro-preview` | N/A | Fast, accurate legal research |
+| digest | `anthropic/claude-3-sonnet` | N/A | Reliable document summarization |
+| extractfacts | `anthropic/claude-3-sonnet` | N/A | Precise fact extraction |
+| brainstorm | `x-ai/grok-3-beta` | `anthropic/claude-3.5-sonnet` | Creative generation + expert analysis |
+| strategy | `openai/gpt-4o` | `anthropic/claude-3.5-sonnet` | Strategic development + intelligent ranking |
+| draft | `openai/gpt-4o` | N/A | Persuasive legal writing |
 
 ### Temperature and Sampling Parameters
 
@@ -1310,13 +1404,14 @@ temperature=0.2, top_p=0.5
 - **Effect**: Mostly consistent with minor creative elements
 - **Why**: Different perspectives can reveal different issues
 
-**strategy** (`openai/gpt-4o`):
+**strategy** (`openai/gpt-4o` for generation, `anthropic/claude-3.5-sonnet` for analysis):
 ```python
-temperature=0.2, top_p=0.9, presence_penalty=0.0, frequency_penalty=0.0
+# Generation: temperature=0.2, top_p=0.9, presence_penalty=0.0, frequency_penalty=0.0
+# Analysis: temperature=0.2, top_p=0.8
 ```
-- **Purpose**: Strategic analysis needs reliability with insight
-- **Effect**: Consistent core analysis with room for strategic creativity
-- **Why**: Legal strategies require both precedent and innovation
+- **Generation Purpose**: Create detailed strategic options with reliability and insight
+- **Analysis Purpose**: Intelligent ranking of brainstormed strategies for specific outcomes
+- **Why**: Combines strategic development with expert strategy prioritization
 
 #### Creative Commands
 
@@ -1329,13 +1424,14 @@ temperature=0.5, top_p=0.8, presence_penalty=0.1, frequency_penalty=0.1
 - **Why**: Legal drafts need varied language while maintaining precision
 - **Penalties**: Reduce repetitive phrases and improve readability
 
-**brainstorm** (`x-ai/grok-3-beta`):
+**brainstorm** (`x-ai/grok-3-beta` for generation, `anthropic/claude-3.5-sonnet` for analysis):
 ```python
-temperature=0.9, top_p=0.95
+# Generation: temperature=0.9, top_p=0.95
+# Analysis: temperature=0.2, top_p=0.8
 ```
-- **Purpose**: Generate novel and unorthodox strategies
-- **Effect**: High creativity and diverse outputs
-- **Why**: Brainstorming benefits from thinking outside conventional approaches
+- **Generation Purpose**: Generate novel and unorthodox strategies with high creativity
+- **Analysis Purpose**: Expert evaluation of "most likely to succeed" strategies
+- **Why**: Combines creative ideation with consistent legal analysis
 
 #### Verification Parameters
 

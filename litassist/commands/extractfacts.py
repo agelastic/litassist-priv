@@ -53,6 +53,8 @@ def extractfacts(file, verify):
     client.command_context = "extractfacts"  # Set command context for auto-verification
 
     # extractfacts always needs verification as it creates foundational documents
+    if not verify:
+        click.echo("ℹ️  Note: --verify flag ignored - extractfacts command always uses verification for accuracy")
     verify = True  # Force verification for critical accuracy
 
     # For single chunk, use original approach
@@ -167,6 +169,7 @@ Important:
     # Note: Citation verification now handled automatically in LLMClient.complete()
 
     # Mandatory heavy verification for extractfacts (creates foundational documents)
+    click.echo("🔍 Running verification (mandatory for extractfacts command)")
     try:
         # Use heavy verification to ensure legal accuracy and proper structure
         correction = client.verify_with_level(combined, "heavy")

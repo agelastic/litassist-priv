@@ -401,8 +401,29 @@ class LLMClient:
             complete_citations.add(f"{party1} v {party2}")
 
         # 1. Generic/Common Name Detection (only for standalone case names)
-        case_name_pattern = r"([A-Za-z\'\-]+(?:\s+[A-Za-z\'\-]+)*)\s+v\s+([A-Za-z\'\-]+(?:\s+[A-Za-z\'\-]+)*)"
-        all_case_names = re.findall(case_name_pattern, content)
+        # Find case patterns and clean up party names
+        case_name_pattern = r"([A-Z][A-Za-z\'\-]+(?:\s+[A-Z][A-Za-z\'\-]+)*)\s+v\s+([A-Z][A-Za-z\'\-]+(?:\s+[A-Z][A-Za-z\'\-]+)*)"
+        raw_case_names = re.findall(case_name_pattern, content)
+        
+        # Clean up party names by removing common prefixes
+        all_case_names = []
+        prefix_words = {"In", "in", "The", "the", "Following", "following", "Case", "case", "decision", "Decision"}
+        for party1, party2 in raw_case_names:
+            # Clean first party
+            p1_words = party1.split()
+            while p1_words and p1_words[0] in prefix_words:
+                p1_words.pop(0)
+            clean_party1 = " ".join(p1_words) if p1_words else party1
+            
+            # Clean second party  
+            p2_words = party2.split()
+            while p2_words and p2_words[0] in prefix_words:
+                p2_words.pop(0)
+            clean_party2 = " ".join(p2_words) if p2_words else party2
+            
+            # Only add if both parties are still valid after cleaning
+            if clean_party1 and clean_party2:
+                all_case_names.append((clean_party1, clean_party2))
 
         # Filter out case names that are part of complete citations
         case_names = []
@@ -458,19 +479,19 @@ class LLMClient:
                 and len(p2_words) == 1
                 and p2_lower in generic_surnames
             ):
-                issues.append(f"Suspiciously generic case name: {party1} v {party2}")
+                issues.append(f"GENERIC CASE NAME: {party1} v {party2}\n  → FAILURE: Both parties use common surnames (possible AI hallucination)\n  → ACTION: Flagging for manual verification")
 
             # Check for placeholder patterns
             for pattern in placeholder_patterns:
                 if re.match(pattern, p1_lower) or re.match(pattern, p2_lower):
-                    issues.append(f"Placeholder-like case name: {party1} v {party2}")
+                    issues.append(f"PLACEHOLDER CASE NAME: {party1} v {party2}\n  → FAILURE: Contains placeholder/test-like party names\n  → ACTION: Excluding non-real case reference")
                     break
 
             # Check for single letters or very short names
             if (len(p1_lower) <= 2 or len(p2_lower) <= 2) and not any(
                 c in "'" for c in party1 + party2
             ):
-                issues.append(f"Suspiciously short case name: {party1} v {party2}")
+                issues.append(f"INVALID CASE NAME: {party1} v {party2}\n  → FAILURE: Party name suspiciously short (≤2 characters)\n  → ACTION: Excluding likely invalid case reference")
 
         # 2. Court Identifier Validation
         # Valid court abbreviations (Australian + historical UK/Privy Council)
@@ -620,7 +641,7 @@ class LLMClient:
 
             # Check if court exists in valid courts
             if court not in valid_courts:
-                issues.append(f"Unknown court abbreviation in citation: {citation}")
+                issues.append(f"UNKNOWN COURT: {citation}\n  → FAILURE: Court abbreviation '{court}' not recognized in Australian legal system\n  → ACTION: Excluding invalid court reference")
                 continue
 
             court_info = valid_courts[court]
@@ -628,18 +649,18 @@ class LLMClient:
             # Check if court existed in that year
             if year < court_info["established"]:
                 issues.append(
-                    f"Anachronistic citation - {court_info['name']} established {court_info['established']}: {citation}"
+                    f"ANACHRONISTIC CITATION: {citation}\n  → FAILURE: {court_info['name']} not established until {court_info['established']}\n  → ACTION: Excluding impossible historical reference"
                 )
 
             # Check if citation number is reasonable
             if number > court_info["max_per_year"]:
                 issues.append(
-                    f"Suspiciously high citation number for {court}: {citation}"
+                    f"EXCESSIVE CITATION NUMBER: {citation}\n  → FAILURE: Citation number {number} exceeds typical annual capacity for {court_info['name']}\n  → ACTION: Flagging unlikely citation number"
                 )
 
             # Check for future years
             if year > 2025:
-                issues.append(f"Future year in citation: {citation}")
+                issues.append(f"FUTURE CITATION: {citation}\n  → FAILURE: Citation dated in the future (after 2025)\n  → ACTION: Excluding impossible future case")
 
         # 3. Report Series Validation
         report_patterns = [
@@ -736,11 +757,11 @@ class LLMClient:
                         if not already_flagged:
                             # Distinguish between different types of online failures
                             if "Unknown court" in reason:
-                                unique_issues.append(f"COURT NOT RECOGNIZED: {citation} - {reason}")
+                                unique_issues.append(f"COURT NOT RECOGNIZED: {citation} - {reason}\n  → ACTION: Excluding unrecognized court identifier")
                             elif "Not found on AustLII" in reason:
-                                unique_issues.append(f"CITATION NOT FOUND: {citation} - {reason}")
+                                unique_issues.append(f"CITATION NOT FOUND: {citation} - {reason}\n  → ACTION: Citation does not exist in legal database")
                             else:
-                                unique_issues.append(f"ONLINE VERIFICATION FAILED: {citation} - {reason}")
+                                unique_issues.append(f"ONLINE VERIFICATION FAILED: {citation} - {reason}\n  → ACTION: Could not verify citation authenticity")
                     
                     # Add summary of online verification if issues found
                     if unverified_citations:
@@ -758,10 +779,23 @@ class LLMClient:
                 if len(unique_issues) > 5
                 else "medium" if len(unique_issues) > 2 else "low"
             )
-            unique_issues.insert(
-                0,
-                f"CITATION RELIABILITY WARNING ({severity} risk): {len(unique_issues)} potential issues detected. Manual verification strongly recommended.",
-            )
+            
+            # Count different types of issues for better messaging
+            offline_issues = len([issue for issue in unique_issues if not issue.startswith(("COURT NOT RECOGNIZED:", "CITATION NOT FOUND:", "ONLINE VERIFICATION FAILED:", "AustLII check:"))])
+            online_issues = len([issue for issue in unique_issues if issue.startswith(("COURT NOT RECOGNIZED:", "CITATION NOT FOUND:", "ONLINE VERIFICATION FAILED:"))])
+            
+            # Create detailed action message
+            action_msg = f"CITATION VALIDATION FAILURE ({severity} risk): {len(unique_issues)} issues detected.\n"
+            
+            if offline_issues > 0:
+                action_msg += f"→ PATTERN ANALYSIS: {offline_issues} citations flagged for suspicious patterns\n"
+            if online_issues > 0:
+                action_msg += f"→ AUSTLII VERIFICATION: {online_issues} citations not found in legal database\n"
+            
+            action_msg += "→ ACTION TAKEN: Flagging questionable citations for manual review\n"
+            action_msg += "→ RECOMMENDATION: Verify all citations independently before use"
+            
+            unique_issues.insert(0, action_msg)
 
         return unique_issues
 

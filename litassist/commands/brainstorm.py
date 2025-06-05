@@ -8,7 +8,9 @@ tailored to the specified party (plaintiff/defendant) and legal area.
 
 import click
 import os
+import re
 import time
+from typing import List, Tuple
 
 from litassist.config import CONFIG
 from litassist.utils import (
@@ -21,6 +23,136 @@ from litassist.utils import (
     save_reasoning_trace,
 )
 from litassist.llm import LLMClient
+
+
+def regenerate_bad_strategies(client: LLMClient, original_content: str, base_prompt: str, strategy_type: str, max_retries: int = 2) -> str:
+    """
+    Selectively regenerate only strategies with citation issues.
+    
+    Args:
+        client: LLMClient instance to use for regeneration
+        original_content: Original strategy content with potential citation issues
+        base_prompt: Base prompt used for generation
+        strategy_type: Type of strategies ("orthodox" or "unorthodox") for logging
+        max_retries: Maximum regeneration attempts
+    
+    Returns:
+        Clean content with verified strategies only
+    """
+    click.echo(f"  🔍 Analyzing {strategy_type} strategies for citation issues...")
+    
+    # Split content into individual strategies
+    strategies = []
+    current_strategy = []
+    lines = original_content.split('\n')
+    
+    for line in lines:
+        # Strategy headers start with numbers (1., 2., etc.)
+        if re.match(r'^\d+\.\s+', line.strip()) and current_strategy:
+            # Save previous strategy
+            strategies.append('\n'.join(current_strategy))
+            current_strategy = [line]
+        else:
+            current_strategy.append(line)
+    
+    # Don't forget the last strategy
+    if current_strategy:
+        strategies.append('\n'.join(current_strategy))
+    
+    # Validate each strategy individually and track their final state
+    strategy_results = {}  # Maps original position to final strategy content
+    strategies_to_regenerate = []
+    
+    for i, strategy in enumerate(strategies, 1):
+        if not strategy.strip():
+            continue
+            
+        citation_issues = client.validate_citations(strategy)
+        if citation_issues:
+            click.echo(f"    📋 Strategy {i}: Found {len(citation_issues)-1} citation issues - marking for regeneration")
+            strategies_to_regenerate.append((i, strategy))
+        else:
+            click.echo(f"    ✅ Strategy {i}: Citations verified")
+            strategy_results[i] = strategy
+    
+    # Regenerate problematic strategies
+    for retry_attempt in range(max_retries):
+        if not strategies_to_regenerate:
+            break
+            
+        click.echo(f"  🔄 Regeneration attempt {retry_attempt + 1}: {len(strategies_to_regenerate)} strategies need fixing")
+        
+        remaining_to_regenerate = []
+        
+        for strategy_num, bad_strategy in strategies_to_regenerate:
+            # Create focused regeneration prompt
+            regen_prompt = f"""{base_prompt}
+
+IMPORTANT: The previous generation contained strategies with unverifiable citations. 
+Please generate ONE replacement strategy (this will be strategy #{strategy_num}).
+
+Do NOT use any of these problematic citations or similar patterns:
+- Generic case names like "Smith v Jones", "Brown v Wilson" 
+- Future citations (years after 2025)
+- Impossible court references
+- Non-existent case citations
+
+Use only real, verifiable Australian cases that exist on AustLII, or omit citations entirely if unsure.
+
+Generate ONLY strategy #{strategy_num} in the exact format:
+
+{strategy_num}. [Strategy Title]
+[Strategy content...]
+"""
+            
+            try:
+                # Generate single replacement strategy
+                new_strategy, _ = client.complete([{
+                    "role": "user", 
+                    "content": regen_prompt
+                }])
+                
+                # Validate the regenerated strategy
+                new_citation_issues = client.validate_citations(new_strategy)
+                if new_citation_issues:
+                    click.echo(f"    ⚠️  Strategy {strategy_num}: Still has citation issues after regeneration")
+                    remaining_to_regenerate.append((strategy_num, bad_strategy))
+                else:
+                    click.echo(f"    ✅ Strategy {strategy_num}: Successfully regenerated with clean citations")
+                    strategy_results[strategy_num] = new_strategy
+                    
+            except Exception as e:
+                click.echo(f"    💥 Strategy {strategy_num}: Regeneration failed - {str(e)}")
+                remaining_to_regenerate.append((strategy_num, bad_strategy))
+        
+        strategies_to_regenerate = remaining_to_regenerate
+    
+    # Report final status
+    if strategies_to_regenerate:
+        click.echo(f"  ⚠️  {len(strategies_to_regenerate)} {strategy_type} strategies still have citation issues after {max_retries} attempts")
+        click.echo(f"    📋 Excluding these strategies: {[num for num, _ in strategies_to_regenerate]}")
+    else:
+        click.echo(f"  ✅ All {strategy_type} strategies now have verified citations")
+    
+    click.echo(f"  📊 Final result: {len(strategy_results)} verified {strategy_type} strategies")
+    
+    # Reconstruct content with final verified strategies only
+    if strategy_results:
+        # Get strategies in their final positions and renumber sequentially
+        renumbered_strategies = []
+        for i, (original_pos, strategy) in enumerate(sorted(strategy_results.items()), 1):
+            # Replace the original numbering with sequential numbering
+            strategy_lines = strategy.split('\n')
+            if strategy_lines and re.match(r'^\d+\.\s+', strategy_lines[0].strip()):
+                # Replace first line numbering
+                strategy_lines[0] = re.sub(r'^\d+\.', f'{i}.', strategy_lines[0])
+                renumbered_strategies.append('\n'.join(strategy_lines))
+            else:
+                renumbered_strategies.append(strategy)
+        
+        return '\n\n'.join(renumbered_strategies)
+    else:
+        return f"No {strategy_type} strategies could be generated with verified citations."
 
 
 @click.command()
@@ -113,6 +245,8 @@ def brainstorm(facts_file, side, area, verify):
 
     # Auto-verify for Grok due to hallucination tendency
     if "grok" in "x-ai/grok-3-beta".lower():
+        if not verify:
+            click.echo("ℹ️  Note: --verify flag auto-enabled for Grok models due to hallucination tendency")
         verify = True  # Force verification for Grok models
 
     # Generate Orthodox Strategies (conservative approach)
@@ -158,10 +292,13 @@ Focus on well-established legal approaches with clear precedential support."""
     except Exception as e:
         raise click.ClickException(f"Error generating orthodox strategies: {e}")
 
-    # Validate orthodox citations immediately
+    # Selectively regenerate orthodox strategies with citation issues
     orthodox_citation_issues = orthodox_client.validate_citations(orthodox_content)
     if orthodox_citation_issues:
-        click.echo(f"  ⚠️  Found {len(orthodox_citation_issues)-1} citation issues in orthodox strategies")
+        click.echo(f"  🔄 Found {len(orthodox_citation_issues)-1} citation issues in orthodox strategies - fixing...")
+        orthodox_content = regenerate_bad_strategies(
+            orthodox_client, orthodox_content, orthodox_base_prompt, "orthodox"
+        )
 
     # Generate Unorthodox Strategies (creative approach)
     click.echo("Generating unorthodox strategies...")
@@ -205,14 +342,17 @@ Be creative and innovative while acknowledging any legal uncertainties or risks.
     except Exception as e:
         raise click.ClickException(f"Error generating unorthodox strategies: {e}")
 
-    # Validate unorthodox citations immediately
+    # Selectively regenerate unorthodox strategies with citation issues
     unorthodox_citation_issues = unorthodox_client.validate_citations(unorthodox_content)
     if unorthodox_citation_issues:
-        click.echo(f"  ⚠️  Found {len(unorthodox_citation_issues)-1} citation issues in unorthodox strategies")
+        click.echo(f"  🔄 Found {len(unorthodox_citation_issues)-1} citation issues in unorthodox strategies - fixing...")
+        unorthodox_content = regenerate_bad_strategies(
+            unorthodox_client, unorthodox_content, unorthodox_base_prompt, "unorthodox"
+        )
 
     # Generate Most Likely to Succeed analysis
     click.echo("Analyzing most promising strategies...")
-    analysis_client = LLMClient("x-ai/grok-3-beta", temperature=0.4, top_p=0.8)
+    analysis_client = LLMClient("anthropic/claude-3.5-sonnet", temperature=0.2, top_p=0.8)
     analysis_client.command_context = "brainstorm-analysis"
 
     analysis_base_prompt = f"""Facts:
@@ -287,7 +427,20 @@ Consider both orthodox and unorthodox options. Base selections on legal merit, f
 
     # Smart verification - auto-enabled for Grok or when requested
     # Use analysis_client for verification since it has balanced settings
-    if verify or analysis_client.should_auto_verify(original_content, "brainstorm"):
+    auto_verify = analysis_client.should_auto_verify(original_content, "brainstorm")
+    needs_verification = verify or auto_verify
+    
+    # Inform user about verification status
+    if verify and auto_verify:
+        click.echo("🔍 Running verification (--verify flag + auto-verification triggered)")
+    elif verify:
+        click.echo("🔍 Running verification (--verify flag enabled)")
+    elif auto_verify:
+        click.echo("🔍 Running auto-verification (Grok model or high-risk content detected)")
+    else:
+        click.echo("ℹ️  No verification performed")
+    
+    if needs_verification:
         try:
             # Use medium verification for creative brainstorming
             correction = analysis_client.verify_with_level(original_content, "medium")

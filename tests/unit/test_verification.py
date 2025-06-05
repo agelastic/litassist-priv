@@ -54,7 +54,7 @@ class TestLLMClientVerification:
         issues = self.client.validate_citations(content)
         assert len(issues) > 0
         # Check for anachronistic citation (HCA established 1903)
-        anachronistic_issues = [i for i in issues if "Anachronistic citation" in i]
+        anachronistic_issues = [i for i in issues if "ANACHRONISTIC CITATION" in i]
         assert len(anachronistic_issues) > 0
 
     def test_validate_citations_future_year(self):
@@ -63,7 +63,7 @@ class TestLLMClientVerification:
         issues = self.client.validate_citations(content)
         assert len(issues) > 0
         # Check for future year citation
-        future_issues = [i for i in issues if "Future year in citation" in i]
+        future_issues = [i for i in issues if "FUTURE CITATION" in i]
         assert len(future_issues) > 0
 
     def test_validate_citations_fabricated_names(self):
@@ -72,7 +72,7 @@ class TestLLMClientVerification:
         issues = self.client.validate_citations(content)
         assert len(issues) > 0
         # Should flag either generic case name or high citation number
-        generic_issues = [i for i in issues if "generic case name" in i or "Suspiciously high citation number" in i]
+        generic_issues = [i for i in issues if "GENERIC CASE NAME" in i or "EXCESSIVE CITATION NUMBER" in i]
         assert len(generic_issues) > 0
 
     def test_validate_citations_valid_citation(self):

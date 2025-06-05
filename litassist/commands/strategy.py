@@ -7,7 +7,7 @@ documents for Australian civil litigation matters.
 """
 
 import click
-from typing import Dict, List, Any
+from typing import Dict, List, Any, Tuple
 import re
 import time
 import os
@@ -15,7 +15,7 @@ import os
 from litassist.config import CONFIG
 from litassist.utils import (
     save_log, heartbeat, OUTPUT_DIR,
-    create_reasoning_prompt, extract_reasoning_trace, save_reasoning_trace
+    create_reasoning_prompt, extract_reasoning_trace, save_reasoning_trace, LegalReasoningTrace
 )
 from litassist.llm import LLMClient
 
@@ -91,29 +91,25 @@ def parse_strategies_file(strategies_text: str) -> Dict[str, Any]:
         parsed["metadata"]["side"] = metadata_match.group(1).strip()
         parsed["metadata"]["area"] = metadata_match.group(2).strip()
     
-    # Simple counting approach - just count numbered items in each section
-    lines = strategies_text.split('\n')
-    current_section = None
+    # Extract and count each section separately to avoid cross-contamination
     
-    for line in lines:
-        line_upper = line.upper().strip()
-        
-        # Detect section headers
-        if "ORTHODOX" in line_upper and "STRATEG" in line_upper and "UNORTHODOX" not in line_upper:
-            current_section = "orthodox"
-        elif "UNORTHODOX" in line_upper and "STRATEG" in line_upper:
-            current_section = "unorthodox"
-        elif "MOST LIKELY" in line_upper and "SUCCEED" in line_upper:
-            current_section = "likely"
-        
-        # Count numbered items (handles "1.", "10.", etc.)
-        if current_section and re.match(r'^\d+\.\s+', line.strip()):
-            if current_section == "orthodox":
-                parsed["orthodox_count"] += 1
-            elif current_section == "unorthodox":
-                parsed["unorthodox_count"] += 1
-            elif current_section == "likely":
-                parsed["most_likely_count"] += 1
+    # Find ORTHODOX STRATEGIES section
+    orthodox_match = re.search(r'## ORTHODOX STRATEGIES\n(.*?)(?=## [A-Z]|===|\Z)', strategies_text, re.DOTALL)
+    if orthodox_match:
+        orthodox_text = orthodox_match.group(1)
+        parsed["orthodox_count"] = len(re.findall(r'^\d+\.', orthodox_text, re.MULTILINE))
+    
+    # Find UNORTHODOX STRATEGIES section  
+    unorthodox_match = re.search(r'## UNORTHODOX STRATEGIES\n(.*?)(?=## [A-Z]|===|\Z)', strategies_text, re.DOTALL)
+    if unorthodox_match:
+        unorthodox_text = unorthodox_match.group(1)
+        parsed["unorthodox_count"] = len(re.findall(r'^\d+\.', unorthodox_text, re.MULTILINE))
+    
+    # Find MOST LIKELY TO SUCCEED section
+    likely_match = re.search(r'## MOST LIKELY TO SUCCEED\n(.*?)(?====|\Z)', strategies_text, re.DOTALL)
+    if likely_match:
+        likely_text = likely_match.group(1)
+        parsed["most_likely_count"] = len(re.findall(r'^\d+\.', likely_text, re.MULTILINE))
     
     return parsed
 
@@ -148,6 +144,35 @@ def extract_legal_issues(case_text: str) -> List[str]:
     ]
 
     return issues
+
+
+def create_consolidated_reasoning_trace(option_traces, outcome):
+    """Create a consolidated reasoning trace from multiple strategy options."""
+    
+    consolidated_content = f"# CONSOLIDATED LEGAL REASONING TRACE\n"
+    consolidated_content += f"# Strategic Options for: {outcome}\n"
+    consolidated_content += f"# Generated: {time.strftime('%Y-%m-%d %H:%M:%S')}\n\n"
+    
+    for trace_data in option_traces:
+        option_num = trace_data["option_number"]
+        trace = trace_data["trace"]
+        
+        consolidated_content += f"## STRATEGIC OPTION {option_num} - REASONING TRACE\n\n"
+        
+        if trace:
+            consolidated_content += f"**Issue:** {trace.issue}\n\n"
+            consolidated_content += f"**Applicable Law:** {trace.applicable_law}\n\n"
+            consolidated_content += f"**Application to Facts:** {trace.application}\n\n"
+            consolidated_content += f"**Conclusion:** {trace.conclusion}\n\n"
+            consolidated_content += f"**Confidence:** {trace.confidence}%\n\n"
+            if trace.sources:
+                consolidated_content += f"**Sources:** {', '.join(trace.sources)}\n\n"
+        else:
+            consolidated_content += "No reasoning trace available for this option.\n\n"
+        
+        consolidated_content += "-" * 80 + "\n\n"
+    
+    return consolidated_content
 
 
 @click.command()
@@ -233,6 +258,8 @@ def strategy(case_facts, outcome, strategies, verify):
             click.echo("  - Warning: No strategies marked as 'most likely to succeed' found")
     
     # strategy always needs verification as it creates foundational strategic documents
+    if not verify:
+        click.echo("ℹ️  Note: --verify flag ignored - strategy command always uses verification for accuracy")
     verify = True  # Force verification for critical accuracy
 
     # Generate strategic options
@@ -296,19 +323,353 @@ IDENTIFIED LEGAL ISSUES:
     # Add reasoning trace to the prompt
     user_prompt = create_reasoning_prompt(base_user_prompt, "strategy")
     
-    user_prompt += "\nGenerate 3-5 distinct strategic options to achieve the desired outcome using the exact format specified."""
-
-    # Call LLM with heartbeat to show progress
+    # Generate strategic options - prioritize brainstormed strategies if available
+    click.echo("Generating strategic options...")
+    valid_options = []
+    option_reasoning_traces = []  # Store reasoning traces for each option
+    total_usage = {"prompt_tokens": 0, "completion_tokens": 0, "total_tokens": 0}
     call_with_hb = heartbeat(CONFIG.heartbeat_interval)(llm_client.complete)
-    try:
-        strategy_content, usage = call_with_hb(
-            [
-                {"role": "system", "content": system_prompt},
-                {"role": "user", "content": user_prompt},
-            ]
-        )
-    except Exception as e:
-        raise click.ClickException(f"LLM strategy generation error: {e}")
+    
+    # Extract and rank strategies using LLM analysis
+    priority_strategies = []
+    target_options = 4  # Target 3-5 options, need this defined early
+    
+    if parsed_strategies:
+        # First, extract all available strategies from the content
+        all_strategies = []
+        
+        # Extract from "MOST LIKELY TO SUCCEED" section if it exists
+        if parsed_strategies['most_likely_count'] > 0:
+            likely_match = re.search(r'## MOST LIKELY TO SUCCEED\n(.*?)(?====|\Z)', strategies_content, re.DOTALL)
+            if likely_match:
+                likely_text = likely_match.group(1)
+                strategy_patterns = re.findall(r'(\d+\..*?)(?=\d+\.|$)', likely_text, re.DOTALL)
+                for pattern in strategy_patterns:
+                    strategy_title = re.search(r'\d+\.\s*([^\n]+)', pattern)
+                    if strategy_title and len(pattern.strip()) > 50:
+                        all_strategies.append({
+                            'title': strategy_title.group(1).strip(),
+                            'content': pattern.strip(),
+                            'source': 'most_likely'
+                        })
+        
+        # Extract from ORTHODOX section
+        if parsed_strategies['orthodox_count'] > 0:
+            orthodox_match = re.search(r'## ORTHODOX STRATEGIES\n(.*?)(?=## [A-Z]|===|\Z)', strategies_content, re.DOTALL)
+            if orthodox_match:
+                orthodox_text = orthodox_match.group(1)
+                strategy_patterns = re.findall(r'(\d+\..*?)(?=\d+\.|$)', orthodox_text, re.DOTALL)
+                for pattern in strategy_patterns:
+                    strategy_title = re.search(r'\d+\.\s*([^\n]+)', pattern)
+                    if strategy_title and len(pattern.strip()) > 50:
+                        all_strategies.append({
+                            'title': strategy_title.group(1).strip(),
+                            'content': pattern.strip(),
+                            'source': 'orthodox'
+                        })
+        
+        # Extract from UNORTHODOX section
+        if parsed_strategies['unorthodox_count'] > 0:
+            unorthodox_match = re.search(r'## UNORTHODOX STRATEGIES\n(.*?)(?=## [A-Z]|===|\Z)', strategies_content, re.DOTALL)
+            if unorthodox_match:
+                unorthodox_text = unorthodox_match.group(1)
+                strategy_patterns = re.findall(r'(\d+\..*?)(?=\d+\.|$)', unorthodox_text, re.DOTALL)
+                for pattern in strategy_patterns:
+                    strategy_title = re.search(r'\d+\.\s*([^\n]+)', pattern)
+                    if strategy_title and len(pattern.strip()) > 50:
+                        all_strategies.append({
+                            'title': strategy_title.group(1).strip(),
+                            'content': pattern.strip(),
+                            'source': 'unorthodox'
+                        })
+        
+        # Fallback: Extract any numbered strategies if no structured sections found
+        if not all_strategies and strategies_content:
+            click.echo("  📋 No structured sections found - extracting any numbered strategies")
+            all_strategy_patterns = re.findall(r'(\d+\..*?)(?=\d+\.|$)', strategies_content, re.DOTALL)
+            valid_patterns = [p for p in all_strategy_patterns if len(p.strip()) > 50]
+            
+            for pattern in valid_patterns:
+                strategy_title = re.search(r'\d+\.\s*([^\n]+)', pattern)
+                if strategy_title:
+                    all_strategies.append({
+                        'title': strategy_title.group(1).strip(),
+                        'content': pattern.strip(),
+                        'source': 'unstructured'
+                    })
+        
+        # Use LLM ranking only if no "most likely to succeed" strategies are available
+        if all_strategies:
+            # Check if we have "most likely to succeed" strategies already identified
+            most_likely_strategies = [s for s in all_strategies if s['source'] == 'most_likely']
+            
+            if most_likely_strategies:
+                # Use the pre-analyzed "most likely" strategies directly - no need to re-analyze
+                click.echo(f"  📋 Using {len(most_likely_strategies)} pre-analyzed 'most likely to succeed' strategies")
+                priority_strategies = most_likely_strategies[:target_options]
+                
+                # Fill remaining slots with other strategies if needed
+                if len(priority_strategies) < target_options:
+                    # Get strategies not already used, avoiding duplicates by title
+                    used_titles = {s['title'].lower().strip() for s in priority_strategies}
+                    other_strategies = [s for s in all_strategies 
+                                      if s['source'] != 'most_likely' 
+                                      and s['title'].lower().strip() not in used_titles]
+                    remaining_needed = target_options - len(priority_strategies)
+                    
+                    if other_strategies and remaining_needed > 0:
+                        # Intelligently select additional strategies rather than just taking first N
+                        click.echo(f"    🧠 Analyzing remaining {len(other_strategies)} unique strategies to fill {remaining_needed} slots...")
+                        if len(other_strategies) < len([s for s in all_strategies if s['source'] != 'most_likely']):
+                            click.echo(f"    📎 Excluded duplicate strategy titles already in 'most likely' selection")
+                        
+                        # Create ranking prompt for remaining strategies
+                        remaining_strategies_list = ""
+                        for i, strategy in enumerate(other_strategies, 1):
+                            remaining_strategies_list += f"\n{i}. {strategy['title']} (from {strategy['source']} strategies)\n{strategy['content'][:200]}...\n"
+                        
+                        remaining_ranking_prompt = f"""CASE FACTS:
+{facts_content}
+
+DESIRED OUTCOME:
+{outcome}
+
+We have already selected {len(priority_strategies)} 'most likely to succeed' strategies. Now rank these remaining strategies by likelihood of success for achieving "{outcome}":
+
+{remaining_strategies_list}
+
+Rank them using the same criteria: legal merit, factual support, precedential strength, and judicial likelihood for this specific outcome.
+
+Output format:
+RANKING: [comma-separated list of strategy numbers in order of likelihood, e.g., "2,1,4"]
+REASONING: [brief explanation for top selections]"""
+
+                        try:
+                            analysis_client = LLMClient("anthropic/claude-3.5-sonnet", temperature=0.2, top_p=0.8)
+                            analysis_client.command_context = "strategy-analysis-remaining"
+                            
+                            remaining_response, _ = analysis_client.complete([
+                                {"role": "system", "content": "Australian law only. Rank strategies objectively for the specific outcome."},
+                                {"role": "user", "content": remaining_ranking_prompt}
+                            ])
+                            
+                            # Parse the ranking for remaining strategies
+                            remaining_match = re.search(r'RANKING:\s*([0-9,\s]+)', remaining_response)
+                            if remaining_match:
+                                remaining_ranking_str = remaining_match.group(1).strip()
+                                remaining_indices = [int(x.strip()) - 1 for x in remaining_ranking_str.split(',') if x.strip().isdigit()]
+                                
+                                # Add top-ranked remaining strategies
+                                for idx in remaining_indices[:remaining_needed]:
+                                    if 0 <= idx < len(other_strategies):
+                                        strategy = other_strategies[idx].copy()
+                                        strategy['supplemental_ranked'] = True
+                                        priority_strategies.append(strategy)
+                                
+                                click.echo(f"    📊 Intelligently selected {len(priority_strategies) - len(most_likely_strategies)} additional strategies")
+                            else:
+                                # Fallback to first N if parsing fails
+                                priority_strategies.extend(other_strategies[:remaining_needed])
+                                click.echo(f"    📎 Added {min(remaining_needed, len(other_strategies))} additional strategies (fallback)")
+                                
+                        except Exception as e:
+                            # Fallback to first N if analysis fails
+                            priority_strategies.extend(other_strategies[:remaining_needed])
+                            click.echo(f"    📎 Added {min(remaining_needed, len(other_strategies))} additional strategies (analysis failed)")
+            
+            else:
+                # No "most likely" pre-analysis available - run intelligent ranking
+                click.echo(f"  🧠 No 'most likely' strategies found - analyzing {len(all_strategies)} strategies for '{outcome}'...")
+                
+                # Create ranking prompt
+                strategies_list = ""
+                for i, strategy in enumerate(all_strategies, 1):
+                    strategies_list += f"\n{i}. {strategy['title']} (from {strategy['source']} strategies)\n{strategy['content'][:200]}...\n"
+                
+                ranking_prompt = f"""CASE FACTS:
+{facts_content}
+
+DESIRED OUTCOME:
+{outcome}
+
+AVAILABLE STRATEGIES:
+{strategies_list}
+
+Analyze all {len(all_strategies)} strategies above and rank them by likelihood of success for achieving the specific outcome "{outcome}" given these case facts.
+
+Use the SAME criteria as brainstorm command's "most likely to succeed" analysis:
+- Legal merit and strength of legal foundation
+- Factual support from the case materials provided
+- Precedential strength and established legal principles
+- Likelihood of judicial acceptance in Australian courts
+
+Additional focus for this specific outcome:
+- Direct relevance to achieving "{outcome}"
+- Procedural feasibility for this specific result
+- Practical implementation steps available
+
+Output format:
+RANKING: [comma-separated list of strategy numbers in order of likelihood, e.g., "3,1,7,2"]
+REASONING: [brief explanation focusing on legal merit, factual support, precedential strength, and judicial likelihood for the top strategies]"""
+
+                try:
+                    # Use dedicated analysis model for consistency with brainstorm command
+                    analysis_client = LLMClient("anthropic/claude-3.5-sonnet", temperature=0.2, top_p=0.8)
+                    analysis_client.command_context = "strategy-analysis"
+                    
+                    ranking_response, _ = analysis_client.complete([
+                        {"role": "system", "content": "Australian law only. Analyze strategies objectively. Consider legal merit, factual support, precedential strength, and judicial likelihood. Provide clear reasoning for selections."},
+                        {"role": "user", "content": ranking_prompt}
+                    ])
+                    
+                    # Parse the ranking
+                    ranking_match = re.search(r'RANKING:\s*([0-9,\s]+)', ranking_response)
+                    if ranking_match:
+                        ranking_str = ranking_match.group(1).strip()
+                        try:
+                            # Parse comma-separated numbers
+                            strategy_indices = [int(x.strip()) - 1 for x in ranking_str.split(',') if x.strip().isdigit()]
+                            
+                            # Reorder strategies based on LLM ranking, take top target_options
+                            for idx in strategy_indices[:target_options]:
+                                if 0 <= idx < len(all_strategies):
+                                    strategy = all_strategies[idx].copy()
+                                    strategy['llm_ranked'] = True
+                                    priority_strategies.append(strategy)
+                            
+                            click.echo(f"    📊 Selected top {len(priority_strategies)} strategies based on legal analysis")
+                            
+                            # Show reasoning if available
+                            reasoning_match = re.search(r'REASONING:\s*(.*?)(?:\n\n|\Z)', ranking_response, re.DOTALL)
+                            if reasoning_match:
+                                reasoning = reasoning_match.group(1).strip()
+                                click.echo(f"    💡 Analysis: {reasoning[:150]}..." if len(reasoning) > 150 else f"    💡 Analysis: {reasoning}")
+                        
+                        except (ValueError, IndexError) as e:
+                            click.echo(f"    ⚠️  Could not parse strategy ranking, using fallback selection")
+                            # Fallback to first target_options strategies
+                            priority_strategies = all_strategies[:target_options]
+                    else:
+                        click.echo(f"    ⚠️  No ranking found in response, using fallback selection")
+                        priority_strategies = all_strategies[:target_options]
+                        
+                except Exception as e:
+                    click.echo(f"    ⚠️  Strategy ranking failed ({str(e)}), using fallback selection")
+                    priority_strategies = all_strategies[:target_options]
+        
+        else:
+            click.echo("  📋 No strategies found in provided file")
+    
+    # Target 3-5 options, prioritizing brainstormed strategies
+    max_attempts = 7
+    # target_options already defined above
+    
+    for attempt in range(1, max_attempts + 1):
+        if len(valid_options) >= target_options:
+            break
+            
+        click.echo(f"  🎯 Generating option {attempt}...")
+        
+        # Determine if we should use a specific brainstormed strategy
+        use_brainstormed = False
+        specific_strategy = None
+        
+        if priority_strategies and attempt <= len(priority_strategies):
+            # Use one of the priority strategies as foundation
+            specific_strategy = priority_strategies[attempt - 1]
+            use_brainstormed = True
+            strategy_source = specific_strategy.get('source', 'brainstormed')
+            click.echo(f"    📋 Building on {strategy_source} strategy: '{specific_strategy['title']}'")
+        
+        # Individual option prompt
+        if use_brainstormed and specific_strategy:
+            individual_prompt = user_prompt + f"""
+
+SPECIFIC INSTRUCTION: Transform the following brainstormed strategy into a detailed strategic option for the specific outcome "{outcome}":
+
+BRAINSTORMED STRATEGY TO DEVELOP:
+{specific_strategy['content']}
+
+Generate ONE strategic option based on this brainstormed strategy (this will be option #{len(valid_options) + 1}). Use the exact format specified for a single OPTION, but develop this specific brainstormed strategy into concrete strategic steps for achieving "{outcome}".
+
+Focus on:
+- How this brainstormed strategy applies specifically to achieving "{outcome}"
+- Concrete legal steps to implement this strategy
+- Specific hurdles and missing facts for this approach
+- Probability assessment based on this strategy's legal foundation"""
+        else:
+            # Generate fresh strategic option if no brainstormed strategies or we've used them all
+            individual_prompt = user_prompt + f"\n\nGenerate ONE strategic option (this will be option #{len(valid_options) + 1}) to achieve the desired outcome. Use the exact format specified for a single OPTION."
+            if parsed_strategies:
+                individual_prompt += f"\n\nConsider the brainstormed strategies provided but develop a new approach that complements the {len(valid_options)} options already generated."
+        
+        # If we already have options, tell the LLM to avoid duplication
+        if valid_options:
+            individual_prompt += f"\n\nPreviously generated {len(valid_options)} options. Generate a DIFFERENT strategic approach that has not been covered yet."
+        
+        try:
+            option_content, option_usage = call_with_hb(
+                [
+                    {"role": "system", "content": system_prompt},
+                    {"role": "user", "content": individual_prompt},
+                ]
+            )
+            
+            # Validate citations immediately
+            citation_issues = llm_client.validate_citations(option_content)
+            if citation_issues:
+                click.echo(f"    ❌ Option {attempt}: Found {len(citation_issues)-1} citation issues - discarding")
+                continue
+            else:
+                click.echo(f"    ✅ Option {attempt}: Citations verified - keeping")
+                
+                # Extract reasoning trace from this option before cleaning
+                option_trace = extract_reasoning_trace(option_content, "strategy")
+                if option_trace:
+                    option_reasoning_traces.append({
+                        "option_number": len(valid_options) + 1,
+                        "trace": option_trace
+                    })
+                
+                # Remove reasoning trace from option content
+                trace_pattern = r"=== LEGAL REASONING TRACE ===\s*\n(.*?)(?=\n\n|\n=|$)"
+                clean_option_content = re.sub(trace_pattern, '', option_content, flags=re.DOTALL | re.IGNORECASE).strip()
+                
+                valid_options.append(clean_option_content)
+                
+                # Accumulate usage stats
+                for key in total_usage:
+                    total_usage[key] += option_usage.get(key, 0)
+                
+        except Exception as e:
+            click.echo(f"    💥 Option {attempt}: Generation failed - {str(e)}")
+            continue
+    
+    # Combine valid options into final strategy content
+    if valid_options:
+        strategy_header = f"# STRATEGIC OPTIONS FOR: {outcome.upper()}\n\n"
+        
+        # Renumber options sequentially
+        numbered_options = []
+        for i, option in enumerate(valid_options, 1):
+            # Clean up the option content and add proper numbering
+            clean_option = option.strip()
+            if not clean_option.startswith("## OPTION"):
+                clean_option = f"## OPTION {i}: [Generated Strategy]\n{clean_option}"
+            else:
+                # Replace existing numbering
+                clean_option = re.sub(r'^## OPTION \d+:', f'## OPTION {i}:', clean_option)
+            numbered_options.append(clean_option)
+        
+        strategy_content = strategy_header + "\n\n".join(numbered_options)
+        usage = total_usage
+        
+        click.echo(f"  📊 Successfully generated {len(valid_options)} verified strategic options")
+    else:
+        # No valid options could be generated
+        strategy_content = f"# STRATEGIC OPTIONS FOR: {outcome.upper()}\n\n## NO VALID OPTIONS GENERATED\n\nUnable to generate strategic options with verified citations after {max_attempts} attempts. Please refine the case facts or desired outcome and try again."
+        usage = total_usage
+        click.echo(f"  ⚠️  Could not generate any options with verified citations after {max_attempts} attempts")
 
     # Generate recommended next steps
     next_steps_prompt = """Based on the strategic options above, provide EXACTLY 5 immediate next steps.
@@ -496,6 +857,7 @@ Requirements:
         output = citation_warning + output
     
     # Mandatory verification for strategy (creates critical strategic guidance)
+    click.echo("🔍 Running verification (mandatory for strategy command)")
     try:
         # Use heavy verification for strategic legal advice
         correction = llm_client.verify_with_level(output, "heavy")
@@ -510,8 +872,10 @@ Requirements:
     except Exception as e:
         raise click.ClickException(f"Verification error during strategy generation: {e}")
 
-    # Extract reasoning trace before saving
-    reasoning_trace = extract_reasoning_trace(output, "strategy")
+    # Create consolidated reasoning trace from all options
+    consolidated_reasoning = None
+    if option_reasoning_traces:
+        consolidated_reasoning = create_consolidated_reasoning_trace(option_reasoning_traces, outcome)
 
     # Save output to timestamped file
     # Create a slug from the outcome for the filename
@@ -535,9 +899,11 @@ Requirements:
     
     click.echo(f"\nOutput saved to: {output_file}")
     
-    # Save reasoning trace if extracted
-    if reasoning_trace:
-        reasoning_file = save_reasoning_trace(reasoning_trace, output_file)
+    # Save consolidated reasoning trace if we have option traces
+    if consolidated_reasoning:
+        reasoning_file = output_file.replace('.txt', '_reasoning.txt')
+        with open(reasoning_file, 'w', encoding='utf-8') as f:
+            f.write(consolidated_reasoning)
         click.echo(f"Legal reasoning trace saved to: {reasoning_file}")
 
     # Save audit log
