@@ -22,6 +22,7 @@ mock_config.pinecone_api_key = "test-pinecone-key"
 mock_config.pinecone_environment = "test-env"
 mock_config.pinecone_index = "test-index"
 mock_config.log_format = "json"
+mock_config.heartbeat_interval = 10
 
 # Replace the CONFIG in sys.modules before litassist is imported
 config_module = Mock()
