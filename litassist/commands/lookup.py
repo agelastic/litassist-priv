@@ -25,86 +25,142 @@ from litassist.llm import LLMClient
 def format_lookup_output(content: str, extract: str = None) -> str:
     """
     Add basic structure to lookup output or extract specific information.
-    
+
     Args:
         content: The raw LLM response
         extract: Type of extraction - 'citations', 'principles', or 'checklist'
-        
+
     Returns:
         Formatted output based on extraction type
     """
-    if extract == 'citations':
+    if extract == "citations":
         # Extract citations using multiple regex patterns
         citations = set()
-        
+
         # Pattern 1: [Year] Court abbreviation number
-        citations.update(re.findall(r'\[\d{4}\]\s+[A-Z]+[A-Za-z]*\s+\d+', content))
-        
+        citations.update(re.findall(r"\[\d{4}\]\s+[A-Z]+[A-Za-z]*\s+\d+", content))
+
         # Pattern 2: (Year) volume court page
-        citations.update(re.findall(r'\(\d{4}\)\s+\d+\s+[A-Z]+[A-Za-z]*\s+\d+', content))
-        
+        citations.update(
+            re.findall(r"\(\d{4}\)\s+\d+\s+[A-Z]+[A-Za-z]*\s+\d+", content)
+        )
+
         # Pattern 3: Act references
-        citations.update(re.findall(r'[A-Za-z\s]+Act\s+\d{4}\s*\([A-Z]+\)', content))
-        
+        citations.update(re.findall(r"[A-Za-z\s]+Act\s+\d{4}\s*\([A-Z]+\)", content))
+
         # Pattern 4: Section references with acts
-        citations.update(re.findall(r'[A-Za-z\s]+Act\s+\d{4}\s*\([A-Z]+\)\s+s\s*\d+[A-Za-z]*', content))
-        
+        citations.update(
+            re.findall(
+                r"[A-Za-z\s]+Act\s+\d{4}\s*\([A-Z]+\)\s+s\s*\d+[A-Za-z]*", content
+            )
+        )
+
         if citations:
             return "CITATIONS FOUND:\n" + "\n".join(sorted(citations))
         else:
             return "No clear citations found in the response."
-    
-    elif extract == 'principles':
+
+    elif extract == "principles":
         # Extract sentences that contain legal principles (simple heuristic)
-        lines = content.split('\n')
+        lines = content.split("\n")
         principles = []
-        
+
         for line in lines:
             line = line.strip()
             # Look for lines that start with numbers or contain key legal terms
-            if (re.match(r'^\d+\.', line) or 
-                any(term in line.lower() for term in ['must', 'requires', 'establishes', 'principle', 'rule', 'test', 'elements'])):
+            if re.match(r"^\d+\.", line) or any(
+                term in line.lower()
+                for term in [
+                    "must",
+                    "requires",
+                    "establishes",
+                    "principle",
+                    "rule",
+                    "test",
+                    "elements",
+                ]
+            ):
                 if len(line) > 20:  # Filter out very short lines
                     principles.append(line)
-        
+
         if principles:
-            return "LEGAL PRINCIPLES:\n" + "\n".join(f"• {p}" for p in principles[:10])  # Limit to 10
+            return "LEGAL PRINCIPLES:\n" + "\n".join(
+                f"• {p}" for p in principles[:10]
+            )  # Limit to 10
         else:
             return "No clear legal principles extracted from the response."
-    
-    elif extract == 'checklist':
+
+    elif extract == "checklist":
         # Extract actionable items or requirements
-        lines = content.split('\n')
+        lines = content.split("\n")
         checklist_items = []
-        
+
         for line in lines:
             line = line.strip()
             # Look for lines that suggest requirements or steps
-            if any(word in line.lower() for word in ['must', 'should', 'require', 'need', 'evidence', 'prove', 'establish', 'demonstrate']):
-                if len(line) > 15 and not line.startswith('http'):  # Filter out URLs and short lines
+            if any(
+                word in line.lower()
+                for word in [
+                    "must",
+                    "should",
+                    "require",
+                    "need",
+                    "evidence",
+                    "prove",
+                    "establish",
+                    "demonstrate",
+                ]
+            ):
+                if len(line) > 15 and not line.startswith(
+                    "http"
+                ):  # Filter out URLs and short lines
                     # Clean up the line
-                    clean_line = re.sub(r'^[-•*]\s*', '', line)  # Remove bullet points
-                    clean_line = re.sub(r'^\d+\.\s*', '', clean_line)  # Remove numbering
+                    clean_line = re.sub(r"^[-•*]\s*", "", line)  # Remove bullet points
+                    clean_line = re.sub(
+                        r"^\d+\.\s*", "", clean_line
+                    )  # Remove numbering
                     if clean_line and len(clean_line) > 10:
                         checklist_items.append(clean_line)
-        
+
         if checklist_items:
-            return "PRACTICAL CHECKLIST:\n" + "\n".join(f"□ {item}" for item in checklist_items[:15])  # Limit to 15
+            return "PRACTICAL CHECKLIST:\n" + "\n".join(
+                f"□ {item}" for item in checklist_items[:15]
+            )  # Limit to 15
         else:
             return "No clear checklist items extracted from the response."
-    
+
     else:
         # Default: Add basic structure markers to the content
         structured = content
-        
+
         # Add structure markers if they don't already exist
         if "=== LEGAL PRINCIPLES ===" not in structured:
             # Try to identify and mark sections
-            structured = re.sub(r'(Legal principles?|Principles?|Rules?):?\s*\n', r'=== LEGAL PRINCIPLES ===\n', structured, flags=re.IGNORECASE)
-            structured = re.sub(r'(Key cases?|Cases?|Authorities?):?\s*\n', r'=== KEY CASES ===\n', structured, flags=re.IGNORECASE)
-            structured = re.sub(r'(Citations?|References?|Sources?):?\s*\n', r'=== CITATIONS LIST ===\n', structured, flags=re.IGNORECASE)
-            structured = re.sub(r'(Checklist|Requirements?|Elements?):?\s*\n', r'=== PRACTICAL CHECKLIST ===\n', structured, flags=re.IGNORECASE)
-        
+            structured = re.sub(
+                r"(Legal principles?|Principles?|Rules?):?\s*\n",
+                r"=== LEGAL PRINCIPLES ===\n",
+                structured,
+                flags=re.IGNORECASE,
+            )
+            structured = re.sub(
+                r"(Key cases?|Cases?|Authorities?):?\s*\n",
+                r"=== KEY CASES ===\n",
+                structured,
+                flags=re.IGNORECASE,
+            )
+            structured = re.sub(
+                r"(Citations?|References?|Sources?):?\s*\n",
+                r"=== CITATIONS LIST ===\n",
+                structured,
+                flags=re.IGNORECASE,
+            )
+            structured = re.sub(
+                r"(Checklist|Requirements?|Elements?):?\s*\n",
+                r"=== PRACTICAL CHECKLIST ===\n",
+                structured,
+                flags=re.IGNORECASE,
+            )
+
         return structured
 
 
@@ -219,9 +275,9 @@ def fetch_jade_links(question):
     help="Search engine to use (google for AustLII via CSE, jade for Jade.io)",
 )
 @click.option(
-    "--extract", 
-    type=click.Choice(["citations", "principles", "checklist"]), 
-    help="Extract specific information in a structured format"
+    "--extract",
+    type=click.Choice(["citations", "principles", "checklist"]),
+    help="Extract specific information in a structured format",
 )
 def lookup(question, mode, engine, extract):
     """
@@ -274,14 +330,14 @@ def lookup(question, mode, engine, extract):
 
     # Prepare prompt
     prompt = f"Question: {question}\nLinks:\n" + "\n".join(links)
-    
+
     # Add extraction-specific instructions
     if extract:
-        if extract == 'citations':
+        if extract == "citations":
             prompt += "\n\nAlso provide a clear 'CITATIONS' section that lists all case citations and legislation references in a format easy to copy and use."
-        elif extract == 'principles':
+        elif extract == "principles":
             prompt += "\n\nAlso provide a clear 'LEGAL PRINCIPLES' section that lists the key legal rules and principles in a structured format suitable for advice letters."
-        elif extract == 'checklist':
+        elif extract == "checklist":
             prompt += "\n\nAlso provide a clear 'PRACTICAL CHECKLIST' section that lists actionable requirements, evidence needed, and steps to take."
     # Set parameters based on mode
     # IRAC mode uses lower temperature for more precise, deterministic answers
@@ -321,24 +377,33 @@ def lookup(question, mode, engine, extract):
         except Exception as e:
             raise click.ClickException(f"LLM retry error during lookup: {e}")
 
-    # Note: lookup verification removed as citation retry logic already ensures accuracy
+    # CRITICAL: Validate citations immediately to prevent cascade errors
+    citation_issues = client.validate_citations(content)
+    if citation_issues:
+        # Prepend warnings to content so they appear prominently
+        citation_warning = "--- CITATION VALIDATION WARNINGS ---\n"
+        citation_warning += "\n".join(citation_issues)
+        citation_warning += "\n" + "-" * 40 + "\n\n"
+        content = citation_warning + content
 
     # Apply formatting based on extract option
     formatted_content = format_lookup_output(content, extract)
 
     # Save output to timestamped file
     # Create a slug from the question for the filename
-    question_slug = re.sub(r'[^\w\s-]', '', question.lower())
-    question_slug = re.sub(r'[-\s]+', '_', question_slug)
+    question_slug = re.sub(r"[^\w\s-]", "", question.lower())
+    question_slug = re.sub(r"[-\s]+", "_", question_slug)
     # Limit slug length and ensure it's not empty
-    question_slug = question_slug[:50].strip('_') or 'query'
-    
+    question_slug = question_slug[:50].strip("_") or "query"
+
     timestamp = time.strftime("%Y%m%d_%H%M%S")
     # Include extract type in filename if specified
     extract_suffix = f"_{extract}" if extract else ""
-    output_file = os.path.join(OUTPUT_DIR, f"lookup{extract_suffix}_{question_slug}_{timestamp}.txt")
-    
-    with open(output_file, 'w', encoding='utf-8') as f:
+    output_file = os.path.join(
+        OUTPUT_DIR, f"lookup{extract_suffix}_{question_slug}_{timestamp}.txt"
+    )
+
+    with open(output_file, "w", encoding="utf-8") as f:
         f.write(f"Lookup Query: {question}\n")
         f.write(f"Mode: {mode}\n")
         f.write(f"Engine: {engine}\n")
@@ -347,14 +412,14 @@ def lookup(question, mode, engine, extract):
         f.write(f"Timestamp: {time.strftime('%Y-%m-%d %H:%M:%S')}\n")
         f.write("-" * 80 + "\n\n")
         f.write(formatted_content)
-    
+
     click.echo(f"\nOutput saved to: {output_file}")
 
     # Save audit log
     params_str = f"mode={mode}, engine={engine}"
     if extract:
         params_str += f", extract={extract}"
-    
+
     save_log(
         "lookup",
         {

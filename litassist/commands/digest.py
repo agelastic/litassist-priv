@@ -90,6 +90,18 @@ def digest(file, mode):
                 raise click.ClickException(f"LLM error in digest chunk {idx}: {e}")
 
             # Note: digest removed verification as it's low-stakes content summarization
+            # However, we still need to validate citations to prevent cascade errors
+            
+            # CRITICAL: Validate citations immediately to prevent cascade errors
+            # Even digest can contain legal precedents that need validation
+            if mode == "issues":  # Legal issues mode is more likely to contain citations
+                citation_issues = client.validate_citations(content)
+                if citation_issues:
+                    # Prepend warnings to this chunk's content
+                    citation_warning = "--- CITATION WARNINGS FOR THIS CHUNK ---\n"
+                    citation_warning += "\n".join(citation_issues)
+                    citation_warning += "\n" + "-" * 40 + "\n\n"
+                    content = citation_warning + content
 
             # Save audit log for this chunk
             save_log(

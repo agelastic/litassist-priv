@@ -20,6 +20,9 @@ from litassist.utils import (
     save_log,
     heartbeat,
     OUTPUT_DIR,
+    create_reasoning_prompt,
+    extract_reasoning_trace,
+    save_reasoning_trace,
 )
 from litassist.llm import LLMClient
 from litassist.retriever import Retriever, get_pinecone_client
@@ -214,15 +217,23 @@ def draft(documents, query, verify, diversity):
 
     system_prompt += " Be thorough but concise. Focus on legal accuracy, relevant precedents, and clear organization. Use section headings, numbered paragraphs, and proper legal citation format. Maintain internal consistency throughout and ensure all claims are supported by the provided context. Avoid speculation beyond the provided information."
 
+    # Create base user prompt
+    base_user_prompt = f"Context:\n{context}\n\nDraft {query}"
+
+    # Add reasoning trace to user prompt
+    user_prompt = create_reasoning_prompt(base_user_prompt, "draft")
+
     messages = [
         {"role": "system", "content": system_prompt},
-        {"role": "user", "content": f"Context:\n{context}\n\nDraft {query}"},
+        {"role": "user", "content": user_prompt},
     ]
     call_with_hb = heartbeat(CONFIG.heartbeat_interval)(client.complete)
     try:
         content, usage = call_with_hb(messages)
     except Exception as e:
         raise click.ClickException(f"LLM draft error: {e}")
+
+    # Note: Citation verification now handled automatically in LLMClient.complete()
 
     # Smart verification with conditional depth
     needs_verification = verify or client.should_auto_verify(content, "draft")
@@ -244,6 +255,9 @@ def draft(documents, query, verify, diversity):
         except Exception as e:
             raise click.ClickException(f"Verification error during drafting: {e}")
 
+    # Extract reasoning trace before saving
+    reasoning_trace = extract_reasoning_trace(content, "draft")
+
     # Save output to timestamped file
     # Create a slug from the query for the filename
     query_slug = re.sub(r"[^\w\s-]", "", query.lower())
@@ -263,6 +277,11 @@ def draft(documents, query, verify, diversity):
         f.write(content)
 
     click.echo(f"\nOutput saved to: {output_file}")
+
+    # Save reasoning trace if extracted
+    if reasoning_trace:
+        reasoning_file = save_reasoning_trace(reasoning_trace, output_file)
+        click.echo(f"Legal reasoning trace saved to: {reasoning_file}")
 
     # Save audit log and echo response
     save_log(

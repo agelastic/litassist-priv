@@ -11,13 +11,23 @@ import os
 import time
 
 from litassist.config import CONFIG
-from litassist.utils import read_document, chunk_text, save_log, OUTPUT_DIR
+from litassist.utils import (
+    read_document,
+    chunk_text,
+    save_log,
+    OUTPUT_DIR,
+    create_reasoning_prompt,
+    extract_reasoning_trace,
+    save_reasoning_trace,
+)
 from litassist.llm import LLMClient
 
 
 @click.command()
 @click.argument("file", type=click.Path(exists=True))
-@click.option("--verify", is_flag=True, help="Enable self-critique pass (default: auto-enabled)")
+@click.option(
+    "--verify", is_flag=True, help="Enable self-critique pass (default: auto-enabled)"
+)
 def extractfacts(file, verify):
     """
     Auto-generate case_facts.txt under ten structured headings.
@@ -41,13 +51,13 @@ def extractfacts(file, verify):
     # Initialize the LLM client with deterministic settings
     client = LLMClient("anthropic/claude-3-sonnet", temperature=0, top_p=0.15)
     client.command_context = "extractfacts"  # Set command context for auto-verification
-    
+
     # extractfacts always needs verification as it creates foundational documents
     verify = True  # Force verification for critical accuracy
 
     # For single chunk, use original approach
     if len(chunks) == 1:
-        prompt = (
+        base_prompt = (
             "Extract under these headings (include all relevant details):\n"
             "1. Parties (include roles and relationships)\n"
             "2. Background (include commercial/policy context if relevant)\n"
@@ -61,6 +71,9 @@ def extractfacts(file, verify):
             "10. Client Objectives (include any constraints/limitations)\n\n"
             + chunks[0]
         )
+
+        # Add reasoning trace to prompt
+        prompt = create_reasoning_prompt(base_prompt, "extractfacts")
         try:
             combined, usage = client.complete(
                 [
@@ -73,11 +86,11 @@ def extractfacts(file, verify):
             )
         except Exception as e:
             raise click.ClickException(f"Error extracting facts: {e}")
-    
+
     else:
         # For multiple chunks, accumulate facts then organize
         accumulated_facts = []
-        
+
         # First, extract relevant facts from each chunk
         with click.progressbar(chunks, label="Processing document chunks") as bar:
             for idx, chunk in enumerate(bar, 1):
@@ -96,7 +109,7 @@ def extractfacts(file, verify):
 Just extract the raw facts found in this excerpt:
 
 {chunk}"""
-                
+
                 try:
                     content, usage = client.complete(
                         [
@@ -110,10 +123,10 @@ Just extract the raw facts found in this excerpt:
                 except Exception as e:
                     raise click.ClickException(f"Error processing chunk {idx}: {e}")
                 accumulated_facts.append(content.strip())
-        
+
         # Now organize all accumulated facts into the required structure
         all_facts = "\n\n".join(accumulated_facts)
-        organize_prompt = f"""Organize the following extracted facts into these 10 headings:
+        base_organize_prompt = f"""Organize the following extracted facts into these 10 headings:
 
 1. **Parties**: Identify all parties involved in the matter, including their roles and relevant characteristics
 2. **Background**: Provide context about the relationship between parties and circumstances leading to the dispute
@@ -135,6 +148,9 @@ Important:
 - Maintain chronological order for events
 - Be comprehensive but factual"""
 
+        # Add reasoning trace to organize prompt
+        organize_prompt = create_reasoning_prompt(base_organize_prompt, "extractfacts")
+
         try:
             combined, usage = client.complete(
                 [
@@ -148,39 +164,52 @@ Important:
         except Exception as e:
             raise click.ClickException(f"Error organizing facts: {e}")
 
+    # Note: Citation verification now handled automatically in LLMClient.complete()
+
     # Mandatory heavy verification for extractfacts (creates foundational documents)
     try:
         # Use heavy verification to ensure legal accuracy and proper structure
         correction = client.verify_with_level(combined, "heavy")
         if correction.strip():  # Only append if there are actual corrections
             combined = combined + "\n\n--- Legal Accuracy Review ---\n" + correction
-        
+
         # Also run citation validation
         citation_issues = client.validate_citations(combined)
         if citation_issues:
             combined += "\n\n--- Citation Warnings ---\n" + "\n".join(citation_issues)
-            
+
     except Exception as e:
-        raise click.ClickException(
-            f"Verification error during fact extraction: {e}"
-        )
+        raise click.ClickException(f"Verification error during fact extraction: {e}")
+
+    # Extract reasoning trace before saving
+    reasoning_trace = extract_reasoning_trace(combined, "extractfacts")
 
     # Save to timestamped file only
     timestamp = time.strftime("%Y%m%d_%H%M%S")
     # Extract base filename without extension for the output name
     base_filename = os.path.splitext(os.path.basename(file))[0]
     # Create a slug from the filename
-    filename_slug = base_filename.lower().replace(' ', '_')[:30]
-    output_file = os.path.join(OUTPUT_DIR, f"extractfacts_{filename_slug}_{timestamp}.txt")
-    
+    filename_slug = base_filename.lower().replace(" ", "_")[:30]
+    output_file = os.path.join(
+        OUTPUT_DIR, f"extractfacts_{filename_slug}_{timestamp}.txt"
+    )
+
     with open(output_file, "w", encoding="utf-8") as f:
         f.write(f"# Extracted Facts from: {file}\n")
         f.write(f"# Generated: {time.strftime('%Y-%m-%d %H:%M:%S')}\n")
         f.write("-" * 80 + "\n\n")
         f.write(combined)
-    
+
     click.echo(f"Extraction saved to: {output_file}")
-    click.echo("\nTo use these facts with other commands, manually create or update case_facts.txt")
+
+    # Save reasoning trace if extracted
+    if reasoning_trace:
+        reasoning_file = save_reasoning_trace(reasoning_trace, output_file)
+        click.echo(f"Legal reasoning trace saved to: {reasoning_file}")
+
+    click.echo(
+        "\nTo use these facts with other commands, manually create or update case_facts.txt"
+    )
 
     # Audit log
     save_log(
