@@ -24,4 +24,7 @@ general:
   rag_max_chars: 8000       # Maximum characters per chunk for RAG retrieval (default: 8000)
   log_format: "json"        # Format for audit logs: "json" or "markdown" (default: json)
 
+citation_validation:
+  offline_validation: false  # Enable pattern-based offline validation (default: false - AustLII only)
+
 # Jade API configuration removed - now uses public endpoints directly

@@ -369,7 +369,15 @@ class LLMClient:
                     "Do not invent case names. If unsure about a citation, omit it rather than guess."
                 )
 
-            # Retry with enhanced prompt
+            # Retry with enhanced prompt - need to set API base again
+            original_api_base_retry = openai.api_base
+            original_api_key_retry = openai.api_key
+
+            # Use OpenRouter for non-OpenAI models
+            if "/" in self.model and not self.model.startswith("openai/"):
+                openai.api_base = CONFIG.or_base
+                openai.api_key = CONFIG.or_key
+
             try:
                 retry_response = openai.ChatCompletion.create(
                     model=model_name, messages=enhanced_messages, **params
@@ -398,6 +406,10 @@ class LLMClient:
                     "The AI model is consistently generating unverifiable legal citations. "
                     "Manual intervention required."
                 )
+            finally:
+                # Restore original settings after retry
+                openai.api_base = original_api_base_retry
+                openai.api_key = original_api_key_retry
 
         # Log the LLM call
         save_log(
@@ -522,7 +534,18 @@ class LLMClient:
         Raises:
             CitationVerificationError: If strict_mode=True and unverified citations found
         """
-        # First do real-time verification
+        issues = []
+
+        # Optionally perform offline pattern validation if enabled in config
+        if CONFIG.offline_validation:
+            pattern_issues = self.validate_citations(content, enable_online=False)
+            if pattern_issues:
+                issues.extend(pattern_issues)
+                print(
+                    f"⚠️  Offline validation found {len(pattern_issues)} potential issues"
+                )
+
+        # Always do real-time AustLII verification
         verified_citations, unverified_citations = verify_all_citations(content)
 
         if unverified_citations and strict_mode:
@@ -535,7 +558,6 @@ class LLMClient:
 
         # If not strict mode or no unverified citations, clean up the content
         cleaned_content = content
-        issues = []
 
         for citation, reason in unverified_citations:
             # Add to issues list

@@ -147,6 +147,11 @@ class Config:
             self.rag_max_chars = self.cfg.get("general", {}).get("rag_max_chars", 8000)
             self.log_format = self.cfg.get("general", {}).get("log_format", "json")
 
+            # Extract citation validation settings with defaults
+            self.offline_validation = self.cfg.get("citation_validation", {}).get(
+                "offline_validation", False
+            )
+
         # Jade API key is no longer used - functionality now uses public endpoint
 
         except KeyError as e:

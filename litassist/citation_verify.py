@@ -131,6 +131,13 @@ def build_austlii_url(citation: str) -> Tuple[str, str]:
     # Parse medium neutral citation
     match = re.match(r"\[(\d{4})\]\s+([A-Z]+[A-Za-z]*)\s+(\d+)", citation)
     if not match:
+        # Check if it's a traditional citation format
+        trad_match = re.match(
+            r"\((\d{4})\)\s+(\d+)\s+([A-Z]+[A-Za-z]*)\s+(\d+)", citation
+        )
+        if trad_match:
+            # Traditional citations can't be directly converted to URLs
+            return "", "Traditional citation format - cannot build direct URL"
         return "", "Invalid citation format"
 
     year, court, number = match.groups()
@@ -160,14 +167,16 @@ def check_url_exists(url: str, timeout: int = 5) -> bool:
     start_time = time.time()
     status_code = None
     error_msg = None
-    
+
     try:
         # Use GET instead of HEAD as AustLII doesn't properly support HEAD requests
         response = requests.get(
             url,
             timeout=timeout,
-            headers={"User-Agent": "Mozilla/5.0 (compatible; LitAssist Citation Verification)"},
-            stream=True  # Don't download the whole body
+            headers={
+                "User-Agent": "Mozilla/5.0 (compatible; LitAssist Citation Verification)"
+            },
+            stream=True,  # Don't download the whole body
         )
         status_code = response.status_code
         response.close()  # Close immediately to save bandwidth
@@ -175,22 +184,104 @@ def check_url_exists(url: str, timeout: int = 5) -> bool:
     except (requests.RequestException, requests.Timeout) as e:
         success = False
         error_msg = str(e)
-    
+
     # Log the HTTP validation call
     save_log(
         "austlii_http_validation",
         {
-            "method": "check_url_exists", 
+            "method": "check_url_exists",
             "url": url,
             "status_code": status_code,
             "success": success,
             "error": error_msg,
             "response_time_ms": round((time.time() - start_time) * 1000, 2),
             "timeout": timeout,
-            "timestamp": time.strftime("%Y-%m-%d %H:%M:%S")
-        }
+            "timestamp": time.strftime("%Y-%m-%d %H:%M:%S"),
+        },
     )
-    
+
+    return success
+
+
+def search_austlii_for_citation(citation: str, timeout: int = 10) -> bool:
+    """
+    Search AustLII for a citation using their search interface.
+
+    This is a fallback method for citations that can't be directly accessed via URL.
+
+    Args:
+        citation: The citation to search for
+        timeout: Request timeout in seconds
+
+    Returns:
+        True if citation is found in search results
+    """
+    start_time = time.time()
+
+    try:
+        # Format citation for search - wrap in parentheses for exact match
+        search_query = f"({citation})"
+
+        # AustLII search URL
+        search_url = "https://www.austlii.edu.au/cgi-bin/sinosrch.cgi"
+
+        # Search parameters
+        params = {
+            "method": "auto",
+            "query": search_query,
+            "meta": "/au",  # Search Australian content
+            "mask_path": "",
+            "mask_world": "",
+            "results": "10",
+            "format": "long",
+            "sort": "relevance",
+        }
+
+        response = requests.get(
+            search_url,
+            params=params,
+            timeout=timeout,
+            headers={
+                "User-Agent": "Mozilla/5.0 (compatible; LitAssist Citation Verification)"
+            },
+        )
+
+        if response.status_code == 200:
+            # Check if the exact citation appears in the results
+            # AustLII returns "0 documents found" if nothing matches
+            content = response.text
+
+            # Check for "0 documents found" which indicates no results
+            if "0 documents found" in content:
+                success = False
+            else:
+                # Look for the citation in the results
+                # Normalize spaces in both the citation and content for matching
+                normalized_citation = re.sub(r"\s+", " ", citation.strip())
+                normalized_content = re.sub(r"\s+", " ", content)
+
+                # Check if citation appears in results
+                success = normalized_citation in normalized_content
+        else:
+            success = False
+
+    except Exception as e:
+        success = False
+        error_msg = str(e)
+
+    # Log the search attempt
+    save_log(
+        "austlii_search_validation",
+        {
+            "method": "search_austlii_for_citation",
+            "citation": citation,
+            "success": success,
+            "response_time_ms": round((time.time() - start_time) * 1000, 2),
+            "timeout": timeout,
+            "timestamp": time.strftime("%Y-%m-%d %H:%M:%S"),
+        },
+    )
+
     return success
 
 
@@ -207,9 +298,9 @@ def is_traditional_citation_format(citation: str) -> bool:
     # Traditional formats like (1968) 118 CLR 1, [1919] VLR 497, [1955] AC 431
     traditional_patterns = [
         r"\(\d{4}\)\s+\d+\s+[A-Z]+\s+\d+",  # (Year) Volume Series Page - covers CLR, ALR, etc.
-        # Australian traditional law reports: VLR=Victorian Law Reports, CLR=Commonwealth Law Reports, 
-        # ALR=Australian Law Reports, FCR=Federal Court Reports, FLR=Family Law Reports, etc.
-        r"\[\d{4}\]\s+(VLR|CLR|ALR|FCR|FLR|IR|ACTR|NTLR|SASR|WAR|TasR)\s+\d+",  
+        # Australian traditional law reports: VR=Victorian Reports, VLR=Victorian Law Reports,
+        # CLR=Commonwealth Law Reports, ALR=Australian Law Reports, FCR=Federal Court Reports, etc.
+        r"\[\d{4}\]\s+(VR|VLR|CLR|ALR|FCR|FLR|IR|ACTR|NTLR|SASR|WAR|TasR|NSWLR|QLR|QR|SR)\s+\d+",
         r"\[\d{4}\]\s+(AC|PC|WLR|All\s*ER|Ch|QB|KB)\s+\d+",  # UK/Privy Council citations
     ]
 
@@ -239,22 +330,23 @@ def verify_single_citation(citation: str) -> Tuple[bool, str, str]:
             cached = _citation_cache[normalized]
             return cached["exists"], cached.get("url", ""), cached.get("reason", "")
 
-    # Check if this is a traditional citation format that we should allow through
-    if is_traditional_citation_format(normalized):
-        # Cache as verified for traditional citations
+    # Build URL for medium neutral citations
+    url, error_reason = build_austlii_url(normalized)
+
+    if error_reason == "Traditional citation format - cannot build direct URL":
+        # Traditional citations temporarily accepted due to AustLII search API being broken
+        # TODO: Re-enable search verification once AustLII fixes their API
         with _cache_lock:
             _citation_cache[normalized] = {
                 "exists": True,
                 "url": "",
-                "reason": "Traditional citation format - verification skipped",
+                "reason": "Traditional citation - temporarily accepted (AustLII search unavailable)",
                 "checked_at": time.time(),
             }
-        return True, "", "Traditional citation format - verification skipped"
+        return True, "", "Traditional citation - temporarily accepted"
 
-    # Build URL for medium neutral citations
-    url, error_reason = build_austlii_url(normalized)
-    if error_reason:
-        # Cache the error
+    elif error_reason:
+        # Other errors (invalid format, etc)
         with _cache_lock:
             _citation_cache[normalized] = {
                 "exists": False,
@@ -264,7 +356,7 @@ def verify_single_citation(citation: str) -> Tuple[bool, str, str]:
             }
         return False, "", error_reason
 
-    # Check if exists
+    # Check if URL exists (for medium neutral citations)
     exists = check_url_exists(url)
     reason = "" if exists else "Not found on AustLII"
 
@@ -313,10 +405,12 @@ def verify_all_citations(text: str) -> Tuple[List[str], List[Tuple[str, str]]]:
             "citations_verified": len(verified),
             "citations_unverified": len(unverified),
             "verified_citations": verified,
-            "unverified_citations": [{"citation": cit, "reason": reason} for cit, reason in unverified],
+            "unverified_citations": [
+                {"citation": cit, "reason": reason} for cit, reason in unverified
+            ],
             "processing_time_ms": round((time.time() - start_time) * 1000, 2),
-            "timestamp": time.strftime("%Y-%m-%d %H:%M:%S")
-        }
+            "timestamp": time.strftime("%Y-%m-%d %H:%M:%S"),
+        },
     )
 
     return verified, unverified
