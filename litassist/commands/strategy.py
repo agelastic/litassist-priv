@@ -14,7 +14,7 @@ import os
 
 from litassist.config import CONFIG
 from litassist.utils import (
-    save_log, heartbeat, OUTPUT_DIR,
+    save_log, heartbeat, timed, OUTPUT_DIR,
     create_reasoning_prompt, extract_reasoning_trace, save_reasoning_trace, LegalReasoningTrace
 )
 from litassist.llm import LLMClient
@@ -64,6 +64,7 @@ def validate_case_facts_format(text: str) -> bool:
     return True
 
 
+@timed
 def parse_strategies_file(strategies_text: str) -> Dict[str, Any]:
     """
     Parse the strategies.txt file to extract basic counts and metadata.
@@ -146,6 +147,7 @@ def extract_legal_issues(case_text: str) -> List[str]:
     return issues
 
 
+@timed
 def create_consolidated_reasoning_trace(option_traces, outcome):
     """Create a consolidated reasoning trace from multiple strategy options."""
     
@@ -180,6 +182,7 @@ def create_consolidated_reasoning_trace(option_traces, outcome):
 @click.option("--outcome", required=True, help="Desired outcome (single sentence)")
 @click.option("--strategies", type=click.File("r"), help="Optional strategies file from brainstorm command")
 @click.option("--verify", is_flag=True, help="Enable self-critique pass (default: auto-enabled)")
+@timed
 def strategy(case_facts, outcome, strategies, verify):
     """
     Generate legal strategy options and draft documents for Australian civil matters.
@@ -258,8 +261,10 @@ def strategy(case_facts, outcome, strategies, verify):
             click.echo("  - Warning: No strategies marked as 'most likely to succeed' found")
     
     # strategy always needs verification as it creates foundational strategic documents
-    if not verify:
-        click.echo("ℹ️  Note: --verify flag ignored - strategy command always uses verification for accuracy")
+    if verify:
+        click.echo("⚠️  Note: --verify flag ignored - strategy command always uses verification for accuracy")
+    elif not verify:
+        click.echo("ℹ️  Note: Strategy command automatically uses verification for accuracy")
     verify = True  # Force verification for critical accuracy
 
     # Generate strategic options
@@ -592,20 +597,32 @@ BRAINSTORMED STRATEGY TO DEVELOP:
 
 Generate ONE strategic option based on this brainstormed strategy (this will be option #{len(valid_options) + 1}). Use the exact format specified for a single OPTION, but develop this specific brainstormed strategy into concrete strategic steps for achieving "{outcome}".
 
+CRITICAL: Use a UNIQUE TITLE that reflects the specific legal approach of this brainstormed strategy. Do not reuse titles from other options.
+
 Focus on:
 - How this brainstormed strategy applies specifically to achieving "{outcome}"
 - Concrete legal steps to implement this strategy
 - Specific hurdles and missing facts for this approach
-- Probability assessment based on this strategy's legal foundation"""
+- Probability assessment based on this strategy's legal foundation
+- Ensure the OPTION title clearly distinguishes this approach from other strategies"""
         else:
             # Generate fresh strategic option if no brainstormed strategies or we've used them all
             individual_prompt = user_prompt + f"\n\nGenerate ONE strategic option (this will be option #{len(valid_options) + 1}) to achieve the desired outcome. Use the exact format specified for a single OPTION."
+            individual_prompt += f"\n\nCRITICAL: Use a UNIQUE TITLE that clearly distinguishes this strategic approach. Do not reuse titles from other options."
             if parsed_strategies:
                 individual_prompt += f"\n\nConsider the brainstormed strategies provided but develop a new approach that complements the {len(valid_options)} options already generated."
         
         # If we already have options, tell the LLM to avoid duplication
         if valid_options:
-            individual_prompt += f"\n\nPreviously generated {len(valid_options)} options. Generate a DIFFERENT strategic approach that has not been covered yet."
+            existing_titles = []
+            for existing_option in valid_options:
+                title_match = re.search(r'## OPTION \d+: (.+)', existing_option)
+                if title_match:
+                    existing_titles.append(title_match.group(1).strip())
+            
+            if existing_titles:
+                individual_prompt += f"\n\nEXISTING OPTION TITLES TO AVOID: {', '.join(existing_titles)}"
+            individual_prompt += f"\n\nPreviously generated {len(valid_options)} options. Generate a DIFFERENT strategic approach with a UNIQUE TITLE that has not been covered yet."
         
         try:
             option_content, option_usage = call_with_hb(
@@ -897,14 +914,11 @@ Requirements:
         f.write("-" * 80 + "\n\n")
         f.write(output)
     
-    click.echo(f"\nOutput saved to: \"{output_file}\"")
-    
     # Save consolidated reasoning trace if we have option traces
     if consolidated_reasoning:
         reasoning_file = output_file.replace('.txt', '_reasoning.txt')
         with open(reasoning_file, 'w', encoding='utf-8') as f:
             f.write(consolidated_reasoning)
-        click.echo(f"Legal reasoning trace saved to: \"{reasoning_file}\"")
 
     # Save audit log
     save_log(

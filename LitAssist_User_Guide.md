@@ -68,6 +68,13 @@ This running example provides context for understanding how each LitAssist workf
 - ✅ **Enhanced error messages** - Clear explanations of citation failures with specific actions taken
 - ✅ **Verification status transparency** - Always informed when verification runs and why
 
+**Legal Reasoning & Analysis (New June 2025):**
+- ✅ **Multi-section reasoning traces** - Brainstorm saves separate reasoning files for orthodox, unorthodox, and analysis sections
+- ✅ **Transparent legal reasoning** - See the logic behind strategy selection and "most likely to succeed" analysis
+- ✅ **Structured analysis** - Each reasoning trace includes issue, applicable law, application to facts, and conclusion
+- ✅ **Comprehensive timing** - All operations timed and logged for performance monitoring
+- ✅ **Centralized configuration** - Log format and other settings moved to config.yaml for consistency
+
 ## Installation and Setup
 
 **Quick Installation:**
@@ -90,6 +97,50 @@ litassist test  # Test API connectivity
 ```
 
 For complete installation instructions, troubleshooting, and alternative methods, see [INSTALLATION.md](INSTALLATION.md).
+
+## Configuration
+
+### config.yaml Settings
+
+**New June 2025 - Centralized Configuration**: Log format and other settings have been moved from CLI options to config.yaml for consistency and user convenience.
+
+Key configuration options in the `general` section:
+```yaml
+general:
+  heartbeat_interval: 10    # Progress indicator interval in seconds (default: 10)
+  max_chars: 20000          # Maximum characters per chunk for document processing (default: 20000)
+  rag_max_chars: 8000       # Maximum characters per chunk for RAG retrieval (default: 8000)
+  log_format: "json"        # Format for audit logs: "json" or "markdown" (default: json)
+```
+
+### Log Format Configuration
+
+**Previous behavior**: Required `--log-format` CLI option every time
+```bash
+# Old way - had to specify every time
+litassist --log-format markdown lookup "contract law"
+```
+
+**New behavior**: Set once in config.yaml, use everywhere
+```yaml
+# In config.yaml
+general:
+  log_format: "markdown"  # Set your preference once
+```
+
+```bash
+# Now just run commands - uses config.yaml setting
+litassist lookup "contract law"
+
+# Override config.yaml for one-off changes
+litassist --log-format json lookup "contract law"  
+```
+
+**Benefits**:
+- ✅ Set your preference once in config.yaml
+- ✅ Consistent logging format across all commands
+- ✅ CLI option still available for overrides
+- ✅ Aligns with other configuration patterns
 
 ## Working Directory Setup
 
@@ -700,8 +751,13 @@ With the structured case facts in place, you can now use the `brainstorm` workfl
 The `brainstorm` command uses Grok's creative capabilities to generate a comprehensive set of litigation strategies based on the facts provided, tailored to your specific party side and legal area. The command produces both orthodox and unorthodox strategies, along with an assessment of which are most likely to succeed.
 
 **Output**: The brainstormed strategies are saved to:
-- `brainstorm_[area]_[side]_YYYYMMDD_HHMMSS.txt` - Timestamped output file
+- `brainstorm_[area]_[side]_YYYYMMDD_HHMMSS.txt` - Main strategies file with comprehensive strategy options
+- `brainstorm_[area]_[side]_YYYYMMDD_HHMMSS_orthodox_reasoning.txt` - Legal reasoning behind orthodox strategy selection
+- `brainstorm_[area]_[side]_YYYYMMDD_HHMMSS_unorthodox_reasoning.txt` - Reasoning behind unorthodox strategy development  
+- `brainstorm_[area]_[side]_YYYYMMDD_HHMMSS_analysis_reasoning.txt` - **Most important:** Analysis of why certain strategies are "most likely to succeed"
 - Note: To use with other commands, manually create/update `strategies.txt`
+
+**New June 2025 - Multi-Section Reasoning Traces**: The brainstorm command now captures the legal reasoning behind each major section, providing unprecedented transparency into the strategic analysis process.
 
 **Quality Control ("Option B" Implementation)**: When citation issues are detected, brainstorm uses selective regeneration - only individual strategies with citation problems are regenerated, while verified strategies are preserved unchanged. This "quality over quantity" approach ensures users receive fewer but higher-quality strategies rather than many options requiring manual review for citation issues.
 
@@ -807,7 +863,7 @@ Required parameters:
 Optional parameters:
 - `--strategies`: Path to strategies.txt from brainstorm command. When provided, the command efficiently uses pre-analyzed "most likely to succeed" strategies, with intelligent gap-filling analysis only when needed
 
-**Note:** This command includes automatic verification for accuracy - no additional flag needed. The --verify flag is ignored as verification is mandatory for strategic analysis.
+**Note:** This command includes automatic verification for accuracy - no additional flag needed. If you use the --verify flag, you'll see a warning that it's being ignored since verification is mandatory for strategic analysis.
 
 **Intelligent Strategy Prioritization**: Strategy now efficiently uses brainstormed strategies as foundations for strategic options. When strategies.txt is provided:
 
@@ -1013,17 +1069,60 @@ gantt
 
 ### Purpose
 
-The `draft` command creates well-supported legal drafts with intelligent document recognition:
+The `draft` command creates well-supported legal drafts with intelligent document recognition and context building. It produces comprehensive legal documents by combining case facts, strategies, and supporting materials into persuasive, well-cited submissions.
 
-- **Automatic Document Type Detection**:
-  - `case_facts.txt` → Recognized as structured case facts
-  - `strategies.txt` → Recognized as brainstormed legal strategies
-  - Other text files → Treated as supporting documents
-  - PDFs → Use embedding/retrieval for relevant passages
+### Document Processing Modes
 
-- **Smart Context Building**: The command structures different document types with clear headers, helping the LLM understand each document's role
+**Small Files (Direct LLM Processing):**
+- Text files (.txt) under 50,000 characters passed directly to LLM
+- Provides complete context and comprehensive drafts
+- **Recommended for case facts and strategies**
 
-- **Adaptive Prompting**: System instructions change based on which document types are provided, ensuring optimal use of case facts and strategies
+**Large Files (Embedding/Retrieval):**
+- PDFs and large files processed through Pinecone RAG
+- Extracts relevant passages using semantic search
+- More limited context but handles large documents
+
+### File Format Requirements
+
+**CRITICAL: Use .txt extensions for structured documents**
+
+```bash
+# ✅ CORRECT - Direct processing, rich context
+./litassist.py draft case_facts.txt strategies.txt "submissions"
+
+# ❌ INCORRECT - Forces embedding/retrieval, limited context  
+./litassist.py draft case_facts.md strategies.md "submissions"
+```
+
+**Why file extensions matter:**
+- `.txt` files: Processed directly by LLM (full context)
+- `.md` files: Forced into embedding/retrieval (snippets only)
+- `.pdf` files: Always use embedding/retrieval (appropriate for large documents)
+
+### Automatic Document Type Detection
+
+- **Files named `case_facts.txt`** → Recognized as structured case facts
+- **Files named `strategies.txt`** → Recognized as brainstormed legal strategies  
+- **Files containing `"# Legal Strategies"` header** → Recognized as brainstorm output
+- **Other text files** → Treated as supporting documents
+- **PDFs and large files** → Use embedding/retrieval for relevant passages
+
+### Smart Context Building
+
+The command structures different document types with clear headers:
+- `=== CASE FACTS ===` - Structured factual foundation
+- `=== LEGAL STRATEGIES FROM BRAINSTORMING ===` - Strategic options and precedents
+- `=== SUPPORTING DOCUMENT: filename ===` - Additional context
+- `=== Retrieved Context ===` - Relevant passages from large documents
+
+### Adaptive Prompting
+
+System instructions change based on document types provided:
+- **Case facts only**: Focus on factual foundation
+- **Strategies only**: Consider strategic options marked as "most likely to succeed"
+- **Both**: Use facts as foundation, incorporate strategic analysis
+- **Supporting docs**: Additional context for comprehensive drafting
 
 **Output**: All drafts saved to timestamped files: `draft_[query_slug]_YYYYMMDD_HHMMSS.txt`
 
@@ -1046,19 +1145,70 @@ Options:
 - `--diversity`: Control diversity of search results (0.0-1.0) - only applies to PDF/large file processing
 - `--verify`: Optional AI verification to check citations, arguments, and compliance. Automatically triggered when content contains case citations, statutory references, percentage claims, or strong legal conclusions to ensure accuracy in high-stakes legal drafting (see [Using the --verify Switch](#using-the--verify-switch))
 
+### Brainstorm vs Strategy Integration
+
+**Understanding the difference between brainstorm and strategy outputs:**
+
+| Aspect | Brainstorm Output | Strategy Output |
+|--------|-------------------|-----------------|
+| **Content Type** | Comprehensive legal strategies with citations | Strategic analysis + basic application |
+| **Legal Foundation** | Rich precedents and principles for each strategy | Focused tactical recommendations |
+| **Draft Integration** | Excellent for substantive legal writing | Provides planning context |
+| **Auto-Recognition** | Contains `"# Legal Strategies"` header | Generic document format |
+| **Best Use** | **Foundation for comprehensive drafts** | Tactical planning and simple applications |
+
+### Recommended Integration Workflows
+
+**Optimal Workflow (Brainstorm → Draft):**
+```bash
+# 1. Generate comprehensive strategies with legal foundations
+./litassist.py brainstorm case_facts.txt --side plaintiff --area family
+
+# 2. Use brainstorm output for rich legal drafting (automatically recognized)
+./litassist.py draft case_facts.txt brainstorm_family_plaintiff_20250606_143022.txt "comprehensive outline of submissions"
+```
+
+**Alternative Workflow (Strategy → Draft):**
+```bash
+# 1. Generate tactical analysis for specific outcome
+./litassist.py strategy case_facts.txt --outcome "secure interim orders"
+
+# 2. Use strategy output as supporting document (requires manual integration)
+./litassist.py draft case_facts.txt strategy_interim_orders_20250606_143022.txt "detailed submissions"
+```
+
+**Why brainstorm output is preferred for drafting:**
+- **Richer legal citations**: Each strategy includes relevant precedents and principles
+- **Multiple strategic angles**: Draft can weave together various approaches
+- **Automatic recognition**: Integrates seamlessly as structured strategies
+- **Comprehensive coverage**: 10 orthodox + 10 unorthodox + analysis provides depth
+
 ### Example Usage
 
-For our *Smith v Jones* case, we can now draft a submission on the relocation issue using either the extracted facts or the original bundle:
+For our *Smith v Jones* case, we can now draft a submission on the relocation issue using different input combinations:
 
 ```bash
-# Using just the case facts
+# Using just the case facts (basic drafting)
 ./litassist.py draft case_facts.txt "outline of submissions regarding relocation of children in Smith v Jones"
 
-# Combining case facts with brainstormed strategies
-./litassist.py draft case_facts.txt strategies.txt "draft argument focusing on strategy #3 from brainstorm"
+# Using case facts + brainstorm output (RECOMMENDED - rich legal foundation)
+./litassist.py draft case_facts.txt brainstorm_family_plaintiff_20250606_143022.txt "comprehensive outline of submissions"
 
-# Using multiple sources including PDFs
-./litassist.py draft case_facts.txt examples/smith_bundle.pdf "comprehensive submission on relocation"
+# Using case facts + strategy output (tactical context)
+./litassist.py draft case_facts.txt strategy_interim_orders_20250606_143022.txt "submissions for interim hearing"
+
+# Using multiple sources including PDFs (comprehensive context)
+./litassist.py draft case_facts.txt brainstorm_family_plaintiff_20250606_143022.txt examples/smith_bundle.pdf "comprehensive submission on relocation"
+```
+
+**File naming for optimal integration:**
+```bash
+# For automatic recognition, use these patterns:
+cp brainstorm_family_plaintiff_20250606_143022.txt strategies.txt
+./litassist.py draft case_facts.txt strategies.txt "submissions"
+
+# Or use direct file references (brainstorm auto-recognized by header):
+./litassist.py draft case_facts.txt brainstorm_family_plaintiff_20250606_143022.txt "submissions"
 ```
 
 **Output Example**:
@@ -1087,6 +1237,72 @@ For our *Smith v Jones* case, we can now draft a submission on the relocation is
 ...
 
 [Content continues with well-structured legal arguments incorporating citations from the document]
+```
+
+### Troubleshooting Draft Quality Issues
+
+**Problem: "Result file is barebones!" or limited content**
+
+**Diagnosis: Check your CLI output for these indicators:**
+```bash
+Will use embedding/retrieval for case_facts.md    # ❌ Problem!
+Will use embedding/retrieval for strategies.md    # ❌ Problem!
+```
+
+**Solution: File format correction**
+```bash
+# Convert to .txt for direct processing
+cp case_facts.md case_facts.txt
+cp strategies.md strategies.txt
+
+# Re-run with proper extensions
+./litassist.py draft case_facts.txt strategies.txt "comprehensive outline of submissions"
+```
+
+**Expected CLI output with correct setup:**
+```bash
+Using case_facts.txt as CASE FACTS (12,543 characters)      # ✅ Direct processing
+Using strategies.txt as LEGAL STRATEGIES (8,932 characters) # ✅ Direct processing
+```
+
+**Why this matters:**
+- **Direct processing**: Full document context, rich comprehensive drafts
+- **Embedding/retrieval**: Limited snippets, basic skeletal drafts
+- **File size check**: Files over 50,000 characters automatically use embedding regardless of extension
+
+**Quick fixes for common issues:**
+```bash
+# Check file sizes
+wc -c case_facts.md strategies.md
+
+# If over 50KB, break into smaller files or use PDF processing
+# If under 50KB, simply rename extensions:
+mv case_facts.md case_facts.txt
+mv strategies.md strategies.txt
+```
+
+### Advanced Usage Patterns
+
+**Multi-stage drafting workflow:**
+```bash
+# Stage 1: Research and strategy
+./litassist.py lookup "contract formation elements" --extract principles
+./litassist.py brainstorm case_facts.txt --side plaintiff --area commercial
+
+# Stage 2: Comprehensive drafting using research foundation
+./litassist.py draft case_facts.txt brainstorm_commercial_plaintiff_*.txt "detailed contract dispute submissions"
+
+# Stage 3: Tactical planning for specific outcomes
+./litassist.py strategy case_facts.txt --outcome "summary judgment application" --strategies strategies.txt
+```
+
+**Document combination strategies:**
+```bash
+# Maximum context for complex matters
+./litassist.py draft case_facts.txt strategies.txt expert_reports.pdf witness_statements.pdf "comprehensive submissions"
+
+# Focused drafting for specific applications
+./litassist.py draft case_facts.txt strategy_interim_orders_*.txt "urgent application for interim relief"
 ```
 
 
@@ -1158,13 +1374,16 @@ To demonstrate how these five workflows combine into a seamless end-to-end pipel
    ./litassist.py strategy examples/case_facts.txt --outcome "Secure interim orders allowing children to remain in Brisbane"
    ```
 
-6. **Draft**: Create a well-supported legal submission incorporating citations from case documents.
+6. **Draft**: Create comprehensive legal submissions using brainstormed strategies and case facts.
    ```bash
-   # Using extracted case facts from the pipeline
+   # RECOMMENDED: Use brainstorm output for rich legal foundation
+   ./litassist.py draft case_facts.txt brainstorm_family_plaintiff_20250606_143022.txt "comprehensive outline of submissions"
+   
+   # Alternative: Basic drafting with just case facts
    ./litassist.py draft case_facts.txt "outline of submissions regarding relocation of children in Smith v Jones"
    
-   # Or using the original bundle directly
-   ./litassist.py draft examples/smith_bundle.pdf "outline of submissions regarding relocation of children in Smith v Jones"
+   # Or combine with original documents for maximum context
+   ./litassist.py draft case_facts.txt brainstorm_family_plaintiff_20250606_143022.txt examples/smith_bundle.pdf "comprehensive submission on relocation"
    ```
 
 ## Conclusion
@@ -1195,12 +1414,38 @@ The `--verify` switch is available for commands that generate substantive legal 
 |---------|--------------|------------------------|
 | lookup | ❌ No | Simple search results don't need verification |
 | digest | ❌ No | Summaries are straightforward factual extracts |
-| extractfacts | ❌ No* | Automatic heavy verification enabled for foundational accuracy (flag ignored) |
+| extractfacts | ❌ No* | Automatic heavy verification enabled for foundational accuracy (**⚠️ warns if --verify used**) |
 | brainstorm | ✅ Yes | Optional verification, auto-enabled for Grok models due to hallucination tendency |
-| strategy | ❌ No* | Automatic heavy verification enabled for strategic accuracy (flag ignored) |
+| strategy | ❌ No* | Automatic heavy verification enabled for strategic accuracy (**⚠️ warns if --verify used**) |
 | draft | ✅ Yes | Optional verification, auto-triggered for legal citations/references |
 
-*Commands marked with * include automatic verification regardless of the flag.
+*Commands marked with * include automatic verification regardless of the flag and will warn users if they attempt to use --verify.
+
+### Warning Messages
+
+**When --verify flag is ignored:**
+```bash
+# strategy command with --verify flag
+$ litassist strategy case_facts.txt --outcome "..." --verify
+⚠️  Note: --verify flag ignored - strategy command always uses verification for accuracy
+
+# extractfacts command with --verify flag  
+$ litassist extractfacts document.pdf --verify
+⚠️  Note: --verify flag ignored - extractfacts command always uses verification for accuracy
+```
+
+**When verification is auto-enabled:**
+```bash
+# brainstorm command (Grok models)
+$ litassist brainstorm case_facts.txt --side plaintiff --area civil
+ℹ️  Note: Verification auto-enabled for Grok models due to hallucination tendency
+
+# strategy command (always enabled)
+$ litassist strategy case_facts.txt --outcome "..."
+ℹ️  Note: Strategy command automatically uses verification for accuracy
+```
+
+These warnings help users understand when their explicit --verify flags are being overridden versus when verification is automatically applied.
 
 ### When to Use --verify
 

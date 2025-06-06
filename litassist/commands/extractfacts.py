@@ -15,6 +15,7 @@ from litassist.utils import (
     read_document,
     chunk_text,
     save_log,
+    timed,
     OUTPUT_DIR,
     create_reasoning_prompt,
     extract_reasoning_trace,
@@ -28,6 +29,7 @@ from litassist.llm import LLMClient
 @click.option(
     "--verify", is_flag=True, help="Enable self-critique pass (default: auto-enabled)"
 )
+@timed
 def extractfacts(file, verify):
     """
     Auto-generate case_facts.txt under ten structured headings.
@@ -53,8 +55,10 @@ def extractfacts(file, verify):
     client.command_context = "extractfacts"  # Set command context for auto-verification
 
     # extractfacts always needs verification as it creates foundational documents
-    if not verify:
-        click.echo("ℹ️  Note: --verify flag ignored - extractfacts command always uses verification for accuracy")
+    if verify:
+        click.echo("⚠️  Note: --verify flag ignored - extractfacts command always uses verification for accuracy")
+    elif not verify:
+        click.echo("ℹ️  Note: Extractfacts command automatically uses verification for accuracy")
     verify = True  # Force verification for critical accuracy
 
     # For single chunk, use original approach

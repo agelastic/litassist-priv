@@ -145,6 +145,7 @@ class Config:
             )
             self.max_chars = self.cfg.get("general", {}).get("max_chars", 20000)
             self.rag_max_chars = self.cfg.get("general", {}).get("rag_max_chars", 8000)
+            self.log_format = self.cfg.get("general", {}).get("log_format", "json")
 
         # Jade API key is no longer used - functionality now uses public endpoint
 

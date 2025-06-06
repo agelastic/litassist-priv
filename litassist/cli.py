@@ -21,9 +21,8 @@ from litassist.config import CONFIG
 @click.option(
     "--log-format",
     type=click.Choice(["json", "markdown"]),
-    default="json",
-    show_default=True,
-    help="Format for audit logs.",
+    default=None,  # Will use config.yaml value if not specified
+    help="Format for audit logs (overrides config.yaml setting).",
 )
 @click.option(
     "--verbose", is_flag=True, default=False, help="Enable debug-level logging."
@@ -45,12 +44,15 @@ def cli(ctx, log_format, verbose):
     """
     # Ensure context object exists
     ctx.ensure_object(dict)
+    # Use config.yaml value if no CLI option provided
+    if log_format is None:
+        log_format = CONFIG.log_format
     # Store the chosen log format for downstream use
     ctx.obj["log_format"] = log_format
     # Configure logging level
     if verbose:
         logging.getLogger().setLevel(logging.DEBUG)
-    logging.debug(f"Log format set to: {log_format}")
+    logging.debug(f"Log format set to: {log_format} (from {'CLI' if ctx.params.get('log_format') else 'config.yaml'})")
 
 
 def validate_credentials(show_progress=True):

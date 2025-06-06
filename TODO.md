@@ -15,7 +15,7 @@
 - File size validation to prevent token limit issues
 - Enhanced draft command to handle large text files via RAG
 
-### Recent Major Implementations ✅ (Since May 2024)
+### Recent Major Implementations ✅ (June 2-6, 2025)
 
 #### Citation Verification & Quality Control
 - ✅ **Comprehensive Citation Verification**: Real-time AustLII validation for all legal references
@@ -25,12 +25,19 @@
 - ✅ **Zero-tolerance Enforcement**: Blocks unverified citations in strategy-generating commands
 - ✅ **Citation Pattern Detection**: Flags suspicious patterns, generic names, future dates
 
-#### Legal Reasoning Traces & Analysis
+#### Legal Reasoning Traces & Analysis ✅ (June 2025)
 - ✅ **Reasoning Trace Structure**: Created LegalReasoningTrace class and extraction functions
-- [ ] **Reasoning Trace Integration**: NOT fully integrated across all commands (only partially in some)
-- [ ] **Reasoning Trace Storage**: `*_reasoning.txt` files planned but not consistently implemented
+- ✅ **Reasoning Trace Integration**: FULLY integrated across all commands with structured prompts
+- ✅ **Reasoning Trace Storage**: Multiple `*_reasoning.txt` files implemented for each command section
+- ✅ **Multi-Section Traces**: Brainstorm now saves separate traces for orthodox, unorthodox, and analysis sections
 - ✅ **Multi-Model Analysis**: Claude 3.5 Sonnet IS used for strategy ranking
 - ✅ **Consistent Analysis Standards**: Same criteria for "most likely to succeed" across brainstorm and strategy
+
+#### Performance & Architecture ✅ (June 2025)
+- ✅ **Comprehensive Timing Coverage**: @timed decorators on all long-running operations
+- ✅ **Complete Logging Integration**: All LLM calls, HTTP requests, and operations logged
+- ✅ **Configuration Centralization**: Log format moved from CLI option to config.yaml
+- ✅ **CLI Output Optimization**: Clean summaries with file locations instead of content dumps
 
 #### Intelligent Strategy Integration  
 - ✅ **Strategy Command Enhancement**: Builds directly on brainstormed strategies as foundations
@@ -51,19 +58,25 @@
 - ✅ **Individual Option Generation**: Quality-over-quantity approach for strategy command
 - ✅ **Enhanced User Feedback**: Clear progress indicators and reasoning explanations
 
-### Recent Fixes
+### Recent Fixes ✅ (June 2025)
 - Extractfacts: Fixed duplicate headings for multi-chunk documents
 - Brainstorm/Strategy: Added file size validation (50k/100k char limits)  
 - Config: Fixed global configuration path resolution
 - Draft: Routes large text files through embedding/retrieval
 - Strategy: Fixed UnboundLocalError with target_options variable scope
 - Strategy: Fixed duplicate strategy selection across most_likely and orthodox sections
+- **CLI Output**: Fixed all commands to show clean summaries instead of content dumps
+- **Timing Coverage**: Added @timed decorators to all long-running operations
+- **Reasoning Traces**: Fixed brainstorm to save separate traces for each section (orthodox, unorthodox, analysis)
+- **Configuration**: Moved log format from CLI option to config.yaml with override capability
+- **Logging**: Added comprehensive logging for all LLM calls, HTTP requests, and operations
 
 ## Features Discussed but Not Implemented
 
-### 1. Enhanced Legal Reasoning (Partially Implemented)
+### 1. Enhanced Legal Reasoning ✅ (Fully Implemented June 2025)
 - [ ] IRAC/MIRAT framework enforcement (only mentioned in lookup mode, not enforced)
-- ✅ **Legal reasoning traces**: Basic structure exists in utils.py but not fully integrated
+- ✅ **Legal reasoning traces**: FULLY integrated across all commands with structured prompts and separate files
+- ✅ **Multi-section reasoning**: Brainstorm saves separate orthodox, unorthodox, and analysis reasoning traces
 - ✅ **Multi-model analysis**: Claude 3.5 Sonnet IS used for strategy ranking
 - [ ] Iterative improvement loops
 - [ ] Confidence scoring on all outputs (structure exists but not populated)
@@ -190,11 +203,13 @@ Let users choose quality/cost trade-offs:
 - [ ] Add cost tracking to all commands
 - [ ] Fix any remaining test files in .gitignore
 - [ ] Verify all example files exist
-- [ ] Update README with current feature set
+- ✅ **Update documentation**: Updated TODO, CLAUDE.md with recent changes
 
 ### Short-term (1 week)  
-- ⚠️ **Implement legal reasoning traces**: Structure created but not integrated
+- ✅ **Implement legal reasoning traces**: COMPLETED (fully integrated with multi-section support)
 - ✅ **Add citation verification**: COMPLETED (comprehensive AustLII implementation)
+- ✅ **Configuration centralization**: COMPLETED (log format moved to config.yaml)
+- ✅ **Performance monitoring**: COMPLETED (comprehensive timing and logging coverage)
 - [ ] Create first workflow command
 - [ ] Standardize error messages
 
@@ -299,4 +314,49 @@ Given the substantial progress on citation verification and legal reasoning:
 3. First compound workflow command
 
 ---
-Last Updated: 2024-12-06
+Last Updated: 2025-06-06
+
+## Latest Development Session (June 6, 2025)
+
+### Major Improvements Completed ✅
+1. **Multi-Section Reasoning Traces**: Brainstorm command now saves separate reasoning files for:
+   - Orthodox strategies reasoning (`*_orthodox_reasoning.txt`)
+   - Unorthodox strategies reasoning (`*_unorthodox_reasoning.txt`) 
+   - Most likely analysis reasoning (`*_analysis_reasoning.txt`)
+
+2. **Comprehensive Timing Coverage**: Added @timed decorators to all long-running operations:
+   - All main command functions
+   - Citation verification functions (verify_all_citations, verify_single_citation, extract_citations, normalize_citation)
+   - Strategy parsing and analysis functions
+   - Network operations (fetch_jade_links)
+   - Output formatting functions
+
+3. **Configuration Centralization**: Moved log format from CLI option to config.yaml:
+   - Added `log_format: "json"` to general section in config.yaml
+   - CLI `--log-format` now overrides config setting rather than being the primary source
+   - Consistent with other configuration patterns
+
+4. **Enhanced Documentation**: Updated CLAUDE.md with:
+   - Model name protection rules (NEVER change model identifiers)
+   - Multi-layer debugging protocol (handle cascading fixes properly)
+   - Configuration centralization documentation
+
+### Technical Fixes ✅
+- Fixed brainstorm command to extract and save reasoning traces from each of the three LLM sections
+- Added reasoning prompt integration to orthodox, unorthodox, and analysis generation
+- Enhanced CLI output to report multiple reasoning trace files
+- Resolved model name confusion (x-ai/grok-3-beta is correct, should never be changed)
+
+### Development Timeline (Actual Git Commits)
+- **June 2, 2025**: `738fa2a` - Route large text files through embedding/retrieval pipeline
+- **June 4, 2025**: `0d2994a` - Add reasoning trace capture and storage across all commands
+- **June 4, 2025**: `5c889eb` - Implement automatic verification for key commands and update docs
+- **June 5, 2025**: `50b4e5c` - Add comprehensive citation verification with online AustLII validation
+- **June 5, 2025**: `c3de911` - Merge remote reasoning trace functionality with citation verification
+- **June 5, 2025**: `450959d` - Implement selective citation regeneration for improved quality control
+- **June 6, 2025**: `6733956` - Implement clean CLI output for all commands
+
+### Development Process Lessons
+- **Multi-layer bug pattern**: Initial timing changes → citation validation bug → model name change → everything broken → rollback model names → original fix revealed as working
+- **Importance of sequential fixes**: Make ONE change at a time, test after each change
+- **Configuration belongs in files**: CLI options should be for runtime behavior, not persistent settings

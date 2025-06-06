@@ -9,8 +9,9 @@ import openai
 import re
 from typing import List, Dict, Any, Tuple
 
-from litassist.utils import timed
+from litassist.utils import timed, save_log
 from litassist.config import CONFIG
+import time
 from litassist.citation_verify import (
     verify_all_citations,
     remove_citation_from_text,
@@ -212,6 +213,20 @@ class LLMClient:
                     "Manual intervention required."
                 )
 
+        # Log the LLM call
+        save_log(
+            f"llm_{self.model.replace('/', '_')}",
+            {
+                "method": "complete",
+                "model": self.model,
+                "messages": messages,
+                "params": {**self.default_params, **overrides},
+                "response": content,
+                "usage": usage,
+                "timestamp": time.strftime("%Y-%m-%d %H:%M:%S")
+            }
+        )
+
         return content, usage
 
     @timed
@@ -283,7 +298,23 @@ class LLMClient:
             # Restore original settings
             openai.api_base = original_api_base
             openai.api_key = original_api_key
-        return response.choices[0].message.content
+        
+        verification_result = response.choices[0].message.content
+        
+        # Log the verification call
+        save_log(
+            f"llm_{self.model.replace('/', '_')}_verify",
+            {
+                "method": "verify",
+                "model": self.model,
+                "input_text_length": len(primary_text),
+                "verification_result": verification_result,
+                "usage": response.usage._asdict() if hasattr(response.usage, '_asdict') else dict(response.usage),
+                "timestamp": time.strftime("%Y-%m-%d %H:%M:%S")
+            }
+        )
+        
+        return verification_result
 
     def validate_and_verify_citations(
         self, content: str, strict_mode: bool = True
@@ -797,6 +828,19 @@ class LLMClient:
             
             unique_issues.insert(0, action_msg)
 
+        # Log the citation validation
+        save_log(
+            "citation_validation",
+            {
+                "method": "validate_citations",
+                "input_text_length": len(content),
+                "enable_online": enable_online,
+                "issues_found": len(unique_issues),
+                "issues": unique_issues,
+                "timestamp": time.strftime("%Y-%m-%d %H:%M:%S")
+            }
+        )
+
         return unique_issues
 
     def verify_with_level(self, primary_text: str, level: str = "medium") -> str:
@@ -875,4 +919,20 @@ class LLMClient:
             openai.api_base = original_api_base
             openai.api_key = original_api_key
 
-        return response.choices[0].message.content
+        verification_result = response.choices[0].message.content
+        
+        # Log the verification call
+        save_log(
+            f"llm_{self.model.replace('/', '_')}_verify_{level}",
+            {
+                "method": f"verify_with_level({level})",
+                "model": self.model,
+                "input_text_length": len(primary_text),
+                "verification_level": level,
+                "verification_result": verification_result,
+                "usage": response.usage._asdict() if hasattr(response.usage, '_asdict') else dict(response.usage),
+                "timestamp": time.strftime("%Y-%m-%d %H:%M:%S")
+            }
+        )
+
+        return verification_result

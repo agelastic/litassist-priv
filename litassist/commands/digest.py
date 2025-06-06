@@ -12,13 +12,14 @@ import re
 import time
 
 from litassist.config import CONFIG
-from litassist.utils import read_document, chunk_text, save_log, OUTPUT_DIR
+from litassist.utils import read_document, chunk_text, save_log, timed, OUTPUT_DIR
 from litassist.llm import LLMClient
 
 
 @click.command()
 @click.argument("file", type=click.Path(exists=True))
 @click.option("--mode", type=click.Choice(["summary", "issues"]), default="summary")
+@timed
 def digest(file, mode):
     """
     Mass-document digestion via Claude.
@@ -67,6 +68,15 @@ def digest(file, mode):
     all_output.append(f"Timestamp: {time.strftime('%Y-%m-%d %H:%M:%S')}")
     all_output.append("-" * 80 + "\n")
 
+    # Collect comprehensive log data
+    comprehensive_log = {
+        "file": file,
+        "mode": mode,
+        "chunks_processed": len(chunks),
+        "responses": [],
+        "total_usage": {"prompt_tokens": 0, "completion_tokens": 0, "total_tokens": 0}
+    }
+
     # Process each chunk with a progress bar
     with click.progressbar(chunks, label="Processing chunks") as chunks_bar:
         for idx, chunk in enumerate(chunks_bar, start=1):
@@ -103,16 +113,17 @@ def digest(file, mode):
                     citation_warning += "\n" + "-" * 40 + "\n\n"
                     content = citation_warning + content
 
-            # Save audit log for this chunk
-            save_log(
-                f"digest_{mode}",
-                {
-                    "file": file,
-                    "chunk": idx,
-                    "response": content,
-                    "usage": usage,
-                },
-            )
+            # Collect data for comprehensive log
+            comprehensive_log["responses"].append({
+                "chunk": idx,
+                "content": content,
+                "usage": usage
+            })
+            
+            # Accumulate usage statistics
+            for key in comprehensive_log["total_usage"]:
+                comprehensive_log["total_usage"][key] += usage.get(key, 0)
+            
             # Collect output
             chunk_output = f"\n--- Chunk {idx} ---\n{content}"
             all_output.append(chunk_output)
@@ -120,6 +131,22 @@ def digest(file, mode):
     # Write all output to file
     with open(output_file, 'w', encoding='utf-8') as f:
         f.write('\n'.join(all_output))
+    
+    # Save comprehensive audit log
+    save_log(
+        f"digest_{mode}",
+        {
+            "inputs": {
+                "file": file,
+                "mode": mode,
+                "chunks_processed": len(chunks)
+            },
+            "params": f"mode={mode}, max_chars={CONFIG.max_chars}",
+            "responses": comprehensive_log["responses"],
+            "usage": comprehensive_log["total_usage"],
+            "output_file": output_file
+        }
+    )
     
     # Show summary instead of full content
     click.echo("\n✅ Document digest complete!")

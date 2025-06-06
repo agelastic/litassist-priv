@@ -18,10 +18,11 @@ os.environ["GOOGLE_API_USE_CLIENT_CERTIFICATE"] = "false"
 warnings.filterwarnings("ignore", message=".*file_cache.*")
 
 from litassist.config import CONFIG
-from litassist.utils import save_log, heartbeat, OUTPUT_DIR
+from litassist.utils import save_log, heartbeat, timed, OUTPUT_DIR
 from litassist.llm import LLMClient
 
 
+@timed
 def format_lookup_output(content: str, extract: str = None) -> str:
     """
     Add basic structure to lookup output or extract specific information.
@@ -164,6 +165,7 @@ def format_lookup_output(content: str, extract: str = None) -> str:
         return structured
 
 
+@timed
 def fetch_jade_links(question):
     """
     Fetch Australian case law links relevant to the query.
@@ -279,6 +281,7 @@ def fetch_jade_links(question):
     type=click.Choice(["citations", "principles", "checklist"]),
     help="Extract specific information in a structured format",
 )
+@timed
 def lookup(question, mode, engine, extract):
     """
     Rapid case-law lookup via Google CSE or Jade + Gemini.

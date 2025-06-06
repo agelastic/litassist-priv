@@ -19,6 +19,7 @@ from litassist.utils import (
     create_embeddings,
     save_log,
     heartbeat,
+    timed,
     OUTPUT_DIR,
     create_reasoning_prompt,
     extract_reasoning_trace,
@@ -38,6 +39,7 @@ from litassist.retriever import Retriever, get_pinecone_client
     help="Control diversity of search results (0.0-1.0)",
     default=None,
 )
+@timed
 def draft(documents, query, verify, diversity):
     """
     Citation-rich drafting via RAG & GPT-4o.

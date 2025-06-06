@@ -24,6 +24,23 @@ graph TD
 
 For detailed usage guidance, see [LitAssist_User_Guide.md](LitAssist_User_Guide.md).
 
+## 🆕 Recent Improvements (June 2025)
+
+### Legal Reasoning & Transparency
+- **Multi-Section Reasoning Traces**: Brainstorm command now saves separate reasoning files for orthodox, unorthodox, and "most likely to succeed" analysis
+- **Comprehensive Legal Analysis**: See the logic behind every strategic recommendation with structured reasoning traces
+- **Enhanced Strategy Integration**: Strategy command builds intelligently on brainstormed foundations
+
+### Performance & Architecture  
+- **Complete Timing Coverage**: All long-running operations now timed and logged for performance monitoring
+- **Comprehensive Logging**: Every LLM call, HTTP request, and operation logged for full audit trails
+- **Configuration Centralization**: Log format and other settings moved from CLI options to config.yaml for consistency
+
+### Quality & User Experience
+- **Clean CLI Output**: All commands show professional summaries instead of overwhelming text dumps
+- **Citation Verification**: Continued enhancement of real-time AustLII validation
+- **File Organization**: Clear file locations with proper shell escaping for paths with spaces
+
 ## 🔧 Installation
 
 ### Quick Start
@@ -116,10 +133,13 @@ Global options:
    # Note: case_facts.txt must be created/edited manually
    ```
 
-4. **brainstorm** - Generate comprehensive legal strategies
+4. **brainstorm** - Generate comprehensive legal strategies with reasoning traces
    ```bash
    ./litassist.py brainstorm case_facts.txt --side [plaintiff|defendant|accused] --area [criminal|civil|family|commercial|administrative]
-   # Creates: brainstorm_[area]_[side]_YYYYMMDD_HHMMSS.txt
+   # Creates: brainstorm_[area]_[side]_YYYYMMDD_HHMMSS.txt (main strategies)
+   #          brainstorm_[area]_[side]_YYYYMMDD_HHMMSS_orthodox_reasoning.txt
+   #          brainstorm_[area]_[side]_YYYYMMDD_HHMMSS_unorthodox_reasoning.txt  
+   #          brainstorm_[area]_[side]_YYYYMMDD_HHMMSS_analysis_reasoning.txt
    # Note: strategies.txt must be created/edited manually
    ```
 

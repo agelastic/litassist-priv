@@ -17,6 +17,7 @@ from litassist.utils import (
     read_document,
     save_log,
     heartbeat,
+    timed,
     OUTPUT_DIR,
     create_reasoning_prompt,
     extract_reasoning_trace,
@@ -221,6 +222,7 @@ Generate ONLY strategy #{strategy_num} in the exact format:
     is_flag=True,
     help="Enable self-critique pass (auto-enabled for Grok models)",
 )
+@timed
 def brainstorm(facts_file, side, area, verify):
     """
     Generate comprehensive legal strategies via Grok.
@@ -292,8 +294,10 @@ def brainstorm(facts_file, side, area, verify):
 
     # Auto-verify for Grok due to hallucination tendency
     if "grok" in "x-ai/grok-3-beta".lower():
-        if not verify:
-            click.echo("ℹ️  Note: --verify flag auto-enabled for Grok models due to hallucination tendency")
+        if verify:
+            click.echo("ℹ️  Note: --verify flag enabled (auto-required for Grok models due to hallucination tendency)")
+        elif not verify:
+            click.echo("ℹ️  Note: Verification auto-enabled for Grok models due to hallucination tendency")
         verify = True  # Force verification for Grok models
 
     # Generate Orthodox Strategies (conservative approach)
@@ -324,7 +328,8 @@ Please provide output in EXACTLY this format:
 
 Focus on well-established legal approaches with clear precedential support."""
 
-    orthodox_prompt = orthodox_base_prompt
+    # Add reasoning trace to orthodox prompt
+    orthodox_prompt = create_reasoning_prompt(orthodox_base_prompt, "brainstorm-orthodox")
     orthodox_messages = [
         {
             "role": "system",
@@ -375,7 +380,8 @@ Please provide output in EXACTLY this format:
 
 Be creative and innovative while acknowledging any legal uncertainties or risks."""
 
-    unorthodox_prompt = unorthodox_base_prompt
+    # Add reasoning trace to unorthodox prompt
+    unorthodox_prompt = create_reasoning_prompt(unorthodox_base_prompt, "brainstorm-unorthodox")
     unorthodox_messages = [
         {
             "role": "system",
@@ -504,28 +510,14 @@ Consider both orthodox and unorthodox options. Base selections on legal merit, f
         except Exception as e:
             raise click.ClickException(f"Verification error during brainstorming: {e}")
 
-    # Extract reasoning trace before saving
-    reasoning_trace = extract_reasoning_trace(original_content, "brainstorm")
-
-    # Save audit log (with full content including verification)
-    full_content = original_content
-    if verification_notes:
-        full_content += "\n\n" + "\n\n".join(verification_notes)
-
-    save_log(
-        "brainstorm",
-        {
-            "inputs": {"facts_file": facts_file, "method": "three-stage approach"},
-            "params": f"verify={verify} (auto-enabled for Grok), orthodox_temp=0.3, unorthodox_temp=0.9, analysis_temp=0.4",
-            "response": full_content,
-            "usage": usage,
-            "stages": {
-                "orthodox": {"usage": orthodox_usage, "temperature": 0.3},
-                "unorthodox": {"usage": unorthodox_usage, "temperature": 0.9},
-                "analysis": {"usage": analysis_usage, "temperature": 0.4},
-            },
-        },
-    )
+    # Extract separate reasoning traces for each section
+    orthodox_trace = extract_reasoning_trace(orthodox_content, "brainstorm-orthodox")
+    unorthodox_trace = extract_reasoning_trace(unorthodox_content, "brainstorm-unorthodox") 
+    analysis_trace = extract_reasoning_trace(analysis_content, "brainstorm-analysis")
+    
+    # Remove reasoning traces from main content
+    trace_pattern = r"=== LEGAL REASONING TRACE ===\s*\n(.*?)(?=\n\n|\n=|$)"
+    clean_content = re.sub(trace_pattern, '', original_content, flags=re.DOTALL | re.IGNORECASE).strip()
 
     # Save to timestamped file only
     timestamp = time.strftime("%Y%m%d_%H%M%S")
@@ -536,14 +528,47 @@ Consider both orthodox and unorthodox options. Base selections on legal merit, f
         f.write(f"# Side: {side.capitalize()}\n")
         f.write(f"# Area: {area.capitalize()}\n")
         f.write(f"# Source: {facts_file}\n\n")
-        f.write(original_content)
+        f.write(clean_content)
 
     click.echo(f"Strategies saved to: \"{output_file}\"")
 
-    # Save reasoning trace if extracted
-    if reasoning_trace:
-        reasoning_file = save_reasoning_trace(reasoning_trace, output_file)
-        click.echo(f"Legal reasoning trace saved to: \"{reasoning_file}\"")
+    # Save separate reasoning traces if extracted
+    reasoning_files = []
+    
+    if orthodox_trace:
+        orthodox_reasoning_file = output_file.replace('.txt', '_orthodox_reasoning.txt')
+        with open(orthodox_reasoning_file, 'w', encoding='utf-8') as f:
+            f.write(f"# ORTHODOX STRATEGIES - REASONING TRACE\n")
+            f.write(f"# Generated: {time.strftime('%Y-%m-%d %H:%M:%S')}\n")
+            f.write(f"# Command: brainstorm-orthodox\n\n")
+            f.write(orthodox_trace.to_markdown())
+        reasoning_files.append(("Orthodox", orthodox_reasoning_file))
+    
+    if unorthodox_trace:
+        unorthodox_reasoning_file = output_file.replace('.txt', '_unorthodox_reasoning.txt')
+        with open(unorthodox_reasoning_file, 'w', encoding='utf-8') as f:
+            f.write(f"# UNORTHODOX STRATEGIES - REASONING TRACE\n")
+            f.write(f"# Generated: {time.strftime('%Y-%m-%d %H:%M:%S')}\n")
+            f.write(f"# Command: brainstorm-unorthodox\n\n")
+            f.write(unorthodox_trace.to_markdown())
+        reasoning_files.append(("Unorthodox", unorthodox_reasoning_file))
+    
+    if analysis_trace:
+        analysis_reasoning_file = output_file.replace('.txt', '_analysis_reasoning.txt')
+        with open(analysis_reasoning_file, 'w', encoding='utf-8') as f:
+            f.write(f"# MOST LIKELY TO SUCCEED - REASONING TRACE\n")
+            f.write(f"# Generated: {time.strftime('%Y-%m-%d %H:%M:%S')}\n")
+            f.write(f"# Command: brainstorm-analysis\n\n")
+            f.write(analysis_trace.to_markdown())
+        reasoning_files.append(("Most Likely Analysis", analysis_reasoning_file))
+    
+    # Report reasoning files
+    if reasoning_files:
+        click.echo(f"\n📝 Reasoning traces saved:")
+        for trace_type, file_path in reasoning_files:
+            click.echo(f"   {trace_type}: \"{file_path}\"")
+    else:
+        click.echo(f"\n📝 No reasoning traces extracted from this generation")
 
     click.echo(
         "\nTo use these strategies with other commands, manually create or update strategies.txt"
@@ -560,11 +585,30 @@ Consider both orthodox and unorthodox options. Base selections on legal merit, f
             f.write("\n\n".join(verification_notes))
         click.echo(f"Verification notes saved to \"{verification_file}\"")
 
+    # Save comprehensive audit log
+    full_content = original_content
+    if verification_notes:
+        full_content += "\n\n" + "\n\n".join(verification_notes)
+
+    save_log(
+        "brainstorm",
+        {
+            "inputs": {"facts_file": facts_file, "method": "three-stage approach"},
+            "params": f"verify={verify} (auto-enabled for Grok), orthodox_temp=0.3, unorthodox_temp=0.9, analysis_temp=0.4",
+            "response": full_content,
+            "usage": usage,
+            "output_file": output_file,
+            "stages": {
+                "orthodox": {"usage": orthodox_usage, "temperature": 0.3},
+                "unorthodox": {"usage": unorthodox_usage, "temperature": 0.9},
+                "analysis": {"usage": analysis_usage, "temperature": 0.4},
+            },
+        },
+    )
+
     # Show summary instead of full content
     click.echo("\n✅ Brainstorm complete!")
     click.echo(f"📄 Strategies saved to: \"{output_file}\"")
-    if reasoning_trace:
-        click.echo(f"📝 Reasoning trace: open \"{reasoning_file}\"")
     if verification_notes:
         click.echo(f"📋 Verification notes: open \"{verification_file}\"")
     

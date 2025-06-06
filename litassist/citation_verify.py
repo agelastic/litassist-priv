@@ -13,6 +13,9 @@ from typing import List, Tuple, Dict, Set
 from urllib.parse import quote
 import threading
 
+# Import logging utility
+from litassist.utils import save_log, timed
+
 # Cache for verified citations to avoid repeated requests
 _citation_cache: Dict[str, Dict] = {}
 _cache_lock = threading.Lock()
@@ -64,6 +67,7 @@ class CitationVerificationError(Exception):
     pass
 
 
+@timed
 def extract_citations(text: str) -> List[str]:
     """
     Extract all Australian legal citations from text.
@@ -91,6 +95,7 @@ def extract_citations(text: str) -> List[str]:
     return list(citations)
 
 
+@timed
 def normalize_citation(citation: str) -> str:
     """
     Normalize citation format for consistent processing.
@@ -152,6 +157,10 @@ def check_url_exists(url: str, timeout: int = 5) -> bool:
     Returns:
         True if URL exists and returns 200 status
     """
+    start_time = time.time()
+    status_code = None
+    error_msg = None
+    
     try:
         # Use GET instead of HEAD as AustLII doesn't properly support HEAD requests
         response = requests.get(
@@ -160,10 +169,29 @@ def check_url_exists(url: str, timeout: int = 5) -> bool:
             headers={"User-Agent": "Mozilla/5.0 (compatible; LitAssist Citation Verification)"},
             stream=True  # Don't download the whole body
         )
+        status_code = response.status_code
         response.close()  # Close immediately to save bandwidth
-        return response.status_code == 200
-    except (requests.RequestException, requests.Timeout):
-        return False
+        success = response.status_code == 200
+    except (requests.RequestException, requests.Timeout) as e:
+        success = False
+        error_msg = str(e)
+    
+    # Log the HTTP validation call
+    save_log(
+        "austlii_http_validation",
+        {
+            "method": "check_url_exists", 
+            "url": url,
+            "status_code": status_code,
+            "success": success,
+            "error": error_msg,
+            "response_time_ms": round((time.time() - start_time) * 1000, 2),
+            "timeout": timeout,
+            "timestamp": time.strftime("%Y-%m-%d %H:%M:%S")
+        }
+    )
+    
+    return success
 
 
 def is_traditional_citation_format(citation: str) -> bool:
@@ -176,9 +204,12 @@ def is_traditional_citation_format(citation: str) -> bool:
     Returns:
         True if citation is in traditional format (volume/page citations)
     """
-    # Traditional formats like (1968) 118 CLR 1, [1955] AC 431
+    # Traditional formats like (1968) 118 CLR 1, [1919] VLR 497, [1955] AC 431
     traditional_patterns = [
-        r"\(\d{4}\)\s+\d+\s+[A-Z]+\s+\d+",  # (Year) Volume Series Page
+        r"\(\d{4}\)\s+\d+\s+[A-Z]+\s+\d+",  # (Year) Volume Series Page - covers CLR, ALR, etc.
+        # Australian traditional law reports: VLR=Victorian Law Reports, CLR=Commonwealth Law Reports, 
+        # ALR=Australian Law Reports, FCR=Federal Court Reports, FLR=Family Law Reports, etc.
+        r"\[\d{4}\]\s+(VLR|CLR|ALR|FCR|FLR|IR|ACTR|NTLR|SASR|WAR|TasR)\s+\d+",  
         r"\[\d{4}\]\s+(AC|PC|WLR|All\s*ER|Ch|QB|KB)\s+\d+",  # UK/Privy Council citations
     ]
 
@@ -188,6 +219,7 @@ def is_traditional_citation_format(citation: str) -> bool:
     return False
 
 
+@timed
 def verify_single_citation(citation: str) -> Tuple[bool, str, str]:
     """
     Verify a single citation against AustLII.
@@ -248,6 +280,7 @@ def verify_single_citation(citation: str) -> Tuple[bool, str, str]:
     return exists, url if exists else "", reason
 
 
+@timed
 def verify_all_citations(text: str) -> Tuple[List[str], List[Tuple[str, str]]]:
     """
     Verify all citations in text content.
@@ -258,6 +291,7 @@ def verify_all_citations(text: str) -> Tuple[List[str], List[Tuple[str, str]]]:
     Returns:
         Tuple of (verified_citations, unverified_citations_with_reasons)
     """
+    start_time = time.time()
     citations = extract_citations(text)
     verified = []
     unverified = []
@@ -268,6 +302,22 @@ def verify_all_citations(text: str) -> Tuple[List[str], List[Tuple[str, str]]]:
             verified.append(citation)
         else:
             unverified.append((citation, reason))
+
+    # Log the overall verification session
+    save_log(
+        "citation_verification_session",
+        {
+            "method": "verify_all_citations",
+            "input_text_length": len(text),
+            "citations_found": len(citations),
+            "citations_verified": len(verified),
+            "citations_unverified": len(unverified),
+            "verified_citations": verified,
+            "unverified_citations": [{"citation": cit, "reason": reason} for cit, reason in unverified],
+            "processing_time_ms": round((time.time() - start_time) * 1000, 2),
+            "timestamp": time.strftime("%Y-%m-%d %H:%M:%S")
+        }
+    )
 
     return verified, unverified
 
