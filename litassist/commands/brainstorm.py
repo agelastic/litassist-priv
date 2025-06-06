@@ -25,6 +25,53 @@ from litassist.utils import (
 from litassist.llm import LLMClient
 
 
+def parse_strategies_file(strategies_text: str) -> dict:
+    """
+    Parse the strategies.txt file to extract basic counts and metadata.
+    
+    Args:
+        strategies_text: Content of the strategies.txt file.
+        
+    Returns:
+        Dictionary containing basic strategies information.
+    """
+    parsed = {
+        "metadata": {},
+        "orthodox_count": 0,
+        "unorthodox_count": 0,
+        "most_likely_count": 0,
+        "raw_content": strategies_text
+    }
+    
+    # Extract metadata from header comments
+    metadata_match = re.search(r"# Side: (.+)\n# Area: (.+)", strategies_text)
+    if metadata_match:
+        parsed["metadata"]["side"] = metadata_match.group(1).strip()
+        parsed["metadata"]["area"] = metadata_match.group(2).strip()
+    
+    # Extract and count each section separately to avoid cross-contamination
+    
+    # Find ORTHODOX STRATEGIES section
+    orthodox_match = re.search(r'## ORTHODOX STRATEGIES\n(.*?)(?=## [A-Z]|===|\Z)', strategies_text, re.DOTALL)
+    if orthodox_match:
+        orthodox_text = orthodox_match.group(1)
+        parsed["orthodox_count"] = len(re.findall(r'^\d+\.', orthodox_text, re.MULTILINE))
+    
+    # Find UNORTHODOX STRATEGIES section  
+    unorthodox_match = re.search(r'## UNORTHODOX STRATEGIES\n(.*?)(?=## [A-Z]|===|\Z)', strategies_text, re.DOTALL)
+    if unorthodox_match:
+        unorthodox_text = unorthodox_match.group(1)
+        parsed["unorthodox_count"] = len(re.findall(r'^\d+\.', unorthodox_text, re.MULTILINE))
+    
+    # Find MOST LIKELY TO SUCCEED section
+    likely_match = re.search(r'## MOST LIKELY TO SUCCEED\n(.*?)(?====|\Z)', strategies_text, re.DOTALL)
+    if likely_match:
+        likely_text = likely_match.group(1)
+        parsed["most_likely_count"] = len(re.findall(r'^\d+\.', likely_text, re.MULTILINE))
+    
+    return parsed
+
+
 def regenerate_bad_strategies(client: LLMClient, original_content: str, base_prompt: str, strategy_type: str, max_retries: int = 2) -> str:
     """
     Selectively regenerate only strategies with citation issues.
@@ -491,12 +538,12 @@ Consider both orthodox and unorthodox options. Base selections on legal merit, f
         f.write(f"# Source: {facts_file}\n\n")
         f.write(original_content)
 
-    click.echo(f"Strategies saved to: {output_file}")
+    click.echo(f"Strategies saved to: \"{output_file}\"")
 
     # Save reasoning trace if extracted
     if reasoning_trace:
         reasoning_file = save_reasoning_trace(reasoning_trace, output_file)
-        click.echo(f"Legal reasoning trace saved to: {reasoning_file}")
+        click.echo(f"Legal reasoning trace saved to: \"{reasoning_file}\"")
 
     click.echo(
         "\nTo use these strategies with other commands, manually create or update strategies.txt"
@@ -511,13 +558,27 @@ Consider both orthodox and unorthodox options. Base selections on legal merit, f
             f.write(f"# Verification Notes for Strategies\n")
             f.write(f"# Generated: {time.strftime('%Y-%m-%d %H:%M:%S')}\n\n")
             f.write("\n\n".join(verification_notes))
-        click.echo(f"Verification notes saved to {verification_file}")
+        click.echo(f"Verification notes saved to \"{verification_file}\"")
 
-    # Display the ideas with verification
-    display_content = original_content
+    # Show summary instead of full content
+    click.echo("\n✅ Brainstorm complete!")
+    click.echo(f"📄 Strategies saved to: \"{output_file}\"")
+    if reasoning_trace:
+        click.echo(f"📝 Reasoning trace: open \"{reasoning_file}\"")
     if verification_notes:
-        display_content += "\n\n" + "\n\n".join(verification_notes)
-
-    click.echo(
-        f"\n--- {area.capitalize()} Law Strategies for {side.capitalize()} ---\n{display_content}"
-    )
+        click.echo(f"📋 Verification notes: open \"{verification_file}\"")
+    
+    # Count and show what was generated
+    orthodox_count = len(re.findall(r'^## ORTHODOX STRATEGIES', original_content, re.MULTILINE))
+    unorthodox_count = len(re.findall(r'^## UNORTHODOX STRATEGIES', original_content, re.MULTILINE))
+    
+    # Parse the actual strategies generated
+    parsed_result = parse_strategies_file(original_content)
+    
+    click.echo(f"\n📊 Generated strategies for {side.capitalize()} in {area.capitalize()} law:")
+    click.echo(f"   • Orthodox strategies: {parsed_result.get('orthodox_count', 0)}")
+    click.echo(f"   • Unorthodox strategies: {parsed_result.get('unorthodox_count', 0)}")
+    click.echo(f"   • Most likely to succeed: {parsed_result.get('most_likely_count', 0)}")
+    
+    click.echo(f"\n💡 View full strategies: open \"{output_file}\"")
+    click.echo("\n📌 To use with strategy command, manually copy to strategies.txt")

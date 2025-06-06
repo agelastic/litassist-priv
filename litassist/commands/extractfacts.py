@@ -203,17 +203,6 @@ Important:
         f.write("-" * 80 + "\n\n")
         f.write(combined)
 
-    click.echo(f"Extraction saved to: {output_file}")
-
-    # Save reasoning trace if extracted
-    if reasoning_trace:
-        reasoning_file = save_reasoning_trace(reasoning_trace, output_file)
-        click.echo(f"Legal reasoning trace saved to: {reasoning_file}")
-
-    click.echo(
-        "\nTo use these facts with other commands, manually create or update case_facts.txt"
-    )
-
     # Audit log
     save_log(
         "extractfacts",
@@ -224,4 +213,21 @@ Important:
             "output_file": output_file,
         },
     )
-    click.echo("Extraction completed with legal accuracy verification.")
+
+    # Show summary instead of full content
+    click.echo("\n✅ Fact extraction complete!")
+    click.echo(f"📄 Output saved to: \"{output_file}\"")
+    
+    # Save reasoning trace if extracted
+    if reasoning_trace:
+        reasoning_file = save_reasoning_trace(reasoning_trace, output_file)
+        click.echo(f"📝 Reasoning trace: open \"{reasoning_file}\"")
+    
+    # Show what was processed
+    chunk_desc = f"{len(chunks)} chunks" if len(chunks) > 1 else "single document"
+    click.echo(f"\n📊 Processed {chunk_desc} from: {os.path.basename(file)}")
+    click.echo("📋 Organized facts under 10 structured headings")
+    click.echo("🔍 Verified with legal accuracy review")
+    
+    click.echo(f"\n💡 View extracted facts: open \"{output_file}\"")
+    click.echo("📌 To use with other commands, manually copy to case_facts.txt")

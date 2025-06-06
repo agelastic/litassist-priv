@@ -143,6 +143,65 @@ smith-v-jones-2025/
 - **Easy sharing** - Send specific timestamped files to colleagues
 - **Manual control** - Working files (case_facts.txt, strategies.txt) remain under user control
 
+## Clean CLI Output Format
+
+**All LitAssist commands now show clean summaries instead of dumping full content to your terminal.**
+
+### What You See on Screen
+Every command follows this consistent, professional output pattern:
+
+```
+✅ [Command] complete!
+📄 Output saved to: outputs/[filename]_YYYYMMDD_HHMMSS.txt
+📊 [Processing statistics and summary]
+💡 View full [content]: open outputs/[filename]_YYYYMMDD_HHMMSS.txt
+```
+
+### Example: Before vs After
+
+**Before (overwhelming terminal output):**
+```bash
+$ litassist lookup "contract formation elements"
+[2000+ lines of legal analysis dumped to terminal]
+```
+
+**After (clean summary):**
+```bash
+$ litassist lookup "contract formation elements"
+Found links:
+- https://austlii.edu.au/cgi-bin/viewdoc/au/cases/cth/HCA/1893/23.html
+- https://austlii.edu.au/cgi-bin/viewdoc/au/cases/cth/HCA/1968/1.html
+
+✅ Lookup complete!
+📄 Output saved to: outputs/lookup_contract_formation_elements_20250606_143022.txt
+📊 Legal analysis for: contract formation elements
+🔍 Searched 2 sources:
+   1. Carlill v Carbolic Smoke Ball Co
+   2. Australian Woollen Mills v Commonwealth
+💡 View full analysis: open outputs/lookup_contract_formation_elements_20250606_143022.txt
+```
+
+### Benefits of Clean Output
+- **Readable terminal** - No overwhelming text walls
+- **Clear file locations** - Always know where your content is saved
+- **Processing transparency** - See exactly what was done
+- **Professional workflow** - Focus on next steps, not parsing output
+- **Full content preserved** - Everything saved to timestamped files
+
+### Accessing Full Content
+To read the complete analysis, drafts, or strategies:
+```bash
+# Option 1: Use the provided command
+open outputs/lookup_contract_formation_elements_20250606_143022.txt
+
+# Option 2: Use any text editor
+code outputs/lookup_contract_formation_elements_20250606_143022.txt
+vim outputs/lookup_contract_formation_elements_20250606_143022.txt
+
+# Option 3: View in terminal
+cat outputs/lookup_contract_formation_elements_20250606_143022.txt
+```
+
 ## Workflow 1: Lookup - Rapid Case-Law Search
 
 **Pipeline Phase**: Ingest (Research)

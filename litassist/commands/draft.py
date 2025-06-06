@@ -287,14 +287,14 @@ def draft(documents, query, verify, diversity):
         f.write("-" * 80 + "\n\n")
         f.write(content)
 
-    click.echo(f"\nOutput saved to: {output_file}")
+    click.echo(f"\nOutput saved to: \"{output_file}\"")
 
     # Save reasoning trace if extracted
     if reasoning_trace:
         reasoning_file = save_reasoning_trace(reasoning_trace, output_file)
-        click.echo(f"Legal reasoning trace saved to: {reasoning_file}")
+        click.echo(f"Legal reasoning trace saved to: \"{reasoning_file}\"")
 
-    # Save audit log and echo response
+    # Save audit log
     save_log(
         "draft",
         {
@@ -313,4 +313,19 @@ def draft(documents, query, verify, diversity):
             "output_file": output_file,
         },
     )
-    click.echo(content)
+    
+    # Show summary instead of full content
+    click.echo("\n✅ Draft generation complete!")
+    click.echo(f"📄 Output saved to: \"{output_file}\"")
+    if reasoning_trace:
+        click.echo(f"📝 Reasoning trace: open \"{reasoning_file}\"")
+    
+    # Show brief preview
+    lines = content.split('\n')
+    preview_lines = [line for line in lines[:10] if line.strip()][:5]
+    if preview_lines:
+        click.echo("\n📋 Preview:")
+        for line in preview_lines:
+            click.echo(f"   {line[:80]}..." if len(line) > 80 else f"   {line}")
+    
+    click.echo(f"\n💡 View full draft: open \"{output_file}\"")

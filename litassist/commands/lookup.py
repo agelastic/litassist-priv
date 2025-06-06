@@ -413,7 +413,7 @@ def lookup(question, mode, engine, extract):
         f.write("-" * 80 + "\n\n")
         f.write(formatted_content)
 
-    click.echo(f"\nOutput saved to: {output_file}")
+    click.echo(f"\nOutput saved to: \"{output_file}\"")
 
     # Save audit log
     params_str = f"mode={mode}, engine={engine}"
@@ -435,4 +435,21 @@ def lookup(question, mode, engine, extract):
             "output_file": output_file,
         },
     )
-    click.echo(formatted_content)
+    
+    # Show summary instead of full content
+    click.echo("\n✅ Lookup complete!")
+    click.echo(f"📄 Output saved to: \"{output_file}\"")
+    
+    # Show what was found
+    if extract:
+        extract_type = extract.capitalize()
+        click.echo(f"\n📊 {extract_type} extracted from search results")
+    else:
+        click.echo(f"\n📊 Legal analysis for: {question}")
+    
+    # Show links that were searched
+    click.echo(f"\n🔍 Searched {len(links)} sources:")
+    for i, link in enumerate(links, 1):
+        click.echo(f"   {i}. {link}")
+    
+    click.echo(f"\n💡 View full analysis: open \"{output_file}\"")

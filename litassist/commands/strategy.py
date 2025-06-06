@@ -897,14 +897,14 @@ Requirements:
         f.write("-" * 80 + "\n\n")
         f.write(output)
     
-    click.echo(f"\nOutput saved to: {output_file}")
+    click.echo(f"\nOutput saved to: \"{output_file}\"")
     
     # Save consolidated reasoning trace if we have option traces
     if consolidated_reasoning:
         reasoning_file = output_file.replace('.txt', '_reasoning.txt')
         with open(reasoning_file, 'w', encoding='utf-8') as f:
             f.write(consolidated_reasoning)
-        click.echo(f"Legal reasoning trace saved to: {reasoning_file}")
+        click.echo(f"Legal reasoning trace saved to: \"{reasoning_file}\"")
 
     # Save audit log
     save_log(
@@ -923,5 +923,21 @@ Requirements:
         },
     )
 
-    # Display the output
-    click.echo(output)
+    # Show summary instead of full output
+    click.echo("\n✅ Strategy generation complete!")
+    click.echo(f"📄 Main output: \"{output_file}\"")
+    if consolidated_reasoning:
+        click.echo(f"📝 Reasoning traces: open \"{output_file.replace('.txt', '_reasoning.txt')}\"")
+    
+    # Show what was generated
+    click.echo(f"\n📊 Generated {len(valid_options)} strategic options for: {outcome}")
+    
+    # Brief preview of options
+    click.echo("\n📋 Strategic options generated:")
+    for i, option in enumerate(valid_options, 1):
+        # Extract option title
+        title_match = re.search(r'## OPTION \d+: (.+)', option)
+        if title_match:
+            click.echo(f"   {i}. {title_match.group(1)}")
+    
+    click.echo(f"\n💡 View full strategy: open \"{output_file}\"")

@@ -116,11 +116,18 @@ def digest(file, mode):
             # Collect output
             chunk_output = f"\n--- Chunk {idx} ---\n{content}"
             all_output.append(chunk_output)
-            # Output to user
-            click.echo(chunk_output)
     
     # Write all output to file
     with open(output_file, 'w', encoding='utf-8') as f:
         f.write('\n'.join(all_output))
     
-    click.echo(f"\n\nOutput saved to: {output_file}")
+    # Show summary instead of full content
+    click.echo("\n✅ Document digest complete!")
+    click.echo(f"📄 Output saved to: \"{output_file}\"")
+    
+    # Show what was processed
+    mode_description = "chronological summaries" if mode == "summary" else "legal issue identification"
+    click.echo(f"\n📊 Generated {mode_description} for {len(chunks)} chunks")
+    click.echo(f"📋 Document: {os.path.basename(file)}")
+    
+    click.echo(f"\n💡 View full digest: open \"{output_file}\"")
