@@ -23,16 +23,16 @@ from litassist.utils import (
     extract_reasoning_trace,
     save_reasoning_trace,
 )
-from litassist.llm import LLMClient
+from litassist.llm import LLMClientFactory, LLMClient
 
 
 def parse_strategies_file(strategies_text: str) -> dict:
     """
     Parse the strategies.txt file to extract basic counts and metadata.
-    
+
     Args:
         strategies_text: Content of the strategies.txt file.
-        
+
     Returns:
         Dictionary containing basic strategies information.
     """
@@ -41,97 +41,121 @@ def parse_strategies_file(strategies_text: str) -> dict:
         "orthodox_count": 0,
         "unorthodox_count": 0,
         "most_likely_count": 0,
-        "raw_content": strategies_text
+        "raw_content": strategies_text,
     }
-    
+
     # Extract metadata from header comments
     metadata_match = re.search(r"# Side: (.+)\n# Area: (.+)", strategies_text)
     if metadata_match:
         parsed["metadata"]["side"] = metadata_match.group(1).strip()
         parsed["metadata"]["area"] = metadata_match.group(2).strip()
-    
+
     # Extract and count each section separately to avoid cross-contamination
-    
+
     # Find ORTHODOX STRATEGIES section
-    orthodox_match = re.search(r'## ORTHODOX STRATEGIES\n(.*?)(?=## [A-Z]|===|\Z)', strategies_text, re.DOTALL)
+    orthodox_match = re.search(
+        r"## ORTHODOX STRATEGIES\n(.*?)(?=## [A-Z]|===|\Z)", strategies_text, re.DOTALL
+    )
     if orthodox_match:
         orthodox_text = orthodox_match.group(1)
-        parsed["orthodox_count"] = len(re.findall(r'^\d+\.', orthodox_text, re.MULTILINE))
-    
-    # Find UNORTHODOX STRATEGIES section  
-    unorthodox_match = re.search(r'## UNORTHODOX STRATEGIES\n(.*?)(?=## [A-Z]|===|\Z)', strategies_text, re.DOTALL)
+        parsed["orthodox_count"] = len(
+            re.findall(r"^\d+\.", orthodox_text, re.MULTILINE)
+        )
+
+    # Find UNORTHODOX STRATEGIES section
+    unorthodox_match = re.search(
+        r"## UNORTHODOX STRATEGIES\n(.*?)(?=## [A-Z]|===|\Z)",
+        strategies_text,
+        re.DOTALL,
+    )
     if unorthodox_match:
         unorthodox_text = unorthodox_match.group(1)
-        parsed["unorthodox_count"] = len(re.findall(r'^\d+\.', unorthodox_text, re.MULTILINE))
-    
+        parsed["unorthodox_count"] = len(
+            re.findall(r"^\d+\.", unorthodox_text, re.MULTILINE)
+        )
+
     # Find MOST LIKELY TO SUCCEED section
-    likely_match = re.search(r'## MOST LIKELY TO SUCCEED\n(.*?)(?====|\Z)', strategies_text, re.DOTALL)
+    likely_match = re.search(
+        r"## MOST LIKELY TO SUCCEED\n(.*?)(?====|\Z)", strategies_text, re.DOTALL
+    )
     if likely_match:
         likely_text = likely_match.group(1)
-        parsed["most_likely_count"] = len(re.findall(r'^\d+\.', likely_text, re.MULTILINE))
-    
+        parsed["most_likely_count"] = len(
+            re.findall(r"^\d+\.", likely_text, re.MULTILINE)
+        )
+
     return parsed
 
 
-def regenerate_bad_strategies(client: LLMClient, original_content: str, base_prompt: str, strategy_type: str, max_retries: int = 2) -> str:
+def regenerate_bad_strategies(
+    client: LLMClient,
+    original_content: str,
+    base_prompt: str,
+    strategy_type: str,
+    max_retries: int = 2,
+) -> str:
     """
     Selectively regenerate only strategies with citation issues.
-    
+
     Args:
         client: LLMClient instance to use for regeneration
         original_content: Original strategy content with potential citation issues
         base_prompt: Base prompt used for generation
         strategy_type: Type of strategies ("orthodox" or "unorthodox") for logging
         max_retries: Maximum regeneration attempts
-    
+
     Returns:
         Clean content with verified strategies only
     """
     click.echo(f"  🔍 Analyzing {strategy_type} strategies for citation issues...")
-    
+
     # Split content into individual strategies
     strategies = []
     current_strategy = []
-    lines = original_content.split('\n')
-    
+    lines = original_content.split("\n")
+
     for line in lines:
         # Strategy headers start with numbers (1., 2., etc.)
-        if re.match(r'^\d+\.\s+', line.strip()) and current_strategy:
+        if re.match(r"^\d+\.\s+", line.strip()) and current_strategy:
             # Save previous strategy
-            strategies.append('\n'.join(current_strategy))
+            strategies.append("\n".join(current_strategy))
             current_strategy = [line]
         else:
             current_strategy.append(line)
-    
+
     # Don't forget the last strategy
     if current_strategy:
-        strategies.append('\n'.join(current_strategy))
-    
+        strategies.append("\n".join(current_strategy))
+
     # Validate each strategy individually and track their final state
     strategy_results = {}  # Maps original position to final strategy content
     strategies_to_regenerate = []
-    
+
     for i, strategy in enumerate(strategies, 1):
         if not strategy.strip():
             continue
-            
+
         citation_issues = client.validate_citations(strategy)
         if citation_issues:
-            click.echo(f"    📋 Strategy {i}: Found {len(citation_issues)-1} citation issues - marking for regeneration")
+            click.echo(
+                f"    📋 Strategy {i}: Found {len(citation_issues)-1} citation issues - marking for regeneration"
+            )
             strategies_to_regenerate.append((i, strategy))
         else:
             click.echo(f"    ✅ Strategy {i}: Citations verified")
             strategy_results[i] = strategy
-    
+
     # Regenerate problematic strategies
     for retry_attempt in range(max_retries):
         if not strategies_to_regenerate:
             break
-            
-        click.echo(f"  🔄 Regeneration attempt {retry_attempt + 1}: {len(strategies_to_regenerate)} strategies need fixing")
-        
+
+        click.echo(
+            f"  🔄 Regeneration attempt {retry_attempt + 1}: {len(strategies_to_regenerate)} strategies need fixing"
+        )
+
         remaining_to_regenerate = []
-        
+
         for strategy_num, bad_strategy in strategies_to_regenerate:
             # Create focused regeneration prompt
             regen_prompt = f"""{base_prompt}
@@ -152,55 +176,70 @@ Generate ONLY strategy #{strategy_num} in the exact format:
 {strategy_num}. [Strategy Title]
 [Strategy content...]
 """
-            
+
             try:
                 # Generate single replacement strategy
-                new_strategy, _ = client.complete([{
-                    "role": "user", 
-                    "content": regen_prompt
-                }])
-                
+                new_strategy, _ = client.complete(
+                    [{"role": "user", "content": regen_prompt}]
+                )
+
                 # Validate the regenerated strategy
                 new_citation_issues = client.validate_citations(new_strategy)
                 if new_citation_issues:
-                    click.echo(f"    ⚠️  Strategy {strategy_num}: Still has citation issues after regeneration")
+                    click.echo(
+                        f"    ⚠️  Strategy {strategy_num}: Still has citation issues after regeneration"
+                    )
                     remaining_to_regenerate.append((strategy_num, bad_strategy))
                 else:
-                    click.echo(f"    ✅ Strategy {strategy_num}: Successfully regenerated with clean citations")
+                    click.echo(
+                        f"    ✅ Strategy {strategy_num}: Successfully regenerated with clean citations"
+                    )
                     strategy_results[strategy_num] = new_strategy
-                    
+
             except Exception as e:
-                click.echo(f"    💥 Strategy {strategy_num}: Regeneration failed - {str(e)}")
+                click.echo(
+                    f"    💥 Strategy {strategy_num}: Regeneration failed - {str(e)}"
+                )
                 remaining_to_regenerate.append((strategy_num, bad_strategy))
-        
+
         strategies_to_regenerate = remaining_to_regenerate
-    
+
     # Report final status
     if strategies_to_regenerate:
-        click.echo(f"  ⚠️  {len(strategies_to_regenerate)} {strategy_type} strategies still have citation issues after {max_retries} attempts")
-        click.echo(f"    📋 Excluding these strategies: {[num for num, _ in strategies_to_regenerate]}")
+        click.echo(
+            f"  ⚠️  {len(strategies_to_regenerate)} {strategy_type} strategies still have citation issues after {max_retries} attempts"
+        )
+        click.echo(
+            f"    📋 Excluding these strategies: {[num for num, _ in strategies_to_regenerate]}"
+        )
     else:
         click.echo(f"  ✅ All {strategy_type} strategies now have verified citations")
-    
-    click.echo(f"  📊 Final result: {len(strategy_results)} verified {strategy_type} strategies")
-    
+
+    click.echo(
+        f"  📊 Final result: {len(strategy_results)} verified {strategy_type} strategies"
+    )
+
     # Reconstruct content with final verified strategies only
     if strategy_results:
         # Get strategies in their final positions and renumber sequentially
         renumbered_strategies = []
-        for i, (original_pos, strategy) in enumerate(sorted(strategy_results.items()), 1):
+        for i, (original_pos, strategy) in enumerate(
+            sorted(strategy_results.items()), 1
+        ):
             # Replace the original numbering with sequential numbering
-            strategy_lines = strategy.split('\n')
-            if strategy_lines and re.match(r'^\d+\.\s+', strategy_lines[0].strip()):
+            strategy_lines = strategy.split("\n")
+            if strategy_lines and re.match(r"^\d+\.\s+", strategy_lines[0].strip()):
                 # Replace first line numbering
-                strategy_lines[0] = re.sub(r'^\d+\.', f'{i}.', strategy_lines[0])
-                renumbered_strategies.append('\n'.join(strategy_lines))
+                strategy_lines[0] = re.sub(r"^\d+\.", f"{i}.", strategy_lines[0])
+                renumbered_strategies.append("\n".join(strategy_lines))
             else:
                 renumbered_strategies.append(strategy)
-        
-        return '\n\n'.join(renumbered_strategies)
+
+        return "\n\n".join(renumbered_strategies)
     else:
-        return f"No {strategy_type} strategies could be generated with verified citations."
+        return (
+            f"No {strategy_type} strategies could be generated with verified citations."
+        )
 
 
 @click.command()
@@ -295,15 +334,18 @@ def brainstorm(facts_file, side, area, verify):
     # Auto-verify for Grok due to hallucination tendency
     if "grok" in "x-ai/grok-3-beta".lower():
         if verify:
-            click.echo("ℹ️  Note: --verify flag enabled (auto-required for Grok models due to hallucination tendency)")
+            click.echo(
+                "ℹ️  Note: --verify flag enabled (auto-required for Grok models due to hallucination tendency)"
+            )
         elif not verify:
-            click.echo("ℹ️  Note: Verification auto-enabled for Grok models due to hallucination tendency")
+            click.echo(
+                "ℹ️  Note: Verification auto-enabled for Grok models due to hallucination tendency"
+            )
         verify = True  # Force verification for Grok models
 
     # Generate Orthodox Strategies (conservative approach)
     click.echo("Generating orthodox strategies...")
-    orthodox_client = LLMClient("x-ai/grok-3-beta", temperature=0.3, top_p=0.7)
-    orthodox_client.command_context = "brainstorm-orthodox"
+    orthodox_client = LLMClientFactory.for_command("brainstorm", "orthodox")
 
     orthodox_base_prompt = f"""Facts:
 {facts}
@@ -329,7 +371,9 @@ Please provide output in EXACTLY this format:
 Focus on well-established legal approaches with clear precedential support."""
 
     # Add reasoning trace to orthodox prompt
-    orthodox_prompt = create_reasoning_prompt(orthodox_base_prompt, "brainstorm-orthodox")
+    orthodox_prompt = create_reasoning_prompt(
+        orthodox_base_prompt, "brainstorm-orthodox"
+    )
     orthodox_messages = [
         {
             "role": "system",
@@ -347,15 +391,16 @@ Focus on well-established legal approaches with clear precedential support."""
     # Selectively regenerate orthodox strategies with citation issues
     orthodox_citation_issues = orthodox_client.validate_citations(orthodox_content)
     if orthodox_citation_issues:
-        click.echo(f"  🔄 Found {len(orthodox_citation_issues)-1} citation issues in orthodox strategies - fixing...")
+        click.echo(
+            f"  🔄 Found {len(orthodox_citation_issues)-1} citation issues in orthodox strategies - fixing..."
+        )
         orthodox_content = regenerate_bad_strategies(
             orthodox_client, orthodox_content, orthodox_base_prompt, "orthodox"
         )
 
     # Generate Unorthodox Strategies (creative approach)
     click.echo("Generating unorthodox strategies...")
-    unorthodox_client = LLMClient("x-ai/grok-3-beta", temperature=0.9, top_p=0.95)
-    unorthodox_client.command_context = "brainstorm-unorthodox"
+    unorthodox_client = LLMClientFactory.for_command("brainstorm", "unorthodox")
 
     unorthodox_base_prompt = f"""Facts:
 {facts}
@@ -381,7 +426,9 @@ Please provide output in EXACTLY this format:
 Be creative and innovative while acknowledging any legal uncertainties or risks."""
 
     # Add reasoning trace to unorthodox prompt
-    unorthodox_prompt = create_reasoning_prompt(unorthodox_base_prompt, "brainstorm-unorthodox")
+    unorthodox_prompt = create_reasoning_prompt(
+        unorthodox_base_prompt, "brainstorm-unorthodox"
+    )
     unorthodox_messages = [
         {
             "role": "system",
@@ -396,17 +443,20 @@ Be creative and innovative while acknowledging any legal uncertainties or risks.
         raise click.ClickException(f"Error generating unorthodox strategies: {e}")
 
     # Selectively regenerate unorthodox strategies with citation issues
-    unorthodox_citation_issues = unorthodox_client.validate_citations(unorthodox_content)
+    unorthodox_citation_issues = unorthodox_client.validate_citations(
+        unorthodox_content
+    )
     if unorthodox_citation_issues:
-        click.echo(f"  🔄 Found {len(unorthodox_citation_issues)-1} citation issues in unorthodox strategies - fixing...")
+        click.echo(
+            f"  🔄 Found {len(unorthodox_citation_issues)-1} citation issues in unorthodox strategies - fixing..."
+        )
         unorthodox_content = regenerate_bad_strategies(
             unorthodox_client, unorthodox_content, unorthodox_base_prompt, "unorthodox"
         )
 
     # Generate Most Likely to Succeed analysis
     click.echo("Analyzing most promising strategies...")
-    analysis_client = LLMClient("anthropic/claude-3.5-sonnet", temperature=0.2, top_p=0.8)
-    analysis_client.command_context = "brainstorm-analysis"
+    analysis_client = LLMClientFactory.for_command("brainstorm", "analysis")
 
     analysis_base_prompt = f"""Facts:
 {facts}
@@ -482,17 +532,21 @@ Consider both orthodox and unorthodox options. Base selections on legal merit, f
     # Use analysis_client for verification since it has balanced settings
     auto_verify = analysis_client.should_auto_verify(original_content, "brainstorm")
     needs_verification = verify or auto_verify
-    
+
     # Inform user about verification status
     if verify and auto_verify:
-        click.echo("🔍 Running verification (--verify flag + auto-verification triggered)")
+        click.echo(
+            "🔍 Running verification (--verify flag + auto-verification triggered)"
+        )
     elif verify:
         click.echo("🔍 Running verification (--verify flag enabled)")
     elif auto_verify:
-        click.echo("🔍 Running auto-verification (Grok model or high-risk content detected)")
+        click.echo(
+            "🔍 Running auto-verification (Grok model or high-risk content detected)"
+        )
     else:
         click.echo("ℹ️  No verification performed")
-    
+
     if needs_verification:
         try:
             # Use medium verification for creative brainstorming
@@ -512,12 +566,16 @@ Consider both orthodox and unorthodox options. Base selections on legal merit, f
 
     # Extract separate reasoning traces for each section
     orthodox_trace = extract_reasoning_trace(orthodox_content, "brainstorm-orthodox")
-    unorthodox_trace = extract_reasoning_trace(unorthodox_content, "brainstorm-unorthodox") 
+    unorthodox_trace = extract_reasoning_trace(
+        unorthodox_content, "brainstorm-unorthodox"
+    )
     analysis_trace = extract_reasoning_trace(analysis_content, "brainstorm-analysis")
-    
+
     # Remove reasoning traces from main content
     trace_pattern = r"=== LEGAL REASONING TRACE ===\s*\n(.*?)(?=\n\n|\n=|$)"
-    clean_content = re.sub(trace_pattern, '', original_content, flags=re.DOTALL | re.IGNORECASE).strip()
+    clean_content = re.sub(
+        trace_pattern, "", original_content, flags=re.DOTALL | re.IGNORECASE
+    ).strip()
 
     # Save to timestamped file only
     timestamp = time.strftime("%Y%m%d_%H%M%S")
@@ -530,43 +588,45 @@ Consider both orthodox and unorthodox options. Base selections on legal merit, f
         f.write(f"# Source: {facts_file}\n\n")
         f.write(clean_content)
 
-    click.echo(f"Strategies saved to: \"{output_file}\"")
+    click.echo(f'Strategies saved to: "{output_file}"')
 
     # Save separate reasoning traces if extracted
     reasoning_files = []
-    
+
     if orthodox_trace:
-        orthodox_reasoning_file = output_file.replace('.txt', '_orthodox_reasoning.txt')
-        with open(orthodox_reasoning_file, 'w', encoding='utf-8') as f:
+        orthodox_reasoning_file = output_file.replace(".txt", "_orthodox_reasoning.txt")
+        with open(orthodox_reasoning_file, "w", encoding="utf-8") as f:
             f.write(f"# ORTHODOX STRATEGIES - REASONING TRACE\n")
             f.write(f"# Generated: {time.strftime('%Y-%m-%d %H:%M:%S')}\n")
             f.write(f"# Command: brainstorm-orthodox\n\n")
             f.write(orthodox_trace.to_markdown())
         reasoning_files.append(("Orthodox", orthodox_reasoning_file))
-    
+
     if unorthodox_trace:
-        unorthodox_reasoning_file = output_file.replace('.txt', '_unorthodox_reasoning.txt')
-        with open(unorthodox_reasoning_file, 'w', encoding='utf-8') as f:
+        unorthodox_reasoning_file = output_file.replace(
+            ".txt", "_unorthodox_reasoning.txt"
+        )
+        with open(unorthodox_reasoning_file, "w", encoding="utf-8") as f:
             f.write(f"# UNORTHODOX STRATEGIES - REASONING TRACE\n")
             f.write(f"# Generated: {time.strftime('%Y-%m-%d %H:%M:%S')}\n")
             f.write(f"# Command: brainstorm-unorthodox\n\n")
             f.write(unorthodox_trace.to_markdown())
         reasoning_files.append(("Unorthodox", unorthodox_reasoning_file))
-    
+
     if analysis_trace:
-        analysis_reasoning_file = output_file.replace('.txt', '_analysis_reasoning.txt')
-        with open(analysis_reasoning_file, 'w', encoding='utf-8') as f:
+        analysis_reasoning_file = output_file.replace(".txt", "_analysis_reasoning.txt")
+        with open(analysis_reasoning_file, "w", encoding="utf-8") as f:
             f.write(f"# MOST LIKELY TO SUCCEED - REASONING TRACE\n")
             f.write(f"# Generated: {time.strftime('%Y-%m-%d %H:%M:%S')}\n")
             f.write(f"# Command: brainstorm-analysis\n\n")
             f.write(analysis_trace.to_markdown())
         reasoning_files.append(("Most Likely Analysis", analysis_reasoning_file))
-    
+
     # Report reasoning files
     if reasoning_files:
         click.echo(f"\n📝 Reasoning traces saved:")
         for trace_type, file_path in reasoning_files:
-            click.echo(f"   {trace_type}: \"{file_path}\"")
+            click.echo(f'   {trace_type}: "{file_path}"')
     else:
         click.echo(f"\n📝 No reasoning traces extracted from this generation")
 
@@ -583,7 +643,7 @@ Consider both orthodox and unorthodox options. Base selections on legal merit, f
             f.write(f"# Verification Notes for Strategies\n")
             f.write(f"# Generated: {time.strftime('%Y-%m-%d %H:%M:%S')}\n\n")
             f.write("\n\n".join(verification_notes))
-        click.echo(f"Verification notes saved to \"{verification_file}\"")
+        click.echo(f'Verification notes saved to "{verification_file}"')
 
     # Save comprehensive audit log
     full_content = original_content
@@ -608,21 +668,31 @@ Consider both orthodox and unorthodox options. Base selections on legal merit, f
 
     # Show summary instead of full content
     click.echo("\n✅ Brainstorm complete!")
-    click.echo(f"📄 Strategies saved to: \"{output_file}\"")
+    click.echo(f'📄 Strategies saved to: "{output_file}"')
     if verification_notes:
-        click.echo(f"📋 Verification notes: open \"{verification_file}\"")
-    
+        click.echo(f'📋 Verification notes: open "{verification_file}"')
+
     # Count and show what was generated
-    orthodox_count = len(re.findall(r'^## ORTHODOX STRATEGIES', original_content, re.MULTILINE))
-    unorthodox_count = len(re.findall(r'^## UNORTHODOX STRATEGIES', original_content, re.MULTILINE))
-    
+    orthodox_count = len(
+        re.findall(r"^## ORTHODOX STRATEGIES", original_content, re.MULTILINE)
+    )
+    unorthodox_count = len(
+        re.findall(r"^## UNORTHODOX STRATEGIES", original_content, re.MULTILINE)
+    )
+
     # Parse the actual strategies generated
     parsed_result = parse_strategies_file(original_content)
-    
-    click.echo(f"\n📊 Generated strategies for {side.capitalize()} in {area.capitalize()} law:")
+
+    click.echo(
+        f"\n📊 Generated strategies for {side.capitalize()} in {area.capitalize()} law:"
+    )
     click.echo(f"   • Orthodox strategies: {parsed_result.get('orthodox_count', 0)}")
-    click.echo(f"   • Unorthodox strategies: {parsed_result.get('unorthodox_count', 0)}")
-    click.echo(f"   • Most likely to succeed: {parsed_result.get('most_likely_count', 0)}")
-    
-    click.echo(f"\n💡 View full strategies: open \"{output_file}\"")
+    click.echo(
+        f"   • Unorthodox strategies: {parsed_result.get('unorthodox_count', 0)}"
+    )
+    click.echo(
+        f"   • Most likely to succeed: {parsed_result.get('most_likely_count', 0)}"
+    )
+
+    click.echo(f'\n💡 View full strategies: open "{output_file}"')
     click.echo("\n📌 To use with strategy command, manually copy to strategies.txt")

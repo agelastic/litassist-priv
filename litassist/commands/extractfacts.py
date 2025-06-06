@@ -21,7 +21,7 @@ from litassist.utils import (
     extract_reasoning_trace,
     save_reasoning_trace,
 )
-from litassist.llm import LLMClient
+from litassist.llm import LLMClientFactory
 
 
 @click.command()
@@ -50,15 +50,18 @@ def extractfacts(file, verify):
     text = read_document(file)
     chunks = chunk_text(text, max_chars=CONFIG.max_chars)
 
-    # Initialize the LLM client with deterministic settings
-    client = LLMClient("anthropic/claude-3-sonnet", temperature=0, top_p=0.15)
-    client.command_context = "extractfacts"  # Set command context for auto-verification
+    # Initialize the LLM client using factory
+    client = LLMClientFactory.for_command("extractfacts")
 
     # extractfacts always needs verification as it creates foundational documents
     if verify:
-        click.echo("⚠️  Note: --verify flag ignored - extractfacts command always uses verification for accuracy")
+        click.echo(
+            "⚠️  Note: --verify flag ignored - extractfacts command always uses verification for accuracy"
+        )
     elif not verify:
-        click.echo("ℹ️  Note: Extractfacts command automatically uses verification for accuracy")
+        click.echo(
+            "ℹ️  Note: Extractfacts command automatically uses verification for accuracy"
+        )
     verify = True  # Force verification for critical accuracy
 
     # For single chunk, use original approach
@@ -220,18 +223,18 @@ Important:
 
     # Show summary instead of full content
     click.echo("\n✅ Fact extraction complete!")
-    click.echo(f"📄 Output saved to: \"{output_file}\"")
-    
+    click.echo(f'📄 Output saved to: "{output_file}"')
+
     # Save reasoning trace if extracted
     if reasoning_trace:
         reasoning_file = save_reasoning_trace(reasoning_trace, output_file)
-        click.echo(f"📝 Reasoning trace: open \"{reasoning_file}\"")
-    
+        click.echo(f'📝 Reasoning trace: open "{reasoning_file}"')
+
     # Show what was processed
     chunk_desc = f"{len(chunks)} chunks" if len(chunks) > 1 else "single document"
     click.echo(f"\n📊 Processed {chunk_desc} from: {os.path.basename(file)}")
     click.echo("📋 Organized facts under 10 structured headings")
     click.echo("🔍 Verified with legal accuracy review")
-    
-    click.echo(f"\n💡 View extracted facts: open \"{output_file}\"")
+
+    click.echo(f'\n💡 View extracted facts: open "{output_file}"')
     click.echo("📌 To use with other commands, manually copy to case_facts.txt")

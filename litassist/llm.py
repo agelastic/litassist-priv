@@ -20,6 +20,192 @@ from litassist.citation_verify import (
 )
 
 
+class LLMClientFactory:
+    """
+    Factory class for creating LLMClient instances with command-specific configurations.
+
+    This centralizes all model and parameter configurations for each command,
+    eliminating duplication and providing a single source of truth.
+    """
+
+    # Command configurations registry
+    COMMAND_CONFIGS = {
+        # Extract facts - deterministic, focused on accuracy
+        "extractfacts": {
+            "model": "anthropic/claude-3-sonnet",
+            "temperature": 0,
+            "top_p": 0.15,
+            "force_verify": True,  # Always verify for foundational docs
+        },
+        # Strategy - balanced for legal analysis
+        "strategy": {
+            "model": "openai/gpt-4o",
+            "temperature": 0.2,
+            "top_p": 0.9,
+            "presence_penalty": 0.0,
+            "frequency_penalty": 0.0,
+            "force_verify": True,  # Always verify for strategic guidance
+        },
+        # Strategy sub-type for analysis
+        "strategy-analysis": {
+            "model": "anthropic/claude-3.5-sonnet",
+            "temperature": 0.2,
+            "top_p": 0.8,
+        },
+        # Brainstorm - varied temperatures for different approaches
+        "brainstorm-orthodox": {
+            "model": "x-ai/grok-3-beta",
+            "temperature": 0.3,
+            "top_p": 0.7,
+            "force_verify": True,  # Auto-verify Grok due to hallucination tendency
+        },
+        "brainstorm-unorthodox": {
+            "model": "x-ai/grok-3-beta",
+            "temperature": 0.9,
+            "top_p": 0.95,
+            "force_verify": True,  # Auto-verify Grok
+        },
+        "brainstorm-analysis": {
+            "model": "anthropic/claude-3.5-sonnet",
+            "temperature": 0.2,
+            "top_p": 0.8,
+        },
+        # Draft - balanced creativity with accuracy
+        "draft": {
+            "model": "openai/gpt-4o",
+            "temperature": 0.5,
+            "top_p": 0.8,
+            "presence_penalty": 0.1,
+            "frequency_penalty": 0.1,
+        },
+        # Digest - mode-dependent settings
+        "digest-summary": {
+            "model": "anthropic/claude-3-sonnet",
+            "temperature": 0,
+            "top_p": 0,
+        },
+        "digest-issues": {
+            "model": "anthropic/claude-3-sonnet",
+            "temperature": 0.2,
+            "top_p": 0.5,
+        },
+        # Lookup - if it uses LLM (not in analyzed commands but for completeness)
+        "lookup": {
+            "model": "anthropic/claude-3-sonnet",
+            "temperature": 0.1,
+            "top_p": 0.2,
+        },
+    }
+
+    @classmethod
+    def for_command(
+        cls, command_name: str, sub_type: str = None, **overrides
+    ) -> "LLMClient":
+        """
+        Create an LLMClient configured for a specific command.
+
+        Args:
+            command_name: The command name (e.g., 'extractfacts', 'strategy')
+            sub_type: Optional sub-type for commands with multiple clients
+                     (e.g., 'orthodox', 'unorthodox', 'analysis' for brainstorm,
+                      'summary', 'issues' for digest)
+            **overrides: Any parameter overrides to apply to the default configuration
+
+        Returns:
+            Configured LLMClient instance with command context set
+
+        Examples:
+            # Simple command
+            client = LLMClientFactory.for_command('extractfacts')
+
+            # Command with sub-type
+            client = LLMClientFactory.for_command('brainstorm', 'orthodox')
+
+            # With overrides
+            client = LLMClientFactory.for_command('draft', temperature=0.7)
+        """
+        # Build the configuration key
+        if sub_type:
+            config_key = f"{command_name}-{sub_type}"
+        else:
+            config_key = command_name
+
+        # Get the configuration or fall back to a default
+        if config_key not in cls.COMMAND_CONFIGS:
+            # Default configuration for unknown commands
+            config = {
+                "model": "anthropic/claude-3-sonnet",
+                "temperature": 0.3,
+                "top_p": 0.7,
+            }
+            print(f"⚠️  No configuration found for '{config_key}', using defaults")
+        else:
+            config = cls.COMMAND_CONFIGS[config_key].copy()
+
+        # Extract special flags
+        force_verify = config.pop("force_verify", False)
+
+        # Allow environment variable overrides for model selection
+        env_model_key = f"LITASSIST_{command_name.upper()}_MODEL"
+        if sub_type:
+            env_model_key = f"LITASSIST_{command_name.upper()}_{sub_type.upper()}_MODEL"
+
+        import os
+
+        env_model = os.environ.get(env_model_key)
+        if env_model:
+            config["model"] = env_model
+            print(f"📋 Using model from environment: {env_model}")
+
+        # Apply any provided overrides
+        config.update(overrides)
+
+        # Extract model from config
+        model = config.pop("model")
+
+        # Create the LLM client with remaining config as parameters
+        client = LLMClient(model, **config)
+
+        # Set the command context
+        client.command_context = config_key
+
+        # Set force verification flag if applicable
+        if force_verify:
+            client._force_verify = True
+
+        return client
+
+    @classmethod
+    def get_model_for_command(cls, command_name: str, sub_type: str = None) -> str:
+        """
+        Get the model name configured for a specific command.
+
+        Useful for logging or debugging purposes.
+
+        Args:
+            command_name: The command name
+            sub_type: Optional sub-type
+
+        Returns:
+            Model name string
+        """
+        config_key = f"{command_name}-{sub_type}" if sub_type else command_name
+        config = cls.COMMAND_CONFIGS.get(
+            config_key, {"model": "anthropic/claude-3-sonnet"}
+        )
+        return config["model"]
+
+    @classmethod
+    def list_configurations(cls) -> Dict[str, Dict[str, Any]]:
+        """
+        List all available command configurations.
+
+        Returns:
+            Dictionary of all command configurations
+        """
+        return cls.COMMAND_CONFIGS.copy()
+
+
 class LLMClient:
     """
     Wrapper for LLM API calls with support for completions and self-verification.
@@ -223,8 +409,8 @@ class LLMClient:
                 "params": {**self.default_params, **overrides},
                 "response": content,
                 "usage": usage,
-                "timestamp": time.strftime("%Y-%m-%d %H:%M:%S")
-            }
+                "timestamp": time.strftime("%Y-%m-%d %H:%M:%S"),
+            },
         )
 
         return content, usage
@@ -298,9 +484,9 @@ class LLMClient:
             # Restore original settings
             openai.api_base = original_api_base
             openai.api_key = original_api_key
-        
+
         verification_result = response.choices[0].message.content
-        
+
         # Log the verification call
         save_log(
             f"llm_{self.model.replace('/', '_')}_verify",
@@ -309,11 +495,15 @@ class LLMClient:
                 "model": self.model,
                 "input_text_length": len(primary_text),
                 "verification_result": verification_result,
-                "usage": response.usage._asdict() if hasattr(response.usage, '_asdict') else dict(response.usage),
-                "timestamp": time.strftime("%Y-%m-%d %H:%M:%S")
-            }
+                "usage": (
+                    response.usage._asdict()
+                    if hasattr(response.usage, "_asdict")
+                    else dict(response.usage)
+                ),
+                "timestamp": time.strftime("%Y-%m-%d %H:%M:%S"),
+            },
         )
-        
+
         return verification_result
 
     def validate_and_verify_citations(
@@ -373,6 +563,10 @@ class LLMClient:
         Returns:
             True if auto-verification should be triggered
         """
+        # Check if factory has set force verification
+        if hasattr(self, "_force_verify") and self._force_verify:
+            return True
+
         # Always verify critical foundation commands
         if command in ["extractfacts", "strategy"]:
             return True
@@ -435,23 +629,34 @@ class LLMClient:
         # Find case patterns and clean up party names
         case_name_pattern = r"([A-Z][A-Za-z\'\-]+(?:\s+[A-Z][A-Za-z\'\-]+)*)\s+v\s+([A-Z][A-Za-z\'\-]+(?:\s+[A-Z][A-Za-z\'\-]+)*)"
         raw_case_names = re.findall(case_name_pattern, content)
-        
+
         # Clean up party names by removing common prefixes
         all_case_names = []
-        prefix_words = {"In", "in", "The", "the", "Following", "following", "Case", "case", "decision", "Decision"}
+        prefix_words = {
+            "In",
+            "in",
+            "The",
+            "the",
+            "Following",
+            "following",
+            "Case",
+            "case",
+            "decision",
+            "Decision",
+        }
         for party1, party2 in raw_case_names:
             # Clean first party
             p1_words = party1.split()
             while p1_words and p1_words[0] in prefix_words:
                 p1_words.pop(0)
             clean_party1 = " ".join(p1_words) if p1_words else party1
-            
-            # Clean second party  
+
+            # Clean second party
             p2_words = party2.split()
             while p2_words and p2_words[0] in prefix_words:
                 p2_words.pop(0)
             clean_party2 = " ".join(p2_words) if p2_words else party2
-            
+
             # Only add if both parties are still valid after cleaning
             if clean_party1 and clean_party2:
                 all_case_names.append((clean_party1, clean_party2))
@@ -510,19 +715,25 @@ class LLMClient:
                 and len(p2_words) == 1
                 and p2_lower in generic_surnames
             ):
-                issues.append(f"GENERIC CASE NAME: {party1} v {party2}\n  → FAILURE: Both parties use common surnames (possible AI hallucination)\n  → ACTION: Flagging for manual verification")
+                issues.append(
+                    f"GENERIC CASE NAME: {party1} v {party2}\n  → FAILURE: Both parties use common surnames (possible AI hallucination)\n  → ACTION: Flagging for manual verification"
+                )
 
             # Check for placeholder patterns
             for pattern in placeholder_patterns:
                 if re.match(pattern, p1_lower) or re.match(pattern, p2_lower):
-                    issues.append(f"PLACEHOLDER CASE NAME: {party1} v {party2}\n  → FAILURE: Contains placeholder/test-like party names\n  → ACTION: Excluding non-real case reference")
+                    issues.append(
+                        f"PLACEHOLDER CASE NAME: {party1} v {party2}\n  → FAILURE: Contains placeholder/test-like party names\n  → ACTION: Excluding non-real case reference"
+                    )
                     break
 
             # Check for single letters or very short names
             if (len(p1_lower) <= 2 or len(p2_lower) <= 2) and not any(
                 c in "'" for c in party1 + party2
             ):
-                issues.append(f"INVALID CASE NAME: {party1} v {party2}\n  → FAILURE: Party name suspiciously short (≤2 characters)\n  → ACTION: Excluding likely invalid case reference")
+                issues.append(
+                    f"INVALID CASE NAME: {party1} v {party2}\n  → FAILURE: Party name suspiciously short (≤2 characters)\n  → ACTION: Excluding likely invalid case reference"
+                )
 
         # 2. Court Identifier Validation
         # Valid court abbreviations (Australian + historical UK/Privy Council)
@@ -672,7 +883,9 @@ class LLMClient:
 
             # Check if court exists in valid courts
             if court not in valid_courts:
-                issues.append(f"UNKNOWN COURT: {citation}\n  → FAILURE: Court abbreviation '{court}' not recognized in Australian legal system\n  → ACTION: Excluding invalid court reference")
+                issues.append(
+                    f"UNKNOWN COURT: {citation}\n  → FAILURE: Court abbreviation '{court}' not recognized in Australian legal system\n  → ACTION: Excluding invalid court reference"
+                )
                 continue
 
             court_info = valid_courts[court]
@@ -691,7 +904,9 @@ class LLMClient:
 
             # Check for future years
             if year > 2025:
-                issues.append(f"FUTURE CITATION: {citation}\n  → FAILURE: Citation dated in the future (after 2025)\n  → ACTION: Excluding impossible future case")
+                issues.append(
+                    f"FUTURE CITATION: {citation}\n  → FAILURE: Citation dated in the future (after 2025)\n  → ACTION: Excluding impossible future case"
+                )
 
         # 3. Report Series Validation
         report_patterns = [
@@ -776,29 +991,50 @@ class LLMClient:
             # This catches citations that pass pattern checks but don't actually exist
             try:
                 from litassist.citation_verify import extract_citations
+
                 all_citations = extract_citations(content)
-                
+
                 if all_citations:
-                    verified_citations, unverified_citations = verify_all_citations(content)
-                    
+                    verified_citations, unverified_citations = verify_all_citations(
+                        content
+                    )
+
                     # Add online verification results to issues
                     for citation, reason in unverified_citations:
                         # Check if this citation was already flagged by offline validation
-                        already_flagged = any(citation in issue for issue in unique_issues)
+                        already_flagged = any(
+                            citation in issue for issue in unique_issues
+                        )
                         if not already_flagged:
                             # Distinguish between different types of online failures
                             if "Unknown court" in reason:
-                                unique_issues.append(f"COURT NOT RECOGNIZED: {citation} - {reason}\n  → ACTION: Excluding unrecognized court identifier")
+                                unique_issues.append(
+                                    f"COURT NOT RECOGNIZED: {citation} - {reason}\n  → ACTION: Excluding unrecognized court identifier"
+                                )
                             elif "Not found on AustLII" in reason:
-                                unique_issues.append(f"CITATION NOT FOUND: {citation} - {reason}\n  → ACTION: Citation does not exist in legal database")
+                                unique_issues.append(
+                                    f"CITATION NOT FOUND: {citation} - {reason}\n  → ACTION: Citation does not exist in legal database"
+                                )
                             else:
-                                unique_issues.append(f"ONLINE VERIFICATION FAILED: {citation} - {reason}\n  → ACTION: Could not verify citation authenticity")
-                    
+                                unique_issues.append(
+                                    f"ONLINE VERIFICATION FAILED: {citation} - {reason}\n  → ACTION: Could not verify citation authenticity"
+                                )
+
                     # Add summary of online verification if issues found
                     if unverified_citations:
-                        online_only_issues = len([c for c, r in unverified_citations if not any(c in issue for issue in unique_issues[:len(issues)])])
+                        online_only_issues = len(
+                            [
+                                c
+                                for c, r in unverified_citations
+                                if not any(
+                                    c in issue for issue in unique_issues[: len(issues)]
+                                )
+                            ]
+                        )
                         if online_only_issues > 0:
-                            unique_issues.append(f"AustLII check: {online_only_issues} citations not found in database")
+                            unique_issues.append(
+                                f"AustLII check: {online_only_issues} citations not found in database"
+                            )
             except Exception as e:
                 # If online verification fails, just note it and continue
                 unique_issues.append(f"Online verification unavailable: {str(e)}")
@@ -810,22 +1046,51 @@ class LLMClient:
                 if len(unique_issues) > 5
                 else "medium" if len(unique_issues) > 2 else "low"
             )
-            
+
             # Count different types of issues for better messaging
-            offline_issues = len([issue for issue in unique_issues if not issue.startswith(("COURT NOT RECOGNIZED:", "CITATION NOT FOUND:", "ONLINE VERIFICATION FAILED:", "AustLII check:"))])
-            online_issues = len([issue for issue in unique_issues if issue.startswith(("COURT NOT RECOGNIZED:", "CITATION NOT FOUND:", "ONLINE VERIFICATION FAILED:"))])
-            
+            offline_issues = len(
+                [
+                    issue
+                    for issue in unique_issues
+                    if not issue.startswith(
+                        (
+                            "COURT NOT RECOGNIZED:",
+                            "CITATION NOT FOUND:",
+                            "ONLINE VERIFICATION FAILED:",
+                            "AustLII check:",
+                        )
+                    )
+                ]
+            )
+            online_issues = len(
+                [
+                    issue
+                    for issue in unique_issues
+                    if issue.startswith(
+                        (
+                            "COURT NOT RECOGNIZED:",
+                            "CITATION NOT FOUND:",
+                            "ONLINE VERIFICATION FAILED:",
+                        )
+                    )
+                ]
+            )
+
             # Create detailed action message
             action_msg = f"CITATION VALIDATION FAILURE ({severity} risk): {len(unique_issues)} issues detected.\n"
-            
+
             if offline_issues > 0:
                 action_msg += f"→ PATTERN ANALYSIS: {offline_issues} citations flagged for suspicious patterns\n"
             if online_issues > 0:
                 action_msg += f"→ AUSTLII VERIFICATION: {online_issues} citations not found in legal database\n"
-            
-            action_msg += "→ ACTION TAKEN: Flagging questionable citations for manual review\n"
-            action_msg += "→ RECOMMENDATION: Verify all citations independently before use"
-            
+
+            action_msg += (
+                "→ ACTION TAKEN: Flagging questionable citations for manual review\n"
+            )
+            action_msg += (
+                "→ RECOMMENDATION: Verify all citations independently before use"
+            )
+
             unique_issues.insert(0, action_msg)
 
         # Log the citation validation
@@ -837,8 +1102,8 @@ class LLMClient:
                 "enable_online": enable_online,
                 "issues_found": len(unique_issues),
                 "issues": unique_issues,
-                "timestamp": time.strftime("%Y-%m-%d %H:%M:%S")
-            }
+                "timestamp": time.strftime("%Y-%m-%d %H:%M:%S"),
+            },
         )
 
         return unique_issues
@@ -920,7 +1185,7 @@ class LLMClient:
             openai.api_key = original_api_key
 
         verification_result = response.choices[0].message.content
-        
+
         # Log the verification call
         save_log(
             f"llm_{self.model.replace('/', '_')}_verify_{level}",
@@ -930,9 +1195,13 @@ class LLMClient:
                 "input_text_length": len(primary_text),
                 "verification_level": level,
                 "verification_result": verification_result,
-                "usage": response.usage._asdict() if hasattr(response.usage, '_asdict') else dict(response.usage),
-                "timestamp": time.strftime("%Y-%m-%d %H:%M:%S")
-            }
+                "usage": (
+                    response.usage._asdict()
+                    if hasattr(response.usage, "_asdict")
+                    else dict(response.usage)
+                ),
+                "timestamp": time.strftime("%Y-%m-%d %H:%M:%S"),
+            },
         )
 
         return verification_result

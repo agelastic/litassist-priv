@@ -13,7 +13,7 @@ import time
 
 from litassist.config import CONFIG
 from litassist.utils import read_document, chunk_text, save_log, timed, OUTPUT_DIR
-from litassist.llm import LLMClient
+from litassist.llm import LLMClientFactory
 
 
 @click.command()
@@ -42,25 +42,23 @@ def digest(file, mode):
     # Read and split the document
     text = read_document(file)
     chunks = chunk_text(text, max_chars=CONFIG.max_chars)
-    # Select parameter presets based on mode
-    presets = {
-        "summary": {"temperature": 0, "top_p": 0},
-        "issues": {"temperature": 0.2, "top_p": 0.5},
-    }[mode]
-    client = LLMClient("anthropic/claude-3-sonnet", **presets)
+    # Create client using factory with mode-specific configuration
+    client = LLMClientFactory.for_command("digest", mode)
 
     # Prepare output file
     # Extract base filename without extension
     base_filename = os.path.splitext(os.path.basename(file))[0]
     # Create a slug from the filename
-    filename_slug = re.sub(r'[^\w\s-]', '', base_filename.lower())
-    filename_slug = re.sub(r'[-\s]+', '_', filename_slug)
+    filename_slug = re.sub(r"[^\w\s-]", "", base_filename.lower())
+    filename_slug = re.sub(r"[-\s]+", "_", filename_slug)
     # Limit slug length
-    filename_slug = filename_slug[:30].strip('_') or 'document'
-    
+    filename_slug = filename_slug[:30].strip("_") or "document"
+
     timestamp = time.strftime("%Y%m%d_%H%M%S")
-    output_file = os.path.join(OUTPUT_DIR, f"digest_{mode}_{filename_slug}_{timestamp}.txt")
-    
+    output_file = os.path.join(
+        OUTPUT_DIR, f"digest_{mode}_{filename_slug}_{timestamp}.txt"
+    )
+
     # Collect all output
     all_output = []
     all_output.append(f"Document Digest: {file}")
@@ -74,7 +72,7 @@ def digest(file, mode):
         "mode": mode,
         "chunks_processed": len(chunks),
         "responses": [],
-        "total_usage": {"prompt_tokens": 0, "completion_tokens": 0, "total_tokens": 0}
+        "total_usage": {"prompt_tokens": 0, "completion_tokens": 0, "total_tokens": 0},
     }
 
     # Process each chunk with a progress bar
@@ -101,10 +99,12 @@ def digest(file, mode):
 
             # Note: digest removed verification as it's low-stakes content summarization
             # However, we still need to validate citations to prevent cascade errors
-            
+
             # CRITICAL: Validate citations immediately to prevent cascade errors
             # Even digest can contain legal precedents that need validation
-            if mode == "issues":  # Legal issues mode is more likely to contain citations
+            if (
+                mode == "issues"
+            ):  # Legal issues mode is more likely to contain citations
                 citation_issues = client.validate_citations(content)
                 if citation_issues:
                     # Prepend warnings to this chunk's content
@@ -114,47 +114,43 @@ def digest(file, mode):
                     content = citation_warning + content
 
             # Collect data for comprehensive log
-            comprehensive_log["responses"].append({
-                "chunk": idx,
-                "content": content,
-                "usage": usage
-            })
-            
+            comprehensive_log["responses"].append(
+                {"chunk": idx, "content": content, "usage": usage}
+            )
+
             # Accumulate usage statistics
             for key in comprehensive_log["total_usage"]:
                 comprehensive_log["total_usage"][key] += usage.get(key, 0)
-            
+
             # Collect output
             chunk_output = f"\n--- Chunk {idx} ---\n{content}"
             all_output.append(chunk_output)
-    
+
     # Write all output to file
-    with open(output_file, 'w', encoding='utf-8') as f:
-        f.write('\n'.join(all_output))
-    
+    with open(output_file, "w", encoding="utf-8") as f:
+        f.write("\n".join(all_output))
+
     # Save comprehensive audit log
     save_log(
         f"digest_{mode}",
         {
-            "inputs": {
-                "file": file,
-                "mode": mode,
-                "chunks_processed": len(chunks)
-            },
+            "inputs": {"file": file, "mode": mode, "chunks_processed": len(chunks)},
             "params": f"mode={mode}, max_chars={CONFIG.max_chars}",
             "responses": comprehensive_log["responses"],
             "usage": comprehensive_log["total_usage"],
-            "output_file": output_file
-        }
+            "output_file": output_file,
+        },
     )
-    
+
     # Show summary instead of full content
     click.echo("\n✅ Document digest complete!")
-    click.echo(f"📄 Output saved to: \"{output_file}\"")
-    
+    click.echo(f'📄 Output saved to: "{output_file}"')
+
     # Show what was processed
-    mode_description = "chronological summaries" if mode == "summary" else "legal issue identification"
+    mode_description = (
+        "chronological summaries" if mode == "summary" else "legal issue identification"
+    )
     click.echo(f"\n📊 Generated {mode_description} for {len(chunks)} chunks")
     click.echo(f"📋 Document: {os.path.basename(file)}")
-    
-    click.echo(f"\n💡 View full digest: open \"{output_file}\"")
+
+    click.echo(f'\n💡 View full digest: open "{output_file}"')
