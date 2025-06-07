@@ -376,12 +376,17 @@ class LLMClient:
         # Determine the correct model name
         model_name = self.model
 
-        # Use OpenRouter for non-OpenAI models
-        if "/" in self.model and not self.model.startswith("openai/"):
+        # Use OpenRouter for non-OpenAI models AND for o1/o3 models (only available via OpenRouter)
+        if (
+            ("/" in self.model and not self.model.startswith("openai/")) or
+            (self.model.startswith("openai/o1") or self.model.startswith("openai/o3"))
+        ):
             openai.api_base = CONFIG.or_base
             openai.api_key = CONFIG.or_key
+            # Keep full model name for OpenRouter
+            model_name = self.model
         else:
-            # Extract just the model name for OpenAI models
+            # Extract just the model name for direct OpenAI models
             if self.model.startswith("openai/"):
                 model_name = self.model.replace("openai/", "")
 
@@ -441,8 +446,11 @@ class LLMClient:
             original_api_base_retry = openai.api_base
             original_api_key_retry = openai.api_key
 
-            # Use OpenRouter for non-OpenAI models
-            if "/" in self.model and not self.model.startswith("openai/"):
+            # Use OpenRouter for non-OpenAI models AND for o1/o3 models (only available via OpenRouter)
+            if (
+                ("/" in self.model and not self.model.startswith("openai/")) or
+                (self.model.startswith("openai/o1") or self.model.startswith("openai/o3"))
+            ):
                 openai.api_base = CONFIG.or_base
                 openai.api_key = CONFIG.or_key
 

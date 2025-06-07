@@ -10,6 +10,8 @@ ingest → analyse → structure → brainstorm → strategy → draft
 
 This guide demonstrates how to use each workflow through a running example of a family court case, *Smith v Jones*, involving a complex child custody dispute with issues of interstate relocation and allegations of parental alienation.
 
+**Important Note**: Many users find the distinction between `brainstorm` and `strategy` commands confusing. In brief: **brainstorm explores all possible legal approaches comprehensively**, while **strategy develops specific tactical implementation plans for particular outcomes**. See [Understanding Brainstormed Strategies vs Strategic Options](#understanding-brainstormed-strategies-vs-strategic-options) for a detailed explanation of these crucial differences.
+
 ```mermaid
 graph TD
     A["Lookup - Research"] --> B["Digest - Analyse"]
@@ -897,6 +899,8 @@ With the structured case facts in place, you can now use the `brainstorm` workfl
 
 The `brainstorm` command uses Grok's creative capabilities to generate a comprehensive set of litigation strategies based on the facts provided, tailored to your specific party side and legal area. The command produces both orthodox and unorthodox strategies, along with an assessment of which are most likely to succeed.
 
+**Important**: Brainstormed strategies are **conceptual foundations** for legal approaches, not detailed implementation plans. For tactical implementation with probability assessments and obstacle analysis, see the [strategy command](#workflow-5-strategy---generate-legal-options) and the comprehensive comparison in [Understanding Brainstormed Strategies vs Strategic Options](#understanding-brainstormed-strategies-vs-strategic-options).
+
 **Output**: The brainstormed strategies are saved to:
 - `brainstorm_[area]_[side]_YYYYMMDD_HHMMSS.txt` - Main strategies file with comprehensive strategy options
 - `brainstorm_[area]_[side]_YYYYMMDD_HHMMSS_orthodox_reasoning.txt` - Legal reasoning behind orthodox strategy selection
@@ -984,7 +988,7 @@ For the *Smith v Jones* case, we can use the structured facts to generate compre
 
 ### Next in Pipeline
 
-With comprehensive strategies generated, you can now use the `strategy` workflow to develop targeted legal options for achieving specific outcomes.
+With comprehensive strategies generated, you can now use the `strategy` workflow to develop targeted legal options for achieving specific outcomes. **Key Distinction**: The brainstormed strategies provide creative foundations and legal principles, while the strategy command transforms these into specific tactical implementation plans with probability assessments and obstacle analysis. See [Understanding Brainstormed Strategies vs Strategic Options](#understanding-brainstormed-strategies-vs-strategic-options) for detailed comparison.
 
 ## Workflow 5: Strategy - Generate Legal Options
 
@@ -993,6 +997,8 @@ With comprehensive strategies generated, you can now use the `strategy` workflow
 ### Purpose
 
 The `strategy` command analyzes case facts to generate strategic legal options, recommended actions, and draft documents tailored to achieving a specific outcome. It produces comprehensive analysis including probability assessments, critical hurdles, and prioritized next steps.
+
+**Important**: Strategic options are **tactical implementation plans** for specific outcomes, not broad conceptual exploration. For comprehensive creative ideation and exploration of all possible approaches, see the [brainstorm command](#workflow-4-brainstorm---comprehensive-legal-strategy-generation). For a detailed comparison of these fundamentally different approaches, see [Understanding Brainstormed Strategies vs Strategic Options](#understanding-brainstormed-strategies-vs-strategic-options).
 
 **Output**: All analysis saved to timestamped files: 
 - `strategy_[outcome_slug]_YYYYMMDD_HHMMSS.txt` - Main strategic options and recommendations
@@ -1209,6 +1215,229 @@ gantt
     Create submissions outline         :active, d1, after s4, 3d
     Final document preparation         :d2, after d1, 2d
 ```
+
+## Understanding Brainstormed Strategies vs Strategic Options
+
+**This is a crucial distinction that many users find confusing.** The `brainstorm` and `strategy` commands serve fundamentally different purposes in the LitAssist workflow, even though both deal with legal strategy. Understanding these differences is essential for effective use of the tool.
+
+### Overview of the Two Approaches
+
+**Brainstormed Strategies** (from `brainstorm` command):
+- **Purpose**: Creative exploration and comprehensive ideation
+- **Scope**: Wide-ranging exploration of all possible legal approaches
+- **Output**: Comprehensive list of strategic concepts with legal foundations
+- **Mindset**: "What are all the ways we could approach this problem?"
+
+**Strategic Options** (from `strategy` command):  
+- **Purpose**: Tactical implementation planning for specific outcomes
+- **Scope**: Focused analysis of how to achieve a particular result
+- **Output**: Detailed implementation plans with probability assessments
+- **Mindset**: "How do we specifically execute these approaches to win?"
+
+### Fundamental Differences
+
+| Aspect | Brainstormed Strategies | Strategic Options |
+|--------|------------------------|-------------------|
+| **Primary Goal** | Comprehensive exploration | Tactical implementation |
+| **Question Answered** | "What could we argue?" | "How do we win this specific outcome?" |
+| **Content Focus** | Legal principles and case law | Probability, hurdles, missing evidence |
+| **Analysis Depth** | Broad conceptual coverage | Deep tactical analysis |
+| **Outcome Specificity** | General strategic themes | Targeted for specific result |
+| **Risk Assessment** | General confidence levels | Specific probability percentages |
+| **Implementation Detail** | Legal foundations | Concrete next steps and documents |
+| **Evidence Requirements** | Cites supporting law | Identifies missing facts |
+| **Creative Scope** | Includes unorthodox approaches | Focuses on most viable paths |
+
+### Detailed Comparison with Examples
+
+#### Brainstormed Strategy Example:
+```
+1. Resulting Trust Claim
+   Argue that a resulting trust arose when Osipov provided purchase money but title went to Wong.
+   Key principles: Calverley v Green (1984) 155 CLR 242; Trustees of the Property of 
+   John Daniel Cummins v Cummins [2006] HCA 6
+```
+
+**Characteristics:**
+- High-level legal concept
+- Supporting case law provided
+- General approach described
+- Foundation for further development
+
+#### Strategic Option Example:
+```
+## OPTION 1: CLAIM FOR A PURCHASE MONEY RESULTING TRUST
+* **Probability of Success**: 90%
+* **Principal Hurdles**:
+  1. Overcoming the presumption that registration in Wong's name indicates a gift — 
+     Calverley v Green (1984) 155 CLR 242 at 246
+  2. Establishing lack of donative intent despite possible inferences from joint residence 
+     and marriage — Muschinski v Dodds (1985) 160 CLR 583 at 613
+* **Critical Missing Facts**:
+  - Any direct testimony or written statements by Wong indicating Osipov's gifting intention
+  - Any evidence as to why Osipov allowed registration and insurance under Wong's name beyond the license issue
+```
+
+**Characteristics:**
+- Specific probability assessment (90%)
+- Detailed obstacle identification
+- Pinpoint case citations with specific paragraphs
+- Identifies exact evidence gaps
+- Implementation-ready analysis
+
+### When to Use Each Approach
+
+#### Use Brainstorm When:
+- ✅ **Starting a new matter** and need to explore all possible angles
+- ✅ **Complex legal problem** requiring creative solutions
+- ✅ **Client consultation** to present comprehensive options
+- ✅ **Research phase** to ensure nothing is overlooked
+- ✅ **Building strategy foundation** for later tactical planning
+- ✅ **Teaching/training** to demonstrate legal thinking
+- ✅ **Collaborative planning** with team members
+- ✅ **Uncertain outcomes** requiring multiple approaches
+
+#### Use Strategy When:
+- ✅ **Specific outcome required** (e.g., "obtain interim injunction")
+- ✅ **Court deadline approaching** and need actionable plan
+- ✅ **Client decision made** about desired approach
+- ✅ **Implementation planning** for chosen strategy
+- ✅ **Resource allocation** decisions required
+- ✅ **Probability assessment** needed for client advice
+- ✅ **Document drafting** preparation with specific goals
+- ✅ **Settlement negotiations** requiring tactical analysis
+
+### How They Work Together in Practice
+
+#### The Optimal Workflow Pattern:
+
+**Phase 1: Comprehensive Exploration (Brainstorm)**
+```bash
+# Generate comprehensive strategic foundation
+litassist brainstorm case_facts.txt --side plaintiff --area civil
+```
+- Creates 20+ strategic approaches (orthodox + unorthodox)
+- Identifies "most likely to succeed" strategies
+- Provides rich legal foundations and case law
+- Offers creative and conventional approaches
+
+**Phase 2: Tactical Implementation (Strategy)**  
+```bash
+# Build specific implementation plan
+litassist strategy case_facts.txt --outcome "obtain injunctive relief" --strategies strategies.txt
+```
+- Uses "most likely to succeed" strategies as foundation
+- Adds probability assessments and risk analysis
+- Identifies implementation obstacles and evidence gaps
+- Creates specific action plans and draft documents
+
+#### The Efficiency Benefits:
+
+When you provide a `--strategies` file to the strategy command, it demonstrates sophisticated intelligence:
+
+**Scenario 1 - Complete "Most Likely" Available:**
+```
+📋 Using 4 pre-analyzed 'most likely to succeed' strategies
+🎯 Generating option 1...
+    📋 Building on most_likely strategy: 'Resulting Trust Claim'
+```
+- **Benefit**: Maximum efficiency - no duplicate analysis
+- **Result**: Direct transformation of brainstormed concepts into tactical plans
+
+**Scenario 2 - Intelligent Gap-Filling:**
+```
+📋 Using 2 pre-analyzed 'most likely to succeed' strategies
+🧠 Analyzing remaining 15 strategies to fill 2 slots...
+📊 Intelligently selected 2 additional strategies
+```
+- **Benefit**: Minimal additional analysis only where needed
+- **Result**: Optimized use of both human and AI analysis
+
+### Output Integration and File Management
+
+#### Brainstorm Outputs:
+- `brainstorm_[area]_[side]_YYYYMMDD_HHMMSS.txt` - Main strategies file
+- `brainstorm_[area]_[side]_YYYYMMDD_HHMMSS_orthodox_reasoning.txt` - Orthodox strategy reasoning
+- `brainstorm_[area]_[side]_YYYYMMDD_HHMMSS_unorthodox_reasoning.txt` - Unorthodox strategy reasoning  
+- `brainstorm_[area]_[side]_YYYYMMDD_HHMMSS_analysis_reasoning.txt` - "Most likely" analysis reasoning
+
+#### Strategy Outputs:
+- `strategy_[outcome_slug]_YYYYMMDD_HHMMSS.txt` - Strategic options and implementation plans
+- `strategy_[outcome_slug]_YYYYMMDD_HHMMSS_reasoning.txt` - Detailed reasoning traces for each option
+
+#### File Integration Pattern:
+```bash
+# Use brainstorm output directly with strategy command
+litassist strategy case_facts.txt --outcome "specific goal" --strategies brainstorm_civil_plaintiff_20250607_143022.txt
+
+# Or copy to working file for manual editing
+cp brainstorm_civil_plaintiff_20250607_143022.txt strategies.txt
+# Edit strategies.txt to add client preferences, remove unsuitable options, etc.
+litassist strategy case_facts.txt --outcome "specific goal" --strategies strategies.txt
+```
+
+### Common Usage Patterns and Best Practices
+
+#### Pattern 1: Comprehensive Legal Analysis
+```bash
+# Full exploration → targeted implementation
+litassist brainstorm case_facts.txt --side plaintiff --area commercial
+litassist strategy case_facts.txt --outcome "summary judgment" --strategies strategies.txt
+litassist draft case_facts.txt strategies.txt "summary judgment application"
+```
+**Use for**: Complex matters requiring thorough analysis
+
+#### Pattern 2: Quick Tactical Planning  
+```bash
+# Direct strategic implementation without brainstorming
+litassist strategy case_facts.txt --outcome "interim injunction"
+```
+**Use for**: Urgent matters with clear objectives
+
+#### Pattern 3: Iterative Development
+```bash
+# Multiple strategic analyses for different outcomes
+litassist brainstorm case_facts.txt --side defendant --area civil
+litassist strategy case_facts.txt --outcome "strike out application" --strategies strategies.txt
+litassist strategy case_facts.txt --outcome "summary judgment defense" --strategies strategies.txt
+litassist strategy case_facts.txt --outcome "counterclaim" --strategies strategies.txt
+```
+**Use for**: Multi-faceted matters with several potential approaches
+
+#### Pattern 4: Client Consultation Preparation
+```bash
+# Comprehensive options for client discussion
+litassist brainstorm case_facts.txt --side plaintiff --area family
+# Review brainstorm output with client to select preferred approaches
+# Then create implementation plan for chosen direction
+litassist strategy case_facts.txt --outcome "custody modification" --strategies strategies.txt
+```
+**Use for**: Client-centered strategic planning
+
+### Integration with Draft Command
+
+**Using Brainstorm Output for Drafting (Recommended):**
+- Rich legal foundations and precedents
+- Multiple strategic angles to weave together
+- Comprehensive case law for substantive arguments
+- Automatic recognition as structured strategies
+
+**Using Strategy Output for Drafting:**  
+- Tactical implementation context
+- Specific probability assessments
+- Focused on particular outcomes
+- Requires manual integration as supporting document
+
+### Key Takeaways
+
+1. **Brainstorm = Exploration**: "What are all our options?" (Comprehensive creative ideation)
+2. **Strategy = Implementation**: "How do we execute this specific plan?" (Tactical analysis and planning)
+3. **They're complementary**: Brainstorm provides the foundation, Strategy provides the implementation roadmap
+4. **Efficiency matters**: Using them together leverages pre-analysis and avoids duplication
+5. **File management**: Understand the different output types and how to use them effectively
+6. **Workflow integration**: Each serves a distinct role in the end-to-end legal workflow
+
+**Bottom Line**: Think of brainstorm as your "legal research and ideation assistant" and strategy as your "tactical implementation planner." Both are essential, but they serve fundamentally different purposes in building a winning case.
 
 ## Workflow 6: Draft - Retrieval-Augmented Drafting
 
@@ -1515,11 +1744,15 @@ To demonstrate how these five workflows combine into a seamless end-to-end pipel
    ```bash
    ./litassist.py brainstorm examples/case_facts.txt --side plaintiff --area family
    ```
+   *Produces: Creative exploration of all possible legal approaches with legal foundations*
 
 5. **Strategy**: Generate targeted strategic options and draft documents for specific outcomes.
    ```bash
    ./litassist.py strategy examples/case_facts.txt --outcome "Secure interim orders allowing children to remain in Brisbane"
    ```
+   *Produces: Tactical implementation plans with probability assessments and obstacle analysis*
+   
+   **Note**: See [Understanding Brainstormed Strategies vs Strategic Options](#understanding-brainstormed-strategies-vs-strategic-options) for the crucial differences between these two approaches.
 
 6. **Draft**: Create comprehensive legal submissions using brainstormed strategies and case facts.
    ```bash
