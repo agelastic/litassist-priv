@@ -20,10 +20,13 @@ from litassist.utils import (
     save_log,
     heartbeat,
     timed,
-    OUTPUT_DIR,
     create_reasoning_prompt,
     extract_reasoning_trace,
     save_reasoning_trace,
+    save_command_output,
+    show_command_completion,
+    verify_content_if_needed,
+    validate_file_size,
 )
 from litassist.llm import LLMClientFactory
 from litassist.retriever import Retriever, get_pinecone_client
@@ -230,66 +233,28 @@ def draft(documents, query, verify, diversity):
 
     # Note: Citation verification now handled automatically in LLMClient.complete()
 
-    # Smart verification with conditional depth
-    auto_verify = client.should_auto_verify(content, "draft")
-    needs_verification = verify or auto_verify
-
-    # Inform user about verification status
-    if verify and auto_verify:
-        click.echo(
-            "🔍 Running verification (--verify flag + auto-verification triggered)"
-        )
-    elif verify:
-        click.echo("🔍 Running verification (--verify flag enabled)")
-    elif auto_verify:
-        click.echo("🔍 Running auto-verification (high-risk content detected)")
-    else:
-        click.echo("ℹ️  No verification performed")
-
-    if needs_verification:
-        try:
-            # Use heavy verification for legal drafting (high stakes)
-            correction = client.verify_with_level(content, "heavy")
-            if correction.strip():  # Only append if there are actual corrections
-                content = content + "\n\n--- Legal Draft Review ---\n" + correction
-
-            # Run comprehensive citation validation for drafts
-            citation_issues = client.validate_citations(content)
-            if citation_issues:
-                content += "\n\n--- Citation Warnings ---\n" + "\n".join(
-                    citation_issues
-                )
-
-        except Exception as e:
-            raise click.ClickException(f"Verification error during drafting: {e}")
+    # Apply verification if needed
+    content, needs_verification = verify_content_if_needed(client, content, "draft", verify)
 
     # Extract reasoning trace before saving
     reasoning_trace = extract_reasoning_trace(content, "draft")
 
-    # Save output to timestamped file
-    # Create a slug from the query for the filename
-    query_slug = re.sub(r"[^\w\s-]", "", query.lower())
-    query_slug = re.sub(r"[-\s]+", "_", query_slug)
-    # Limit slug length and ensure it's not empty
-    query_slug = query_slug[:40].strip("_") or "draft"
-
-    timestamp = time.strftime("%Y%m%d_%H%M%S")
-    output_file = os.path.join(OUTPUT_DIR, f"draft_{query_slug}_{timestamp}.txt")
-
-    with open(output_file, "w", encoding="utf-8") as f:
-        f.write(f"Draft Generation\n")
-        f.write(f"Query: {query}\n")
-        f.write(f"Documents: {', '.join(documents)}\n")
-        f.write(f"Timestamp: {time.strftime('%Y-%m-%d %H:%M:%S')}\n")
-        f.write("-" * 80 + "\n\n")
-        f.write(content)
-
-    click.echo(f'\nOutput saved to: "{output_file}"')
+    # Save output using utility
+    output_file = save_command_output(
+        "draft",
+        content,
+        query,
+        metadata={
+            "Query": query,
+            "Documents": ", ".join(documents)
+        }
+    )
 
     # Save reasoning trace if extracted
+    extra_files = {}
     if reasoning_trace:
         reasoning_file = save_reasoning_trace(reasoning_trace, output_file)
-        click.echo(f'Legal reasoning trace saved to: "{reasoning_file}"')
+        extra_files["Reasoning trace"] = reasoning_file
 
     # Save audit log
     save_log(
@@ -311,12 +276,15 @@ def draft(documents, query, verify, diversity):
         },
     )
 
-    # Show summary instead of full content
-    click.echo("\n✅ Draft generation complete!")
-    click.echo(f'📄 Output saved to: "{output_file}"')
-    if reasoning_trace:
-        click.echo(f'📝 Reasoning trace: open "{reasoning_file}"')
-
+    # Show completion with preview
+    stats = {
+        "Query": query,
+        "Documents": len(documents),
+        "Verification": "Applied" if needs_verification else "Not needed"
+    }
+    
+    show_command_completion("draft", output_file, extra_files, stats)
+    
     # Show brief preview
     lines = content.split("\n")
     preview_lines = [line for line in lines[:10] if line.strip()][:5]
@@ -324,5 +292,3 @@ def draft(documents, query, verify, diversity):
         click.echo("\n📋 Preview:")
         for line in preview_lines:
             click.echo(f"   {line[:80]}..." if len(line) > 80 else f"   {line}")
-
-    click.echo(f'\n💡 View full draft: open "{output_file}"')

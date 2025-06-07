@@ -12,7 +12,14 @@ import re
 import time
 
 from litassist.config import CONFIG
-from litassist.utils import read_document, chunk_text, save_log, timed, OUTPUT_DIR
+from litassist.utils import (
+    read_document, 
+    chunk_text, 
+    save_log, 
+    timed, 
+    save_command_output,
+    show_command_completion
+)
 from litassist.llm import LLMClientFactory
 
 
@@ -45,26 +52,8 @@ def digest(file, mode):
     # Create client using factory with mode-specific configuration
     client = LLMClientFactory.for_command("digest", mode)
 
-    # Prepare output file
-    # Extract base filename without extension
-    base_filename = os.path.splitext(os.path.basename(file))[0]
-    # Create a slug from the filename
-    filename_slug = re.sub(r"[^\w\s-]", "", base_filename.lower())
-    filename_slug = re.sub(r"[-\s]+", "_", filename_slug)
-    # Limit slug length
-    filename_slug = filename_slug[:30].strip("_") or "document"
-
-    timestamp = time.strftime("%Y%m%d_%H%M%S")
-    output_file = os.path.join(
-        OUTPUT_DIR, f"digest_{mode}_{filename_slug}_{timestamp}.txt"
-    )
-
-    # Collect all output
+    # Collect all output content
     all_output = []
-    all_output.append(f"Document Digest: {file}")
-    all_output.append(f"Mode: {mode}")
-    all_output.append(f"Timestamp: {time.strftime('%Y-%m-%d %H:%M:%S')}")
-    all_output.append("-" * 80 + "\n")
 
     # Collect comprehensive log data
     comprehensive_log = {
@@ -126,9 +115,14 @@ def digest(file, mode):
             chunk_output = f"\n--- Chunk {idx} ---\n{content}"
             all_output.append(chunk_output)
 
-    # Write all output to file
-    with open(output_file, "w", encoding="utf-8") as f:
-        f.write("\n".join(all_output))
+    # Save output using utility
+    content = "\n".join(all_output)
+    output_file = save_command_output(
+        f"digest_{mode}",
+        content,
+        os.path.basename(file),
+        metadata={"Mode": mode.title(), "Source File": file}
+    )
 
     # Save comprehensive audit log
     save_log(
@@ -142,15 +136,15 @@ def digest(file, mode):
         },
     )
 
-    # Show summary instead of full content
-    click.echo("\n✅ Document digest complete!")
-    click.echo(f'📄 Output saved to: "{output_file}"')
-
-    # Show what was processed
+    # Show completion
     mode_description = (
         "chronological summaries" if mode == "summary" else "legal issue identification"
     )
-    click.echo(f"\n📊 Generated {mode_description} for {len(chunks)} chunks")
-    click.echo(f"📋 Document: {os.path.basename(file)}")
-
-    click.echo(f'\n💡 View full digest: open "{output_file}"')
+    stats = {
+        "Document": os.path.basename(file),
+        "Mode": mode_description,
+        "Chunks processed": len(chunks),
+        "Total tokens": comprehensive_log["total_usage"]["total_tokens"]
+    }
+    
+    show_command_completion(f"digest {mode}", output_file, None, stats)

@@ -622,3 +622,164 @@ def save_reasoning_trace(trace: LegalReasoningTrace, output_file: str) -> str:
         f.write(trace.to_structured_text())
 
     return trace_file
+
+
+def save_command_output(
+    command_name: str,
+    content: str,
+    query_or_slug: str,
+    metadata: Optional[Dict[str, str]] = None,
+) -> str:
+    """
+    Save command output with standard format.
+
+    Args:
+        command_name: Name of the command (e.g., 'strategy', 'draft')
+        content: The main content to save
+        query_or_slug: Query string or slug for filename generation
+        metadata: Optional dict of metadata to include in header
+
+    Returns:
+        Path to the saved output file
+    """
+    timestamp = time.strftime("%Y%m%d_%H%M%S")
+
+    # Create filename slug
+    slug = re.sub(r"[^\w\s-]", "", query_or_slug.lower())
+    slug = re.sub(r"[-\s]+", "_", slug)[:40].strip("_") or command_name
+
+    output_file = os.path.join(OUTPUT_DIR, f"{command_name}_{slug}_{timestamp}.txt")
+
+    with open(output_file, "w", encoding="utf-8") as f:
+        # Standard header
+        f.write(f"{command_name.replace('_', ' ').title()}\n")
+
+        # Add metadata if provided
+        if metadata:
+            for key, value in metadata.items():
+                f.write(f"{key}: {value}\n")
+
+        f.write(f"Timestamp: {time.strftime('%Y-%m-%d %H:%M:%S')}\n")
+        f.write("-" * 80 + "\n\n")
+        f.write(content)
+
+    return output_file
+
+
+def show_command_completion(
+    command_name: str,
+    output_file: str,
+    extra_files: Optional[Dict[str, str]] = None,
+    stats: Optional[Dict[str, Any]] = None,
+):
+    """
+    Display standard completion message for commands.
+
+    Args:
+        command_name: Name of the command
+        output_file: Path to the main output file
+        extra_files: Optional dict of label->path for additional files
+        stats: Optional statistics to display
+    """
+    click.echo(f"\n✅ {command_name.replace('_', ' ').title()} complete!")
+    click.echo(f'📄 Output saved to: "{output_file}"')
+
+    if extra_files:
+        for label, path in extra_files.items():
+            click.echo(f'📝 {label}: open "{path}"')
+
+    if stats:
+        click.echo(f"\n📊 Statistics:")
+        for key, value in stats.items():
+            click.echo(f"   {key}: {value}")
+
+    click.echo(f'\n💡 View full output: open "{output_file}"')
+
+
+def verify_content_if_needed(
+    client: Any, content: str, command_name: str, verify_flag: bool = False
+) -> tuple[str, bool]:
+    """
+    Handle verification and citation validation.
+
+    Args:
+        client: LLMClient instance
+        content: Content to verify
+        command_name: Name of the command (for context)
+        verify_flag: Whether user explicitly requested verification
+
+    Returns:
+        Tuple of (possibly modified content, whether verification was performed)
+    """
+    # Check if auto-verification is needed
+    auto_verify = client.should_auto_verify(content, command_name)
+    needs_verification = verify_flag or auto_verify
+
+    # Inform user about verification status
+    if verify_flag and auto_verify:
+        click.echo(
+            "🔍 Running verification (--verify flag + auto-verification triggered)"
+        )
+    elif verify_flag:
+        click.echo("🔍 Running verification (--verify flag enabled)")
+    elif auto_verify:
+        click.echo("🔍 Running auto-verification (high-risk content detected)")
+    else:
+        click.echo("ℹ️  No verification performed")
+
+    if needs_verification:
+        try:
+            # Use appropriate verification level based on command
+            verification_level = (
+                "heavy" if command_name in ["strategy", "draft"] else "medium"
+            )
+            correction = client.verify_with_level(content, verification_level)
+
+            if correction.strip() and not correction.lower().startswith(
+                "no corrections needed"
+            ):
+                content = (
+                    content
+                    + f"\n\n--- {command_name.title()} Review ---\n"
+                    + correction
+                )
+
+            # Run citation validation
+            citation_issues = client.validate_citations(content)
+            if citation_issues:
+                content += "\n\n--- Citation Warnings ---\n" + "\n".join(
+                    citation_issues
+                )
+
+        except Exception as e:
+            raise click.ClickException(f"Verification error during {command_name}: {e}")
+
+    return content, needs_verification
+
+
+def validate_file_size(
+    file_path: str, max_size: int = 50000, file_type: str = "input"
+) -> str:
+    """
+    Validate file size and return content if within limits.
+
+    Args:
+        file_path: Path to the file
+        max_size: Maximum allowed characters
+        file_type: Type of file for error message
+
+    Returns:
+        File content if valid
+
+    Raises:
+        click.ClickException: If file is too large
+    """
+    content = read_document(file_path)
+
+    if len(content) > max_size:
+        raise click.ClickException(
+            f"{file_type.capitalize()} file too large ({len(content):,} characters). "
+            f"Please provide a file under {max_size:,} characters (~{max_size//5:,} words)."
+        )
+
+    return content

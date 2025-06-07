@@ -60,6 +60,84 @@ COURT_MAPPINGS = {
     "FCWA": "wa/FCWA",
 }
 
+# UK/International court abbreviations - historically relevant to Australian law
+# These cannot be verified via AustLII but are valid citations
+UK_INTERNATIONAL_COURTS = {
+    # UK Courts and Reports
+    "AC": "Appeal Cases (House of Lords/Privy Council)",
+    "PC": "Privy Council",
+    "Ch": "Chancery Division",
+    "QB": "Queen's Bench Division",
+    "KB": "King's Bench Division",
+    "WLR": "Weekly Law Reports",
+    "All ER": "All England Reports",
+    "AllER": "All England Reports",  # Alternative format
+    "UKHL": "UK House of Lords",
+    "UKSC": "UK Supreme Court",
+    "EWCA": "England and Wales Court of Appeal",
+    "EWHC": "England and Wales High Court",
+    "Fam": "Family Division",
+    "ER": "English Reports (historical)",
+    "Cr App R": "Criminal Appeal Reports",
+    "CrAppR": "Criminal Appeal Reports",  # Alternative format
+    "Lloyd's Rep": "Lloyd's Law Reports",
+    # New Zealand
+    "NZLR": "New Zealand Law Reports",
+    "NZCA": "New Zealand Court of Appeal",
+    "NZSC": "New Zealand Supreme Court",
+    "NZHC": "New Zealand High Court",
+    # Canada
+    "SCR": "Supreme Court Reports (Canada)",
+    "DLR": "Dominion Law Reports",
+    "OR": "Ontario Reports",
+    "BCR": "British Columbia Reports",
+    "AR": "Alberta Reports",
+    "QR": "Quebec Reports",
+    "SCC": "Supreme Court of Canada",
+    "ONCA": "Ontario Court of Appeal",
+    "BCCA": "British Columbia Court of Appeal",
+    # Singapore
+    "SLR": "Singapore Law Reports",
+    "SGCA": "Singapore Court of Appeal",
+    "SGHC": "Singapore High Court",
+    # Hong Kong
+    "HKLR": "Hong Kong Law Reports",
+    "HKLRD": "Hong Kong Law Reports & Digest",
+    "HKCFA": "Hong Kong Court of Final Appeal",
+    "HKCA": "Hong Kong Court of Appeal",
+    "HKCFI": "Hong Kong Court of First Instance",
+    # Malaysia
+    "MLJ": "Malayan Law Journal",
+    "CLJ": "Current Law Journal (Malaysia)",
+    # South Africa
+    "SALR": "South African Law Reports",
+    "ZASCA": "South Africa Supreme Court of Appeal",
+    "ZACC": "South Africa Constitutional Court",
+    # International Courts
+    "ICJ": "International Court of Justice",
+    "ECHR": "European Court of Human Rights",
+    "ECJ": "European Court of Justice",
+    "ICC": "International Criminal Court",
+    "ITLOS": "International Tribunal for the Law of the Sea",
+    # United States (occasionally referenced)
+    "US": "United States Reports (Supreme Court)",
+    "S.Ct": "Supreme Court Reporter (US)",
+    "SCt": "Supreme Court Reporter (US)",  # Alternative format
+    "F.2d": "Federal Reporter, Second Series",
+    "F.3d": "Federal Reporter, Third Series",
+    "F2d": "Federal Reporter, Second Series",  # Alternative format
+    "F3d": "Federal Reporter, Third Series",  # Alternative format
+    # Academic and Specialist Reports
+    "ICLQ": "International & Comparative Law Quarterly",
+    "LQR": "Law Quarterly Review",
+    "MLR": "Modern Law Review",
+    "CLJ": "Cambridge Law Journal",
+    "OJLS": "Oxford Journal of Legal Studies",
+    "AILR": "Australian Indigenous Law Reporter",
+    "IPR": "Intellectual Property Reports",
+    "IPLR": "Intellectual Property Law Reports",
+}
+
 
 class CitationVerificationError(Exception):
     """Raised when citation verification fails and output cannot proceed."""
@@ -90,6 +168,48 @@ def extract_citations(text: str) -> List[str]:
     pattern2 = r"\((\d{4})\)\s+(\d+)\s+([A-Z]+[A-Za-z]*)\s+(\d+)"
     matches2 = re.finditer(pattern2, text)
     for match in matches2:
+        citations.add(match.group(0))
+
+    # Pattern 3: Medium neutral with case type suffix [YEAR] COURT Type NUMBER
+    # e.g., [2020] EWCA Civ 1234, [2020] EWHC (QB) 123
+    pattern3 = r"\[(\d{4})\]\s+([A-Z]+[A-Za-z]*)\s+(?:Civ|Crim|Admin|Fam|QB|Ch|Pat|Comm|TCC)\s+(\d+)"
+    matches3 = re.finditer(pattern3, text)
+    for match in matches3:
+        citations.add(match.group(0))
+
+    # Pattern 4: Citations with volume between year and series
+    # e.g., [2010] 3 NZLR 123, [2019] 2 SLR 123
+    pattern4 = r"\[(\d{4})\]\s+(\d+)\s+([A-Z]+[A-Za-z]*)\s+(\d+)"
+    matches4 = re.finditer(pattern4, text)
+    for match in matches4:
+        citations.add(match.group(0))
+
+    # Pattern 5: US Supreme Court citations
+    # e.g., 123 U.S. 456, 123 US 456
+    pattern5 = r"\b(\d+)\s+U\.?S\.?\s+(\d+)\b"
+    matches5 = re.finditer(pattern5, text)
+    for match in matches5:
+        citations.add(match.group(0))
+
+    # Pattern 6: US Federal Reporter citations
+    # e.g., 456 F.3d 789, 456 F3d 789
+    pattern6 = r"\b(\d+)\s+F\.?\s*[23]d\s+(\d+)\b"
+    matches6 = re.finditer(pattern6, text)
+    for match in matches6:
+        citations.add(match.group(0))
+
+    # Pattern 7: US Supreme Court Reporter
+    # e.g., 789 S.Ct. 123, 789 SCt 123
+    pattern7 = r"\b(\d+)\s+S\.?\s*Ct\.?\s+(\d+)\b"
+    matches7 = re.finditer(pattern7, text)
+    for match in matches7:
+        citations.add(match.group(0))
+
+    # Pattern 8: Lloyd's Reports and Criminal Appeal Reports with possessive
+    # e.g., [2005] 2 Lloyd's Rep 123, (1990) 2 Cr App R 456
+    pattern8 = r"(?:\[(\d{4})\]|\((\d{4})\))\s+(\d+)\s+(?:Lloyd's\s*Rep|Cr\s*App\s*R|CrAppR)\s+(\d+)"
+    matches8 = re.finditer(pattern8, text)
+    for match in matches8:
         citations.add(match.group(0))
 
     return list(citations)
@@ -128,7 +248,72 @@ def build_austlii_url(citation: str) -> Tuple[str, str]:
     Returns:
         Tuple of (url, error_reason) where error_reason is empty if successful
     """
-    # Parse medium neutral citation
+    # Check for special citation formats first
+
+    # EWCA/EWHC with case type suffix
+    ewca_match = re.match(
+        r"\[(\d{4})\]\s+(EWCA|EWHC)\s+(?:Civ|Crim|Admin|Fam|QB|Ch|Pat|Comm|TCC)\s+(\d+)",
+        citation,
+    )
+    if ewca_match:
+        court = ewca_match.group(2)
+        if court in UK_INTERNATIONAL_COURTS:
+            return (
+                "",
+                f"UK/International citation ({UK_INTERNATIONAL_COURTS[court]}) - not available on AustLII",
+            )
+
+    # US Citations
+    us_match = re.match(r"\d+\s+U\.?S\.?\s+\d+", citation)
+    if us_match:
+        return (
+            "",
+            "UK/International citation (United States Reports (Supreme Court)) - not available on AustLII",
+        )
+
+    us_fed_match = re.match(r"\d+\s+F\.?\s*[23]d\s+\d+", citation)
+    if us_fed_match:
+        return (
+            "",
+            "UK/International citation (Federal Reporter) - not available on AustLII",
+        )
+
+    us_sct_match = re.match(r"\d+\s+S\.?\s*Ct\.?\s+\d+", citation)
+    if us_sct_match:
+        return (
+            "",
+            "UK/International citation (Supreme Court Reporter (US)) - not available on AustLII",
+        )
+
+    # Lloyd's Reports and Criminal Appeal Reports
+    special_reports_match = re.match(
+        r"(?:\[(\d{4})\]|\((\d{4})\))\s+\d+\s+(Lloyd's\s*Rep|Cr\s*App\s*R|CrAppR)\s+\d+",
+        citation,
+    )
+    if special_reports_match:
+        report_type = special_reports_match.group(3)
+        if "Lloyd" in report_type:
+            return (
+                "",
+                "UK/International citation (Lloyd's Law Reports) - not available on AustLII",
+            )
+        elif "Cr" in report_type:
+            return (
+                "",
+                "UK/International citation (Criminal Appeal Reports) - not available on AustLII",
+            )
+
+    # Citations with volume between year and series
+    volume_match = re.match(r"\[(\d{4})\]\s+\d+\s+([A-Z]+[A-Za-z]*)\s+\d+", citation)
+    if volume_match:
+        court = volume_match.group(2)
+        if court in UK_INTERNATIONAL_COURTS:
+            return (
+                "",
+                f"UK/International citation ({UK_INTERNATIONAL_COURTS[court]}) - not available on AustLII",
+            )
+
+    # Parse standard medium neutral citation
     match = re.match(r"\[(\d{4})\]\s+([A-Z]+[A-Za-z]*)\s+(\d+)", citation)
     if not match:
         # Check if it's a traditional citation format
@@ -141,6 +326,13 @@ def build_austlii_url(citation: str) -> Tuple[str, str]:
         return "", "Invalid citation format"
 
     year, court, number = match.groups()
+
+    # Check if it's a UK/International court
+    if court in UK_INTERNATIONAL_COURTS:
+        return (
+            "",
+            f"UK/International citation ({UK_INTERNATIONAL_COURTS[court]}) - not available on AustLII",
+        )
 
     # Check if court is known
     if court not in COURT_MAPPINGS:
@@ -298,10 +490,35 @@ def is_traditional_citation_format(citation: str) -> bool:
     # Traditional formats like (1968) 118 CLR 1, [1919] VLR 497, [1955] AC 431
     traditional_patterns = [
         r"\(\d{4}\)\s+\d+\s+[A-Z]+\s+\d+",  # (Year) Volume Series Page - covers CLR, ALR, etc.
-        # Australian traditional law reports: VR=Victorian Reports, VLR=Victorian Law Reports,
-        # CLR=Commonwealth Law Reports, ALR=Australian Law Reports, FCR=Federal Court Reports, etc.
+        # Australian traditional law reports
         r"\[\d{4}\]\s+(VR|VLR|CLR|ALR|FCR|FLR|IR|ACTR|NTLR|SASR|WAR|TasR|NSWLR|QLR|QR|SR)\s+\d+",
-        r"\[\d{4}\]\s+(AC|PC|WLR|All\s*ER|Ch|QB|KB)\s+\d+",  # UK/Privy Council citations
+        # UK/Privy Council citations
+        r"\[\d{4}\]\s+(AC|PC|WLR|All\s*ER|AllER|Ch|QB|KB|Fam|ER)\s+\d+",
+        r"\[\d{4}\]\s+\d+\s+(WLR|All\s*ER|AllER)\s+\d+",  # Alternative format [Year] Volume Series Page
+        r"\(\d{4}\)\s+\d+\s+(Cr\s*App\s*R|CrAppR|Lloyd's\s*Rep)\s+\d+",  # Criminal Appeal Reports, Lloyd's
+        # New Zealand
+        r"\[\d{4}\]\s+\d+\s+NZLR\s+\d+",
+        r"\(\d{4}\)\s+\d+\s+NZLR\s+\d+",
+        # Canada
+        r"\[\d{4}\]\s+\d+\s+SCR\s+\d+",
+        r"\(\d{4}\)\s+\d+\s+(DLR|OR|BCR|AR|QR)\s+\d+",
+        # Singapore
+        r"\[\d{4}\]\s+\d+\s+SLR\s+\d+",
+        # Hong Kong
+        r"\[\d{4}\]\s+\d+\s+(HKLR|HKLRD)\s+\d+",
+        r"\(\d{4}\)\s+\d+\s+(HKLR|HKLRD)\s+\d+",
+        # Malaysia
+        r"\[\d{4}\]\s+\d+\s+(MLJ|CLJ)\s+\d+",
+        # South Africa
+        r"\[\d{4}\]\s+\d+\s+SALR\s+\d+",
+        r"\(\d{4}\)\s+\d+\s+SALR\s+\d+",
+        # United States
+        r"\d+\s+U\.?S\.?\s+\d+",  # 123 U.S. 456 or 123 US 456
+        r"\d+\s+S\.?\s*Ct\.?\s+\d+",  # 123 S.Ct. 456 or 123 SCt 456
+        r"\d+\s+F\.?\s*[23]d\s+\d+",  # 123 F.2d 456 or 123 F2d 456
+        # International law reports/journals
+        r"\[\d{4}\]\s+\d*\s*(ICLQ|LQR|MLR|CLJ|OJLS|AILR|IPR|IPLR)\s+\d+",
+        r"\(\d{4}\)\s+\d+\s+(ICLQ|LQR|MLR|CLJ|OJLS|AILR|IPR|IPLR)\s+\d+",
     ]
 
     for pattern in traditional_patterns:
@@ -346,15 +563,30 @@ def verify_single_citation(citation: str) -> Tuple[bool, str, str]:
         return True, "", "Traditional citation - temporarily accepted"
 
     elif error_reason:
-        # Other errors (invalid format, etc)
-        with _cache_lock:
-            _citation_cache[normalized] = {
-                "exists": False,
-                "url": "",
-                "reason": error_reason,
-                "checked_at": time.time(),
-            }
-        return False, "", error_reason
+        # Check if it's a UK/International citation (which is valid, just not on AustLII)
+        if "UK/International citation" in error_reason:
+            with _cache_lock:
+                _citation_cache[normalized] = {
+                    "exists": True,  # Mark as valid
+                    "url": "",
+                    "reason": error_reason,  # Keep the explanation
+                    "checked_at": time.time(),
+                }
+            return (
+                True,
+                "",
+                error_reason,
+            )  # Return True for valid UK/international citations
+        else:
+            # Other errors (invalid format, etc)
+            with _cache_lock:
+                _citation_cache[normalized] = {
+                    "exists": False,
+                    "url": "",
+                    "reason": error_reason,
+                    "checked_at": time.time(),
+                }
+            return False, "", error_reason
 
     # Check if URL exists (for medium neutral citations)
     exists = check_url_exists(url)
@@ -388,30 +620,54 @@ def verify_all_citations(text: str) -> Tuple[List[str], List[Tuple[str, str]]]:
     verified = []
     unverified = []
 
+    # Enhanced logging to capture full details for audit
+    detailed_results = []
+
     for citation in citations:
         exists, url, reason = verify_single_citation(citation)
+
+        # Capture full details for logging
+        citation_detail = {
+            "citation": citation,
+            "verified": exists,
+            "url": url if url else None,
+            "reason": reason if reason else None,
+            "is_traditional": is_traditional_citation_format(citation),
+            "is_international": (
+                "UK/International citation" in reason if reason else False
+            ),
+        }
+        detailed_results.append(citation_detail)
+
         if exists:
             verified.append(citation)
         else:
             unverified.append((citation, reason))
 
+    # Enhanced logging with full citation details
+    log_data = {
+        "method": "verify_all_citations",
+        "input_text_length": len(text),
+        "citations_found": len(citations),
+        "citations_verified": len(verified),
+        "citations_unverified": len(unverified),
+        "verified_citations": verified,
+        "unverified_citations": [
+            {"citation": cit, "reason": reason} for cit, reason in unverified
+        ],
+        "detailed_results": detailed_results,
+        "international_citations": [
+            d for d in detailed_results if d.get("is_international", False)
+        ],
+        "traditional_citations": [
+            d for d in detailed_results if d.get("is_traditional", False)
+        ],
+        "processing_time_ms": round((time.time() - start_time) * 1000, 2),
+        "timestamp": time.strftime("%Y-%m-%d %H:%M:%S"),
+    }
+
     # Log the overall verification session
-    save_log(
-        "citation_verification_session",
-        {
-            "method": "verify_all_citations",
-            "input_text_length": len(text),
-            "citations_found": len(citations),
-            "citations_verified": len(verified),
-            "citations_unverified": len(unverified),
-            "verified_citations": verified,
-            "unverified_citations": [
-                {"citation": cit, "reason": reason} for cit, reason in unverified
-            ],
-            "processing_time_ms": round((time.time() - start_time) * 1000, 2),
-            "timestamp": time.strftime("%Y-%m-%d %H:%M:%S"),
-        },
-    )
+    save_log("citation_verification_session", log_data)
 
     return verified, unverified
 

@@ -16,10 +16,13 @@ from litassist.utils import (
     chunk_text,
     save_log,
     timed,
-    OUTPUT_DIR,
     create_reasoning_prompt,
     extract_reasoning_trace,
     save_reasoning_trace,
+    save_command_output,
+    show_command_completion,
+    verify_content_if_needed,
+    validate_file_size,
 )
 from litassist.llm import LLMClientFactory
 
@@ -46,8 +49,8 @@ def extractfacts(file, verify):
         click.ClickException: If there are errors reading the file, processing chunks,
                              or with the LLM API calls.
     """
-    # Read and chunk the document
-    text = read_document(file)
+    # Read and validate document, then chunk
+    text = validate_file_size(file, max_size=50000, file_type="source")
     chunks = chunk_text(text, max_chars=CONFIG.max_chars)
 
     # Initialize the LLM client using factory
@@ -175,40 +178,19 @@ Important:
 
     # Note: Citation verification now handled automatically in LLMClient.complete()
 
-    # Mandatory heavy verification for extractfacts (creates foundational documents)
-    click.echo("🔍 Running verification (mandatory for extractfacts command)")
-    try:
-        # Use heavy verification to ensure legal accuracy and proper structure
-        correction = client.verify_with_level(combined, "heavy")
-        if correction.strip():  # Only append if there are actual corrections
-            combined = combined + "\n\n--- Legal Accuracy Review ---\n" + correction
-
-        # Also run citation validation
-        citation_issues = client.validate_citations(combined)
-        if citation_issues:
-            combined += "\n\n--- Citation Warnings ---\n" + "\n".join(citation_issues)
-
-    except Exception as e:
-        raise click.ClickException(f"Verification error during fact extraction: {e}")
+    # Apply verification (always required for extractfacts)
+    combined, _ = verify_content_if_needed(client, combined, "extractfacts", verify_flag=True)
 
     # Extract reasoning trace before saving
     reasoning_trace = extract_reasoning_trace(combined, "extractfacts")
 
-    # Save to timestamped file only
-    timestamp = time.strftime("%Y%m%d_%H%M%S")
-    # Extract base filename without extension for the output name
-    base_filename = os.path.splitext(os.path.basename(file))[0]
-    # Create a slug from the filename
-    filename_slug = base_filename.lower().replace(" ", "_")[:30]
-    output_file = os.path.join(
-        OUTPUT_DIR, f"extractfacts_{filename_slug}_{timestamp}.txt"
+    # Save output using utility
+    output_file = save_command_output(
+        "extractfacts",
+        combined,
+        os.path.basename(file),
+        metadata={"Source File": file}
     )
-
-    with open(output_file, "w", encoding="utf-8") as f:
-        f.write(f"# Extracted Facts from: {file}\n")
-        f.write(f"# Generated: {time.strftime('%Y-%m-%d %H:%M:%S')}\n")
-        f.write("-" * 80 + "\n\n")
-        f.write(combined)
 
     # Audit log
     save_log(
@@ -221,20 +203,20 @@ Important:
         },
     )
 
-    # Show summary instead of full content
-    click.echo("\n✅ Fact extraction complete!")
-    click.echo(f'📄 Output saved to: "{output_file}"')
-
     # Save reasoning trace if extracted
+    extra_files = {}
     if reasoning_trace:
         reasoning_file = save_reasoning_trace(reasoning_trace, output_file)
-        click.echo(f'📝 Reasoning trace: open "{reasoning_file}"')
+        extra_files["Reasoning trace"] = reasoning_file
 
-    # Show what was processed
-    chunk_desc = f"{len(chunks)} chunks" if len(chunks) > 1 else "single document"
-    click.echo(f"\n📊 Processed {chunk_desc} from: {os.path.basename(file)}")
-    click.echo("📋 Organized facts under 10 structured headings")
-    click.echo("🔍 Verified with legal accuracy review")
-
-    click.echo(f'\n💡 View extracted facts: open "{output_file}"')
+    # Show completion
+    chunk_desc = f"{len(chunks)} chunks" if len(chunks) > 1 else "single document" 
+    stats = {
+        "Source": os.path.basename(file),
+        "Processed": chunk_desc,
+        "Structure": "10 structured headings",
+        "Verification": "Legal accuracy review applied"
+    }
+    
+    show_command_completion("extractfacts", output_file, extra_files, stats)
     click.echo("📌 To use with other commands, manually copy to case_facts.txt")
