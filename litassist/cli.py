@@ -127,6 +127,48 @@ def validate_credentials(show_progress=True):
         if show_progress:
             print("  - Skipping Google CSE connectivity test (placeholder credentials)")
 
+    # Test OpenRouter connectivity (only if not using placeholders)
+    if not placeholder_checks.get("openrouter", False):
+        try:
+            if show_progress:
+                print("  - Testing OpenRouter API... ", end="", flush=True)
+            # Test OpenRouter by making a minimal API call
+            import requests
+            headers = {
+                "Authorization": f"Bearer {CONFIG.or_key}",
+                "Content-Type": "application/json"
+            }
+            # Use the models endpoint which doesn't cost credits
+            response = requests.get(
+                "https://openrouter.ai/api/v1/models",
+                headers=headers,
+                timeout=10
+            )
+            if response.status_code != 200:
+                raise Exception(f"HTTP {response.status_code}: {response.text}")
+            
+            # Verify at least one required model is available
+            models = response.json().get("data", [])
+            model_ids = [m.get("id", "") for m in models]
+            required_models = [
+                "anthropic/claude-sonnet-4",
+                "x-ai/grok-3-beta", 
+                "google/gemini-2.5-pro-preview"
+            ]
+            
+            if not any(model in model_ids for model in required_models):
+                raise Exception(f"No required models found. Available: {len(model_ids)} models")
+            
+            if show_progress:
+                print("OK")
+        except Exception as e:
+            if show_progress:
+                print("FAILED")
+            sys.exit(f"Error: OpenRouter API test failed: {e}")
+    else:
+        if show_progress:
+            print("  - Skipping OpenRouter connectivity test (placeholder credentials)")
+
     # Jade API direct validation removed - now uses public endpoints
 
     if show_progress:
@@ -138,8 +180,9 @@ def test():
     """
     Test API connectivity.
 
-    This command validates credentials for OpenAI, Pinecone, and Google CSE
-    by making test API calls and reports success or failure.
+    This command validates credentials for OpenAI, OpenRouter, Pinecone, and Google CSE
+    by making test API calls and reports success or failure. For OpenRouter, it also
+    verifies that at least one of the required models is available.
     """
     validate_credentials(show_progress=True)
 

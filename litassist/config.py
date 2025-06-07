@@ -188,7 +188,8 @@ class Config:
             Dictionary of service names mapped to boolean indicating placeholder usage.
         """
         return {
-            "openai": "YOUR_" in self.oa_key or "YOUR_" in self.or_key,
+            "openai": "YOUR_" in self.oa_key,
+            "openrouter": "YOUR_" in self.or_key,
             "pinecone": "YOUR_PINECONE" in self.pc_key
             or "YOUR_PINECONE" in self.pc_env,
             "google_cse": "YOUR_GOOGLE" in self.g_key or "YOUR_GOOGLE" in self.cse_id,

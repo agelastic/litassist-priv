@@ -7,12 +7,13 @@
 # Usage: ./cleanup.zsh
 #
 # This script safely removes:
-# • Test result files (test_results_*.json, quality_results_*.json)
+# • Test result files (test_results_*.json, test_results_*.log, quality_results_*.json)
+# • Test input directories (test_inputs/)
 # • Application logs (logs/*.md - preserves logs/README.md)
 # • Python cache (__pycache__, *.pyc, .pytest_cache, etc.)
 # • LaTeX auxiliary files (*.aux, *.log, *.synctex.gz, etc.)
 # • OS temporary files (.DS_Store, Thumbs.db, *.tmp)
-# • Generated case facts and debug files
+# • Generated case facts, strategies, and output files
 # • Build artifacts (build/, dist/, *.egg-info/)
 # • Coverage reports (.coverage, htmlcov/)
 #
@@ -55,6 +56,7 @@ echo ""
 # Test result files
 echo "Test Results & Quality Reports:"
 remove_pattern "test_results_*.json" "integration test result"
+remove_pattern "test_results_*.log" "CLI test result log"
 remove_pattern "quality_results_*.json" "quality test result"
 
 # Application logs (but keep logs/README.md)
@@ -100,6 +102,7 @@ safe_remove ".pytest_cache" "Pytest cache"
 echo ""
 echo "Test Files & Directories:"
 safe_remove "real_test" "real test directory"
+safe_remove "test_inputs" "test input directory"
 remove_pattern "temp_*.py" "temporary Python scripts"
 remove_pattern "debug_*.txt" "debug output files"
 
@@ -133,7 +136,7 @@ remove_pattern "Thumbs.db" "Windows thumbnails"
 remove_pattern "*.tmp" "temporary files"
 remove_pattern "*.log" "standalone log files"
 
-# Generated case facts (if it exists and isn't the example)
+# Generated case facts and outputs
 echo ""
 echo "Generated Content:"
 if [[ -f "case_facts.txt" && -f "examples/case_facts.txt" ]]; then
@@ -144,6 +147,18 @@ if [[ -f "case_facts.txt" && -f "examples/case_facts.txt" ]]; then
 elif [[ -f "case_facts.txt" ]]; then
     # Remove if example doesn't exist (likely generated)
     safe_remove "case_facts.txt" "generated case facts"
+fi
+
+# Remove generated strategies file
+safe_remove "strategies.txt" "generated strategies"
+
+# Clean outputs directory (but keep the directory itself)
+if [[ -d "outputs" ]]; then
+    local output_files=(outputs/*.txt outputs/*.md outputs/*.pdf)
+    if [[ ${#output_files[@]} -gt 0 && -e "${output_files[1]}" ]]; then
+        echo "  Removing ${#output_files[@]} output files..."
+        rm -f outputs/*.txt outputs/*.md outputs/*.pdf
+    fi
 fi
 
 # Build artifacts

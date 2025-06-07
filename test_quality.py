@@ -254,6 +254,102 @@ def test_openai_embedding_quality():
 
 
 # ─── OpenRouter Quality Tests ────────────────────────────────────────────────
+def test_litassist_models():
+    """Test that all models used by LitAssist commands are accessible"""
+    result = TestResult("OpenRouter", "LitAssist Model Availability")
+    
+    try:
+        # Require real credentials
+        if OR_KEY in placeholder_values:
+            result.failure(
+                "OpenRouter API key not configured - model testing requires real credentials"
+            )
+            return result
+            
+        from litassist.llm import LLMClientFactory
+        
+        print("Testing availability of models used by LitAssist commands...")
+        
+        # Test each command's model configuration
+        command_models = {
+            "extractfacts": "anthropic/claude-sonnet-4",
+            "strategy": "openai/o1-pro",
+            "brainstorm-orthodox": "anthropic/claude-sonnet-4",
+            "brainstorm-unorthodox": "x-ai/grok-3-beta",
+            "draft": "openai/o3",
+            "digest": "anthropic/claude-sonnet-4",
+            "lookup": "google/gemini-2.5-pro-preview",
+        }
+        
+        model_results = {}
+        
+        for command, expected_model in command_models.items():
+            try:
+                # Get the actual model from factory
+                if "-" in command:
+                    cmd, subtype = command.split("-", 1)
+                    client = LLMClientFactory.for_command(cmd, subtype)
+                else:
+                    client = LLMClientFactory.for_command(command)
+                
+                actual_model = client.model
+                
+                # Test a minimal completion to verify model is accessible
+                test_messages = [
+                    {"role": "system", "content": "Test"},
+                    {"role": "user", "content": "Reply with 'OK'"}
+                ]
+                
+                response, usage = client.complete(test_messages, max_tokens=10)
+                
+                model_results[command] = {
+                    "expected": expected_model,
+                    "actual": actual_model,
+                    "accessible": True,
+                    "response": response[:50] if response else None
+                }
+                
+            except Exception as e:
+                model_results[command] = {
+                    "expected": expected_model,
+                    "actual": actual_model if 'actual_model' in locals() else "Unknown",
+                    "accessible": False,
+                    "error": str(e)
+                }
+        
+        # Quality checks
+        quality_checks = {
+            "all_models_configured": all(r["actual"] == r["expected"] for r in model_results.values()),
+            "all_models_accessible": all(r["accessible"] for r in model_results.values()),
+            "claude_available": any("claude" in r["actual"] and r["accessible"] for r in model_results.values()),
+            "grok_available": any("grok" in r["actual"] and r["accessible"] for r in model_results.values()),
+            "o1_available": any("o1" in r["actual"] and r["accessible"] for r in model_results.values()),
+            "gemini_available": any("gemini" in r["actual"] and r["accessible"] for r in model_results.values()),
+        }
+        
+        quality_score = int(
+            sum(1 for check in quality_checks.values() if check)
+            * (100 / len(quality_checks))
+        )
+        
+        if quality_score >= 80:
+            result.success(
+                quality_score=quality_score,
+                quality_checks=quality_checks,
+                model_results=model_results,
+                models_tested=len(model_results)
+            )
+        else:
+            result.failure(
+                f"Model availability score ({quality_score}/100) below threshold. Results: {model_results}"
+            )
+            
+    except Exception as e:
+        result.failure(e)
+        
+    return result
+
+
 def test_openrouter_australian_judgment():
     """Test OpenRouter Australian legal judgement formatting"""
     result = TestResult("OpenRouter", "Australian Judgment Format")
@@ -272,7 +368,7 @@ def test_openrouter_australian_judgment():
         openai.api_base = OR_BASE
 
         # Use a model that LitAssist actually uses
-        model = "anthropic/claude-3-sonnet"
+        model = "anthropic/claude-sonnet-4"
         print(f"Testing Australian judgment format with {model} via OpenRouter...")
 
         # Test with a more explicit request for Australian judgment format
@@ -366,7 +462,7 @@ def test_openrouter_case_citation():
         openai.api_base = OR_BASE
 
         # Use a model that LitAssist actually uses
-        model = "anthropic/claude-3-sonnet"
+        model = "anthropic/claude-sonnet-4"
         print(f"Testing Australian case citation format with {model} via OpenRouter...")
 
         # Test with a request to format citations correctly in Australian style
@@ -1041,6 +1137,7 @@ def run_tests(args):
     if args.all or args.openrouter:
         print("\nRunning OpenRouter quality tests:")
         print("-" * 40)
+        results.append(test_litassist_models())
         results.append(test_openrouter_australian_judgment())
         results.append(test_openrouter_case_citation())
 
@@ -1113,7 +1210,7 @@ def test_verification_system():
         # Test with real LLM calls to measure actual verification effectiveness
         # Use OpenRouter to access Claude for verification testing
         print("Initializing Claude for verification effectiveness testing...")
-        test_client = LLMClient("anthropic/claude-3-sonnet", temperature=0.2)
+        test_client = LLMClient("anthropic/claude-sonnet-4", temperature=0.2)
 
         # Test cases with known issues that verification should catch
         test_cases = [
