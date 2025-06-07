@@ -7,7 +7,6 @@ with optional diversity-based re-ranking using Maximal Marginal Relevance (MMR).
 
 from typing import List, Dict, Any, Optional
 
-import pinecone
 from litassist.utils import timed
 from litassist.config import CONFIG
 
@@ -43,13 +42,8 @@ class MockPineconeIndex:
         Returns:
             A mock stats object with basic properties.
         """
-
-        class MockStats:
-            def __init__(self):
-                self.total_vector_count = 0
-                self.dimension = 1536
-
-        return MockStats()
+        # Return simple object instead of inner class
+        return type("MockStats", (), {"total_vector_count": 0, "dimension": 1536})()
 
 
 def get_pinecone_client():
