@@ -86,22 +86,19 @@ class TestLLMClientVerification:
         fabricated_issues = [i for i in issues if "fabricated" in i]
         assert len(fabricated_issues) == 0
 
+    @patch("litassist.utils.save_log")
     @patch("openai.ChatCompletion.create")
-    def test_verify_with_level_light(self, mock_create):
+    def test_verify_with_level_light(self, mock_create, mock_save_log):
         """Test light verification level."""
         mock_response = Mock()
         mock_response.choices = [Mock()]
         mock_response.choices[0].message.content = "Corrected text"
-        # Mock the usage attribute with proper data
-        mock_usage = Mock()
-        mock_usage._asdict = Mock(
-            return_value={
-                "prompt_tokens": 100,
-                "completion_tokens": 50,
-                "total_tokens": 150,
-            }
-        )
-        mock_response.usage = mock_usage
+        # Create a dict-like object that's JSON serializable
+        mock_response.usage = {
+            "prompt_tokens": 100,
+            "completion_tokens": 50,
+            "total_tokens": 150,
+        }
         mock_create.return_value = mock_response
 
         result = self.client.verify_with_level("test content", "light")
@@ -111,22 +108,19 @@ class TestLLMClientVerification:
         call_args = mock_create.call_args[1]["messages"]
         assert "Australian English spelling" in call_args[0]["content"]
 
+    @patch("litassist.utils.save_log")
     @patch("openai.ChatCompletion.create")
-    def test_verify_with_level_heavy(self, mock_create):
+    def test_verify_with_level_heavy(self, mock_create, mock_save_log):
         """Test heavy verification level."""
         mock_response = Mock()
         mock_response.choices = [Mock()]
         mock_response.choices[0].message.content = "Thoroughly reviewed content"
-        # Mock the usage attribute with proper data
-        mock_usage = Mock()
-        mock_usage._asdict = Mock(
-            return_value={
-                "prompt_tokens": 200,
-                "completion_tokens": 100,
-                "total_tokens": 300,
-            }
-        )
-        mock_response.usage = mock_usage
+        # Create a dict-like object that's JSON serializable
+        mock_response.usage = {
+            "prompt_tokens": 200,
+            "completion_tokens": 100,
+            "total_tokens": 300,
+        }
         mock_create.return_value = mock_response
 
         result = self.client.verify_with_level("test content", "heavy")
