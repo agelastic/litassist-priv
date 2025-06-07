@@ -19,8 +19,8 @@ graph TD
 - **Digest**: Mass-document processing (Chronological summaries or issue-spotting via Claude)  
 - **ExtractFacts**: Automatic extraction of case facts into a structured file  
 - **Brainstorm**: Creative legal strategy generation (Unorthodox strategies via Grok)  
-- **Strategy**: Targeted legal options with probability assessments and draft documents
-- **Draft**: Citation-rich document creation (Retrieval-Augmented Generation with GPT-4o)  
+- **Strategy**: Targeted legal options with probability assessments and draft documents (Enhanced reasoning via o1-pro)
+- **Draft**: Citation-rich document creation (Superior technical writing via o3)  
 
 For detailed usage guidance, see [LitAssist_User_Guide.md](LitAssist_User_Guide.md).
 
@@ -86,7 +86,7 @@ openai:
 
 google_cse:
   api_key:  "YOUR_GOOGLE_API_KEY"
-  cse_id:   "YOUR_GOOGLE_CSE_ID"
+  cse_id:   "YOUR_JADE_CSE_ID"    # Google CSE for Jade.io
 
 pinecone:
   api_key:     "YOUR_PINECONE_KEY"
@@ -101,6 +101,29 @@ general:
   max_chars: 20000        # Document chunking: characters per chunk for digest/extractfacts (default: 20000 ≈ 4000 words)
   rag_max_chars: 8000     # Document chunking: characters per chunk for draft command embeddings (default: 8000 ≈ 1600 words)
 ```
+
+### 🤖 Model Configuration & BYOK Requirements
+
+LitAssist uses cutting-edge AI models optimized for legal work:
+
+| Command | Model | BYOK Required | Purpose |
+|---------|-------|--------------|---------|
+| **strategy** | OpenAI o1-pro | No | Enhanced multi-step legal reasoning |
+| **draft** | OpenAI o3 | **Yes** | Superior technical legal writing |
+| **brainstorm** | Claude 4 Sonnet / Grok 3 | No | Conservative vs creative strategies |
+| **digest** | Claude 4 Sonnet | No | Document analysis and summarization |
+| **extractfacts** | Claude 4 Sonnet | No | Structured fact extraction |
+
+#### Setting up BYOK for o3 (Draft Command)
+
+The `draft` command uses OpenAI's o3 model, which requires **BYOK (Bring Your Own Key)**:
+
+1. Go to [OpenRouter Settings](https://openrouter.ai/settings/integrations)
+2. Add your OpenAI API key under "OpenAI Integration"
+3. Save the integration
+4. o3 will now be available through your OpenRouter API key
+
+Without BYOK setup, the draft command will fail with an authentication error.
 
 ## 🚀 Command Reference
 

@@ -31,26 +31,27 @@ class LLMClientFactory:
     COMMAND_CONFIGS = {
         # Extract facts - deterministic, focused on accuracy
         "extractfacts": {
-            "model": "anthropic/claude-3-sonnet",
+            "model": "anthropic/claude-sonnet-4",
             "temperature": 0,
             "top_p": 0.15,
             "force_verify": True,  # Always verify for foundational docs
         },
-        # Strategy - balanced for legal analysis
+        # Strategy - enhanced multi-step legal reasoning (o1-pro has limited parameters)
         "strategy": {
-            "model": "openai/o1-preview",
-            "temperature": 1,  # o1 models use temperature=1
+            "model": "openai/o1-pro",
+            # o1-pro has fixed parameters: temperature=1, top_p=1, presence_penalty=0, frequency_penalty=0
+            # Only max_completion_tokens can be controlled
             "force_verify": True,  # Always verify for strategic guidance
         },
         # Strategy sub-type for analysis
         "strategy-analysis": {
-            "model": "anthropic/claude-3.5-sonnet",
+            "model": "anthropic/claude-sonnet-4",
             "temperature": 0.2,
             "top_p": 0.8,
         },
         # Brainstorm - varied temperatures for different approaches
         "brainstorm-orthodox": {
-            "model": "anthropic/claude-3.5-sonnet",
+            "model": "anthropic/claude-sonnet-4",
             "temperature": 0.3,
             "top_p": 0.7,
             "force_verify": True,  # Conservative analysis requires verification
@@ -62,32 +63,31 @@ class LLMClientFactory:
             "force_verify": True,  # Auto-verify Grok
         },
         "brainstorm-analysis": {
-            "model": "anthropic/claude-3.5-sonnet",
+            "model": "anthropic/claude-sonnet-4",
             "temperature": 0.2,
             "top_p": 0.8,
         },
-        # Draft - balanced creativity with accuracy
+        # Draft - superior technical writing (o3 model with very limited parameter support)
         "draft": {
-            "model": "openai/gpt-4o",
-            "temperature": 0.5,
-            "top_p": 0.8,
-            "presence_penalty": 0.1,
-            "frequency_penalty": 0.1,
+            "model": "openai/o3",
+            "reasoning_effort": "medium",  # o3 reasoning effort: low, medium, high
+            # o3 only supports max_completion_tokens and reasoning_effort
+            # No temperature, top_p, presence_penalty, frequency_penalty support
         },
         # Digest - mode-dependent settings
         "digest-summary": {
-            "model": "anthropic/claude-3-sonnet",
+            "model": "anthropic/claude-sonnet-4",
             "temperature": 0,
             "top_p": 0,
         },
         "digest-issues": {
-            "model": "anthropic/claude-3-sonnet",
+            "model": "anthropic/claude-sonnet-4",
             "temperature": 0.2,
             "top_p": 0.5,
         },
         # Lookup - if it uses LLM (not in analyzed commands but for completeness)
         "lookup": {
-            "model": "anthropic/claude-3-sonnet",
+            "model": "anthropic/claude-sonnet-4",
             "temperature": 0.1,
             "top_p": 0.2,
         },
@@ -130,7 +130,7 @@ class LLMClientFactory:
         if config_key not in cls.COMMAND_CONFIGS:
             # Default configuration for unknown commands
             config = {
-                "model": "anthropic/claude-3-sonnet",
+                "model": "anthropic/claude-sonnet-4",
                 "temperature": 0.3,
                 "top_p": 0.7,
             }
@@ -218,7 +218,7 @@ class LLMClient:
     Example:
         ```python
         # Initialize client with default parameters
-        client = LLMClient("anthropic/claude-3-sonnet", temperature=0.2, top_p=0.8)
+        client = LLMClient("anthropic/claude-sonnet-4", temperature=0.2, top_p=0.8)
 
         # Run a completion
         content, usage = client.complete([
@@ -237,7 +237,7 @@ class LLMClient:
         Initialize an LLM client for chat completions.
 
         Args:
-            model: The model name to use (e.g., 'openai/gpt-4o', 'anthropic/claude-3-sonnet').
+            model: The model name to use (e.g., 'openai/gpt-4o', 'anthropic/claude-sonnet-4').
             **default_params: Default decoding parameters (temperature, top_p, etc.) to use
                              for all completions unless overridden.
         """
@@ -245,26 +245,39 @@ class LLMClient:
         self.command_context = None  # Track which command is using this client
 
         # Set model-specific token limits if enabled in config and not explicitly specified
-        if CONFIG.use_token_limits and "max_tokens" not in default_params:
-            # These limits are carefully chosen to balance comprehensive responses with quality
-            if "google/gemini" in model.lower():
-                default_params["max_tokens"] = (
-                    2048  # Gemini - reliable up to this length
-                )
-            elif "anthropic/claude" in model.lower():
-                default_params["max_tokens"] = (
-                    4096  # Claude - coherent for longer outputs
-                )
-            elif "openai/gpt-4" in model.lower():
-                default_params["max_tokens"] = (
-                    3072  # GPT-4/o - balanced limit for precision
-                )
-            elif "grok" in model.lower():
-                default_params["max_tokens"] = (
-                    1536  # Grok - more prone to hallucination
-                )
-            else:
-                default_params["max_tokens"] = 2048  # Default safe limit
+        if CONFIG.use_token_limits:
+            # Check if this is an o1/o3 model which uses max_completion_tokens instead of max_tokens
+            is_reasoning_model = "o1" in model.lower() or "o3" in model.lower()
+            token_param = "max_completion_tokens" if is_reasoning_model else "max_tokens"
+            
+            if token_param not in default_params:
+                # These limits are carefully chosen to balance comprehensive responses with quality
+                if "google/gemini" in model.lower():
+                    default_params[token_param] = (
+                        2048  # Gemini - reliable up to this length
+                    )
+                elif "anthropic/claude" in model.lower():
+                    default_params[token_param] = (
+                        4096  # Claude - coherent for longer outputs
+                    )
+                elif "openai/gpt-4" in model.lower():
+                    default_params[token_param] = (
+                        3072  # GPT-4 - balanced limit for precision
+                    )
+                elif "o1" in model.lower():
+                    default_params[token_param] = (
+                        25000  # o1-pro - OpenAI recommends at least 25k for reasoning models
+                    )
+                elif "o3" in model.lower():
+                    default_params[token_param] = (
+                        4096  # o3 - high-quality reasoning output
+                    )
+                elif "grok" in model.lower():
+                    default_params[token_param] = (
+                        1536  # Grok - more prone to hallucination
+                    )
+                else:
+                    default_params[token_param] = 2048  # Default safe limit
 
         self.default_params = default_params
 
@@ -289,8 +302,8 @@ class LLMClient:
         Raises:
             Exception: If the API call fails or returns an error.
         """
-        # Check if this is an o1 model that doesn't support system messages
-        is_o1_model = "o1" in self.model.lower()
+        # Check if this is an o1/o3 model that doesn't support system messages
+        is_o1_model = "o1" in self.model.lower() or "o3" in self.model.lower()
         
         if is_o1_model:
             # o1 models don't support system messages - merge into first user message
@@ -497,24 +510,32 @@ class LLMClient:
             },
         ]
         # Use deterministic settings for verification with appropriate token limits
-        # Note: o1 models only support temperature=1, so skip temperature override for those
-        if "o1" in self.model.lower():
-            params = {}  # o1 models use their default parameters
+        # Note: o1/o3 models only support temperature=1, so skip temperature override for those
+        if "o1" in self.model.lower() or "o3" in self.model.lower():
+            params = {}  # o1/o3 models use their default parameters
         else:
             params = {"temperature": 0, "top_p": 0.2}
 
         # Add model-specific token limits for verification if enabled in config
         if CONFIG.use_token_limits:
+            # o1/o3 models use max_completion_tokens instead of max_tokens
+            is_reasoning_model = "o1" in self.model.lower() or "o3" in self.model.lower()
+            token_param = "max_completion_tokens" if is_reasoning_model else "max_tokens"
+            
             if "google/gemini" in self.model.lower():
-                params["max_tokens"] = 1024  # Concise verification for Gemini
+                params[token_param] = 1024  # Concise verification for Gemini
             elif "anthropic/claude" in self.model.lower():
-                params["max_tokens"] = 1536  # Claude verification
-            elif "openai/gpt-4" in self.model.lower() or "openai/o1" in self.model.lower():
-                params["max_tokens"] = 1024  # GPT-4/o1 verification
+                params[token_param] = 1536  # Claude verification
+            elif "openai/gpt-4" in self.model.lower():
+                params[token_param] = 1024  # GPT-4 verification
+            elif "o1" in self.model.lower():
+                params[token_param] = 5000  # o1 verification - higher for reasoning
+            elif "o3" in self.model.lower():
+                params[token_param] = 1024  # o3 verification
             elif "grok" in self.model.lower():
-                params["max_tokens"] = 800  # Tighter limit for Grok
+                params[token_param] = 800  # Tighter limit for Grok
             else:
-                params["max_tokens"] = 1024  # Default verification limit
+                params[token_param] = 1024  # Default verification limit
 
         # Use the complete method which handles o1 models properly
         verification_result, usage = self.complete(critique_prompt, **params)
@@ -714,23 +735,31 @@ class LLMClient:
             return self.verify(primary_text)
 
         # Use same verification logic with custom prompts
-        # Note: o1 models only support temperature=1, so skip temperature override for those
-        if "o1" in self.model.lower():
-            params = {}  # o1 models use their default parameters
+        # Note: o1/o3 models only support temperature=1, so skip temperature override for those
+        if "o1" in self.model.lower() or "o3" in self.model.lower():
+            params = {}  # o1/o3 models use their default parameters
         else:
             params = {"temperature": 0, "top_p": 0.2}
 
         if CONFIG.use_token_limits:
+            # o1/o3 models use max_completion_tokens instead of max_tokens
+            is_reasoning_model = "o1" in self.model.lower() or "o3" in self.model.lower()
+            token_param = "max_completion_tokens" if is_reasoning_model else "max_tokens"
+            
             if "google/gemini" in self.model.lower():
-                params["max_tokens"] = 1024
+                params[token_param] = 1024
             elif "anthropic/claude" in self.model.lower():
-                params["max_tokens"] = 1536 if level == "heavy" else 1024
-            elif "openai/gpt-4" in self.model.lower() or "openai/o1" in self.model.lower():
-                params["max_tokens"] = 1024
+                params[token_param] = 1536 if level == "heavy" else 1024
+            elif "openai/gpt-4" in self.model.lower():
+                params[token_param] = 1024
+            elif "o1" in self.model.lower():
+                params[token_param] = 5000  # o1 verification - higher for reasoning
+            elif "o3" in self.model.lower():
+                params[token_param] = 1024
             elif "grok" in self.model.lower():
-                params["max_tokens"] = 800
+                params[token_param] = 800
             else:
-                params["max_tokens"] = 1024
+                params[token_param] = 1024
 
         # Use the complete method which handles o1 models properly
         verification_result, usage = self.complete(critique_prompt, **params)

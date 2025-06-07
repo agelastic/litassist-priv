@@ -1815,11 +1815,11 @@ Each LitAssist command uses a specific LLM model chosen for its strengths:
 | Command | Generation Model | Analysis Model | Primary Purpose |
 |---------|------------------|----------------|-----------------|
 | lookup | `google/gemini-2.5-pro-preview` | N/A | Fast, accurate legal research |
-| digest | `anthropic/claude-3-sonnet` | N/A | Reliable document summarization |
-| extractfacts | `anthropic/claude-3-sonnet` | N/A | Precise fact extraction |
-| brainstorm | `x-ai/grok-3-beta` | `anthropic/claude-3.5-sonnet` | Creative generation + expert analysis |
-| strategy | `openai/gpt-4o` | `anthropic/claude-3.5-sonnet` | Strategic development + intelligent ranking |
-| draft | `openai/gpt-4o` | N/A | Persuasive legal writing |
+| digest | `anthropic/claude-sonnet-4` | N/A | Reliable document summarization |
+| extractfacts | `anthropic/claude-sonnet-4` | N/A | Precise fact extraction |
+| brainstorm | `x-ai/grok-3-beta` | `anthropic/claude-sonnet-4` | Creative generation + expert analysis |
+| strategy | `openai/o1-pro` | `anthropic/claude-sonnet-4` | Enhanced multi-step legal reasoning |
+| draft | `openai/o3` | N/A | Superior technical legal writing (BYOK required) |
 
 ### Temperature and Sampling Parameters
 
@@ -1835,7 +1835,7 @@ temperature=0, top_p=0.2
 - **Effect**: Near-deterministic responses with minimal variation
 - **Why**: Legal citations and case summaries must be consistent
 
-**extractfacts** (`anthropic/claude-3-sonnet`):
+**extractfacts** (`anthropic/claude-sonnet-4`):
 ```python
 temperature=0, top_p=0.15
 ```
@@ -1843,7 +1843,7 @@ temperature=0, top_p=0.15
 - **Effect**: Highly deterministic with virtually no randomness
 - **Why**: Facts must be extracted consistently across runs
 
-**digest - Summary Mode** (`anthropic/claude-3-sonnet`):
+**digest - Summary Mode** (`anthropic/claude-sonnet-4`):
 ```python
 temperature=0, top_p=0
 ```
@@ -1853,7 +1853,7 @@ temperature=0, top_p=0
 
 #### Analytical Commands
 
-**digest - Issues Mode** (`anthropic/claude-3-sonnet`):
+**digest - Issues Mode** (`anthropic/claude-sonnet-4`):
 ```python
 temperature=0.2, top_p=0.5
 ```
@@ -1861,27 +1861,31 @@ temperature=0.2, top_p=0.5
 - **Effect**: Mostly consistent with minor creative elements
 - **Why**: Different perspectives can reveal different issues
 
-**strategy** (`openai/gpt-4o` for generation, `anthropic/claude-3.5-sonnet` for analysis):
+**strategy** (`openai/o1-pro` for generation, `anthropic/claude-sonnet-4` for analysis):
 ```python
-# Generation: temperature=0.2, top_p=0.9, presence_penalty=0.0, frequency_penalty=0.0
+# Generation (o1-pro): Fixed parameters - temperature=1, top_p=1, presence_penalty=0, frequency_penalty=0
+#                     Only max_completion_tokens can be controlled (default: 25000 tokens)
 # Analysis: temperature=0.2, top_p=0.8
 ```
-- **Generation Purpose**: Create detailed strategic options with reliability and insight
+- **Generation Purpose**: Enhanced multi-step legal reasoning with advanced problem-solving
 - **Analysis Purpose**: Intelligent ranking of brainstormed strategies for specific outcomes
-- **Why**: Combines strategic development with expert strategy prioritization
+- **Why**: o1-pro provides superior reasoning capabilities for complex strategic analysis
 
 #### Creative Commands
 
-**draft** (`openai/gpt-4o`):
+**draft** (`openai/o3`):
 ```python
-temperature=0.5, top_p=0.8, presence_penalty=0.1, frequency_penalty=0.1
+# o3 model supports very limited parameters:
+# - max_completion_tokens (instead of max_tokens, default: 4096)
+# - reasoning_effort: "medium" (options: low, medium, high)
+# - No temperature, top_p, presence_penalty, frequency_penalty support
 ```
-- **Purpose**: Persuasive writing requires eloquence
-- **Effect**: Balanced creativity with coherent arguments
-- **Why**: Legal drafts need varied language while maintaining precision
-- **Penalties**: Reduce repetitive phrases and improve readability
+- **Purpose**: Superior technical legal writing (requires BYOK)
+- **Effect**: Advanced reasoning with sophisticated legal arguments  
+- **Why**: o3 provides enhanced technical writing capabilities for complex legal documents
+- **Note**: o3 uses internal reasoning tokens and has very limited parameter support compared to other models
 
-**brainstorm** (`x-ai/grok-3-beta` for generation, `anthropic/claude-3.5-sonnet` for analysis):
+**brainstorm** (`x-ai/grok-3-beta` for generation, `anthropic/claude-sonnet-4` for analysis):
 ```python
 # Generation: temperature=0.9, top_p=0.95
 # Analysis: temperature=0.2, top_p=0.8
@@ -1899,6 +1903,21 @@ temperature=0, top_p=0.2
 - **Purpose**: Critique and error-checking must be consistent
 - **Effect**: Deterministic verification results
 - **Why**: Verification feedback should not vary
+
+### BYOK Requirements for Advanced Models
+
+**Important**: The advanced reasoning models require **BYOK (Bring Your Own Key)** setup:
+
+- **o1-pro** (strategy command): Requires BYOK setup
+- **o3** (draft command): Requires BYOK setup
+
+**Setup Instructions:**
+1. Go to [OpenRouter Settings](https://openrouter.ai/settings/integrations)
+2. Add your OpenAI API key under "OpenAI Integration"
+3. Save the integration
+4. Both o1-pro and o3 will now be available through your OpenRouter API key
+
+Without BYOK setup, the strategy and draft commands will fail with authentication errors.
 
 ### Understanding the Parameters
 
