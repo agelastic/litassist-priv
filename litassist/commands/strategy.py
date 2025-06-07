@@ -7,19 +7,21 @@ documents for Australian civil litigation matters.
 """
 
 import click
-from typing import Dict, List, Any
+from typing import List
 import re
 import time
-import os
 
 from litassist.config import CONFIG
 from litassist.utils import (
     save_log,
     heartbeat,
     timed,
-    OUTPUT_DIR,
     create_reasoning_prompt,
     extract_reasoning_trace,
+    parse_strategies_file,
+    validate_file_size_limit,
+    save_command_output,
+    verify_content_if_needed,
 )
 from litassist.llm import LLMClientFactory
 
@@ -69,69 +71,6 @@ def validate_case_facts_format(text: str) -> bool:
     return True
 
 
-@timed
-def parse_strategies_file(strategies_text: str) -> Dict[str, Any]:
-    """
-    Parse the strategies.txt file to extract basic counts and metadata.
-
-    Since we pass the full content to the LLM anyway, we just need rough counts
-    for the user display, not detailed parsing.
-
-    Args:
-        strategies_text: Content of the strategies.txt file.
-
-    Returns:
-        Dictionary containing basic strategies information.
-    """
-    parsed = {
-        "metadata": {},
-        "orthodox_count": 0,
-        "unorthodox_count": 0,
-        "most_likely_count": 0,
-        "raw_content": strategies_text,
-    }
-
-    # Extract metadata from header comments
-    metadata_match = re.search(r"# Side: (.+)\n# Area: (.+)", strategies_text)
-    if metadata_match:
-        parsed["metadata"]["side"] = metadata_match.group(1).strip()
-        parsed["metadata"]["area"] = metadata_match.group(2).strip()
-
-    # Extract and count each section separately to avoid cross-contamination
-
-    # Find ORTHODOX STRATEGIES section
-    orthodox_match = re.search(
-        r"## ORTHODOX STRATEGIES\n(.*?)(?=## [A-Z]|===|\Z)", strategies_text, re.DOTALL
-    )
-    if orthodox_match:
-        orthodox_text = orthodox_match.group(1)
-        parsed["orthodox_count"] = len(
-            re.findall(r"^\d+\.", orthodox_text, re.MULTILINE)
-        )
-
-    # Find UNORTHODOX STRATEGIES section
-    unorthodox_match = re.search(
-        r"## UNORTHODOX STRATEGIES\n(.*?)(?=## [A-Z]|===|\Z)",
-        strategies_text,
-        re.DOTALL,
-    )
-    if unorthodox_match:
-        unorthodox_text = unorthodox_match.group(1)
-        parsed["unorthodox_count"] = len(
-            re.findall(r"^\d+\.", unorthodox_text, re.MULTILINE)
-        )
-
-    # Find MOST LIKELY TO SUCCEED section
-    likely_match = re.search(
-        r"## MOST LIKELY TO SUCCEED\n(.*?)(?====|\Z)", strategies_text, re.DOTALL
-    )
-    if likely_match:
-        likely_text = likely_match.group(1)
-        parsed["most_likely_count"] = len(
-            re.findall(r"^\d+\.", likely_text, re.MULTILINE)
-        )
-
-    return parsed
 
 
 def extract_legal_issues(case_text: str) -> List[str]:
@@ -230,12 +169,7 @@ def strategy(case_facts, outcome, strategies, verify):
     facts_content = case_facts.read()
 
     # Check file size to prevent token limit issues
-    if len(facts_content) > 50000:  # ~10,000 words
-        raise click.ClickException(
-            f"Case facts file too large ({len(facts_content):,} characters). "
-            "Please provide a structured summary under 50,000 characters (~10,000 words). "
-            "The strategy command expects concise, well-organized facts under 10 headings."
-        )
+    validate_file_size_limit(facts_content, 50000, "Case facts")
 
     if not validate_case_facts_format(facts_content):
         raise click.ClickException(
@@ -259,13 +193,7 @@ def strategy(case_facts, outcome, strategies, verify):
         strategies_content = strategies.read()
 
         # Check strategies file size
-        if (
-            len(strategies_content) > 100000
-        ):  # ~20,000 words, larger limit for strategies
-            raise click.ClickException(
-                f"Strategies file too large ({len(strategies_content):,} characters). "
-                "Please provide a file under 100,000 characters (~20,000 words)."
-            )
+        validate_file_size_limit(strategies_content, 100000, "Strategies")
 
         parsed_strategies = parse_strategies_file(strategies_content)
 
@@ -1032,25 +960,8 @@ Requirements:
         citation_warning += "\n" + "-" * 40 + "\n\n"
         output = citation_warning + output
 
-    # Mandatory verification for strategy (creates critical strategic guidance)
-    click.echo("🔍 Running verification (mandatory for strategy command)")
-    try:
-        # Use heavy verification for strategic legal advice
-        correction = llm_client.verify_with_level(output, "heavy")
-        if correction.strip() and not correction.lower().startswith(
-            "no corrections needed"
-        ):
-            output = output + "\n\n--- Strategic Legal Review ---\n" + correction
-
-        # Run citation validation
-        citation_issues = llm_client.validate_citations(output)
-        if citation_issues:
-            output += "\n\n--- Citation Warnings ---\n" + "\n".join(citation_issues)
-
-    except Exception as e:
-        raise click.ClickException(
-            f"Verification error during strategy generation: {e}"
-        )
+    # Apply verification (always required for strategy)
+    output, _ = verify_content_if_needed(llm_client, output, "strategy", verify_flag=True)
 
     # Create consolidated reasoning trace from all options
     consolidated_reasoning = None
@@ -1059,25 +970,20 @@ Requirements:
             option_reasoning_traces, outcome
         )
 
-    # Save output to timestamped file
-    # Create a slug from the outcome for the filename
-    outcome_slug = re.sub(r"[^\w\s-]", "", outcome.lower())
-    outcome_slug = re.sub(r"[-\s]+", "_", outcome_slug)
-    # Limit slug length and ensure it's not empty
-    outcome_slug = outcome_slug[:40].strip("_") or "strategy"
-
-    timestamp = time.strftime("%Y%m%d_%H%M%S")
-    output_file = os.path.join(OUTPUT_DIR, f"strategy_{outcome_slug}_{timestamp}.txt")
-
-    with open(output_file, "w", encoding="utf-8") as f:
-        f.write("Strategy Generation\n")
-        f.write(f"Desired Outcome: {outcome}\n")
-        f.write(f"Case Facts File: {case_facts.name}\n")
-        if strategies:
-            f.write(f"Strategies File: {strategies.name}\n")
-        f.write(f"Timestamp: {time.strftime('%Y-%m-%d %H:%M:%S')}\n")
-        f.write("-" * 80 + "\n\n")
-        f.write(output)
+    # Save output using utility
+    metadata = {
+        "Desired Outcome": outcome,
+        "Case Facts File": case_facts.name
+    }
+    if strategies:
+        metadata["Strategies File"] = strategies.name
+    
+    output_file = save_command_output(
+        "strategy",
+        output,
+        outcome,
+        metadata=metadata
+    )
 
     # Save consolidated reasoning trace if we have option traces
     if consolidated_reasoning:

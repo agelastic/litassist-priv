@@ -38,11 +38,8 @@ class LLMClientFactory:
         },
         # Strategy - balanced for legal analysis
         "strategy": {
-            "model": "openai/gpt-4o",
-            "temperature": 0.2,
-            "top_p": 0.9,
-            "presence_penalty": 0.0,
-            "frequency_penalty": 0.0,
+            "model": "openai/o1-preview",
+            "temperature": 1,  # o1 models use temperature=1
             "force_verify": True,  # Always verify for strategic guidance
         },
         # Strategy sub-type for analysis
@@ -53,10 +50,10 @@ class LLMClientFactory:
         },
         # Brainstorm - varied temperatures for different approaches
         "brainstorm-orthodox": {
-            "model": "x-ai/grok-3-beta",
+            "model": "anthropic/claude-3.5-sonnet",
             "temperature": 0.3,
             "top_p": 0.7,
-            "force_verify": True,  # Auto-verify Grok due to hallucination tendency
+            "force_verify": True,  # Conservative analysis requires verification
         },
         "brainstorm-unorthodox": {
             "model": "x-ai/grok-3-beta",
@@ -275,25 +272,60 @@ class LLMClient:
     def complete(
         self, messages: List[Dict[str, str]], **overrides
     ) -> Tuple[str, Dict[str, Any]]:
-        # Enforce Australian English in system prompts if not already specified
-        has_system_message = any(msg.get("role") == "system" for msg in messages)
-        if has_system_message:
-            for msg in messages:
-                if msg.get("role") == "system" and "Australian English" not in msg.get(
-                    "content", ""
-                ):
-                    msg[
-                        "content"
-                    ] += "\nUse Australian English spellings and terminology."
+        # Check if this is an o1 model that doesn't support system messages
+        is_o1_model = "o1" in self.model.lower()
+        
+        if is_o1_model:
+            # o1 models don't support system messages - merge into first user message
+            modified_messages = []
+            system_content = "Use Australian English spellings and terminology."
+            
+            # Collect all system messages
+            system_messages = [msg for msg in messages if msg.get("role") == "system"]
+            non_system_messages = [msg for msg in messages if msg.get("role") != "system"]
+            
+            if system_messages:
+                # Combine all system content
+                system_content = "\n".join([msg.get("content", "") for msg in system_messages])
+                if "Australian English" not in system_content:
+                    system_content += "\nUse Australian English spellings and terminology."
+            
+            # Find first user message and prepend system content
+            for i, msg in enumerate(non_system_messages):
+                if msg.get("role") == "user":
+                    enhanced_content = f"{system_content}\n\n{msg.get('content', '')}"
+                    modified_messages.append({
+                        "role": "user", 
+                        "content": enhanced_content
+                    })
+                    # Add remaining messages as-is
+                    modified_messages.extend(non_system_messages[i+1:])
+                    break
+            else:
+                # No user message found, just use non-system messages
+                modified_messages = non_system_messages
+            
+            messages = modified_messages
         else:
-            # Add system message if none exists
-            messages.insert(
-                0,
-                {
-                    "role": "system",
-                    "content": "Use Australian English spellings and terminology.",
-                },
-            )
+            # Regular models - handle system messages normally
+            has_system_message = any(msg.get("role") == "system" for msg in messages)
+            if has_system_message:
+                for msg in messages:
+                    if msg.get("role") == "system" and "Australian English" not in msg.get(
+                        "content", ""
+                    ):
+                        msg[
+                            "content"
+                        ] += "\nUse Australian English spellings and terminology."
+            else:
+                # Add system message if none exists
+                messages.insert(
+                    0,
+                    {
+                        "role": "system",
+                        "content": "Use Australian English spellings and terminology.",
+                    },
+                )
         """
         Run a single chat completion with the configured model.
 
@@ -362,11 +394,20 @@ class LLMClient:
 
             # Enhance the last user message with strict citation instructions
             enhanced_messages = messages.copy()
-            if enhanced_messages and enhanced_messages[-1].get("role") == "user":
-                enhanced_messages[-1]["content"] += (
-                    "\n\nIMPORTANT: Use only real, verifiable Australian cases that exist on AustLII. "
-                    "Do not invent case names. If unsure about a citation, omit it rather than guess."
-                )
+            if is_o1_model:
+                # For o1 models, append to the enhanced user content from earlier processing
+                if enhanced_messages and enhanced_messages[-1].get("role") == "user":
+                    enhanced_messages[-1]["content"] += (
+                        "\n\nIMPORTANT: Use only real, verifiable Australian cases that exist on AustLII. "
+                        "Do not invent case names. If unsure about a citation, omit it rather than guess."
+                    )
+            else:
+                # For regular models with system messages
+                if enhanced_messages and enhanced_messages[-1].get("role") == "user":
+                    enhanced_messages[-1]["content"] += (
+                        "\n\nIMPORTANT: Use only real, verifiable Australian cases that exist on AustLII. "
+                        "Do not invent case names. If unsure about a citation, omit it rather than guess."
+                    )
 
             # Retry with enhanced prompt - need to set API base again
             original_api_base_retry = openai.api_base
@@ -548,11 +589,43 @@ class LLMClient:
         verified_citations, unverified_citations = verify_all_citations(content)
 
         if unverified_citations and strict_mode:
-            # Build error message
-            error_msg = "CRITICAL: Unverified citations detected:\n"
+            # Categorize issues for better error messages
+            format_errors = []
+            existence_errors = []
+            verification_errors = []
+            
             for citation, reason in unverified_citations:
-                error_msg += f"- {citation}: {reason}\n"
-            error_msg += "\nCannot proceed. Remove these citations and try again."
+                if "format" in reason.lower() and "not found" not in reason.lower():
+                    format_errors.append((citation, reason))
+                elif "not found" in reason.lower() or "case not found" in reason.lower():
+                    existence_errors.append((citation, reason))
+                else:
+                    verification_errors.append((citation, reason))
+            
+            # Build categorized error message
+            error_msg = "🚫 CRITICAL: Citation verification failed:\n\n"
+            
+            if existence_errors:
+                error_msg += "📋 CASES NOT FOUND IN DATABASE:\n"
+                for citation, reason in existence_errors:
+                    error_msg += f"   • {citation}\n     → {reason}\n"
+                error_msg += "\n"
+            
+            if format_errors:
+                error_msg += "⚠️  CITATION FORMAT ISSUES:\n"
+                for citation, reason in format_errors:
+                    error_msg += f"   • {citation}\n     → {reason}\n"
+                error_msg += "\n"
+            
+            if verification_errors:
+                error_msg += "🔍 VERIFICATION PROBLEMS:\n"
+                for citation, reason in verification_errors:
+                    error_msg += f"   • {citation}\n     → {reason}\n"
+                error_msg += "\n"
+            
+            error_msg += "🛑 ACTION REQUIRED: These citations appear to be AI hallucinations.\n"
+            error_msg += "   Remove these citations and regenerate, or verify them independently."
+            
             raise CitationVerificationError(error_msg)
 
         # If not strict mode or no unverified citations, clean up the content

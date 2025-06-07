@@ -1145,15 +1145,15 @@ def test_verification_system():
             print(f"Test case {i}: {test_case['name']}")
             
             # Test citation validation
-            print(f"  Validating citations...")
+            print("  Validating citations...")
             citation_issues = test_client.validate_citations(test_case["content"])
 
             # Test auto-verification triggers
-            print(f"  Checking auto-verification triggers...")
+            print("  Checking auto-verification triggers...")
             should_auto_verify = test_client.should_auto_verify(test_case["content"])
 
             # Test actual verification with real LLM call
-            print(f"  Performing real LLM verification...")
+            print("  Performing real LLM verification...")
             try:
                 corrections = test_client.verify_with_level(
                     test_case["content"], "heavy"

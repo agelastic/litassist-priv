@@ -3,9 +3,8 @@ Pytest configuration and shared fixtures for LitAssist tests.
 """
 
 import pytest
-from unittest.mock import Mock, patch, MagicMock
+from unittest.mock import Mock, patch
 import tempfile
-import os
 from pathlib import Path
 
 # Mock the CONFIG object before any imports to prevent SystemExit

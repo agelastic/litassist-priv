@@ -987,3 +987,135 @@ def validate_file_size(
         )
 
     return content
+
+
+def parse_strategies_file(strategies_text: str) -> dict:
+    """
+    Parse the strategies.txt file to extract basic counts and metadata.
+
+    Since we pass the full content to the LLM anyway, we just need rough counts
+    for the user display, not detailed parsing.
+
+    Args:
+        strategies_text: Content of the strategies.txt file.
+
+    Returns:
+        Dictionary containing basic strategies information.
+    """
+    parsed = {
+        "metadata": {},
+        "orthodox_count": 0,
+        "unorthodox_count": 0,
+        "most_likely_count": 0,
+        "raw_content": strategies_text,
+    }
+
+    # Extract metadata from header comments
+    metadata_match = re.search(r"# Side: (.+)\n# Area: (.+)", strategies_text)
+    if metadata_match:
+        parsed["metadata"]["side"] = metadata_match.group(1).strip()
+        parsed["metadata"]["area"] = metadata_match.group(2).strip()
+
+    # Extract and count each section separately to avoid cross-contamination
+
+    # Find ORTHODOX STRATEGIES section
+    orthodox_match = re.search(
+        r"## ORTHODOX STRATEGIES\n(.*?)(?=## [A-Z]|===|\Z)", strategies_text, re.DOTALL
+    )
+    if orthodox_match:
+        orthodox_text = orthodox_match.group(1)
+        parsed["orthodox_count"] = len(
+            re.findall(r"^\d+\.", orthodox_text, re.MULTILINE)
+        )
+
+    # Find UNORTHODOX STRATEGIES section
+    unorthodox_match = re.search(
+        r"## UNORTHODOX STRATEGIES\n(.*?)(?=## [A-Z]|===|\Z)",
+        strategies_text,
+        re.DOTALL,
+    )
+    if unorthodox_match:
+        unorthodox_text = unorthodox_match.group(1)
+        parsed["unorthodox_count"] = len(
+            re.findall(r"^\d+\.", unorthodox_text, re.MULTILINE)
+        )
+
+    # Find MOST LIKELY TO SUCCEED section
+    likely_match = re.search(
+        r"## MOST LIKELY TO SUCCEED\n(.*?)(?====|\Z)", strategies_text, re.DOTALL
+    )
+    if likely_match:
+        likely_text = likely_match.group(1)
+        parsed["most_likely_count"] = len(
+            re.findall(r"^\d+\.", likely_text, re.MULTILINE)
+        )
+
+    return parsed
+
+
+def validate_side_area_combination(side: str, area: str):
+    """
+    Validate side/area combinations and display warnings for incompatible pairs.
+    
+    Args:
+        side: The side being represented (plaintiff/defendant/accused/respondent)
+        area: The legal area (criminal/civil/family/commercial/administrative)
+    """
+    import click
+    
+    valid_combinations = {
+        "criminal": ["accused"],
+        "civil": ["plaintiff", "defendant"],
+        "family": ["plaintiff", "defendant", "respondent"],
+        "commercial": ["plaintiff", "defendant"],
+        "administrative": ["plaintiff", "defendant", "respondent"],
+    }
+
+    if area in valid_combinations and side not in valid_combinations[area]:
+        warning_msg = click.style(
+            f"Warning: '{side}' is not typically used in {area} matters. ",
+            fg="yellow",
+            bold=True,
+        )
+        suggestion = click.style(
+            f"Standard options for {area} are: {', '.join(valid_combinations[area])}\n",
+            fg="yellow",
+        )
+        click.echo(warning_msg + suggestion)
+
+        # Add specific warnings for common mistakes
+        if side == "plaintiff" and area == "criminal":
+            click.echo(
+                click.style(
+                    "Note: Criminal cases use 'accused' instead of 'plaintiff/defendant'\n",
+                    fg="yellow",
+                )
+            )
+        elif side == "accused" and area != "criminal":
+            click.echo(
+                click.style(
+                    "Note: 'Accused' is typically only used in criminal matters\n",
+                    fg="yellow",
+                )
+            )
+
+
+def validate_file_size_limit(content: str, max_size: int, context: str):
+    """
+    Validate file size and raise exception if too large.
+    
+    Args:
+        content: The file content to check
+        max_size: Maximum allowed characters
+        context: Description of what type of file is being validated
+        
+    Raises:
+        click.ClickException: If file is too large
+    """
+    import click
+    
+    if len(content) > max_size:
+        raise click.ClickException(
+            f"{context} file too large ({len(content):,} characters). "
+            f"Please provide a file under {max_size:,} characters (~{max_size//5:,} words)."
+        )

@@ -375,8 +375,8 @@ def test_pinecone_mmr():
         # Connect to the index
         try:
             index = pinecone.Index(PC_INDEX)
-        except Exception as e:
-            result.failure(f"Failed to connect; did you specify the correct index name?")
+        except Exception:
+            result.failure("Failed to connect; did you specify the correct index name?")
             return result
         
         # Generate clustered test vectors to test diversity

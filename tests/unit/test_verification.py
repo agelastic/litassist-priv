@@ -1,7 +1,6 @@
 """Tests for the enhanced verification system."""
 
-import pytest
-from unittest.mock import Mock, patch, MagicMock
+from unittest.mock import Mock, patch
 from litassist.llm import LLMClient
 
 

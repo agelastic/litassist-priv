@@ -20,69 +20,13 @@ from litassist.utils import (
     OUTPUT_DIR,
     create_reasoning_prompt,
     extract_reasoning_trace,
+    parse_strategies_file,
+    validate_side_area_combination,
+    validate_file_size_limit,
+    save_command_output,
 )
 from litassist.llm import LLMClientFactory, LLMClient
 
-
-def parse_strategies_file(strategies_text: str) -> dict:
-    """
-    Parse the strategies.txt file to extract basic counts and metadata.
-
-    Args:
-        strategies_text: Content of the strategies.txt file.
-
-    Returns:
-        Dictionary containing basic strategies information.
-    """
-    parsed = {
-        "metadata": {},
-        "orthodox_count": 0,
-        "unorthodox_count": 0,
-        "most_likely_count": 0,
-        "raw_content": strategies_text,
-    }
-
-    # Extract metadata from header comments
-    metadata_match = re.search(r"# Side: (.+)\n# Area: (.+)", strategies_text)
-    if metadata_match:
-        parsed["metadata"]["side"] = metadata_match.group(1).strip()
-        parsed["metadata"]["area"] = metadata_match.group(2).strip()
-
-    # Extract and count each section separately to avoid cross-contamination
-
-    # Find ORTHODOX STRATEGIES section
-    orthodox_match = re.search(
-        r"## ORTHODOX STRATEGIES\n(.*?)(?=## [A-Z]|===|\Z)", strategies_text, re.DOTALL
-    )
-    if orthodox_match:
-        orthodox_text = orthodox_match.group(1)
-        parsed["orthodox_count"] = len(
-            re.findall(r"^\d+\.", orthodox_text, re.MULTILINE)
-        )
-
-    # Find UNORTHODOX STRATEGIES section
-    unorthodox_match = re.search(
-        r"## UNORTHODOX STRATEGIES\n(.*?)(?=## [A-Z]|===|\Z)",
-        strategies_text,
-        re.DOTALL,
-    )
-    if unorthodox_match:
-        unorthodox_text = unorthodox_match.group(1)
-        parsed["unorthodox_count"] = len(
-            re.findall(r"^\d+\.", unorthodox_text, re.MULTILINE)
-        )
-
-    # Find MOST LIKELY TO SUCCEED section
-    likely_match = re.search(
-        r"## MOST LIKELY TO SUCCEED\n(.*?)(?====|\Z)", strategies_text, re.DOTALL
-    )
-    if likely_match:
-        likely_text = likely_match.group(1)
-        parsed["most_likely_count"] = len(
-            re.findall(r"^\d+\.", likely_text, re.MULTILINE)
-        )
-
-    return parsed
 
 
 def regenerate_bad_strategies(
@@ -282,52 +226,17 @@ def brainstorm(facts_file, side, area, verify):
         click.ClickException: If there are errors reading the facts file or with the LLM API call.
     """
     # Check for potentially incompatible side/area combinations
-    valid_combinations = {
-        "criminal": ["accused"],
-        "civil": ["plaintiff", "defendant"],
-        "family": ["plaintiff", "defendant", "respondent"],
-        "commercial": ["plaintiff", "defendant"],
-        "administrative": ["plaintiff", "defendant", "respondent"],
-    }
-
-    if area in valid_combinations and side not in valid_combinations[area]:
-        warning_msg = click.style(
-            f"Warning: '{side}' is not typically used in {area} matters. ",
-            fg="yellow",
-            bold=True,
-        )
-        suggestion = click.style(
-            f"Standard options for {area} are: {', '.join(valid_combinations[area])}\n",
-            fg="yellow",
-        )
-        click.echo(warning_msg + suggestion)
-
-        # Add specific warnings for common mistakes
-        if side == "plaintiff" and area == "criminal":
-            click.echo(
-                click.style(
-                    "Note: Criminal cases use 'accused' instead of 'plaintiff/defendant'\n",
-                    fg="yellow",
-                )
-            )
-        elif side == "accused" and area != "criminal":
-            click.echo(
-                click.style(
-                    "Note: 'Accused' is typically only used in criminal matters\n",
-                    fg="yellow",
-                )
-            )
+    validate_side_area_combination(side, area)
 
     # Read the structured facts file
     facts = read_document(facts_file)
 
     # Check file size to prevent token limit issues
-    if len(facts) > 50000:  # ~10,000 words
-        raise click.ClickException(
-            f"Case facts file too large ({len(facts):,} characters). "
-            "Please provide a concise summary under 50,000 characters (~10,000 words). "
-            "Consider using 'extractfacts' command to create a structured summary first."
-        )
+    validate_file_size_limit(
+        facts, 
+        50000, 
+        "Case facts"
+    )
 
     # Auto-verify for Grok due to hallucination tendency
     if "grok" in "x-ai/grok-3-beta".lower():
@@ -576,17 +485,16 @@ Consider both orthodox and unorthodox options. Base selections on legal merit, f
     ).strip()
 
     # Save to timestamped file only
-    timestamp = time.strftime("%Y%m%d_%H%M%S")
-    output_file = os.path.join(OUTPUT_DIR, f"brainstorm_{area}_{side}_{timestamp}.txt")
-    with open(output_file, "w", encoding="utf-8") as f:
-        f.write("# Legal Strategies\n")
-        f.write(f"# Generated: {time.strftime('%Y-%m-%d %H:%M:%S')}\n")
-        f.write(f"# Side: {side.capitalize()}\n")
-        f.write(f"# Area: {area.capitalize()}\n")
-        f.write(f"# Source: {facts_file}\n\n")
-        f.write(clean_content)
-
-    click.echo(f'Strategies saved to: "{output_file}"')
+    output_file = save_command_output(
+        f"brainstorm_{area}_{side}",
+        clean_content,
+        f"{side} in {area} law",
+        metadata={
+            "Side": side.capitalize(),
+            "Area": area.capitalize(),
+            "Source": facts_file
+        }
+    )
 
     # Save separate reasoning traces if extracted
     reasoning_files = []
@@ -634,6 +542,7 @@ Consider both orthodox and unorthodox options. Base selections on legal merit, f
 
     # Save verification notes separately if any exist
     if verification_notes:
+        timestamp = time.strftime("%Y%m%d_%H%M%S")
         verification_file = os.path.join(
             OUTPUT_DIR, f"brainstorm_verification_{area}_{side}_{timestamp}.txt"
         )

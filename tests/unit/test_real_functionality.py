@@ -1,6 +1,5 @@
 """Real tests that actually test litassist functionality."""
 
-import pytest
 from unittest.mock import Mock, patch
 import tempfile
 from pathlib import Path

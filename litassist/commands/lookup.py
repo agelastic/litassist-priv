@@ -11,10 +11,9 @@ import re
 import requests
 import warnings
 import os
-import time
 
 from litassist.config import CONFIG
-from litassist.utils import save_log, heartbeat, timed, OUTPUT_DIR
+from litassist.utils import save_log, heartbeat, timed, save_command_output
 from litassist.llm import LLMClient
 
 # Suppress Google API cache warning
@@ -392,31 +391,21 @@ def lookup(question, mode, engine, extract):
     # Apply formatting based on extract option
     formatted_content = format_lookup_output(content, extract)
 
-    # Save output to timestamped file
-    # Create a slug from the question for the filename
-    question_slug = re.sub(r"[^\w\s-]", "", question.lower())
-    question_slug = re.sub(r"[-\s]+", "_", question_slug)
-    # Limit slug length and ensure it's not empty
-    question_slug = question_slug[:50].strip("_") or "query"
-
-    timestamp = time.strftime("%Y%m%d_%H%M%S")
-    # Include extract type in filename if specified
-    extract_suffix = f"_{extract}" if extract else ""
-    output_file = os.path.join(
-        OUTPUT_DIR, f"lookup{extract_suffix}_{question_slug}_{timestamp}.txt"
+    # Save output using utility
+    command_name = f"lookup_{extract}" if extract else "lookup"
+    metadata = {
+        "Mode": mode,
+        "Engine": engine
+    }
+    if extract:
+        metadata["Extract"] = extract
+    
+    output_file = save_command_output(
+        command_name,
+        formatted_content,
+        question,
+        metadata=metadata
     )
-
-    with open(output_file, "w", encoding="utf-8") as f:
-        f.write(f"Lookup Query: {question}\n")
-        f.write(f"Mode: {mode}\n")
-        f.write(f"Engine: {engine}\n")
-        if extract:
-            f.write(f"Extract: {extract}\n")
-        f.write(f"Timestamp: {time.strftime('%Y-%m-%d %H:%M:%S')}\n")
-        f.write("-" * 80 + "\n\n")
-        f.write(formatted_content)
-
-    click.echo(f'\nOutput saved to: "{output_file}"')
 
     # Save audit log
     params_str = f"mode={mode}, engine={engine}"
