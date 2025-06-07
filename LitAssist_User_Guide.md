@@ -417,29 +417,23 @@ The `lookup` command performs rapid searches on Jade.io for relevant case law us
 ### Command
 
 ```bash
-./litassist.py lookup "your legal question" [--mode irac|broad] [--engine google|jade] [--extract citations|principles|checklist]
+./litassist.py lookup "your legal question" [--mode irac|broad] [--extract citations|principles|checklist] [--comprehensive]
 ```
 
 Options:
 - `--mode`: Choose between IRAC (Issue, Rule, Application, Conclusion) or a broader exploration
-- `--engine`: Choose search engine - 'google' for Jade.io via CSE (default), 'jade' for legacy direct search
 - `--extract`: Extract specific information in a structured format for workflow efficiency
+- `--comprehensive`: Use exhaustive analysis with up to 40 sources instead of 5 (default: false)
 
-#### Search Engine and Mode Combinations
-
-**Search Engines:**
-- **Google CSE** (default): Searches Jade.io via Google Custom Search for comprehensive Australian legal database coverage
-- **Jade**: Uses Jade.io for recent cases and landmark decisions, with fallback to curated topic-specific cases
-
-**Analysis Modes:**
+#### Analysis Modes:
 - **IRAC** (default): Structured legal analysis (Issue, Rule, Application, Conclusion) with precise, deterministic answers
 - **Broad**: Creative exploration for more expansive legal thinking
 
 **Recommended Combinations:**
-- **Google + IRAC**: Standard research for structured case law analysis from comprehensive Jade.io database
-- **Google + Broad**: Creative legal research using full Jade.io coverage 
-- **Jade + IRAC**: Focused analysis using recent/landmark cases via legacy direct search
-- **Jade + Broad**: Exploratory research with curated high-quality cases
+- **IRAC mode**: Standard research for structured case law analysis (default: 5 sources)
+- **IRAC + comprehensive**: Exhaustive structured analysis (up to 40 sources)
+- **Broad mode**: Creative legal research for novel arguments (default: 5 sources)
+- **Broad + comprehensive**: Exploratory research with maximum coverage (up to 40 sources)
 
 #### Extract Options for Workflow Efficiency
 
@@ -568,10 +562,10 @@ PRACTICAL CHECKLIST:
 **Strategic Research Combinations:**
 ```bash
 # For complex constitutional matters - use Jade for landmark cases + broad analysis
-./litassist.py lookup "implied freedom of political communication" --engine jade --mode broad --extract principles
+./litassist.py lookup "implied freedom of political communication" --mode broad --extract principles
 
-# For urgent court prep - use Google for comprehensive coverage + structured analysis  
-./litassist.py lookup "summary judgment applications" --engine google --mode irac --extract checklist
+# For urgent court prep - use comprehensive mode for thorough coverage + structured analysis  
+./litassist.py lookup "summary judgment applications" --mode irac --extract checklist --comprehensive
 
 # For client communications - extract principles in accessible format
 ./litassist.py lookup "unfair contract terms consumer law" --mode broad --extract principles
@@ -679,7 +673,7 @@ mv outputs/lookup_*contract* research_contract/
 # Start broad, then narrow focus
 ./litassist.py lookup "contract law" --mode broad --extract principles
 ./litassist.py lookup "specific performance remedies" --mode irac --extract citations  
-./litassist.py lookup "equity specific performance discretion" --engine jade --extract checklist
+./litassist.py lookup "equity specific performance discretion" --extract checklist --comprehensive
 ```
 
 #### Performance and Cost Considerations

@@ -15,7 +15,7 @@ graph TD
     G --> J["Mock Mode"]
 ```
 
-- **Lookup**: Rapid case-law research (Google Custom Search + Google Gemini)  
+- **Lookup**: Rapid case-law research (Jade.io database via Google Custom Search + Google Gemini)  
 - **Digest**: Mass-document processing (Chronological summaries or issue-spotting via Claude)  
 - **ExtractFacts**: Automatic extraction of case facts into a structured file  
 - **Brainstorm**: Creative legal strategy generation (Unorthodox strategies via Grok)  
@@ -25,6 +25,13 @@ graph TD
 For detailed usage guidance, see [LitAssist_User_Guide.md](LitAssist_User_Guide.md).
 
 ## 🆕 Recent Improvements (June 2025)
+
+### June 2025: Lookup Command Overhaul
+- **Simplified Search Engine**: Removed Google web search option due to anti-bot restrictions; now uses reliable Jade.io database exclusively
+- **Comprehensive Mode**: Added `--comprehensive` flag for exhaustive analysis with up to 40 sources (vs 5 standard)
+- **Enhanced Extraction**: Improved `--extract` options for citations, principles, and checklists with better parsing
+- **Citation Integration**: Streamlined citation verification using Jade.io as primary source
+- **Code Quality**: Fixed all ruff linting errors and removed unused dependencies
 
 ### Legal Reasoning & Transparency
 - **Multi-Section Reasoning Traces**: Brainstorm command now saves separate reasoning files for orthodox, unorthodox, and "most likely to succeed" analysis

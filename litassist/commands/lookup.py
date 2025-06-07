@@ -1,20 +1,19 @@
 """
-Rapid case-law lookup via Google CSE or Jade + Gemini.
+Rapid case-law lookup via Jade CSE + Gemini.
 
 This module implements the 'lookup' command which searches for legal information
-via Google Custom Search (AustLII) or Jade, then processes the results with Google Gemini
+via Jade.io database using Google Custom Search, then processes the results with Google Gemini
 to produce a structured legal answer citing relevant cases.
 """
 
 import click
 import re
-import requests
 import warnings
 import os
 
 from litassist.config import CONFIG
 from litassist.utils import save_log, heartbeat, timed, save_command_output
-from litassist.llm import LLMClient
+from litassist.llm import LLMClientFactory
 
 # Suppress Google API cache warning
 os.environ["GOOGLE_API_USE_CLIENT_CERTIFICATE"] = "false"
@@ -61,27 +60,55 @@ def format_lookup_output(content: str, extract: str = None) -> str:
             return "No clear citations found in the response."
 
     elif extract == "principles":
-        # Extract sentences that contain legal principles (simple heuristic)
-        lines = content.split("\n")
+        # Extract sentences that contain legal principles
+        # First try to split by common delimiters
         principles = []
 
+        # Try multiple splitting strategies
+        # 1. First try newlines
+        lines = content.split("\n")
+
+        # If no newlines or very few lines, try splitting by sentences
+        if len(lines) <= 2:
+            # Split by sentence endings followed by capital letter or number
+            sentences = re.split(r"(?<=[.!?])\s+(?=[A-Z0-9])", content)
+            lines = sentences
+
+        # Also split by bullet points or numbering patterns
         for line in lines:
-            line = line.strip()
-            # Look for lines that start with numbers or contain key legal terms
-            if re.match(r"^\d+\.", line) or any(
-                term in line.lower()
-                for term in [
-                    "must",
-                    "requires",
-                    "establishes",
-                    "principle",
-                    "rule",
-                    "test",
-                    "elements",
-                ]
-            ):
-                if len(line) > 20:  # Filter out very short lines
-                    principles.append(line)
+            # Further split by common list patterns
+            sub_lines = re.split(r"(?:^|\s)(?:\d+\.|[•*-])\s*", line)
+            for sub_line in sub_lines:
+                sub_line = sub_line.strip()
+                # Look for lines that contain key legal terms
+                if sub_line and any(
+                    term in sub_line.lower()
+                    for term in [
+                        "must",
+                        "requires",
+                        "establishes",
+                        "principle",
+                        "rule",
+                        "test",
+                        "elements",
+                        "duty",
+                        "breach",
+                        "standard",
+                        "defendant",
+                        "plaintiff",
+                        "court",
+                    ]
+                ):
+                    if len(sub_line) > 20:  # Filter out very short lines
+                        # Clean up the line
+                        clean_line = re.sub(
+                            r"^\d+\.\s*", "", sub_line
+                        )  # Remove numbering
+                        clean_line = re.sub(
+                            r"^[•*-]\s*", "", clean_line
+                        )  # Remove bullets
+                        if clean_line and clean_line not in principles:
+                            principles.append(clean_line)
 
         if principles:
             return "LEGAL PRINCIPLES:\n" + "\n".join(
@@ -92,35 +119,66 @@ def format_lookup_output(content: str, extract: str = None) -> str:
 
     elif extract == "checklist":
         # Extract actionable items or requirements
-        lines = content.split("\n")
         checklist_items = []
 
+        # Try multiple splitting strategies
+        lines = content.split("\n")
+
+        # If no newlines or very few lines, try splitting by sentences
+        if len(lines) <= 2:
+            # Split by sentence endings
+            sentences = re.split(r"(?<=[.!?])\s+(?=[A-Z0-9])", content)
+            lines = sentences
+
+        # Process all lines
         for line in lines:
-            line = line.strip()
-            # Look for lines that suggest requirements or steps
-            if any(
-                word in line.lower()
-                for word in [
-                    "must",
-                    "should",
-                    "require",
-                    "need",
-                    "evidence",
-                    "prove",
-                    "establish",
-                    "demonstrate",
-                ]
-            ):
-                if len(line) > 15 and not line.startswith(
-                    "http"
-                ):  # Filter out URLs and short lines
-                    # Clean up the line
-                    clean_line = re.sub(r"^[-•*]\s*", "", line)  # Remove bullet points
-                    clean_line = re.sub(
-                        r"^\d+\.\s*", "", clean_line
-                    )  # Remove numbering
-                    if clean_line and len(clean_line) > 10:
-                        checklist_items.append(clean_line)
+            # Further split by common list patterns
+            sub_lines = re.split(r"(?:^|\s)(?:\d+\.|[•*-])\s*", line)
+            for sub_line in sub_lines:
+                sub_line = sub_line.strip()
+                # Look for lines that suggest requirements or steps
+                if sub_line and any(
+                    word in sub_line.lower()
+                    for word in [
+                        "must",
+                        "should",
+                        "require",
+                        "need",
+                        "evidence",
+                        "prove",
+                        "establish",
+                        "demonstrate",
+                        "ensure",
+                        "verify",
+                        "confirm",
+                        "check",
+                        "assess",
+                    ]
+                ):
+                    if len(sub_line) > 15 and not sub_line.startswith(
+                        "http"
+                    ):  # Filter out URLs and short lines
+                        # Clean up the line
+                        clean_line = re.sub(
+                            r"^[-•*]\s*", "", sub_line
+                        )  # Remove bullet points
+                        clean_line = re.sub(
+                            r"^\d+\.\s*", "", clean_line
+                        )  # Remove numbering
+                        clean_line = clean_line.strip()
+                        # Split very long lines at sentence boundaries
+                        if len(clean_line) > 150:
+                            sub_sentences = re.split(
+                                r"(?<=[.!?])\s+(?=[A-Z])", clean_line
+                            )
+                            for sub_sent in sub_sentences:
+                                if (
+                                    len(sub_sent) > 10
+                                    and sub_sent not in checklist_items
+                                ):
+                                    checklist_items.append(sub_sent)
+                        elif len(clean_line) > 10 and clean_line not in checklist_items:
+                            checklist_items.append(clean_line)
 
         if checklist_items:
             return "PRACTICAL CHECKLIST:\n" + "\n".join(
@@ -130,200 +188,95 @@ def format_lookup_output(content: str, extract: str = None) -> str:
             return "No clear checklist items extracted from the response."
 
     else:
-        # Default: Add basic structure markers to the content
-        structured = content
+        # Default: Fix Gemini-specific formatting issues
+        formatted = content
 
-        # Add structure markers if they don't already exist
-        if "=== LEGAL PRINCIPLES ===" not in structured:
-            # Try to identify and mark sections
-            structured = re.sub(
-                r"(Legal principles?|Principles?|Rules?):?\s*\n",
-                r"=== LEGAL PRINCIPLES ===\n",
-                structured,
-                flags=re.IGNORECASE,
-            )
-            structured = re.sub(
-                r"(Key cases?|Cases?|Authorities?):?\s*\n",
-                r"=== KEY CASES ===\n",
-                structured,
-                flags=re.IGNORECASE,
-            )
-            structured = re.sub(
-                r"(Citations?|References?|Sources?):?\s*\n",
-                r"=== CITATIONS LIST ===\n",
-                structured,
-                flags=re.IGNORECASE,
-            )
-            structured = re.sub(
-                r"(Checklist|Requirements?|Elements?):?\s*\n",
-                r"=== PRACTICAL CHECKLIST ===\n",
-                structured,
-                flags=re.IGNORECASE,
-            )
+        # Fix Gemini's broken markdown headers where closing ** appears on next line
+        # Pattern: "### **Summary*\n*" -> "### **Summary**"
+        formatted = re.sub(r"(\*)\n(\*)", r"\1\2", formatted)
 
-        return structured
+        # Also fix cases where there's extra spacing
+        formatted = re.sub(r"(\*)\s*\n\s*(\*)", r"\1\2", formatted)
 
-
-@timed
-def fetch_jade_links(question):
-    """
-    Fetch Australian case law links relevant to the query.
-
-    This function retrieves links from Jade's public site when possible,
-    or falls back to selected landmark Australian cases.
-
-    Args:
-        question: The legal question to search for.
-
-    Returns:
-        A list of relevant Australian case law links.
-    """
-    # Simplify the search string to avoid complex queries
-    # Focus on key legal terms that are likely to yield results
-    search_terms = question.lower()
-    for term in ["what is", "how to", "can i", "should", "would", "could"]:
-        search_terms = search_terms.replace(term, "")
-    search_terms = re.sub(r"[^\w\s]", "", search_terms).strip()
-
-    # Map common legal topics to known important cases (fallback mechanism)
-    landmark_cases = {
-        "defamation": [
-            "https://jade.io/article/68176",  # Lange v Australian Broadcasting Corporation
-            "https://jade.io/article/182648",  # Dow Jones v Gutnick
-        ],
-        "privacy": [
-            "https://jade.io/article/228583",  # Australian Broadcasting Corp v Lenah Game Meats
-            "https://jade.io/article/206177",  # Giller v Procopets
-        ],
-        "negligence": [
-            "https://jade.io/article/67193",  # Donoghue v Stevenson
-            "https://jade.io/article/67538",  # Wyong Shire Council v Shirt
-        ],
-        "contract": [
-            "https://jade.io/article/66168",  # Carlill v Carbolic Smoke Ball Co
-            "https://jade.io/article/66987",  # Toll (FGCT) Pty Ltd v Alphapharm Pty Ltd
-        ],
-        "copyright": [
-            "https://jade.io/article/260168",  # IceTV v Nine Network
-            "https://jade.io/article/66452",  # Computer Edge v Apple Computer
-        ],
-        "constitutional": [
-            "https://jade.io/article/410717",  # McCloy v New South Wales
-            "https://jade.io/article/409090",  # Commonwealth v Tasmania (Tasmanian Dam Case)
-        ],
-        "criminal": [
-            "https://jade.io/article/67604",  # He Kaw Teh v The Queen
-            "https://jade.io/article/68001",  # R v Tang
-        ],
-    }
-
-    # Try to fetch from homepage first (reliable but may not be topic-specific)
-    try:
-        jade_homepage = "https://jade.io/"
-        response = requests.get(
-            jade_homepage,
-            headers={
-                "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36",
-            },
-            timeout=10,
-        )
-
-        # Find citation links on the homepage
-        jade_links = []
-        if response.status_code == 200:
-            matches = re.findall(
-                r'href="(https://jade\.io/(?:article|j)[^"]+)"', response.text
-            )
-
-            # Process and clean up links
-            for match in matches:
-                # Remove any query parameters or fragments
-                clean_link = match.split("?")[0].split("#")[0]
-                if clean_link not in jade_links and "/article/" in clean_link:
-                    jade_links.append(clean_link)
-
-        if jade_links:
-            # If we have links from the homepage, use the first three
-            click.echo("Found recent Australian case law from Jade.")
-            return jade_links[:3]
-
-    except Exception as e:
-        click.echo(f"Warning: Could not access Jade homepage: {e}")
-
-    # If homepage approach failed, look for topic-specific landmark cases
-    for topic, cases in landmark_cases.items():
-        if topic in search_terms or topic in question.lower():
-            click.echo(f"Using landmark Australian cases related to {topic}.")
-            return cases[:3]
-
-    # If no specific topic matched, return general important cases
-    click.echo("Using general landmark Australian cases.")
-    general_cases = [
-        "https://jade.io/article/68176",  # Lange v Australian Broadcasting Corporation
-        "https://jade.io/article/260168",  # Google Inc v Australian Competition and Consumer Commission
-        "https://jade.io/article/410717",  # McCloy v New South Wales
-    ]
-    return general_cases
+        return formatted
 
 
 @click.command()
 @click.argument("question")
 @click.option("--mode", type=click.Choice(["irac", "broad"]), default="irac")
 @click.option(
-    "--engine",
-    type=click.Choice(["google", "jade"]),
-    default="google",
-    help="Search engine to use (google for AustLII via CSE, jade for Jade.io)",
-)
-@click.option(
     "--extract",
     type=click.Choice(["citations", "principles", "checklist"]),
     help="Extract specific information in a structured format",
 )
+@click.option(
+    "--comprehensive",
+    is_flag=True,
+    help="Use exhaustive analysis with maximum sources (40 instead of 5)",
+)
 @timed
-def lookup(question, mode, engine, extract):
+def lookup(question, mode, extract, comprehensive):
     """
-    Rapid case-law lookup via Google CSE or Jade + Gemini.
+    Rapid case-law lookup via Jade CSE + Gemini.
 
-    Searches for legal information using either:
-    - Google Custom Search on AustLII (default)
-    - Jade.io public search
-
-    Then processes the results with Google Gemini to produce a structured
+    Searches for legal information using Jade.io database via Custom Search Engine,
+    then processes the results with Google Gemini to produce a structured
     legal answer citing relevant cases.
 
     Args:
         question: The legal question to search for.
         mode: Answer format - 'irac' (Issue, Rule, Application, Conclusion) for
               structured analysis, or 'broad' for more creative exploration.
-        engine: The search engine to use - 'google' for AustLII via CSE, or 'jade' for Jade.io.
         extract: Extract specific information - 'citations' for case references,
                 'principles' for legal rules, or 'checklist' for practical items.
+        comprehensive: Use exhaustive analysis with 40 sources instead of 5.
 
     Raises:
         click.ClickException: If there are errors with the search or LLM API calls.
     """
-    # Fetch case links based on the selected engine
-    if engine == "google":
-        # Fetch AustLII links via Google Custom Search
-        try:
-            from googleapiclient.discovery import build
-
-            # Disable cache to avoid warning
-            service = build(
-                "customsearch", "v1", developerKey=CONFIG.g_key, cache_discovery=False
-            )
-            res = (
-                service.cse()
-                .list(q=question, cx=CONFIG.cse_id, num=3, siteSearch="austlii.edu.au")
-                .execute()
-            )
-        except Exception as e:
-            raise click.ClickException(f"Google CSE error: {e}")
-        links = [item.get("link") for item in res.get("items", [])]
-    else:  # engine == "jade"
-        # Fetch links via Jade's public search
-        links = fetch_jade_links(question)
+    # Determine search parameters based on comprehensive flag
+    if comprehensive:
+        num_sources = 10  # Request more for comprehensive search
+        max_sources = 40
+    else:
+        num_sources = 5   # Standard search
+        max_sources = 5
+    
+    # Fetch case links using Jade CSE
+    try:
+        from googleapiclient.discovery import build
+        service = build("customsearch", "v1", developerKey=CONFIG.g_key, cache_discovery=False)
+        
+        if comprehensive:
+            # Comprehensive Jade CSE search
+            all_links = []
+            queries = [
+                question,
+                f"{question} case law",
+                f"{question} court decision",
+                f"{question} legal principle"
+            ]
+            
+            for query in queries:
+                res = service.cse().list(q=query, cx=CONFIG.cse_id, num=num_sources, siteSearch="jade.io").execute()
+                all_links.extend([item.get("link") for item in res.get("items", [])])
+            
+            # Remove duplicates while preserving order
+            seen = set()
+            links = []
+            for link in all_links:
+                if link and link not in seen:
+                    seen.add(link)
+                    links.append(link)
+                    if len(links) >= max_sources:
+                        break
+        else:
+            # Standard Jade CSE search
+            res = service.cse().list(q=question, cx=CONFIG.cse_id, num=num_sources, siteSearch="jade.io").execute()
+            links = [item.get("link") for item in res.get("items", [])]
+            
+    except Exception as e:
+        raise click.ClickException(f"Search error: {e}")
 
     # Display found links
     click.echo("Found links:")
@@ -341,76 +294,91 @@ def lookup(question, mode, engine, extract):
             prompt += "\n\nAlso provide a clear 'LEGAL PRINCIPLES' section that lists the key legal rules and principles in a structured format suitable for advice letters."
         elif extract == "checklist":
             prompt += "\n\nAlso provide a clear 'PRACTICAL CHECKLIST' section that lists actionable requirements, evidence needed, and steps to take."
-    # Set parameters based on mode
-    # IRAC mode uses lower temperature for more precise, deterministic answers
-    # Broad mode uses higher temperature for more creative exploration
-    if mode == "irac":
-        overrides = {"temperature": 0, "top_p": 0.1}
+    # Set parameters based on mode and comprehensive flag
+    if comprehensive:
+        if mode == "irac":
+            overrides = {"temperature": 0, "top_p": 0.05, "max_tokens": 8192}  # Maximum precision
+        else:  # broad
+            overrides = {"temperature": 0.3, "top_p": 0.7, "max_tokens": 8192}  # Controlled creativity
     else:
-        overrides = {"temperature": 0.5, "top_p": 0.9}
+        # Standard parameters
+        if mode == "irac":
+            overrides = {"temperature": 0, "top_p": 0.1}
+        else:
+            overrides = {"temperature": 0.5, "top_p": 0.9}
 
-    # Call the LLM
-    client = LLMClient("google/gemini-2.5-pro-preview", temperature=0, top_p=0.2)
+    # Use LLMClientFactory to create the client
+    client = LLMClientFactory.for_command("lookup", **overrides)
     call_with_hb = heartbeat(CONFIG.heartbeat_interval)(client.complete)
+
+    # Set system prompt based on comprehensive flag
+    if comprehensive:
+        system_content = """Australian law only. Provide exhaustive legal analysis.
+
+EXHAUSTIVE ANALYSIS REQUIREMENTS:
+- Review ALL provided sources thoroughly (expect 20-40 sources)
+- Identify primary and secondary authorities with hierarchy
+- Cross-reference between sources for consistency/conflicts
+- Include minority opinions and dissenting views where relevant
+- Distinguish binding vs persuasive authorities by jurisdiction
+- Analyze temporal evolution of legal principles
+- Consider jurisdictional variations across Australian states/territories
+
+COMPREHENSIVE CITATION REQUIREMENTS:
+- Cite ALL relevant cases from the sources with parallel citations
+- Reference specific paragraphs/sections when applicable
+- Distinguish between ratio decidendi and obiter dicta
+- Group citations by authority level (High Court → Federal → State)
+
+EXHAUSTIVE OUTPUT STRUCTURE:
+- Executive Summary (2-3 paragraphs)
+- Comprehensive Legal Framework
+- Authority Hierarchy Analysis
+- Detailed Case Analysis by jurisdiction
+- Synthesis and Conflicts Resolution
+- Practical Application with confidence levels
+- Conclusion with Confidence Assessment"""
+    else:
+        system_content = "Australian law only. Cite sources. Analyze the provided sources (typically 5) to provide well-structured, comprehensive responses with clear sections. Begin with a summary, then provide analysis with supporting case law from all relevant sources, and end with a definitive conclusion. Cross-reference between sources where applicable."
+
     try:
         content, usage = call_with_hb(
             [
-                {
-                    "role": "system",
-                    "content": "Australian law only. Cite sources. Provide well-structured, concise responses with clear sections. Begin with a summary, then provide analysis with supporting case law, and end with a definitive conclusion. Avoid repeating yourself and maintain coherence throughout the response.",
-                },
+                {"role": "system", "content": system_content},
                 {"role": "user", "content": prompt},
-            ],
-            **overrides,
+            ]
         )
     except Exception as e:
-        raise click.ClickException(f"LLM error during lookup: {e}")
-
-    # Citation guard: retry once if no AustLII or Jade pattern found
-    if not re.search(r"(austlii|jade)", content, re.IGNORECASE):
-        try:
-            content, usage = call_with_hb(
-                [
-                    {"role": "system", "content": "Australian law only. Cite sources."},
-                    {"role": "user", "content": prompt + "\n\n(Cite your sources!)"},
-                ],
-                **overrides,
-            )
-        except Exception as e:
-            raise click.ClickException(f"LLM retry error during lookup: {e}")
-
-    # CRITICAL: Validate citations immediately to prevent cascade errors
-    citation_issues = client.validate_citations(content)
-    if citation_issues:
-        # Prepend warnings to content so they appear prominently
-        citation_warning = "--- CITATION VALIDATION WARNINGS ---\n"
-        citation_warning += "\n".join(citation_issues)
-        citation_warning += "\n" + "-" * 40 + "\n\n"
-        content = citation_warning + content
+        # Check if it's a citation verification error
+        if "Citation verification failed" in str(e):
+            # Extract just the error message after any citation warnings
+            click.echo("⚠️  Citation verification issues detected")
+            # The error contains the citations that failed - we can still proceed with warnings
+            raise click.ClickException(f"LLM error during lookup: {e}")
+        else:
+            raise click.ClickException(f"LLM error during lookup: {e}")
 
     # Apply formatting based on extract option
     formatted_content = format_lookup_output(content, extract)
 
     # Save output using utility
     command_name = f"lookup_{extract}" if extract else "lookup"
-    metadata = {
-        "Mode": mode,
-        "Engine": engine
-    }
+    metadata = {"Mode": mode}
     if extract:
         metadata["Extract"] = extract
-    
+    if comprehensive:
+        metadata["Comprehensive"] = "True"
+
     output_file = save_command_output(
-        command_name,
-        formatted_content,
-        question,
-        metadata=metadata
+        command_name, formatted_content, question, metadata=metadata
     )
 
     # Save audit log
-    params_str = f"mode={mode}, engine={engine}"
+    params_str = f"mode={mode}"
     if extract:
         params_str += f", extract={extract}"
+    if comprehensive:
+        params_str += ", comprehensive=True"
 
     save_log(
         "lookup",
@@ -437,10 +405,15 @@ def lookup(question, mode, engine, extract):
         extract_type = extract.capitalize()
         click.echo(f"\n📊 {extract_type} extracted from search results")
     else:
-        click.echo(f"\n📊 Legal analysis for: {question}")
+        analysis_type = "Exhaustive" if comprehensive else "Standard"
+        click.echo(f"\n📊 {analysis_type} legal analysis for: {question}")
 
     # Show links that were searched
-    click.echo(f"\n🔍 Searched {len(links)} sources:")
+    if comprehensive:
+        click.echo(f"\n🔍 Exhaustive search: {len(links)} sources analyzed")
+    else:
+        click.echo(f"\n🔍 Standard search: {len(links)} sources analyzed")
+    
     for i, link in enumerate(links, 1):
         click.echo(f"   {i}. {link}")
 

@@ -85,11 +85,12 @@ class LLMClientFactory:
             "temperature": 0.2,
             "top_p": 0.5,
         },
-        # Lookup - if it uses LLM (not in analyzed commands but for completeness)
+        # Lookup - uses Gemini for rapid processing with verification
         "lookup": {
-            "model": "anthropic/claude-sonnet-4",
+            "model": "google/gemini-2.5-pro-preview",
             "temperature": 0.1,
             "top_p": 0.2,
+            "force_verify": False,  # Don't force strict verification
         },
     }
 
@@ -165,9 +166,8 @@ class LLMClientFactory:
         # Set the command context
         client.command_context = config_key
 
-        # Set force verification flag if applicable
-        if force_verify:
-            client._force_verify = True
+        # Set force verification flag - explicitly set both True and False
+        client._force_verify = force_verify
 
         return client
 
@@ -248,8 +248,10 @@ class LLMClient:
         if CONFIG.use_token_limits:
             # Check if this is an o1/o3 model which uses max_completion_tokens instead of max_tokens
             is_reasoning_model = "o1" in model.lower() or "o3" in model.lower()
-            token_param = "max_completion_tokens" if is_reasoning_model else "max_tokens"
-            
+            token_param = (
+                "max_completion_tokens" if is_reasoning_model else "max_tokens"
+            )
+
             if token_param not in default_params:
                 # These limits are carefully chosen to balance comprehensive responses with quality
                 if "google/gemini" in model.lower():
@@ -304,44 +306,51 @@ class LLMClient:
         """
         # Check if this is an o1/o3 model that doesn't support system messages
         is_o1_model = "o1" in self.model.lower() or "o3" in self.model.lower()
-        
+
         if is_o1_model:
             # o1 models don't support system messages - merge into first user message
             modified_messages = []
             system_content = "Use Australian English spellings and terminology."
-            
+
             # Collect all system messages
             system_messages = [msg for msg in messages if msg.get("role") == "system"]
-            non_system_messages = [msg for msg in messages if msg.get("role") != "system"]
-            
+            non_system_messages = [
+                msg for msg in messages if msg.get("role") != "system"
+            ]
+
             if system_messages:
                 # Combine all system content
-                system_content = "\n".join([msg.get("content", "") for msg in system_messages])
+                system_content = "\n".join(
+                    [msg.get("content", "") for msg in system_messages]
+                )
                 if "Australian English" not in system_content:
-                    system_content += "\nUse Australian English spellings and terminology."
-            
+                    system_content += (
+                        "\nUse Australian English spellings and terminology."
+                    )
+
             # Find first user message and prepend system content
             for i, msg in enumerate(non_system_messages):
                 if msg.get("role") == "user":
                     enhanced_content = f"{system_content}\n\n{msg.get('content', '')}"
-                    modified_messages.append({
-                        "role": "user", 
-                        "content": enhanced_content
-                    })
+                    modified_messages.append(
+                        {"role": "user", "content": enhanced_content}
+                    )
                     # Add remaining messages as-is
-                    modified_messages.extend(non_system_messages[i+1:])
+                    modified_messages.extend(non_system_messages[i + 1 :])
                     break
             else:
                 # No user message found, just use non-system messages
                 modified_messages = non_system_messages
-            
+
             messages = modified_messages
         else:
             # Regular models - handle system messages normally
             has_system_message = any(msg.get("role") == "system" for msg in messages)
             if has_system_message:
                 for msg in messages:
-                    if msg.get("role") == "system" and "Australian English" not in msg.get(
+                    if msg.get(
+                        "role"
+                    ) == "system" and "Australian English" not in msg.get(
                         "content", ""
                     ):
                         msg[
@@ -356,7 +365,7 @@ class LLMClient:
                         "content": "Use Australian English spellings and terminology.",
                     },
                 )
-        
+
         # Merge default and override parameters
         params = {**self.default_params, **overrides}
 
@@ -389,10 +398,15 @@ class LLMClient:
         content = response.choices[0].message.content
         usage = getattr(response, "usage", {})
 
-        # STRICT CITATION VERIFICATION - Block output with unverified citations
+        # Citation verification - respect force_verify setting
+        # For commands like lookup that have force_verify=False, use lenient mode
+        strict_mode = getattr(
+            self, "_force_verify", True
+        )  # Default to strict unless explicitly disabled
+
         try:
             verified_content, verification_issues = self.validate_and_verify_citations(
-                content, strict_mode=True
+                content, strict_mode=strict_mode
             )
 
             # If we got here, all citations are verified or were safely removed
@@ -519,9 +533,13 @@ class LLMClient:
         # Add model-specific token limits for verification if enabled in config
         if CONFIG.use_token_limits:
             # o1/o3 models use max_completion_tokens instead of max_tokens
-            is_reasoning_model = "o1" in self.model.lower() or "o3" in self.model.lower()
-            token_param = "max_completion_tokens" if is_reasoning_model else "max_tokens"
-            
+            is_reasoning_model = (
+                "o1" in self.model.lower() or "o3" in self.model.lower()
+            )
+            token_param = (
+                "max_completion_tokens" if is_reasoning_model else "max_tokens"
+            )
+
             if "google/gemini" in self.model.lower():
                 params[token_param] = 1024  # Concise verification for Gemini
             elif "anthropic/claude" in self.model.lower():
@@ -577,46 +595,48 @@ class LLMClient:
             format_errors = []
             existence_errors = []
             verification_errors = []
-            
+
             for citation, reason in unverified_citations:
                 # Don't block for offline validation warnings - treat as warnings only
                 if "OFFLINE VALIDATION ONLY" in reason:
                     continue  # Skip - these are warnings, not errors
                 elif "format" in reason.lower() and "not found" not in reason.lower():
                     format_errors.append((citation, reason))
-                elif "not found" in reason.lower() or "case not found" in reason.lower():
+                elif (
+                    "not found" in reason.lower() or "case not found" in reason.lower()
+                ):
                     existence_errors.append((citation, reason))
                 else:
                     verification_errors.append((citation, reason))
-            
+
             # Only raise error if there are actual blocking issues
             blocking_errors = format_errors + existence_errors + verification_errors
-            
+
             if blocking_errors:
                 # Build categorized error message
                 error_msg = "🚫 CRITICAL: Citation verification failed:\n\n"
-                
+
                 if existence_errors:
                     error_msg += "📋 CASES NOT FOUND IN DATABASE:\n"
                     for citation, reason in existence_errors:
                         error_msg += f"   • {citation}\n     → {reason}\n"
                     error_msg += "\n"
-                
+
                 if format_errors:
                     error_msg += "⚠️  CITATION FORMAT ISSUES:\n"
                     for citation, reason in format_errors:
                         error_msg += f"   • {citation}\n     → {reason}\n"
                     error_msg += "\n"
-                
+
                 if verification_errors:
                     error_msg += "🔍 VERIFICATION PROBLEMS:\n"
                     for citation, reason in verification_errors:
                         error_msg += f"   • {citation}\n     → {reason}\n"
                     error_msg += "\n"
-                
+
                 error_msg += "🛑 ACTION REQUIRED: These citations appear to be AI hallucinations.\n"
                 error_msg += "   Remove these citations and regenerate, or verify them independently."
-                
+
                 raise CitationVerificationError(error_msg)
 
         # If not strict mode or no unverified citations, clean up the content
@@ -743,9 +763,13 @@ class LLMClient:
 
         if CONFIG.use_token_limits:
             # o1/o3 models use max_completion_tokens instead of max_tokens
-            is_reasoning_model = "o1" in self.model.lower() or "o3" in self.model.lower()
-            token_param = "max_completion_tokens" if is_reasoning_model else "max_tokens"
-            
+            is_reasoning_model = (
+                "o1" in self.model.lower() or "o3" in self.model.lower()
+            )
+            token_param = (
+                "max_completion_tokens" if is_reasoning_model else "max_tokens"
+            )
+
             if "google/gemini" in self.model.lower():
                 params[token_param] = 1024
             elif "anthropic/claude" in self.model.lower():

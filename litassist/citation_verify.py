@@ -8,7 +8,6 @@ and targeted regeneration when necessary.
 """
 
 import re
-import requests
 import time
 from typing import List, Tuple, Dict
 import threading
@@ -378,7 +377,7 @@ def search_jade_via_google_cse(citation: str, timeout: int = 10) -> bool:
                         success = True
                         break
 
-    except Exception as e:
+    except Exception:
         success = False
 
     # Log the search attempt
