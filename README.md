@@ -38,7 +38,7 @@ For detailed usage guidance, see [LitAssist_User_Guide.md](LitAssist_User_Guide.
 
 ### Quality & User Experience
 - **Clean CLI Output**: All commands show professional summaries instead of overwhelming text dumps
-- **Citation Verification**: Continued enhancement of real-time AustLII validation
+- **Citation Verification**: Enhanced real-time validation via Jade.io database search
 - **File Organization**: Clear file locations with proper shell escaping for paths with spaces
 
 ## 🔧 Installation

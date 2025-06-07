@@ -1,9 +1,9 @@
-### Google CSE (AustLII) Setup & Usage  🔑
+### Google CSE (Jade.io) Setup & Usage  🔑
 
 1. **Create a CSE**
 
    1. Go to [https://programmablesearchengine.google.com/about/](https://programmablesearchengine.google.com/about/) and click **Add**.
-   2. In **Sites to search**, enter `www.austlii.edu.au/*` → Save.
+   2. In **Sites to search**, enter `jade.io/*` → Save.
    3. Under **Setup ▸ Basics ▸ Search engine ID**, copy the alphanumeric string — this is your **`cse_id`** for `config.yaml`.
 
 2. **Enable the Custom Search JSON API**
@@ -38,12 +38,12 @@ Once these two values are in `config.yaml`:
 ```yaml
 google_cse:
   api_key:  "YOUR_GOOGLE_API_KEY"
-  cse_id:   "YOUR_GOOGLE_CSE_ID"
+  cse_id:   "YOUR_JADE_CSE_ID"
 ```
 
 the **lookup** command will automatically:
 
-1. Query Google CSE for AustLII pages (max 3).
+1. Query Google CSE for Jade.io pages (max 3).
 2. Feed the links into **Gemini 2.5 Pro**.
 3. Return an IRAC-style answer with citations.
 
@@ -71,4 +71,4 @@ C – Conclusion
 Frustration alone will rarely displace the orthodox indemnity principle; however, courts retain…
 ```
 
-Citations include direct AustLII links produced in step 1.
+Citations include direct Jade.io links produced in step 1.

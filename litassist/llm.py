@@ -272,6 +272,23 @@ class LLMClient:
     def complete(
         self, messages: List[Dict[str, str]], **overrides
     ) -> Tuple[str, Dict[str, Any]]:
+        """
+        Run a single chat completion with the configured model.
+
+        Args:
+            messages: List of message dictionaries, each containing 'role' (system/user/assistant)
+                     and 'content' (the message text).
+            **overrides: Optional parameter overrides for this specific completion that will
+                        take precedence over the default parameters.
+
+        Returns:
+            A tuple containing:
+                - The generated text content (str)
+                - The usage statistics dictionary (with prompt_tokens, completion_tokens, etc.)
+
+        Raises:
+            Exception: If the API call fails or returns an error.
+        """
         # Check if this is an o1 model that doesn't support system messages
         is_o1_model = "o1" in self.model.lower()
         
@@ -326,23 +343,7 @@ class LLMClient:
                         "content": "Use Australian English spellings and terminology.",
                     },
                 )
-        """
-        Run a single chat completion with the configured model.
-
-        Args:
-            messages: List of message dictionaries, each containing 'role' (system/user/assistant)
-                     and 'content' (the message text).
-            **overrides: Optional parameter overrides for this specific completion that will
-                        take precedence over the default parameters.
-
-        Returns:
-            A tuple containing:
-                - The generated text content (str)
-                - The usage statistics dictionary (with prompt_tokens, completion_tokens, etc.)
-
-        Raises:
-            Exception: If the API call fails or returns an error.
-        """
+        
         # Merge default and override parameters
         params = {**self.default_params, **overrides}
 
@@ -496,65 +497,27 @@ class LLMClient:
             },
         ]
         # Use deterministic settings for verification with appropriate token limits
-        params = {"temperature": 0, "top_p": 0.2}
+        # Note: o1 models only support temperature=1, so skip temperature override for those
+        if "o1" in self.model.lower():
+            params = {}  # o1 models use their default parameters
+        else:
+            params = {"temperature": 0, "top_p": 0.2}
 
         # Add model-specific token limits for verification if enabled in config
-        if CONFIG.use_token_limits and "max_tokens" not in params:
+        if CONFIG.use_token_limits:
             if "google/gemini" in self.model.lower():
                 params["max_tokens"] = 1024  # Concise verification for Gemini
             elif "anthropic/claude" in self.model.lower():
                 params["max_tokens"] = 1536  # Claude verification
-            elif "openai/gpt-4" in self.model.lower():
-                params["max_tokens"] = 1024  # GPT-4 verification
+            elif "openai/gpt-4" in self.model.lower() or "openai/o1" in self.model.lower():
+                params["max_tokens"] = 1024  # GPT-4/o1 verification
             elif "grok" in self.model.lower():
                 params["max_tokens"] = 800  # Tighter limit for Grok
             else:
                 params["max_tokens"] = 1024  # Default verification limit
 
-        # Set API base based on model type
-        original_api_base = openai.api_base
-        original_api_key = openai.api_key
-
-        # Determine the correct model name
-        model_name = self.model
-
-        # Use OpenRouter for non-OpenAI models
-        if "/" in self.model and not self.model.startswith("openai/"):
-            openai.api_base = CONFIG.or_base
-            openai.api_key = CONFIG.or_key
-        else:
-            # Extract just the model name for OpenAI models
-            if self.model.startswith("openai/"):
-                model_name = self.model.replace("openai/", "")
-
-        # Invoke the verification
-        try:
-            response = openai.ChatCompletion.create(
-                model=model_name, messages=critique_prompt, **params
-            )
-        finally:
-            # Restore original settings
-            openai.api_base = original_api_base
-            openai.api_key = original_api_key
-
-        verification_result = response.choices[0].message.content
-
-        # Log the verification call
-        save_log(
-            f"llm_{self.model.replace('/', '_')}_verify",
-            {
-                "method": "verify",
-                "model": self.model,
-                "input_text_length": len(primary_text),
-                "verification_result": verification_result,
-                "usage": (
-                    response.usage._asdict()
-                    if hasattr(response.usage, "_asdict")
-                    else dict(response.usage)
-                ),
-                "timestamp": time.strftime("%Y-%m-%d %H:%M:%S"),
-            },
-        )
+        # Use the complete method which handles o1 models properly
+        verification_result, usage = self.complete(critique_prompt, **params)
 
         return verification_result
 
@@ -595,38 +558,45 @@ class LLMClient:
             verification_errors = []
             
             for citation, reason in unverified_citations:
-                if "format" in reason.lower() and "not found" not in reason.lower():
+                # Don't block for offline validation warnings - treat as warnings only
+                if "OFFLINE VALIDATION ONLY" in reason:
+                    continue  # Skip - these are warnings, not errors
+                elif "format" in reason.lower() and "not found" not in reason.lower():
                     format_errors.append((citation, reason))
                 elif "not found" in reason.lower() or "case not found" in reason.lower():
                     existence_errors.append((citation, reason))
                 else:
                     verification_errors.append((citation, reason))
             
-            # Build categorized error message
-            error_msg = "🚫 CRITICAL: Citation verification failed:\n\n"
+            # Only raise error if there are actual blocking issues
+            blocking_errors = format_errors + existence_errors + verification_errors
             
-            if existence_errors:
-                error_msg += "📋 CASES NOT FOUND IN DATABASE:\n"
-                for citation, reason in existence_errors:
-                    error_msg += f"   • {citation}\n     → {reason}\n"
-                error_msg += "\n"
-            
-            if format_errors:
-                error_msg += "⚠️  CITATION FORMAT ISSUES:\n"
-                for citation, reason in format_errors:
-                    error_msg += f"   • {citation}\n     → {reason}\n"
-                error_msg += "\n"
-            
-            if verification_errors:
-                error_msg += "🔍 VERIFICATION PROBLEMS:\n"
-                for citation, reason in verification_errors:
-                    error_msg += f"   • {citation}\n     → {reason}\n"
-                error_msg += "\n"
-            
-            error_msg += "🛑 ACTION REQUIRED: These citations appear to be AI hallucinations.\n"
-            error_msg += "   Remove these citations and regenerate, or verify them independently."
-            
-            raise CitationVerificationError(error_msg)
+            if blocking_errors:
+                # Build categorized error message
+                error_msg = "🚫 CRITICAL: Citation verification failed:\n\n"
+                
+                if existence_errors:
+                    error_msg += "📋 CASES NOT FOUND IN DATABASE:\n"
+                    for citation, reason in existence_errors:
+                        error_msg += f"   • {citation}\n     → {reason}\n"
+                    error_msg += "\n"
+                
+                if format_errors:
+                    error_msg += "⚠️  CITATION FORMAT ISSUES:\n"
+                    for citation, reason in format_errors:
+                        error_msg += f"   • {citation}\n     → {reason}\n"
+                    error_msg += "\n"
+                
+                if verification_errors:
+                    error_msg += "🔍 VERIFICATION PROBLEMS:\n"
+                    for citation, reason in verification_errors:
+                        error_msg += f"   • {citation}\n     → {reason}\n"
+                    error_msg += "\n"
+                
+                error_msg += "🛑 ACTION REQUIRED: These citations appear to be AI hallucinations.\n"
+                error_msg += "   Remove these citations and regenerate, or verify them independently."
+                
+                raise CitationVerificationError(error_msg)
 
         # If not strict mode or no unverified citations, clean up the content
         cleaned_content = content
@@ -744,58 +714,25 @@ class LLMClient:
             return self.verify(primary_text)
 
         # Use same verification logic with custom prompts
-        params = {"temperature": 0, "top_p": 0.2}
+        # Note: o1 models only support temperature=1, so skip temperature override for those
+        if "o1" in self.model.lower():
+            params = {}  # o1 models use their default parameters
+        else:
+            params = {"temperature": 0, "top_p": 0.2}
 
         if CONFIG.use_token_limits:
             if "google/gemini" in self.model.lower():
                 params["max_tokens"] = 1024
             elif "anthropic/claude" in self.model.lower():
                 params["max_tokens"] = 1536 if level == "heavy" else 1024
-            elif "openai/gpt-4" in self.model.lower():
+            elif "openai/gpt-4" in self.model.lower() or "openai/o1" in self.model.lower():
                 params["max_tokens"] = 1024
             elif "grok" in self.model.lower():
                 params["max_tokens"] = 800
             else:
                 params["max_tokens"] = 1024
 
-        # Execute verification
-        original_api_base = openai.api_base
-        original_api_key = openai.api_key
-        model_name = self.model
-
-        if "/" in self.model and not self.model.startswith("openai/"):
-            openai.api_base = CONFIG.or_base
-            openai.api_key = CONFIG.or_key
-        else:
-            if self.model.startswith("openai/"):
-                model_name = self.model.replace("openai/", "")
-
-        try:
-            response = openai.ChatCompletion.create(
-                model=model_name, messages=critique_prompt, **params
-            )
-        finally:
-            openai.api_base = original_api_base
-            openai.api_key = original_api_key
-
-        verification_result = response.choices[0].message.content
-
-        # Log the verification call
-        save_log(
-            f"llm_{self.model.replace('/', '_')}_verify_{level}",
-            {
-                "method": f"verify_with_level({level})",
-                "model": self.model,
-                "input_text_length": len(primary_text),
-                "verification_level": level,
-                "verification_result": verification_result,
-                "usage": (
-                    response.usage._asdict()
-                    if hasattr(response.usage, "_asdict")
-                    else dict(response.usage)
-                ),
-                "timestamp": time.strftime("%Y-%m-%d %H:%M:%S"),
-            },
-        )
+        # Use the complete method which handles o1 models properly
+        verification_result, usage = self.complete(critique_prompt, **params)
 
         return verification_result

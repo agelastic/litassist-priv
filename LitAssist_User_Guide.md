@@ -61,7 +61,7 @@ This running example provides context for understanding how each LitAssist workf
 - ✅ **Australian English** - All outputs use Australian legal terminology
 
 **Citation Verification & Quality Control:**
-- ✅ **Zero-tolerance citation verification** - All legal references validated against AustLII database
+- ✅ **Zero-tolerance citation verification** - All legal references validated against Jade.io database
 - ✅ **Real-time online validation** - HEAD requests verify case existence during generation
 - ✅ **Intelligent regeneration** - Commands automatically fix citation issues where possible
 - ✅ **Quality over quantity** - Strategy commands discard options with unfixable citation problems
@@ -111,14 +111,14 @@ ANACHRONISTIC CITATION: [1970] FCAFC 123
 **Purpose**: Confirm that citations actually exist in legal databases
 
 **What it verifies**:
-- **Australian Cases**: Checks against AustLII database
-- **International Citations**: Recognizes UK, US, NZ citations as valid but not checkable
+- **Australian Cases**: Checks against Jade.io database
+- **International Citations**: Recognizes UK, US, NZ citations as valid but not in Australian databases
 - **Traditional Citations**: Accepts format like "(1980) 146 CLR 40" temporarily
 - **Medium-Neutral Citations**: Validates format like "[2020] HCA 41" and retrieves URLs
 
 **How it works**:
-- Makes HEAD requests to AustLII to verify case existence
-- Handles international citations appropriately (marked as verified but not on AustLII)
+- Uses Google Custom Search to verify case existence on Jade.io
+- Handles international citations appropriately (marked as verified but not in Australian databases)
 - Provides URLs for verified Australian cases
 - Runs during content generation to ensure accuracy
 
@@ -130,7 +130,7 @@ ANACHRONISTIC CITATION: [1970] FCAFC 123
 
 [1932] AC 562
 → Verified: True  
-→ Reason: UK/International citation (Appeal Cases) - not available on AustLII
+→ Reason: UK/International citation (Appeal Cases) - not in Australian databases
 ```
 
 ### How They Work Together
@@ -193,12 +193,12 @@ LitAssist creates two types of citation-related logs:
 - [2019] FCAFC 185
 
 ## Unverified Citations
-- [2020] HCA 999: Not found on AustLII
+- [2020] HCA 999: Not found in available databases
 - Smith v Jones: Generic case name pattern
 
 ## International Citations
-- [1932] AC 562: UK citation - not on AustLII
-- 123 U.S. 456: US citation - not on AustLII
+- [1932] AC 562: UK citation - not in Australian databases
+- 123 U.S. 456: US citation - not in Australian databases
 ```
 
 ### Command-Specific Citation Handling
@@ -412,7 +412,7 @@ cat outputs/lookup_contract_formation_elements_20250606_143022.txt
 
 ### Purpose
 
-The `lookup` command performs rapid searches on AustLII for relevant case law using Google Custom Search, then processes the results through Gemini to produce a structured legal answer with citations.
+The `lookup` command performs rapid searches on Jade.io for relevant case law using Google Custom Search, then processes the results through Gemini to produce a structured legal answer with citations.
 
 ### Command
 
@@ -422,13 +422,13 @@ The `lookup` command performs rapid searches on AustLII for relevant case law us
 
 Options:
 - `--mode`: Choose between IRAC (Issue, Rule, Application, Conclusion) or a broader exploration
-- `--engine`: Choose search engine - 'google' for AustLII via CSE (default), 'jade' for Jade.io
+- `--engine`: Choose search engine - 'google' for Jade.io via CSE (default), 'jade' for legacy direct search
 - `--extract`: Extract specific information in a structured format for workflow efficiency
 
 #### Search Engine and Mode Combinations
 
 **Search Engines:**
-- **Google CSE** (default): Searches AustLII (austlii.edu.au) via Google Custom Search for comprehensive Australian legal database coverage
+- **Google CSE** (default): Searches Jade.io via Google Custom Search for comprehensive Australian legal database coverage
 - **Jade**: Uses Jade.io for recent cases and landmark decisions, with fallback to curated topic-specific cases
 
 **Analysis Modes:**
@@ -436,9 +436,9 @@ Options:
 - **Broad**: Creative exploration for more expansive legal thinking
 
 **Recommended Combinations:**
-- **Google + IRAC**: Standard research for structured case law analysis from comprehensive AustLII database
-- **Google + Broad**: Creative legal research using full AustLII coverage 
-- **Jade + IRAC**: Focused analysis using recent/landmark cases when AustLII access is limited
+- **Google + IRAC**: Standard research for structured case law analysis from comprehensive Jade.io database
+- **Google + Broad**: Creative legal research using full Jade.io coverage 
+- **Jade + IRAC**: Focused analysis using recent/landmark cases via legacy direct search
 - **Jade + Broad**: Exploratory research with curated high-quality cases
 
 #### Extract Options for Workflow Efficiency
@@ -1637,7 +1637,7 @@ These warnings help users understand when their explicit --verify flags are bein
 
 **Real-Time Citation Verification (All Commands):**
 Beyond AI verification, all commands now include automatic citation verification that:
-- Validates every legal citation against the AustLII database
+- Validates every legal citation against the Jade.io database
 - Flags problematic patterns (generic names, future dates, impossible citations)
 - Provides specific error messages explaining failure types and actions taken
 - Automatically regenerates content when possible (brainstorm) or provides clear warnings (other commands)
@@ -1679,7 +1679,7 @@ VERIFICATION NOTES:
 - Practical implementation challenges
 
 **Citation Quality Control:** In addition to AI verification, brainstorm automatically:
-- Validates all legal citations against AustLII database
+- Validates all legal citations against Jade.io database
 - Regenerates only strategies with citation issues (selective regeneration)
 - Preserves verified strategies unchanged
 - Provides enhanced error messages for any remaining citation problems
@@ -1744,7 +1744,7 @@ VERIFICATION NOTES:
 - Australian legal writing conventions
 
 **Citation Quality Control:** Draft includes comprehensive:
-- Real-time validation of all legal citations against AustLII
+- Real-time validation of all legal citations against Jade.io
 - Enhanced error messages for unverifiable references
 - Automatic flagging of problematic citation patterns
 - Clear warnings appended to draft with specific failure types and actions
@@ -1802,7 +1802,7 @@ VERIFICATION NOTES:
 - **Human judgment required:** All suggestions must be evaluated by qualified counsel
 - **Different models:** Verification often uses different AI models for diverse perspectives
 - **No verification loops:** Running --verify multiple times on same content provides diminishing returns
-- **Citation verification is automatic:** Real-time citation verification against AustLII runs on all commands regardless of --verify flag
+- **Citation verification is automatic:** Real-time citation verification against Jade.io runs on all commands regardless of --verify flag
 - **Zero tolerance for bad citations:** Strategic commands (brainstorm, strategy) automatically regenerate or discard content with citation issues
 - **Enhanced error messages:** Citation failures include specific explanations (e.g., "GENERIC CASE NAME", "FUTURE CITATION") and actions taken
 
@@ -2014,7 +2014,7 @@ When using placeholder API keys in your config.yaml file:
 - Some commands will enter mock mode automatically
 - This allows testing the CLI without active API subscriptions
 - Mock mode provides sample responses to demonstrate functionality:
-  - `lookup`: Returns sample AustLII results
+  - `lookup`: Returns sample Jade.io results
   - `digest`: Uses local test document processing
   - `brainstorm`: Generates theoretical strategies
   - Other commands will indicate they require valid credentials

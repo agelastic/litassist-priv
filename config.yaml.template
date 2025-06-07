@@ -8,7 +8,7 @@ openai:
 
 google_cse:
   api_key:  "YOUR_GOOGLE_API_KEY"
-  cse_id:   "YOUR_GOOGLE_CSE_ID"
+  cse_id:   "YOUR_JADE_CSE_ID"    # Google CSE ID for searching Jade.io legal database
 
 pinecone:
   api_key:     "YOUR_PINECONE_KEY"
@@ -25,6 +25,6 @@ general:
   log_format: "json"        # Format for audit logs: "json" or "markdown" (default: json)
 
 citation_validation:
-  offline_validation: false  # Enable pattern-based offline validation (default: false - AustLII only)
+  offline_validation: false  # Enable pattern-based offline validation (default: false - Jade primary)
 
-# Jade API configuration removed - now uses public endpoints directly
+# Citation verification now uses Jade.io via Google CSE (primary) with offline pattern validation fallback
