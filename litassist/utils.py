@@ -671,7 +671,7 @@ class LegalReasoningTrace:
         """Format reasoning trace as markdown."""
         sources_text = ""
         if self.sources:
-            sources_text = f"\n\n**Sources:**\n" + "\n".join(
+            sources_text = "\n\n**Sources:**\n" + "\n".join(
                 f"- {source}" for source in self.sources
             )
 
@@ -893,7 +893,7 @@ def show_command_completion(
             click.echo(f'📝 {label}: open "{path}"')
 
     if stats:
-        click.echo(f"\n📊 Statistics:")
+        click.echo("\n📊 Statistics:")
         for key, value in stats.items():
             click.echo(f"   {key}: {value}")
 

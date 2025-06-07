@@ -9,8 +9,7 @@ with surgical removal of invalid citations and targeted regeneration when necess
 import re
 import requests
 import time
-from typing import List, Tuple, Dict, Set
-from urllib.parse import quote
+from typing import List, Tuple, Dict
 import threading
 
 # Import logging utility
@@ -131,7 +130,6 @@ UK_INTERNATIONAL_COURTS = {
     "ICLQ": "International & Comparative Law Quarterly",
     "LQR": "Law Quarterly Review",
     "MLR": "Modern Law Review",
-    "CLJ": "Cambridge Law Journal",
     "OJLS": "Oxford Journal of Legal Studies",
     "AILR": "Australian Indigenous Law Reporter",
     "IPR": "Intellectual Property Reports",
@@ -457,9 +455,8 @@ def search_austlii_for_citation(citation: str, timeout: int = 10) -> bool:
         else:
             success = False
 
-    except Exception as e:
+    except Exception:
         success = False
-        error_msg = str(e)
 
     # Log the search attempt
     save_log(

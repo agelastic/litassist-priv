@@ -15,7 +15,6 @@ import time
 from litassist.citation_verify import (
     verify_all_citations,
     remove_citation_from_text,
-    is_core_citation,
     CitationVerificationError,
 )
 

@@ -8,8 +8,6 @@ or identify potential legal issues in each section.
 
 import click
 import os
-import re
-import time
 
 from litassist.config import CONFIG
 from litassist.utils import (

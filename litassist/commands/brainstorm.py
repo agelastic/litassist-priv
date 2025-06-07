@@ -10,7 +10,6 @@ import click
 import os
 import re
 import time
-from typing import List, Tuple
 
 from litassist.config import CONFIG
 from litassist.utils import (
@@ -21,7 +20,6 @@ from litassist.utils import (
     OUTPUT_DIR,
     create_reasoning_prompt,
     extract_reasoning_trace,
-    save_reasoning_trace,
 )
 from litassist.llm import LLMClientFactory, LLMClient
 
@@ -581,7 +579,7 @@ Consider both orthodox and unorthodox options. Base selections on legal merit, f
     timestamp = time.strftime("%Y%m%d_%H%M%S")
     output_file = os.path.join(OUTPUT_DIR, f"brainstorm_{area}_{side}_{timestamp}.txt")
     with open(output_file, "w", encoding="utf-8") as f:
-        f.write(f"# Legal Strategies\n")
+        f.write("# Legal Strategies\n")
         f.write(f"# Generated: {time.strftime('%Y-%m-%d %H:%M:%S')}\n")
         f.write(f"# Side: {side.capitalize()}\n")
         f.write(f"# Area: {area.capitalize()}\n")
@@ -596,9 +594,9 @@ Consider both orthodox and unorthodox options. Base selections on legal merit, f
     if orthodox_trace:
         orthodox_reasoning_file = output_file.replace(".txt", "_orthodox_reasoning.txt")
         with open(orthodox_reasoning_file, "w", encoding="utf-8") as f:
-            f.write(f"# ORTHODOX STRATEGIES - REASONING TRACE\n")
+            f.write("# ORTHODOX STRATEGIES - REASONING TRACE\n")
             f.write(f"# Generated: {time.strftime('%Y-%m-%d %H:%M:%S')}\n")
-            f.write(f"# Command: brainstorm-orthodox\n\n")
+            f.write("# Command: brainstorm-orthodox\n\n")
             f.write(orthodox_trace.to_markdown())
         reasoning_files.append(("Orthodox", orthodox_reasoning_file))
 
@@ -607,28 +605,28 @@ Consider both orthodox and unorthodox options. Base selections on legal merit, f
             ".txt", "_unorthodox_reasoning.txt"
         )
         with open(unorthodox_reasoning_file, "w", encoding="utf-8") as f:
-            f.write(f"# UNORTHODOX STRATEGIES - REASONING TRACE\n")
+            f.write("# UNORTHODOX STRATEGIES - REASONING TRACE\n")
             f.write(f"# Generated: {time.strftime('%Y-%m-%d %H:%M:%S')}\n")
-            f.write(f"# Command: brainstorm-unorthodox\n\n")
+            f.write("# Command: brainstorm-unorthodox\n\n")
             f.write(unorthodox_trace.to_markdown())
         reasoning_files.append(("Unorthodox", unorthodox_reasoning_file))
 
     if analysis_trace:
         analysis_reasoning_file = output_file.replace(".txt", "_analysis_reasoning.txt")
         with open(analysis_reasoning_file, "w", encoding="utf-8") as f:
-            f.write(f"# MOST LIKELY TO SUCCEED - REASONING TRACE\n")
+            f.write("# MOST LIKELY TO SUCCEED - REASONING TRACE\n")
             f.write(f"# Generated: {time.strftime('%Y-%m-%d %H:%M:%S')}\n")
-            f.write(f"# Command: brainstorm-analysis\n\n")
+            f.write("# Command: brainstorm-analysis\n\n")
             f.write(analysis_trace.to_markdown())
         reasoning_files.append(("Most Likely Analysis", analysis_reasoning_file))
 
     # Report reasoning files
     if reasoning_files:
-        click.echo(f"\n📝 Reasoning traces saved:")
+        click.echo("\n📝 Reasoning traces saved:")
         for trace_type, file_path in reasoning_files:
             click.echo(f'   {trace_type}: "{file_path}"')
     else:
-        click.echo(f"\n📝 No reasoning traces extracted from this generation")
+        click.echo("\n📝 No reasoning traces extracted from this generation")
 
     click.echo(
         "\nTo use these strategies with other commands, manually create or update strategies.txt"
@@ -640,7 +638,7 @@ Consider both orthodox and unorthodox options. Base selections on legal merit, f
             OUTPUT_DIR, f"brainstorm_verification_{area}_{side}_{timestamp}.txt"
         )
         with open(verification_file, "w", encoding="utf-8") as f:
-            f.write(f"# Verification Notes for Strategies\n")
+            f.write("# Verification Notes for Strategies\n")
             f.write(f"# Generated: {time.strftime('%Y-%m-%d %H:%M:%S')}\n\n")
             f.write("\n\n".join(verification_notes))
         click.echo(f'Verification notes saved to "{verification_file}"')
@@ -671,14 +669,6 @@ Consider both orthodox and unorthodox options. Base selections on legal merit, f
     click.echo(f'📄 Strategies saved to: "{output_file}"')
     if verification_notes:
         click.echo(f'📋 Verification notes: open "{verification_file}"')
-
-    # Count and show what was generated
-    orthodox_count = len(
-        re.findall(r"^## ORTHODOX STRATEGIES", original_content, re.MULTILINE)
-    )
-    unorthodox_count = len(
-        re.findall(r"^## UNORTHODOX STRATEGIES", original_content, re.MULTILINE)
-    )
 
     # Parse the actual strategies generated
     parsed_result = parse_strategies_file(original_content)

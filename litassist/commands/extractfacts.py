@@ -8,11 +8,9 @@ with ten standard headings.
 
 import click
 import os
-import time
 
 from litassist.config import CONFIG
 from litassist.utils import (
-    read_document,
     chunk_text,
     save_log,
     timed,

@@ -5,7 +5,6 @@ This package contains the implementation of all CLI commands
 available in the LitAssist tool.
 """
 
-from typing import List
 import click
 
 # Import all command modules to make them available

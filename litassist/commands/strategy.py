@@ -7,7 +7,7 @@ documents for Australian civil litigation matters.
 """
 
 import click
-from typing import Dict, List, Any, Tuple
+from typing import Dict, List, Any
 import re
 import time
 import os
@@ -20,8 +20,6 @@ from litassist.utils import (
     OUTPUT_DIR,
     create_reasoning_prompt,
     extract_reasoning_trace,
-    save_reasoning_trace,
-    LegalReasoningTrace,
 )
 from litassist.llm import LLMClientFactory
 
@@ -172,7 +170,7 @@ def extract_legal_issues(case_text: str) -> List[str]:
 def create_consolidated_reasoning_trace(option_traces, outcome):
     """Create a consolidated reasoning trace from multiple strategy options."""
 
-    consolidated_content = f"# CONSOLIDATED LEGAL REASONING TRACE\n"
+    consolidated_content = "# CONSOLIDATED LEGAL REASONING TRACE\n"
     consolidated_content += f"# Strategic Options for: {outcome}\n"
     consolidated_content += f"# Generated: {time.strftime('%Y-%m-%d %H:%M:%S')}\n\n"
 
@@ -272,7 +270,7 @@ def strategy(case_facts, outcome, strategies, verify):
         parsed_strategies = parse_strategies_file(strategies_content)
 
         # Display what was found
-        click.echo(f"Using strategies from brainstorm:")
+        click.echo("Using strategies from brainstorm:")
         click.echo(f"  - {parsed_strategies['orthodox_count']} orthodox strategies")
         click.echo(f"  - {parsed_strategies['unorthodox_count']} unorthodox strategies")
         click.echo(
@@ -352,7 +350,7 @@ IDENTIFIED LEGAL ISSUES:
 
     # Add strategies content if provided
     if parsed_strategies:
-        base_user_prompt += f"\nBRAINSTORMED STRATEGIES PROVIDED:\n"
+        base_user_prompt += "\nBRAINSTORMED STRATEGIES PROVIDED:\n"
         base_user_prompt += (
             f"- {parsed_strategies['orthodox_count']} orthodox strategies\n"
         )
@@ -508,7 +506,7 @@ IDENTIFIED LEGAL ISSUES:
                             [s for s in all_strategies if s["source"] != "most_likely"]
                         ):
                             click.echo(
-                                f"    📎 Excluded duplicate strategy titles already in 'most likely' selection"
+                                "    📎 Excluded duplicate strategy titles already in 'most likely' selection"
                             )
 
                         # Create ranking prompt for remaining strategies
@@ -581,7 +579,7 @@ REASONING: [brief explanation for top selections]"""
                                     f"    📎 Added {min(remaining_needed, len(other_strategies))} additional strategies (fallback)"
                                 )
 
-                        except Exception as e:
+                        except Exception:
                             # Fallback to first N if analysis fails
                             priority_strategies.extend(
                                 other_strategies[:remaining_needed]
@@ -682,15 +680,15 @@ REASONING: [brief explanation focusing on legal merit, factual support, preceden
                                     else f"    💡 Analysis: {reasoning}"
                                 )
 
-                        except (ValueError, IndexError) as e:
+                        except (ValueError, IndexError):
                             click.echo(
-                                f"    ⚠️  Could not parse strategy ranking, using fallback selection"
+                                "    ⚠️  Could not parse strategy ranking, using fallback selection"
                             )
                             # Fallback to first target_options strategies
                             priority_strategies = all_strategies[:target_options]
                     else:
                         click.echo(
-                            f"    ⚠️  No ranking found in response, using fallback selection"
+                            "    ⚠️  No ranking found in response, using fallback selection"
                         )
                         priority_strategies = all_strategies[:target_options]
 
@@ -754,7 +752,7 @@ Focus on:
                 user_prompt
                 + f"\n\nGenerate ONE strategic option (this will be option #{len(valid_options) + 1}) to achieve the desired outcome. Use the exact format specified for a single OPTION."
             )
-            individual_prompt += f"\n\nCRITICAL: Use a UNIQUE TITLE that clearly distinguishes this strategic approach. Do not reuse titles from other options."
+            individual_prompt += "\n\nCRITICAL: Use a UNIQUE TITLE that clearly distinguishes this strategic approach. Do not reuse titles from other options."
             if parsed_strategies:
                 individual_prompt += f"\n\nConsider the brainstormed strategies provided but develop a new approach that complements the {len(valid_options)} options already generated."
 
@@ -1072,7 +1070,7 @@ Requirements:
     output_file = os.path.join(OUTPUT_DIR, f"strategy_{outcome_slug}_{timestamp}.txt")
 
     with open(output_file, "w", encoding="utf-8") as f:
-        f.write(f"Strategy Generation\n")
+        f.write("Strategy Generation\n")
         f.write(f"Desired Outcome: {outcome}\n")
         f.write(f"Case Facts File: {case_facts.name}\n")
         if strategies:

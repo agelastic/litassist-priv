@@ -6,7 +6,7 @@ the real-time verification in citation_verify.py.
 """
 
 import re
-from typing import List, Tuple
+from typing import List
 from litassist.utils import save_log
 import time
 

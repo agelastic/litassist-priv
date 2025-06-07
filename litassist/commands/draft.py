@@ -8,9 +8,6 @@ with GPT-4o that incorporates these citations.
 """
 
 import click
-import re
-import time
-import os
 
 from litassist.config import CONFIG
 from litassist.utils import (
@@ -26,7 +23,6 @@ from litassist.utils import (
     save_command_output,
     show_command_completion,
     verify_content_if_needed,
-    validate_file_size,
 )
 from litassist.llm import LLMClientFactory
 from litassist.retriever import Retriever, get_pinecone_client
