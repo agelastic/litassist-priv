@@ -75,6 +75,159 @@ This running example provides context for understanding how each LitAssist workf
 - ✅ **Comprehensive timing** - All operations timed and logged for performance monitoring
 - ✅ **Centralized configuration** - Log format and other settings moved to config.yaml for consistency
 
+## Citation Quality Control
+
+LitAssist employs a comprehensive two-phase citation checking system to ensure all legal references are accurate and verifiable:
+
+### Phase 1: Citation Validation (Offline Pattern Analysis)
+
+**Purpose**: Detect potentially problematic citation patterns without requiring internet access
+
+**What it catches**:
+- **AI Hallucinations**: Generic case names like "Smith v Jones" that are commonly fabricated
+- **Impossible Citations**: Future dates, non-existent courts, anachronistic references
+- **Suspicious Patterns**: Placeholder names, single-letter parties, "Corporation v Corporation"
+- **Format Issues**: Malformed parallel citations, unrealistic page numbers
+
+**How it works**:
+- Runs instantly as part of pattern matching
+- Uses comprehensive pattern library based on Australian legal citation formats
+- No internet connection required
+- Provides immediate feedback on problematic patterns
+
+**Example detections**:
+```
+GENERIC CASE NAME: Smith v Jones
+→ FAILURE: Both parties use common surnames (possible AI hallucination)
+→ ACTION: Flagging for manual verification
+
+ANACHRONISTIC CITATION: [1970] FCAFC 123
+→ FAILURE: Full Federal Court not established until 1977
+→ ACTION: Excluding impossible historical reference
+```
+
+### Phase 2: Citation Verification (Online Database Checks)
+
+**Purpose**: Confirm that citations actually exist in legal databases
+
+**What it verifies**:
+- **Australian Cases**: Checks against AustLII database
+- **International Citations**: Recognizes UK, US, NZ citations as valid but not checkable
+- **Traditional Citations**: Accepts format like "(1980) 146 CLR 40" temporarily
+- **Medium-Neutral Citations**: Validates format like "[2020] HCA 41" and retrieves URLs
+
+**How it works**:
+- Makes HEAD requests to AustLII to verify case existence
+- Handles international citations appropriately (marked as verified but not on AustLII)
+- Provides URLs for verified Australian cases
+- Runs during content generation to ensure accuracy
+
+**Example verifications**:
+```
+[2020] HCA 41
+→ Verified: True
+→ URL: https://www.austlii.edu.au/cgi-bin/viewdoc/au/cases/cth/HCA/2020/41.html
+
+[1932] AC 562
+→ Verified: True  
+→ Reason: UK/International citation (Appeal Cases) - not available on AustLII
+```
+
+### How They Work Together
+
+The two systems complement each other:
+
+1. **Validation** runs first to catch obvious problems through pattern analysis
+2. **Verification** confirms that remaining citations actually exist
+3. Together they provide comprehensive quality control
+
+**Example workflow**:
+```
+Input text: "See Smith v Jones [2025] HCA 99"
+
+Phase 1 (Validation):
+- Detects "Smith v Jones" as generic case name
+- Detects "[2025] HCA 99" as future citation
+
+Phase 2 (Verification):  
+- Would check AustLII but validation already flagged issues
+- Both problems reported to user
+```
+
+### Understanding Citation Logs
+
+LitAssist creates two types of citation-related logs:
+
+#### Citation Validation Logs
+**Location**: `logs/citation_validation_YYYYMMDD-HHMMSS.{json|md}`
+
+**When issues found**:
+```markdown
+## Details
+- Method: validate_citation_patterns
+- Input Text Length: 19560 characters
+- Online Verification: True
+- Issues Found: 3
+
+## Issues Found
+- GENERIC CASE NAME: Brown v Wilson
+- FUTURE CITATION: [2026] VSC 123
+- COURT NOT RECOGNIZED: [2020] XYZ 45
+```
+
+**When no issues found**: Minimal log showing successful validation
+
+#### Citation Verification Session Logs
+**Location**: `logs/citation_verification_session_YYYYMMDD-HHMMSS.{json|md}`
+
+**Contents**:
+```markdown
+## Summary
+- Citations Found: 15
+- Verified: 12
+- Unverified: 3
+
+## Verified Citations
+- [2020] HCA 41
+- (1984) 155 CLR 549
+- [2019] FCAFC 185
+
+## Unverified Citations
+- [2020] HCA 999: Not found on AustLII
+- Smith v Jones: Generic case name pattern
+
+## International Citations
+- [1932] AC 562: UK citation - not on AustLII
+- 123 U.S. 456: US citation - not on AustLII
+```
+
+### Command-Specific Citation Handling
+
+Different commands handle citation issues differently:
+
+| Command | Validation | Verification | Response to Issues |
+|---------|------------|--------------|-------------------|
+| lookup | ✓ | ✓ | Warnings in output |
+| digest | ✓ | ✓ | Warnings per chunk |
+| extractfacts | ✓ | ✓ | Enhanced error messages |
+| brainstorm | ✓ | ✓ | Regenerates problematic strategies |
+| strategy | ✓ | ✓ | Discards options with bad citations |
+| draft | ✓ | ✓ | Appends warnings to draft |
+
+### Best Practices
+
+1. **Review all citation warnings** - They indicate potential reliability issues
+2. **Check logs for patterns** - Frequent generic names may indicate AI hallucination
+3. **Verify international citations manually** - System can't check non-Australian databases
+4. **Use verification for critical documents** - Court filings should have zero citation issues
+
+### Benefits
+
+- **Professional Protection**: Prevents reliance on non-existent cases
+- **Quality Assurance**: Ensures all legal references are verifiable
+- **Audit Trail**: Complete logs for compliance and review
+- **Time Savings**: Automatic detection prevents manual citation checking
+
 ## Installation and Setup
 
 **Quick Installation:**

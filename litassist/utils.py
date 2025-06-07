@@ -99,6 +99,12 @@ def save_log(tag: str, payload: dict):
     """
     Save an audit log under logs/ in either JSON or Markdown format.
 
+    Intelligently detects log type and formats markdown appropriately for:
+    - Citation verification/validation logs
+    - HTTP validation logs
+    - Command output logs
+    - Generic/unknown log types
+
     Args:
         tag: A string identifier for the log (e.g., command name).
         payload: Dictionary containing log data including inputs, response, and usage statistics.
@@ -107,10 +113,17 @@ def save_log(tag: str, payload: dict):
         click.ClickException: If there's an error writing the log file.
     """
     from click import get_current_context
+    from litassist.config import CONFIG
 
     ts = time.strftime("%Y%m%d-%H%M%S")
     ctx = get_current_context(silent=True)
-    log_format = ctx.obj.get("log_format", "json") if ctx and ctx.obj else "json"
+
+    # Try to get log format from click context first, then CONFIG, then default to json
+    if ctx and ctx.obj and "log_format" in ctx.obj:
+        log_format = ctx.obj["log_format"]
+    else:
+        # Fall back to CONFIG setting when not in a click context (e.g., during tests)
+        log_format = getattr(CONFIG, "log_format", "json")
 
     # JSON logging
     if log_format == "json":
@@ -123,41 +136,232 @@ def save_log(tag: str, payload: dict):
             raise click.ClickException(f"Failed to save JSON log {path}: {e}")
         return
 
-    # Markdown logging (default)
+    # Markdown logging with intelligent template selection
     md_path = os.path.join(LOG_DIR, f"{tag}_{ts}.md")
     try:
         with open(md_path, "w", encoding="utf-8") as f:
-            # Metadata
-            f.write(f"# {tag} — {ts}\n\n")
-            f.write(f"- **Command**: `{tag}`  \n")
-            f.write(f"- **Parameters**: `{payload.get('params','')}`  \n\n")
-            # Inputs
-            f.write("## Inputs\n\n")
-            for k, v in payload.get("inputs", {}).items():
-                f.write(f"**{k}**:  \n```\n{v}\n```\n\n")
-            # Output
-            f.write("## Output\n\n```\n")
-            f.write(payload.get("response", "").strip())
-            f.write("\n```\n\n")
-            # Usage
-            f.write("## Usage\n\n")
-            usage = payload.get("usage", {})
-            for field in ("prompt_tokens", "completion_tokens", "total_tokens"):
-                if field in usage:
-                    f.write(f"- **{field}**: {usage[field]}  \n")
+            # Detect log type and use appropriate formatter
+            if tag == "citation_verification_session" or "citations_found" in payload:
+                _write_citation_verification_markdown(f, tag, ts, payload)
+            elif tag == "citation_validation" or "validate_citation_patterns" in str(
+                payload.get("method", "")
+            ):
+                _write_citation_validation_markdown(f, tag, ts, payload)
+            elif tag == "austlii_http_validation" or "check_url_exists" in str(
+                payload.get("method", "")
+            ):
+                _write_http_validation_markdown(f, tag, ts, payload)
+            elif tag == "austlii_search_validation":
+                _write_search_validation_markdown(f, tag, ts, payload)
+            elif "response" in payload or "inputs" in payload:
+                # Standard command output format
+                _write_command_output_markdown(f, tag, ts, payload)
+            else:
+                # Generic format for unknown log types
+                _write_generic_markdown(f, tag, ts, payload)
 
-            # Add timing information if available
-            timing = usage.get("timing", {})
-            if timing:
-                f.write("\n## Timing\n\n")
-                f.write(f"- **Start Time**: {timing.get('start_time', 'N/A')}  \n")
-                f.write(f"- **End Time**: {timing.get('end_time', 'N/A')}  \n")
-                f.write(
-                    f"- **Duration**: {timing.get('duration_seconds', 'N/A')} seconds  \n"
-                )
         logging.info(f"Markdown log saved: {md_path}")
     except IOError as e:
         raise click.ClickException(f"Failed to save Markdown log {md_path}: {e}")
+
+
+def _write_citation_verification_markdown(f, tag: str, ts: str, payload: dict):
+    """Write markdown for citation verification logs."""
+    f.write(f"# {tag} — {ts}\n\n")
+
+    # Summary section
+    f.write("## Summary\n\n")
+    f.write(f"- **Method**: `{payload.get('method', 'N/A')}`  \n")
+    f.write(
+        f"- **Input Text Length**: {payload.get('input_text_length', 0)} characters  \n"
+    )
+    f.write(f"- **Citations Found**: {payload.get('citations_found', 0)}  \n")
+    f.write(f"- **Verified**: {payload.get('citations_verified', 0)}  \n")
+    f.write(f"- **Unverified**: {payload.get('citations_unverified', 0)}  \n")
+    f.write(f"- **Processing Time**: {payload.get('processing_time_ms', 'N/A')} ms  \n")
+    f.write(f"- **Timestamp**: {payload.get('timestamp', ts)}  \n\n")
+
+    # Verified citations
+    verified = payload.get("verified_citations", [])
+    if verified:
+        f.write("## Verified Citations\n\n")
+        for citation in verified:
+            f.write(f"- `{citation}`  \n")
+        f.write("\n")
+
+    # Unverified citations
+    unverified = payload.get("unverified_citations", [])
+    if unverified:
+        f.write("## Unverified Citations\n\n")
+        for item in unverified:
+            if isinstance(item, dict):
+                f.write(
+                    f"- `{item.get('citation', 'N/A')}`: {item.get('reason', 'N/A')}  \n"
+                )
+            else:
+                f.write(f"- {item}  \n")
+        f.write("\n")
+
+    # International citations
+    intl_citations = payload.get("international_citations", [])
+    if intl_citations:
+        f.write("## International Citations\n\n")
+        for citation in intl_citations:
+            f.write(f"- **{citation.get('citation', 'N/A')}**  \n")
+            f.write(f"  - Verified: {citation.get('verified', 'N/A')}  \n")
+            f.write(f"  - Reason: {citation.get('reason', 'N/A')}  \n")
+        f.write("\n")
+
+    # Traditional citations
+    trad_citations = payload.get("traditional_citations", [])
+    if trad_citations:
+        f.write("## Traditional Citations\n\n")
+        for citation in trad_citations:
+            f.write(f"- **{citation.get('citation', 'N/A')}**  \n")
+            f.write(f"  - Verified: {citation.get('verified', 'N/A')}  \n")
+            f.write(f"  - Reason: {citation.get('reason', 'N/A')}  \n")
+        f.write("\n")
+
+    # Detailed results
+    detailed = payload.get("detailed_results", [])
+    if detailed:
+        f.write("## Detailed Results\n\n")
+        for result in detailed:
+            f.write(f"### {result.get('citation', 'N/A')}\n\n")
+            f.write(f"- **Verified**: {result.get('verified', 'N/A')}  \n")
+            f.write(
+                f"- **Traditional Format**: {result.get('is_traditional', 'N/A')}  \n"
+            )
+            f.write(f"- **International**: {result.get('is_international', 'N/A')}  \n")
+            if result.get("reason"):
+                f.write(f"- **Reason**: {result.get('reason')}  \n")
+            if result.get("url"):
+                f.write(f"- **URL**: {result.get('url')}  \n")
+            f.write("\n")
+
+
+def _write_citation_validation_markdown(f, tag: str, ts: str, payload: dict):
+    """Write markdown for citation validation logs."""
+    f.write(f"# {tag} — {ts}\n\n")
+
+    # Method and parameters
+    f.write("## Details\n\n")
+    f.write(f"- **Method**: `{payload.get('method', 'N/A')}`  \n")
+    f.write(
+        f"- **Input Text Length**: {payload.get('input_text_length', 0)} characters  \n"
+    )
+    f.write(f"- **Online Verification**: {payload.get('enable_online', False)}  \n")
+    f.write(f"- **Issues Found**: {payload.get('issues_found', 0)}  \n")
+    f.write(f"- **Timestamp**: {payload.get('timestamp', ts)}  \n\n")
+
+    # Issues
+    issues = payload.get("issues", [])
+    if issues:
+        f.write("## Issues Found\n\n")
+        for issue in issues:
+            f.write(f"- {issue}  \n")
+        f.write("\n")
+
+
+def _write_http_validation_markdown(f, tag: str, ts: str, payload: dict):
+    """Write markdown for HTTP validation logs."""
+    f.write(f"# {tag} — {ts}\n\n")
+
+    # Request details
+    f.write("## Request Details\n\n")
+    f.write(f"- **Method**: `{payload.get('method', 'N/A')}`  \n")
+    f.write(f"- **URL**: `{payload.get('url', 'N/A')}`  \n")
+    f.write(f"- **Timeout**: {payload.get('timeout', 'N/A')} seconds  \n\n")
+
+    # Response details
+    f.write("## Response\n\n")
+    f.write(f"- **Status Code**: {payload.get('status_code', 'N/A')}  \n")
+    f.write(f"- **Success**: {payload.get('success', 'N/A')}  \n")
+    f.write(f"- **Response Time**: {payload.get('response_time_ms', 'N/A')} ms  \n")
+    if payload.get("error"):
+        f.write(f"- **Error**: {payload.get('error')}  \n")
+    f.write(f"- **Timestamp**: {payload.get('timestamp', ts)}  \n")
+
+
+def _write_search_validation_markdown(f, tag: str, ts: str, payload: dict):
+    """Write markdown for AustLII search validation logs."""
+    f.write(f"# {tag} — {ts}\n\n")
+
+    f.write("## Search Details\n\n")
+    f.write(f"- **Method**: `{payload.get('method', 'N/A')}`  \n")
+    f.write(f"- **Citation**: `{payload.get('citation', 'N/A')}`  \n")
+    f.write(f"- **Success**: {payload.get('success', 'N/A')}  \n")
+    f.write(f"- **Response Time**: {payload.get('response_time_ms', 'N/A')} ms  \n")
+    f.write(f"- **Timeout**: {payload.get('timeout', 'N/A')} seconds  \n")
+    f.write(f"- **Timestamp**: {payload.get('timestamp', ts)}  \n")
+
+
+def _write_command_output_markdown(f, tag: str, ts: str, payload: dict):
+    """Write markdown for standard command output logs."""
+    # Original format for command outputs
+    f.write(f"# {tag} — {ts}\n\n")
+    f.write(f"- **Command**: `{tag}`  \n")
+    f.write(f"- **Parameters**: `{payload.get('params','')}`  \n\n")
+
+    # Inputs
+    f.write("## Inputs\n\n")
+    for k, v in payload.get("inputs", {}).items():
+        f.write(f"**{k}**:  \n```\n{v}\n```\n\n")
+
+    # Output
+    f.write("## Output\n\n```\n")
+    f.write(payload.get("response", "").strip())
+    f.write("\n```\n\n")
+
+    # Usage
+    f.write("## Usage\n\n")
+    usage = payload.get("usage", {})
+    for field in ("prompt_tokens", "completion_tokens", "total_tokens"):
+        if field in usage:
+            f.write(f"- **{field}**: {usage[field]}  \n")
+
+    # Timing information
+    timing = usage.get("timing", {})
+    if timing:
+        f.write("\n## Timing\n\n")
+        f.write(f"- **Start Time**: {timing.get('start_time', 'N/A')}  \n")
+        f.write(f"- **End Time**: {timing.get('end_time', 'N/A')}  \n")
+        f.write(f"- **Duration**: {timing.get('duration_seconds', 'N/A')} seconds  \n")
+
+
+def _write_generic_markdown(f, tag: str, ts: str, payload: dict):
+    """Write markdown for unknown/generic log types."""
+    f.write(f"# {tag} — {ts}\n\n")
+
+    def write_value(key: str, value: Any, level: int = 0):
+        """Recursively write values with proper formatting."""
+        indent = "  " * level
+
+        if isinstance(value, dict):
+            f.write(f"{indent}**{key}**:\n")
+            for k, v in value.items():
+                write_value(k, v, level + 1)
+        elif isinstance(value, list):
+            f.write(f"{indent}**{key}**:\n")
+            for i, item in enumerate(value):
+                if isinstance(item, dict):
+                    f.write(f"{indent}  - Item {i + 1}:\n")
+                    for k, v in item.items():
+                        write_value(k, v, level + 2)
+                else:
+                    f.write(f"{indent}  - {item}\n")
+        else:
+            # Handle different value types
+            if isinstance(value, str) and len(value) > 100:
+                # Long strings in code blocks
+                f.write(f"{indent}**{key}**:\n{indent}```\n{value}\n{indent}```\n")
+            else:
+                f.write(f"{indent}**{key}**: {value}  \n")
+
+    # Write all payload data
+    for key, value in payload.items():
+        write_value(key, value)
+        f.write("\n")
 
 
 @timed

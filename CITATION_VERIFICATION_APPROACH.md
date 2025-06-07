@@ -10,6 +10,67 @@ AI models are notoriously unreliable when it comes to legal precedent, often hal
 
 ## Core Implementation Architecture
 
+### Two-Phase Citation Quality Control System
+
+LitAssist employs a comprehensive two-phase approach to ensure citation accuracy:
+
+#### Phase 1: Citation Validation (Offline Pattern Analysis)
+**Module**: `litassist/citation_patterns.py`
+**Purpose**: Detect potentially problematic citation patterns without requiring internet access
+
+**Capabilities**:
+- **AI Hallucination Detection**: Identifies generic case names (Smith v Jones, Brown v Wilson)
+- **Impossible Citation Detection**: Future dates, non-existent courts, anachronistic references
+- **Suspicious Pattern Detection**: Placeholder names, single-letter parties, "Corporation v Corporation"
+- **Format Issue Detection**: Malformed parallel citations, unrealistic page numbers
+
+**Implementation**:
+```python
+def validate_citation_patterns(content: str, enable_online: bool = True) -> List[str]
+```
+- Runs instantly as part of pattern matching
+- No internet connection required
+- Provides immediate feedback on problematic patterns
+- Can optionally trigger Phase 2 online verification
+
+#### Phase 2: Citation Verification (Online Database Checks)
+**Module**: `litassist/citation_verify.py`
+**Purpose**: Confirm that citations actually exist in legal databases
+
+**Capabilities**:
+- **Australian Case Verification**: Real-time checks against AustLII database
+- **International Citation Recognition**: Accepts UK, US, NZ citations as valid but not checkable
+- **Traditional Citation Handling**: Temporarily accepts format like "(1980) 146 CLR 40"
+- **Medium-Neutral Citation Validation**: Verifies format like "[2020] HCA 41" and retrieves URLs
+
+**Implementation**:
+```python
+def verify_all_citations(text: str) -> Tuple[List[str], List[Tuple[str, str]]]
+```
+- Makes HEAD requests to AustLII to verify case existence
+- Provides URLs for verified Australian cases
+- Handles international citations appropriately
+- Caches results for performance
+
+### How The Two Phases Work Together
+
+1. **Validation First**: Pattern analysis catches obvious problems immediately
+2. **Verification Second**: Online checks confirm remaining citations exist
+3. **Comprehensive Coverage**: Together they provide complete quality control
+
+**Example Workflow**:
+```
+Input: "See Smith v Jones [2025] HCA 99"
+
+Phase 1 (Validation):
+- Detects "Smith v Jones" as generic case name pattern
+- Detects "[2025] HCA 99" as future citation
+
+Phase 2 (Verification):
+- Would check AustLII but validation already flagged issues
+- Both problems reported to user with specific failure reasons
+```
+
 ### 1. Real-Time AustLII Verification (`litassist/citation_verify.py`)
 
 **✅ IMPLEMENTED**: Complete verification module with the following capabilities:
