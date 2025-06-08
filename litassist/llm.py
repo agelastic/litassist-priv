@@ -487,6 +487,14 @@ class LLMClient:
                 openai.api_base = original_api_base_retry
                 openai.api_key = original_api_key_retry
 
+        # Normalize usage data so it can be safely serialized
+        if hasattr(usage, "_asdict"):
+            usage = usage._asdict()
+        elif hasattr(usage, "to_dict"):
+            usage = usage.to_dict()
+        elif not isinstance(usage, dict):
+            usage = {"raw": str(usage)}
+
         # Log the LLM call
         save_log(
             f"llm_{self.model.replace('/', '_')}",
