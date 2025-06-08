@@ -10,6 +10,7 @@ with GPT-4o that incorporates these citations.
 import click
 
 from litassist.config import CONFIG
+from litassist.prompts import PROMPTS
 from litassist.utils import (
     read_document,
     chunk_text,
@@ -200,7 +201,7 @@ def draft(documents, query, verify, diversity):
     # Generate draft with GPT-4o
     client = LLMClientFactory.for_command("draft")
     # Build system prompt based on available content
-    system_prompt = "Australian law only. Draft a legally precise document with proper citations and structure."
+    system_prompt = PROMPTS.get('processing.draft.system_prompt_base')
 
     if structured_content["case_facts"] and structured_content["strategies"]:
         system_prompt += " You have been provided with structured case facts and legal strategies from brainstorming. Use the case facts as the factual foundation and consider the strategies when developing your arguments, particularly any marked as 'most likely to succeed'."
@@ -211,8 +212,9 @@ def draft(documents, query, verify, diversity):
 
     system_prompt += " Be thorough but concise. Focus on legal accuracy, relevant precedents, and clear organization. Use section headings, numbered paragraphs, and proper legal citation format. Maintain internal consistency throughout and ensure all claims are supported by the provided context. Avoid speculation beyond the provided information."
 
-    # Create base user prompt
-    base_user_prompt = f"Context:\n{context}\n\nDraft {query}"
+    # Create user prompt using centralized template
+    user_template = PROMPTS.get('processing.draft.user_prompt_template')
+    base_user_prompt = user_template.format(document_type=query, user_request=f"Context:\n{context}")
 
     # Add reasoning trace to user prompt
     user_prompt = create_reasoning_prompt(base_user_prompt, "draft")

@@ -10,6 +10,7 @@ import click
 import os
 
 from litassist.config import CONFIG
+from litassist.prompts import PROMPTS
 from litassist.utils import (
     chunk_text,
     save_log,
@@ -67,20 +68,9 @@ def extractfacts(file, verify):
 
     # For single chunk, use original approach
     if len(chunks) == 1:
-        base_prompt = (
-            "Extract under these headings (include all relevant details):\n"
-            "1. Parties (include roles and relationships)\n"
-            "2. Background (include commercial/policy context if relevant)\n"
-            "3. Key Events (in chronological order)\n"
-            "4. Legal Issues\n"
-            "5. Evidence Available (prioritize key evidence)\n"
-            "6. Opposing Arguments (include known weaknesses/gaps)\n"
-            "7. Procedural History (current status and past proceedings)\n"
-            "8. Jurisdiction (include specific court/forum)\n"
-            "9. Applicable Law\n"
-            "10. Client Objectives (include any constraints/limitations)\n\n"
-            + chunks[0]
-        )
+        # Use centralized format template
+        format_instructions = PROMPTS.get_format_template('case_facts_10_heading')
+        base_prompt = f"Extract under these headings (include all relevant details):\n{format_instructions}\n\n{chunks[0]}"
 
         # Add reasoning trace to prompt
         prompt = create_reasoning_prompt(base_prompt, "extractfacts")
@@ -89,7 +79,7 @@ def extractfacts(file, verify):
                 [
                     {
                         "role": "system",
-                        "content": "Australian law only. Extract factual information precisely under the requested headings. Focus on being comprehensive, accurate, and well-organized. Use clear paragraph structure and bullet points where appropriate. Maintain a neutral, factual tone throughout. Ensure all extracted information follows Australian legal terminology and conventions.",
+                        "content": PROMPTS.get_system_prompt('extractfacts'),
                     },
                     {"role": "user", "content": prompt},
                 ]
@@ -136,18 +126,11 @@ Just extract the raw facts found in this excerpt:
 
         # Now organize all accumulated facts into the required structure
         all_facts = "\n\n".join(accumulated_facts)
+        # Use centralized format template for organizing
+        format_instructions = PROMPTS.get_format_template('case_facts_10_heading')
         base_organize_prompt = f"""Organize the following extracted facts into these 10 headings:
 
-1. **Parties**: Identify all parties involved in the matter, including their roles and relevant characteristics
-2. **Background**: Provide context about the relationship between parties and circumstances leading to the dispute
-3. **Key Events**: List significant events in chronological order with dates where available
-4. **Legal Issues**: Enumerate the legal questions that need to be addressed
-5. **Evidence Available**: Catalog all available evidence, documents, and potential witnesses
-6. **Opposing Arguments**: Summarize the other party's position and claims
-7. **Procedural History**: Detail any court proceedings, orders, or legal steps taken to date
-8. **Jurisdiction**: Specify the relevant court or tribunal and basis for jurisdiction
-9. **Applicable Law**: List relevant statutes, regulations, and legal principles
-10. **Client Objectives**: State what the client hopes to achieve
+{format_instructions}
 
 Raw facts to organize:
 {all_facts}
@@ -166,7 +149,7 @@ Important:
                 [
                     {
                         "role": "system",
-                        "content": "Australian law only. Organize the extracted facts precisely under the requested headings. Ensure consistency and avoid duplication.",
+                        "content": PROMPTS.get_system_prompt('extractfacts'),
                     },
                     {"role": "user", "content": organize_prompt},
                 ]

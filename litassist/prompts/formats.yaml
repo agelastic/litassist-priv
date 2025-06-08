@@ -1,0 +1,70 @@
+# Format templates for structured output
+# These templates define the structure for various command outputs
+
+formats:
+  # 10-heading case facts structure used by extractfacts and strategy commands
+  case_facts_10_heading: |
+    1. **Parties**: Identify all parties involved in the matter, including their roles and relevant characteristics
+    2. **Background**: Provide context about the relationship between parties and circumstances leading to the dispute
+    3. **Key Events**: List significant events in chronological order with dates where available
+    4. **Legal Issues**: Enumerate the legal questions that need to be addressed
+    5. **Evidence Available**: Catalog all available evidence, documents, and potential witnesses
+    6. **Opposing Arguments**: Summarize the other party's position and claims
+    7. **Procedural History**: Detail any court proceedings, orders, or legal steps taken to date
+    8. **Jurisdiction**: Specify the relevant court or tribunal and basis for jurisdiction
+    9. **Applicable Law**: List relevant statutes, regulations, and legal principles
+    10. **Client Objectives**: State what the client hopes to achieve
+  
+  # Strategic options format used by brainstorm and strategy commands
+  strategic_options: |
+    **[Strategy Title]**
+    - **Approach:** [Brief description]
+    - **Legal Basis:** [Relevant law/precedent]
+    - **Likelihood:** [High/Medium/Low with reasoning]
+    - **Timeline:** [Expected duration]
+    - **Resources:** [Required resources]
+    - **Risks:** [Key risks and mitigation]
+  
+  # IRAC structure for legal analysis (lookup command)
+  irac_structure: |
+    **Issue**: [Legal question to be resolved]
+    **Rule**: [Applicable law, statute, or precedent]
+    **Application**: [How the law applies to these facts]
+    **Conclusion**: [The likely legal outcome]
+  
+  # Chronological summary format (digest command)
+  chronological_summary: |
+    **CHRONOLOGICAL SUMMARY**
+    
+    - **[Date]**: [Event description]
+    - **[Date]**: [Event description]
+    - **[Date]**: [Event description]
+  
+  # Citation extraction format (lookup --extract citations)
+  citation_extraction: |
+    **CITATIONS**
+    
+    Cases:
+    - [Case Name] [Year] [Court] [Citation]
+    - [Case Name] [Year] [Court] [Citation]
+    
+    Legislation:
+    - [Act Name] [Year] [Jurisdiction] s [Section]
+    - [Act Name] [Year] [Jurisdiction] s [Section]
+  
+  # Legal principles extraction (lookup --extract principles)
+  principles_extraction: |
+    **LEGAL PRINCIPLES**
+    
+    1. [Principle statement] - [Supporting case/statute]
+    2. [Principle statement] - [Supporting case/statute]
+    3. [Principle statement] - [Supporting case/statute]
+  
+  # Practical checklist format (lookup --extract checklist)
+  checklist_extraction: |
+    **PRACTICAL CHECKLIST**
+    
+    □ [Action item with specific requirement]
+    □ [Evidence needed with description]
+    □ [Procedural step with deadline]
+    □ [Document to obtain or prepare]

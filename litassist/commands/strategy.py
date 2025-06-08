@@ -24,6 +24,7 @@ from litassist.utils import (
     verify_content_if_needed,
 )
 from litassist.llm import LLMClientFactory
+from litassist.prompts import PROMPTS
 
 
 def validate_case_facts_format(text: str) -> bool:
@@ -237,34 +238,9 @@ You must analyze case facts and produce strategic options for achieving a specif
     elif parsed_strategies:
         system_prompt += "\n\nYou have been provided with brainstormed strategies including orthodox and unorthodox approaches. Consider these when developing your strategic options, but focus on those most relevant to the specific outcome requested."
 
-    system_prompt += """
-
-For the strategic options section, use EXACTLY this format:
-
-# STRATEGIC OPTIONS FOR: [OUTCOME IN CAPS]
-
-## OPTION 1: [Title of Strategy]
-* **Probability of Success**: [X]%
-* **Principal Hurdles**:
-  1. [Description of hurdle] — *[Case citation with pinpoint reference]*
-  2. [Description of hurdle] — *[Case citation with pinpoint reference]*
-* **Critical Missing Facts**:
-  - [Missing fact 1]
-  - [Missing fact 2]
-
-## OPTION 2: [Title of Strategy]
-[Same format as above]
-
-[Continue for 3-5 options total]
-
-Requirements:
-- Australian law only
-- Use real case citations with pinpoint references (e.g., Smith v Jones [2015] HCA 5 [27])
-- Be specific about probability percentages based on precedents
-- Identify genuine hurdles based on the case facts provided
-- Note actual missing facts from the case materials
-- Do not introduce facts not in the case materials
-"""
+    # Use centralized strategic options instructions
+    strategic_instructions = PROMPTS.get('strategies.strategy.strategic_options_instructions')
+    system_prompt += f"\n\n{strategic_instructions}"
 
     base_user_prompt = f"""CASE FACTS:
 {facts_content}
@@ -771,20 +747,8 @@ Focus on:
             f"  ⚠️  Could not generate any options with verified citations after {max_attempts} attempts"
         )
 
-    # Generate recommended next steps
-    next_steps_prompt = """Based on the strategic options above, provide EXACTLY 5 immediate next steps.
-
-Format your response as:
-
-# RECOMMENDED NEXT STEPS
-
-1. [Specific action with reference to relevant rules/requirements]
-2. [Specific action with reference to relevant rules/requirements]
-3. [Specific action with reference to relevant rules/requirements]
-4. [Specific action with reference to relevant rules/requirements]
-5. [Specific action with reference to relevant rules/requirements]
-
-Focus on evidence gathering, required notices, preliminary applications, or other procedural steps required by Australian court rules. Be specific to this case."""
+    # Generate recommended next steps using centralized prompt
+    next_steps_prompt = PROMPTS.get('strategies.strategy.next_steps_prompt')
 
     try:
         next_steps_content, _ = llm_client.complete(
@@ -925,16 +889,11 @@ I, [Full Name], of [Address], [Occupation], state on oath/affirm:
 **Deponent's signature:** _______________""",
     }
 
-    doc_prompt = f"""Based on the case facts and strategic options, draft a {doc_type.upper()} to achieve the outcome: "{outcome}"
+    # Use centralized document generation context
+    doc_context = PROMPTS.get('strategies.strategy.document_generation_context')
+    doc_prompt = f"""{doc_context.format(recommended_strategy=f"draft a {doc_type.upper()} to achieve the outcome: '{outcome}'")}
 
-{doc_formats.get(doc_type, doc_formats['claim'])}
-
-Requirements:
-- Use formal Australian legal drafting style
-- Include specific facts from the case materials
-- Reference actual parties and dates from the case facts
-- Cite relevant authorities with pinpoint references
-- Do not invent facts not in the case materials"""
+{doc_formats.get(doc_type, doc_formats['claim'])}"""
 
     try:
         document_content, _ = llm_client.complete(

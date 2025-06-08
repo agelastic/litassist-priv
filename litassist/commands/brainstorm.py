@@ -26,6 +26,7 @@ from litassist.utils import (
     save_command_output,
 )
 from litassist.llm import LLMClientFactory, LLMClient
+from litassist.prompts import PROMPTS
 
 
 
@@ -100,18 +101,12 @@ def regenerate_bad_strategies(
 
         for strategy_num, bad_strategy in strategies_to_regenerate:
             # Create focused regeneration prompt
+            # Use centralized regeneration prompt template
+            regen_template = PROMPTS.get('strategies.brainstorm.regeneration_prompt')
+            citation_instructions = PROMPTS.get('verification.citation_retry_instructions')
             regen_prompt = f"""{base_prompt}
 
-IMPORTANT: The previous generation contained strategies with unverifiable citations. 
-Please generate ONE replacement strategy (this will be strategy #{strategy_num}).
-
-Do NOT use any of these problematic citations or similar patterns:
-- Generic case names like "Smith v Jones", "Brown v Wilson" 
-- Future citations (years after 2025)
-- Impossible court references
-- Non-existent case citations
-
-Use only real, verifiable Australian cases that exist on AustLII, or omit citations entirely if unsure.
+{regen_template.format(feedback=f"Strategy #{strategy_num} contained unverifiable citations", citation_instructions=citation_instructions)}
 
 Generate ONLY strategy #{strategy_num} in the exact format:
 
@@ -254,12 +249,14 @@ def brainstorm(facts_file, side, area, verify):
     click.echo("Generating orthodox strategies...")
     orthodox_client = LLMClientFactory.for_command("brainstorm", "orthodox")
 
+    # Use centralized orthodox prompt template
+    orthodox_template = PROMPTS.get('strategies.brainstorm.orthodox_prompt')
     orthodox_base_prompt = f"""Facts:
 {facts}
 
 I am representing the {side} in this {area} law matter.
 
-Generate 10 ORTHODOX legal strategies - established, conservative approaches with strong legal precedent.
+{orthodox_template}
 
 Please provide output in EXACTLY this format:
 
@@ -273,9 +270,7 @@ Please provide output in EXACTLY this format:
    [Brief explanation]
    Key principles: [Legal principles with citations]
 
-[Continue for 10 orthodox strategies]
-
-Focus on well-established legal approaches with clear precedential support."""
+[Continue for 10 orthodox strategies]"""
 
     # Add reasoning trace to orthodox prompt
     orthodox_prompt = create_reasoning_prompt(
@@ -309,12 +304,14 @@ Focus on well-established legal approaches with clear precedential support."""
     click.echo("Generating unorthodox strategies...")
     unorthodox_client = LLMClientFactory.for_command("brainstorm", "unorthodox")
 
+    # Use centralized unorthodox prompt template
+    unorthodox_template = PROMPTS.get('strategies.brainstorm.unorthodox_prompt')
     unorthodox_base_prompt = f"""Facts:
 {facts}
 
 I am representing the {side} in this {area} law matter.
 
-Generate 10 UNORTHODOX legal strategies - creative, innovative approaches that push legal boundaries.
+{unorthodox_template}
 
 Please provide output in EXACTLY this format:
 
@@ -328,9 +325,7 @@ Please provide output in EXACTLY this format:
    [Brief explanation]
    Key principles: [Legal principles or innovative theories]
 
-[Continue for 10 unorthodox strategies]
-
-Be creative and innovative while acknowledging any legal uncertainties or risks."""
+[Continue for 10 unorthodox strategies]"""
 
     # Add reasoning trace to unorthodox prompt
     unorthodox_prompt = create_reasoning_prompt(
@@ -365,6 +360,8 @@ Be creative and innovative while acknowledging any legal uncertainties or risks.
     click.echo("Analyzing most promising strategies...")
     analysis_client = LLMClientFactory.for_command("brainstorm", "analysis")
 
+    # Use centralized analysis prompt template
+    analysis_template = PROMPTS.get('strategies.brainstorm.analysis_prompt')
     analysis_base_prompt = f"""Facts:
 {facts}
 
@@ -376,7 +373,7 @@ ORTHODOX STRATEGIES GENERATED:
 UNORTHODOX STRATEGIES GENERATED:
 {unorthodox_content}
 
-Analyze ALL the strategies above and select the 3-5 most likely to succeed.
+{analysis_template}
 
 Please provide output in EXACTLY this format:
 
@@ -388,9 +385,7 @@ Please provide output in EXACTLY this format:
 2. [Strategy Title from above]
    [Why this strategy is most likely to succeed]
 
-[List 3-5 strategies total that are most likely to succeed]
-
-Consider both orthodox and unorthodox options. Base selections on legal merit, factual support, and likelihood of judicial acceptance."""
+[List 3-5 strategies total that are most likely to succeed]"""
 
     analysis_prompt = create_reasoning_prompt(
         analysis_base_prompt, "brainstorm-analysis"

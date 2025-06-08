@@ -1,0 +1,136 @@
+# Strategic analysis and brainstorming prompt templates
+# Used by brainstorm.py and strategy.py commands for generating and analyzing legal strategies
+
+strategies:
+  # Brainstorm command prompts
+  brainstorm:
+    # Orthodox strategies generation prompt
+    # USED BY: brainstorm.py generate_strategies() - when approach="orthodox"
+    # LOCATION: brainstorm.py:257-278 (to be extracted)
+    orthodox_prompt: |
+      Generate 10 ORTHODOX legal strategies - established, conservative approaches that follow conventional wisdom and accepted practice. Focus on:
+      
+      - Precedent-based arguments
+      - Traditional legal remedies
+      - Conservative interpretations
+      - Established case law
+      - Standard procedural approaches
+      - Well-settled legal principles
+      - Conventional dispute resolution
+      - Risk-averse strategies
+      
+      For each strategy, provide:
+      1. Strategy name/title
+      2. Brief description (2-3 sentences)
+      3. Legal basis or precedent
+      4. Likelihood of success
+      5. Key considerations
+    
+    # Unorthodox strategies generation prompt
+    # USED BY: brainstorm.py generate_strategies() - when approach="unorthodox"
+    # LOCATION: brainstorm.py:312-333 (to be extracted)
+    unorthodox_prompt: |
+      Generate 10 UNORTHODOX legal strategies - creative, innovative approaches that think outside conventional frameworks. Focus on:
+      
+      - Novel legal arguments
+      - Creative use of existing law
+      - Innovative procedural approaches
+      - Cross-jurisdictional precedents
+      - Emerging legal principles
+      - Strategic forum shopping
+      - Unconventional remedy combinations
+      - Disruptive legal theories
+      
+      For each strategy, provide:
+      1. Strategy name/title
+      2. Brief description (2-3 sentences)
+      3. Legal basis or novel interpretation
+      4. Risk assessment
+      5. Innovation factor
+    
+    # Strategy analysis prompt
+    # USED BY: brainstorm.py generate_strategies() - when approach="analysis"
+    # LOCATION: brainstorm.py:368-393 (to be extracted)
+    analysis_prompt: |
+      Analyze ALL the strategies above and select the 3-5 most likely to succeed based on:
+      
+      **SELECTION CRITERIA:**
+      - Legal merit and strength of precedent
+      - Practical feasibility given available resources
+      - Risk/reward ratio
+      - Timeline considerations
+      - Client objectives alignment
+      - Jurisdictional factors
+      - Available evidence strength
+      
+      **REQUIRED ANALYSIS:**
+      For each selected strategy:
+      1. **Why this strategy was selected** (detailed reasoning)
+      2. **Implementation roadmap** (step-by-step approach)
+      3. **Resource requirements** (time, cost, expertise needed)
+      4. **Risk assessment** (potential downsides and mitigation)
+      5. **Success probability** (realistic percentage with reasoning)
+      
+      **FINAL RECOMMENDATION:**
+      Conclude with your #1 recommended strategy and a compelling 2-3 paragraph justification.
+    
+    # Regeneration prompt with feedback incorporation
+    # USED BY: brainstorm.py brainstorm() - when --regenerate flag is used
+    # LOCATION: brainstorm.py:103-120 (to be extracted)
+    regeneration_prompt: |
+      Based on the following feedback: "{feedback}"
+      
+      Please regenerate the strategic analysis, incorporating this feedback while maintaining the same analytical rigor and Australian legal focus.
+      
+      {citation_instructions}
+  
+  # Strategy command prompts  
+  strategy:
+    # Strategic options format instructions
+    # USED BY: strategy.py strategy() - for strategic options section
+    # LOCATION: strategy.py:240-267 (to be extracted)
+    strategic_options_instructions: |
+      For the strategic options section, use EXACTLY this format with numbered strategies, each containing these subsections:
+      
+      **1. [Strategy Name]**
+      - **Approach:** [Brief description]
+      - **Legal Basis:** [Relevant law/precedent]
+      - **Likelihood:** [High/Medium/Low with reasoning]
+      - **Timeline:** [Expected duration]
+      - **Resources:** [Required resources]
+      - **Risks:** [Key risks and mitigation]
+    
+    # Next steps generation prompt
+    # USED BY: strategy.py strategy() - for generating immediate action items
+    # LOCATION: strategy.py:775-787 (to be extracted)
+    next_steps_prompt: |
+      Based on the strategic options above, provide EXACTLY 5 immediate next steps that should be taken within the next 2-4 weeks. Format as:
+      
+      **IMMEDIATE NEXT STEPS (2-4 weeks):**
+      
+      1. **[Action Item]** - [Specific task description with timeline]
+      2. **[Action Item]** - [Specific task description with timeline]
+      3. **[Action Item]** - [Specific task description with timeline]
+      4. **[Action Item]** - [Specific task description with timeline]
+      5. **[Action Item]** - [Specific task description with timeline]
+      
+      Each step should be:
+      - Specific and actionable
+      - Have a clear timeline
+      - Identify responsible party
+      - Include expected outcome
+    
+    # Document generation context
+    # USED BY: strategy.py strategy() - for contextualizing document drafts
+    # LOCATION: strategy.py:928-937 (to be extracted)
+    document_generation_context: |
+      Based on the strategic analysis above, the recommended approach is to proceed with: {recommended_strategy}
+      
+      This document should align with that strategic direction and incorporate the key legal arguments identified.
+      
+      Document requirements:
+      - Follow Australian court formatting requirements
+      - Use proper legal citations
+      - Maintain professional tone
+      - Include all required sections
+      - Reference supporting evidence where applicable

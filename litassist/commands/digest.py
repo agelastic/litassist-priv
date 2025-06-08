@@ -10,6 +10,7 @@ import click
 import os
 
 from litassist.config import CONFIG
+from litassist.prompts import PROMPTS
 from litassist.utils import (
     read_document, 
     chunk_text, 
@@ -65,18 +66,20 @@ def digest(file, mode):
     # Process each chunk with a progress bar
     with click.progressbar(chunks, label="Processing chunks") as chunks_bar:
         for idx, chunk in enumerate(chunks_bar, start=1):
-            prompt = (
-                "Provide a concise chronological summary:\n\n" + chunk
-                if mode == "summary"
-                else "Identify any potential legal issues:\n\n" + chunk
-            )
+            # Use centralized digest prompts
+            if mode == "summary":
+                digest_prompt = PROMPTS.get('processing.digest.summary_mode')
+                prompt = f"{digest_prompt}\n\n{chunk}"
+            else:  # issues mode
+                digest_prompt = PROMPTS.get('processing.digest.issues_mode')
+                prompt = f"{digest_prompt}\n\n{chunk}"
             # Call the LLM
             try:
                 content, usage = client.complete(
                     [
                         {
                             "role": "system",
-                            "content": "Australian law only. Structure your response logically with clear headings, bullet points for key facts, and proper paragraph breaks. Focus on legal accuracy over comprehensiveness, and cite relevant legislation or cases when identified. Conclude each section with a definitive statement rather than open-ended observations.",
+                            "content": PROMPTS.get('processing.digest.system_prompt'),
                         },
                         {"role": "user", "content": prompt},
                     ]

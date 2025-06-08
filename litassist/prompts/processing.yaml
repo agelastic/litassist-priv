@@ -1,0 +1,106 @@
+# Document processing and analysis prompt templates
+# Used for digest, draft, and extractfacts commands
+
+processing:
+  # Digest command prompts
+  # USED BY: digest.py digest() - summary and issues modes
+  # LOCATION: digest.py:68-80 (to be extracted)
+  digest:
+    summary_mode: |
+      Create a chronological summary of the document focusing on key events, dates, and parties. Structure as:
+      
+      **CHRONOLOGICAL SUMMARY**
+      
+      - **[Date]**: [Event description]
+      - **[Date]**: [Event description]
+      - **[Date]**: [Event description]
+      
+      Include all significant developments, procedural steps, and factual events in chronological order.
+    
+    issues_mode: |
+      Identify and analyze legal issues present in the document. Structure as:
+      
+      **LEGAL ISSUES ANALYSIS**
+      
+      **Issue 1: [Issue Name]**
+      - **Description:** [What the issue involves]
+      - **Legal Framework:** [Relevant law/precedent]
+      - **Analysis:** [Discussion of the issue]
+      - **Significance:** [Why this matters]
+      
+      **Issue 2: [Issue Name]**
+      [Same structure...]
+      
+      Focus on substantive legal questions, procedural issues, and areas requiring legal analysis.
+    
+    system_prompt: |
+      Extract and organize information from this document. Focus on being comprehensive, accurate, and well-organized. Use clear paragraph structure and bullet points where appropriate. Maintain a neutral, analytical tone throughout.
+  
+  # Draft command prompts
+  # USED BY: draft.py draft() - system and user prompts
+  # LOCATION: draft.py:203-215 (to be extracted)
+  draft:
+    system_prompt_base: |
+      You are a senior Australian barrister with expertise in drafting high-quality legal documents. Create professional, well-structured documents that comply with Australian court rules and legal conventions.
+    
+    system_prompt_case_facts: |
+      Australian law only. You have been provided with structured case facts. Use these facts as the foundation for your legal draft. Ensure consistency with the facts provided and do not introduce new factual claims.
+    
+    system_prompt_strategies: |
+      Australian law only. You have been provided with legal strategies for this matter. Consider these strategic approaches when drafting, particularly those marked as most likely to succeed. Ensure your draft aligns with the recommended strategic direction.
+    
+    system_prompt_general: |
+      Australian law only. Draft a legally precise document with proper citations and structure. Follow Australian legal drafting conventions and ensure all arguments are well-supported.
+    
+    context_aware_prompt: |
+      Context from case analysis:
+      {context}
+      
+      Draft a {document_type} that incorporates the strategic direction and legal arguments identified above. Ensure the document is:
+      - Professionally formatted
+      - Legally sound
+      - Strategically aligned
+      - Court-rule compliant
+      - Evidence-based where applicable
+    
+    user_prompt_template: |
+      Draft a {document_type}: {user_request}
+  
+  # Multi-chunk extraction prompts
+  # USED BY: extractfacts.py extractfacts() - chunk processing
+  # LOCATION: extractfacts.py:99-113 (to be extracted)
+  extraction:
+    chunk_facts_prompt: |
+      From this excerpt (part {chunk_num} of {total_chunks}), extract any facts relevant to:
+      - Parties involved
+      - Background/context
+      - Key events with dates
+      - Legal issues raised
+      - Evidence mentioned
+      - Arguments made
+      - Procedural matters
+      - Jurisdictional details
+      - Applicable laws
+      - Client objectives
+      
+      Just extract the raw facts found in this excerpt:
+    
+    chunk_system_prompt: |
+      Extract facts from this document excerpt. Be comprehensive but only include information actually present in this excerpt.
+    
+    organize_facts_prompt: |
+      Organize the following extracted facts into these 10 headings:
+      
+      {format_instructions}
+      
+      Raw facts to organize:
+      {all_facts}
+      
+      Important: 
+      - Only include information that was actually in the document
+      - If information for a heading is not available, write "Not specified in the document"
+      - Maintain chronological order for events
+      - Be comprehensive but factual
+    
+    organize_system_prompt: |
+      Organize the extracted facts precisely under the requested headings. Ensure consistency and avoid duplication.

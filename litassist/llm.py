@@ -11,6 +11,7 @@ from typing import List, Dict, Any, Tuple
 
 from litassist.utils import timed, save_log
 from litassist.config import CONFIG
+from litassist.prompts import PROMPTS
 import time
 from litassist.citation_verify import (
     verify_all_citations,
@@ -310,7 +311,7 @@ class LLMClient:
         if is_o1_model:
             # o1 models don't support system messages - merge into first user message
             modified_messages = []
-            system_content = "Use Australian English spellings and terminology."
+            system_content = PROMPTS.get('base.australian_law')
 
             # Collect all system messages
             system_messages = [msg for msg in messages if msg.get("role") == "system"]
@@ -324,9 +325,7 @@ class LLMClient:
                     [msg.get("content", "") for msg in system_messages]
                 )
                 if "Australian English" not in system_content:
-                    system_content += (
-                        "\nUse Australian English spellings and terminology."
-                    )
+                    system_content += "\n" + PROMPTS.get('base.australian_law')
 
             # Find first user message and prepend system content
             for i, msg in enumerate(non_system_messages):
@@ -353,16 +352,14 @@ class LLMClient:
                     ) == "system" and "Australian English" not in msg.get(
                         "content", ""
                     ):
-                        msg[
-                            "content"
-                        ] += "\nUse Australian English spellings and terminology."
+                        msg["content"] += "\n" + PROMPTS.get('base.australian_law')
             else:
                 # Add system message if none exists
                 messages.insert(
                     0,
                     {
                         "role": "system",
-                        "content": "Use Australian English spellings and terminology.",
+                        "content": PROMPTS.get('base.australian_law'),
                     },
                 )
 
@@ -417,30 +414,45 @@ class LLMClient:
             # If we got here, all citations are verified or were safely removed
             if verification_issues:
                 # Log what was cleaned but still proceed
-                print(f"⚠️  Citation verification: {verification_issues[0]}")
+                try:
+                    warning_msg = PROMPTS.get('warnings.citation_verification_warning', issue=verification_issues[0])
+                except (KeyError, ValueError):
+                    warning_msg = f"⚠️  Citation verification: {verification_issues[0]}"
+                    
+                print(warning_msg)
                 content = verified_content
 
         except CitationVerificationError as e:
             # Strict mode failed - attempt retry with enhanced prompt
-            print(f"🚫 {str(e)}")
-            print("🔄 Retrying with enhanced citation instructions...")
+            try:
+                strict_failed_msg = PROMPTS.get('warnings.strict_mode_failed', error=str(e))
+                retrying_msg = PROMPTS.get('warnings.retrying_with_instructions')
+            except (KeyError, ValueError):
+                strict_failed_msg = f"🚫 {str(e)}"
+                retrying_msg = "🔄 Retrying with enhanced citation instructions..."
+                
+            print(strict_failed_msg)
+            print(retrying_msg)
 
             # Enhance the last user message with strict citation instructions
             enhanced_messages = messages.copy()
+            try:
+                citation_instructions = PROMPTS.get('verification.citation_retry_instructions')
+            except KeyError:
+                # Fallback to hardcoded if prompts not available
+                citation_instructions = (
+                    "IMPORTANT: Use only real, verifiable Australian cases that exist on AustLII. "
+                    "Do not invent case names. If unsure about a citation, omit it rather than guess."
+                )
+            
             if is_o1_model:
                 # For o1 models, append to the enhanced user content from earlier processing
                 if enhanced_messages and enhanced_messages[-1].get("role") == "user":
-                    enhanced_messages[-1]["content"] += (
-                        "\n\nIMPORTANT: Use only real, verifiable Australian cases that exist on AustLII. "
-                        "Do not invent case names. If unsure about a citation, omit it rather than guess."
-                    )
+                    enhanced_messages[-1]["content"] += f"\n\n{citation_instructions}"
             else:
                 # For regular models with system messages
                 if enhanced_messages and enhanced_messages[-1].get("role") == "user":
-                    enhanced_messages[-1]["content"] += (
-                        "\n\nIMPORTANT: Use only real, verifiable Australian cases that exist on AustLII. "
-                        "Do not invent case names. If unsure about a citation, omit it rather than guess."
-                    )
+                    enhanced_messages[-1]["content"] += f"\n\n{citation_instructions}"
 
             # Retry with enhanced prompt - need to set API base again
             original_api_base_retry = openai.api_base
@@ -470,18 +482,33 @@ class LLMClient:
                 content = verified_retry_content
                 usage = retry_usage
                 if retry_issues:
-                    print(f"✅ Retry successful: {retry_issues[0]}")
+                    try:
+                        success_msg = PROMPTS.get('warnings.retry_successful', issue=retry_issues[0])
+                    except (KeyError, ValueError):
+                        success_msg = f"✅ Retry successful: {retry_issues[0]}"
+                    print(success_msg)
                 else:
-                    print("✅ Retry successful: All citations verified")
+                    try:
+                        all_verified_msg = PROMPTS.get('warnings.all_citations_verified')
+                    except (KeyError, ValueError):
+                        all_verified_msg = "✅ Retry successful: All citations verified"
+                    print(all_verified_msg)
 
             except CitationVerificationError as retry_error:
                 # Both attempts failed - this is a critical error
-                print(f"💥 Retry also failed: {str(retry_error)}")
-                raise CitationVerificationError(
-                    "CRITICAL: Multiple attempts to generate content with verified citations failed. "
-                    "The AI model is consistently generating unverifiable legal citations. "
-                    "Manual intervention required."
-                )
+                try:
+                    retry_failed_msg = PROMPTS.get('warnings.retry_also_failed', error=str(retry_error))
+                    multiple_attempts_msg = PROMPTS.get('warnings.multiple_attempts_failed')
+                except (KeyError, ValueError):
+                    retry_failed_msg = f"💥 Retry also failed: {str(retry_error)}"
+                    multiple_attempts_msg = (
+                        "CRITICAL: Multiple attempts to generate content with verified citations failed. "
+                        "The AI model is consistently generating unverifiable legal citations. "
+                        "Manual intervention required."
+                    )
+                    
+                print(retry_failed_msg)
+                raise CitationVerificationError(multiple_attempts_msg)
             finally:
                 # Restore original settings after retry
                 openai.api_base = original_api_base_retry
@@ -528,15 +555,22 @@ class LLMClient:
         Raises:
             Exception: If the verification API call fails.
         """
+        try:
+            base_prompt = PROMPTS.get('base.australian_law')
+            self_critique = PROMPTS.get('verification.self_critique')
+        except KeyError:
+            # Fallback to hardcoded if prompts not available
+            base_prompt = "Australian law only. Use Australian English spellings and terminology (e.g., 'judgement' not 'judgment', 'defence' not 'defense')."
+            self_critique = "Identify and correct any legal inaccuracies above, and provide the corrected text only. Ensure all spellings follow Australian English conventions."
+            
         critique_prompt = [
             {
                 "role": "system",
-                "content": "Australian law only. Use Australian English spellings and terminology (e.g., 'judgement' not 'judgment', 'defence' not 'defense').",
+                "content": base_prompt,
             },
             {
                 "role": "user",
-                "content": primary_text
-                + "\n\nIdentify and correct any legal inaccuracies above, and provide the corrected text only. Ensure all spellings follow Australian English conventions.",
+                "content": primary_text + "\n\n" + self_critique,
             },
         ]
         # Use deterministic settings for verification with appropriate token limits
@@ -629,29 +663,54 @@ class LLMClient:
             blocking_errors = format_errors + existence_errors + verification_errors
 
             if blocking_errors:
-                # Build categorized error message
-                error_msg = "🚫 CRITICAL: Citation verification failed:\n\n"
+                # Build categorized error message using templates
+                categorized_issues = ""
+                
+                try:
+                    if existence_errors:
+                        categorized_issues += PROMPTS.get('warnings.citation_not_found_header') + "\n"
+                        for citation, reason in existence_errors:
+                            categorized_issues += PROMPTS.get('warnings.citation_error_item', citation=citation, reason=reason) + "\n"
+                        categorized_issues += "\n"
 
-                if existence_errors:
-                    error_msg += "📋 CASES NOT FOUND IN DATABASE:\n"
-                    for citation, reason in existence_errors:
-                        error_msg += f"   • {citation}\n     → {reason}\n"
-                    error_msg += "\n"
+                    if format_errors:
+                        categorized_issues += PROMPTS.get('warnings.citation_format_issues_header') + "\n"
+                        for citation, reason in format_errors:
+                            categorized_issues += PROMPTS.get('warnings.citation_error_item', citation=citation, reason=reason) + "\n"
+                        categorized_issues += "\n"
 
-                if format_errors:
-                    error_msg += "⚠️  CITATION FORMAT ISSUES:\n"
-                    for citation, reason in format_errors:
-                        error_msg += f"   • {citation}\n     → {reason}\n"
-                    error_msg += "\n"
+                    if verification_errors:
+                        categorized_issues += PROMPTS.get('warnings.citation_verification_problems_header') + "\n"
+                        for citation, reason in verification_errors:
+                            categorized_issues += PROMPTS.get('warnings.citation_error_item', citation=citation, reason=reason) + "\n"
+                        categorized_issues += "\n"
+                        
+                    error_msg = PROMPTS.get('warnings.citation_verification_failed', categorized_issues=categorized_issues.rstrip())
+                    
+                except (KeyError, ValueError):
+                    # Fallback to hardcoded if templates not available
+                    error_msg = "🚫 CRITICAL: Citation verification failed:\n\n"
 
-                if verification_errors:
-                    error_msg += "🔍 VERIFICATION PROBLEMS:\n"
-                    for citation, reason in verification_errors:
-                        error_msg += f"   • {citation}\n     → {reason}\n"
-                    error_msg += "\n"
+                    if existence_errors:
+                        error_msg += "📋 CASES NOT FOUND IN DATABASE:\n"
+                        for citation, reason in existence_errors:
+                            error_msg += f"   • {citation}\n     → {reason}\n"
+                        error_msg += "\n"
 
-                error_msg += "🛑 ACTION REQUIRED: These citations appear to be AI hallucinations.\n"
-                error_msg += "   Remove these citations and regenerate, or verify them independently."
+                    if format_errors:
+                        error_msg += "⚠️  CITATION FORMAT ISSUES:\n"
+                        for citation, reason in format_errors:
+                            error_msg += f"   • {citation}\n     → {reason}\n"
+                        error_msg += "\n"
+
+                    if verification_errors:
+                        error_msg += "🔍 VERIFICATION PROBLEMS:\n"
+                        for citation, reason in verification_errors:
+                            error_msg += f"   • {citation}\n     → {reason}\n"
+                        error_msg += "\n"
+
+                    error_msg += "🛑 ACTION REQUIRED: These citations appear to be AI hallucinations.\n"
+                    error_msg += "   Remove these citations and regenerate, or verify them independently."
 
                 raise CitationVerificationError(error_msg)
 
@@ -742,28 +801,38 @@ class LLMClient:
         """
         if level == "light":
             # Just check Australian English compliance
+            try:
+                light_verification = PROMPTS.get('verification.light_verification')
+            except KeyError:
+                light_verification = "Check only for Australian English spelling and terminology compliance.\n\nCorrect any non-Australian English spellings or terminology."
+                
             critique_prompt = [
                 {
                     "role": "system",
-                    "content": "Check only for Australian English spelling and terminology compliance.",
+                    "content": light_verification.split('\n\n')[0],
                 },
                 {
                     "role": "user",
-                    "content": primary_text
-                    + "\n\nCorrect any non-Australian English spellings or terminology.",
+                    "content": primary_text + "\n\n" + light_verification.split('\n\n')[-1],
                 },
             ]
         elif level == "heavy":
             # Full legal accuracy and citation check
+            try:
+                system_prompt = PROMPTS.get('verification.system_prompt')
+                heavy_verification = PROMPTS.get('verification.heavy_verification')
+            except KeyError:
+                system_prompt = "Australian law expert. Thoroughly verify legal accuracy, citations, precedents, and reasoning."
+                heavy_verification = "Provide comprehensive legal accuracy review: verify all citations, check legal reasoning, identify any errors in law or procedure, and ensure Australian English compliance."
+                
             critique_prompt = [
                 {
                     "role": "system",
-                    "content": "Australian law expert. Thoroughly verify legal accuracy, citations, precedents, and reasoning.",
+                    "content": system_prompt,
                 },
                 {
                     "role": "user",
-                    "content": primary_text
-                    + "\n\nProvide comprehensive legal accuracy review: verify all citations, check legal reasoning, identify any errors in law or procedure, and ensure Australian English compliance.",
+                    "content": primary_text + "\n\n" + heavy_verification,
                 },
             ]
         else:  # medium (default)

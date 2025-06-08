@@ -1,0 +1,103 @@
+# Warning and error message templates
+# Standardized messages for validation and error handling
+
+warnings:
+  # Citation validation warnings
+  citation_validation_header: |
+    ⚠️  CITATION VALIDATION WARNING
+    
+    The following potential issues were detected in the generated content:
+  
+  # File size validation
+  file_size_exceeded:
+    brainstorm: |
+      ⚠️  Warning: Large case facts file ({size:,} characters).
+      Brainstorm command works best with files under 50,000 characters.
+      Consider using 'extractfacts' first to create a structured summary.
+    
+    strategy: |
+      ⚠️  Warning: Very large case facts file ({size:,} characters).
+      Strategy command has a 100,000 character limit to ensure quality analysis.
+      Please use 'extractfacts' first to create a structured summary.
+  
+  # Invalid command combinations
+  side_area_mismatch: |
+    ⚠️  Warning: '{side}' typically applies to {expected_area} law matters.
+    The specified area is '{area}'. Please verify this combination is correct.
+  
+  # Case facts validation
+  case_facts_missing_headings: |
+    ⚠️  Warning: case_facts.txt appears incomplete.
+    Expected 10 headings but found only {found}.
+    Missing headings may result in less comprehensive analysis.
+  
+  # API connectivity
+  api_key_placeholder: |
+    ⚠️  ERROR: API key appears to be a placeholder value.
+    Please set your actual {service} API key in config.yaml or as an environment variable.
+  
+  # Model availability
+  byok_required:
+    o1_pro: |
+      ⚠️  ERROR: OpenAI o1-pro requires Bring Your Own Key (BYOK) setup.
+      
+      To use o1-pro:
+      1. Ensure you have o1-pro access on your OpenAI account
+      2. Set your OpenAI API key in config.yaml or environment
+      3. The key must have access to o1-pro model
+      
+      Note: o1-pro is expensive (~$15/call) and requires special access.
+    
+    o3: |
+      ⚠️  ERROR: OpenAI o3 requires Bring Your Own Key (BYOK) setup.
+      
+      To use o3:
+      1. Ensure you have o3 access on your OpenAI account (limited availability)
+      2. Set your OpenAI API key in config.yaml or environment
+      3. The key must have access to o3 model
+      
+      Note: o3 is extremely expensive and has very limited availability.
+  
+  # Citation verification error messages
+  citation_verification_failed: |
+    🚫 CRITICAL: Citation verification failed:
+    
+    {categorized_issues}
+    
+    🛑 ACTION REQUIRED: These citations appear to be AI hallucinations.
+    Remove these citations and regenerate, or verify them independently.
+  
+  citation_not_found_header: |
+    📋 CASES NOT FOUND IN DATABASE:
+  
+  citation_format_issues_header: |
+    ⚠️  CITATION FORMAT ISSUES:
+  
+  citation_verification_problems_header: |
+    🔍 VERIFICATION PROBLEMS:
+  
+  citation_error_item: |
+       • {citation}
+         → {reason}
+  
+  multiple_attempts_failed: |
+    CRITICAL: Multiple attempts to generate content with verified citations failed. The AI model is consistently generating unverifiable legal citations. Manual intervention required.
+  
+  # Progress indicators
+  strict_mode_failed: |
+    🚫 {error}
+  
+  retrying_with_instructions: |
+    🔄 Retrying with enhanced citation instructions...
+  
+  retry_also_failed: |
+    💥 Retry also failed: {error}
+  
+  citation_verification_warning: |
+    ⚠️  Citation verification: {issue}
+  
+  retry_successful: |
+    ✅ Retry successful: {issue}
+  
+  all_citations_verified: |
+    ✅ Retry successful: All citations verified

@@ -111,6 +111,7 @@ temp_*.py
 temp_*.txt
 mock_*.txt
 sample_*.txt
+test_inputs/
 
 **/.claude/settings.local.json
 CLAUDE.md

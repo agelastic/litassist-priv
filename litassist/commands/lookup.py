@@ -14,6 +14,7 @@ import os
 from litassist.config import CONFIG
 from litassist.utils import save_log, heartbeat, timed, save_command_output
 from litassist.llm import LLMClientFactory
+from litassist.prompts import PROMPTS
 
 # Suppress Google API cache warning
 os.environ["GOOGLE_API_USE_CLIENT_CERTIFICATE"] = "false"
@@ -289,7 +290,7 @@ def lookup(question, mode, extract, comprehensive):
     # Add extraction-specific instructions
     if extract:
         if extract == "citations":
-            prompt += "\n\nAlso provide a clear 'CITATIONS' section that lists all case citations and legislation references in a format easy to copy and use."
+            prompt += f"\n\n{PROMPTS.get('lookup.extraction_instructions.citations')}"
         elif extract == "principles":
             prompt += "\n\nAlso provide a clear 'LEGAL PRINCIPLES' section that lists the key legal rules and principles in a structured format suitable for advice letters."
         elif extract == "checklist":
@@ -312,34 +313,21 @@ def lookup(question, mode, extract, comprehensive):
     call_with_hb = heartbeat(CONFIG.heartbeat_interval)(client.complete)
 
     # Set system prompt based on comprehensive flag
+    base_system = PROMPTS.get('base.australian_law')
     if comprehensive:
-        system_content = """Australian law only. Provide exhaustive legal analysis.
+        requirements = PROMPTS.get('lookup.comprehensive_analysis.requirements')
+        citation_requirements = PROMPTS.get('lookup.comprehensive_analysis.citation_requirements')
+        output_structure = PROMPTS.get('lookup.comprehensive_analysis.output_structure')
+        system_content = f"""{base_system} Provide exhaustive legal analysis.
 
-EXHAUSTIVE ANALYSIS REQUIREMENTS:
-- Review ALL provided sources thoroughly (expect 20-40 sources)
-- Identify primary and secondary authorities with hierarchy
-- Cross-reference between sources for consistency/conflicts
-- Include minority opinions and dissenting views where relevant
-- Distinguish binding vs persuasive authorities by jurisdiction
-- Analyze temporal evolution of legal principles
-- Consider jurisdictional variations across Australian states/territories
+{requirements}
 
-COMPREHENSIVE CITATION REQUIREMENTS:
-- Cite ALL relevant cases from the sources with parallel citations
-- Reference specific paragraphs/sections when applicable
-- Distinguish between ratio decidendi and obiter dicta
-- Group citations by authority level (High Court → Federal → State)
+{citation_requirements}
 
-EXHAUSTIVE OUTPUT STRUCTURE:
-- Executive Summary (2-3 paragraphs)
-- Comprehensive Legal Framework
-- Authority Hierarchy Analysis
-- Detailed Case Analysis by jurisdiction
-- Synthesis and Conflicts Resolution
-- Practical Application with confidence levels
-- Conclusion with Confidence Assessment"""
+{output_structure}"""
     else:
-        system_content = "Australian law only. Cite sources. Analyze the provided sources (typically 5) to provide well-structured, comprehensive responses with clear sections. Begin with a summary, then provide analysis with supporting case law from all relevant sources, and end with a definitive conclusion. Cross-reference between sources where applicable."
+        standard_instructions = PROMPTS.get('lookup.standard_analysis.instructions')
+        system_content = f"{base_system} {standard_instructions}"
 
     try:
         content, usage = call_with_hb(
