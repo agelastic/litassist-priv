@@ -94,28 +94,15 @@ def extractfacts(file, verify):
         # First, extract relevant facts from each chunk
         with click.progressbar(chunks, label="Processing document chunks") as bar:
             for idx, chunk in enumerate(bar, 1):
-                prompt = f"""From this excerpt (part {idx} of {len(chunks)}), extract any facts relevant to:
-- Parties involved
-- Background/context
-- Key events with dates
-- Legal issues raised
-- Evidence mentioned
-- Arguments made
-- Procedural matters
-- Jurisdictional details
-- Applicable laws
-- Client objectives
-
-Just extract the raw facts found in this excerpt:
-
-{chunk}"""
+                chunk_template = PROMPTS.get('processing.extraction.chunk_facts_prompt')
+                prompt = f"{chunk_template.format(chunk_num=idx, total_chunks=len(chunks))}\n\n{chunk}"
 
                 try:
                     content, usage = client.complete(
                         [
                             {
                                 "role": "system",
-                                "content": "Extract facts from this document excerpt. Be comprehensive but only include information actually present in this excerpt.",
+                                "content": PROMPTS.get('processing.extraction.chunk_system_prompt'),
                             },
                             {"role": "user", "content": prompt},
                         ]
@@ -128,18 +115,11 @@ Just extract the raw facts found in this excerpt:
         all_facts = "\n\n".join(accumulated_facts)
         # Use centralized format template for organizing
         format_instructions = PROMPTS.get_format_template('case_facts_10_heading')
-        base_organize_prompt = f"""Organize the following extracted facts into these 10 headings:
-
-{format_instructions}
-
-Raw facts to organize:
-{all_facts}
-
-Important: 
-- Only include information that was actually in the document
-- If information for a heading is not available, write "Not specified in the document"
-- Maintain chronological order for events
-- Be comprehensive but factual"""
+        organize_template = PROMPTS.get('processing.extraction.organize_facts_prompt')
+        base_organize_prompt = organize_template.format(
+            format_instructions=format_instructions,
+            all_facts=all_facts
+        )
 
         # Add reasoning trace to organize prompt
         organize_prompt = create_reasoning_prompt(base_organize_prompt, "extractfacts")

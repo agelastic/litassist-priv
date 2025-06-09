@@ -7,7 +7,7 @@ the real-time verification in citation_verify.py.
 
 import re
 from typing import List
-from litassist.utils import save_log
+from litassist.utils import save_log, timed
 import time
 
 
@@ -137,6 +137,79 @@ HALLUCINATION_INDICATORS = [
     r"(?:Re|In\s+re)\s+[A-Z](?:\s|$)",  # In re cases with single letters
     r"Ex\s+parte\s+[A-Z](?:\s|$)",  # Ex parte with single letters
 ]
+
+
+# ── Citation Extraction Functions ─────────────────────────────
+
+
+@timed
+def extract_citations(text: str) -> List[str]:
+    """
+    Extract all Australian legal citations from text.
+
+    Args:
+        text: Text content to extract citations from
+
+    Returns:
+        List of unique citations found
+    """
+    citations = set()
+
+    # Pattern 1: Medium neutral citations [YEAR] COURT NUMBER
+    pattern1 = r"\[(\d{4})\]\s+([A-Z]+[A-Za-z]*)\s+(\d+)"
+    matches1 = re.finditer(pattern1, text)
+    for match in matches1:
+        citations.add(match.group(0))
+
+    # Pattern 2: Traditional citations (YEAR) VOLUME COURT PAGE
+    pattern2 = r"\((\d{4})\)\s+(\d+)\s+([A-Z]+[A-Za-z]*)\s+(\d+)"
+    matches2 = re.finditer(pattern2, text)
+    for match in matches2:
+        citations.add(match.group(0))
+
+    # Pattern 3: Medium neutral with case type suffix [YEAR] COURT Type NUMBER
+    # e.g., [2020] EWCA Civ 1234, [2020] EWHC (QB) 123
+    pattern3 = r"\[(\d{4})\]\s+([A-Z]+[A-Za-z]*)\s+(?:Civ|Crim|Admin|Fam|QB|Ch|Pat|Comm|TCC)\s+(\d+)"
+    matches3 = re.finditer(pattern3, text)
+    for match in matches3:
+        citations.add(match.group(0))
+
+    # Pattern 4: Citations with volume between year and series
+    # e.g., [2010] 3 NZLR 123, [2019] 2 SLR 123
+    pattern4 = r"\[(\d{4})\]\s+(\d+)\s+([A-Z]+[A-Za-z]*)\s+(\d+)"
+    matches4 = re.finditer(pattern4, text)
+    for match in matches4:
+        citations.add(match.group(0))
+
+    # Pattern 5: US Supreme Court citations
+    # e.g., 123 U.S. 456, 123 US 456
+    pattern5 = r"\b(\d+)\s+U\.?S\.?\s+(\d+)\b"
+    matches5 = re.finditer(pattern5, text)
+    for match in matches5:
+        citations.add(match.group(0))
+
+    # Pattern 6: US Federal Reporter citations
+    # e.g., 456 F.3d 789, 456 F3d 789
+    pattern6 = r"\b(\d+)\s+F\.?\s*[23]d\s+(\d+)\b"
+    matches6 = re.finditer(pattern6, text)
+    for match in matches6:
+        citations.add(match.group(0))
+
+    # Pattern 7: US Supreme Court Reporter
+    # e.g., 789 S.Ct. 123, 789 SCt 123
+    pattern7 = r"\b(\d+)\s+S\.?\s*Ct\.?\s+(\d+)\b"
+    matches7 = re.finditer(pattern7, text)
+    for match in matches7:
+        citations.add(match.group(0))
+
+    # Pattern 8: Lloyd's Reports and Criminal Appeal Reports with possessive
+    # e.g., [2005] 2 Lloyd's Rep 123, (1990) 2 Cr App R 456
+    pattern8 = r"(?:\[(\d{4})\]|\((\d{4})\))\s+(\d+)\s+(?:Lloyd's\s*Rep|Cr\s*App\s*R|CrAppR)\s+(\d+)"
+    matches8 = re.finditer(pattern8, text)
+    for match in matches8:
+        citations.add(match.group(0))
+
+    return list(citations)
 
 
 # ── Individual Validation Functions ─────────────────────────────
@@ -458,10 +531,7 @@ def validate_citation_patterns(content: str, enable_online: bool = True) -> List
     if enable_online:
         # Perform online verification for ALL citations, not just those flagged offline
         try:
-            from litassist.citation_verify import (
-                extract_citations,
-                verify_all_citations,
-            )
+            from litassist.citation_verify import verify_all_citations
 
             all_citations = extract_citations(content)
 

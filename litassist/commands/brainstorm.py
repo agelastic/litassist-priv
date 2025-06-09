@@ -279,7 +279,7 @@ Please provide output in EXACTLY this format:
     orthodox_messages = [
         {
             "role": "system",
-            "content": "Australian law only. Provide conservative, well-established legal strategies with strong precedential support. Cite relevant case law or legislation for each strategy. Focus on proven approaches with minimal legal risk.",
+            "content": PROMPTS.get('commands.brainstorm.orthodox_system'),
         },
         {"role": "user", "content": orthodox_prompt},
     ]
@@ -334,7 +334,7 @@ Please provide output in EXACTLY this format:
     unorthodox_messages = [
         {
             "role": "system",
-            "content": "Australian law only. Provide creative, innovative legal strategies that push boundaries. Acknowledge legal uncertainties and risks. Suggest novel approaches while maintaining ethical boundaries.",
+            "content": PROMPTS.get('commands.brainstorm.unorthodox_system'),
         },
         {"role": "user", "content": unorthodox_prompt},
     ]
@@ -393,7 +393,7 @@ Please provide output in EXACTLY this format:
     analysis_messages = [
         {
             "role": "system",
-            "content": "Australian law only. Analyze strategies objectively. Consider legal merit, factual support, precedential strength, and judicial likelihood. Provide clear reasoning for selections.",
+            "content": PROMPTS.get('commands.brainstorm.analysis_system'),
         },
         {"role": "user", "content": analysis_prompt},
     ]

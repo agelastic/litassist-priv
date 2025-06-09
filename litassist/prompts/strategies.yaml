@@ -88,17 +88,33 @@ strategies:
   strategy:
     # Strategic options format instructions
     # USED BY: strategy.py strategy() - for strategic options section
-    # LOCATION: strategy.py:240-267 (to be extracted)
+    # LOCATION: strategy.py:240-267 (extracted from working session)
     strategic_options_instructions: |
-      For the strategic options section, use EXACTLY this format with numbered strategies, each containing these subsections:
-      
-      **1. [Strategy Name]**
-      - **Approach:** [Brief description]
-      - **Legal Basis:** [Relevant law/precedent]
-      - **Likelihood:** [High/Medium/Low with reasoning]
-      - **Timeline:** [Expected duration]
-      - **Resources:** [Required resources]
-      - **Risks:** [Key risks and mitigation]
+      For the strategic options section, use EXACTLY this format:
+
+      # STRATEGIC OPTIONS FOR: [OUTCOME IN CAPS]
+
+      ## OPTION 1: [Title of Strategy]
+      * **Probability of Success**: [X]%
+      * **Principal Hurdles**:
+        1. [Description of hurdle] — *[Case citation with pinpoint reference]*
+        2. [Description of hurdle] — *[Case citation with pinpoint reference]*
+      * **Critical Missing Facts**:
+        - [Missing fact 1]
+        - [Missing fact 2]
+
+      ## OPTION 2: [Title of Strategy]
+      [Same format as above]
+
+      [Continue for 3-5 options total]
+
+      Requirements:
+      - Australian law only
+      - Use real case citations with pinpoint references (e.g., Smith v Jones [2015] HCA 5 [27])
+      - Be specific about probability percentages based on precedents
+      - Identify genuine hurdles based on the case facts provided
+      - Note actual missing facts from the case materials
+      - Do not introduce facts not in the case materials
     
     # Next steps generation prompt
     # USED BY: strategy.py strategy() - for generating immediate action items

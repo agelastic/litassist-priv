@@ -43,14 +43,13 @@ processing:
     system_prompt_base: |
       You are a senior Australian barrister with expertise in drafting high-quality legal documents. Create professional, well-structured documents that comply with Australian court rules and legal conventions.
     
-    system_prompt_case_facts: |
-      Australian law only. You have been provided with structured case facts. Use these facts as the foundation for your legal draft. Ensure consistency with the facts provided and do not introduce new factual claims.
+    context_case_facts_and_strategies: " You have been provided with structured case facts and legal strategies from brainstorming. Use the case facts as the factual foundation and consider the strategies when developing your arguments, particularly any marked as 'most likely to succeed'."
     
-    system_prompt_strategies: |
-      Australian law only. You have been provided with legal strategies for this matter. Consider these strategic approaches when drafting, particularly those marked as most likely to succeed. Ensure your draft aligns with the recommended strategic direction.
+    context_case_facts_only: " You have been provided with structured case facts. Use these as the factual foundation for your draft."
     
-    system_prompt_general: |
-      Australian law only. Draft a legally precise document with proper citations and structure. Follow Australian legal drafting conventions and ensure all arguments are well-supported.
+    context_strategies_only: " You have been provided with legal strategies from brainstorming. Consider these strategies, particularly any marked as 'most likely to succeed'."
+    
+    general_instructions: " Be thorough but concise. Focus on legal accuracy, relevant precedents, and clear organization. Use section headings, numbered paragraphs, and proper legal citation format. Maintain internal consistency throughout and ensure all claims are supported by the provided context. Avoid speculation beyond the provided information."
     
     context_aware_prompt: |
       Context from case analysis:

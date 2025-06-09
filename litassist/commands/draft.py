@@ -204,13 +204,13 @@ def draft(documents, query, verify, diversity):
     system_prompt = PROMPTS.get('processing.draft.system_prompt_base')
 
     if structured_content["case_facts"] and structured_content["strategies"]:
-        system_prompt += " You have been provided with structured case facts and legal strategies from brainstorming. Use the case facts as the factual foundation and consider the strategies when developing your arguments, particularly any marked as 'most likely to succeed'."
+        system_prompt += PROMPTS.get('processing.draft.context_case_facts_and_strategies')
     elif structured_content["case_facts"]:
-        system_prompt += " You have been provided with structured case facts. Use these as the factual foundation for your draft."
+        system_prompt += PROMPTS.get('processing.draft.context_case_facts_only')
     elif structured_content["strategies"]:
-        system_prompt += " You have been provided with legal strategies from brainstorming. Consider these strategies, particularly any marked as 'most likely to succeed'."
+        system_prompt += PROMPTS.get('processing.draft.context_strategies_only')
 
-    system_prompt += " Be thorough but concise. Focus on legal accuracy, relevant precedents, and clear organization. Use section headings, numbered paragraphs, and proper legal citation format. Maintain internal consistency throughout and ensure all claims are supported by the provided context. Avoid speculation beyond the provided information."
+    system_prompt += PROMPTS.get('processing.draft.general_instructions')
 
     # Create user prompt using centralized template
     user_template = PROMPTS.get('processing.draft.user_prompt_template')

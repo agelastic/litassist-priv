@@ -229,8 +229,7 @@ def strategy(case_facts, outcome, strategies, verify):
     verify = True  # Force verification for critical accuracy
 
     # Generate strategic options
-    system_prompt = """You are an Australian legal expert specializing in civil litigation strategy.
-You must analyze case facts and produce strategic options for achieving a specific outcome."""
+    system_prompt = PROMPTS.get('commands.strategy.system')
 
     # Enhance prompt if strategies are provided
     if parsed_strategies and parsed_strategies["most_likely_count"] > 0:
@@ -443,7 +442,7 @@ REASONING: [brief explanation for top selections]"""
                                 [
                                     {
                                         "role": "system",
-                                        "content": "Australian law only. Rank strategies objectively for the specific outcome.",
+                                        "content": PROMPTS.get('commands.strategy.ranking_system'),
                                     },
                                     {
                                         "role": "user",
@@ -539,7 +538,7 @@ REASONING: [brief explanation focusing on legal merit, factual support, preceden
                         [
                             {
                                 "role": "system",
-                                "content": "Australian law only. Analyze strategies objectively. Consider legal merit, factual support, precedential strength, and judicial likelihood. Provide clear reasoning for selections.",
+                                "content": PROMPTS.get('commands.brainstorm.analysis_system'),
                             },
                             {"role": "user", "content": ranking_prompt},
                         ]
@@ -777,116 +776,9 @@ Focus on:
 
     # Generate draft document
     doc_formats = {
-        "claim": """Draft a STATEMENT OF CLAIM using this exact format:
-
-# DRAFT STATEMENT OF CLAIM
-
-## PARTIES
-
-1. [Description of plaintiff including relevant characteristics]
-
-2. [Description of defendant including relevant characteristics]
-
-## FACTS RELIED UPON
-
-1. [Chronological fact 1]
-
-2. [Chronological fact 2]
-
-[Continue numbering for all relevant facts]
-
-## CAUSES OF ACTION
-
-### FIRST CAUSE OF ACTION - [Name]
-[X]. [Description of cause of action]
-     *[Authority with pinpoint reference]*
-
-### SECOND CAUSE OF ACTION - [Name]
-[Y]. [Description of cause of action]
-     *[Authority with pinpoint reference]*
-
-[Continue for all causes of action]
-
-## RELIEF SOUGHT
-
-The plaintiff claims:
-
-1. [Specific relief sought]
-
-2. [Specific relief sought]
-
-3. Interest pursuant to [relevant statutory provision]
-
-4. Costs
-
-5. Such further or other relief as the Court deems just""",
-        "application": """Draft an ORIGINATING APPLICATION using this exact format:
-
-# DRAFT ORIGINATING APPLICATION
-
-**IN THE [COURT NAME]**
-**[DIVISION IF APPLICABLE]**
-
-**File No:**
-
-**Applicant**: [Full name and description]
-
-**Respondent**: [Full name and description]
-
-## THE APPLICANT APPLIES FOR:
-
-1. [Specific order sought with reference to enabling provision]
-
-2. [Additional order if applicable]
-
-3. Such further or other orders as the Court deems just
-
-4. Costs
-
-## GROUNDS OF APPLICATION:
-
-The grounds on which the application is made are:
-
-1. [First ground with factual basis]
-   *[Authority with pinpoint reference]*
-
-2. [Second ground with factual basis]
-   *[Authority with pinpoint reference]*
-
-[Continue for all grounds]
-
-## AFFIDAVIT EVIDENCE:
-
-This application is supported by the affidavit of [name] sworn/affirmed [date]""",
-        "affidavit": """Draft an AFFIDAVIT OUTLINE using this exact format:
-
-# DRAFT AFFIDAVIT
-
-**[COURT NAME]**
-**[DIVISION IF APPLICABLE]**
-
-**File No:**
-
-**AFFIDAVIT OF [FULL NAME]**
-
-I, [Full Name], of [Address], [Occupation], state on oath/affirm:
-
-1. I am [position/relationship to proceedings] and have personal knowledge of the matters deposed to herein except where otherwise stated.
-
-2. [Factual paragraph - one fact per paragraph]
-
-3. [Factual paragraph - one fact per paragraph]
-
-[Continue numbering for all relevant facts]
-
-**Exhibits:**
-[List any documents to be exhibited]
-
-**Sworn/Affirmed at:** [Location]
-**Date:** [Date]
-**Before me:** [Commissioner for Affidavits/Solicitor]
-
-**Deponent's signature:** _______________""",
+        "claim": PROMPTS.get('documents.statement_of_claim'),
+        "application": PROMPTS.get('documents.originating_application'),
+        "affidavit": PROMPTS.get('documents.affidavit'),
     }
 
     # Use centralized document generation context
@@ -969,7 +861,7 @@ I, [Full Name], of [Address], [Occupation], state on oath/affirm:
 
     # Show summary instead of full output
     click.echo("\n✅ Strategy generation complete!")
-    click.echo(f'📄 Main output: "{output_file}"')
+    click.echo(f'📄 Output saved to: "{output_file}"')
     if consolidated_reasoning:
         click.echo(
             f"📝 Reasoning traces: open \"{output_file.replace('.txt', '_reasoning.txt')}\""
