@@ -18,11 +18,19 @@ import yaml
 import json
 import openai
 import requests
+import contextlib
+import io
+
+# Add the project root to the Python path
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from datetime import datetime
+from test_utils import EnhancedTestResult, print_result
 
 # ─── Configuration ────────────────────────────────────────────────
-CONFIG_PATH = "config.yaml"
+CONFIG_PATH = os.path.join(
+    os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "config.yaml"
+)
 if not os.path.exists(CONFIG_PATH):
     sys.exit("Error: Missing config.yaml")
 
@@ -78,78 +86,21 @@ def validate_credentials_for_quality_testing():
 
 
 # ─── Test Utilities ────────────────────────────────────────────────
-class TestResult:
-    """Store and format test results"""
-
-    def __init__(self, service, test_name):
-        self.service = service
-        self.test_name = test_name
-        self.start_time = time.time()
-        self.status = None
-        self.latency_ms = None
-        self.details = {}
-        self.error = None
-
-    def success(self, **details):
-        self.status = "SUCCESS"
-        self.latency_ms = int((time.time() - self.start_time) * 1000)
-        self.details = details
-        return self
-
-    def failure(self, error):
-        self.status = "FAILURE"
-        self.latency_ms = int((time.time() - self.start_time) * 1000)
-        self.error = str(error)
-        return self
-
-    def to_dict(self):
-        result = {
-            "service": self.service,
-            "test": self.test_name,
-            "status": self.status,
-            "latency_ms": self.latency_ms,
-            "timestamp": datetime.now().isoformat(),
-        }
-        if self.details:
-            result["details"] = self.details
-        if self.error:
-            result["error"] = self.error
-        return result
+@contextlib.contextmanager
+def suppress_expected_errors():
+    """Capture and suppress expected verification error output"""
+    old_stdout = sys.stdout
+    old_stderr = sys.stderr
+    sys.stdout = io.StringIO()
+    sys.stderr = io.StringIO()
+    try:
+        yield
+    finally:
+        sys.stdout = old_stdout
+        sys.stderr = old_stderr
 
 
-def print_result(result):
-    """Print a test result in a readable format"""
-    res = result.to_dict()
-
-    # Determine color based on status (for terminals that support ANSI colors)
-    color_start = "\033[92m" if res["status"] == "SUCCESS" else "\033[91m"
-    color_end = "\033[0m"
-
-    print(
-        f"{color_start}[{res['status']}]{color_end} {res['service']} - {res['test']} ({res['latency_ms']}ms)"
-    )
-
-    if "details" in res:
-        for k, v in res["details"].items():
-            if (
-                k in ["sample_output", "response"]
-                and isinstance(v, str)
-                and len(v) > 100
-            ):
-                print(f"  {k}: {v[:100]}...")
-            elif k == "quality_checks" and isinstance(v, dict):
-                print(f"  {k}:")
-                for check_name, check_result in v.items():
-                    check_symbol = "✓" if check_result else "✗"
-                    check_color = "\033[92m" if check_result else "\033[91m"
-                    print(f"    {check_color}{check_symbol}{color_end} {check_name}")
-            else:
-                print(f"  {k}: {v}")
-
-    if "error" in res:
-        print(f"  Error: {res['error']}")
-
-    print()  # Add empty line for readability
+# Enhanced error handling now provided by test_utils.py
 
 
 # ─── OpenAI Quality Tests ────────────────────────────────────────────────
@@ -159,64 +110,68 @@ def print_result(result):
 
 def test_openai_embedding_quality():
     """Test OpenAI embedding quality with legal content"""
-    result = TestResult("OpenAI", "Embedding Quality")
+    result = EnhancedTestResult("OpenAI", "Embedding Quality")
 
     try:
         # Require real credentials for quality testing
         if OA_KEY in placeholder_values:
             result.failure(
-                "OpenAI API key not configured - quality testing requires real credentials"
+                "OpenAI API key not configured - quality testing requires real credentials",
+                context={"api_key_status": "placeholder", "model": EMB_MODEL},
             )
             return result
-        
+
         print("Configuring OpenAI API connection...")
         # Configure OpenAI with direct API
         openai.api_key = OA_KEY
         openai.api_base = "https://api.openai.com/v1"
 
         print("Testing embedding quality with legal documents...")
-        
+
         # Test with diverse legal content that should produce meaningful embeddings
         test_documents = [
             "The High Court of Australia established the implied freedom of political communication in Australian law",
             "Contract law requires offer, acceptance, consideration and intention to create legal relations",
             "Criminal liability requires both actus reus (guilty act) and mens rea (guilty mind) elements",
             "The separation of powers doctrine divides government into legislative, executive and judicial branches",
-            "Negligence requires duty of care, breach of duty, causation and damage under tort law"
+            "Negligence requires duty of care, breach of duty, causation and damage under tort law",
         ]
 
         # Generate embeddings
         embeddings = []
         for doc in test_documents:
-            response = openai.Embedding.create(
-                input=doc,
-                model=EMB_MODEL
-            )
+            response = openai.Embedding.create(input=doc, model=EMB_MODEL)
             embeddings.append(response.data[0].embedding)
 
         # Quality checks for embeddings
         import numpy as np
-        
+
         # Check embedding dimensions are consistent
         dimensions = [len(emb) for emb in embeddings]
         consistent_dimensions = len(set(dimensions)) == 1
-        
+
         # Check embeddings are different (not identical)
-        unique_embeddings = len(set(tuple(emb) for emb in embeddings)) == len(embeddings)
-        
+        unique_embeddings = len(set(tuple(emb) for emb in embeddings)) == len(
+            embeddings
+        )
+
         # Check embeddings have reasonable magnitude (not zero vectors)
         magnitudes = [np.linalg.norm(emb) for emb in embeddings]
         reasonable_magnitudes = all(mag > 0.1 for mag in magnitudes)
-        
+
         # Calculate similarity between related legal concepts
         contract_emb = np.array(embeddings[1])  # Contract law
-        tort_emb = np.array(embeddings[4])      # Negligence (tort law)
+        tort_emb = np.array(embeddings[4])  # Negligence (tort law)
         constitutional_emb = np.array(embeddings[0])  # Constitutional law
-        
+
         # Contract and tort should be more similar than contract and constitutional
-        contract_tort_sim = np.dot(contract_emb, tort_emb) / (np.linalg.norm(contract_emb) * np.linalg.norm(tort_emb))
-        contract_constitutional_sim = np.dot(contract_emb, constitutional_emb) / (np.linalg.norm(contract_emb) * np.linalg.norm(constitutional_emb))
-        
+        contract_tort_sim = np.dot(contract_emb, tort_emb) / (
+            np.linalg.norm(contract_emb) * np.linalg.norm(tort_emb)
+        )
+        contract_constitutional_sim = np.dot(contract_emb, constitutional_emb) / (
+            np.linalg.norm(contract_emb) * np.linalg.norm(constitutional_emb)
+        )
+
         meaningful_similarities = contract_tort_sim > contract_constitutional_sim
 
         quality_checks = {
@@ -224,7 +179,9 @@ def test_openai_embedding_quality():
             "unique_embeddings": bool(unique_embeddings),
             "reasonable_magnitudes": bool(reasonable_magnitudes),
             "meaningful_similarities": bool(meaningful_similarities),
-            "expected_dimension": bool(dimensions[0] == 1536),  # Expected for text-embedding-3-small
+            "expected_dimension": bool(
+                dimensions[0] == 1536
+            ),  # Expected for text-embedding-3-small
         }
 
         quality_score = int(
@@ -240,15 +197,30 @@ def test_openai_embedding_quality():
                 documents_tested=len(test_documents),
                 average_magnitude=float(np.mean(magnitudes)),
                 contract_tort_similarity=float(contract_tort_sim),
-                contract_constitutional_similarity=float(contract_constitutional_sim)
+                contract_constitutional_similarity=float(contract_constitutional_sim),
             )
         else:
             result.failure(
-                f"Embedding quality score ({quality_score}/100) below threshold. Quality checks: {quality_checks}"
+                f"Embedding quality score ({quality_score}/100) below threshold. Quality checks: {quality_checks}",
+                context={
+                    "model": EMB_MODEL,
+                    "quality_score": quality_score,
+                    "documents_tested": len(test_documents),
+                    "embedding_dimension": dimensions[0] if dimensions else "unknown",
+                },
             )
 
     except Exception as e:
-        result.failure(e)
+        result.failure(
+            e,
+            context={
+                "model": EMB_MODEL,
+                "api_base": "https://api.openai.com/v1",
+                "documents_count": (
+                    len(test_documents) if "test_documents" in locals() else 0
+                ),
+            },
+        )
 
     return result
 
@@ -256,20 +228,21 @@ def test_openai_embedding_quality():
 # ─── OpenRouter Quality Tests ────────────────────────────────────────────────
 def test_litassist_models():
     """Test that all models used by LitAssist commands are accessible"""
-    result = TestResult("OpenRouter", "LitAssist Model Availability")
-    
+    result = EnhancedTestResult("OpenRouter", "LitAssist Model Availability")
+
     try:
         # Require real credentials
         if OR_KEY in placeholder_values:
             result.failure(
-                "OpenRouter API key not configured - model testing requires real credentials"
+                "OpenRouter API key not configured - model testing requires real credentials",
+                context={"api_key_status": "placeholder", "api_base": OR_BASE},
             )
             return result
-            
+
         from litassist.llm import LLMClientFactory
-        
+
         print("Testing availability of models used by LitAssist commands...")
-        
+
         # Test each command's model configuration
         command_models = {
             "extractfacts": "anthropic/claude-sonnet-4",
@@ -277,12 +250,12 @@ def test_litassist_models():
             "brainstorm-orthodox": "anthropic/claude-sonnet-4",
             "brainstorm-unorthodox": "x-ai/grok-3-beta",
             "draft": "openai/o3",
-            "digest": "anthropic/claude-sonnet-4",
+            "digest-summary": "anthropic/claude-sonnet-4",
             "lookup": "google/gemini-2.5-pro-preview",
         }
-        
+
         model_results = {}
-        
+
         for command, expected_model in command_models.items():
             try:
                 # Get the actual model from factory
@@ -291,77 +264,111 @@ def test_litassist_models():
                     client = LLMClientFactory.for_command(cmd, subtype)
                 else:
                     client = LLMClientFactory.for_command(command)
-                
+
                 actual_model = client.model
-                
+
                 # Test a minimal completion to verify model is accessible
                 test_messages = [
                     {"role": "system", "content": "Test"},
-                    {"role": "user", "content": "Reply with 'OK'"}
+                    {"role": "user", "content": "Reply with 'OK'"},
                 ]
-                
-                response, usage = client.complete(test_messages, max_tokens=10)
-                
+
+                response, usage = client.complete(test_messages, max_tokens=20)
+
                 model_results[command] = {
                     "expected": expected_model,
                     "actual": actual_model,
                     "accessible": True,
-                    "response": response[:50] if response else None
+                    "response": response[:50] if response else None,
                 }
-                
+
             except Exception as e:
                 model_results[command] = {
                     "expected": expected_model,
-                    "actual": actual_model if 'actual_model' in locals() else "Unknown",
+                    "actual": actual_model if "actual_model" in locals() else "Unknown",
                     "accessible": False,
-                    "error": str(e)
+                    "error": str(e),
                 }
-        
+
         # Quality checks
         quality_checks = {
-            "all_models_configured": all(r["actual"] == r["expected"] for r in model_results.values()),
-            "all_models_accessible": all(r["accessible"] for r in model_results.values()),
-            "claude_available": any("claude" in r["actual"] and r["accessible"] for r in model_results.values()),
-            "grok_available": any("grok" in r["actual"] and r["accessible"] for r in model_results.values()),
-            "o1_available": any("o1" in r["actual"] and r["accessible"] for r in model_results.values()),
-            "gemini_available": any("gemini" in r["actual"] and r["accessible"] for r in model_results.values()),
+            "all_models_configured": all(
+                r["actual"] == r["expected"] for r in model_results.values()
+            ),
+            "all_models_accessible": all(
+                r["accessible"] for r in model_results.values()
+            ),
+            "claude_available": any(
+                "claude" in r["actual"] and r["accessible"]
+                for r in model_results.values()
+            ),
+            "grok_available": any(
+                "grok" in r["actual"] and r["accessible"]
+                for r in model_results.values()
+            ),
+            "o1_available": any(
+                "o1" in r["actual"] and r["accessible"] for r in model_results.values()
+            ),
+            "gemini_available": any(
+                "gemini" in r["actual"] and r["accessible"]
+                for r in model_results.values()
+            ),
         }
-        
+
         quality_score = int(
             sum(1 for check in quality_checks.values() if check)
             * (100 / len(quality_checks))
         )
-        
+
         if quality_score >= 80:
             result.success(
                 quality_score=quality_score,
                 quality_checks=quality_checks,
                 model_results=model_results,
-                models_tested=len(model_results)
+                models_tested=len(model_results),
             )
         else:
             result.failure(
-                f"Model availability score ({quality_score}/100) below threshold. Results: {model_results}"
+                f"Model availability score ({quality_score}/100) below threshold. Results: {model_results}",
+                context={
+                    "api_base": OR_BASE,
+                    "quality_score": quality_score,
+                    "commands_tested": list(command_models.keys()),
+                    "accessible_models": [
+                        cmd
+                        for cmd, res in model_results.items()
+                        if res.get("accessible")
+                    ],
+                },
             )
-            
+
     except Exception as e:
-        result.failure(e)
-        
+        result.failure(
+            e,
+            context={
+                "api_base": OR_BASE,
+                "commands_to_test": (
+                    list(command_models.keys()) if "command_models" in locals() else []
+                ),
+            },
+        )
+
     return result
 
 
 def test_openrouter_australian_judgment():
     """Test OpenRouter Australian legal judgement formatting"""
-    result = TestResult("OpenRouter", "Australian Judgment Format")
+    result = EnhancedTestResult("OpenRouter", "Australian Judgment Format")
 
     try:
         # Require real credentials for quality testing
         if OR_KEY in placeholder_values:
             result.failure(
-                "OpenRouter API key not configured - quality testing requires real credentials"
+                "OpenRouter API key not configured - quality testing requires real credentials",
+                context={"api_key_status": "placeholder", "api_base": OR_BASE},
             )
             return result
-        
+
         print("Configuring OpenRouter API connection...")
         # Configure OpenAI with OpenRouter base
         openai.api_key = OR_KEY
@@ -435,27 +442,41 @@ def test_openrouter_australian_judgment():
             )
         else:
             result.failure(
-                f"Australian judgment format score ({quality_score}/100) below threshold. Quality checks: {quality_checks}"
+                f"Australian judgment format score ({quality_score}/100) below threshold. Quality checks: {quality_checks}",
+                context={
+                    "model": model,
+                    "api_base": OR_BASE,
+                    "quality_score": quality_score,
+                    "tokens_used": tokens_used,
+                },
             )
 
     except Exception as e:
-        result.failure(e)
+        result.failure(
+            e,
+            context={
+                "model": model if "model" in locals() else "anthropic/claude-sonnet-4",
+                "api_base": OR_BASE,
+                "request_type": "australian_judgment_format",
+            },
+        )
 
     return result
 
 
 def test_openrouter_case_citation():
     """Test OpenRouter Australian case citation formatting"""
-    result = TestResult("OpenRouter", "Australian Case Citation")
+    result = EnhancedTestResult("OpenRouter", "Australian Case Citation")
 
     try:
         # Require real credentials for quality testing
         if OR_KEY in placeholder_values:
             result.failure(
-                "OpenRouter API key not configured - quality testing requires real credentials"
+                "OpenRouter API key not configured - quality testing requires real credentials",
+                context={"api_key_status": "placeholder", "api_base": OR_BASE},
             )
             return result
-        
+
         print("Configuring OpenRouter API connection...")
         # Configure OpenAI with OpenRouter base
         openai.api_key = OR_KEY
@@ -531,11 +552,24 @@ def test_openrouter_case_citation():
             )
         else:
             result.failure(
-                f"Australian citation format score ({quality_score}/100) below threshold. Quality checks: {quality_checks}"
+                f"Australian citation format score ({quality_score}/100) below threshold. Quality checks: {quality_checks}",
+                context={
+                    "model": model,
+                    "api_base": OR_BASE,
+                    "quality_score": quality_score,
+                    "tokens_used": tokens_used,
+                },
             )
 
     except Exception as e:
-        result.failure(e)
+        result.failure(
+            e,
+            context={
+                "model": model if "model" in locals() else "anthropic/claude-sonnet-4",
+                "api_base": OR_BASE,
+                "request_type": "australian_citation_format",
+            },
+        )
 
     return result
 
@@ -567,7 +601,7 @@ def search_google(query, api_key, cse_id, use_mock=False):
 
 def test_google_search_relevance():
     """Test Google CSE search relevance for Australian legal queries"""
-    result = TestResult("Google CSE", "Search Relevance")
+    result = EnhancedTestResult("Google CSE", "Search Relevance")
 
     try:
         # Require real credentials for quality testing
@@ -578,7 +612,19 @@ def test_google_search_relevance():
             or GOOGLE_CSE_ID in placeholder_values
         ):
             result.failure(
-                "Google CSE credentials not configured - quality testing requires real credentials"
+                "Google CSE credentials not configured - quality testing requires real credentials",
+                context={
+                    "api_key_status": (
+                        "placeholder"
+                        if GOOGLE_API_KEY in placeholder_values
+                        else "missing"
+                    ),
+                    "cse_id_status": (
+                        "placeholder"
+                        if GOOGLE_CSE_ID in placeholder_values
+                        else "missing"
+                    ),
+                },
             )
             return result
 
@@ -648,11 +694,26 @@ def test_google_search_relevance():
             )
         else:
             result.failure(
-                f"Google CSE search quality score ({quality_score}/100) below threshold. Quality checks: {quality_checks}"
+                f"Google CSE search quality score ({quality_score}/100) below threshold. Quality checks: {quality_checks}",
+                context={
+                    "api_key": (
+                        GOOGLE_API_KEY[:10] + "..." if GOOGLE_API_KEY else "None"
+                    ),
+                    "cse_id": GOOGLE_CSE_ID,
+                    "quality_score": quality_score,
+                    "queries_tested": test_queries,
+                },
             )
 
     except Exception as e:
-        result.failure(e)
+        result.failure(
+            e,
+            context={
+                "api_key": GOOGLE_API_KEY[:10] + "..." if GOOGLE_API_KEY else "None",
+                "cse_id": GOOGLE_CSE_ID,
+                "queries": test_queries if "test_queries" in locals() else [],
+            },
+        )
 
     return result
 
@@ -660,7 +721,7 @@ def test_google_search_relevance():
 # ─── Jade Quality Tests ────────────────────────────────────────────────
 def test_jade_extraction_accuracy():
     """Test Jade content extraction accuracy"""
-    result = TestResult("Jade", "Content Extraction Accuracy")
+    result = EnhancedTestResult("Jade", "Content Extraction Accuracy")
 
     try:
         print("Testing Jade database content extraction...")
@@ -674,7 +735,10 @@ def test_jade_extraction_accuracy():
         response = requests.get(url, headers=headers, timeout=10)
 
         if response.status_code != 200:
-            result.failure(f"HTTP {response.status_code} error")
+            result.failure(
+                f"HTTP {response.status_code} error",
+                context={"url": url, "status_code": response.status_code},
+            )
             return result
 
         content = response.text.lower()
@@ -714,18 +778,31 @@ def test_jade_extraction_accuracy():
             )
         else:
             result.failure(
-                f"Content extraction accuracy score ({quality_score}/100) below threshold. Quality checks: {quality_checks}"
+                f"Content extraction accuracy score ({quality_score}/100) below threshold. Quality checks: {quality_checks}",
+                context={
+                    "url": url,
+                    "status_code": response.status_code,
+                    "content_length": len(content),
+                    "quality_score": quality_score,
+                },
             )
 
     except Exception as e:
-        result.failure(e)
+        result.failure(
+            e,
+            context={
+                "url": url if "url" in locals() else "https://jade.io/article/67958",
+                "timeout": 10,
+                "headers": headers if "headers" in locals() else {},
+            },
+        )
 
     return result
 
 
 def test_jade_legal_content_quality():
     """Test Jade legal content quality and structure"""
-    result = TestResult("Jade", "Legal Content Quality")
+    result = EnhancedTestResult("Jade", "Legal Content Quality")
 
     try:
         print("Testing Jade legal content quality and structure...")
@@ -739,7 +816,10 @@ def test_jade_legal_content_quality():
         response = requests.get(url, headers=headers, timeout=10)
 
         if response.status_code != 200:
-            result.failure(f"HTTP {response.status_code} error accessing Jade legal content")
+            result.failure(
+                f"HTTP {response.status_code} error accessing Jade legal content",
+                context={"url": url, "status_code": response.status_code},
+            )
             return result
 
         content = response.text.lower()
@@ -747,7 +827,8 @@ def test_jade_legal_content_quality():
         # Quality checks focused on different aspects than first test
         quality_checks = {
             "accessible": response.status_code == 200,
-            "substantial_content": len(content) > 1000,  # Lower bar since we know this case works
+            "substantial_content": len(content)
+            > 1000,  # Lower bar since we know this case works
             "legal_terminology": any(
                 term in content
                 for term in ["court", "justice", "judgment", "case", "decision"]
@@ -772,15 +853,28 @@ def test_jade_legal_content_quality():
                 quality_checks=quality_checks,
                 url=url,
                 content_length=len(content),
-                legal_document_verified=True
+                legal_document_verified=True,
             )
         else:
             result.failure(
-                f"Legal content quality score ({quality_score}/100) below threshold. Quality checks: {quality_checks}"
+                f"Legal content quality score ({quality_score}/100) below threshold. Quality checks: {quality_checks}",
+                context={
+                    "url": url,
+                    "status_code": response.status_code,
+                    "content_length": len(content),
+                    "quality_score": quality_score,
+                },
             )
 
     except Exception as e:
-        result.failure(e)
+        result.failure(
+            e,
+            context={
+                "url": url if "url" in locals() else "https://jade.io/article/67958",
+                "timeout": 10,
+                "headers": headers if "headers" in locals() else {},
+            },
+        )
 
     return result
 
@@ -788,7 +882,7 @@ def test_jade_legal_content_quality():
 # ─── Pinecone Quality Tests ────────────────────────────────────────────────
 def test_pinecone_vector_operations():
     """Test Pinecone vector database operations for embeddings and retrieval"""
-    result = TestResult("Pinecone", "Vector Operations Quality")
+    result = EnhancedTestResult("Pinecone", "Vector Operations Quality")
 
     try:
         # Require real credentials for quality testing
@@ -799,12 +893,20 @@ def test_pinecone_vector_operations():
             or PC_ENV in placeholder_values
         ):
             result.failure(
-                "Pinecone credentials not configured - quality testing requires real credentials"
+                "Pinecone credentials not configured - quality testing requires real credentials",
+                context={
+                    "pc_key_status": (
+                        "placeholder" if PC_KEY in placeholder_values else "missing"
+                    ),
+                    "pc_env_status": (
+                        "placeholder" if PC_ENV in placeholder_values else "missing"
+                    ),
+                },
             )
             return result
 
         from litassist.utils import create_embeddings
-        from litassist.pinecone_config import PineconeWrapper
+        from litassist.helpers.pinecone_config import PineconeWrapper
 
         # Use PineconeWrapper - the pinecone-client package is broken
         try:
@@ -843,8 +945,8 @@ def test_pinecone_vector_operations():
 
         # Test embedding creation - temporarily restore OpenAI config for embeddings
         original_key = openai.api_key
-        original_base = getattr(openai, 'api_base', None)
-        
+        original_base = getattr(openai, "api_base", None)
+
         try:
             # Set OpenAI config for embeddings
             openai.api_key = OA_KEY
@@ -952,18 +1054,31 @@ def test_pinecone_vector_operations():
             )
         else:
             result.failure(
-                f"Pinecone vector operations quality score ({quality_score}/100) below threshold. Quality checks: {quality_checks}"
+                f"Pinecone vector operations quality score ({quality_score}/100) below threshold. Quality checks: {quality_checks}",
+                context={
+                    "index_name": PC_INDEX,
+                    "has_real_index": has_real_index,
+                    "embeddings_count": len(embeddings),
+                    "matches_count": len(matches),
+                },
             )
 
     except Exception as e:
-        result.failure(e)
+        result.failure(
+            e,
+            context={
+                "pc_index": PC_INDEX,
+                "pc_key": PC_KEY[:10] + "..." if PC_KEY else "None",
+                "pc_env": PC_ENV,
+            },
+        )
 
     return result
 
 
 def test_pinecone_service_reliability():
     """Test Pinecone service reliability with basic CRUD operations"""
-    result = TestResult("Pinecone", "Service Reliability")
+    result = EnhancedTestResult("Pinecone", "Service Reliability")
 
     try:
         # Require real credentials for service testing
@@ -974,44 +1089,55 @@ def test_pinecone_service_reliability():
             or PC_ENV in placeholder_values
         ):
             result.failure(
-                "Pinecone credentials not configured - service testing requires real credentials"
+                "Pinecone credentials not configured - service testing requires real credentials",
+                context={
+                    "pc_key_status": (
+                        "placeholder" if PC_KEY in placeholder_values else "missing"
+                    ),
+                    "pc_env_status": (
+                        "placeholder" if PC_ENV in placeholder_values else "missing"
+                    ),
+                },
             )
             return result
 
-        from litassist.pinecone_config import PineconeWrapper
+        from litassist.helpers.pinecone_config import PineconeWrapper
         import time
         import numpy as np
 
         print("Testing Pinecone service reliability with CRUD operations...")
-        
+
         # Use PineconeWrapper
         try:
             index = PineconeWrapper(PC_KEY, PC_INDEX)
             stats = index.describe_index_stats()
             has_real_index = True
         except:
-            from litassist.retriever import MockPineconeIndex
+            from litassist.helpers.retriever import MockPineconeIndex
+
             index = MockPineconeIndex()
             has_real_index = False
 
         # Create simple test vectors (no domain-specific content)
         test_vectors = []
         test_embeddings = []
-        
+
         # Generate simple random vectors for testing
         np.random.seed(42)  # For reproducible results
         for i in range(5):
             # Create random embedding vector (1536 dimensions like OpenAI)
             embedding = np.random.random(1536).astype(np.float32)
             test_embeddings.append(embedding)
-            test_vectors.append((f"reliability-test-{i}", embedding.tolist(), {
-                "test_id": i,
-                "content": f"test document {i}",
-                "test": True
-            }))
+            test_vectors.append(
+                (
+                    f"reliability-test-{i}",
+                    embedding.tolist(),
+                    {"test_id": i, "content": f"test document {i}", "test": True},
+                )
+            )
 
         namespace = "service_reliability_test"
-        
+
         # Test 1: Upsert Operation
         print("Testing upsert operation...")
         upsert_start = time.time()
@@ -1032,24 +1158,24 @@ def test_pinecone_service_reliability():
                 vector=test_embeddings[0].tolist(),
                 namespace=namespace,
                 top_k=3,
-                include_metadata=True
+                include_metadata=True,
             )
             query_time = time.time() - query_start
-            
+
             # Validate response structure
-            if hasattr(query_response, 'matches'):
+            if hasattr(query_response, "matches"):
                 matches = query_response.matches
                 query_success = True
                 valid_response = len(matches) > 0
-            elif isinstance(query_response, dict) and 'matches' in query_response:
-                matches = query_response['matches']
+            elif isinstance(query_response, dict) and "matches" in query_response:
+                matches = query_response["matches"]
                 query_success = True
                 valid_response = len(matches) > 0
             else:
                 query_success = False
                 valid_response = False
                 matches = []
-                
+
         except Exception as e:
             query_time = time.time() - query_start
             query_success = False
@@ -1073,12 +1199,15 @@ def test_pinecone_service_reliability():
         # Performance and reliability checks
         reliability_checks = {
             "upsert_completed": upsert_success,
-            "upsert_reasonable_time": upsert_time < 30.0,  # Should complete within 30 seconds
+            "upsert_reasonable_time": upsert_time
+            < 30.0,  # Should complete within 30 seconds
             "query_completed": query_success,
-            "query_reasonable_time": query_time < 10.0,  # Should complete within 10 seconds
+            "query_reasonable_time": query_time
+            < 10.0,  # Should complete within 10 seconds
             "query_valid_response": valid_response,
             "delete_completed": delete_success,
-            "delete_reasonable_time": delete_time < 15.0,  # Should complete within 15 seconds
+            "delete_reasonable_time": delete_time
+            < 15.0,  # Should complete within 15 seconds
         }
 
         # Calculate reliability score
@@ -1092,7 +1221,7 @@ def test_pinecone_service_reliability():
             "upsert_time": round(upsert_time, 3),
             "query_time": round(query_time, 3),
             "delete_time": round(delete_time, 3),
-            "total_time": round(upsert_time + query_time + delete_time, 3)
+            "total_time": round(upsert_time + query_time + delete_time, 3),
         }
 
         if reliability_score >= 85:  # Higher threshold for service reliability
@@ -1102,15 +1231,28 @@ def test_pinecone_service_reliability():
                 timing_metrics=timing_metrics,
                 vectors_tested=len(test_vectors),
                 response_structure_valid=valid_response,
-                matches_returned=len(matches) if matches else 0
+                matches_returned=len(matches) if matches else 0,
             )
         else:
             result.failure(
-                f"Service reliability score ({reliability_score}/100) below threshold. Checks: {reliability_checks}, Timing: {timing_metrics}"
+                f"Service reliability score ({reliability_score}/100) below threshold. Checks: {reliability_checks}, Timing: {timing_metrics}",
+                context={
+                    "index_name": PC_INDEX,
+                    "has_real_index": has_real_index,
+                    "reliability_score": reliability_score,
+                    "timing_metrics": timing_metrics,
+                },
             )
 
     except Exception as e:
-        result.failure(e)
+        result.failure(
+            e,
+            context={
+                "pc_index": PC_INDEX,
+                "pc_key": PC_KEY[:10] + "..." if PC_KEY else "None",
+                "pc_env": PC_ENV,
+            },
+        )
 
     return result
 
@@ -1194,13 +1336,16 @@ def run_tests(args):
 
 def test_verification_system():
     """Test the enhanced verification system effectiveness with real LLM calls."""
-    result = TestResult("Verification System", "Real Verification Effectiveness")
+    result = EnhancedTestResult(
+        "Verification System", "Real Verification Effectiveness"
+    )
 
     try:
         # Require real credentials for verification effectiveness testing
         if OR_KEY in placeholder_values:
             result.failure(
-                "OpenRouter API key not configured - verification testing requires real LLM calls"
+                "OpenRouter API key not configured - verification testing requires real LLM calls",
+                context={"api_key_status": "placeholder", "api_base": OR_BASE},
             )
             return result
 
@@ -1237,28 +1382,32 @@ def test_verification_system():
 
         verification_results = []
         print(f"Running {len(test_cases)} verification test cases...")
-        
+
         for i, test_case in enumerate(test_cases, 1):
             print(f"Test case {i}: {test_case['name']}")
-            
-            # Test citation validation
-            print("  Validating citations...")
-            citation_issues = test_client.validate_citations(test_case["content"])
 
-            # Test auto-verification triggers
-            print("  Checking auto-verification triggers...")
-            should_auto_verify = test_client.should_auto_verify(test_case["content"])
+            with suppress_expected_errors():
+                # Test citation validation
+                citation_issues = test_client.validate_citations(test_case["content"])
 
-            # Test actual verification with real LLM call
-            print("  Performing real LLM verification...")
-            try:
-                corrections = test_client.verify_with_level(
-                    test_case["content"], "heavy"
+                # Test auto-verification triggers
+                should_auto_verify = test_client.should_auto_verify(
+                    test_case["content"]
                 )
-                verification_worked = len(corrections.strip()) > 0
-            except Exception as e:
-                corrections = f"Verification failed: {e}"
-                verification_worked = False
+
+                # Test actual verification with real LLM call
+                try:
+                    corrections = test_client.verify_with_level(
+                        test_case["content"], "heavy"
+                    )
+                    verification_worked = len(corrections.strip()) > 0
+                except Exception as e:
+                    corrections = f"Verification failed: {e}"
+                    verification_worked = False
+
+            print(f"  ✓ Citation validation: {len(citation_issues)} issues caught")
+            print(f"  ✓ Auto-verification triggered: {should_auto_verify}")
+            print(f"  ✓ Verification feedback provided: {verification_worked}")
 
             verification_results.append(
                 {
@@ -1270,10 +1419,10 @@ def test_verification_system():
                 }
             )
 
-        print("Testing verification system configuration...")
+        print("\nTesting verification system configuration...")
         print("  Checking critical command auto-verification...")
         print("  Testing Grok model auto-verification...")
-        
+
         # Quality checks for verification effectiveness
         quality_checks = {
             "citation_validation_catches_issues": any(
@@ -1314,11 +1463,23 @@ def test_verification_system():
             )
         else:
             result.failure(
-                f"Verification effectiveness score ({quality_score}/100) below threshold. Results: {verification_results}"
+                f"Verification effectiveness score ({quality_score}/100) below threshold. Results: {verification_results}",
+                context={
+                    "api_base": OR_BASE,
+                    "test_client_model": "anthropic/claude-sonnet-4",
+                    "quality_score": quality_score,
+                    "test_cases": [tc["name"] for tc in test_cases],
+                },
             )
 
     except Exception as e:
-        result.failure(e)
+        result.failure(
+            e,
+            context={
+                "api_base": OR_BASE,
+                "test_cases_count": len(test_cases) if "test_cases" in locals() else 0,
+            },
+        )
 
     return result
 

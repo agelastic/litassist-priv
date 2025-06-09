@@ -62,7 +62,7 @@ if [ $# -eq 0 ]; then
 fi
 
 # Execute the test with passed arguments
-python test_quality.py "$@"
+python test-scripts/test_quality.py "$@"
 
 # Check exit code
 EXIT_CODE=$?

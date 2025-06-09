@@ -2,9 +2,9 @@
 # Consolidates errors, warnings, and status messages
 
 system_feedback:
-  # Critical failures that halt execution
+  # USED BY: error_handler.py format_and_display_errors()
   errors:
-    # LLM operation errors
+    # USED BY: llm.py _handle_generation_error()
     llm:
       generation_failed: |
         Error generating {operation}: {error}
@@ -27,7 +27,7 @@ system_feedback:
       digest_chunk_error: |
         LLM error in digest chunk {chunk_idx}: {error}
 
-    # File operation errors
+    # USED BY: file_operations.py save/load methods  
     file:
       not_found: |
         File not found: {path}
@@ -47,7 +47,7 @@ system_feedback:
       save_markdown_failed: |
         Failed to save Markdown log {path}: {error}
 
-    # Data processing errors
+    # USED BY: processing.py process_facts()  
     processing:
       facts_extraction_failed: |
         Error extracting facts: {error}
@@ -61,7 +61,7 @@ system_feedback:
       file_too_large: |
         {file_type} file too large ({size:,} characters). Please provide a file under {max_size:,} characters (~{word_count:,} words).
 
-    # External service errors
+    # USED BY: retriever.py execute_search()
     external:
       search_error: |
         Search error: {error}
@@ -78,7 +78,7 @@ system_feedback:
       pinecone_retrieval_error: |
         Pinecone retrieval error: {error}
 
-    # Configuration errors
+    # USED BY: config.py validate_config()
     config:
       file_not_found: |
         Configuration file not found: {config_path}
@@ -95,7 +95,7 @@ system_feedback:
       api_test_failed: |
         {service} API test failed: {error}
 
-    # Critical citation errors
+    # USED BY: citation_verify.py verify_citations()
     citation:
       multiple_attempts_failed: |
         CRITICAL: Multiple attempts to generate content with verified citations failed. The AI model is consistently generating unverifiable legal citations. Manual intervention required.
@@ -108,9 +108,9 @@ system_feedback:
         🛑 ACTION REQUIRED: These citations appear to be AI hallucinations.
         Remove these citations and regenerate, or verify them independently.
 
-  # Non-critical advisories and warnings
+  # USED BY: warning_service.py generate_warnings()  
   warnings:
-    # Validation warnings
+    # USED BY: validation.py check_case_facts()
     validation:
       citation_validation_header: |
         ⚠️  CITATION VALIDATION WARNING
@@ -126,7 +126,7 @@ system_feedback:
         ⚠️  Warning: '{side}' typically applies to {expected_area} law matters.
         The specified area is '{area}'. Please verify this combination is correct.
 
-    # File size warnings
+    # USED BY: file_operations.py check_file_size()
     file_size:
       brainstorm: |
         ⚠️  Warning: Large case facts file ({size:,} characters).
@@ -138,7 +138,7 @@ system_feedback:
         Strategy command has a 100,000 character limit to ensure quality analysis.
         Please use 'extractfacts' first to create a structured summary.
 
-    # API and configuration warnings
+    # USED BY: config.py test_api_connections()
     api:
       key_placeholder: |
         ⚠️  ERROR: API key appears to be a placeholder value.
@@ -164,7 +164,7 @@ system_feedback:
         
         Note: o3 is extremely expensive and has very limited availability.
 
-    # Citation-specific warnings
+    # USED BY: citation_verify.py validate_citation_format()
     citation:
       not_found_header: |
         📋 CASES NOT FOUND IN DATABASE:
@@ -197,9 +197,9 @@ system_feedback:
       all_citations_verified: |
         ✅ Retry successful: All citations verified
 
-  # Progress feedback and status messages
+  # USED BY: status_reporter.py update_status()  
   status:
-    # Progress indicators
+    # USED BY: strategy_analyzer.py track_progress()
     progress:
       analyzing_strategies: |
         🔍 Analyzing {strategy_type} strategies for citation issues...
@@ -216,7 +216,7 @@ system_feedback:
       will_use_embedding_large: |
         Will use embedding/retrieval for large {doc_path}
 
-    # Status updates
+    # USED BY: command_runner.py finalize_command()  
     completion:
       strategy_verified: |
         ✅ Strategy {strategy_num}: Citations verified
@@ -248,7 +248,7 @@ system_feedback:
       strategies_with_issues: |
         ⚠️  {count} {strategy_type} strategies still have citation issues after {max_retries} attempts
 
-    # File operations
+    # USED BY: file_operations.py log_file_activity()  
     file_ops:
       using_case_facts: |
         Using {doc_path} as CASE FACTS ({length} characters)
@@ -265,7 +265,7 @@ system_feedback:
       preview_line_short: |
         {line}
 
-    # Search and analysis
+    # USED BY: lookup_command.py display_results()  
     search:
       link_item: |
         - {link}
@@ -285,7 +285,7 @@ system_feedback:
       analysis_type_summary: |
         📊 {analysis_type} legal analysis for: {question}
 
-    # Strategy analysis
+    # USED BY: strategy.py analyze_strategies()  
     strategy_analysis:
       using_brainstorm_strategies: |
         Using strategies from brainstorm:
@@ -326,7 +326,7 @@ system_feedback:
       option_title: |
         {index}. {title}
 
-    # Command completion
+    # USED BY: cli.py show_completion_summary()  
     command_completion:
       command_complete: |
         ✅ {command_name} complete!
@@ -349,7 +349,7 @@ system_feedback:
       most_likely_summary: |
         • Most likely to succeed: {count}
 
-    # Debugging and development
+    # USED BY: debug_logger.py log_execution_metrics()  
     debug:
       function_execution_time: |
         Function {function_name} execution time: {duration:.3f} seconds
@@ -375,7 +375,7 @@ system_feedback:
       offline_validation_issues: |
         ⚠️  Offline validation found {count} potential issues
 
-    # Citation processing
+    # USED BY: citation_processor.py handle_citations()  
     citation_processing:
       citation_warnings_found: |
         🔄 Found {count} citation issues in {strategy_type} strategies - fixing...

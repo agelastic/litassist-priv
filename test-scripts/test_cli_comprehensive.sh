@@ -291,7 +291,7 @@ test_lookup_command() {
     
     # Test 1: Basic lookup with default settings
     run_test "Lookup - Basic IRAC mode" \
-        "python ../litassist.py lookup 'contract formation requirements'" \
+        "python litassist.py lookup 'contract formation requirements'" \
         "Found links|sources analyzed"
     
     # Test 2: Lookup with broad mode
@@ -495,7 +495,7 @@ test_connectivity() {
     
     # Test 5: Pinecone Vector DB (used by draft command)
     run_test "Connectivity - Pinecone Vector DB" \
-        "python -c 'from litassist.pinecone_config import PineconeWrapper; from litassist.config import CONFIG; wrapper = PineconeWrapper(CONFIG.pc_key, CONFIG.pc_index); stats = wrapper.describe_index_stats(); print(\"Pinecone API: OK - Dimension:\", stats.dimension)' 2>&1" \
+        "python -c 'from litassist.helpers.pinecone_config import PineconeWrapper; from litassist.config import CONFIG; wrapper = PineconeWrapper(CONFIG.pc_key, CONFIG.pc_index); stats = wrapper.describe_index_stats(); print(\"Pinecone API: OK - Dimension:\", stats.dimension)' 2>&1" \
         "Pinecone API: OK"
     
     # Test 6: Verify all required API keys are present
@@ -627,8 +627,8 @@ main() {
     fi
     
     # Check if we're in the right directory
-    if [[ ! -f "../litassist.py" ]]; then
-        echo -e "${RED}Error: litassist.py not found. Please run this script from the test-scripts directory.${NC}"
+    if [[ ! -f "litassist.py" ]]; then
+        echo -e "${RED}Error: litassist.py not found. Please run this script from the project root directory.${NC}"
         exit 1
     fi
     

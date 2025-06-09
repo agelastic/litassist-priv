@@ -2,13 +2,14 @@
 Real-time citation verification against Jade.io.
 
 This module provides comprehensive verification of Australian legal citations
-by checking their existence on Jade.io database via Google Custom Search. 
-It implements strict validation with surgical removal of invalid citations 
+by checking their existence on Jade.io database via Google Custom Search.
+It implements strict validation with surgical removal of invalid citations
 and targeted regeneration when necessary.
 """
 
 import re
 import time
+import os
 from typing import List, Tuple, Dict
 import threading
 
@@ -148,6 +149,16 @@ class CitationVerificationError(Exception):
     pass
 
 
+class TestVerificationError(CitationVerificationError):
+    """Raised for expected verification errors in tests - no console output."""
+
+    def __str__(self):
+        return ""
+
+
+def in_test_mode():
+    """Check if running in test mode."""
+    return os.environ.get("LITASSIST_TEST_MODE") == "1"
 
 
 @timed
@@ -176,10 +187,10 @@ def normalize_citation(citation: str) -> str:
 def check_international_citation(citation: str) -> str:
     """
     Check if citation is UK/International (valid but not Australian).
-    
+
     Args:
         citation: Citation to check
-        
+
     Returns:
         Reason string if international citation, empty string if Australian
     """
@@ -198,7 +209,9 @@ def check_international_citation(citation: str) -> str:
         return "UK/International citation (United States Reports (Supreme Court)) - not in Australian databases"
 
     if re.match(r"\d+\s+F\.?\s*[23]d\s+\d+", citation):
-        return "UK/International citation (Federal Reporter) - not in Australian databases"
+        return (
+            "UK/International citation (Federal Reporter) - not in Australian databases"
+        )
 
     if re.match(r"\d+\s+S\.?\s*Ct\.?\s+\d+", citation):
         return "UK/International citation (Supreme Court Reporter (US)) - not in Australian databases"
@@ -249,15 +262,17 @@ def search_jade_via_google_cse(citation: str, timeout: int = 10) -> bool:
 
     try:
         from googleapiclient.discovery import build
-        
+
         # Use Google Custom Search to search Jade.io
         service = build(
             "customsearch", "v1", developerKey=CONFIG.g_key, cache_discovery=False
         )
-        
+
         # Format citation for search - clean format for better matching
-        search_query = citation.replace("(", "").replace(")", "").replace("[", "").replace("]", "")
-        
+        search_query = (
+            citation.replace("(", "").replace(")", "").replace("[", "").replace("]", "")
+        )
+
         # Search Jade.io specifically
         res = (
             service.cse()
@@ -269,44 +284,58 @@ def search_jade_via_google_cse(citation: str, timeout: int = 10) -> bool:
         success = False
         if "items" in res:
             # Create multiple search variations for better matching
-            base_citation = citation.replace("(", "").replace(")", "").replace("[", "").replace("]", "")
+            base_citation = (
+                citation.replace("(", "")
+                .replace(")", "")
+                .replace("[", "")
+                .replace("]", "")
+            )
             citation_variations = [
                 citation.lower(),  # Original format
                 base_citation.lower(),  # Clean version
-                citation.replace("[", "(").replace("]", ")").lower(),  # Convert brackets to parentheses
-                citation.replace("(", "[").replace(")", "]").lower(),  # Convert parentheses to brackets
+                citation.replace("[", "(")
+                .replace("]", ")")
+                .lower(),  # Convert brackets to parentheses
+                citation.replace("(", "[")
+                .replace(")", "]")
+                .lower(),  # Convert parentheses to brackets
             ]
-            
+
             # Extract components for flexible matching
             import re
+
             year_match = re.search(r"(\d{4})", citation)
-            volume_match = re.search(r"\)\s*(\d+)\s+([A-Z]+)\s+(\d+)", citation)  # For (year) vol series page
-            
+            volume_match = re.search(
+                r"\)\s*(\d+)\s+([A-Z]+)\s+(\d+)", citation
+            )  # For (year) vol series page
+
             for item in res["items"]:
                 title = item.get("title", "").lower()
                 snippet = item.get("snippet", "").lower()
                 link = item.get("link", "").lower()
                 combined_text = f"{title} {snippet} {link}"
-                
+
                 # Check for exact citation match in any variation
                 for variation in citation_variations:
                     if variation in combined_text:
                         success = True
                         break
-                
+
                 if success:
                     break
-                    
+
                 # For traditional citations, check if we can find the key components
                 if year_match and volume_match:
                     year = year_match.group(1)
                     series = volume_match.group(2).lower()
                     page = volume_match.group(3)
-                    
+
                     # Check if year, series, and page all appear in the result
-                    if (year in combined_text and 
-                        series in combined_text and 
-                        page in combined_text):
+                    if (
+                        year in combined_text
+                        and series in combined_text
+                        and page in combined_text
+                    ):
                         success = True
                         break
 
@@ -412,10 +441,10 @@ def verify_single_citation(citation: str) -> Tuple[bool, str, str]:
                 "checked_at": time.time(),
             }
         return True, "", international_reason
-    
+
     # Check for format issues using offline validation
     from litassist.citation_patterns import validate_citation_patterns
-    
+
     format_issues = validate_citation_patterns(normalized, enable_online=False)
     if format_issues:
         # Format validation found problems - invalid citation format
@@ -433,7 +462,7 @@ def verify_single_citation(citation: str) -> Tuple[bool, str, str]:
         exists_in_jade = search_jade_via_google_cse(normalized, timeout=5)
         if exists_in_jade:
             reason = "Verified via Google CSE search of Jade.io"
-            
+
             with _cache_lock:
                 _citation_cache[normalized] = {
                     "exists": True,
@@ -444,7 +473,7 @@ def verify_single_citation(citation: str) -> Tuple[bool, str, str]:
             return True, "", reason
     except Exception:
         pass  # Fall through to offline validation
-    
+
     # If online verification fails, accept with offline validation warning
     reason = "⚠️ OFFLINE VALIDATION ONLY - Online verification unavailable, passed pattern analysis"
     with _cache_lock:

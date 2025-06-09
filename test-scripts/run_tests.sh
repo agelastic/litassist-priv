@@ -79,7 +79,7 @@ if [ $# -eq 0 ]; then
 fi
 
 # Execute the test with passed arguments (or without arguments for all tests)
-python test_integrations.py "$@"
+python test-scripts/test_integrations.py "$@"
 
 # Check exit code
 EXIT_CODE=$?
