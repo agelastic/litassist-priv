@@ -251,7 +251,7 @@ litassist --help
 litassist test  # Test API connectivity
 ```
 
-For complete installation instructions, troubleshooting, and alternative methods, see [INSTALLATION.md](INSTALLATION.md).
+For complete installation instructions, troubleshooting, and alternative methods, see [INSTALLATION.md](/INSTALLATION.md).
 
 ## Configuration
 

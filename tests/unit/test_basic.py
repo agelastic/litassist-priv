@@ -66,7 +66,7 @@ class TestModuleImports:
 
     def test_import_retriever(self):
         """Test retriever module imports."""
-        from litassist import retriever
+        from litassist.helpers import retriever
 
         assert retriever is not None
 

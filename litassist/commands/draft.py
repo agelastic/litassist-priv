@@ -26,7 +26,7 @@ from litassist.utils import (
     verify_content_if_needed,
 )
 from litassist.llm import LLMClientFactory
-from litassist.retriever import Retriever, get_pinecone_client
+from litassist.helpers.retriever import Retriever, get_pinecone_client
 
 
 @click.command()

@@ -826,7 +826,7 @@ def test_pinecone_vector_operations():
             print("Using mock index for quality testing instead.")
 
             # Import the MockPineconeIndex from retriever.py
-            from litassist.retriever import MockPineconeIndex
+            from litassist.helpers.retriever import MockPineconeIndex
 
             index = MockPineconeIndex()
             print("Testing with mock Pinecone index...")

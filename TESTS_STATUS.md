@@ -46,4 +46,4 @@ See `test_real_functionality.py` for examples of:
 - Correct mocking patterns
 - Real functionality testing
 
-For integration test approach details, see [integration_testing_approach.md](integration_testing_approach.md).
+For integration test approach details, see [integration_testing_approach.md](/docs/development/integration_testing_approach.md).

@@ -22,7 +22,7 @@ graph TD
 - **Strategy**: Targeted legal options with probability assessments and draft documents (Enhanced reasoning via o1-pro)
 - **Draft**: Citation-rich document creation (Superior technical writing via o3)  
 
-For detailed usage guidance, see [LitAssist_User_Guide.md](LitAssist_User_Guide.md).
+For detailed usage guidance, see [LitAssist_User_Guide.md](/docs/user/LitAssist_User_Guide.md).
 
 ## 🆕 Recent Improvements (June 2025)
 
@@ -227,7 +227,7 @@ Each command uses optimized LLM models and parameters:
 - **Creative tasks** (brainstorm, draft): `temperature=0.5-0.9` for innovation
 - **Verification**: Always uses `temperature=0` for consistency
 
-**Note**: Document chunking (`max_chars`) and AI output limits (`use_token_limits`) are separate systems. See [LitAssist_User_Guide.md](LitAssist_User_Guide.md#llm-models-and-parameter-configuration) for details.
+**Note**: Document chunking (`max_chars`) and AI output limits (`use_token_limits`) are separate systems. See [LitAssist_User_Guide.md](/docs/user/LitAssist_User_Guide.md#llm-models-and-parameter-configuration) for details.
 
 ## ⚖️ Disclaimer
 
@@ -235,4 +235,4 @@ This tool provides drafts and summaries only. All outputs should be reviewed by 
 
 ---
 
-For detailed instructions, workflows, and examples, see [LitAssist_User_Guide.md](LitAssist_User_Guide.md).
+For detailed instructions, workflows, and examples, see [LitAssist_User_Guide.md](/docs/user/LitAssist_User_Guide.md).

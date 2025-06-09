@@ -361,7 +361,7 @@ find ~ -name "logs" -type d -exec rm -rf {} + 2>/dev/null
 ## Getting Help
 
 - **Command help:** `litassist --help` or `litassist <command> --help`
-- **User guide:** See [LitAssist_User_Guide.md](LitAssist_User_Guide.md)
+- **User guide:** See [LitAssist_User_Guide.md](/docs/user/LitAssist_User_Guide.md)
 - **Configuration:** See `config.yaml.template` for all options
 - **Issues:** Report bugs at https://github.com/agelastic/litassist/issues
 

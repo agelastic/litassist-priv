@@ -61,7 +61,7 @@ def get_pinecone_client():
         return MockPineconeIndex()
 
     # Import locally to allow for mock usage when pinecone-client isn't installed
-    from litassist.pinecone_config import get_pinecone_client as get_pc
+    from litassist.helpers.pinecone_config import get_pinecone_client as get_pc
 
     pc_index = get_pc(CONFIG.pc_key, CONFIG.pc_env, CONFIG.pc_index)
 
