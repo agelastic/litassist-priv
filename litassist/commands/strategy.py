@@ -640,7 +640,7 @@ BRAINSTORMED STRATEGY TO DEVELOP:
 
 Generate ONE strategic option based on this brainstormed strategy (this will be option #{len(valid_options) + 1}). Use the exact format specified for a single OPTION, but develop this specific brainstormed strategy into concrete strategic steps for achieving "{outcome}".
 
-CRITICAL: Use a UNIQUE TITLE that reflects the specific legal approach of this brainstormed strategy. Do not reuse titles from other options.
+{PROMPTS.get('strategies.strategy.unique_title_requirement')}
 
 Focus on:
 - How this brainstormed strategy applies specifically to achieving "{outcome}"
@@ -655,7 +655,7 @@ Focus on:
                 user_prompt
                 + f"\n\nGenerate ONE strategic option (this will be option #{len(valid_options) + 1}) to achieve the desired outcome. Use the exact format specified for a single OPTION."
             )
-            individual_prompt += "\n\nCRITICAL: Use a UNIQUE TITLE that clearly distinguishes this strategic approach. Do not reuse titles from other options."
+            individual_prompt += f"\n\n{PROMPTS.get('strategies.strategy.unique_title_requirement')}"
             if parsed_strategies:
                 individual_prompt += f"\n\nConsider the brainstormed strategies provided but develop a new approach that complements the {len(valid_options)} options already generated."
 

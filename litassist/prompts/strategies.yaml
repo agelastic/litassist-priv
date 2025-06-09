@@ -150,3 +150,9 @@ strategies:
       - Maintain professional tone
       - Include all required sections
       - Reference supporting evidence where applicable
+    
+    # Unique title requirement instruction
+    # USED BY: strategy.py strategy() - for ensuring unique strategy titles
+    # LOCATION: strategy.py:643,658 (to be extracted)
+    unique_title_requirement: |
+      CRITICAL: Use a UNIQUE TITLE that clearly distinguishes this strategic approach. Do not reuse titles from other options.
