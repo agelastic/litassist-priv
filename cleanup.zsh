@@ -21,6 +21,9 @@
 
 set -e  # Exit on any error
 
+# Suppress "no matches found" errors globally
+setopt null_glob
+
 echo "LitAssist Cleanup Script"
 echo "=========================="
 echo ""
@@ -131,7 +134,7 @@ safe_remove "nosetests.xml" "nose test results"
 echo ""
 echo "OS & Editor Files:"
 safe_remove ".DS_Store" "macOS metadata"
-remove_pattern "**/,DS_Store" "nested macOS metadata"
+remove_pattern "*/.DS_Store" "nested macOS metadata"
 remove_pattern "Thumbs.db" "Windows thumbnails"
 remove_pattern "*.tmp" "temporary files"
 remove_pattern "*.log" "standalone log files"

@@ -11,8 +11,9 @@ recursive-include examples *.txt *.pdf
 recursive-include article *.pdf *.tex
 
 # Exclude test and development files
-exclude test_*.py
-exclude run_tests.sh
+exclude test-scripts/test_*.py
+exclude test-scripts/run_tests.sh
+exclude test-scripts/*.sh
 exclude cleanup.zsh
 
 # Exclude logs and temporary files

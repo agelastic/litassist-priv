@@ -291,7 +291,7 @@ test_lookup_command() {
     
     # Test 1: Basic lookup with default settings
     run_test "Lookup - Basic IRAC mode" \
-        "python litassist.py lookup 'contract formation requirements'" \
+        "python ../litassist.py lookup 'contract formation requirements'" \
         "Found links|sources analyzed"
     
     # Test 2: Lookup with broad mode
@@ -627,8 +627,8 @@ main() {
     fi
     
     # Check if we're in the right directory
-    if [[ ! -f "litassist.py" ]]; then
-        echo -e "${RED}Error: litassist.py not found. Please run this script from the project root directory.${NC}"
+    if [[ ! -f "../litassist.py" ]]; then
+        echo -e "${RED}Error: litassist.py not found. Please run this script from the test-scripts directory.${NC}"
         exit 1
     fi
     

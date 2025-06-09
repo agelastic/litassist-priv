@@ -83,10 +83,10 @@ docs/_build/
 htmlcov/
 coverage.xml
 nosetests.xml
-logs/
 
 # Command outputs
 outputs/
+logs/
 
 real_test/
 case_facts.txt

@@ -11,7 +11,7 @@ Located in `tests/unit/`:
 - `test_simple.py` - Simple functionality tests
 
 ## Integration Tests ✅
-Located in project root:
+Located in test-scripts/:
 - `test_connectivity.py` - Tests basic connectivity to external services
 - `test_integrations.py` - Tests integration with external APIs (OpenAI, Pinecone, OpenRouter)
 - `test_quality.py` - Tests response quality from various commands
@@ -20,9 +20,9 @@ Located in project root:
 
 Integration tests can be run using:
 ```bash
-./run_tests.sh --all
+./test-scripts/run_tests.sh --all
 # Or for specific services
-./run_tests.sh --openai --pinecone
+./test-scripts/run_tests.sh --openai --pinecone
 ```
 
 Unit tests can be run using:
