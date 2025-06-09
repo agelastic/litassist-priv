@@ -27,8 +27,14 @@ from litassist.config import CONFIG
 @click.option(
     "--verbose", is_flag=True, default=False, help="Enable debug-level logging."
 )
+@click.option(
+    "--premium",
+    is_flag=True,
+    default=False,
+    help="Enable premium models (e.g. o1-pro instead of o3).",
+)
 @click.pass_context
-def cli(ctx, log_format, verbose):
+def cli(ctx, log_format, verbose, premium):
     """
     LitAssist: automated litigation support workflows for Australian legal practice.
 
@@ -41,6 +47,7 @@ def cli(ctx, log_format, verbose):
     \b
     --log-format    Choose log output format (json or markdown).
     --verbose       Enable debug logging and detailed output.
+    --premium       Enable premium models (e.g. o1-pro instead of o3).
     """
     # Ensure context object exists
     ctx.ensure_object(dict)
@@ -49,10 +56,13 @@ def cli(ctx, log_format, verbose):
         log_format = CONFIG.log_format
     # Store the chosen log format for downstream use
     ctx.obj["log_format"] = log_format
+    ctx.obj["premium"] = premium
     # Configure logging level
     if verbose:
         logging.getLogger().setLevel(logging.DEBUG)
-    logging.debug(f"Log format set to: {log_format} (from {'CLI' if ctx.params.get('log_format') else 'config.yaml'})")
+    logging.debug(
+        f"Log format set to: {log_format} (from {'CLI' if ctx.params.get('log_format') else 'config.yaml'})"
+    )
 
 
 def validate_credentials(show_progress=True):
@@ -134,31 +144,32 @@ def validate_credentials(show_progress=True):
                 print("  - Testing OpenRouter API... ", end="", flush=True)
             # Test OpenRouter by making a minimal API call
             import requests
+
             headers = {
                 "Authorization": f"Bearer {CONFIG.or_key}",
-                "Content-Type": "application/json"
+                "Content-Type": "application/json",
             }
             # Use the models endpoint which doesn't cost credits
             response = requests.get(
-                "https://openrouter.ai/api/v1/models",
-                headers=headers,
-                timeout=10
+                "https://openrouter.ai/api/v1/models", headers=headers, timeout=10
             )
             if response.status_code != 200:
                 raise Exception(f"HTTP {response.status_code}: {response.text}")
-            
+
             # Verify at least one required model is available
             models = response.json().get("data", [])
             model_ids = [m.get("id", "") for m in models]
             required_models = [
                 "anthropic/claude-sonnet-4",
-                "x-ai/grok-3-beta", 
-                "google/gemini-2.5-pro-preview"
+                "x-ai/grok-3-beta",
+                "google/gemini-2.5-pro-preview",
             ]
-            
+
             if not any(model in model_ids for model in required_models):
-                raise Exception(f"No required models found. Available: {len(model_ids)} models")
-            
+                raise Exception(
+                    f"No required models found. Available: {len(model_ids)} models"
+                )
+
             if show_progress:
                 print("OK")
         except Exception as e:

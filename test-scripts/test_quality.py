@@ -246,7 +246,7 @@ def test_litassist_models():
         # Test each command's model configuration
         command_models = {
             "extractfacts": "anthropic/claude-sonnet-4",
-            "strategy": "openai/o1-pro",
+            "strategy": "openai/o3",  # Test default model, not premium
             "brainstorm-orthodox": "anthropic/claude-sonnet-4",
             "brainstorm-unorthodox": "x-ai/grok-3-beta",
             "draft": "openai/o3",
@@ -306,8 +306,8 @@ def test_litassist_models():
                 "grok" in r["actual"] and r["accessible"]
                 for r in model_results.values()
             ),
-            "o1_available": any(
-                "o1" in r["actual"] and r["accessible"] for r in model_results.values()
+            "o3_available": any(
+                "o3" in r["actual"] and r["accessible"] for r in model_results.values()
             ),
             "gemini_available": any(
                 "gemini" in r["actual"] and r["accessible"]

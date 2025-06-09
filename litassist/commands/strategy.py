@@ -72,8 +72,6 @@ def validate_case_facts_format(text: str) -> bool:
     return True
 
 
-
-
 def extract_legal_issues(case_text: str) -> List[str]:
     """
     Extract legal issues from the case facts text.
@@ -149,8 +147,9 @@ def create_consolidated_reasoning_trace(option_traces, outcome):
 @click.option(
     "--verify", is_flag=True, help="Enable self-critique pass (default: auto-enabled)"
 )
+@click.pass_context
 @timed
-def strategy(case_facts, outcome, strategies, verify):
+def strategy(ctx, case_facts, outcome, strategies, verify):
     """
     Generate legal strategy options and draft documents for Australian civil matters.
 
@@ -184,8 +183,11 @@ def strategy(case_facts, outcome, strategies, verify):
             "Could not extract legal issues from the case facts file."
         )
 
+    # Get premium flag from context
+    premium = ctx.obj.get("premium", False)
+
     # Initialize LLM client using factory
-    llm_client = LLMClientFactory.for_command("strategy")
+    llm_client = LLMClientFactory.for_command("strategy", premium=premium)
 
     # Read and parse strategies file if provided
     strategies_content = ""
@@ -229,7 +231,7 @@ def strategy(case_facts, outcome, strategies, verify):
     verify = True  # Force verification for critical accuracy
 
     # Generate strategic options
-    system_prompt = PROMPTS.get('commands.strategy.system')
+    system_prompt = PROMPTS.get("commands.strategy.system")
 
     # Enhance prompt if strategies are provided
     if parsed_strategies and parsed_strategies["most_likely_count"] > 0:
@@ -238,7 +240,9 @@ def strategy(case_facts, outcome, strategies, verify):
         system_prompt += "\n\nYou have been provided with brainstormed strategies including orthodox and unorthodox approaches. Consider these when developing your strategic options, but focus on those most relevant to the specific outcome requested."
 
     # Use centralized strategic options instructions
-    strategic_instructions = PROMPTS.get('strategies.strategy.strategic_options_instructions')
+    strategic_instructions = PROMPTS.get(
+        "strategies.strategy.strategic_options_instructions"
+    )
     system_prompt += f"\n\n{strategic_instructions}"
 
     base_user_prompt = f"""CASE FACTS:
@@ -442,7 +446,9 @@ REASONING: [brief explanation for top selections]"""
                                 [
                                     {
                                         "role": "system",
-                                        "content": PROMPTS.get('commands.strategy.ranking_system'),
+                                        "content": PROMPTS.get(
+                                            "commands.strategy.ranking_system"
+                                        ),
                                     },
                                     {
                                         "role": "user",
@@ -538,7 +544,9 @@ REASONING: [brief explanation focusing on legal merit, factual support, preceden
                         [
                             {
                                 "role": "system",
-                                "content": PROMPTS.get('commands.brainstorm.analysis_system'),
+                                "content": PROMPTS.get(
+                                    "commands.brainstorm.analysis_system"
+                                ),
                             },
                             {"role": "user", "content": ranking_prompt},
                         ]
@@ -655,7 +663,9 @@ Focus on:
                 user_prompt
                 + f"\n\nGenerate ONE strategic option (this will be option #{len(valid_options) + 1}) to achieve the desired outcome. Use the exact format specified for a single OPTION."
             )
-            individual_prompt += f"\n\n{PROMPTS.get('strategies.strategy.unique_title_requirement')}"
+            individual_prompt += (
+                f"\n\n{PROMPTS.get('strategies.strategy.unique_title_requirement')}"
+            )
             if parsed_strategies:
                 individual_prompt += f"\n\nConsider the brainstormed strategies provided but develop a new approach that complements the {len(valid_options)} options already generated."
 
@@ -747,7 +757,7 @@ Focus on:
         )
 
     # Generate recommended next steps using centralized prompt
-    next_steps_prompt = PROMPTS.get('strategies.strategy.next_steps_prompt')
+    next_steps_prompt = PROMPTS.get("strategies.strategy.next_steps_prompt")
 
     try:
         next_steps_content, _ = llm_client.complete(
@@ -776,13 +786,13 @@ Focus on:
 
     # Generate draft document
     doc_formats = {
-        "claim": PROMPTS.get('documents.statement_of_claim'),
-        "application": PROMPTS.get('documents.originating_application'),
-        "affidavit": PROMPTS.get('documents.affidavit'),
+        "claim": PROMPTS.get("documents.statement_of_claim"),
+        "application": PROMPTS.get("documents.originating_application"),
+        "affidavit": PROMPTS.get("documents.affidavit"),
     }
 
     # Use centralized document generation context
-    doc_context = PROMPTS.get('strategies.strategy.document_generation_context')
+    doc_context = PROMPTS.get("strategies.strategy.document_generation_context")
     doc_prompt = f"""{doc_context.format(recommended_strategy=f"draft a {doc_type.upper()} to achieve the outcome: '{outcome}'")}
 
 {doc_formats.get(doc_type, doc_formats['claim'])}"""
@@ -812,7 +822,9 @@ Focus on:
         output = citation_warning + output
 
     # Apply verification (always required for strategy)
-    output, _ = verify_content_if_needed(llm_client, output, "strategy", verify_flag=True)
+    output, _ = verify_content_if_needed(
+        llm_client, output, "strategy", verify_flag=True
+    )
 
     # Create consolidated reasoning trace from all options
     consolidated_reasoning = None
@@ -822,19 +834,11 @@ Focus on:
         )
 
     # Save output using utility
-    metadata = {
-        "Desired Outcome": outcome,
-        "Case Facts File": case_facts.name
-    }
+    metadata = {"Desired Outcome": outcome, "Case Facts File": case_facts.name}
     if strategies:
         metadata["Strategies File"] = strategies.name
-    
-    output_file = save_command_output(
-        "strategy",
-        output,
-        outcome,
-        metadata=metadata
-    )
+
+    output_file = save_command_output("strategy", output, outcome, metadata=metadata)
 
     # Save consolidated reasoning trace if we have option traces
     if consolidated_reasoning:
