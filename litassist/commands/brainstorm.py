@@ -29,7 +29,6 @@ from litassist.llm import LLMClientFactory, LLMClient
 from litassist.prompts import PROMPTS
 
 
-
 def regenerate_bad_strategies(
     client: LLMClient,
     original_content: str,
@@ -50,7 +49,12 @@ def regenerate_bad_strategies(
     Returns:
         Clean content with verified strategies only
     """
-    click.echo(f"  🔍 Analyzing {strategy_type} strategies for citation issues...")
+    click.echo(
+        PROMPTS.get(
+            "system_feedback.status.progress.analyzing_strategies",
+            strategy_type=strategy_type,
+        )
+    )
 
     # Split content into individual strategies
     strategies = []
@@ -81,11 +85,20 @@ def regenerate_bad_strategies(
         citation_issues = client.validate_citations(strategy)
         if citation_issues:
             click.echo(
-                f"    📋 Strategy {i}: Found {len(citation_issues)-1} citation issues - marking for regeneration"
+                PROMPTS.get(
+                    "system_feedback.status.completion.strategy_issues_found",
+                    strategy_num=i,
+                    issue_count=len(citation_issues) - 1,
+                )
             )
             strategies_to_regenerate.append((i, strategy))
         else:
-            click.echo(f"    ✅ Strategy {i}: Citations verified")
+            click.echo(
+                PROMPTS.get(
+                    "system_feedback.status.completion.strategy_verified",
+                    strategy_num=i,
+                )
+            )
             strategy_results[i] = strategy
 
     # Regenerate problematic strategies
@@ -102,8 +115,10 @@ def regenerate_bad_strategies(
         for strategy_num, bad_strategy in strategies_to_regenerate:
             # Create focused regeneration prompt
             # Use centralized regeneration prompt template
-            regen_template = PROMPTS.get('strategies.brainstorm.regeneration_prompt')
-            citation_instructions = PROMPTS.get('verification.citation_retry_instructions')
+            regen_template = PROMPTS.get("strategies.brainstorm.regeneration_prompt")
+            citation_instructions = PROMPTS.get(
+                "verification.citation_retry_instructions"
+            )
             regen_prompt = f"""{base_prompt}
 
 {regen_template.format(feedback=f"Strategy #{strategy_num} contained unverifiable citations", citation_instructions=citation_instructions)}
@@ -227,11 +242,7 @@ def brainstorm(facts_file, side, area, verify):
     facts = read_document(facts_file)
 
     # Check file size to prevent token limit issues
-    validate_file_size_limit(
-        facts, 
-        50000, 
-        "Case facts"
-    )
+    validate_file_size_limit(facts, 50000, "Case facts")
 
     # Auto-verify for Grok due to hallucination tendency
     if "grok" in "x-ai/grok-3-beta".lower():
@@ -250,7 +261,7 @@ def brainstorm(facts_file, side, area, verify):
     orthodox_client = LLMClientFactory.for_command("brainstorm", "orthodox")
 
     # Use centralized orthodox prompt template
-    orthodox_template = PROMPTS.get('strategies.brainstorm.orthodox_prompt')
+    orthodox_template = PROMPTS.get("strategies.brainstorm.orthodox_prompt")
     orthodox_base_prompt = f"""Facts:
 {facts}
 
@@ -279,7 +290,7 @@ Please provide output in EXACTLY this format:
     orthodox_messages = [
         {
             "role": "system",
-            "content": PROMPTS.get('commands.brainstorm.orthodox_system'),
+            "content": PROMPTS.get("commands.brainstorm.orthodox_system"),
         },
         {"role": "user", "content": orthodox_prompt},
     ]
@@ -288,7 +299,13 @@ Please provide output in EXACTLY this format:
     try:
         orthodox_content, orthodox_usage = call_with_hb(orthodox_messages)
     except Exception as e:
-        raise click.ClickException(f"Error generating orthodox strategies: {e}")
+        raise click.ClickException(
+            PROMPTS.get(
+                "system_feedback.errors.llm.generation_failed",
+                operation="orthodox strategies",
+                error=str(e),
+            )
+        )
 
     # Selectively regenerate orthodox strategies with citation issues
     orthodox_citation_issues = orthodox_client.validate_citations(orthodox_content)
@@ -305,7 +322,7 @@ Please provide output in EXACTLY this format:
     unorthodox_client = LLMClientFactory.for_command("brainstorm", "unorthodox")
 
     # Use centralized unorthodox prompt template
-    unorthodox_template = PROMPTS.get('strategies.brainstorm.unorthodox_prompt')
+    unorthodox_template = PROMPTS.get("strategies.brainstorm.unorthodox_prompt")
     unorthodox_base_prompt = f"""Facts:
 {facts}
 
@@ -334,7 +351,7 @@ Please provide output in EXACTLY this format:
     unorthodox_messages = [
         {
             "role": "system",
-            "content": PROMPTS.get('commands.brainstorm.unorthodox_system'),
+            "content": PROMPTS.get("commands.brainstorm.unorthodox_system"),
         },
         {"role": "user", "content": unorthodox_prompt},
     ]
@@ -342,7 +359,13 @@ Please provide output in EXACTLY this format:
     try:
         unorthodox_content, unorthodox_usage = call_with_hb(unorthodox_messages)
     except Exception as e:
-        raise click.ClickException(f"Error generating unorthodox strategies: {e}")
+        raise click.ClickException(
+            PROMPTS.get(
+                "system_feedback.errors.llm.generation_failed",
+                operation="unorthodox strategies",
+                error=str(e),
+            )
+        )
 
     # Selectively regenerate unorthodox strategies with citation issues
     unorthodox_citation_issues = unorthodox_client.validate_citations(
@@ -361,7 +384,7 @@ Please provide output in EXACTLY this format:
     analysis_client = LLMClientFactory.for_command("brainstorm", "analysis")
 
     # Use centralized analysis prompt template
-    analysis_template = PROMPTS.get('strategies.brainstorm.analysis_prompt')
+    analysis_template = PROMPTS.get("strategies.brainstorm.analysis_prompt")
     analysis_base_prompt = f"""Facts:
 {facts}
 
@@ -393,7 +416,7 @@ Please provide output in EXACTLY this format:
     analysis_messages = [
         {
             "role": "system",
-            "content": PROMPTS.get('commands.brainstorm.analysis_system'),
+            "content": PROMPTS.get("commands.brainstorm.analysis_system"),
         },
         {"role": "user", "content": analysis_prompt},
     ]
@@ -487,8 +510,8 @@ Please provide output in EXACTLY this format:
         metadata={
             "Side": side.capitalize(),
             "Area": area.capitalize(),
-            "Source": facts_file
-        }
+            "Source": facts_file,
+        },
     )
 
     # Save separate reasoning traces if extracted

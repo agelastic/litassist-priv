@@ -18,6 +18,8 @@ import click
 import openai
 from pypdf import PdfReader
 
+from litassist.prompts import PROMPTS
+
 # ── Directory Setup ─────────────────────────────────────────
 # Use current working directory for logs and outputs when running as global command
 WORKING_DIR = os.getcwd()
@@ -133,7 +135,13 @@ def save_log(tag: str, payload: dict):
                 json.dump(payload, f, ensure_ascii=False, indent=2)
             logging.info(f"JSON log saved: {path}")
         except IOError as e:
-            raise click.ClickException(f"Failed to save JSON log {path}: {e}")
+            raise click.ClickException(
+                PROMPTS.get(
+                    "system_feedback.errors.file.save_json_failed",
+                    path=path,
+                    error=str(e),
+                )
+            )
         return
 
     # Markdown logging with intelligent template selection
@@ -1056,13 +1064,13 @@ def parse_strategies_file(strategies_text: str) -> dict:
 def validate_side_area_combination(side: str, area: str):
     """
     Validate side/area combinations and display warnings for incompatible pairs.
-    
+
     Args:
         side: The side being represented (plaintiff/defendant/accused/respondent)
         area: The legal area (criminal/civil/family/commercial/administrative)
     """
     import click
-    
+
     valid_combinations = {
         "criminal": ["accused"],
         "civil": ["plaintiff", "defendant"],
@@ -1103,17 +1111,17 @@ def validate_side_area_combination(side: str, area: str):
 def validate_file_size_limit(content: str, max_size: int, context: str):
     """
     Validate file size and raise exception if too large.
-    
+
     Args:
         content: The file content to check
         max_size: Maximum allowed characters
         context: Description of what type of file is being validated
-        
+
     Raises:
         click.ClickException: If file is too large
     """
     import click
-    
+
     if len(content) > max_size:
         raise click.ClickException(
             f"{context} file too large ({len(content):,} characters). "

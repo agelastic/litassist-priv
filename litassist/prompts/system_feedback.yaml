@@ -1,0 +1,391 @@
+# Unified system feedback messages
+# Consolidates errors, warnings, and status messages
+
+system_feedback:
+  # Critical failures that halt execution
+  errors:
+    # LLM operation errors
+    llm:
+      generation_failed: |
+        Error generating {operation}: {error}
+      
+      verification_failed: |
+        Verification error during {command_name}: {error}
+      
+      lookup_error: |
+        LLM error during lookup: {error}
+      
+      draft_error: |
+        LLM draft error: {error}
+      
+      next_steps_error: |
+        LLM next steps generation error: {error}
+      
+      document_generation_error: |
+        LLM document generation error: {error}
+      
+      digest_chunk_error: |
+        LLM error in digest chunk {chunk_idx}: {error}
+
+    # File operation errors
+    file:
+      not_found: |
+        File not found: {path}
+      
+      no_text_found: |
+        No text found in file: {path}
+      
+      no_pdf_text: |
+        No extractable text found in PDF: {path}
+      
+      read_error: |
+        Error reading document {path}: {error}
+      
+      save_json_failed: |
+        Failed to save JSON log {path}: {error}
+      
+      save_markdown_failed: |
+        Failed to save Markdown log {path}: {error}
+
+    # Data processing errors
+    processing:
+      facts_extraction_failed: |
+        Error extracting facts: {error}
+      
+      chunk_processing_failed: |
+        Error processing chunk {chunk_idx}: {error}
+      
+      facts_organization_failed: |
+        Error organizing facts: {error}
+      
+      file_too_large: |
+        {file_type} file too large ({size:,} characters). Please provide a file under {max_size:,} characters (~{word_count:,} words).
+
+    # External service errors
+    external:
+      search_error: |
+        Search error: {error}
+      
+      embedding_error: |
+        Embedding error: {error}
+      
+      embedding_query_error: |
+        Embedding error for query: {error}
+      
+      pinecone_upsert_error: |
+        Pinecone upsert error: {error}
+      
+      pinecone_retrieval_error: |
+        Pinecone retrieval error: {error}
+
+    # Configuration errors
+    config:
+      file_not_found: |
+        Configuration file not found: {config_path}
+      
+      invalid_yaml: |
+        Invalid YAML in {config_path}: {error}
+      
+      missing_key: |
+        config.yaml missing key {key}
+      
+      invalid_value: |
+        config '{key}' must be a non-empty string
+      
+      api_test_failed: |
+        {service} API test failed: {error}
+
+    # Critical citation errors
+    citation:
+      multiple_attempts_failed: |
+        CRITICAL: Multiple attempts to generate content with verified citations failed. The AI model is consistently generating unverifiable legal citations. Manual intervention required.
+      
+      verification_failed_critical: |
+        🚫 CRITICAL: Citation verification failed:
+        
+        {categorized_issues}
+        
+        🛑 ACTION REQUIRED: These citations appear to be AI hallucinations.
+        Remove these citations and regenerate, or verify them independently.
+
+  # Non-critical advisories and warnings
+  warnings:
+    # Validation warnings
+    validation:
+      citation_validation_header: |
+        ⚠️  CITATION VALIDATION WARNING
+        
+        The following potential issues were detected in the generated content:
+      
+      case_facts_missing_headings: |
+        ⚠️  Warning: case_facts.txt appears incomplete.
+        Expected 10 headings but found only {found}.
+        Missing headings may result in less comprehensive analysis.
+      
+      side_area_mismatch: |
+        ⚠️  Warning: '{side}' typically applies to {expected_area} law matters.
+        The specified area is '{area}'. Please verify this combination is correct.
+
+    # File size warnings
+    file_size:
+      brainstorm: |
+        ⚠️  Warning: Large case facts file ({size:,} characters).
+        Brainstorm command works best with files under 50,000 characters.
+        Consider using 'extractfacts' first to create a structured summary.
+      
+      strategy: |
+        ⚠️  Warning: Very large case facts file ({size:,} characters).
+        Strategy command has a 100,000 character limit to ensure quality analysis.
+        Please use 'extractfacts' first to create a structured summary.
+
+    # API and configuration warnings
+    api:
+      key_placeholder: |
+        ⚠️  ERROR: API key appears to be a placeholder value.
+        Please set your actual {service} API key in config.yaml or as an environment variable.
+      
+      byok_required_o1_pro: |
+        ⚠️  ERROR: OpenAI o1-pro requires Bring Your Own Key (BYOK) setup.
+        
+        To use o1-pro:
+        1. Ensure you have o1-pro access on your OpenAI account
+        2. Set your OpenAI API key in config.yaml or environment
+        3. The key must have access to o1-pro model
+        
+        Note: o1-pro is expensive (~$15/call) and requires special access.
+      
+      byok_required_o3: |
+        ⚠️  ERROR: OpenAI o3 requires Bring Your Own Key (BYOK) setup.
+        
+        To use o3:
+        1. Ensure you have o3 access on your OpenAI account (limited availability)
+        2. Set your OpenAI API key in config.yaml or environment
+        3. The key must have access to o3 model
+        
+        Note: o3 is extremely expensive and has very limited availability.
+
+    # Citation-specific warnings
+    citation:
+      not_found_header: |
+        📋 CASES NOT FOUND IN DATABASE:
+      
+      format_issues_header: |
+        ⚠️  CITATION FORMAT ISSUES:
+      
+      verification_problems_header: |
+        🔍 VERIFICATION PROBLEMS:
+      
+      error_item: |
+           • {citation}
+             → {reason}
+      
+      strict_mode_failed: |
+        🚫 {error}
+      
+      retrying_with_instructions: |
+        🔄 Retrying with enhanced citation instructions...
+      
+      retry_also_failed: |
+        💥 Retry also failed: {error}
+      
+      citation_verification_warning: |
+        ⚠️  Citation verification: {issue}
+      
+      retry_successful: |
+        ✅ Retry successful: {issue}
+      
+      all_citations_verified: |
+        ✅ Retry successful: All citations verified
+
+  # Progress feedback and status messages
+  status:
+    # Progress indicators
+    progress:
+      analyzing_strategies: |
+        🔍 Analyzing {strategy_type} strategies for citation issues...
+      
+      generating_option: |
+        🎯 Generating option {attempt}...
+      
+      regeneration_attempt: |
+        🔄 Regeneration attempt {retry_attempt}: {count} strategies need fixing
+      
+      will_use_embedding: |
+        Will use embedding/retrieval for {doc_path}
+      
+      will_use_embedding_large: |
+        Will use embedding/retrieval for large {doc_path}
+
+    # Status updates
+    completion:
+      strategy_verified: |
+        ✅ Strategy {strategy_num}: Citations verified
+      
+      strategy_regenerated: |
+        ✅ Strategy {strategy_num}: Successfully regenerated with clean citations
+      
+      strategy_issues_found: |
+        📋 Strategy {strategy_num}: Found {issue_count} citation issues - marking for regeneration
+      
+      strategy_still_has_issues: |
+        ⚠️  Strategy {strategy_num}: Still has citation issues after regeneration
+      
+      strategy_regeneration_failed: |
+        💥 Strategy {strategy_num}: Regeneration failed - {error}
+      
+      option_verified: |
+        ✅ Option {attempt}: Citations verified - keeping
+      
+      option_issues_found: |
+        ❌ Option {attempt}: Found {issue_count} citation issues - discarding
+      
+      option_generation_failed: |
+        💥 Option {attempt}: Generation failed - {error}
+      
+      all_strategies_verified: |
+        ✅ All {strategy_type} strategies now have verified citations
+      
+      strategies_with_issues: |
+        ⚠️  {count} {strategy_type} strategies still have citation issues after {max_retries} attempts
+
+    # File operations
+    file_ops:
+      using_case_facts: |
+        Using {doc_path} as CASE FACTS ({length} characters)
+      
+      using_legal_strategies: |
+        Using {doc_path} as LEGAL STRATEGIES ({length} characters)
+      
+      using_supporting_document: |
+        Using {doc_path} as supporting document ({length} characters)
+      
+      preview_line_long: |
+        {line_preview}...
+      
+      preview_line_short: |
+        {line}
+
+    # Search and analysis
+    search:
+      link_item: |
+        - {link}
+      
+      numbered_link: |
+        {index}. {link}
+      
+      exhaustive_search: |
+        🔍 Exhaustive search: {count} sources analyzed
+      
+      standard_search: |
+        🔍 Standard search: {count} sources analyzed
+      
+      extract_type_summary: |
+        📊 {extract_type} extracted from search results
+      
+      analysis_type_summary: |
+        📊 {analysis_type} legal analysis for: {question}
+
+    # Strategy analysis
+    strategy_analysis:
+      using_brainstorm_strategies: |
+        Using strategies from brainstorm:
+      
+      orthodox_count: |
+        - {count} orthodox strategies
+      
+      unorthodox_count: |
+        - {count} unorthodox strategies
+      
+      most_likely_count: |
+        - {count} marked as most likely to succeed
+      
+      generated_for_context: |
+        - Generated for: {side} in {area} law
+      
+      missing_headings: |
+        Missing required headings: {missing_list}
+      
+      headings_case_insensitive_note: |
+        Note: Headings are now case-insensitive and can have punctuation.
+      
+      strategies_excluded: |
+        📋 Excluding these strategies: {strategy_numbers}
+      
+      final_result: |
+        📊 Final result: {count} verified {strategy_type} strategies
+      
+      options_generated: |
+        📊 Successfully generated {count} verified strategic options
+      
+      no_options_after_attempts: |
+        ⚠️  Could not generate any options with verified citations after {max_attempts} attempts
+      
+      total_options_for_outcome: |
+        📊 Generated {count} strategic options for: {outcome}
+      
+      option_title: |
+        {index}. {title}
+
+    # Command completion
+    command_completion:
+      command_complete: |
+        ✅ {command_name} complete!
+      
+      output_saved: |
+        📄 Output saved to: "{output_file}"
+      
+      stat_item: |
+        {key}: {value}
+      
+      strategies_summary: |
+        📊 Generated strategies for {side} in {area} law:
+      
+      orthodox_summary: |
+        • Orthodox strategies: {count}
+      
+      unorthodox_summary: |
+        • Unorthodox strategies: {count}
+      
+      most_likely_summary: |
+        • Most likely to succeed: {count}
+
+    # Debugging and development
+    debug:
+      function_execution_time: |
+        Function {function_name} execution time: {duration:.3f} seconds
+      
+      function_started: |
+        - Started: {start_timestamp}
+      
+      function_ended: |
+        - Ended: {end_timestamp}
+      
+      function_failed: |
+        Function {function_name} failed after {duration:.3f} seconds
+      
+      log_saved: |
+        {log_type} log saved: {path}
+      
+      config_key_not_found: |
+        ⚠️  No configuration found for '{config_key}', using defaults
+      
+      using_env_model: |
+        📋 Using model from environment: {model}
+      
+      offline_validation_issues: |
+        ⚠️  Offline validation found {count} potential issues
+
+    # Citation processing
+    citation_processing:
+      citation_warnings_found: |
+        🔄 Found {count} citation issues in {strategy_type} strategies - fixing...
+      
+      categorized_error_header: |
+        {error_type} ERRORS:
+      
+      citation_error_detail: |
+        • {citation}
+          → {reason}
+      
+      unverified_citations_removed: |
+        CITATION VERIFICATION WARNING: {count} citations removed as unverified
