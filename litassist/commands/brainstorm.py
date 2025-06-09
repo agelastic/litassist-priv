@@ -56,23 +56,12 @@ def regenerate_bad_strategies(
         )
     )
 
-    # Split content into individual strategies
-    strategies = []
-    current_strategy = []
-    lines = original_content.split("\n")
-
-    for line in lines:
-        # Strategy headers start with numbers (1., 2., etc.)
-        if re.match(r"^\d+\.\s+", line.strip()) and current_strategy:
-            # Save previous strategy
-            strategies.append("\n".join(current_strategy))
-            current_strategy = [line]
-        else:
-            current_strategy.append(line)
-
-    # Don't forget the last strategy
-    if current_strategy:
-        strategies.append("\n".join(current_strategy))
+    # Split content into individual strategies using a robust regex
+    # This pattern finds all numbered list items (e.g., "1. Strategy Title...")
+    # and treats each one as a separate strategy.
+    strategies = re.split(r"\n(?=\d+\.\s+)", original_content.strip())
+    # The first item might be a header, so filter it out if it doesn't start with a number
+    strategies = [s.strip() for s in strategies if re.match(r"^\d+\.", s.strip())]
 
     # Validate each strategy individually and track their final state
     strategy_results = {}  # Maps original position to final strategy content
@@ -448,14 +437,13 @@ Please provide output in EXACTLY this format:
         + analysis_usage.get("total_tokens", 0),
     }
 
-    # Store original content before verification
-    original_content = combined_content
+    # Store content before verification
     usage = total_usage
     verification_notes = []
 
     # Smart verification - auto-enabled for Grok or when requested
     # Use analysis_client for verification since it has balanced settings
-    auto_verify = analysis_client.should_auto_verify(original_content, "brainstorm")
+    auto_verify = analysis_client.should_auto_verify(combined_content, "brainstorm")
     needs_verification = verify or auto_verify
 
     # Inform user about verification status
@@ -475,13 +463,23 @@ Please provide output in EXACTLY this format:
     if needs_verification:
         try:
             # Use medium verification for creative brainstorming
-            correction = analysis_client.verify_with_level(original_content, "medium")
-            if correction.strip():  # Only append if there are actual corrections
-                verification_notes.append("--- Strategic Review ---\n" + correction)
+            correction = analysis_client.verify_with_level(combined_content, "medium")
 
-            # Run citation validation for any legal references
-            citation_issues = analysis_client.validate_citations(original_content)
+            # The verification model returns the full, corrected text.
+            # We should replace the content, not append to it.
+            if correction.strip() and not correction.lower().startswith(
+                "no corrections needed"
+            ):
+                # The correction IS the new content
+                combined_content = correction
+                verification_notes.append(
+                    "--- Strategic Review Applied ---\nContent was updated based on verification."
+                )
+
+            # Run citation validation on the potentially corrected content
+            citation_issues = analysis_client.validate_citations(combined_content)
             if citation_issues:
+                # Append warnings, but don't modify the content further here
                 verification_notes.append(
                     "--- Citation Warnings ---\n" + "\n".join(citation_issues)
                 )
@@ -497,9 +495,11 @@ Please provide output in EXACTLY this format:
     analysis_trace = extract_reasoning_trace(analysis_content, "brainstorm-analysis")
 
     # Remove reasoning traces from main content
-    trace_pattern = r"=== LEGAL REASONING TRACE ===\s*\n(.*?)(?=\n\n|\n=|$)"
+    # Use a non-greedy pattern to remove each trace block individually
+    trace_pattern = r"=== LEGAL REASONING TRACE ===.*?(?=\n\n##|\Z)"
+    # Ensure clean_content is based on the potentially modified combined_content
     clean_content = re.sub(
-        trace_pattern, "", original_content, flags=re.DOTALL | re.IGNORECASE
+        trace_pattern, "", combined_content, flags=re.DOTALL | re.IGNORECASE
     ).strip()
 
     # Save to timestamped file only
@@ -571,16 +571,12 @@ Please provide output in EXACTLY this format:
         click.echo(f'Verification notes saved to "{verification_file}"')
 
     # Save comprehensive audit log
-    full_content = original_content
-    if verification_notes:
-        full_content += "\n\n" + "\n\n".join(verification_notes)
-
     save_log(
         "brainstorm",
         {
             "inputs": {"facts_file": facts_file, "method": "three-stage approach"},
             "params": f"verify={verify} (auto-enabled for Grok), orthodox_temp=0.3, unorthodox_temp=0.9, analysis_temp=0.4",
-            "response": full_content,
+            "response": combined_content,  # Log the final, verified content
             "usage": usage,
             "output_file": output_file,
             "stages": {
@@ -598,7 +594,7 @@ Please provide output in EXACTLY this format:
         click.echo(f'📋 Verification notes: open "{verification_file}"')
 
     # Parse the actual strategies generated
-    parsed_result = parse_strategies_file(original_content)
+    parsed_result = parse_strategies_file(combined_content)
 
     click.echo(
         f"\n📊 Generated strategies for {side.capitalize()} in {area.capitalize()} law:"

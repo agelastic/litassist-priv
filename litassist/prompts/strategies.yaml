@@ -52,7 +52,7 @@ strategies:
     # USED BY: brainstorm.py generate_strategies() - when approach="analysis"
     # LOCATION: brainstorm.py:368-393 (to be extracted)
     analysis_prompt: |
-      Analyze ALL the strategies above and select the 3-5 most likely to succeed based on:
+      Analyze ALL the strategies above and select EXACTLY 5 of the most promising strategies.
       
       **SELECTION CRITERIA:**
       - Legal merit and strength of precedent
@@ -64,12 +64,14 @@ strategies:
       - Available evidence strength
       
       **REQUIRED ANALYSIS:**
-      For each selected strategy:
+      For each of the 5 selected strategies, provide:
       1. **Why this strategy was selected** (detailed reasoning)
       2. **Implementation roadmap** (step-by-step approach)
       3. **Resource requirements** (time, cost, expertise needed)
       4. **Risk assessment** (potential downsides and mitigation)
       5. **Success probability** (realistic percentage with reasoning)
+
+      **IMPORTANT:** You must return exactly 5 strategies. If you cannot find 5 high-quality strategies, you must still provide 5, but for the lower-quality ones, you must explicitly state why they are not recommended.
       
       **FINAL RECOMMENDATION:**
       Conclude with your #1 recommended strategy and a compelling 2-3 paragraph justification.

@@ -754,8 +754,9 @@ def extract_reasoning_trace(
     Returns:
         LegalReasoningTrace object if found, None otherwise
     """
-    # Look for the reasoning trace section
-    trace_pattern = r"=== LEGAL REASONING TRACE ===\s*\n(.*?)(?=\n\n|\n=|$)"
+    # The pattern now looks for the start of the trace and captures everything
+    # until the end of the content or another major header. It is non-greedy.
+    trace_pattern = r"=== LEGAL REASONING TRACE ===\s*\n(.*?)(?=\n===|$)"
     match = re.search(trace_pattern, content, re.DOTALL | re.IGNORECASE)
 
     if not match:
@@ -763,33 +764,21 @@ def extract_reasoning_trace(
 
     trace_text = match.group(1).strip()
 
-    # Extract individual components using precise patterns that stop at the next field
+    # More robust extraction for each component
     components = {}
     patterns = {
-        "issue": r"Issue:\s*(.+?)(?=\nApplicable Law:|$)",
-        "applicable_law": r"Applicable Law:\s*(.+?)(?=\nApplication to Facts:|$)",
-        "application": r"Application to Facts:\s*(.+?)(?=\nConclusion:|$)",
-        "conclusion": r"Conclusion:\s*(.+?)(?=\nConfidence:|$)",
-        "confidence": r"Confidence:\s*(\d+)%?",
-        "sources": r"Sources:\s*(.+?)(?=\nGenerated:|$)",
+        "issue": r"Issue:\s*(.*?)(?=\nApplicable Law:|\nApplication to Facts:|\nConclusion:|\nConfidence:|\nSources:|\Z)",
+        "applicable_law": r"Applicable Law:\s*(.*?)(?=\nApplication to Facts:|\nConclusion:|\nConfidence:|\nSources:|\Z)",
+        "application": r"Application to Facts:\s*(.*?)(?=\nConclusion:|\nConfidence:|\nSources:|\Z)",
+        "conclusion": r"Conclusion:\s*(.*?)(?=\nConfidence:|\nSources:|\Z)",
+        "confidence": r"Confidence:\s*(\d+)",
+        "sources": r"Sources:\s*(.*?)(?=\nGenerated:|\Z)",
     }
 
     for key, pattern in patterns.items():
         match = re.search(pattern, trace_text, re.DOTALL | re.IGNORECASE)
         if match:
             value = match.group(1).strip()
-
-            # Clean up repetitive content by taking only the first substantial paragraph
-            if key in ["applicable_law", "application"] and len(value) > 200:
-                # Split into sentences and look for repetition
-                sentences = value.split(". ")
-                if len(sentences) > 3:
-                    # Take first substantial chunk up to a reasonable stopping point
-                    first_chunk = ". ".join(sentences[:3]) + "."
-                    # Check if this seems complete (ends with punctuation and reasonable length)
-                    if len(first_chunk) > 100 and first_chunk.endswith("."):
-                        value = first_chunk
-
             if key == "confidence":
                 components[key] = int(value) if value.isdigit() else 50
             elif key == "sources":
@@ -797,16 +786,16 @@ def extract_reasoning_trace(
             else:
                 components[key] = value
 
-    # Only create trace if we have the essential components
+    # Check for essential components before creating the trace object
     if all(
         key in components
         for key in ["issue", "applicable_law", "application", "conclusion"]
     ):
         return LegalReasoningTrace(
-            issue=components["issue"],
-            applicable_law=components["applicable_law"],
-            application=components["application"],
-            conclusion=components["conclusion"],
+            issue=components.get("issue", "N/A"),
+            applicable_law=components.get("applicable_law", "N/A"),
+            application=components.get("application", "N/A"),
+            conclusion=components.get("conclusion", "N/A"),
             confidence=components.get("confidence", 50),
             sources=components.get("sources", []),
             command=command,
