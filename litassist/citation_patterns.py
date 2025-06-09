@@ -492,11 +492,11 @@ def validate_citation_patterns(content: str, enable_online: bool = True) -> List
 
     This function performs two phases of validation:
     1. Offline pattern detection (Phase 1) - Always runs
-    2. Online AustLII verification (Phase 2) - Runs if enable_online=True
+    2. Online database verification (Phase 2) - Runs if enable_online=True
 
     Args:
         content: Text content to validate
-        enable_online: Whether to perform online AustLII verification after offline checks
+        enable_online: Whether to perform online database verification after offline checks
 
     Returns:
         List of potential citation issues found
@@ -527,7 +527,7 @@ def validate_citation_patterns(content: str, enable_online: bool = True) -> List
     # Remove duplicates from issues list
     unique_issues = list(dict.fromkeys(issues))
 
-    # ── Phase 2: Online AustLII Verification (if enabled) ────────────────
+    # ── Phase 2: Online Database Verification (if enabled) ────────────────
     if enable_online:
         # Perform online verification for ALL citations, not just those flagged offline
         try:
@@ -548,7 +548,8 @@ def validate_citation_patterns(content: str, enable_online: bool = True) -> List
                             unique_issues.append(
                                 f"COURT NOT RECOGNIZED: {citation} - {reason}\n  → ACTION: Excluding unrecognized court identifier"
                             )
-                        elif "Not found on AustLII" in reason:
+                        elif ("Invalid citation format" in reason or 
+                              "verification unavailable" in reason):
                             unique_issues.append(
                                 f"CITATION NOT FOUND: {citation} - {reason}\n  → ACTION: Citation does not exist in legal database"
                             )
@@ -570,7 +571,7 @@ def validate_citation_patterns(content: str, enable_online: bool = True) -> List
                     )
                     if online_only_issues > 0:
                         unique_issues.append(
-                            f"AustLII check: {online_only_issues} citations not found in database"
+                            f"Online database check: {online_only_issues} citations not found in database"
                         )
         except Exception as e:
             # If online verification fails, just note it and continue
@@ -594,7 +595,7 @@ def validate_citation_patterns(content: str, enable_online: bool = True) -> List
                         "COURT NOT RECOGNIZED:",
                         "CITATION NOT FOUND:",
                         "ONLINE VERIFICATION FAILED:",
-                        "AustLII check:",
+                        "Online database check:",
                     )
                 )
             ]
@@ -619,7 +620,7 @@ def validate_citation_patterns(content: str, enable_online: bool = True) -> List
         if offline_issues > 0:
             action_msg += f"→ PATTERN ANALYSIS: {offline_issues} citations flagged for suspicious patterns\n"
         if online_issues > 0:
-            action_msg += f"→ AUSTLII VERIFICATION: {online_issues} citations not found in legal database\n"
+            action_msg += f"→ ONLINE DATABASE VERIFICATION: {online_issues} citations not found in legal database\n"
 
         action_msg += (
             "→ ACTION TAKEN: Flagging questionable citations for manual review\n"

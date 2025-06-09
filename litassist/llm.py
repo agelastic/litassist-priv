@@ -637,7 +637,7 @@ class LLMClient:
                     f"⚠️  Offline validation found {len(pattern_issues)} potential issues"
                 )
 
-        # Always do real-time AustLII verification
+        # Always do real-time online database verification
         verified_citations, unverified_citations = verify_all_citations(content)
 
         if unverified_citations and strict_mode:
@@ -779,7 +779,7 @@ class LLMClient:
 
         Args:
             content: Text content to validate
-            enable_online: Whether to perform online AustLII verification after offline checks
+            enable_online: Whether to perform online database verification after offline checks
 
         Returns:
             List of potential citation issues found

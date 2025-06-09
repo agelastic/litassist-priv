@@ -12,14 +12,13 @@ verification:
   # USED BY: llm.py LLMClient.complete() method - when citation verification fails and retry is needed
   # LOCATION: llm.py:431-440
   citation_retry_instructions: |
-    IMPORTANT: Use only real, verifiable Australian cases that exist on AustLII. Do not invent case names. If unsure about a citation, omit it rather than guess.
+    IMPORTANT: Use only real, verifiable Australian cases that exist on AustLII or BarNet Jade . Do not invent case names. If unsure about a citation, omit it rather than guess.
   
   # Light verification - Australian English compliance only
   # USED BY: llm.py LLMClient.verify_with_level() method - when level="light"
   # LOCATION: llm.py:744-753
   light_verification: |
     Check only for Australian English spelling and terminology compliance.
-    
     Correct any non-Australian English spellings or terminology.
   
   # Heavy verification - comprehensive legal accuracy

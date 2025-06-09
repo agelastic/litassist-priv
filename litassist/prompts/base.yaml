@@ -12,7 +12,7 @@ base:
   accuracy_standards: "Ensure all facts are accurate and verifiable. Do not invent or assume information."
   
   # Verification standards  
-  verification_standards: "All citations must be verifiable on AustLII. All legal principles must have supporting authority."
+  verification_standards: "All citations must be verifiable on AustLII or BarNet Jade. All legal principles must have supporting authority."
 
 # Command-specific system prompts
 commands:
