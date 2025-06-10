@@ -133,7 +133,7 @@ def save_log(tag: str, payload: dict):
         try:
             with open(path, "w", encoding="utf-8") as f:
                 json.dump(payload, f, ensure_ascii=False, indent=2)
-            logging.info(f"JSON log saved: {path}")
+            logging.debug(f"JSON log saved: {path}")
         except IOError as e:
             raise click.ClickException(
                 PROMPTS.get(
@@ -168,7 +168,7 @@ def save_log(tag: str, payload: dict):
                 # Generic format for unknown log types
                 _write_generic_markdown(f, tag, ts, payload)
 
-        logging.info(f"Markdown log saved: {md_path}")
+            logging.debug(f"Markdown log saved: {md_path}")
     except IOError as e:
         raise click.ClickException(f"Failed to save Markdown log {md_path}: {e}")
 
