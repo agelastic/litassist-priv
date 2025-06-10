@@ -41,7 +41,7 @@ class LLMClientFactory:
         "strategy": {
             "model": "openai/o3",
             "premium_model": "openai/o1-pro",
-            "reasoning_effort": "medium",
+            "reasoning_effort": "high",
             # o1-pro has fixed parameters: temperature=1, top_p=1, presence_penalty=0, frequency_penalty=0
             # Only max_completion_tokens can be controlled
             "force_verify": True,  # Always verify for strategic guidance
@@ -73,7 +73,7 @@ class LLMClientFactory:
         # Draft - superior technical writing (o3 model with very limited parameter support)
         "draft": {
             "model": "openai/o3",
-            "reasoning_effort": "medium",  # o3 reasoning effort: low, medium, high
+            "reasoning_effort": "high",  # o3 reasoning effort: low, medium, high
             # o3 only supports max_completion_tokens and reasoning_effort
             # No temperature, top_p, presence_penalty, frequency_penalty support
         },

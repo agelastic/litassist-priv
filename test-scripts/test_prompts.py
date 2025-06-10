@@ -9,49 +9,52 @@ import os
 # Add the project root to the Python path
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
+
 def test_prompt_system():
     """Test that the prompt management system works correctly."""
     try:
         from litassist.prompts import PROMPTS
-        
+
         print("🧪 Testing centralized prompt management system...")
-        
+
         # Test 1: Basic prompt retrieval
         print("\n1. Testing basic prompt retrieval...")
         try:
-            australian_law = PROMPTS.get('base.australian_law')
+            australian_law = PROMPTS.get("base.australian_law")
             print(f"✅ Australian law base: {australian_law}")
         except Exception as e:
             print(f"❌ Failed to get base.australian_law: {e}")
             return False
-        
+
         # Test 2: System prompt generation
         print("\n2. Testing system prompt generation...")
         try:
-            system_prompt = PROMPTS.get_system_prompt('extractfacts')
+            system_prompt = PROMPTS.get_system_prompt("extractfacts")
             print(f"✅ Extractfacts system prompt: {system_prompt[:100]}...")
         except Exception as e:
             print(f"❌ Failed to get extractfacts system prompt: {e}")
             return False
-        
+
         # Test 3: Format template retrieval
         print("\n3. Testing format template retrieval...")
         try:
-            format_template = PROMPTS.get_format_template('case_facts_10_heading')
+            format_template = PROMPTS.get_format_template("case_facts_10_heading")
             print(f"✅ Case facts format: {format_template[:100]}...")
         except Exception as e:
             print(f"❌ Failed to get case_facts_10_heading format: {e}")
             return False
-        
+
         # Test 4: Template composition
         print("\n4. Testing template composition...")
         try:
-            composed = PROMPTS.compose_prompt('base.australian_law', 'base.citation_standards')
+            composed = PROMPTS.compose_prompt(
+                "base.australian_law", "base.citation_standards"
+            )
             print(f"✅ Composed prompt: {composed[:100]}...")
         except Exception as e:
             print(f"❌ Failed to compose prompts: {e}")
             return False
-        
+
         # Test 5: Template listing
         print("\n5. Testing template listing...")
         try:
@@ -62,44 +65,43 @@ def test_prompt_system():
         except Exception as e:
             print(f"❌ Failed to list templates: {e}")
             return False
-        
+
         print("\n🎉 All prompt management tests passed!")
         return True
-        
+
     except ImportError as e:
         print(f"❌ Failed to import prompt management system: {e}")
         return False
 
+
 def test_fallback_behavior():
     """Test that commands work even without centralized prompts."""
     print("\n🧪 Testing fallback behavior...")
-    
+
     try:
         # Test creating a new PromptManager instance with no templates
         import tempfile
-        import shutil
         from pathlib import Path
-        
+
         # Create a temporary directory without prompts
         with tempfile.TemporaryDirectory() as temp_dir:
             temp_path = Path(temp_dir)
-            
+
             # Create a mock PromptManager with no templates directory
-            import sys
             from litassist.prompts import PromptManager
-            
+
             # Create an instance that will have no templates
             class EmptyPromptManager(PromptManager):
                 def __init__(self):
                     self.prompts_dir = temp_path / "nonexistent_prompts"
                     self.templates = self._load_templates()
                     self._templates_loaded = bool(self.templates)
-            
+
             empty_manager = EmptyPromptManager()
-            
+
             # Test that it correctly fails with missing templates
             try:
-                empty_manager.get('base.australian_law')
+                empty_manager.get("base.australian_law")
                 print("❌ Should have failed with missing templates")
                 return False
             except KeyError as e:
@@ -108,31 +110,34 @@ def test_fallback_behavior():
                 else:
                     print(f"❌ Wrong error message: {e}")
                     return False
-        
+
         print("🎉 Fallback behavior test passed!")
         return True
-        
+
     except Exception as e:
         print(f"❌ Fallback test failed: {e}")
         return False
 
+
 if __name__ == "__main__":
     print("🚀 Testing LitAssist Phase 1 Prompt Centralization")
     print("=" * 50)
-    
+
     success = True
-    
+
     # Test the prompt management system
     if not test_prompt_system():
         success = False
-    
+
     # Test fallback behavior
     if not test_fallback_behavior():
         success = False
-    
+
     print("\n" + "=" * 50)
     if success:
-        print("🎉 All tests passed! Phase 1 prompt centralization is working correctly.")
+        print(
+            "🎉 All tests passed! Phase 1 prompt centralization is working correctly."
+        )
         sys.exit(0)
     else:
         print("❌ Some tests failed. Please check the implementation.")
