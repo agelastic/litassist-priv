@@ -4,7 +4,7 @@ openrouter:
 
 openai:
   api_key:          "YOUR_OPENAI_KEY"
-  embedding_model:  "text-embedding-ada-002"
+  embedding_model:  "text-embedding-3-small"
 
 google_cse:
   api_key:  "YOUR_GOOGLE_API_KEY"

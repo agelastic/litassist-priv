@@ -2039,14 +2039,24 @@ VERIFICATION NOTES:
 
 Each LitAssist command uses a specific LLM model chosen for its strengths:
 
-| Command | Generation Model | Analysis Model | Primary Purpose |
-|---------|------------------|----------------|-----------------|
-| lookup | `google/gemini-2.5-pro-preview` | N/A | Fast, accurate legal research |
-| digest | `anthropic/claude-sonnet-4` | N/A | Reliable document summarization |
-| extractfacts | `anthropic/claude-sonnet-4` | N/A | Precise fact extraction |
-| brainstorm | `x-ai/grok-3-beta` | `anthropic/claude-sonnet-4` | Creative generation + expert analysis |
-| strategy | `openai/o1-pro` | `anthropic/claude-sonnet-4` | Enhanced multi-step legal reasoning |
-| draft | `openai/o3` | N/A | Superior technical legal writing (BYOK required) |
+| Command | Default Model | Premium Model | Analysis Model | Primary Purpose |
+|---------|---------------|---------------|----------------|-----------------|
+| lookup | `google/gemini-2.5-pro-preview` | N/A | N/A | Fast, accurate legal research |
+| digest | `anthropic/claude-sonnet-4` | N/A | N/A | Reliable document summarization |
+| extractfacts | `anthropic/claude-sonnet-4` | N/A | N/A | Precise fact extraction |
+| brainstorm | *Sub-command specific* | N/A | `anthropic/claude-sonnet-4` | Creative generation + expert analysis |
+| strategy | `openai/o3` | `openai/o1-pro` | `anthropic/claude-sonnet-4` | Enhanced multi-step legal reasoning |
+| draft | `openai/o3` | N/A | N/A | Superior technical legal writing (BYOK required) |
+
+### Brainstorm Sub-Command Models
+
+The brainstorm command uses different models for different types of strategy generation:
+
+| Sub-Command | Model | Temperature | Top-P | Purpose |
+|-------------|-------|-------------|-------|---------|
+| Orthodox strategies | `anthropic/claude-sonnet-4` | 0.3 | 0.7 | Conservative, proven legal approaches |
+| Unorthodox strategies | `x-ai/grok-3-beta` | 0.9 | 0.95 | Creative, novel legal arguments |
+| Analysis ("Most Likely") | `anthropic/claude-sonnet-4` | 0.2 | 0.8 | Expert evaluation and ranking |
 
 ### Temperature and Sampling Parameters
 
@@ -2056,11 +2066,11 @@ LitAssist uses carefully tuned parameters for each command to balance accuracy w
 
 **lookup** (`google/gemini-2.5-pro-preview`):
 ```python
-temperature=0, top_p=0.2
+temperature=0.1, top_p=0.2
 ```
-- **Purpose**: Case law search requires maximum accuracy
-- **Effect**: Near-deterministic responses with minimal variation
-- **Why**: Legal citations and case summaries must be consistent
+- **Purpose**: Case law search with slight variation for comprehensive coverage
+- **Effect**: Near-deterministic responses with minimal creative variation
+- **Why**: Slight randomness helps discover diverse legal angles while maintaining accuracy
 
 **extractfacts** (`anthropic/claude-sonnet-4`):
 ```python

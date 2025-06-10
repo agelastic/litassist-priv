@@ -142,14 +142,23 @@ Basic usage:
 Global options:
 - `--log-format [json|markdown]`: Choose audit-log format (default: json)
 - `--verbose`: Enable debug-level logging
+- `--premium`: Enable premium models (e.g. o1-pro instead of o3)
 
 ### Core Pipeline Commands
 
 1. **lookup** - Rapid case-law search with automatic citation
    ```bash
    ./litassist.py lookup "What defences exist to adverse costs orders?"
-   ./litassist.py lookup "Question?" --mode broad --engine jade
+   ./litassist.py lookup "Question?" --mode broad --comprehensive
+   ./litassist.py lookup "contract formation elements" --extract citations
+   ./litassist.py lookup "negligence principles" --extract principles  
+   ./litassist.py lookup "discovery requirements" --extract checklist
    ```
+   
+   Options:
+   - `--mode [irac|broad]`: Analysis format (default: irac)
+   - `--extract [citations|principles|checklist]`: Extract specific information in structured format
+   - `--comprehensive`: Use exhaustive analysis with up to 40 sources (vs 5 standard)
 
 2. **digest** - Process large documents for summaries or issues
    ```bash

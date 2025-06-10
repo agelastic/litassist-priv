@@ -120,18 +120,17 @@ composed = PROMPTS.compose_prompt('base.australian_law', 'base.citation_standard
 
 ## Commands Updated
 
-### Phase 1 Implementation
+### Phase 1 Implementation - COMPLETE ✅
 
-✅ **`llm.py`** - Imports PROMPTS module (partial implementation)  
+✅ **`llm.py`** - Imports PROMPTS module  
+✅ **`extractfacts.py`** - Fully integrated with centralized prompts  
+✅ **`lookup.py`** - Fully integrated with centralized prompts  
+✅ **`brainstorm.py`** - Fully integrated with centralized prompts  
+✅ **`strategy.py`** - Fully integrated with centralized prompts  
+✅ **`draft.py`** - Fully integrated with centralized prompts  
+✅ **`digest.py`** - Fully integrated with centralized prompts  
 
-### Pending Integration
-
-⏳ **`extractfacts.py`** - Needs to use centralized prompts  
-⏳ **`lookup.py`** - Needs to use centralized prompts  
-⏳ **`brainstorm.py`** - Needs to use centralized prompts  
-⏳ **`strategy.py`** - Needs to use centralized prompts  
-⏳ **`draft.py`** - Needs to use centralized prompts  
-⏳ **`digest.py`** - Needs to use centralized prompts  
+**Integration Status**: All commands now use centralized prompt templates from the YAML files, with comprehensive coverage of system prompts, format templates, and document templates.
 
 ## Benefits Achieved
 
