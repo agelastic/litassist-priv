@@ -96,6 +96,38 @@ def timed(func: Callable) -> Callable:
     return wrapper
 
 
+def _sanitize_for_json(obj):
+    """
+    Recursively sanitize objects for JSON serialization.
+
+    Converts Mock objects and other non-serializable objects to strings.
+
+    Args:
+        obj: The object to sanitize
+
+    Returns:
+        A JSON-serializable version of the object
+    """
+    import unittest.mock
+
+    if isinstance(obj, unittest.mock.Mock):
+        return f"<Mock: {obj._mock_name or 'unnamed'}>"
+    elif isinstance(obj, dict):
+        return {key: _sanitize_for_json(value) for key, value in obj.items()}
+    elif isinstance(obj, list):
+        return [_sanitize_for_json(item) for item in obj]
+    elif isinstance(obj, tuple):
+        return tuple(_sanitize_for_json(item) for item in obj)
+    elif hasattr(obj, "__dict__") and not isinstance(
+        obj, (str, int, float, bool, type(None))
+    ):
+        # Handle custom objects by converting to string
+        return str(obj)
+    else:
+        # Return as-is for basic JSON-serializable types
+        return obj
+
+
 @timed
 def save_log(tag: str, payload: dict):
     """
@@ -131,8 +163,10 @@ def save_log(tag: str, payload: dict):
     if log_format == "json":
         path = os.path.join(LOG_DIR, f"{tag}_{ts}.json")
         try:
+            # Sanitize payload for JSON serialization (handle Mock objects)
+            sanitized_payload = _sanitize_for_json(payload)
             with open(path, "w", encoding="utf-8") as f:
-                json.dump(payload, f, ensure_ascii=False, indent=2)
+                json.dump(sanitized_payload, f, ensure_ascii=False, indent=2)
             logging.debug(f"JSON log saved: {path}")
         except IOError as e:
             raise click.ClickException(
@@ -767,12 +801,12 @@ def extract_reasoning_trace(
     # More robust extraction for each component
     components = {}
     patterns = {
-        "issue": r"Issue:\s*(.*?)(?=\nApplicable Law:|\nApplication to Facts:|\nConclusion:|\nConfidence:|\nSources:|\Z)",
-        "applicable_law": r"Applicable Law:\s*(.*?)(?=\nApplication to Facts:|\nConclusion:|\nConfidence:|\nSources:|\Z)",
-        "application": r"Application to Facts:\s*(.*?)(?=\nConclusion:|\nConfidence:|\nSources:|\Z)",
-        "conclusion": r"Conclusion:\s*(.*?)(?=\nConfidence:|\nSources:|\Z)",
+        "issue": r"Issue:\s*(.*?)(?=\n\s*Applicable Law:|\n\s*Application to Facts:|\n\s*Conclusion:|\n\s*Confidence:|\n\s*Sources:|\Z)",
+        "applicable_law": r"Applicable Law:\s*(.*?)(?=\n\s*Application to Facts:|\n\s*Conclusion:|\n\s*Confidence:|\n\s*Sources:|\Z)",
+        "application": r"Application to Facts:\s*(.*?)(?=\n\s*Conclusion:|\n\s*Confidence:|\n\s*Sources:|\Z)",
+        "conclusion": r"Conclusion:\s*(.*?)(?=\n\s*Confidence:|\n\s*Sources:|\Z)",
         "confidence": r"Confidence:\s*(\d+)",
-        "sources": r"Sources:\s*(.*?)(?=\nGenerated:|\Z)",
+        "sources": r"Sources:\s*(.*?)(?=\n\s*Generated:|\Z)",
     }
 
     for key, pattern in patterns.items():
