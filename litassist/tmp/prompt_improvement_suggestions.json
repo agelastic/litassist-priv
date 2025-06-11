@@ -1,0 +1,516 @@
+[
+  {
+    "prompt_name": "base.australian_law",
+    "original_purpose": "To ensure all LLM outputs adhere to Australian law and use Australian English.",
+    "effectiveness_assessment": "Highly effective. Clear, concise, and fundamental for a tool targeted at Australian legal practice. Its application to 'all' commands ensures consistency.",
+    "suggested_improvements": [
+      {
+        "focus": "Correctness",
+        "suggestion": "Consider appending: \"Where applicable, explicitly state if the legal principles discussed are Commonwealth, State or Territory-based. If State or Territory, specify which one (e.g., New South Wales, Victoria).\"",
+        "rationale": "Adds a layer of jurisdictional specificity, which is crucial in Australian law."
+      }
+    ],
+    "cost_considerations": "Minor increase in token output if jurisdiction is frequently specified. Negligible processing cost."
+  },
+  {
+    "prompt_name": "base.citation_standards",
+    "original_purpose": "To enforce proper Australian citation formats for all legal documents.",
+    "effectiveness_assessment": "Highly effective. Sets a clear standard for citations, crucial for legal document accuracy and verifiability. Broad application is appropriate.",
+    "suggested_improvements": [
+      {
+        "focus": "Correctness",
+        "suggestion": "Change to: \"Cite all cases and legislative materials strictly in accordance with the latest edition of the Australian Guide to Legal Citations (AGLC). For cases, include medium neutral citations where available, alongside reported citations. Include pinpoint references (e.g., paragraph numbers or sections) whenever specific parts of a source are relied upon.\"",
+        "rationale": "Specifies AGLC, which is the de facto standard, and emphasizes pinpoint referencing for better precision."
+      }
+    ],
+    "cost_considerations": "Slightly longer prompt. May marginally increase processing time for the LLM to ensure AGLC compliance. Output length may increase with more detailed citations."
+  },
+  {
+    "prompt_name": "base.accuracy_standards",
+    "original_purpose": "To ensure all factual information provided by the LLM is accurate and verifiable.",
+    "effectiveness_assessment": "Highly effective. Critical for maintaining trust and reliability in a legal context. Prevents invention of information.",
+    "suggested_improvements": [
+      {
+        "focus": "Correctness",
+        "suggestion": "Add: \"If uncertainty or ambiguity exists in source materials, this must be explicitly stated in the output. Do not make assumptions to fill gaps in information. Clearly distinguish between established facts and reasoned inferences.\"",
+        "rationale": "Promotes transparency about the limits of available information and encourages critical handling of source material."
+      }
+    ],
+    "cost_considerations": "Minor increase in prompt length. May lead to slightly longer, more nuanced outputs, increasing token count. Worth it for improved accuracy and trustworthiness."
+  },
+  {
+    "prompt_name": "base.verification_standards",
+    "original_purpose": "To ensure all legal citations are verifiable on specified Australian legal databases and legal principles have authority.",
+    "effectiveness_assessment": "Highly effective. Reinforces citation quality and the need for authoritative support for legal claims, vital for practical legal work.",
+    "suggested_improvements": [
+      {
+        "focus": "Correctness",
+        "suggestion": "Specify databases more explicitly if possible: \"All citations must be verifiable on AustLII, BarNet Jade, or official court/government legislation websites. When citing legal principles, directly reference the primary source (case or legislation) that establishes or best illustrates that principle.\"",
+        "rationale": "Provides clearer guidance on acceptable verification sources and encourages direct sourcing for principles."
+      }
+    ],
+    "cost_considerations": "Minor prompt length increase. No significant impact on processing cost."
+  },
+  {
+    "prompt_name": "commands.extractfacts.system",
+    "original_purpose": "System prompt for the 'extractfacts' command, instructing it to extract facts precisely under headings and handle missing information.",
+    "effectiveness_assessment": "Effective. Clearly defines the task, the expected output structure (though headings are detailed elsewhere), and how to manage missing data ('Not specified' or 'To be determined'). Aligns with the user guide's description of 'extractfacts' for structuring information.",
+    "suggested_improvements": [
+      {
+        "focus": "Logical Strength",
+        "suggestion": "Add: \"When extracting facts for 'Key Events', ensure strict chronological order. If dates are ambiguous, note the ambiguity. For 'Legal Issues', phrase as questions where possible.\"",
+        "rationale": "Improves structure for key events and clarity for legal issues."
+      },
+      {
+        "focus": "Correctness",
+        "suggestion": "Add: \"If information seems contradictory within the source, extract both contradictory points and note the contradiction.\"",
+        "rationale": "Ensures comprehensive extraction even with imperfect source material."
+      }
+    ],
+    "cost_considerations": "Slightly longer prompt. May result in more detailed output if contradictions are found. Beneficial for thoroughness."
+  },
+  {
+    "prompt_name": "commands.lookup.system",
+    "original_purpose": "System prompt for the 'lookup' command, emphasizing Australian law, source citation, and well-structured, concise responses focused on Victorian or federal law.",
+    "effectiveness_assessment": "Effective. Sets clear expectations for jurisdiction, citation, structure, and conciseness. Aligns with the 'lookup' command's purpose of rapid case-law search and structured legal answers.",
+    "suggested_improvements": [
+      {
+        "focus": "Logical Strength",
+        "suggestion": "Add: \"Structure responses to clearly distinguish between direct findings from sources and any synthesis or brief analysis performed. If providing analysis (e.g., IRAC structure), ensure each component logically follows from the previous.\"",
+        "rationale": "Encourages clearer separation of information types and reinforces logical flow in analysis."
+      },
+      {
+        "focus": "Correctness",
+        "suggestion": "Add: \"Prioritize primary sources (legislation and case law) over secondary sources when available and appropriate for the query.\"",
+        "rationale": "Guides the LLM to prefer more authoritative sources."
+      }
+    ],
+    "cost_considerations": "Minor prompt length increase. Could lead to slightly more structured and thus longer responses. Quality gain justifies it."
+  },
+  {
+    "prompt_name": "commands.brainstorm.system",
+    "original_purpose": "General system prompt for the 'brainstorm' command, focusing on practical, actionable Australian legal strategies, balancing creativity with accuracy, and requiring a definitive recommendation.",
+    "effectiveness_assessment": "Effective. Guides the LLM towards generating creative yet legally sound strategies, distinguishing orthodox/unorthodox approaches, and ensuring a clear output structure. Matches the user guide's description of 'brainstorm' for comprehensive strategy generation.",
+    "suggested_improvements": [
+      {
+        "focus": "Creativity and Originality",
+        "suggestion": "Add: \"Think broadly: consider procedural tactics, evidentiary angles, negotiation leverage points, and alternative dispute resolution methods in addition to substantive legal arguments. For each strategy, briefly note what makes it distinct or innovative if applicable.\"",
+        "rationale": "Encourages a wider range of strategic thinking and explicit identification of novelty."
+      },
+      {
+        "focus": "Logical Strength",
+        "suggestion": "Add: \"The final recommendation section must synthesize the analysis and provide a compelling, multi-faceted justification for the #1 strategy, considering client objectives, risk tolerance, and resource implications.\"",
+        "rationale": "Strengthens the justification requirement for the top recommendation."
+      }
+    ],
+    "cost_considerations": "Moderate increase in prompt length. May lead to more diverse and detailed strategies, increasing token usage. Using a more capable model (e.g., Claude 3 Opus or GPT-4 Turbo) for the 'brainstorm' command, especially with these enhanced instructions, could yield significant quality improvements in creativity and analysis, justifying the cost."
+  },
+  {
+    "prompt_name": "commands.brainstorm.orthodox_system",
+    "original_purpose": "System prompt for generating 'orthodox' strategies in the 'brainstorm' command, emphasizing conservative, well-established approaches with strong precedential support.",
+    "effectiveness_assessment": "Effective. Clearly defines 'orthodox' and directs the LLM to focus on low-risk, proven strategies with supporting citations. This is crucial for the 'brainstorm' command's ability to generate diverse strategy types.",
+    "suggested_improvements": [
+      {
+        "focus": "Correctness",
+        "suggestion": "Add: \"For each orthodox strategy, cite the primary legal authority (e.g., specific legislation section or leading case) that underpins it. Explain how the strategy aligns with established legal practice.\"",
+        "rationale": "Reinforces the need for strong authoritative backing for orthodox strategies."
+      }
+    ],
+    "cost_considerations": "Slight increase in prompt length and potentially output length due to more detailed explanations. Negligible processing cost."
+  },
+  {
+    "prompt_name": "commands.brainstorm.unorthodox_system",
+    "original_purpose": "System prompt for generating 'unorthodox' strategies in the 'brainstorm' command, encouraging creative, innovative approaches while acknowledging uncertainties.",
+    "effectiveness_assessment": "Effective. Guides the LLM towards innovative thinking, pushing legal boundaries responsibly. Important for the 'brainstorm' command's creative ideation aspect.",
+    "suggested_improvements": [
+      {
+        "focus": "Creativity and Originality",
+        "suggestion": "Add: \"For unorthodox strategies, explicitly state the element of novelty (e.g., a new interpretation of existing law, application of principles from a different legal area, a novel procedural approach). Also, identify potential counter-arguments or reasons why this strategy is not commonly used.\"",
+        "rationale": "Pushes for clearer articulation of innovation and a balanced view by considering downsides."
+      }
+    ],
+    "cost_considerations": "Moderate increase in prompt length. Output will likely be longer and more detailed. This is acceptable for the 'unorthodox' section where deeper exploration is desired."
+  },
+  {
+    "prompt_name": "commands.brainstorm.analysis_system",
+    "original_purpose": "System prompt for the analysis phase of the 'brainstorm' command, instructing objective analysis of strategies based on merit, support, and likelihood.",
+    "effectiveness_assessment": "Effective. Ensures a critical evaluation of the generated strategies, which is key to the 'brainstorm' command's goal of identifying 'most likely to succeed' options.",
+    "suggested_improvements": [
+      {
+        "focus": "Logical Strength",
+        "suggestion": "Add: \"When analyzing, adopt a 'devil's advocate' perspective. For each selected strategy, identify its weakest point or the primary obstacle to its success, and briefly suggest how it might be mitigated. Justify selections with explicit reference to the provided case facts and client objectives.\"",
+        "rationale": "Encourages more robust analysis by forcing consideration of weaknesses and mitigation, and stronger grounding in case specifics."
+      }
+    ],
+    "cost_considerations": "Longer prompt. Output of the analysis will be more detailed and longer. This is a critical reasoning step, so increased token usage is justified for higher quality analysis. May benefit from a more advanced model."
+  },
+  {
+    "prompt_name": "commands.strategy.system",
+    "original_purpose": "System prompt for the 'strategy' command, defining the persona as an Australian civil litigation expert focused on specific courts, analyzing facts for strategic options.",
+    "effectiveness_assessment": "Effective. Establishes a clear expert persona and task (analyzing case facts for strategic options to achieve a specific outcome). Aligns with the user guide's description of 'strategy' for tactical implementation plans.",
+    "suggested_improvements": [
+      {
+        "focus": "Logical Strength",
+        "suggestion": "Add: \"Your analysis should yield 3-5 distinct strategic options, each clearly articulating a pathway to the specified outcome. For each option, detail the core legal argument, key actions, and anticipated challenges. Emphasize practical executability.\"",
+        "rationale": "Provides more specific guidance on the nature and number of strategic options expected."
+      }
+    ],
+    "cost_considerations": "Slightly longer prompt. Could lead to more detailed strategic options. Given 'strategy' uses o1-pro (as per user guide), which is already an advanced model, this should be handled well. Cost implications are within the acceptable range for quality improvement."
+  },
+  {
+    "prompt_name": "commands.strategy.ranking_system",
+    "original_purpose": "System prompt for ranking strategies objectively for a specific outcome within the 'strategy' command.",
+    "effectiveness_assessment": "Effective. Focuses the LLM on objective ranking, which is a key part of the 'strategy' command's analysis to provide actionable, prioritized options.",
+    "suggested_improvements": [
+      {
+        "focus": "Logical Strength",
+        "suggestion": "Add: \"When ranking strategies, provide a brief rationale for each rank, comparing its pros and cons against the other presented options, specifically in relation to achieving the stated outcome.\"",
+        "rationale": "Requires explicit justification for rankings, making the advice more transparent and robust."
+      }
+    ],
+    "cost_considerations": "Prompt length increase. Output will be longer due to justifications. Acceptable for enhancing clarity of strategic advice."
+  },
+  {
+    "prompt_name": "commands.draft.system",
+    "original_purpose": "System prompt for the 'draft' command, setting the persona as a senior Australian barrister drafting high-quality, compliant legal documents.",
+    "effectiveness_assessment": "Effective. Creates a strong persona focused on quality, structure, and compliance, which is essential for the 'draft' command. Aligns with the user guide's goal of producing persuasive, well-cited submissions.",
+    "suggested_improvements": [
+      {
+        "focus": "Correctness",
+        "suggestion": "Add: \"Ensure the tone is appropriate for the specified document type and its intended audience (e.g., court, opposing counsel, client). All legal assertions must be citable to provided materials or generally accepted Australian legal principles.\"",
+        "rationale": "Adds nuance regarding tone and reinforces the need for citable assertions."
+      },
+      {
+        "focus": "Logical Strength",
+        "suggestion": "Add: \"Structure the document with clear, logical flow, using headings and subheadings as appropriate. Arguments should be built incrementally, with each point supporting the overall objective of the document.\"",
+        "rationale": "Emphasizes structural integrity and coherent argumentation."
+      }
+    ],
+    "cost_considerations": "Slightly longer prompt. The 'draft' command uses o3 (as per user guide), which is a very capable model. These instructions should refine output quality with acceptable cost increase. Quality of draft documents is paramount."
+  },
+  {
+    "prompt_name": "commands.digest.system",
+    "original_purpose": "System prompt for the 'digest' command, requiring logical structure, clear headings, bullet points, and concise summaries under Australian law.",
+    "effectiveness_assessment": "Effective. Provides clear instructions on output format and style for the 'digest' command, ensuring usability of the digested information. Aligns with the user guide's description of 'digest' for processing large documents.",
+    "suggested_improvements": [
+      {
+        "focus": "Logical Strength",
+        "suggestion": "Add: \"When summarizing, prioritize information that is legally significant or directly relevant to potential disputes or key obligations. Identify any ambiguities or missing information in the source document that could be legally pertinent.\"",
+        "rationale": "Guides the LLM to filter for legal relevance and spot potential issues, making the digest more than just a neutral summary."
+      }
+    ],
+    "cost_considerations": "Slightly longer prompt. May produce more insightful, and thus slightly longer, digests. Benefits should outweigh minor cost increase."
+  },
+  {
+    "prompt_name": "documents.statement_of_claim",
+    "original_purpose": "Provides a template structure for a Statement of Claim.",
+    "effectiveness_assessment": "Highly effective. Offers a standard, fillable structure for a common court document, significantly aiding the 'draft' command. The use of placeholders like {court_name} makes it adaptable.",
+    "suggested_improvements": [
+      {
+        "focus": "Correctness",
+        "suggestion": "Review placeholders to ensure they cover all typical variations and perhaps add optional sections or common clauses as comments, e.g., `<!-- If applicable, add details of representative capacity -->` or specific types of relief.",
+        "rationale": "Increases comprehensiveness and adaptability of the template."
+      }
+    ],
+    "cost_considerations": "Increased template size is negligible in cost. Improves usability for the 'draft' command."
+  },
+  {
+    "prompt_name": "documents.originating_application",
+    "original_purpose": "Provides a template structure for an Originating Application.",
+    "effectiveness_assessment": "Highly effective. Similar to the Statement of Claim, it provides a crucial, standardized template for the 'draft' command, enhancing efficiency and consistency.",
+    "suggested_improvements": [
+      {
+        "focus": "Correctness",
+        "suggestion": "Consider adding more specific placeholders for common types of relief sought in originating applications or references to specific court rules sections if they vary often, e.g., `{specific_rule_authorizing_application}`.",
+        "rationale": "Makes the template more dynamic and directly prompts for rule-specific information."
+      }
+    ],
+    "cost_considerations": "Negligible cost for template expansion. Enhances utility."
+  },
+  {
+    "prompt_name": "documents.affidavit",
+    "original_purpose": "Provides a template structure for an Affidavit.",
+    "effectiveness_assessment": "Highly effective. Offers a detailed and compliant structure for affidavits, including critical components like deponent information and jurat. Essential for the 'draft' command.",
+    "suggested_improvements": [
+      {
+        "focus": "Correctness",
+        "suggestion": "Add a placeholder or instruction for annexures/exhibits, e.g., \"4. Annexed hereto and marked '{annexure_mark}' is a true copy of [description of document].\" Ensure placeholders for witness qualification are clear.",
+        "rationale": "Covers a common and important part of affidavits."
+      }
+    ],
+    "cost_considerations": "Negligible. Improves completeness."
+  },
+  {
+    "prompt_name": "documents.notice_of_motion",
+    "original_purpose": "Provides a template structure for a Notice of Motion.",
+    "effectiveness_assessment": "Highly effective. Standardizes the creation of Notices of Motion, ensuring necessary details are prompted for, benefiting the 'draft' command.",
+    "suggested_improvements": [
+      {
+        "focus": "Correctness",
+        "suggestion": "Include an optional placeholder for return date/time if not the standard, or if it needs to be calculated/confirmed, e.g., `TAKE NOTICE that the {moving_party_role} will move this Honourable Court at {time_placeholder} on {date_placeholder} or so soon thereafter as the business of the Court may allow...`",
+        "rationale": "Adds flexibility for non-standard hearing times."
+      }
+    ],
+    "cost_considerations": "Negligible. Small improvement to flexibility."
+  },
+  {
+    "prompt_name": "documents.outline_submissions",
+    "original_purpose": "Provides a template structure for an Outline of Submissions.",
+    "effectiveness_assessment": "Highly effective. Gives a logical flow and standard sections for legal submissions, greatly assisting the 'draft' command in producing structured arguments.",
+    "suggested_improvements": [
+      {
+        "focus": "Logical Strength",
+        "suggestion": "Within 'IV. ARGUMENT', suggest a structure for each point: e.g., `A. [First Issue Heading]\n    4.1. [Legal Principle/Proposition]\n        - [Authority 1]\n        - [Authority 2]\n    4.2. [Application to Facts]\n    4.3. [Conclusion on this Issue]`",
+        "rationale": "Provides a micro-structure for arguments, enhancing logical presentation."
+      }
+    ],
+    "cost_considerations": "Increases template complexity slightly. Could guide the LLM to produce more robust and well-structured draft submissions. Output may be longer but higher quality."
+  },
+  {
+    "prompt_name": "documents.interlocutory_application",
+    "original_purpose": "Provides a template structure for an Interlocutory Application.",
+    "effectiveness_assessment": "Highly effective. Offers a clear and concise template for urgent/interim applications, crucial for the 'draft' command in time-sensitive situations.",
+    "suggested_improvements": [
+      {
+        "focus": "Correctness",
+        "suggestion": "Add placeholders for essential elements like undertaking as to damages if it's commonly required for such applications, e.g., \"The Applicant undertakes to abide by any order the Court may make as to damages, in case the Court shall hereafter be of opinion that the Respondent shall have sustained any, by reason of this order, which the Applicant ought to pay.\"",
+        "rationale": "Includes a critical component often needed for interlocutory relief."
+      }
+    ],
+    "cost_considerations": "Negligible cost for adding a common clause to the template."
+  },
+  {
+    "prompt_name": "formats.case_facts_10_heading",
+    "original_purpose": "Defines a 10-heading structure for organizing case facts.",
+    "effectiveness_assessment": "Highly effective. This standardized format is crucial for consistency between 'extractfacts' output and 'strategy' input, as highlighted by the user guide's strict format requirements for the 'strategy' command. Ensures all key factual areas are covered.",
+    "suggested_improvements": [
+      {
+        "focus": "Logical Strength",
+        "suggestion": "For 'Evidence Available', suggest sub-categorization if helpful, e.g., 'Documentary Evidence', 'Witness Statements', 'Expert Reports'. For 'Applicable Law', suggest distinguishing 'Statute' and 'Case Law'.",
+        "rationale": "Could provide more granular structure within the existing headings, aiding clarity."
+      }
+    ],
+    "cost_considerations": "This is a format definition, so changes impact how LLMs are *told* to structure data, not a direct LLM prompt itself for generation. Minimal impact on processing cost, but enhances clarity of structured output."
+  },
+  {
+    "prompt_name": "formats.strategic_options",
+    "original_purpose": "Defines the output format for presenting strategic options.",
+    "effectiveness_assessment": "Effective. Provides a clear and structured way to present strategies, including approach, legal basis, likelihood, timeline, resources, and risks. This aids in the clarity and usability of outputs from 'brainstorm' and 'strategy'.",
+    "suggested_improvements": [
+      {
+        "focus": "Logical Strength",
+        "suggestion": "Add a field for 'Key Assumptions' made when evaluating this strategy, and 'Metrics for Success' (how would one know if this strategy is working?).",
+        "rationale": "Adds depth to the strategic thinking by making assumptions explicit and defining success criteria."
+      }
+    ],
+    "cost_considerations": "Expands the format definition. If LLMs are prompted to fill these new fields, outputs from 'brainstorm' and 'strategy' will be longer and require more detailed generation. This is a valuable trade-off for more robust strategic planning."
+  },
+  {
+    "prompt_name": "formats.irac_structure",
+    "original_purpose": "Defines the IRAC (Issue, Rule, Application, Conclusion) structure for legal analysis.",
+    "effectiveness_assessment": "Highly effective. IRAC is a standard legal analysis method. Providing this format helps the 'lookup' command generate responses that are familiar and useful to legal professionals, as shown in the user guide's example output for 'lookup'.",
+    "suggested_improvements": [
+      {
+        "focus": "Correctness",
+        "suggestion": "Consider adding 'Authorities:' or 'Citations:' as a sub-element under 'Rule' to ensure explicit linkage of rules to their sources within the IRAC structure itself.",
+        "rationale": "Reinforces the direct connection between the stated rule and its legal backing."
+      }
+    ],
+    "cost_considerations": "Minor change to format definition. Promotes better citation practice within IRAC. Negligible cost."
+  },
+  {
+    "prompt_name": "formats.chronological_summary",
+    "original_purpose": "Defines the format for a chronological summary.",
+    "effectiveness_assessment": "Effective. Provides a simple and clear format for the 'digest' command when in 'summary' mode, making it easy to follow events over time.",
+    "suggested_improvements": [
+      {
+        "focus": "Logical Strength",
+        "suggestion": "Add an optional 'Significance/Implication' sub-bullet for key events if the LLM is able to infer it during digest.",
+        "rationale": "Could make the summary more insightful, bridging summarization and basic analysis."
+      }
+    ],
+    "cost_considerations": "If implemented, would require the 'digest' command's prompts to ask for this, potentially increasing its processing per chunk. Could be a valuable enhancement for more insightful digests."
+  },
+  {
+    "prompt_name": "lookup.extraction_instructions.citations",
+    "original_purpose": "Provides specific instructions when citation extraction is requested with the 'lookup' command.",
+    "effectiveness_assessment": "Effective. Clearly tells the LLM to add a 'CITATIONS' section and format it for easy use, directly supporting the '--extract citations' functionality.",
+    "suggested_improvements": [
+      {
+        "focus": "Correctness",
+        "suggestion": "Specify AGLC for formatting: \"Also provide a clear 'CITATIONS' section that lists all case citations and legislation references in AGLC format. Separate Case Law from Legislation.\"",
+        "rationale": "Ensures standardized and correct citation formatting."
+      }
+    ],
+    "cost_considerations": "Minor prompt change. Ensures higher quality output for a key feature. Negligible cost."
+  },
+  {
+    "prompt_name": "lookup.comprehensive_analysis.requirements",
+    "original_purpose": "Defines requirements for a comprehensive analysis in the 'lookup' command, including thorough review, authority hierarchy, and jurisdictional variations.",
+    "effectiveness_assessment": "Effective. Sets high standards for the '--comprehensive' flag in 'lookup', pushing for deeper and broader analysis than the standard mode. Details are specific and cover important analytical dimensions.",
+    "suggested_improvements": [
+      {
+        "focus": "Logical Strength",
+        "suggestion": "Add: \"Identify any conflicting authorities or unresolved legal questions within the analyzed sources. Provide a brief synthesis of the overall state of the law on the topic based on the sources reviewed.\"",
+        "rationale": "Pushes for deeper analytical insight beyond summarizing sources."
+      }
+    ],
+    "cost_considerations": "Increases analytical demand on the LLM. Output will be longer and more complex. Justified for a 'comprehensive' mode. May benefit from a highly capable model."
+  },
+  {
+    "prompt_name": "lookup.standard_analysis.instructions",
+    "original_purpose": "Provides instructions for standard analysis in the 'lookup' command (when not using '--comprehensive').",
+    "effectiveness_assessment": "Effective. Clear instructions for the default 'lookup' mode: cite sources, analyze provided sources (typically 5), structure with summary, analysis, and conclusion. Cross-referencing is a good addition.",
+    "suggested_improvements": [
+      {
+        "focus": "Logical Strength",
+        "suggestion": "Add: \"Begin with a concise executive summary (1-2 sentences) of the main finding before launching into the detailed analysis. Conclude by explicitly answering the user's question based on the analysis.\"",
+        "rationale": "Improves scannability and ensures the user's core question is directly addressed in the conclusion."
+      }
+    ],
+    "cost_considerations": "Minor prompt addition. Should improve clarity and directness of answers with minimal cost."
+  },
+  {
+    "prompt_name": "processing.digest.summary_mode",
+    "original_purpose": "Instructs the 'digest' command to create a chronological summary with a specific format.",
+    "effectiveness_assessment": "Effective. Clearly defines the task (chronological summary) and the expected output format (reiterating `formats.chronological_summary`), ensuring consistency for the 'summary' mode.",
+    "suggested_improvements": [
+      {
+        "focus": "Correctness",
+        "suggestion": "Add: \"Include full dates (DD/MM/YYYY) where available. If only partial dates are present, represent them as accurately as possible (e.g., 'Mid-2023', 'September 2023'). Note any ambiguities in dating directly.\"",
+        "rationale": "Improves precision in chronological reporting."
+      }
+    ],
+    "cost_considerations": "Slightly more detailed instructions, minimal impact on cost."
+  },
+  {
+    "prompt_name": "processing.digest.issues_mode",
+    "original_purpose": "Instructs the 'digest' command to identify and analyze legal issues with a specific structure.",
+    "effectiveness_assessment": "Effective. Clearly defines the task for 'issues' mode and provides a detailed structure for each issue (Description, Legal Framework, Analysis, Significance). This helps in generating useful, structured output for legal issue spotting.",
+    "suggested_improvements": [
+      {
+        "focus": "Logical Strength",
+        "suggestion": "Under 'Analysis', add: \"Briefly explain how the facts in this document segment relate to the identified legal framework for this issue. State any preliminary conclusions or questions that arise from this connection.\"",
+        "rationale": "Encourages a more explicit application of law to facts within each identified issue, making the analysis more robust."
+      }
+    ],
+    "cost_considerations": "May increase the length and complexity of the analysis for each issue. This is desirable for deeper issue spotting and likely justifies the moderate increase in token usage per chunk."
+  },
+  {
+    "prompt_name": "processing.extraction.chunk_facts_prompt",
+    "original_purpose": "Prompt for extracting raw facts from a document chunk during the 'extractfacts' process, listing fact categories.",
+    "effectiveness_assessment": "Effective. Clearly lists the types of facts to look for within a chunk and emphasizes extracting only raw facts present in that specific excerpt. Important for the multi-chunk processing logic of 'extractfacts'.",
+    "suggested_improvements": [
+      {
+        "focus": "Correctness",
+        "suggestion": "Add: \"Extract verbatim quotes for critical pieces of evidence or statements where precise wording is important, clearly indicating they are quotes.\"",
+        "rationale": "Ensures key phrases are captured accurately."
+      }
+    ],
+    "cost_considerations": "May slightly increase output size if many quotes are extracted. Improves fidelity of fact extraction."
+  },
+  {
+    "prompt_name": "processing.extraction.organize_facts_prompt",
+    "original_purpose": "Prompt for organizing all extracted raw facts (from chunks) into the 10 standard headings.",
+    "effectiveness_assessment": "Highly effective. This is the core prompt that assembles the final structured output of 'extractfacts'. It references the `format_instructions` (which would be `formats.case_facts_10_heading`) and gives clear rules about sourcing and completeness.",
+    "suggested_improvements": [
+      {
+        "focus": "Logical Strength",
+        "suggestion": "Add: \"After populating the headings, include a brief 'Confidence Score' section (High/Medium/Low) reflecting the overall clarity and completeness of the information found in the document for this structured summary, with a one-sentence justification.\"",
+        "rationale": "Provides a useful meta-assessment of the extraction quality."
+      }
+    ],
+    "cost_considerations": "Adds a small analytical step after organization. Output will be slightly longer. Potentially useful for user to gauge reliability. May require a slightly more capable model for this meta-analysis part or very clear instructions."
+  },
+  {
+    "prompt_name": "strategies.brainstorm.orthodox_prompt",
+    "original_purpose": "User prompt for generating 10 orthodox legal strategies in 'brainstorm', detailing characteristics and required output format for each.",
+    "effectiveness_assessment": "Highly effective. Very detailed in what constitutes 'orthodox' (precedent-based, traditional, conservative, etc.) and specifies the exact information required for each strategy (name, description, legal basis, likelihood, considerations). This structured approach is crucial for generating useful content.",
+    "suggested_improvements": [
+      {
+        "focus": "Logical Strength",
+        "suggestion": "For 'Key considerations', add: \"specifically address potential downsides or limitations even for these orthodox approaches.\"",
+        "rationale": "Ensures a balanced view, even for conservative strategies."
+      }
+    ],
+    "cost_considerations": "Minor addition, encourages more thorough thinking. Negligible cost."
+  },
+  {
+    "prompt_name": "strategies.brainstorm.unorthodox_prompt",
+    "original_purpose": "User prompt for generating 10 unorthodox legal strategies in 'brainstorm', detailing characteristics and required output format.",
+    "effectiveness_assessment": "Highly effective. Similar to the orthodox prompt, it clearly defines 'unorthodox' (novel, creative, innovative, etc.) and the specific output requirements (name, description, legal basis/interpretation, risk, innovation factor). Essential for the creative aspect of 'brainstorm'.",
+    "suggested_improvements": [
+      {
+        "focus": "Creativity and Originality",
+        "suggestion": "Add: \"For each unorthodox strategy, suggest an analogy or a conceptual parallel from a different domain if it helps clarify the novel approach. Explicitly state why this strategy, despite being unorthodox, might be uniquely suited to the specific case facts or client objectives.\"",
+        "rationale": "Pushes for more creative explanation and stronger justification for unorthodox suggestions."
+      }
+    ],
+    "cost_considerations": "May increase length and cognitive load on the LLM. Use of a highly creative model (like Grok, as mentioned in user guide) is suitable here. Increased token count for better creative output is acceptable for this specific feature."
+  },
+  {
+    "prompt_name": "strategies.brainstorm.analysis_prompt",
+    "original_purpose": "User prompt for analyzing all generated strategies (orthodox and unorthodox) and selecting the 5 most promising ones, with detailed criteria and output requirements, plus a final recommendation.",
+    "effectiveness_assessment": "Highly effective. This prompt drives the critical analysis phase of 'brainstorm'. It specifies selection criteria, detailed analysis points for each selected strategy, the exact number to return (5), and how to handle cases where fewer than 5 high-quality strategies are found. The final recommendation part is also key.",
+    "suggested_improvements": [
+      {
+        "focus": "Logical Strength",
+        "suggestion": "For 'Implementation roadmap', request: \"Outline 3-5 key sequential steps. For 'Success probability', provide a percentage AND a qualitative justification (e.g., '70% - High, because X and Y strengths align well with Z vulnerability of opponent'). For the FINAL RECOMMENDATION, also include a brief discussion of the primary alternative strategy considered and why the #1 choice is superior.\"",
+        "rationale": "Adds more structure to roadmap and success probability, and depth to the final recommendation by requiring comparison."
+      }
+    ],
+    "cost_considerations": "Increases the detail required in the analysis. Output will be significantly longer and more structured. This is a core reasoning task, so increased cost for higher quality is justified. Benefits from a strong analytical model."
+  },
+  {
+    "prompt_name": "strategies.strategy.strategic_options_instructions",
+    "original_purpose": "Provides exact formatting instructions for the strategic options section of the 'strategy' command output.",
+    "effectiveness_assessment": "Highly effective. Extremely specific formatting requirements (title, probability, hurdles with citations, missing facts) ensure the 'strategy' command produces highly structured and detailed tactical options. The emphasis on real case citations with pinpoint references is crucial for legal utility.",
+    "suggested_improvements": [
+      {
+        "focus": "Correctness",
+        "suggestion": "Add to 'Principal Hurdles': \"For each hurdle, also specify if it's a legal, factual, or practical hurdle.\" Add a new section under each option: \"* **Ethical Considerations**: [Briefly note any ethical implications or duties to be mindful of when pursuing this option.]\"",
+        "rationale": "Categorizing hurdles improves clarity. Adding ethical considerations is vital for responsible legal AI."
+      }
+    ],
+    "cost_considerations": "Expands the output format. LLM needs to perform additional classification (hurdle type) and generate ethical considerations. This is a significant quality improvement, likely justifying the increased token usage and processing by the o1-pro model."
+  },
+  {
+    "prompt_name": "verification.self_critique",
+    "original_purpose": "Prompts the LLM to identify and correct legal inaccuracies in its own output and ensure Australian English compliance.",
+    "effectiveness_assessment": "Effective. A good general self-correction mechanism. Its application to core commands like 'extractfacts', 'brainstorm', 'strategy', and 'draft' (especially when auto-triggered or optionally enabled as per user guide) enhances reliability.",
+    "suggested_improvements": [
+      {
+        "focus": "Logical Strength",
+        "suggestion": "Add: \"Review the response for logical consistency. Are there any contradictions? Does the reasoning flow clearly? Are there any unstated assumptions that should be made explicit? Provide the corrected text, and if useful, a brief note on the nature of key corrections made.\"",
+        "rationale": "Expands self-critique to cover logical structure and transparency of assumptions."
+      }
+    ],
+    "cost_considerations": "Increases the scope of self-critique. The LLM performing verification will use more tokens/time. This is a direct investment in quality. A 'verification step' inherently has higher cost but is crucial."
+  },
+  {
+    "prompt_name": "verification.citation_retry_instructions",
+    "original_purpose": "Provides enhanced instructions for citation accuracy when an LLM generation attempt needs a retry due to citation issues.",
+    "effectiveness_assessment": "Highly effective. This is a critical prompt for quality control, emphasizing the use of real, verifiable Australian cases and discouraging invention. Its broad application across all commands that generate citable content is appropriate.",
+    "suggested_improvements": [
+      {
+        "focus": "Correctness",
+        "suggestion": "Add: \"Ensure citations are to the most authoritative version of a case (e.g., High Court over a lower court on the same matter if discussing a principle established by HCA). Verify year and court identifiers meticulously. If providing a direct quote, ensure the pinpoint reference is to the exact paragraph/page of the quote.\"",
+        "rationale": "Adds more specific guidance for choosing among multiple citations and for quoting."
+      }
+    ],
+    "cost_considerations": "Minor prompt length increase. Reinforces best practices for citation, minimal cost impact."
+  },
+  {
+    "prompt_name": "verification.heavy_verification",
+    "original_purpose": "Prompts for a comprehensive legal accuracy review, including citations, reasoning, errors in law/procedure, and Australian English.",
+    "effectiveness_assessment": "Highly effective. This is essential for commands like 'extractfacts' and 'strategy' where accuracy is paramount, as noted by their mandatory verification in the user guide. The prompt is comprehensive in its review criteria.",
+    "suggested_improvements": [
+      {
+        "focus": "Logical Strength",
+        "suggestion": "Add: \"Assess the practical applicability of any advice or strategy. Are there any overlooked practical impediments? Is the advice actionable? Consider if alternative interpretations of the law or facts exist and if they have been adequately addressed.\"",
+        "rationale": "Broadens the heavy verification to include practical considerations and alternative viewpoints."
+      }
+    ],
+    "cost_considerations": "Further increases the thoroughness of the heavy verification step. This will add to token usage and processing time but is in line with the 'heavy' nature of this verification. Essential for critical outputs from 'extractfacts' and 'strategy'."
+  }
+]

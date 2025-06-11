@@ -1,0 +1,318 @@
+[
+  {
+    "prompt_name": "base.australian_law",
+    "associated_commands": ["all"],
+    "current_model": "Varies by command (lookup: google/gemini-2.5-pro-preview, digest/extractfacts: anthropic/claude-sonnet-4, brainstorm: x-ai/grok-3-beta & anthropic/claude-sonnet-4, strategy: openai/o1-pro & anthropic/claude-sonnet-4, draft: openai/o3)",
+    "appropriateness_evaluation": "Generally appropriate as this is a foundational instruction. All listed models are capable of understanding and applying such a general constraint. The suggested improvement for jurisdictional specificity is also within their capabilities.",
+    "alternative_model_suggestions": []
+  },
+  {
+    "prompt_name": "base.citation_standards",
+    "associated_commands": ["all"],
+    "current_model": "Varies by command",
+    "appropriateness_evaluation": "Generally appropriate. Enforcing AGLC might be challenging for some models consistently. The models used for `draft` (o3) and `strategy` (o1-pro) should be highly capable. Gemini 2.5 Pro, Claude Sonnet, and Grok should also manage, but consistency across all might vary. The suggested improvement for strict AGLC and pinpoint references is crucial and tests model precision.",
+    "alternative_model_suggestions": [
+      {
+        "model": "openai/o3 or openai/o1-pro",
+        "justification": "For any command where AGLC precision is absolutely paramount and current model struggles, consider routing through a high-precision model like o3 or o1-pro specifically for citation formatting if feasible, though this would complicate logic."
+      }
+    ]
+  },
+  {
+    "prompt_name": "base.accuracy_standards",
+    "associated_commands": ["all"],
+    "current_model": "Varies by command",
+    "appropriateness_evaluation": "Appropriate. All models should be able to follow instructions about not inventing information. The suggestion to explicitly state uncertainty is a good way to manage hallucination risk within the capability of these models.",
+    "alternative_model_suggestions": []
+  },
+  {
+    "prompt_name": "base.verification_standards",
+    "associated_commands": ["all"],
+    "current_model": "Varies by command",
+    "appropriateness_evaluation": "Appropriate. This prompt supports external verification processes. Models should be able to understand the need for verifiable citations.",
+    "alternative_model_suggestions": []
+  },
+  {
+    "prompt_name": "commands.extractfacts.system",
+    "associated_commands": ["extractfacts"],
+    "current_model": "anthropic/claude-sonnet-4",
+    "appropriateness_evaluation": "Appropriate. Claude Sonnet is good for precise extraction and adherence to structure. The suggested improvements for chronological order and contradiction handling are within its capabilities.",
+    "alternative_model_suggestions": [
+      {
+        "model": "anthropic/claude-3-opus-20240229",
+        "justification": "If higher accuracy in complex documents or better contradiction handling is needed, Opus could offer a step up in nuanced understanding, justifying the cost for foundational fact extraction."
+      }
+    ]
+  },
+  {
+    "prompt_name": "commands.lookup.system",
+    "associated_commands": ["lookup"],
+    "current_model": "google/gemini-2.5-pro-preview",
+    "appropriateness_evaluation": "Appropriate. Gemini 2.5 Pro is designed for fast and accurate information retrieval and synthesis. The suggestions for clearer structure and source prioritization are well within its capabilities.",
+    "alternative_model_suggestions": []
+  },
+  {
+    "prompt_name": "commands.brainstorm.system",
+    "associated_commands": ["brainstorm"],
+    "current_model": "x-ai/grok-3-beta (generation), anthropic/claude-sonnet-4 (analysis)",
+    "appropriateness_evaluation": "Generation (Grok): Appropriate, as Grok is highlighted for creative capabilities. The suggested improvements aim to broaden this creativity. Analysis (Claude Sonnet): Appropriate for the structured analysis part. The suggested improvement for a more compelling justification for the #1 strategy would be handled by Claude Sonnet.",
+    "alternative_model_suggestions": [
+      {
+        "model": "anthropic/claude-3-opus-20240229 (for analysis if Sonnet is insufficient)",
+        "justification": "If the analysis part (done by Claude Sonnet) needs deeper reasoning for the final recommendation, Opus could be considered for the analysis model, though Sonnet is likely adequate."
+      }
+    ]
+  },
+  {
+    "prompt_name": "commands.brainstorm.orthodox_system",
+    "associated_commands": ["brainstorm"],
+    "current_model": "x-ai/grok-3-beta",
+    "appropriateness_evaluation": "Appropriate. Grok should be able to generate conservative strategies when properly guided. The suggested improvement to cite primary legal authority reinforces this.",
+    "alternative_model_suggestions": []
+  },
+  {
+    "prompt_name": "commands.brainstorm.unorthodox_system",
+    "associated_commands": ["brainstorm"],
+    "current_model": "x-ai/grok-3-beta",
+    "appropriateness_evaluation": "Highly appropriate. Grok's strength is creativity, which is exactly what's needed for unorthodox strategies. The suggested improvements to articulate novelty and consider counter-arguments should leverage Grok's capabilities well.",
+    "alternative_model_suggestions": []
+  },
+  {
+    "prompt_name": "commands.brainstorm.analysis_system",
+    "associated_commands": ["brainstorm"],
+    "current_model": "anthropic/claude-sonnet-4",
+    "appropriateness_evaluation": "Appropriate. Claude Sonnet is capable of structured analysis and following detailed instructions for evaluation. The 'devil's advocate' suggestion should enhance its analytical output.",
+    "alternative_model_suggestions": [
+      {
+        "model": "anthropic/claude-3-opus-20240229 or openai/o1-pro",
+        "justification": "For an even more robust 'devil's advocate' analysis and deeper strategic insight during the selection phase, a more powerful reasoning model like Opus or o1-pro could be beneficial, justifying the cost for this critical selection step."
+      }
+    ]
+  },
+  {
+    "prompt_name": "commands.strategy.system",
+    "associated_commands": ["strategy"],
+    "current_model": "openai/o1-pro (generation)",
+    "appropriateness_evaluation": "Highly appropriate. o1-pro is specified for enhanced multi-step legal reasoning, which is exactly what this system prompt for generating strategic options requires. The suggested improvements for detailing core arguments and practical executability align with o1-pro's strengths.",
+    "alternative_model_suggestions": []
+  },
+  {
+    "prompt_name": "commands.strategy.ranking_system",
+    "associated_commands": ["strategy"],
+    "current_model": "anthropic/claude-sonnet-4 (analysis, as per user guide for strategy analysis part)",
+    "appropriateness_evaluation": "Appropriate. Claude Sonnet should be capable of ranking strategies and providing rationales as suggested. If this prompt applies to the o1-pro generation phase, o1-pro is also highly capable.",
+    "alternative_model_suggestions": [
+      {
+        "model": "openai/o1-pro (if ranking is part of generation) or anthropic/claude-3-opus-20240229 (if ranking is a distinct analysis step and Sonnet is not sufficient)",
+        "justification": "If deeper comparative analysis for ranking is needed, Opus or ensuring o1-pro handles this would be better. o1-pro is already in use for the generation."
+      }
+    ]
+  },
+  {
+    "prompt_name": "commands.draft.system",
+    "associated_commands": ["draft"],
+    "current_model": "openai/o3",
+    "appropriateness_evaluation": "Highly appropriate. o3 is described as superior for technical legal writing. The suggested improvements regarding tone, citable assertions, and logical flow are complex tasks that a model like o3 is best suited for.",
+    "alternative_model_suggestions": []
+  },
+  {
+    "prompt_name": "commands.digest.system",
+    "associated_commands": ["digest"],
+    "current_model": "anthropic/claude-sonnet-4",
+    "appropriateness_evaluation": "Appropriate. Claude Sonnet is good for reliable document summarization and structured output. The suggestion to prioritize legally significant information and identify ambiguities should be manageable.",
+    "alternative_model_suggestions": [
+      {
+        "model": "anthropic/claude-3-haiku-20240307",
+        "justification": "If cost is a major concern for digesting very large volumes and the current quality of Claude Sonnet is sufficient, Haiku could be tested for cost-effectiveness. However, for legal significance filtering, Sonnet is likely a better balance."
+      }
+    ]
+  },
+  {
+    "prompt_name": "documents.statement_of_claim",
+    "associated_commands": ["draft"],
+    "current_model": "openai/o3",
+    "appropriateness_evaluation": "N/A (This is a template, not an LLM generation instruction that directly depends on model capability for its own execution. The 'draft' command's LLM (o3) will use this template.) o3 is highly appropriate for filling such templates accurately.",
+    "alternative_model_suggestions": []
+  },
+  {
+    "prompt_name": "documents.originating_application",
+    "associated_commands": ["draft"],
+    "current_model": "openai/o3",
+    "appropriateness_evaluation": "N/A (Template. o3 will use this.)",
+    "alternative_model_suggestions": []
+  },
+  {
+    "prompt_name": "documents.affidavit",
+    "associated_commands": ["draft"],
+    "current_model": "openai/o3",
+    "appropriateness_evaluation": "N/A (Template. o3 will use this.)",
+    "alternative_model_suggestions": []
+  },
+  {
+    "prompt_name": "documents.notice_of_motion",
+    "associated_commands": ["draft"],
+    "current_model": "openai/o3",
+    "appropriateness_evaluation": "N/A (Template. o3 will use this.)",
+    "alternative_model_suggestions": []
+  },
+  {
+    "prompt_name": "documents.outline_submissions",
+    "associated_commands": ["draft"],
+    "current_model": "openai/o3",
+    "appropriateness_evaluation": "N/A (Template. o3 will use this.) The suggested improvement for micro-structuring arguments would be well-handled by o3's advanced reasoning when it fills this template.",
+    "alternative_model_suggestions": []
+  },
+  {
+    "prompt_name": "documents.interlocutory_application",
+    "associated_commands": ["draft"],
+    "current_model": "openai/o3",
+    "appropriateness_evaluation": "N/A (Template. o3 will use this.)",
+    "alternative_model_suggestions": []
+  },
+  {
+    "prompt_name": "formats.case_facts_10_heading",
+    "associated_commands": ["extractfacts", "strategy"],
+    "current_model": "anthropic/claude-sonnet-4 (for extractfacts), openai/o1-pro (for strategy input)",
+    "appropriateness_evaluation": "N/A (Format definition. These models are instructed to follow this format.) The models are capable of adhering to this structured format.",
+    "alternative_model_suggestions": []
+  },
+  {
+    "prompt_name": "formats.strategic_options",
+    "associated_commands": ["brainstorm", "strategy"],
+    "current_model": "x-ai/grok-3-beta / anthropic/claude-sonnet-4 (brainstorm), openai/o1-pro (strategy)",
+    "appropriateness_evaluation": "N/A (Format definition.) These models are capable of populating this structured format. The suggested additions (Key Assumptions, Metrics for Success) would require more nuanced generation, which o1-pro and Grok/Claude-Sonnet are suited for.",
+    "alternative_model_suggestions": []
+  },
+  {
+    "prompt_name": "formats.irac_structure",
+    "associated_commands": ["lookup"],
+    "current_model": "google/gemini-2.5-pro-preview",
+    "appropriateness_evaluation": "N/A (Format definition.) Gemini 2.5 Pro is well-suited to generate content in this standard legal analysis format.",
+    "alternative_model_suggestions": []
+  },
+  {
+    "prompt_name": "formats.chronological_summary",
+    "associated_commands": ["digest"],
+    "current_model": "anthropic/claude-sonnet-4",
+    "appropriateness_evaluation": "N/A (Format definition.) Claude Sonnet can effectively produce summaries in this clear format. The suggested 'Significance/Implication' sub-bullet would be a good test of Sonnet's inference capabilities.",
+    "alternative_model_suggestions": []
+  },
+  {
+    "prompt_name": "lookup.extraction_instructions.citations",
+    "associated_commands": ["lookup"],
+    "current_model": "google/gemini-2.5-pro-preview",
+    "appropriateness_evaluation": "Appropriate. Gemini 2.5 Pro should be able to follow the instruction to create a separate, formatted list. AGLC specification is a good addition.",
+    "alternative_model_suggestions": []
+  },
+  {
+    "prompt_name": "lookup.comprehensive_analysis.requirements",
+    "associated_commands": ["lookup"],
+    "current_model": "google/gemini-2.5-pro-preview",
+    "appropriateness_evaluation": "Appropriate. Gemini 2.5 Pro is a powerful model capable of handling comprehensive analysis. The suggested addition to identify conflicting authorities and synthesize the state of law enhances this comprehensive review.",
+    "alternative_model_suggestions": []
+  },
+  {
+    "prompt_name": "lookup.standard_analysis.instructions",
+    "associated_commands": ["lookup"],
+    "current_model": "google/gemini-2.5-pro-preview",
+    "appropriateness_evaluation": "Appropriate. The model can handle these instructions for a standard lookup. The suggested addition of an executive summary and direct conclusion is a good refinement.",
+    "alternative_model_suggestions": []
+  },
+  {
+    "prompt_name": "processing.digest.summary_mode",
+    "associated_commands": ["digest"],
+    "current_model": "anthropic/claude-sonnet-4",
+    "appropriateness_evaluation": "Appropriate. Sonnet is good for summarization tasks. The suggested improvement on date precision is a minor refinement.",
+    "alternative_model_suggestions": []
+  },
+  {
+    "prompt_name": "processing.digest.issues_mode",
+    "associated_commands": ["digest"],
+    "current_model": "anthropic/claude-sonnet-4",
+    "appropriateness_evaluation": "Appropriate. Sonnet can handle structured issue spotting. The suggestion to more explicitly link facts to legal framework within the analysis pushes for slightly deeper reasoning, which Sonnet should manage.",
+    "alternative_model_suggestions": [
+      {
+        "model": "anthropic/claude-3-sonnet-20240229 (ensure latest Sonnet) or anthropic/claude-3-opus-20240229",
+        "justification": "If the depth of analysis in 'issues_mode' needs significant improvement, especially the connection of facts to law, Opus would offer better reasoning. Ensuring the latest Sonnet version is used is also good."
+      }
+    ]
+  },
+  {
+    "prompt_name": "processing.extraction.chunk_facts_prompt",
+    "associated_commands": ["extractfacts"],
+    "current_model": "anthropic/claude-sonnet-4",
+    "appropriateness_evaluation": "Appropriate. Sonnet is suitable for this kind of focused extraction from chunks. Requesting verbatim quotes is a good addition.",
+    "alternative_model_suggestions": []
+  },
+  {
+    "prompt_name": "processing.extraction.organize_facts_prompt",
+    "associated_commands": ["extractfacts"],
+    "current_model": "anthropic/claude-sonnet-4",
+    "appropriateness_evaluation": "Appropriate. Sonnet can organize extracted facts into headings. The 'Confidence Score' suggestion adds a meta-analytical layer which Sonnet might handle, but would need clear instructions or could benefit from a slightly more advanced model if results are inconsistent.",
+    "alternative_model_suggestions": [
+      {
+        "model": "anthropic/claude-3-opus-20240229",
+        "justification": "If the 'Confidence Score' and its justification prove too complex for Sonnet to do reliably, Opus could handle this meta-analysis more effectively."
+      }
+    ]
+  },
+  {
+    "prompt_name": "strategies.brainstorm.orthodox_prompt",
+    "associated_commands": ["brainstorm"],
+    "current_model": "x-ai/grok-3-beta",
+    "appropriateness_evaluation": "Appropriate. Grok should be able to generate these, and the prompt already provides strong guidance. Adding a 'downsides' consideration is a minor tweak.",
+    "alternative_model_suggestions": []
+  },
+  {
+    "prompt_name": "strategies.brainstorm.unorthodox_prompt",
+    "associated_commands": ["brainstorm"],
+    "current_model": "x-ai/grok-3-beta",
+    "appropriateness_evaluation": "Highly appropriate for Grok's creative strengths. The suggestions to use analogies and stronger justifications leverage this well.",
+    "alternative_model_suggestions": []
+  },
+  {
+    "prompt_name": "strategies.brainstorm.analysis_prompt",
+    "associated_commands": ["brainstorm"],
+    "current_model": "anthropic/claude-sonnet-4",
+    "appropriateness_evaluation": "Appropriate for analysis. The suggested improvements for roadmap structure, success probability, and comparative final recommendation add more depth, which Sonnet should handle. However, this is a complex reasoning task.",
+    "alternative_model_suggestions": [
+      {
+        "model": "anthropic/claude-3-opus-20240229 or openai/o1-pro",
+        "justification": "For the highest quality analysis, especially with the added depth of comparing strategies in the final recommendation, a more powerful model like Opus or o1-pro would be beneficial for this critical analysis step."
+      }
+    ]
+  },
+  {
+    "prompt_name": "strategies.strategy.strategic_options_instructions",
+    "associated_commands": ["strategy"],
+    "current_model": "openai/o1-pro",
+    "appropriateness_evaluation": "Highly appropriate. o1-pro is designed for this kind of detailed strategic output. Adding ethical considerations and hurdle categorization are good refinements for this advanced model.",
+    "alternative_model_suggestions": []
+  },
+  {
+    "prompt_name": "verification.self_critique",
+    "associated_commands": ["brainstorm", "draft", "extractfacts", "strategy"],
+    "current_model": "Varies (typically a capable model is used for verification, often different from the generation model)",
+    "appropriateness_evaluation": "Appropriate. The model performing verification needs strong analytical skills. The suggestion to expand critique to logical consistency and unstated assumptions is good. The models listed for verification (often a powerful one like GPT-4 or Claude Opus if not specified otherwise) should be capable.",
+    "alternative_model_suggestions": []
+  },
+  {
+    "prompt_name": "verification.citation_retry_instructions",
+    "associated_commands": ["lookup", "digest", "extractfacts", "brainstorm", "strategy", "draft"],
+    "current_model": "Varies by command",
+    "appropriateness_evaluation": "Appropriate. This prompt is an instruction for the generating model when it retries. All primary models for these commands should be able to benefit from these clearer instructions on retry.",
+    "alternative_model_suggestions": []
+  },
+  {
+    "prompt_name": "verification.heavy_verification",
+    "associated_commands": ["extractfacts", "strategy"],
+    "current_model": "Likely a powerful model (e.g., as used for `--verify` generally, not necessarily the command's primary model)",
+    "appropriateness_evaluation": "Appropriate. Heavy verification implies a strong analytical model. The suggestions to assess practical applicability and alternative interpretations fit a comprehensive review by a capable model.",
+    "alternative_model_suggestions": [
+      {
+        "model": "anthropic/claude-3-opus-20240229 or openai/gpt-4-turbo",
+        "justification": "Ensuring that 'heavy_verification' uses one of the most capable models available is key to its effectiveness, as it's a critical quality gate."
+      }
+    ]
+  }
+]
