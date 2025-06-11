@@ -1,0 +1,443 @@
+[
+  {
+    "prompt_name": "base.australian_law",
+    "file": "litassist/prompts/base.yaml",
+    "commands": ["all"],
+    "purpose": "To ensure all LLM outputs adhere to Australian law and use Australian English.",
+    "effectiveness_assessment": "Highly effective. Clear, concise, and fundamental for a tool targeted at Australian legal practice. Its application to 'all' commands ensures consistency."
+  },
+  {
+    "prompt_name": "base.citation_standards",
+    "file": "litassist/prompts/base.yaml",
+    "commands": ["all"],
+    "purpose": "To enforce proper Australian citation formats for all legal documents.",
+    "effectiveness_assessment": "Highly effective. Sets a clear standard for citations, crucial for legal document accuracy and verifiability. Broad application is appropriate."
+  },
+  {
+    "prompt_name": "base.accuracy_standards",
+    "file": "litassist/prompts/base.yaml",
+    "commands": ["all"],
+    "purpose": "To ensure all factual information provided by the LLM is accurate and verifiable.",
+    "effectiveness_assessment": "Highly effective. Critical for maintaining trust and reliability in a legal context. Prevents invention of information."
+  },
+  {
+    "prompt_name": "base.verification_standards",
+    "file": "litassist/prompts/base.yaml",
+    "commands": ["all"],
+    "purpose": "To ensure all legal citations are verifiable on specified Australian legal databases and legal principles have authority.",
+    "effectiveness_assessment": "Highly effective. Reinforces citation quality and the need for authoritative support for legal claims, vital for practical legal work."
+  },
+  {
+    "prompt_name": "commands.extractfacts.system",
+    "file": "litassist/prompts/base.yaml",
+    "commands": ["extractfacts"],
+    "purpose": "System prompt for the 'extractfacts' command, instructing it to extract facts precisely under headings and handle missing information.",
+    "effectiveness_assessment": "Effective. Clearly defines the task, the expected output structure (though headings are detailed elsewhere), and how to manage missing data ('Not specified' or 'To be determined'). Aligns with the user guide's description of 'extractfacts' for structuring information."
+  },
+  {
+    "prompt_name": "commands.lookup.system",
+    "file": "litassist/prompts/base.yaml",
+    "commands": ["lookup"],
+    "purpose": "System prompt for the 'lookup' command, emphasizing Australian law, source citation, and well-structured, concise responses focused on Victorian or federal law.",
+    "effectiveness_assessment": "Effective. Sets clear expectations for jurisdiction, citation, structure, and conciseness. Aligns with the 'lookup' command's purpose of rapid case-law search and structured legal answers."
+  },
+  {
+    "prompt_name": "commands.brainstorm.system",
+    "file": "litassist/prompts/base.yaml",
+    "commands": ["brainstorm"],
+    "purpose": "General system prompt for the 'brainstorm' command, focusing on practical, actionable Australian legal strategies, balancing creativity with accuracy, and requiring a definitive recommendation.",
+    "effectiveness_assessment": "Effective. Guides the LLM towards generating creative yet legally sound strategies, distinguishing orthodox/unorthodox approaches, and ensuring a clear output structure. Matches the user guide's description of 'brainstorm' for comprehensive strategy generation."
+  },
+  {
+    "prompt_name": "commands.brainstorm.orthodox_system",
+    "file": "litassist/prompts/base.yaml",
+    "commands": ["brainstorm"],
+    "purpose": "System prompt for generating 'orthodox' strategies in the 'brainstorm' command, emphasizing conservative, well-established approaches with strong precedential support.",
+    "effectiveness_assessment": "Effective. Clearly defines 'orthodox' and directs the LLM to focus on low-risk, proven strategies with supporting citations. This is crucial for the 'brainstorm' command's ability to generate diverse strategy types."
+  },
+  {
+    "prompt_name": "commands.brainstorm.unorthodox_system",
+    "file": "litassist/prompts/base.yaml",
+    "commands": ["brainstorm"],
+    "purpose": "System prompt for generating 'unorthodox' strategies in the 'brainstorm' command, encouraging creative, innovative approaches while acknowledging uncertainties.",
+    "effectiveness_assessment": "Effective. Guides the LLM towards innovative thinking, pushing legal boundaries responsibly. Important for the 'brainstorm' command's creative ideation aspect."
+  },
+  {
+    "prompt_name": "commands.brainstorm.analysis_system",
+    "file": "litassist/prompts/base.yaml",
+    "commands": ["brainstorm"],
+    "purpose": "System prompt for the analysis phase of the 'brainstorm' command, instructing objective analysis of strategies based on merit, support, and likelihood.",
+    "effectiveness_assessment": "Effective. Ensures a critical evaluation of the generated strategies, which is key to the 'brainstorm' command's goal of identifying 'most likely to succeed' options."
+  },
+  {
+    "prompt_name": "commands.strategy.system",
+    "file": "litassist/prompts/base.yaml",
+    "commands": ["strategy"],
+    "purpose": "System prompt for the 'strategy' command, defining the persona as an Australian civil litigation expert focused on specific courts, analyzing facts for strategic options.",
+    "effectiveness_assessment": "Effective. Establishes a clear expert persona and task (analyzing case facts for strategic options to achieve a specific outcome). Aligns with the user guide's description of 'strategy' for tactical implementation plans."
+  },
+  {
+    "prompt_name": "commands.strategy.ranking_system",
+    "file": "litassist/prompts/base.yaml",
+    "commands": ["strategy"],
+    "purpose": "System prompt for ranking strategies objectively for a specific outcome within the 'strategy' command.",
+    "effectiveness_assessment": "Effective. Focuses the LLM on objective ranking, which is a key part of the 'strategy' command's analysis to provide actionable, prioritized options."
+  },
+  {
+    "prompt_name": "commands.draft.system",
+    "file": "litassist/prompts/base.yaml",
+    "commands": ["draft"],
+    "purpose": "System prompt for the 'draft' command, setting the persona as a senior Australian barrister drafting high-quality, compliant legal documents.",
+    "effectiveness_assessment": "Effective. Creates a strong persona focused on quality, structure, and compliance, which is essential for the 'draft' command. Aligns with the user guide's goal of producing persuasive, well-cited submissions."
+  },
+  {
+    "prompt_name": "commands.digest.system",
+    "file": "litassist/prompts/base.yaml",
+    "commands": ["digest"],
+    "purpose": "System prompt for the 'digest' command, requiring logical structure, clear headings, bullet points, and concise summaries under Australian law.",
+    "effectiveness_assessment": "Effective. Provides clear instructions on output format and style for the 'digest' command, ensuring usability of the digested information. Aligns with the user guide's description of 'digest' for processing large documents."
+  },
+  {
+    "prompt_name": "documents.statement_of_claim",
+    "file": "litassist/prompts/documents.yaml",
+    "commands": ["draft"],
+    "purpose": "Provides a template structure for a Statement of Claim.",
+    "effectiveness_assessment": "Highly effective. Offers a standard, fillable structure for a common court document, significantly aiding the 'draft' command. The use of placeholders like {court_name} makes it adaptable."
+  },
+  {
+    "prompt_name": "documents.originating_application",
+    "file": "litassist/prompts/documents.yaml",
+    "commands": ["draft"],
+    "purpose": "Provides a template structure for an Originating Application.",
+    "effectiveness_assessment": "Highly effective. Similar to the Statement of Claim, it provides a crucial, standardized template for the 'draft' command, enhancing efficiency and consistency."
+  },
+  {
+    "prompt_name": "documents.affidavit",
+    "file": "litassist/prompts/documents.yaml",
+    "commands": ["draft"],
+    "purpose": "Provides a template structure for an Affidavit.",
+    "effectiveness_assessment": "Highly effective. Offers a detailed and compliant structure for affidavits, including critical components like deponent information and jurat. Essential for the 'draft' command."
+  },
+  {
+    "prompt_name": "documents.notice_of_motion",
+    "file": "litassist/prompts/documents.yaml",
+    "commands": ["draft"],
+    "purpose": "Provides a template structure for a Notice of Motion.",
+    "effectiveness_assessment": "Highly effective. Standardizes the creation of Notices of Motion, ensuring necessary details are prompted for, benefiting the 'draft' command."
+  },
+  {
+    "prompt_name": "documents.outline_submissions",
+    "file": "litassist/prompts/documents.yaml",
+    "commands": ["draft"],
+    "purpose": "Provides a template structure for an Outline of Submissions.",
+    "effectiveness_assessment": "Highly effective. Gives a logical flow and standard sections for legal submissions, greatly assisting the 'draft' command in producing structured arguments."
+  },
+  {
+    "prompt_name": "documents.interlocutory_application",
+    "file": "litassist/prompts/documents.yaml",
+    "commands": ["draft"],
+    "purpose": "Provides a template structure for an Interlocutory Application.",
+    "effectiveness_assessment": "Highly effective. Offers a clear and concise template for urgent/interim applications, crucial for the 'draft' command in time-sensitive situations."
+  },
+  {
+    "prompt_name": "formats.case_facts_10_heading",
+    "file": "litassist/prompts/formats.yaml",
+    "commands": ["extractfacts", "strategy"],
+    "purpose": "Defines a 10-heading structure for organizing case facts.",
+    "effectiveness_assessment": "Highly effective. This standardized format is crucial for consistency between 'extractfacts' output and 'strategy' input, as highlighted by the user guide's strict format requirements for the 'strategy' command. Ensures all key factual areas are covered."
+  },
+  {
+    "prompt_name": "formats.strategic_options",
+    "file": "litassist/prompts/formats.yaml",
+    "commands": ["brainstorm", "strategy"],
+    "purpose": "Defines the output format for presenting strategic options.",
+    "effectiveness_assessment": "Effective. Provides a clear and structured way to present strategies, including approach, legal basis, likelihood, timeline, resources, and risks. This aids in the clarity and usability of outputs from 'brainstorm' and 'strategy'."
+  },
+  {
+    "prompt_name": "formats.irac_structure",
+    "file": "litassist/prompts/formats.yaml",
+    "commands": ["lookup"],
+    "purpose": "Defines the IRAC (Issue, Rule, Application, Conclusion) structure for legal analysis.",
+    "effectiveness_assessment": "Highly effective. IRAC is a standard legal analysis method. Providing this format helps the 'lookup' command generate responses that are familiar and useful to legal professionals, as shown in the user guide's example output for 'lookup'."
+  },
+  {
+    "prompt_name": "formats.chronological_summary",
+    "file": "litassist/prompts/formats.yaml",
+    "commands": ["digest"],
+    "purpose": "Defines the format for a chronological summary.",
+    "effectiveness_assessment": "Effective. Provides a simple and clear format for the 'digest' command when in 'summary' mode, making it easy to follow events over time."
+  },
+  {
+    "prompt_name": "formats.citation_extraction",
+    "file": "litassist/prompts/formats.yaml",
+    "commands": ["lookup"],
+    "purpose": "Defines the format for extracting and listing citations (cases and legislation).",
+    "effectiveness_assessment": "Highly effective. Clear structure for listing citations, vital for the 'lookup --extract citations' use case described in the user guide for building citation lists."
+  },
+  {
+    "prompt_name": "formats.principles_extraction",
+    "file": "litassist/prompts/formats.yaml",
+    "commands": ["lookup"],
+    "purpose": "Defines the format for extracting legal principles with supporting authorities.",
+    "effectiveness_assessment": "Highly effective. Structured format for principles is ideal for the 'lookup --extract principles' use case (e.g., for advice letters) mentioned in the user guide."
+  },
+  {
+    "prompt_name": "formats.checklist_extraction",
+    "file": "litassist/prompts/formats.yaml",
+    "commands": ["lookup"],
+    "purpose": "Defines the format for extracting practical checklist items.",
+    "effectiveness_assessment": "Highly effective. The checkbox format is very user-friendly for the 'lookup --extract checklist' use case (e.g., pre-trial prep) from the user guide."
+  },
+  {
+    "prompt_name": "lookup.research_assistant.system_prompt",
+    "file": "litassist/prompts/lookup.yaml",
+    "commands": ["lookup"],
+    "purpose": "System prompt for the Jade.io research aspect of the 'lookup' command, reiterating focus on Australian law, citations, structure, and conciseness.",
+    "effectiveness_assessment": "Effective. Reinforces the core requirements for the 'lookup' command's research tasks. It's largely similar to `commands.lookup.system` from `base.yaml` but could be tailored for specific nuances of Jade.io interaction if any."
+  },
+  {
+    "prompt_name": "lookup.extraction_instructions.citations",
+    "file": "litassist/prompts/lookup.yaml",
+    "commands": ["lookup"],
+    "purpose": "Provides specific instructions when citation extraction is requested with the 'lookup' command.",
+    "effectiveness_assessment": "Effective. Clearly tells the LLM to add a 'CITATIONS' section and format it for easy use, directly supporting the '--extract citations' functionality."
+  },
+  {
+    "prompt_name": "lookup.extraction_instructions.principles",
+    "file": "litassist/prompts/lookup.yaml",
+    "commands": ["lookup"],
+    "purpose": "Provides specific instructions when legal principles extraction is requested with the 'lookup' command.",
+    "effectiveness_assessment": "Effective. Instructs the LLM to create a 'LEGAL PRINCIPLES' section in a structured format suitable for advice letters, aligning with the '--extract principles' use case."
+  },
+  {
+    "prompt_name": "lookup.extraction_instructions.checklist",
+    "file": "litassist/prompts/lookup.yaml",
+    "commands": ["lookup"],
+    "purpose": "Provides specific instructions when checklist extraction is requested with the 'lookup' command.",
+    "effectiveness_assessment": "Effective. Guides the LLM to create a 'PRACTICAL CHECKLIST' with actionable items, supporting the '--extract checklist' functionality."
+  },
+  {
+    "prompt_name": "lookup.comprehensive_analysis.requirements",
+    "file": "litassist/prompts/lookup.yaml",
+    "commands": ["lookup"],
+    "purpose": "Defines requirements for a comprehensive analysis in the 'lookup' command, including thorough review, authority hierarchy, and jurisdictional variations.",
+    "effectiveness_assessment": "Effective. Sets high standards for the '--comprehensive' flag in 'lookup', pushing for deeper and broader analysis than the standard mode. Details are specific and cover important analytical dimensions."
+  },
+  {
+    "prompt_name": "lookup.comprehensive_analysis.citation_requirements",
+    "file": "litassist/prompts/lookup.yaml",
+    "commands": ["lookup"],
+    "purpose": "Defines specific citation requirements for comprehensive analysis in 'lookup', such as parallel citations and distinguishing ratio/obiter.",
+    "effectiveness_assessment": "Effective. Adds rigor to citation practice for comprehensive analysis, ensuring a higher quality of academic or detailed research output."
+  },
+  {
+    "prompt_name": "lookup.comprehensive_analysis.output_structure",
+    "file": "litassist/prompts/lookup.yaml",
+    "commands": ["lookup"],
+    "purpose": "Defines a detailed output structure for comprehensive analysis in 'lookup'.",
+    "effectiveness_assessment": "Effective. Provides a clear, multi-section structure for exhaustive output, ensuring that the analysis is well-organized and covers all required aspects."
+  },
+  {
+    "prompt_name": "lookup.standard_analysis.instructions",
+    "file": "litassist/prompts/lookup.yaml",
+    "commands": ["lookup"],
+    "purpose": "Provides instructions for standard analysis in the 'lookup' command (when not using '--comprehensive').",
+    "effectiveness_assessment": "Effective. Clear instructions for the default 'lookup' mode: cite sources, analyze provided sources (typically 5), structure with summary, analysis, and conclusion. Cross-referencing is a good addition."
+  },
+  {
+    "prompt_name": "lookup.standard_user_template",
+    "file": "litassist/prompts/lookup.yaml",
+    "commands": ["lookup"],
+    "purpose": "Formats the user's question and provided links for the 'lookup' command.",
+    "effectiveness_assessment": "Effective. Simple and clear templating of user question and context (links) for the LLM to process."
+  },
+  {
+    "prompt_name": "processing.digest.summary_mode",
+    "file": "litassist/prompts/processing.yaml",
+    "commands": ["digest"],
+    "purpose": "Instructs the 'digest' command to create a chronological summary with a specific format.",
+    "effectiveness_assessment": "Effective. Clearly defines the task (chronological summary) and the expected output format (reiterating `formats.chronological_summary`), ensuring consistency for the 'summary' mode."
+  },
+  {
+    "prompt_name": "processing.digest.issues_mode",
+    "file": "litassist/prompts/processing.yaml",
+    "commands": ["digest"],
+    "purpose": "Instructs the 'digest' command to identify and analyze legal issues with a specific structure.",
+    "effectiveness_assessment": "Effective. Clearly defines the task for 'issues' mode and provides a detailed structure for each issue (Description, Legal Framework, Analysis, Significance). This helps in generating useful, structured output for legal issue spotting."
+  },
+  {
+    "prompt_name": "processing.digest.system_prompt",
+    "file": "litassist/prompts/processing.yaml",
+    "commands": ["digest"],
+    "purpose": "General system prompt for the 'digest' command, focusing on comprehensive, accurate, well-organized extraction with a neutral tone.",
+    "effectiveness_assessment": "Effective. This is a good overarching prompt that sets the quality standard for the digest command's operations, complementing `commands.digest.system` from `base.yaml`."
+  },
+  {
+    "prompt_name": "processing.draft.system_prompt_base",
+    "file": "litassist/prompts/processing.yaml",
+    "commands": ["draft"],
+    "purpose": "Base system prompt for the 'draft' command, reiterating the persona of a senior Australian barrister.",
+    "effectiveness_assessment": "Effective. Consistent reinforcement of the expert persona. This is identical to `commands.draft.system` in `base.yaml` and serves as a good foundation layer for more specific draft instructions."
+  },
+  {
+    "prompt_name": "processing.draft.context_case_facts_and_strategies",
+    "file": "litassist/prompts/processing.yaml",
+    "commands": ["draft"],
+    "purpose": "Adds context to the 'draft' system prompt when both case facts and strategies are provided.",
+    "effectiveness_assessment": "Effective. Instructs the LLM to use facts as a foundation and consider strategies, particularly those marked 'most likely to succeed'. This aligns with the user guide's description of how 'draft' uses various inputs."
+  },
+  {
+    "prompt_name": "processing.draft.context_case_facts_only",
+    "file": "litassist/prompts/processing.yaml",
+    "commands": ["draft"],
+    "purpose": "Adds context to the 'draft' system prompt when only case facts are provided.",
+    "effectiveness_assessment": "Effective. Focuses the LLM on using the provided case facts as the factual basis for the draft."
+  },
+  {
+    "prompt_name": "processing.draft.context_strategies_only",
+    "file": "litassist/prompts/processing.yaml",
+    "commands": ["draft"],
+    "purpose": "Adds context to the 'draft' system prompt when only strategies are provided.",
+    "effectiveness_assessment": "Effective. Guides the LLM to consider the provided strategies, especially those marked 'most likely to succeed'."
+  },
+  {
+    "prompt_name": "processing.draft.general_instructions",
+    "file": "litassist/prompts/processing.yaml",
+    "commands": ["draft"],
+    "purpose": "Provides general drafting instructions regarding thoroughness, conciseness, accuracy, organization, citation, consistency, and avoiding speculation.",
+    "effectiveness_assessment": "Highly effective. This is a comprehensive set of instructions covering key aspects of good legal drafting. Crucial for quality."
+  },
+  {
+    "prompt_name": "processing.draft.context_aware_prompt",
+    "file": "litassist/prompts/processing.yaml",
+    "commands": ["draft"],
+    "purpose": "User-facing prompt template for the 'draft' command when context (facts/strategies) is provided, asking to draft a document type incorporating this context and meeting several quality criteria.",
+    "effectiveness_assessment": "Effective. Clearly structures the request to the LLM, incorporating the previously supplied context and listing explicit quality requirements (formatted, sound, aligned, compliant, evidence-based)."
+  },
+  {
+    "prompt_name": "processing.draft.user_prompt_template",
+    "file": "litassist/prompts/processing.yaml",
+    "commands": ["draft"],
+    "purpose": "Basic user-facing prompt template for the 'draft' command when a simple user request is made.",
+    "effectiveness_assessment": "Effective. Simple template for straightforward drafting requests, specifying document type and user's specific request."
+  },
+  {
+    "prompt_name": "processing.extraction.chunk_facts_prompt",
+    "file": "litassist/prompts/processing.yaml",
+    "commands": ["extractfacts"],
+    "purpose": "Prompt for extracting raw facts from a document chunk during the 'extractfacts' process, listing fact categories.",
+    "effectiveness_assessment": "Effective. Clearly lists the types of facts to look for within a chunk and emphasizes extracting only raw facts present in that specific excerpt. Important for the multi-chunk processing logic of 'extractfacts'."
+  },
+  {
+    "prompt_name": "processing.extraction.chunk_system_prompt",
+    "file": "litassist/prompts/processing.yaml",
+    "commands": ["extractfacts"],
+    "purpose": "System prompt for processing a single chunk in 'extractfacts', emphasizing comprehensiveness but restricting to info in the excerpt.",
+    "effectiveness_assessment": "Effective. Reinforces the boundaries for chunk-based processing: be thorough for the given text but do not go beyond it."
+  },
+  {
+    "prompt_name": "processing.extraction.organize_facts_prompt",
+    "file": "litassist/prompts/processing.yaml",
+    "commands": ["extractfacts"],
+    "purpose": "Prompt for organizing all extracted raw facts (from chunks) into the 10 standard headings.",
+    "effectiveness_assessment": "Highly effective. This is the core prompt that assembles the final structured output of 'extractfacts'. It references the `format_instructions` (which would be `formats.case_facts_10_heading`) and gives clear rules about sourcing and completeness."
+  },
+  {
+    "prompt_name": "processing.extraction.organize_system_prompt",
+    "file": "litassist/prompts/processing.yaml",
+    "commands": ["extractfacts"],
+    "purpose": "System prompt for the fact organization step in 'extractfacts', emphasizing precision, consistency, and avoiding duplication.",
+    "effectiveness_assessment": "Effective. Guides the LLM to accurately map the collected raw facts to the specified 10 headings, ensuring a clean final output. This complements `commands.extractfacts.system` from `base.yaml`."
+  },
+  {
+    "prompt_name": "strategies.brainstorm.orthodox_prompt",
+    "file": "litassist/prompts/strategies.yaml",
+    "commands": ["brainstorm"],
+    "purpose": "User prompt for generating 10 orthodox legal strategies in 'brainstorm', detailing characteristics and required output format for each.",
+    "effectiveness_assessment": "Highly effective. Very detailed in what constitutes 'orthodox' (precedent-based, traditional, conservative, etc.) and specifies the exact information required for each strategy (name, description, legal basis, likelihood, considerations). This structured approach is crucial for generating useful content."
+  },
+  {
+    "prompt_name": "strategies.brainstorm.unorthodox_prompt",
+    "file": "litassist/prompts/strategies.yaml",
+    "commands": ["brainstorm"],
+    "purpose": "User prompt for generating 10 unorthodox legal strategies in 'brainstorm', detailing characteristics and required output format.",
+    "effectiveness_assessment": "Highly effective. Similar to the orthodox prompt, it clearly defines 'unorthodox' (novel, creative, innovative, etc.) and the specific output requirements (name, description, legal basis/interpretation, risk, innovation factor). Essential for the creative aspect of 'brainstorm'."
+  },
+  {
+    "prompt_name": "strategies.brainstorm.analysis_prompt",
+    "file": "litassist/prompts/strategies.yaml",
+    "commands": ["brainstorm"],
+    "purpose": "User prompt for analyzing all generated strategies (orthodox and unorthodox) and selecting the 5 most promising ones, with detailed criteria and output requirements, plus a final recommendation.",
+    "effectiveness_assessment": "Highly effective. This prompt drives the critical analysis phase of 'brainstorm'. It specifies selection criteria, detailed analysis points for each selected strategy, the exact number to return (5), and how to handle cases where fewer than 5 high-quality strategies are found. The final recommendation part is also key."
+  },
+  {
+    "prompt_name": "strategies.brainstorm.regeneration_prompt",
+    "file": "litassist/prompts/strategies.yaml",
+    "commands": ["brainstorm"],
+    "purpose": "User prompt for regenerating strategic analysis based on feedback, incorporating it while maintaining rigor and focus.",
+    "effectiveness_assessment": "Effective. Allows for iterative refinement of brainstormed strategies by incorporating feedback, which is a valuable feature for improving results. The inclusion of `{citation_instructions}` placeholder is good for quality control."
+  },
+  {
+    "prompt_name": "strategies.strategy.strategic_options_instructions",
+    "file": "litassist/prompts/strategies.yaml",
+    "commands": ["strategy"],
+    "purpose": "Provides exact formatting instructions for the strategic options section of the 'strategy' command output.",
+    "effectiveness_assessment": "Highly effective. Extremely specific formatting requirements (title, probability, hurdles with citations, missing facts) ensure the 'strategy' command produces highly structured and detailed tactical options. The emphasis on real case citations with pinpoint references is crucial for legal utility."
+  },
+  {
+    "prompt_name": "strategies.strategy.next_steps_prompt",
+    "file": "litassist/prompts/strategies.yaml",
+    "commands": ["strategy"],
+    "purpose": "Prompts for generating 5 immediate next steps based on the strategic options for the 'strategy' command.",
+    "effectiveness_assessment": "Effective. Focuses on actionable outcomes by requesting specific, timed, and responsible action items. The format provided is clear."
+  },
+  {
+    "prompt_name": "strategies.strategy.document_generation_context",
+    "file": "litassist/prompts/strategies.yaml",
+    "commands": ["strategy"],
+    "purpose": "Provides context for document drafting if the 'strategy' command leads to a draft, linking it to the recommended strategy.",
+    "effectiveness_assessment": "Effective. Ensures that any document drafted as part of the 'strategy' output is aligned with the recommended strategic direction and meets basic legal document standards."
+  },
+  {
+    "prompt_name": "strategies.strategy.unique_title_requirement",
+    "file": "litassist/prompts/strategies.yaml",
+    "commands": ["strategy"],
+    "purpose": "Instructs the LLM to use unique titles for each strategic approach in the 'strategy' command.",
+    "effectiveness_assessment": "Moderately effective. While good practice, the LLM might still struggle with 'uniqueness' without more specific constraints or examples. However, it's a useful instruction to prevent repetition."
+  },
+  {
+    "prompt_name": "verification.self_critique",
+    "file": "litassist/prompts/verification.yaml",
+    "commands": ["brainstorm", "draft", "extractfacts", "strategy"],
+    "purpose": "Prompts the LLM to identify and correct legal inaccuracies in its own output and ensure Australian English compliance.",
+    "effectiveness_assessment": "Effective. A good general self-correction mechanism. Its application to core commands like 'extractfacts', 'brainstorm', 'strategy', and 'draft' (especially when auto-triggered or optionally enabled as per user guide) enhances reliability."
+  },
+  {
+    "prompt_name": "verification.citation_retry_instructions",
+    "file": "litassist/prompts/verification.yaml",
+    "commands": ["lookup", "digest", "extractfacts", "brainstorm", "strategy", "draft"],
+    "purpose": "Provides enhanced instructions for citation accuracy when an LLM generation attempt needs a retry due to citation issues.",
+    "effectiveness_assessment": "Highly effective. This is a critical prompt for quality control, emphasizing the use of real, verifiable Australian cases and discouraging invention. Its broad application across all commands that generate citable content is appropriate."
+  },
+  {
+    "prompt_name": "verification.light_verification",
+    "file": "litassist/prompts/verification.yaml",
+    "commands": ["lookup", "digest", "extractfacts", "brainstorm", "strategy", "draft"],
+    "purpose": "Prompts for a light verification focusing only on Australian English spelling and terminology compliance.",
+    "effectiveness_assessment": "Effective for its specific, limited purpose. Useful for ensuring language consistency without a full legal review. The user guide doesn't specify when this is used over other verification prompts, but it's a sensible, scoped check."
+  },
+  {
+    "prompt_name": "verification.heavy_verification",
+    "file": "litassist/prompts/verification.yaml",
+    "commands": ["extractfacts", "strategy"],
+    "purpose": "Prompts for a comprehensive legal accuracy review, including citations, reasoning, errors in law/procedure, and Australian English.",
+    "effectiveness_assessment": "Highly effective. This is essential for commands like 'extractfacts' and 'strategy' where accuracy is paramount, as noted by their mandatory verification in the user guide. The prompt is comprehensive in its review criteria."
+  },
+  {
+    "prompt_name": "verification.system_prompt",
+    "file": "litassist/prompts/verification.yaml",
+    "commands": ["extractfacts", "strategy"],
+    "purpose": "System prompt for heavy verification, establishing an 'Australian law expert' persona for thorough review.",
+    "effectiveness_assessment": "Effective. Sets the correct expert persona for the LLM when performing heavy verification, reinforcing the expected standard of review for 'extractfacts' and 'strategy'."
+  }
+]
