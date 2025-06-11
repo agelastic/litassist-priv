@@ -1,0 +1,317 @@
+[
+  {
+    "prompt_name": "base.australian_law",
+    "file": "litassist/prompts/base.yaml",
+    "commands": ["all"]
+  },
+  {
+    "prompt_name": "base.citation_standards",
+    "file": "litassist/prompts/base.yaml",
+    "commands": ["all"]
+  },
+  {
+    "prompt_name": "base.accuracy_standards",
+    "file": "litassist/prompts/base.yaml",
+    "commands": ["all"]
+  },
+  {
+    "prompt_name": "base.verification_standards",
+    "file": "litassist/prompts/base.yaml",
+    "commands": ["all"]
+  },
+  {
+    "prompt_name": "commands.extractfacts.system",
+    "file": "litassist/prompts/base.yaml",
+    "commands": ["extractfacts"]
+  },
+  {
+    "prompt_name": "commands.lookup.system",
+    "file": "litassist/prompts/base.yaml",
+    "commands": ["lookup"]
+  },
+  {
+    "prompt_name": "commands.brainstorm.system",
+    "file": "litassist/prompts/base.yaml",
+    "commands": ["brainstorm"]
+  },
+  {
+    "prompt_name": "commands.brainstorm.orthodox_system",
+    "file": "litassist/prompts/base.yaml",
+    "commands": ["brainstorm"]
+  },
+  {
+    "prompt_name": "commands.brainstorm.unorthodox_system",
+    "file": "litassist/prompts/base.yaml",
+    "commands": ["brainstorm"]
+  },
+  {
+    "prompt_name": "commands.brainstorm.analysis_system",
+    "file": "litassist/prompts/base.yaml",
+    "commands": ["brainstorm"]
+  },
+  {
+    "prompt_name": "commands.strategy.system",
+    "file": "litassist/prompts/base.yaml",
+    "commands": ["strategy"]
+  },
+  {
+    "prompt_name": "commands.strategy.ranking_system",
+    "file": "litassist/prompts/base.yaml",
+    "commands": ["strategy"]
+  },
+  {
+    "prompt_name": "commands.draft.system",
+    "file": "litassist/prompts/base.yaml",
+    "commands": ["draft"]
+  },
+  {
+    "prompt_name": "commands.digest.system",
+    "file": "litassist/prompts/base.yaml",
+    "commands": ["digest"]
+  },
+  {
+    "prompt_name": "documents.statement_of_claim",
+    "file": "litassist/prompts/documents.yaml",
+    "commands": ["draft"]
+  },
+  {
+    "prompt_name": "documents.originating_application",
+    "file": "litassist/prompts/documents.yaml",
+    "commands": ["draft"]
+  },
+  {
+    "prompt_name": "documents.affidavit",
+    "file": "litassist/prompts/documents.yaml",
+    "commands": ["draft"]
+  },
+  {
+    "prompt_name": "documents.notice_of_motion",
+    "file": "litassist/prompts/documents.yaml",
+    "commands": ["draft"]
+  },
+  {
+    "prompt_name": "documents.outline_submissions",
+    "file": "litassist/prompts/documents.yaml",
+    "commands": ["draft"]
+  },
+  {
+    "prompt_name": "documents.interlocutory_application",
+    "file": "litassist/prompts/documents.yaml",
+    "commands": ["draft"]
+  },
+  {
+    "prompt_name": "formats.case_facts_10_heading",
+    "file": "litassist/prompts/formats.yaml",
+    "commands": ["extractfacts", "strategy"]
+  },
+  {
+    "prompt_name": "formats.strategic_options",
+    "file": "litassist/prompts/formats.yaml",
+    "commands": ["brainstorm", "strategy"]
+  },
+  {
+    "prompt_name": "formats.irac_structure",
+    "file": "litassist/prompts/formats.yaml",
+    "commands": ["lookup"]
+  },
+  {
+    "prompt_name": "formats.chronological_summary",
+    "file": "litassist/prompts/formats.yaml",
+    "commands": ["digest"]
+  },
+  {
+    "prompt_name": "formats.citation_extraction",
+    "file": "litassist/prompts/formats.yaml",
+    "commands": ["lookup"]
+  },
+  {
+    "prompt_name": "formats.principles_extraction",
+    "file": "litassist/prompts/formats.yaml",
+    "commands": ["lookup"]
+  },
+  {
+    "prompt_name": "formats.checklist_extraction",
+    "file": "litassist/prompts/formats.yaml",
+    "commands": ["lookup"]
+  },
+  {
+    "prompt_name": "lookup.research_assistant.system_prompt",
+    "file": "litassist/prompts/lookup.yaml",
+    "commands": ["lookup"]
+  },
+  {
+    "prompt_name": "lookup.extraction_instructions.citations",
+    "file": "litassist/prompts/lookup.yaml",
+    "commands": ["lookup"]
+  },
+  {
+    "prompt_name": "lookup.extraction_instructions.principles",
+    "file": "litassist/prompts/lookup.yaml",
+    "commands": ["lookup"]
+  },
+  {
+    "prompt_name": "lookup.extraction_instructions.checklist",
+    "file": "litassist/prompts/lookup.yaml",
+    "commands": ["lookup"]
+  },
+  {
+    "prompt_name": "lookup.comprehensive_analysis.requirements",
+    "file": "litassist/prompts/lookup.yaml",
+    "commands": ["lookup"]
+  },
+  {
+    "prompt_name": "lookup.comprehensive_analysis.citation_requirements",
+    "file": "litassist/prompts/lookup.yaml",
+    "commands": ["lookup"]
+  },
+  {
+    "prompt_name": "lookup.comprehensive_analysis.output_structure",
+    "file": "litassist/prompts/lookup.yaml",
+    "commands": ["lookup"]
+  },
+  {
+    "prompt_name": "lookup.standard_analysis.instructions",
+    "file": "litassist/prompts/lookup.yaml",
+    "commands": ["lookup"]
+  },
+  {
+    "prompt_name": "lookup.standard_user_template",
+    "file": "litassist/prompts/lookup.yaml",
+    "commands": ["lookup"]
+  },
+  {
+    "prompt_name": "processing.digest.summary_mode",
+    "file": "litassist/prompts/processing.yaml",
+    "commands": ["digest"]
+  },
+  {
+    "prompt_name": "processing.digest.issues_mode",
+    "file": "litassist/prompts/processing.yaml",
+    "commands": ["digest"]
+  },
+  {
+    "prompt_name": "processing.digest.system_prompt",
+    "file": "litassist/prompts/processing.yaml",
+    "commands": ["digest"]
+  },
+  {
+    "prompt_name": "processing.draft.system_prompt_base",
+    "file": "litassist/prompts/processing.yaml",
+    "commands": ["draft"]
+  },
+  {
+    "prompt_name": "processing.draft.context_case_facts_and_strategies",
+    "file": "litassist/prompts/processing.yaml",
+    "commands": ["draft"]
+  },
+  {
+    "prompt_name": "processing.draft.context_case_facts_only",
+    "file": "litassist/prompts/processing.yaml",
+    "commands": ["draft"]
+  },
+  {
+    "prompt_name": "processing.draft.context_strategies_only",
+    "file": "litassist/prompts/processing.yaml",
+    "commands": ["draft"]
+  },
+  {
+    "prompt_name": "processing.draft.general_instructions",
+    "file": "litassist/prompts/processing.yaml",
+    "commands": ["draft"]
+  },
+  {
+    "prompt_name": "processing.draft.context_aware_prompt",
+    "file": "litassist/prompts/processing.yaml",
+    "commands": ["draft"]
+  },
+  {
+    "prompt_name": "processing.draft.user_prompt_template",
+    "file": "litassist/prompts/processing.yaml",
+    "commands": ["draft"]
+  },
+  {
+    "prompt_name": "processing.extraction.chunk_facts_prompt",
+    "file": "litassist/prompts/processing.yaml",
+    "commands": ["extractfacts"]
+  },
+  {
+    "prompt_name": "processing.extraction.chunk_system_prompt",
+    "file": "litassist/prompts/processing.yaml",
+    "commands": ["extractfacts"]
+  },
+  {
+    "prompt_name": "processing.extraction.organize_facts_prompt",
+    "file": "litassist/prompts/processing.yaml",
+    "commands": ["extractfacts"]
+  },
+  {
+    "prompt_name": "processing.extraction.organize_system_prompt",
+    "file": "litassist/prompts/processing.yaml",
+    "commands": ["extractfacts"]
+  },
+  {
+    "prompt_name": "strategies.brainstorm.orthodox_prompt",
+    "file": "litassist/prompts/strategies.yaml",
+    "commands": ["brainstorm"]
+  },
+  {
+    "prompt_name": "strategies.brainstorm.unorthodox_prompt",
+    "file": "litassist/prompts/strategies.yaml",
+    "commands": ["brainstorm"]
+  },
+  {
+    "prompt_name": "strategies.brainstorm.analysis_prompt",
+    "file": "litassist/prompts/strategies.yaml",
+    "commands": ["brainstorm"]
+  },
+  {
+    "prompt_name": "strategies.brainstorm.regeneration_prompt",
+    "file": "litassist/prompts/strategies.yaml",
+    "commands": ["brainstorm"]
+  },
+  {
+    "prompt_name": "strategies.strategy.strategic_options_instructions",
+    "file": "litassist/prompts/strategies.yaml",
+    "commands": ["strategy"]
+  },
+  {
+    "prompt_name": "strategies.strategy.next_steps_prompt",
+    "file": "litassist/prompts/strategies.yaml",
+    "commands": ["strategy"]
+  },
+  {
+    "prompt_name": "strategies.strategy.document_generation_context",
+    "file": "litassist/prompts/strategies.yaml",
+    "commands": ["strategy"]
+  },
+  {
+    "prompt_name": "strategies.strategy.unique_title_requirement",
+    "file": "litassist/prompts/strategies.yaml",
+    "commands": ["strategy"]
+  },
+  {
+    "prompt_name": "verification.self_critique",
+    "file": "litassist/prompts/verification.yaml",
+    "commands": ["brainstorm", "draft", "extractfacts", "strategy"]
+  },
+  {
+    "prompt_name": "verification.citation_retry_instructions",
+    "file": "litassist/prompts/verification.yaml",
+    "commands": ["lookup", "digest", "extractfacts", "brainstorm", "strategy", "draft"]
+  },
+  {
+    "prompt_name": "verification.light_verification",
+    "file": "litassist/prompts/verification.yaml",
+    "commands": ["lookup", "digest", "extractfacts", "brainstorm", "strategy", "draft"]
+  },
+  {
+    "prompt_name": "verification.heavy_verification",
+    "file": "litassist/prompts/verification.yaml",
+    "commands": ["extractfacts", "strategy"]
+  },
+  {
+    "prompt_name": "verification.system_prompt",
+    "file": "litassist/prompts/verification.yaml",
+    "commands": ["extractfacts", "strategy"]
+  }
+]
