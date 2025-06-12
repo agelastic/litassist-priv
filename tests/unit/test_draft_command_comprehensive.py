@@ -8,7 +8,7 @@ All tests run offline using mocked dependencies.
 import pytest
 import tempfile
 from pathlib import Path
-from unittest.mock import patch, MagicMock, Mock
+from unittest.mock import patch, MagicMock
 from click.testing import CliRunner
 
 from litassist.commands.draft import draft
@@ -189,7 +189,7 @@ class TestDraftCommand:
 
         try:
             runner = CliRunner()
-            result = runner.invoke(
+            _ = runner.invoke(
                 draft,
                 [facts_file, "invalid_type"],
                 obj={"premium": False},
@@ -211,7 +211,7 @@ class TestDraftCommand:
 
         try:
             runner = CliRunner()
-            result = runner.invoke(
+            _ = runner.invoke(
                 draft,
                 [facts_file, "statement_of_claim"],
                 obj={"premium": False},

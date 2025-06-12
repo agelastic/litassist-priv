@@ -6,7 +6,6 @@ All tests run offline using mocked dependencies.
 """
 
 import pytest
-import re
 import tempfile
 from pathlib import Path
 from unittest.mock import patch, MagicMock, Mock
@@ -528,7 +527,7 @@ class TestStrategyGeneration:
 
         try:
             runner = CliRunner()
-            result = runner.invoke(
+            _ = runner.invoke(
                 strategy,
                 [
                     facts_file,
@@ -798,7 +797,7 @@ class TestErrorHandling:
             with patch("litassist.commands.strategy.save_command_output") as mock_save:
                 with patch("litassist.commands.strategy.save_log"):
                     mock_save.return_value = "test_output.txt"
-                    result = runner.invoke(
+                    _ = runner.invoke(
                         strategy, [facts_file, "--outcome", "Test outcome"]
                     )
 

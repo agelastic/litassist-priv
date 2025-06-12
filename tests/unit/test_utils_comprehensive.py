@@ -7,11 +7,8 @@ All tests run offline using mocked dependencies.
 
 import pytest
 import os
-import tempfile
 import time
-from pathlib import Path
 from unittest.mock import patch, MagicMock, mock_open
-import json
 
 from litassist.utils import (
     save_log,
@@ -321,6 +318,7 @@ class TestReasoningPrompts:
 
         # Should handle gracefully, either return None or partial trace
         # Implementation depends on robustness requirements
+        assert trace is None
 
 
 class TestStrategyFileParsing:

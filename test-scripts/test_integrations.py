@@ -12,7 +12,6 @@ Usage:
 
 import os
 import sys
-import time
 import argparse
 import yaml
 import json
@@ -23,13 +22,13 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 try:
     import pinecone
-except:
+except ImportError:
     pinecone = None
 from litassist.helpers.pinecone_config import PineconeWrapper
 import requests
 
 from datetime import datetime
-from test_utils import EnhancedTestResult, print_result
+from test_utils import EnhancedTestResult
 
 # Try importing required packages and report errors
 required_packages = ["openai", "pinecone"]
@@ -173,7 +172,7 @@ def test_pinecone_connection():
 
     try:
         # Use PineconeWrapper - the pinecone-client package is broken
-        wrapper = PineconeWrapper(PC_KEY, PC_INDEX)
+        PineconeWrapper(PC_KEY, PC_INDEX)
         indexes = [PC_INDEX]  # We know our index name
 
         result.success(available_indexes=indexes)

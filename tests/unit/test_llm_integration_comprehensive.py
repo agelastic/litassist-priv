@@ -6,8 +6,7 @@ All tests run offline using mocked dependencies.
 """
 
 import pytest
-import json
-from unittest.mock import patch, MagicMock, Mock
+from unittest.mock import patch, Mock
 import openai
 
 from litassist.llm import LLMClientFactory, LLMClient
