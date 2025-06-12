@@ -127,6 +127,7 @@
 - ✅ **Citation verification**: Real-time validation prevents hallucinations
 - ✅ **Clean CLI output**: Professional summaries instead of raw content
 - ✅ **Code quality**: All ruff linting errors resolved
+- ✅ **Test Quality**: Fixed failing pytests related to unused imports/variables in `test-scripts/test_quality.py` and `tests/unit/test_llm_client_factory.py`.
 
 **Still Missing:**
 - [ ] Automated testing of actual LLM outputs
@@ -143,6 +144,7 @@
 - [ ] Centralize duplicate chunking logic
 - ✅ **Remove unused code and dependencies**: Completed cleanup of beautifulsoup4, requests imports (June 7, 2025)
 - ✅ **Fix linting issues**: All ruff errors resolved across codebase (June 7, 2025)
+- ✅ **Fix test warnings**: Resolved unused import/variable warnings in `test-scripts/test_quality.py` and `tests/unit/test_llm_client_factory.py` (June 12, 2025)
 
 ### Error Handling
 - [ ] Standardize error messages across commands

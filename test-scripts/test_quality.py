@@ -12,7 +12,6 @@ Usage:
 
 import os
 import sys
-import time
 import argparse
 import yaml
 import json
@@ -25,7 +24,7 @@ import io
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from datetime import datetime
-from test_utils import EnhancedTestResult, print_result
+from test_utils import EnhancedTestResult
 
 # ─── Configuration ────────────────────────────────────────────────
 CONFIG_PATH = os.path.join(
@@ -920,7 +919,7 @@ def test_pinecone_vector_operations():
                 f"Index stats: dimension={stats.dimension}, vectors={stats.total_vector_count}"
             )
             print("Testing with real Pinecone index via PineconeWrapper...")
-            using_wrapper = True
+            _using_wrapper = True
             has_real_index = True
             existing_indexes = [PC_INDEX]  # We know our index name
         except Exception as wrapper_error:
@@ -932,7 +931,7 @@ def test_pinecone_vector_operations():
 
             index = MockPineconeIndex()
             print("Testing with mock Pinecone index...")
-            using_wrapper = False
+            _using_wrapper = False
             has_real_index = False
             existing_indexes = []
 
@@ -1110,9 +1109,9 @@ def test_pinecone_service_reliability():
         # Use PineconeWrapper
         try:
             index = PineconeWrapper(PC_KEY, PC_INDEX)
-            stats = index.describe_index_stats()
+            _stats = index.describe_index_stats()
             has_real_index = True
-        except:
+        except Exception:
             from litassist.helpers.retriever import MockPineconeIndex
 
             index = MockPineconeIndex()

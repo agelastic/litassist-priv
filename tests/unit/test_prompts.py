@@ -9,7 +9,6 @@ import pytest
 import tempfile
 from pathlib import Path
 from unittest.mock import patch
-import yaml
 
 from litassist.prompts import PromptManager, PROMPTS
 

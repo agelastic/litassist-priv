@@ -2,8 +2,7 @@
 Tests for the LLMClientFactory functionality.
 """
 
-import pytest
-from unittest.mock import Mock, patch
+from unittest.mock import patch
 from litassist.llm import LLMClientFactory, LLMClient
 
 

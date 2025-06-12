@@ -3,7 +3,6 @@ Test suite for verifying YAML template completeness and structure.
 Validates that all required prompt templates exist with correct key structures.
 """
 
-import os
 import pytest
 import yaml
 from pathlib import Path
