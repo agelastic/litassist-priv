@@ -98,7 +98,7 @@ class ErrorHandler:
         if error_info.get("request_details"):
             print(f"  Request: {json.dumps(error_info['request_details'], indent=4)}")
 
-        print(f"  Full Traceback:")
+        print("  Full Traceback:")
         # Print traceback with indentation
         for line in error_info["traceback"].splitlines():
             print(f"    {line}")

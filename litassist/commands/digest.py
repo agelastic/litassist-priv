@@ -12,12 +12,12 @@ import os
 from litassist.config import CONFIG
 from litassist.prompts import PROMPTS
 from litassist.utils import (
-    read_document, 
-    chunk_text, 
-    save_log, 
-    timed, 
+    read_document,
+    chunk_text,
+    save_log,
+    timed,
     save_command_output,
-    show_command_completion
+    show_command_completion,
 )
 from litassist.llm import LLMClientFactory
 
@@ -68,10 +68,10 @@ def digest(file, mode):
         for idx, chunk in enumerate(chunks_bar, start=1):
             # Use centralized digest prompts
             if mode == "summary":
-                digest_prompt = PROMPTS.get('processing.digest.summary_mode')
+                digest_prompt = PROMPTS.get("processing.digest.summary_mode")
                 prompt = f"{digest_prompt}\n\n{chunk}"
             else:  # issues mode
-                digest_prompt = PROMPTS.get('processing.digest.issues_mode')
+                digest_prompt = PROMPTS.get("processing.digest.issues_mode")
                 prompt = f"{digest_prompt}\n\n{chunk}"
             # Call the LLM
             try:
@@ -79,7 +79,7 @@ def digest(file, mode):
                     [
                         {
                             "role": "system",
-                            "content": PROMPTS.get('processing.digest.system_prompt'),
+                            "content": PROMPTS.get("processing.digest.system_prompt"),
                         },
                         {"role": "user", "content": prompt},
                     ]
@@ -122,7 +122,7 @@ def digest(file, mode):
         f"digest_{mode}",
         content,
         os.path.basename(file),
-        metadata={"Mode": mode.title(), "Source File": file}
+        metadata={"Mode": mode.title(), "Source File": file},
     )
 
     # Save comprehensive audit log
@@ -145,7 +145,7 @@ def digest(file, mode):
         "Document": os.path.basename(file),
         "Mode": mode_description,
         "Chunks processed": len(chunks),
-        "Total tokens": comprehensive_log["total_usage"]["total_tokens"]
+        "Total tokens": comprehensive_log["total_usage"]["total_tokens"],
     }
-    
+
     show_command_completion(f"digest {mode}", output_file, None, stats)

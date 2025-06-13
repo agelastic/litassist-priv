@@ -39,8 +39,9 @@ from litassist.helpers.retriever import Retriever, get_pinecone_client
     help="Control diversity of search results (0.0-1.0)",
     default=None,
 )
+@click.pass_context
 @timed
-def draft(documents, query, verify, diversity):
+def draft(ctx, documents, query, verify, diversity):
     """
     Citation-rich drafting via RAG & GPT-4o.
 
@@ -201,20 +202,24 @@ def draft(documents, query, verify, diversity):
     # Generate draft with GPT-4o
     client = LLMClientFactory.for_command("draft")
     # Build system prompt based on available content
-    system_prompt = PROMPTS.get('processing.draft.system_prompt_base')
+    system_prompt = PROMPTS.get("processing.draft.system_prompt_base")
 
     if structured_content["case_facts"] and structured_content["strategies"]:
-        system_prompt += PROMPTS.get('processing.draft.context_case_facts_and_strategies')
+        system_prompt += PROMPTS.get(
+            "processing.draft.context_case_facts_and_strategies"
+        )
     elif structured_content["case_facts"]:
-        system_prompt += PROMPTS.get('processing.draft.context_case_facts_only')
+        system_prompt += PROMPTS.get("processing.draft.context_case_facts_only")
     elif structured_content["strategies"]:
-        system_prompt += PROMPTS.get('processing.draft.context_strategies_only')
+        system_prompt += PROMPTS.get("processing.draft.context_strategies_only")
 
-    system_prompt += PROMPTS.get('processing.draft.general_instructions')
+    system_prompt += PROMPTS.get("processing.draft.general_instructions")
 
     # Create user prompt using centralized template
-    user_template = PROMPTS.get('processing.draft.user_prompt_template')
-    base_user_prompt = user_template.format(document_type=query, user_request=f"Context:\n{context}")
+    user_template = PROMPTS.get("processing.draft.user_prompt_template")
+    base_user_prompt = user_template.format(
+        document_type=query, user_request=f"Context:\n{context}"
+    )
 
     # Add reasoning trace to user prompt
     user_prompt = create_reasoning_prompt(base_user_prompt, "draft")
@@ -232,7 +237,9 @@ def draft(documents, query, verify, diversity):
     # Note: Citation verification now handled automatically in LLMClient.complete()
 
     # Apply verification if needed
-    content, needs_verification = verify_content_if_needed(client, content, "draft", verify)
+    content, needs_verification = verify_content_if_needed(
+        client, content, "draft", verify
+    )
 
     # Extract reasoning trace before saving
     reasoning_trace = extract_reasoning_trace(content, "draft")
@@ -242,10 +249,7 @@ def draft(documents, query, verify, diversity):
         "draft",
         content,
         query,
-        metadata={
-            "Query": query,
-            "Documents": ", ".join(documents)
-        }
+        metadata={"Query": query, "Documents": ", ".join(documents)},
     )
 
     # Save reasoning trace if extracted
@@ -278,11 +282,11 @@ def draft(documents, query, verify, diversity):
     stats = {
         "Query": query,
         "Documents": len(documents),
-        "Verification": "Applied" if needs_verification else "Not needed"
+        "Verification": "Applied" if needs_verification else "Not needed",
     }
-    
+
     show_command_completion("draft", output_file, extra_files, stats)
-    
+
     # Show brief preview
     lines = content.split("\n")
     preview_lines = [line for line in lines[:10] if line.strip()][:5]
