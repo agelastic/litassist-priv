@@ -1,6 +1,6 @@
 # LitAssist
 
-**LitAssist** is a command-line tool for automated litigation support workflows, tailored to Australian law. It leverages large language models (LLMs) and a managed vector store to provide an end-to-end pipeline:
+**LitAssist** is a command-line tool for automated litigation support workflows, tailored specifically for Australian law. It leverages large language models (LLMs) and a managed vector store to provide a comprehensive end-to-end pipeline:
 
 ```mermaid
 graph TD
@@ -16,13 +16,13 @@ graph TD
 ```
 
 - **Lookup**: Rapid case-law research (Jade.io database via Google Custom Search + Google Gemini)  
-- **Digest**: Mass-document processing (Chronological summaries or issue-spotting via Claude)  
+- **Digest**: Mass document processing (chronological summaries or issue-spotting via Claude)  
 - **ExtractFacts**: Automatic extraction of case facts into a structured file  
-- **Brainstorm**: Creative legal strategy generation (Unorthodox strategies via Grok)  
-- **Strategy**: Targeted legal options with probability assessments and draft documents (Enhanced reasoning via o1-pro)
-- **Draft**: Citation-rich document creation (Superior technical writing via o3)  
+- **Brainstorm**: Creative legal strategy generation (unorthodox strategies via Grok)  
+- **Strategy**: Targeted legal options with probability assessments and draft documents (enhanced reasoning via o1-pro)
+- **Draft**: Citation-rich document creation (superior technical writing via o3)  
 
-For detailed usage guidance, see [LitAssist_User_Guide.md](/docs/user/LitAssist_User_Guide.md).
+For detailed usage guidance, see the [LitAssist User Guide](docs/user/LitAssist_User_Guide.md).
 
 ## 🆕 Recent Improvements (June 2025)
 
@@ -76,11 +76,11 @@ cd ~/any-directory/
 litassist digest document.pdf
 ```
 
-**📖 For detailed installation options, troubleshooting, and advanced setup, see [INSTALLATION.md](INSTALLATION.md)**
+**📖 For detailed installation options, troubleshooting, and advanced setup, see the [Installation Guide](INSTALLATION.md)**
 
 ## ⚙️ Configuration
 
-Required API keys in `config.yaml`:
+Required API keys in `config.yaml` (see [config.yaml.template](config.yaml.template) for reference):
 
 ```yaml
 openrouter:
@@ -111,7 +111,7 @@ general:
 
 ### 🤖 Model Configuration & BYOK Requirements
 
-LitAssist uses cutting-edge AI models optimized for legal work:
+LitAssist uses cutting-edge AI models specifically optimized for legal work:
 
 | Command | Model | BYOK Required | Purpose |
 |---------|-------|--------------|---------|
@@ -140,9 +140,9 @@ Basic usage:
 ```
 
 Global options:
-- `--log-format [json|markdown]`: Choose audit-log format (default: json)
-- `--verbose`: Enable debug-level logging
-- `--premium`: Enable premium models (e.g. o1-pro instead of o3)
+- `--log-format [json|markdown]`: Choose audit log format (default: json)
+- `--verbose`: Enable debug-level logging for troubleshooting
+- `--premium`: Enable premium models (e.g., o1-pro instead of o3)
 
 ### Core Pipeline Commands
 
@@ -169,7 +169,7 @@ Global options:
    ```bash
    ./litassist.py extractfacts document.pdf
    # Creates: extractfacts_document_YYYYMMDD_HHMMSS.txt
-   # Note: case_facts.txt must be created/edited manually
+   # Note: case_facts.txt must be created or edited manually
    ```
 
 4. **brainstorm** - Generate comprehensive legal strategies with reasoning traces
@@ -179,7 +179,7 @@ Global options:
    #          brainstorm_[area]_[side]_YYYYMMDD_HHMMSS_orthodox_reasoning.txt
    #          brainstorm_[area]_[side]_YYYYMMDD_HHMMSS_unorthodox_reasoning.txt  
    #          brainstorm_[area]_[side]_YYYYMMDD_HHMMSS_analysis_reasoning.txt
-   # Note: strategies.txt must be created/edited manually
+   # Note: strategies.txt must be created or edited manually
    ```
 
 5. **strategy** - Generate targeted legal options and draft documents
@@ -208,7 +208,7 @@ Global options:
 
 ## 📁 Example Files
 
-The `examples/` directory contains sample files for testing all commands, based on the fictional *Smith v Jones* family law case.
+The [`examples/`](examples/) directory contains sample files for testing all commands, based on the fictional *Smith v Jones* family law case.
 
 ## 📂 Output Files & Logging
 
@@ -225,10 +225,10 @@ All commands now save their output to timestamped text files without overwriting
 Each output file includes metadata headers with command parameters and timestamps.
 
 ### Output Organization
-- Command outputs stored in `outputs/` directory
-- Detailed logs stored in `logs/<command>_YYYYMMDD-HHMMSS.{json|md}`
-- Progress indicators for long-running operations (configurable heartbeat interval)
-- Network errors are caught with user-friendly messages
+- Command outputs are automatically stored in the `outputs/` directory
+- Detailed logs are saved in `logs/<command>_YYYYMMDD-HHMMSS.{json|md}`
+- Progress indicators keep you informed during long-running operations (configurable heartbeat interval)
+- Network errors are caught and displayed with user-friendly messages
 
 ### Model Configuration
 Each command uses optimized LLM models and parameters:
@@ -236,12 +236,12 @@ Each command uses optimized LLM models and parameters:
 - **Creative tasks** (brainstorm, draft): `temperature=0.5-0.9` for innovation
 - **Verification**: Always uses `temperature=0` for consistency
 
-**Note**: Document chunking (`max_chars`) and AI output limits (`use_token_limits`) are separate systems. See [LitAssist_User_Guide.md](/docs/user/LitAssist_User_Guide.md#llm-models-and-parameter-configuration) for details.
+**Note**: Document chunking (`max_chars`) and AI output limits (`use_token_limits`) are separate systems. See the [LitAssist User Guide](docs/user/LitAssist_User_Guide.md#llm-models-and-parameter-configuration) for details.
 
 ## ⚖️ Disclaimer
 
-This tool provides drafts and summaries only. All outputs should be reviewed by qualified counsel before filing or submission.
+This tool provides drafts and summaries only. All outputs must be reviewed by qualified legal counsel before filing or submission.
 
 ---
 
-For detailed instructions, workflows, and examples, see [LitAssist_User_Guide.md](/docs/user/LitAssist_User_Guide.md).
+For detailed instructions, workflows, and examples, see the [LitAssist User Guide](docs/user/LitAssist_User_Guide.md).
