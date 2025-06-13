@@ -34,9 +34,9 @@ For detailed usage guidance, see [LitAssist_User_Guide.md](/docs/user/LitAssist_
 - **Code Quality**: Fixed all ruff linting errors and removed unused dependencies
 
 ### Legal Reasoning & Transparency
-- **Multi-Section Reasoning Traces**: Brainstorm command now saves separate reasoning files for orthodox, unorthodox, and "most likely to succeed" analysis
-- **Comprehensive Legal Analysis**: See the logic behind every strategic recommendation with structured reasoning traces
-- **Enhanced Strategy Integration**: Strategy command builds intelligently on brainstormed foundations
+- **Multi-Section Reasoning Traces**: Brainstorm command now saves separate reasoning files for orthodox, unorthodox, and "most likely to succeed" analysis  
+- **Comprehensive Legal Analysis**: See the logic behind every strategic recommendation with structured reasoning traces  
+- **Enhanced Strategy Integration**: Strategy command builds intelligently on brainstormed foundations  
 
 ### Performance & Architecture  
 - **Complete Timing Coverage**: All long-running operations now timed and logged for performance monitoring
