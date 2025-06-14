@@ -70,10 +70,9 @@ class LLMClientFactory:
         },
         # Draft - superior technical writing (o3 model with very limited parameter support)
         "draft": {
-            "model": "openai/o3",
-            "reasoning_effort": "high",  # o3 reasoning effort: low, medium, high
+            "model": "openai/o3-pro",
+            # "reasoning_effort": "high",
             # o3 only supports max_completion_tokens and reasoning_effort
-            # No temperature, top_p, presence_penalty, frequency_penalty support
         },
         # Digest - mode-dependent settings
         "digest-summary": {

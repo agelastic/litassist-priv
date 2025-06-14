@@ -292,7 +292,7 @@ IDENTIFIED LEGAL ISSUES:
             if likely_match:
                 likely_text = likely_match.group(1)
                 strategy_patterns = re.findall(
-                    r"(\d+\..*?)(?=\d+\.|$)", likely_text, re.DOTALL
+                    r"(^\d+\..*?)(?=^\d+\.|\Z)", likely_text, re.DOTALL | re.MULTILINE
                 )
                 for pattern in strategy_patterns:
                     strategy_title = re.search(r"\d+\.\s*([^\n]+)", pattern)
@@ -315,7 +315,7 @@ IDENTIFIED LEGAL ISSUES:
             if orthodox_match:
                 orthodox_text = orthodox_match.group(1)
                 strategy_patterns = re.findall(
-                    r"(\d+\..*?)(?=\d+\.|$)", orthodox_text, re.DOTALL
+                    r"(^\d+\..*?)(?=^\d+\.|\Z)", orthodox_text, re.DOTALL | re.MULTILINE
                 )
                 for pattern in strategy_patterns:
                     strategy_title = re.search(r"\d+\.\s*([^\n]+)", pattern)
@@ -338,7 +338,9 @@ IDENTIFIED LEGAL ISSUES:
             if unorthodox_match:
                 unorthodox_text = unorthodox_match.group(1)
                 strategy_patterns = re.findall(
-                    r"(\d+\..*?)(?=\d+\.|$)", unorthodox_text, re.DOTALL
+                    r"(^\d+\..*?)(?=^\d+\.|\Z)",
+                    unorthodox_text,
+                    re.DOTALL | re.MULTILINE,
                 )
                 for pattern in strategy_patterns:
                     strategy_title = re.search(r"\d+\.\s*([^\n]+)", pattern)
@@ -357,7 +359,9 @@ IDENTIFIED LEGAL ISSUES:
                 "  📋 No structured sections found - extracting any numbered strategies"
             )
             all_strategy_patterns = re.findall(
-                r"(\d+\..*?)(?=\d+\.|$)", strategies_content, re.DOTALL
+                r"(^\d+\..*?)(?=^\d+\.|\Z)",
+                strategies_content,
+                re.DOTALL | re.MULTILINE,
             )
             valid_patterns = [p for p in all_strategy_patterns if len(p.strip()) > 50]
 
