@@ -2039,14 +2039,14 @@ VERIFICATION NOTES:
 
 Each LitAssist command uses a specific LLM model chosen for its strengths:
 
-| Command | Default Model | Premium Model | Analysis Model | Primary Purpose |
-|---------|---------------|---------------|----------------|-----------------|
-| lookup | `google/gemini-2.5-pro-preview` | N/A | N/A | Fast, accurate legal research |
-| digest | `anthropic/claude-sonnet-4` | N/A | N/A | Reliable document summarization |
-| extractfacts | `anthropic/claude-sonnet-4` | N/A | N/A | Precise fact extraction |
-| brainstorm | *Sub-command specific* | N/A | `anthropic/claude-sonnet-4` | Creative generation + expert analysis |
-| strategy | `openai/o3` | `openai/o1-pro` | `anthropic/claude-sonnet-4` | Enhanced multi-step legal reasoning |
-| draft | `openai/o3` | N/A | N/A | Superior technical legal writing (BYOK required) |
+| Command | Default Model | Analysis Model | Primary Purpose |
+|---------|---------------|----------------|-----------------|
+| lookup | `google/gemini-2.5-pro-preview` | N/A | Fast, accurate legal research |
+| digest | `anthropic/claude-sonnet-4` | N/A | Reliable document summarization |
+| extractfacts | `anthropic/claude-sonnet-4` | N/A | Precise fact extraction |
+| brainstorm | *Sub-command specific* | `anthropic/claude-sonnet-4` | Creative generation + expert analysis |
+| strategy | `openai/o3` | `anthropic/claude-sonnet-4` | Enhanced multi-step legal reasoning |
+| draft | `openai/o3` | N/A | Superior technical legal writing (BYOK required) |
 
 ### Brainstorm Sub-Command Models
 

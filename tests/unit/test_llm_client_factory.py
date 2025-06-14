@@ -43,7 +43,7 @@ class TestLLMClientFactory:
             client = LLMClientFactory.for_command("strategy")
 
             assert isinstance(client, LLMClient)
-            assert client.model == "openai/o1-pro"
+            assert client.model == "openai/o3-pro"
             assert hasattr(client, "_force_verify")
             assert client._force_verify is True
 
@@ -56,7 +56,7 @@ class TestLLMClientFactory:
             client = LLMClientFactory.for_command("draft")
 
             assert isinstance(client, LLMClient)
-            assert client.model == "openai/o3"
+            assert client.model == "openai/o3-pro"
             assert hasattr(client, "_force_verify")
 
     def test_for_command_with_overrides(self):
@@ -223,8 +223,8 @@ class TestLLMClientFactoryIntegration:
 
             # Specific model assertions based on current configuration
             assert "gemini" in models["lookup"].lower()  # Uses Gemini for search
-            assert "o1-pro" in models["strategy"].lower()  # Uses o1-pro for strategy
-            assert "o3" in models["draft"].lower()  # Uses o3 for drafting
+            assert "o3-pro" in models["strategy"].lower()  # Uses o3-pro for strategy
+            assert "o3-pro" in models["draft"].lower()  # Uses o3-pro for drafting
             assert (
                 "claude" in models["extractfacts"].lower()
             )  # Uses Claude for extraction

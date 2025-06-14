@@ -22,7 +22,7 @@ Added **101 comprehensive pytest tests** covering the most critical functionalit
 **Testing:** LLM client factory, citation validation, reasoning extraction, error handling.
 
 **Key Test Areas:**
-- **LLM Client Factory (4 tests):** Basic, premium, analysis model selection
+- **LLM Client Factory (4 tests):** Basic and analysis model selection
 - **LLM Client (6 tests):** Completion, error handling, citation validation, verification
 - **Citation Validation (2 tests):** Pattern matching, comprehensive validation
 - **Reasoning Trace (5 tests):** Complete/partial extraction, dictionary/markdown conversion
