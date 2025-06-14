@@ -27,14 +27,8 @@ from litassist.config import CONFIG
 @click.option(
     "--verbose", is_flag=True, default=False, help="Enable debug-level logging."
 )
-@click.option(
-    "--premium",
-    is_flag=True,
-    default=False,
-    help="Enable premium models (e.g. o1-pro instead of o3).",
-)
 @click.pass_context
-def cli(ctx, log_format, verbose, premium):
+def cli(ctx, log_format, verbose):
     """
     LitAssist: automated litigation support workflows for Australian legal practice.
 
@@ -47,7 +41,6 @@ def cli(ctx, log_format, verbose, premium):
     \b
     --log-format    Choose log output format (json or markdown).
     --verbose       Enable debug logging and detailed output.
-    --premium       Enable premium models (e.g. o1-pro instead of o3).
     """
     # Ensure context object exists
     ctx.ensure_object(dict)
@@ -56,7 +49,6 @@ def cli(ctx, log_format, verbose, premium):
         log_format = CONFIG.log_format
     # Store the chosen log format for downstream use
     ctx.obj["log_format"] = log_format
-    ctx.obj["premium"] = premium
     # Configure logging level
     if verbose:
         logging.getLogger().setLevel(logging.DEBUG)

@@ -39,9 +39,7 @@ class LLMClientFactory:
         },
         # Strategy - enhanced multi-step legal reasoning (o1-pro has limited parameters)
         "strategy": {
-            "model": "openai/o3",
-            "premium_model": "openai/o1-pro",
-            "reasoning_effort": "high",
+            "model": "openai/o3-pro",
             # o1-pro has fixed parameters: temperature=1, top_p=1, presence_penalty=0, frequency_penalty=0
             # Only max_completion_tokens can be controlled
             "force_verify": True,  # Always verify for strategic guidance
@@ -99,7 +97,7 @@ class LLMClientFactory:
 
     @classmethod
     def for_command(
-        cls, command_name: str, sub_type: str = None, premium: bool = False, **overrides
+        cls, command_name: str, sub_type: str = None, **overrides
     ) -> "LLMClient":
         """
         Create an LLMClient configured for a specific command.
@@ -109,7 +107,6 @@ class LLMClientFactory:
             sub_type: Optional sub-type for commands with multiple clients
                      (e.g., 'orthodox', 'unorthodox', 'analysis' for brainstorm,
                       'summary', 'issues' for digest)
-            premium: If True, use the premium model for the command if available.
             **overrides: Any parameter overrides to apply to the default configuration
 
         Returns:
@@ -145,12 +142,9 @@ class LLMClientFactory:
 
         # Extract special flags
         force_verify = config.pop("force_verify", False)
-        premium_model = config.pop("premium_model", None)
 
-        # Decide which model to use
-        if premium and premium_model:
-            config["model"] = premium_model
-            print(f"👑 Using premium model: {premium_model}")
+        # Remove premium_model key if present (no longer needed)
+        config.pop("premium_model", None)
 
         # Allow environment variable overrides for model selection
         env_model_key = f"LITASSIST_{command_name.upper()}_MODEL"

@@ -147,9 +147,8 @@ def create_consolidated_reasoning_trace(option_traces, outcome):
 @click.option(
     "--verify", is_flag=True, help="Enable self-critique pass (default: auto-enabled)"
 )
-@click.pass_context
 @timed
-def strategy(ctx, case_facts, outcome, strategies, verify):
+def strategy(case_facts, outcome, strategies, verify):
     """
     Generate legal strategy options and draft documents for Australian civil matters.
 
@@ -183,11 +182,8 @@ def strategy(ctx, case_facts, outcome, strategies, verify):
             "Could not extract legal issues from the case facts file."
         )
 
-    # Get premium flag from context
-    premium = ctx.obj.get("premium", False)
-
     # Initialize LLM client using factory
-    llm_client = LLMClientFactory.for_command("strategy", premium=premium)
+    llm_client = LLMClientFactory.for_command("strategy")
 
     # Read and parse strategies file if provided
     strategies_content = ""

@@ -87,16 +87,43 @@ def validate_credentials_for_quality_testing():
 # ─── Test Utilities ────────────────────────────────────────────────
 @contextlib.contextmanager
 def suppress_expected_errors():
-    """Capture and suppress expected verification error output"""
+    """Capture and display verification error output in user-friendly format"""
+    captured_stdout = io.StringIO()
+    captured_stderr = io.StringIO()
+    
     old_stdout = sys.stdout
     old_stderr = sys.stderr
-    sys.stdout = io.StringIO()
-    sys.stderr = io.StringIO()
+    
+    sys.stdout = captured_stdout
+    sys.stderr = captured_stderr
+    
     try:
         yield
-    finally:
+    except Exception as e:
+        # Restore output streams before showing unexpected errors
         sys.stdout = old_stdout
         sys.stderr = old_stderr
+        
+        # Show captured output if there was an unexpected error
+        captured_out = captured_stdout.getvalue()
+        captured_err = captured_stderr.getvalue()
+        
+        if captured_out.strip():
+            print(f"📋 Captured output: {captured_out}")
+        if captured_err.strip():
+            print(f"🚨 Error details: {captured_err}")
+            
+        print(f"❌ UNEXPECTED ERROR: {e}")
+        raise
+    finally:
+        # Always restore streams
+        sys.stdout = old_stdout
+        sys.stderr = old_stderr
+        
+        # Show captured error content that users should see
+        captured_err = captured_stderr.getvalue()
+        if captured_err.strip():
+            print(f"🔍 Error details: {captured_err.strip()}")
 
 
 # Enhanced error handling now provided by test_utils.py
@@ -245,7 +272,7 @@ def test_litassist_models():
         # Test each command's model configuration
         command_models = {
             "extractfacts": "anthropic/claude-sonnet-4",
-            "strategy": "openai/o3",  # Test default model, not premium
+            "strategy": "openai/o1-pro",  # Default model
             "brainstorm-orthodox": "anthropic/claude-sonnet-4",
             "brainstorm-unorthodox": "x-ai/grok-3-beta",
             "draft": "openai/o3",
@@ -1400,13 +1427,19 @@ def test_verification_system():
                         test_case["content"], "heavy"
                     )
                     verification_worked = len(corrections.strip()) > 0
+                    verification_error = None
                 except Exception as e:
                     corrections = f"Verification failed: {e}"
                     verification_worked = False
+                    verification_error = str(e)
 
             print(f"  ✓ Citation validation: {len(citation_issues)} issues caught")
             print(f"  ✓ Auto-verification triggered: {should_auto_verify}")
             print(f"  ✓ Verification feedback provided: {verification_worked}")
+            
+            # Show verification error if it occurred
+            if verification_error:
+                print(f"  ⚠️  Verification error details: {verification_error}")
 
             verification_results.append(
                 {
