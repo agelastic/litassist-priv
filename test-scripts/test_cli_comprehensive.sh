@@ -79,6 +79,8 @@ run_test() {
             echo "PASSED: $test_name" >> "$TEST_LOG"
         fi
     else
+        RET=$?
+        local RET
         # Check if this is a credit limitation error (acceptable for strategy tests)
         if echo "$output" | grep -q "credits\|max_tokens\|afford\|quota"; then
             PASSED_TESTS=$((PASSED_TESTS + 1))
@@ -86,7 +88,7 @@ run_test() {
             echo "PASSED: $test_name - Credit limitation (expected)" >> "$TEST_LOG"
         else
             FAILED_TESTS=$((FAILED_TESTS + 1))
-            echo -e "${RED}✗ FAILED - Command failed with exit code $?${NC}"
+            echo -e "${RED}✗ FAILED - Command failed with exit code $RET${NC}"
             echo "FAILED: $test_name - Command execution failed" >> "$TEST_LOG"
         fi
         echo "Error output: $output" >> "$TEST_LOG"

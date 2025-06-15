@@ -49,7 +49,7 @@ def extractfacts(file, verify):
                              or with the LLM API calls.
     """
     # Read and validate document, then chunk
-    text = validate_file_size(file, max_size=50000, file_type="source")
+    text = validate_file_size(file, max_size=1000000, file_type="source")
     chunks = chunk_text(text, max_chars=CONFIG.max_chars)
 
     # Initialize the LLM client using factory
@@ -69,7 +69,7 @@ def extractfacts(file, verify):
     # For single chunk, use original approach
     if len(chunks) == 1:
         # Use centralized format template
-        format_instructions = PROMPTS.get_format_template('case_facts_10_heading')
+        format_instructions = PROMPTS.get_format_template("case_facts_10_heading")
         base_prompt = f"Extract under these headings (include all relevant details):\n{format_instructions}\n\n{chunks[0]}"
 
         # Add reasoning trace to prompt
@@ -79,7 +79,7 @@ def extractfacts(file, verify):
                 [
                     {
                         "role": "system",
-                        "content": PROMPTS.get_system_prompt('extractfacts'),
+                        "content": PROMPTS.get_system_prompt("extractfacts"),
                     },
                     {"role": "user", "content": prompt},
                 ]
@@ -94,7 +94,7 @@ def extractfacts(file, verify):
         # First, extract relevant facts from each chunk
         with click.progressbar(chunks, label="Processing document chunks") as bar:
             for idx, chunk in enumerate(bar, 1):
-                chunk_template = PROMPTS.get('processing.extraction.chunk_facts_prompt')
+                chunk_template = PROMPTS.get("processing.extraction.chunk_facts_prompt")
                 prompt = f"{chunk_template.format(chunk_num=idx, total_chunks=len(chunks))}\n\n{chunk}"
 
                 try:
@@ -102,7 +102,9 @@ def extractfacts(file, verify):
                         [
                             {
                                 "role": "system",
-                                "content": PROMPTS.get('processing.extraction.chunk_system_prompt'),
+                                "content": PROMPTS.get(
+                                    "processing.extraction.chunk_system_prompt"
+                                ),
                             },
                             {"role": "user", "content": prompt},
                         ]
@@ -114,11 +116,10 @@ def extractfacts(file, verify):
         # Now organize all accumulated facts into the required structure
         all_facts = "\n\n".join(accumulated_facts)
         # Use centralized format template for organizing
-        format_instructions = PROMPTS.get_format_template('case_facts_10_heading')
-        organize_template = PROMPTS.get('processing.extraction.organize_facts_prompt')
+        format_instructions = PROMPTS.get_format_template("case_facts_10_heading")
+        organize_template = PROMPTS.get("processing.extraction.organize_facts_prompt")
         base_organize_prompt = organize_template.format(
-            format_instructions=format_instructions,
-            all_facts=all_facts
+            format_instructions=format_instructions, all_facts=all_facts
         )
 
         # Add reasoning trace to organize prompt
@@ -129,7 +130,7 @@ def extractfacts(file, verify):
                 [
                     {
                         "role": "system",
-                        "content": PROMPTS.get_system_prompt('extractfacts'),
+                        "content": PROMPTS.get_system_prompt("extractfacts"),
                     },
                     {"role": "user", "content": organize_prompt},
                 ]
@@ -140,17 +141,16 @@ def extractfacts(file, verify):
     # Note: Citation verification now handled automatically in LLMClient.complete()
 
     # Apply verification (always required for extractfacts)
-    combined, _ = verify_content_if_needed(client, combined, "extractfacts", verify_flag=True)
+    combined, _ = verify_content_if_needed(
+        client, combined, "extractfacts", verify_flag=True
+    )
 
     # Extract reasoning trace before saving
     reasoning_trace = extract_reasoning_trace(combined, "extractfacts")
 
     # Save output using utility
     output_file = save_command_output(
-        "extractfacts",
-        combined,
-        os.path.basename(file),
-        metadata={"Source File": file}
+        "extractfacts", combined, os.path.basename(file), metadata={"Source File": file}
     )
 
     # Audit log
@@ -171,13 +171,13 @@ def extractfacts(file, verify):
         extra_files["Reasoning trace"] = reasoning_file
 
     # Show completion
-    chunk_desc = f"{len(chunks)} chunks" if len(chunks) > 1 else "single document" 
+    chunk_desc = f"{len(chunks)} chunks" if len(chunks) > 1 else "single document"
     stats = {
         "Source": os.path.basename(file),
         "Processed": chunk_desc,
         "Structure": "10 structured headings",
-        "Verification": "Legal accuracy review applied"
+        "Verification": "Legal accuracy review applied",
     }
-    
+
     show_command_completion("extractfacts", output_file, extra_files, stats)
     click.echo("📌 To use with other commands, manually copy to case_facts.txt")

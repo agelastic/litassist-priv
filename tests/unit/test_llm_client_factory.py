@@ -137,12 +137,12 @@ class TestLLMClientFactory:
             assert "temperature" not in strategy_params
             assert "top_p" not in strategy_params
 
-            # Test o3 model (draft)
+            # Test o3-pro model (draft)
             draft_client = LLMClientFactory.for_command("draft")
             draft_params = draft_client.default_params
 
-            # o3 should have reasoning_effort
-            assert "reasoning_effort" in draft_params
+            # o3-pro should not have reasoning_effort
+            assert "reasoning_effort" not in draft_params
 
     def test_environment_variable_override(self):
         """Test that environment variables can override model selection."""
