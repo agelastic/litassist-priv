@@ -1,5 +1,12 @@
 # LitAssist Integration Testing Approach
 
+## Status Update (June 2025)
+
+- All core commands and citation verification are covered by unit tests.
+- Integration tests exist for citation verification and CLI flow.
+- Integration tests for OpenRouter model routing and extended RAG workflows are pending.
+- Lightweight connectivity tests for OpenAI, Pinecone, and OpenRouter are maintained as described below.
+
 ## Overview
 
 This document explains our approach to testing the API integrations that LitAssist depends on. The testing strategy balances thoroughness, cost efficiency, and maintainability, with specific attention to the service architecture and critical paths.

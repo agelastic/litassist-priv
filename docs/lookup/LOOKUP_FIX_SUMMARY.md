@@ -1,5 +1,12 @@
 # Lookup Command Fix Summary
 
+## Status Update (June 2025)
+
+- Lookup is now Jade.io-only (Google search is no longer available).
+- All citations are verified in real time against AustLII.
+- The --comprehensive flag is available for exhaustive analysis.
+- All fixes described below are now live in production.
+
 ## Problem
 The lookup command was failing with citation verification errors, incorrectly flagging valid Australian tribunal citations (like [2011] VCAT 203) as invalid and potential AI hallucinations.
 

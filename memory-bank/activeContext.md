@@ -1,30 +1,40 @@
 # Active Context
 
 ## Current Work Focus
-Initialising the Memory Bank to document the LitAssist project’s core context, patterns, architecture, and technical setup following .clinerules guidelines.
+Maintaining the Memory Bank as the authoritative, up-to-date reference for LitAssist’s architecture, workflows, and development state. Incorporating all June 2025 improvements, workflow clarifications, and best practices from the latest documentation.
 
 ## Recent Changes
-- Created core Memory Bank files:
-  - projectbrief.md  
-  - productContext.md  
-  - systemPatterns.md  
-  - techContext.md  
+- Implemented major June 2025 improvements:
+  - Lookup command overhaul: Jade.io-only, new --comprehensive flag, improved extract options, citation integration, code quality/linting
+  - Multi-section reasoning traces for brainstorm; enhanced strategy integration
+  - Complete timing coverage and comprehensive logging for all operations
+  - Centralized configuration and log format in config.yaml
+  - Clean CLI output and professional summaries
+  - Output file timestamping and organization in outputs/ and logs/
+  - Model selection and BYOK requirements for advanced commands
+  - Two-phase citation verification and selective regeneration (“Option B”)
+- Updated Memory Bank files for consistency with README, User Guide, and config.yaml.template
 
 ## Next Steps
-1. Create `activeContext.md` and `progress.md` to complete Memory Bank initialization.  
-2. Review Memory Bank for consistency and accuracy against project documentation.  
-3. Commit Memory Bank files to repository.
+1. Continue to update Memory Bank after each major feature, bugfix, or workflow change.
+2. Track progress on advanced features (IRAC/MIRAT enforcement, multi-model consensus, QA loops, cost-tracking, compound commands).
+3. Ensure all new patterns, troubleshooting, and best practices are reflected in systemPatterns.md and techContext.md.
+4. Periodically review Memory Bank for alignment with evolving documentation and codebase.
 
 ## Active Decisions & Considerations
-- Adhering strictly to Memory Bank hierarchy and .clinerules formatting rules.  
-- Synthesizing documentation from existing READMEs, docs/, config.yaml.template, and CLI code.  
-- Ensuring Memory Bank is self‑contained and provides the only source of prior session context.
+- Strict adherence to Memory Bank hierarchy and .clinerules formatting rules.
+- Use pipx as the default install method; config.yaml in ~/.config/litassist/ for global use.
+- Emphasize two-phase citation verification (Jade.io primary, offline fallback) and selective regeneration for quality control.
+- Clarify brainstorm vs strategy distinction: brainstorm = creative exploration, strategy = tactical implementation.
+- Maintain clean CLI output, timestamped files, and professional summaries as standard UX.
 
 ## Important Patterns & Preferences
-- Use Markdown for all Memory Bank files.  
-- Include mermaid diagrams where they aid clarity (already in projectbrief.md).  
-- Reference code and docs accurately; avoid speculative content.
+- Use Markdown for all Memory Bank files.
+- Include mermaid diagrams where they aid clarity (see projectbrief.md).
+- Reference code, config, and docs accurately; avoid speculative content.
+- Document all new workflow patterns, integration strategies, and troubleshooting tips.
 
 ## Learnings & Insights
-- The Memory Bank provides a reliable reference for project onboarding and context after session resets.  
-- Centralizing architecture and technical context documents streamlines future development planning.
+- The Memory Bank is essential for onboarding, context retention, and planning after session resets.
+- Centralizing architecture, workflow, and technical context streamlines future development and QA.
+- Clear distinction and integration pattern between brainstorm and strategy commands improves user understanding and workflow efficiency.

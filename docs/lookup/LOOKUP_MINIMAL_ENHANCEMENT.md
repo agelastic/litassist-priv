@@ -1,5 +1,12 @@
 # Minimal Lookup Enhancement Design
 
+## Status Update (June 2025)
+
+- Lookup is now Jade.io-only (no Google CSE or user-selectable engine).
+- All citations are verified in real time against AustLII.
+- The --comprehensive flag is available for exhaustive analysis.
+- Citation validation is always performed; warnings are provided for unverifiable citations.
+
 ## Problem
 Lookup output is a wall of text that users must manually process to extract citations and principles.
 

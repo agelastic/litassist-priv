@@ -1,5 +1,22 @@
 # LitAssist LLM Improvements Analysis
 
+## Status Update (June 2025)
+
+**Implemented:**
+- Option B (selective regeneration/discard for citation issues in brainstorm/strategy)
+- Multi-section reasoning traces (brainstorm)
+- Strict two-phase citation verification (AustLII backend)
+- Centralized config.yaml for all settings
+- Model selection and BYOK requirements for advanced commands
+- Clean CLI output, output timestamping, and professional summaries
+- Comprehensive logging and timing for all operations
+
+**Planned:**
+- IRAC/MIRAT enforcement
+- Multi-model consensus and iterative improvement loops
+- Confidence scoring and advanced QA loops
+- Cost-tracking and workflow compound commands
+
 This document analyzes all LLM prompts, settings, and processing in LitAssist with recommendations for improvements that prioritize quality over cost.
 
 ## Executive Summary

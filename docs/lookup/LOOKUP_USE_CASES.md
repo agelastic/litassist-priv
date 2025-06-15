@@ -1,7 +1,16 @@
 # Lookup Command Use Cases and Workflows
 
+## Status Update (June 2025)
+
+- Lookup is now Jade.io-only (no Google CSE).
+- All citations are verified in real time against AustLII; warnings are provided for unverifiable citations.
+- The --comprehensive flag is available for exhaustive analysis (up to 40 sources).
+- Extract options (--extract citations|principles|checklist) and structured output are fully supported.
+
 ## Overview
 This document provides real-world examples of how lawyers use the lookup command in their daily practice, showing current pain points and how the minimal enhancements would help.
+
+**Note:** The lookup command now uses Jade.io exclusively for case law search, with all citations verified in real time against AustLII. The --comprehensive flag enables exhaustive analysis, and warnings are provided for any unverifiable citations.
 
 ## Criminal Law Use Cases
 

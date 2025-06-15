@@ -1,5 +1,12 @@
 # Lookup Command Enhancement Design
 
+## Status Update (June 2025)
+
+- Lookup is now Jade.io-only (no Google CSE or user-selectable engine).
+- All citations are verified in real time against AustLII.
+- The --comprehensive flag is available for exhaustive analysis.
+- The --engine option and "search_engine" metadata are obsolete; all lookups use Jade.io.
+
 ## Overview
 
 The lookup command currently produces unstructured text output that requires manual processing. This design document outlines enhancements to make lookup results actionable, structured, and integrated with other LitAssist commands.
@@ -23,7 +30,8 @@ LookupResult = {
         "timestamp": str,
         "legal_area": str,  # detected or specified
         "jurisdiction": str,
-        "search_engine": str,  # jade/austlii/general
+        # (Obsolete: always "jade" now)
+"search_engine": str,  # always "jade"
         "mode": str  # irac/broad
     },
     
@@ -106,7 +114,8 @@ LookupResult = {
 @click.command()
 @click.argument('question')
 @click.option('--mode', type=click.Choice(['irac', 'broad']), default='irac')
-@click.option('--engine', type=click.Choice(['jade', 'austlii', 'general']), default='jade')
+# (Obsolete: --engine option is no longer available; all lookups use Jade.io)
+# @click.option('--engine', type=click.Choice(['jade', 'austlii', 'general']), default='jade')
 @click.option('--format', type=click.Choice(['text', 'structured', 'citations', 'checklist']), default='text')
 @click.option('--extract', multiple=True, type=click.Choice([
     'principles', 'cases', 'elements', 'factors', 'quotes', 'procedural'

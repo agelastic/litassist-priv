@@ -63,8 +63,8 @@ This running example provides context for understanding how each LitAssist workf
 - ✅ **Australian English** - All outputs use Australian legal terminology
 
 **Citation Verification & Quality Control:**
-- ✅ **Zero-tolerance citation verification** - All legal references validated against Jade.io database
-- ✅ **Real-time online validation** - HEAD requests verify case existence during generation
+- ✅ **Zero-tolerance citation verification** - All legal references validated against AustLII database
+- ✅ **Real-time online validation** - HEAD requests verify case existence on AustLII during generation
 - ✅ **Intelligent regeneration** - Commands automatically fix citation issues where possible
 - ✅ **Quality over quantity** - Strategy commands discard options with unfixable citation problems
 - ✅ **Enhanced error messages** - Clear explanations of citation failures with specific actions taken
@@ -113,14 +113,14 @@ ANACHRONISTIC CITATION: [1970] FCAFC 123
 **Purpose**: Confirm that citations actually exist in legal databases
 
 **What it verifies**:
-- **Australian Cases**: Checks against Jade.io database
-- **International Citations**: Recognizes UK, US, NZ citations as valid but not in Australian databases
+- **Australian Cases**: Checks against AustLII database in real time
+- **International Citations**: Recognizes UK, US, NZ citations as valid but not verifiable in Australian databases
 - **Traditional Citations**: Accepts format like "(1980) 146 CLR 40" temporarily
 - **Medium-Neutral Citations**: Validates format like "[2020] HCA 41" and retrieves URLs
 
 **How it works**:
-- Uses Google Custom Search to verify case existence on Jade.io
-- Handles international citations appropriately (marked as verified but not in Australian databases)
+- Makes real-time HEAD requests to AustLII to verify case existence
+- Handles international citations appropriately (marked as recognized but not verifiable)
 - Provides URLs for verified Australian cases
 - Runs during content generation to ensure accuracy
 
@@ -209,7 +209,7 @@ Different commands handle citation issues differently:
 
 | Command | Validation | Verification | Response to Issues |
 |---------|------------|--------------|-------------------|
-| lookup | ✓ | ✓ | Warnings in output |
+| lookup | ✓ | ✓ | Warnings in output (Jade.io-only, AustLII-verified, supports --comprehensive flag) |
 | digest | ✓ | ✓ | Warnings per chunk |
 | extractfacts | ✓ | ✓ | Enhanced error messages |
 | brainstorm | ✓ | ✓ | Regenerates problematic strategies |
@@ -414,7 +414,7 @@ cat outputs/lookup_contract_formation_elements_20250606_143022.txt
 
 ### Purpose
 
-The `lookup` command performs rapid searches on Jade.io for relevant case law using Google Custom Search, then processes the results through Gemini to produce a structured legal answer with citations.
+The `lookup` command performs rapid searches on Jade.io for relevant case law, then processes the results through Gemini to produce a structured legal answer with citations. All citations are verified in real time against AustLII.
 
 ### Command
 
