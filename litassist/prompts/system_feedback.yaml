@@ -8,44 +8,33 @@ system_feedback:
     llm:
       generation_failed: |
         Error generating {operation}: {error}
-      
-      verification_failed: |
-        Verification error during {command_name}: {error}
-      
-      lookup_error: |
-        LLM error during lookup: {error}
-      
-      draft_error: |
-        LLM draft error: {error}
-      
-      next_steps_error: |
-        LLM next steps generation error: {error}
-      
-      document_generation_error: |
-        LLM document generation error: {error}
-      
-      digest_chunk_error: |
-        LLM error in digest chunk {chunk_idx}: {error}
+      # verification_failed: |
+      #   Verification error during {command_name}: {error}
+      # lookup_error: |
+      #   LLM error during lookup: {error}
+      # draft_error: |
+      #   LLM draft error: {error}
+      # next_steps_error: |
+      #   LLM next steps generation error: {error}
+      # document_generation_error: |
+      #   LLM document generation error: {error}
+      # digest_chunk_error: |
+      #   LLM error in digest chunk {chunk_idx}: {error}
 
     # USED BY: file_operations.py save/load methods  
     file:
-      not_found: |
-        File not found: {path}
-      
-      no_text_found: |
-        No text found in file: {path}
-      
-      no_pdf_text: |
-        No extractable text found in PDF: {path}
-      
-      read_error: |
-        Error reading document {path}: {error}
-      
+      # not_found: |
+      #   File not found: {path}
+      # no_text_found: |
+      #   No text found in file: {path}
+      # no_pdf_text: |
+      #   No extractable text found in PDF: {path}
+      # read_error: |
+      #   Error reading document {path}: {error}
       save_json_failed: |
         Failed to save JSON log {path}: {error}
-      
-      save_markdown_failed: |
-        Failed to save Markdown log {path}: {error}
+      # save_markdown_failed: |
+      #   Failed to save Markdown log {path}: {error}
 
     # USED BY: processing.py process_facts()  
     processing:
@@ -203,50 +192,37 @@ system_feedback:
     progress:
       analyzing_strategies: |
         🔍 Analyzing {strategy_type} strategies for citation issues...
-      
-      generating_option: |
-        🎯 Generating option {attempt}...
-      
-      regeneration_attempt: |
-        🔄 Regeneration attempt {retry_attempt}: {count} strategies need fixing
-      
-      will_use_embedding: |
-        Will use embedding/retrieval for {doc_path}
-      
-      will_use_embedding_large: |
-        Will use embedding/retrieval for large {doc_path}
+      # generating_option: |
+      #   🎯 Generating option {attempt}...
+      # regeneration_attempt: |
+      #   🔄 Regeneration attempt {retry_attempt}: {count} strategies need fixing
+      # will_use_embedding: |
+      #   Will use embedding/retrieval for {doc_path}
+      # will_use_embedding_large: |
+      #   Will use embedding/retrieval for large {doc_path}
 
     # USED BY: command_runner.py finalize_command()  
     completion:
       strategy_verified: |
         ✅ Strategy {strategy_num}: Citations verified
-      
-      strategy_regenerated: |
-        ✅ Strategy {strategy_num}: Successfully regenerated with clean citations
-      
+      # strategy_regenerated: |
+      #   ✅ Strategy {strategy_num}: Successfully regenerated with clean citations
       strategy_issues_found: |
         📋 Strategy {strategy_num}: Found {issue_count} citation issues - marking for regeneration
-      
-      strategy_still_has_issues: |
-        ⚠️  Strategy {strategy_num}: Still has citation issues after regeneration
-      
-      strategy_regeneration_failed: |
-        💥 Strategy {strategy_num}: Regeneration failed - {error}
-      
-      option_verified: |
-        ✅ Option {attempt}: Citations verified - keeping
-      
-      option_issues_found: |
-        ❌ Option {attempt}: Found {issue_count} citation issues - discarding
-      
-      option_generation_failed: |
-        💥 Option {attempt}: Generation failed - {error}
-      
-      all_strategies_verified: |
-        ✅ All {strategy_type} strategies now have verified citations
-      
-      strategies_with_issues: |
-        ⚠️  {count} {strategy_type} strategies still have citation issues after {max_retries} attempts
+      # strategy_still_has_issues: |
+      #   ⚠️  Strategy {strategy_num}: Still has citation issues after regeneration
+      # strategy_regeneration_failed: |
+      #   💥 Strategy {strategy_num}: Regeneration failed - {error}
+      # option_verified: |
+      #   ✅ Option {attempt}: Citations verified - keeping
+      # option_issues_found: |
+      #   ❌ Option {attempt}: Found {issue_count} citation issues - discarding
+      # option_generation_failed: |
+      #   💥 Option {attempt}: Generation failed - {error}
+      # all_strategies_verified: |
+      #   ✅ All {strategy_type} strategies now have verified citations
+      # strategies_with_issues: |
+      #   ⚠️  {count} {strategy_type} strategies still have citation issues after {max_retries} attempts
 
     # USED BY: file_operations.py log_file_activity()  
     file_ops:

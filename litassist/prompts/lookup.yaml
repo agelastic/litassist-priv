@@ -5,9 +5,9 @@ lookup:
   # Research assistant system prompt
   # USED BY: lookup.py lookup() - system prompt for jade.io research
   # LOCATION: lookup.py:304-305 (to be extracted)
-  research_assistant:
-    system_prompt: |
-      Australian law only. Cite sources. Provide well-structured, concise responses focused on Victorian or federal law.
+  # research_assistant:
+  #   system_prompt: |
+  #     Australian law only. Cite sources. Provide well-structured, concise responses focused on Victorian or federal law.
   
   # Extraction-specific instructions
   # USED BY: lookup.py lookup() - when --extract option is used
@@ -16,11 +16,11 @@ lookup:
     citations: |
       Also provide a clear 'CITATIONS' section that lists all case citations and legislation references in a format easy to copy and use.
     
-    principles: |
-      Also provide a clear 'LEGAL PRINCIPLES' section that lists the key legal rules and principles in a structured format suitable for advice letters.
+    # principles: |
+    #   Also provide a clear 'LEGAL PRINCIPLES' section that lists the key legal rules and principles in a structured format suitable for advice letters.
     
-    checklist: |
-      Also provide a clear 'PRACTICAL CHECKLIST' section that lists actionable requirements, evidence needed, and steps to take.
+    # checklist: |
+    #   Also provide a clear 'PRACTICAL CHECKLIST' section that lists actionable requirements, evidence needed, and steps to take.
   
   # Comprehensive analysis requirements
   # USED BY: lookup.py lookup() - when --comprehensive flag is used
@@ -63,7 +63,7 @@ lookup:
   # User prompt template
   # USED BY: lookup.py lookup() - user prompt construction
   # LOCATION: lookup.py:348-356 (to be extracted)
-  standard_user_template: |
-    Question: {question}
-    Links:
-    {links}
+  # standard_user_template: |
+  #   Question: {question}
+  #   Links:
+  #   {links}

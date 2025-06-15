@@ -6,13 +6,13 @@ base:
   australian_law: "Australian law only. Use Australian English spellings and terminology."
   
   # Citation standards for all legal documents
-  citation_standards: "Cite all cases with proper Australian citation format. Include year, court, and case number."
+  # citation_standards: "Cite all cases with proper Australian citation format. Include year, court, and case number."
   
   # Accuracy standards
-  accuracy_standards: "Ensure all facts are accurate and verifiable. Do not invent or assume information."
+  # accuracy_standards: "Ensure all facts are accurate and verifiable. Do not invent or assume information."
   
   # Verification standards  
-  verification_standards: "All citations must be verifiable on AustLII or BarNet Jade. All legal principles must have supporting authority."
+  # verification_standards: "All citations must be verifiable on AustLII or BarNet Jade. All legal principles must have supporting authority."
 
 # Command-specific system prompts
 commands:
