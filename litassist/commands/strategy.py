@@ -147,9 +147,8 @@ def create_consolidated_reasoning_trace(option_traces, outcome):
 @click.option(
     "--verify", is_flag=True, help="Enable self-critique pass (default: auto-enabled)"
 )
-@click.pass_context
 @timed
-def strategy(ctx, case_facts, outcome, strategies, verify):
+def strategy(case_facts, outcome, strategies, verify):
     """
     Generate legal strategy options and draft documents for Australian civil matters.
 
@@ -183,11 +182,8 @@ def strategy(ctx, case_facts, outcome, strategies, verify):
             "Could not extract legal issues from the case facts file."
         )
 
-    # Get premium flag from context
-    premium = ctx.obj.get("premium", False)
-
     # Initialize LLM client using factory
-    llm_client = LLMClientFactory.for_command("strategy", premium=premium)
+    llm_client = LLMClientFactory.for_command("strategy")
 
     # Read and parse strategies file if provided
     strategies_content = ""
@@ -296,7 +292,7 @@ IDENTIFIED LEGAL ISSUES:
             if likely_match:
                 likely_text = likely_match.group(1)
                 strategy_patterns = re.findall(
-                    r"(\d+\..*?)(?=\d+\.|$)", likely_text, re.DOTALL
+                    r"(^\d+\..*?)(?=^\d+\.|\Z)", likely_text, re.DOTALL | re.MULTILINE
                 )
                 for pattern in strategy_patterns:
                     strategy_title = re.search(r"\d+\.\s*([^\n]+)", pattern)
@@ -319,7 +315,7 @@ IDENTIFIED LEGAL ISSUES:
             if orthodox_match:
                 orthodox_text = orthodox_match.group(1)
                 strategy_patterns = re.findall(
-                    r"(\d+\..*?)(?=\d+\.|$)", orthodox_text, re.DOTALL
+                    r"(^\d+\..*?)(?=^\d+\.|\Z)", orthodox_text, re.DOTALL | re.MULTILINE
                 )
                 for pattern in strategy_patterns:
                     strategy_title = re.search(r"\d+\.\s*([^\n]+)", pattern)
@@ -342,7 +338,9 @@ IDENTIFIED LEGAL ISSUES:
             if unorthodox_match:
                 unorthodox_text = unorthodox_match.group(1)
                 strategy_patterns = re.findall(
-                    r"(\d+\..*?)(?=\d+\.|$)", unorthodox_text, re.DOTALL
+                    r"(^\d+\..*?)(?=^\d+\.|\Z)",
+                    unorthodox_text,
+                    re.DOTALL | re.MULTILINE,
                 )
                 for pattern in strategy_patterns:
                     strategy_title = re.search(r"\d+\.\s*([^\n]+)", pattern)
@@ -361,7 +359,9 @@ IDENTIFIED LEGAL ISSUES:
                 "  📋 No structured sections found - extracting any numbered strategies"
             )
             all_strategy_patterns = re.findall(
-                r"(\d+\..*?)(?=\d+\.|$)", strategies_content, re.DOTALL
+                r"(^\d+\..*?)(?=^\d+\.|\Z)",
+                strategies_content,
+                re.DOTALL | re.MULTILINE,
             )
             valid_patterns = [p for p in all_strategy_patterns if len(p.strip()) > 50]
 

@@ -17,7 +17,7 @@ Added **50+ comprehensive pytest test cases** covering the most critical functio
 - Error handling for LLM failures and file size limits
 - Citation validation warnings
 - Reasoning trace consolidation
-- Premium mode functionality
+- Enhanced mode functionality
 
 **Key test classes:**
 - `TestCaseFactsValidation` (7 tests) - Validates the 10-heading case facts structure
@@ -34,7 +34,7 @@ Added **50+ comprehensive pytest test cases** covering the most critical functio
 - Document generation for different legal document types
 - Template handling for statements of claim, affidavits, applications
 - Case facts validation integration
-- Premium mode document generation
+- Enhanced document generation
 - Citation validation in generated documents
 - Error handling for invalid inputs
 - File size limit validation
@@ -45,7 +45,7 @@ Added **50+ comprehensive pytest test cases** covering the most critical functio
 - `TestDocumentTemplates` (3 tests) - Template validation and structure
 - `TestDraftValidation` (2 tests) - Input validation logic
 - `TestDraftErrorHandling` (2 tests) - Error scenarios
-- `TestDraftIntegration` (6 tests) - Integration scenarios and premium mode
+- `TestDraftIntegration` (6 tests) - Integration scenarios and advanced features
 
 ### 3. `test_llm_integration_comprehensive.py` (25 tests)
 
@@ -89,7 +89,7 @@ Added **50+ comprehensive pytest test cases** covering the most critical functio
 ✅ **Fallback scenarios** - Graceful degradation  
 
 ### Integration Scenarios
-✅ **Premium mode** - Enhanced functionality with premium models  
+✅ **Advanced features** - Enhanced functionality with specialized models  
 ✅ **Verification workflows** - Auto-verification and manual verification  
 ✅ **Strategy file integration** - Brainstorm command output processing  
 ✅ **Multi-option generation** - Complex strategy generation workflows  
@@ -116,7 +116,7 @@ Added **50+ comprehensive pytest test cases** covering the most critical functio
 ### Integration Testing
 - End-to-end command workflows
 - Cross-component interactions
-- Premium vs standard mode differences
+- Advanced vs standard mode differences
 - File processing pipelines
 
 ## Running the Tests

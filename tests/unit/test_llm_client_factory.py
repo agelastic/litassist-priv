@@ -43,20 +43,7 @@ class TestLLMClientFactory:
             client = LLMClientFactory.for_command("strategy")
 
             assert isinstance(client, LLMClient)
-            assert client.model == "openai/o3"
-            assert hasattr(client, "_force_verify")
-            assert client._force_verify is True
-
-    def test_for_command_strategy_premium(self):
-        """Test factory creates strategy client with premium model."""
-        with patch("litassist.llm.CONFIG") as mock_config:
-            mock_config.openrouter_key = "test_key"
-            mock_config.openai_key = "test_openai_key"
-
-            client = LLMClientFactory.for_command("strategy", premium=True)
-
-            assert isinstance(client, LLMClient)
-            assert client.model == "openai/o1-pro"
+            assert client.model == "openai/o3-pro"
             assert hasattr(client, "_force_verify")
             assert client._force_verify is True
 
@@ -69,7 +56,7 @@ class TestLLMClientFactory:
             client = LLMClientFactory.for_command("draft")
 
             assert isinstance(client, LLMClient)
-            assert client.model == "openai/o3"
+            assert client.model == "openai/o3-pro"
             assert hasattr(client, "_force_verify")
 
     def test_for_command_with_overrides(self):
@@ -141,13 +128,14 @@ class TestLLMClientFactory:
             mock_config.openrouter_key = "test_key"
             mock_config.openai_key = "test_openai_key"
 
-            # Test o3 model (strategy)
+            # Test o3-pro model (strategy)
             strategy_client = LLMClientFactory.for_command("strategy")
             strategy_params = strategy_client.default_params
 
-            # o3 should have reasoning_effort, not max_tokens
-            assert "reasoning_effort" in strategy_params
-            assert "max_tokens" not in strategy_params
+            # o3-pro should not have reasoning_effort or unsupported params
+            assert "reasoning_effort" not in strategy_params
+            assert "temperature" not in strategy_params
+            assert "top_p" not in strategy_params
 
             # Test o3 model (draft)
             draft_client = LLMClientFactory.for_command("draft")
@@ -169,29 +157,6 @@ class TestLLMClientFactory:
                 client = LLMClientFactory.for_command("lookup")
                 # Environment variable should override the model
                 assert client.model == "anthropic/claude-3-5-sonnet-20241022"
-
-    def test_premium_model_strips_unsupported_params(self):
-        """Test that premium model selection strips unsupported parameters."""
-        with patch("litassist.llm.CONFIG") as mock_config:
-            mock_config.openrouter_key = "test_key"
-            mock_config.openai_key = "test_openai_key"
-
-            # Get the client for the premium strategy command
-            client = LLMClientFactory.for_command("strategy", premium=True)
-
-            # The model should be o1-pro
-            assert client.model == "openai/o1-pro"
-
-            # The default_params should not contain unsupported parameters
-            unsupported_params = [
-                "reasoning_effort",
-                "temperature",
-                "top_p",
-                "presence_penalty",
-                "frequency_penalty",
-            ]
-            for param in unsupported_params:
-                assert param not in client.default_params
 
 
 class TestLLMClientFactoryIntegration:
@@ -258,8 +223,8 @@ class TestLLMClientFactoryIntegration:
 
             # Specific model assertions based on current configuration
             assert "gemini" in models["lookup"].lower()  # Uses Gemini for search
-            assert "o3" in models["strategy"].lower()  # Uses o3 for strategy
-            assert "o3" in models["draft"].lower()  # Uses o3 for drafting
+            assert "o3-pro" in models["strategy"].lower()  # Uses o3-pro for strategy
+            assert "o3-pro" in models["draft"].lower()  # Uses o3-pro for drafting
             assert (
                 "claude" in models["extractfacts"].lower()
             )  # Uses Claude for extraction

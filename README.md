@@ -140,9 +140,8 @@ Basic usage:
 ```
 
 Global options:
-- `--log-format [json|markdown]`: Choose audit log format (default: json)
-- `--verbose`: Enable debug-level logging for troubleshooting
-- `--premium`: Enable premium models (e.g., o1-pro instead of o3)
+- `--log-format [json|markdown]`: Choose audit-log format (default: json)
+- `--verbose`: Enable debug-level logging
 
 ### Core Pipeline Commands
 

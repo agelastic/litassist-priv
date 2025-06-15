@@ -37,13 +37,11 @@ class LLMClientFactory:
             "top_p": 0.15,
             "force_verify": True,  # Always verify for foundational docs
         },
-        # Strategy - enhanced multi-step legal reasoning (o1-pro has limited parameters)
+        # Strategy - enhanced multi-step legal reasoning (o3-pro has limited parameters)
         "strategy": {
-            "model": "openai/o3",
-            "premium_model": "openai/o1-pro",
-            "reasoning_effort": "high",
-            # o1-pro has fixed parameters: temperature=1, top_p=1, presence_penalty=0, frequency_penalty=0
-            # Only max_completion_tokens can be controlled
+            "model": "openai/o3-pro",
+            # o3-pro has fixed parameters: temperature=1, top_p=1, presence_penalty=0, frequency_penalty=0
+            # Only max_completion_tokens and reasoning_effort can be controlled
             "force_verify": True,  # Always verify for strategic guidance
         },
         # Strategy sub-type for analysis
@@ -72,10 +70,7 @@ class LLMClientFactory:
         },
         # Draft - superior technical writing (o3 model with very limited parameter support)
         "draft": {
-            "model": "openai/o3",
-            "reasoning_effort": "high",  # o3 reasoning effort: low, medium, high
-            # o3 only supports max_completion_tokens and reasoning_effort
-            # No temperature, top_p, presence_penalty, frequency_penalty support
+            "model": "openai/o3-pro",
         },
         # Digest - mode-dependent settings
         "digest-summary": {
@@ -99,7 +94,7 @@ class LLMClientFactory:
 
     @classmethod
     def for_command(
-        cls, command_name: str, sub_type: str = None, premium: bool = False, **overrides
+        cls, command_name: str, sub_type: str = None, **overrides
     ) -> "LLMClient":
         """
         Create an LLMClient configured for a specific command.
@@ -109,7 +104,6 @@ class LLMClientFactory:
             sub_type: Optional sub-type for commands with multiple clients
                      (e.g., 'orthodox', 'unorthodox', 'analysis' for brainstorm,
                       'summary', 'issues' for digest)
-            premium: If True, use the premium model for the command if available.
             **overrides: Any parameter overrides to apply to the default configuration
 
         Returns:
@@ -145,12 +139,9 @@ class LLMClientFactory:
 
         # Extract special flags
         force_verify = config.pop("force_verify", False)
-        premium_model = config.pop("premium_model", None)
 
-        # Decide which model to use
-        if premium and premium_model:
-            config["model"] = premium_model
-            print(f"👑 Using premium model: {premium_model}")
+        # Remove premium_model key if present (no longer needed)
+        config.pop("premium_model", None)
 
         # Allow environment variable overrides for model selection
         env_model_key = f"LITASSIST_{command_name.upper()}_MODEL"
@@ -169,19 +160,6 @@ class LLMClientFactory:
 
         # Extract model from config
         model = config.pop("model")
-
-        # Clean up parameters based on the final model selection
-        if "o1-pro" in model:
-            # o1-pro has fixed parameters and only supports max_completion_tokens
-            unsupported_params = [
-                "reasoning_effort",
-                "temperature",
-                "top_p",
-                "presence_penalty",
-                "frequency_penalty",
-            ]
-            for param in unsupported_params:
-                config.pop(param, None)
 
         # Create the LLM client with remaining config as parameters
         client = LLMClient(model, **config)
@@ -269,11 +247,9 @@ class LLMClient:
 
         # Set model-specific token limits if enabled in config and not explicitly specified
         if CONFIG.use_token_limits:
-            # Check if this is an o1/o3 model which uses max_completion_tokens instead of max_tokens
-            is_reasoning_model = "o1" in model.lower() or "o3" in model.lower()
-            token_param = (
-                "max_completion_tokens" if is_reasoning_model else "max_tokens"
-            )
+            # Check if this is o1-pro or o3-pro which use max_completion_tokens instead of max_tokens
+            is_reasoning_model = model in ["openai/o1-pro", "openai/o3-pro"]
+            token_param = "max_completion_tokens" if is_reasoning_model else "max_tokens"
 
             if token_param not in default_params:
                 # These limits are carefully chosen to balance comprehensive responses with quality
@@ -289,13 +265,9 @@ class LLMClient:
                     default_params[token_param] = (
                         3072  # GPT-4 - balanced limit for precision
                     )
-                elif "o1" in model.lower():
+                elif model in ["openai/o1-pro", "openai/o3-pro"]:
                     default_params[token_param] = (
-                        25000  # o1-pro - OpenAI recommends at least 25k for reasoning models
-                    )
-                elif "o3" in model.lower():
-                    default_params[token_param] = (
-                        4096  # o3 - high-quality reasoning output
+                        4096  # o1-pro/o3-pro - high-quality reasoning output
                     )
                 elif "grok" in model.lower():
                     default_params[token_param] = (
@@ -331,11 +303,11 @@ class LLMClient:
         Raises:
             Exception: If the API call fails or returns an error.
         """
-        # Check if this is an o1/o3 model that doesn't support system messages
-        is_o1_model = "o1" in self.model.lower() or "o3" in self.model.lower()
+        # Check if this is o3-pro which doesn't support system messages
+        is_o3_pro = self.model == "openai/o3-pro"
 
-        if is_o1_model:
-            # o1 models don't support system messages - merge into first user message
+        if is_o3_pro:
+            # o3-pro doesn't support system messages - merge into first user message
             modified_messages = []
             system_content = PROMPTS.get("base.australian_law")
 
@@ -399,10 +371,10 @@ class LLMClient:
         # Determine the correct model name
         model_name = self.model
 
-        # Use OpenRouter for non-OpenAI models AND for o1/o3 models (only available via OpenRouter)
-        if ("/" in self.model and not self.model.startswith("openai/")) or (
-            self.model.startswith("openai/o1") or self.model.startswith("openai/o3")
-        ):
+        # Use OpenRouter for non-OpenAI models AND for o1-pro/o3-pro (only available via OpenRouter)
+        if (
+            "/" in self.model and not self.model.startswith("openai/")
+        ) or self.model in ["openai/o1-pro", "openai/o3-pro"]:
             openai.api_base = CONFIG.or_base
             openai.api_key = CONFIG.or_key
             # Keep full model name for OpenRouter
@@ -412,18 +384,58 @@ class LLMClient:
             if self.model.startswith("openai/"):
                 model_name = self.model.replace("openai/", "")
 
-        # Invoke the chat completion
+        # Invoke the appropriate API based on model
         try:
-            response = openai.ChatCompletion.create(
-                model=model_name, messages=messages, **params
-            )
+            if self.model in ["openai/o1-pro", "openai/o3-pro"]:
+                # o1-pro and o3-pro use special handling via OpenRouter
+                # These models require specific parameter filtering since they have very limited parameter support
+                
+                # Filter parameters - these models only support max_completion_tokens and reasoning_effort
+                filtered_params = {}
+                if "max_completion_tokens" in params:
+                    filtered_params["max_completion_tokens"] = params["max_completion_tokens"]
+                if "reasoning_effort" in params and self.model == "openai/o3-pro":
+                    filtered_params["reasoning_effort"] = params["reasoning_effort"]
+
+                # Use ChatCompletion API through OpenRouter (which handles the underlying Responses API)
+                response = openai.ChatCompletion.create(
+                    model=model_name, messages=messages, **filtered_params
+                )
+
+                # Check for errors in the response
+                if (hasattr(response, 'choices') and response.choices and 
+                    hasattr(response.choices[0], 'error') and response.choices[0].error):
+                    error_info = response.choices[0].error
+                    error_message = error_info.get('message', 'Unknown API error')
+                    raise Exception(f"API Error: {error_message}")
+                
+                # Check for error finish_reason
+                if (hasattr(response, 'choices') and response.choices and 
+                    hasattr(response.choices[0], 'finish_reason') and 
+                    response.choices[0].finish_reason == 'error'):
+                    # Try to get error details
+                    if hasattr(response.choices[0], 'error'):
+                        error_info = response.choices[0].error
+                        error_message = error_info.get('message', 'Unknown API error')
+                        raise Exception(f"API request failed: {error_message}")
+                    else:
+                        raise Exception("API request failed with error finish_reason but no error details")
+
+                # Extract content and usage from chat response
+                content = response.choices[0].message.content or ""
+                usage = getattr(response, "usage", {})
+            else:
+                # Regular ChatCompletion API for all other models
+                response = openai.ChatCompletion.create(
+                    model=model_name, messages=messages, **params
+                )
+                # Extract content and usage from chat response
+                content = response.choices[0].message.content
+                usage = getattr(response, "usage", {})
         finally:
             # Restore original settings
             openai.api_base = original_api_base
             openai.api_key = original_api_key
-        # Extract content and usage
-        content = response.choices[0].message.content
-        usage = getattr(response, "usage", {})
 
         if not skip_citation_verification:
             # Citation verification - respect force_verify setting
@@ -480,8 +492,8 @@ class LLMClient:
                         "Do not invent case names. If unsure about a citation, omit it rather than guess."
                     )
 
-                if is_o1_model:
-                    # For o1 models, append to the enhanced user content from earlier processing
+                if is_o3_pro:
+                    # For o3 models, append to the enhanced user content from earlier processing
                     if (
                         enhanced_messages
                         and enhanced_messages[-1].get("role") == "user"
@@ -503,20 +515,53 @@ class LLMClient:
                 original_api_base_retry = openai.api_base
                 original_api_key_retry = openai.api_key
 
-                # Use OpenRouter for non-OpenAI models AND for o1/o3 models (only available via OpenRouter)
-                if ("/" in self.model and not self.model.startswith("openai/")) or (
-                    self.model.startswith("openai/o1")
-                    or self.model.startswith("openai/o3")
-                ):
+                # Use OpenRouter for non-OpenAI models AND for o1-pro/o3-pro models (only available via OpenRouter)
+                if (
+                    "/" in self.model and not self.model.startswith("openai/")
+                ) or self.model in ["openai/o1-pro", "openai/o3-pro"]:
                     openai.api_base = CONFIG.or_base
                     openai.api_key = CONFIG.or_key
 
                 try:
-                    retry_response = openai.ChatCompletion.create(
-                        model=model_name, messages=enhanced_messages, **params
-                    )
-                    retry_content = retry_response.choices[0].message.content
-                    retry_usage = getattr(retry_response, "usage", {})
+                    if self.model in ["openai/o1-pro", "openai/o3-pro"]:
+                        # o1-pro and o3-pro use special handling via OpenRouter
+                        # Filter parameters - these models only support max_completion_tokens and reasoning_effort
+                        retry_filtered_params = {}
+                        if "max_completion_tokens" in params:
+                            retry_filtered_params["max_completion_tokens"] = params["max_completion_tokens"]
+                        if "reasoning_effort" in params and self.model == "openai/o3-pro":
+                            retry_filtered_params["reasoning_effort"] = params["reasoning_effort"]
+                        
+                        # Use ChatCompletion API through OpenRouter
+                        retry_response = openai.ChatCompletion.create(
+                            model=model_name, messages=enhanced_messages, **retry_filtered_params
+                        )
+                        
+                        # Check for errors in the retry response
+                        if (hasattr(retry_response, 'choices') and retry_response.choices and 
+                            hasattr(retry_response.choices[0], 'error') and retry_response.choices[0].error):
+                            error_info = retry_response.choices[0].error
+                            error_message = error_info.get('message', 'Unknown API error')
+                            raise Exception(f"API Error on retry: {error_message}")
+                        
+                        if (hasattr(retry_response, 'choices') and retry_response.choices and 
+                            hasattr(retry_response.choices[0], 'finish_reason') and 
+                            retry_response.choices[0].finish_reason == 'error'):
+                            if hasattr(retry_response.choices[0], 'error'):
+                                error_info = retry_response.choices[0].error
+                                error_message = error_info.get('message', 'Unknown API error')
+                                raise Exception(f"API retry request failed: {error_message}")
+                            else:
+                                raise Exception("API retry request failed with error finish_reason")
+                        
+                        retry_content = retry_response.choices[0].message.content or ""
+                        retry_usage = getattr(retry_response, "usage", {})
+                    else:
+                        retry_response = openai.ChatCompletion.create(
+                            model=model_name, messages=enhanced_messages, **params
+                        )
+                        retry_content = retry_response.choices[0].message.content
+                        retry_usage = getattr(retry_response, "usage", {})
 
                     # Verify the retry
                     (
@@ -632,21 +677,17 @@ class LLMClient:
             },
         ]
         # Use deterministic settings for verification with appropriate token limits
-        # Note: o1/o3 models only support temperature=1, so skip temperature override for those
-        if "o1" in self.model.lower() or "o3" in self.model.lower():
-            params = {}  # o1/o3 models use their default parameters
+        # Note: o3-pro only supports specific parameters, so skip temperature override
+        if self.model == "openai/o3-pro":
+            params = {}  # o3-pro uses its default parameters
         else:
             params = {"temperature": 0, "top_p": 0.2}
 
         # Add model-specific token limits for verification if enabled in config
         if CONFIG.use_token_limits:
-            # o1/o3 models use max_completion_tokens instead of max_tokens
-            is_reasoning_model = (
-                "o1" in self.model.lower() or "o3" in self.model.lower()
-            )
-            token_param = (
-                "max_completion_tokens" if is_reasoning_model else "max_tokens"
-            )
+            # o3-pro uses max_completion_tokens instead of max_tokens
+            is_o3_pro = self.model == "openai/o3-pro"
+            token_param = "max_completion_tokens" if is_o3_pro else "max_tokens"
 
             if "google/gemini" in self.model.lower():
                 params[token_param] = 1024  # Concise verification for Gemini
@@ -654,16 +695,14 @@ class LLMClient:
                 params[token_param] = 1536  # Claude verification
             elif "openai/gpt-4" in self.model.lower():
                 params[token_param] = 1024  # GPT-4 verification
-            elif "o1" in self.model.lower():
-                params[token_param] = 5000  # o1 verification - higher for reasoning
-            elif "o3" in self.model.lower():
-                params[token_param] = 1024  # o3 verification
+            elif self.model == "openai/o3-pro":
+                params[token_param] = 1024  # o3-pro verification
             elif "grok" in self.model.lower():
                 params[token_param] = 800  # Tighter limit for Grok
             else:
                 params[token_param] = 1024  # Default verification limit
 
-        # Use the complete method which handles o1 models properly
+        # Use the complete method which handles o3-pro properly
         verification_result, usage = self.complete(
             critique_prompt, skip_citation_verification=True, **params
         )
@@ -935,20 +974,16 @@ class LLMClient:
             return self.verify(primary_text)
 
         # Use same verification logic with custom prompts
-        # Note: o1/o3 models only support temperature=1, so skip temperature override for those
-        if "o1" in self.model.lower() or "o3" in self.model.lower():
-            params = {}  # o1/o3 models use their default parameters
+        # Note: o3-pro only supports specific parameters, so skip temperature override
+        if self.model == "openai/o3-pro":
+            params = {}  # o3-pro uses its default parameters
         else:
             params = {"temperature": 0, "top_p": 0.2}
 
         if CONFIG.use_token_limits:
-            # o1/o3 models use max_completion_tokens instead of max_tokens
-            is_reasoning_model = (
-                "o1" in self.model.lower() or "o3" in self.model.lower()
-            )
-            token_param = (
-                "max_completion_tokens" if is_reasoning_model else "max_tokens"
-            )
+            # o3-pro uses max_completion_tokens instead of max_tokens
+            is_o3_pro = self.model == "openai/o3-pro"
+            token_param = "max_completion_tokens" if is_o3_pro else "max_tokens"
 
             if "google/gemini" in self.model.lower():
                 params[token_param] = 1024
@@ -956,16 +991,14 @@ class LLMClient:
                 params[token_param] = 1536 if level == "heavy" else 1024
             elif "openai/gpt-4" in self.model.lower():
                 params[token_param] = 1024
-            elif "o1" in self.model.lower():
-                params[token_param] = 5000  # o1 verification - higher for reasoning
-            elif "o3" in self.model.lower():
+            elif self.model == "openai/o3-pro":
                 params[token_param] = 1024
             elif "grok" in self.model.lower():
                 params[token_param] = 800
             else:
                 params[token_param] = 1024
 
-        # Use the complete method which handles o1 models properly
+        # Use the complete method which handles o3-pro properly
         verification_result, usage = self.complete(
             critique_prompt, skip_citation_verification=True, **params
         )
