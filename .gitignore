@@ -114,6 +114,4 @@ sample_*.txt
 test_inputs/
 
 **/.claude/settings.local.json
-CLAUDE.md
 temp *.md
-.clinerules
