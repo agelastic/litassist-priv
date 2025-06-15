@@ -733,6 +733,12 @@ Focus on:
         for i, option in enumerate(valid_options, 1):
             # Clean up the option content and add proper numbering
             clean_option = option.strip()
+            
+            # Remove duplicate strategy header if present
+            header_pattern = r"^#\s*STRATEGIC OPTIONS FOR:.*?\n\n"
+            clean_option = re.sub(header_pattern, "", clean_option, flags=re.IGNORECASE)
+            clean_option = clean_option.strip()
+            
             if not clean_option.startswith("## OPTION"):
                 clean_option = f"## OPTION {i}: [Generated Strategy]\n{clean_option}"
             else:
