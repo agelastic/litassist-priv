@@ -7,11 +7,33 @@ LitAssist is a command-line tool for automated litigation support workflows, tai
 - **Rapid case-law lookup** (Jade.io database via Google Custom Search + Google Gemini)
 - **Mass-document digestion** (Chronological summaries or issue-spotting via Claude 4 Sonnet)
 - **Novel strategy ideation** (Creative legal arguments via Grok)
-- **Enhanced strategic reasoning** (Multi-step analysis via OpenAI o1-pro)
+- **Enhanced strategic reasoning** (Multi-step analysis via OpenAI o3-pro)
 - **Automatic extraction of case facts** into a structured file
-- **Superior technical drafting** (Advanced legal writing via OpenAI o3)
+- **Superior technical drafting** (Advanced legal writing via OpenAI o3-pro)
 
 ## Key Technical Components
+
+### Project Structure
+
+**Core Modules:**
+- `litassist/commands/` - Individual command implementations (lookup, digest, brainstorm, extractfacts, draft, strategy)
+- `litassist/prompts/` - YAML-based prompt template system with structured legal templates
+- `litassist/helpers/` - Specialized utilities (pinecone_config, retriever)
+- `litassist/llm.py` - LLMClientFactory and model management
+- `litassist/config.py` - Configuration management
+- `litassist/utils.py` - Core utilities including LegalReasoningTrace
+
+**Command System:**
+- Commands are organized in separate modules with sub-types:
+  - `brainstorm-orthodox`, `brainstorm-unorthodox`, `brainstorm-analysis`
+  - `strategy-analysis` for ranking and analysis
+  - `digest-summary`, `digest-issues` for different processing modes
+
+**Prompt Management:**
+- YAML-based templates in `prompts/` directory
+- Structured legal document templates
+- Australian law compliance templates
+- Centralized prompt composition system
 
 ### Architecture Patterns (Preserve These)
 
@@ -25,12 +47,13 @@ LitAssist is a command-line tool for automated litigation support workflows, tai
    - Clear error messages with setup instructions
    - Validates all required keys
 
-3. **LegalReasoningTrace**: Domain-specific structure for legal analysis
+3. **LegalReasoningTrace**: Domain-specific structure for legal analysis (implemented in utils.py)
    - Required for accountability in legal documents
    - Multiple output formats for different consumers
-   - Structured extraction and storage
+   - Structured extraction and storage with IRAC-based reasoning structure
+   - Captures issue, applicable law, application, conclusion, confidence, and sources
 
-### Recent Simplifications (June 7, 2025)
+### Recent Simplifications (June 16, 2025)
 
 1. **Removed Inner Classes**: Replaced unnecessary inner classes with simple anonymous objects
    - PineconeWrapper: `Stats`, `UpsertResponse`, `QueryResult`
@@ -77,10 +100,17 @@ LitAssist is a command-line tool for automated litigation support workflows, tai
 **CRITICAL**: Never change model identifiers in the code. These are exact API endpoints:
 - `x-ai/grok-3-beta` (NOT grok-beta or any variation)
 - `anthropic/claude-sonnet-4` (current Claude 4 Sonnet)
-- `openai/o1-pro` (strategic reasoning model)
-- `openai/o3` (advanced technical writing model, requires BYOK)
+- `openai/o3-pro` (strategic reasoning and advanced technical writing model, requires BYOK)
 - `google/gemini-2.5-pro-preview` (lookup research)
 - Model names with `/` are routed through OpenRouter
+
+### OpenRouter Usage Policy
+
+**IMPORTANT**: Always use OpenRouter as the primary routing method for all LLM calls. The OpenRouter API key has extensive permissions and multiple BYOK (Bring Your Own Key) configurations attached, providing access to premium models and enhanced capabilities. When adding new models or providers:
+1. Route through OpenRouter first using the existing OR API key
+2. Only consider direct API access if OpenRouter doesn't support the model
+3. All current production models successfully route through OpenRouter
+4. This approach centralizes API management and leverages existing BYOK setups
 
 ### Refactoring Philosophy
 
@@ -120,26 +150,47 @@ Before labeling something as "overengineering":
 ## Testing Approach
 
 ### Unit Tests
-- Mock external API calls
-- Test command logic independently
-- Verify error handling
+Located in `tests/unit/` with comprehensive coverage:
+- `test_llm_client_factory.py` - LLMClientFactory pattern verification and model parameter restrictions
+- `test_prompts.py` - Centralized prompt management system testing
+- `test_prompt_templates.py` - YAML template validation and structure verification
+- `test_citation_verification_simple.py` - Citation validation testing
+- `test_verification.py` - Content verification testing
+- Mock external API calls and test command logic independently
+- Verify error handling, parameter restrictions, and template dependencies
+- Comprehensive validation of o3-pro model parameter handling
+
+### Test Scripts
+Development utilities in `test-scripts/`:
+- `test_integrations.py` - API integration verification with real endpoints
+- `test_quality.py` - Output quality assessment and LLM response validation
+- `test_utils.py` - Utility function testing and helper validation
+- `test_cli_comprehensive.sh` - Complete CLI testing suite with mock files
+- `run_tests.sh` - Test execution orchestration script
+- `TESTS_STATUS.md` - Test coverage and status documentation
 
 ### Integration Tests
-- Limited due to API costs
-- Focus on critical paths
-- Use cached responses where possible
+- Limited due to API costs but comprehensive in scope
+- Real API testing via `test_integrations.py` with authentication validation
+- Quality assessment using `test_quality.py` with actual LLM responses
+- Full command workflow testing via `test_cli_comprehensive.sh` with mock documents
+- Use cached responses where possible to minimize API costs
+- Cross-command integration testing for complex workflows
 
 ### Manual Testing
 Essential for commands involving:
-- Legal reasoning quality
-- Citation accuracy
-- Australian law compliance
+- Legal reasoning quality and LegalReasoningTrace accuracy with domain expertise
+- Citation accuracy and real-time Jade.io verification
+- Australian law compliance, terminology, and jurisdiction-specific requirements
+- Model-specific parameter handling (especially o3-pro restrictions and reasoning_effort)
+- Complex multi-step workflows (brainstorm → strategy → draft pipelines)
+- Citation verification system reliability under various scenarios
 
 ## Configuration Management
 
 ### Required API Keys
 - OpenRouter API key (primary LLM access)
-- OpenAI API key (BYOK setup required for o1-pro and o3 models)
+- OpenAI API key (BYOK setup required for o3-pro model)
 - Google Custom Search API key & CSE ID (Jade.io citation verification)
 - Pinecone API key, environment & index name (document embeddings)
 
@@ -196,17 +247,19 @@ When debugging cascading issues:
 2. **Over-refactoring**: Many patterns serve specific purposes
 3. **Ignoring Australian requirements**: This is a legal tool for Australian law
 4. **Making multiple changes at once**: Debug systematically
-5. **Wrong parameters for reasoning models**: o1/o3 models have very limited parameter support
-   - o1-pro: Only max_completion_tokens (fixed: temperature=1, top_p=1, presence_penalty=0, frequency_penalty=0)
-   - o3: Only max_completion_tokens and reasoning_effort (no temperature, top_p, penalties)
+5. **Wrong parameters for reasoning models**: o3-pro model has very limited parameter support
+   - o3-pro: Only max_completion_tokens and reasoning_effort (no temperature, top_p, penalties)
+   - Uses max_completion_tokens instead of max_tokens for token limit control
 
 ## Recent Major Features
 
 ### Citation Verification System
-- Real-time Jade.io validation via Google Custom Search
-- Pattern-based suspicious citation detection
-- Selective regeneration for quality control
-- Fallback offline validation for comprehensive coverage
+- **Primary**: Real-time Jade.io validation via Google Custom Search API
+- **Secondary**: Pattern-based offline validation in `citation_patterns.py`
+- **Implementation**: Dual-layer verification in `citation_verify.py`
+- **Features**: Selective regeneration, automatic citation removal, strict/lenient modes
+- **Coverage**: Australian case law focus with international citation detection
+- **Quality Control**: Immediate validation prevents citation hallucinations
 
 ### Legal Reasoning Traces
 - Structured capture across all commands
@@ -214,10 +267,10 @@ When debugging cascading issues:
 - Accountability and transparency
 
 ### Advanced Reasoning Models
-- o1-pro for strategic analysis: Enhanced multi-step legal reasoning with fixed parameters
-- o3 for technical drafting: Superior legal writing with reasoning_effort control
-- Both models use max_completion_tokens instead of max_tokens
-- BYOK (Bring Your Own Key) setup required for both models
+- o3-pro for strategic analysis and technical drafting: Enhanced multi-step legal reasoning and superior legal writing
+- Supports max_completion_tokens and reasoning_effort parameters only
+- Uses max_completion_tokens instead of max_tokens for token limit control
+- BYOK (Bring Your Own Key) setup required via OpenRouter
 
 ### Performance Enhancements
 - Comprehensive timing coverage
@@ -225,4 +278,4 @@ When debugging cascading issues:
 - Clean CLI output
 
 ---
-Last Updated: 2025-06-07 (Model configurations updated for Claude 4 Sonnet, o1-pro, o3)
+Last Updated: 2025-06-16 (Model configurations corrected for Claude 4 Sonnet and o3-pro, architecture documentation updated)

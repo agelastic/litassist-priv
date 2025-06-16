@@ -733,12 +733,12 @@ Focus on:
         for i, option in enumerate(valid_options, 1):
             # Clean up the option content and add proper numbering
             clean_option = option.strip()
-            
+
             # Remove duplicate strategy header if present
             header_pattern = r"^#\s*STRATEGIC OPTIONS FOR:.*?\n\n"
             clean_option = re.sub(header_pattern, "", clean_option, flags=re.IGNORECASE)
             clean_option = clean_option.strip()
-            
+
             if not clean_option.startswith("## OPTION"):
                 clean_option = f"## OPTION {i}: [Generated Strategy]\n{clean_option}"
             else:
@@ -816,7 +816,14 @@ Focus on:
         raise click.ClickException(f"LLM document generation error: {e}")
 
     # Combine all outputs
-    output = strategy_content + "\n\n" + next_steps_content + "\n\n" + document_content
+    output = (
+        strategy_content
+        + "\n\n"
+        + next_steps_content
+        + "\n\n"
+        + "--- DRAFT DOCUMENT ---\n\n"
+        + document_content
+    )
 
     # CRITICAL: Validate citations immediately to prevent cascade errors
     citation_issues = llm_client.validate_citations(output)

@@ -1,4 +1,4 @@
-#!/usr/bin/env zsh
+#!/usr/bin/env bash
 
 # Comprehensive CLI Testing Script for LitAssist
 # Tests all commands with all options using mock input files but real LLM and HTTP calls
@@ -53,7 +53,7 @@ run_test() {
         # Check for expected patterns if provided
         if [[ -n "$expected_patterns" ]]; then
             local all_patterns_found=true
-            IFS='|' read -A patterns <<< "$expected_patterns"
+            IFS='|' read -a patterns <<< "$expected_patterns"
             
             for pattern in "${patterns[@]}"; do
                 if echo "$output" | grep -q "$pattern"; then
