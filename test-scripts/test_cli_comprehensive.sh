@@ -354,17 +354,17 @@ test_strategy_command() {
     # Test 1: Strategy development from facts
     run_test "Strategy - From case facts with outcome" \
         "python litassist.py strategy test_inputs/mock_case_facts.txt --outcome 'Obtain damages for breach of contract'" \
-        "complete|saved to|strategy|credits|max_tokens|Error"
+        "complete|saved to|strategy"
     
     # Test 2: Strategy with verification
     run_test "Strategy - With verification" \
         "python litassist.py strategy test_inputs/mock_case_facts.txt --outcome 'Win the case' --verify" \
-        "complete|saved to|verification|credits|max_tokens|Error"
+        "complete|saved to|verification"
     
     # Test 3: Strategy with existing strategies file
     run_test "Strategy - With strategies file" \
         "python litassist.py strategy test_inputs/mock_case_facts.txt --outcome 'Defend claim' --strategies test_inputs/mock_strategy_headers.txt" \
-        "complete|saved to|strategy|credits|max_tokens|Error"
+        "complete|saved to|strategy"
 }
 
 test_brainstorm_command() {
