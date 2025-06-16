@@ -3,6 +3,12 @@
 ## Current Work Focus
 Maintaining the Memory Bank as the authoritative, up-to-date reference for LitAssist’s architecture, workflows, and development state. Incorporating all June 2025 improvements, workflow clarifications, and best practices from the latest documentation.
 
+**Latest update (16 June 2025):**
+- Synchronized all prompt YAML files and test suites so that tests only validate active (uncommented) templates.
+- Commented out all test code for templates that are commented out in the YAML files, including in `test_prompt_templates.py` and `test_prompts.py`.
+- Fixed all schema and accessibility checks for commented-out prompt keys (including lookup.yaml, documents.yaml, base.yaml).
+- All tests now pass after these changes.
+
 ## Recent Changes
 - Implemented major June 2025 improvements:
   - Lookup command overhaul: Jade.io-only, new --comprehensive flag, improved extract options, citation integration, code quality/linting
@@ -15,6 +21,7 @@ Maintaining the Memory Bank as the authoritative, up-to-date reference for LitAs
   - Two-phase citation verification and selective regeneration (“Option B”)
 - Updated Memory Bank files for consistency with README, User Guide, and config.yaml.template
 - Full Memory Bank review performed on 15 June 2025: all files confirmed up to date and synchronized with codebase and documentation. No changes required.
+- 16 June 2025: Test suite and prompt YAMLs synchronized; all tests for commented-out templates are now commented out in the test code. All tests pass.
 
 ## Next Steps
 1. Continue to update Memory Bank after each major feature, bugfix, or workflow change.
