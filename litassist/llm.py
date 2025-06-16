@@ -9,7 +9,7 @@ import openai
 import re
 from typing import List, Dict, Any, Tuple
 
-from litassist.utils import timed, save_log
+from litassist.utils import timed, save_log, heartbeat
 from litassist.config import CONFIG
 from litassist.prompts import PROMPTS
 import time
@@ -249,7 +249,9 @@ class LLMClient:
         if CONFIG.use_token_limits:
             # Check if this is o1-pro or o3-pro which use max_completion_tokens instead of max_tokens
             is_reasoning_model = model in ["openai/o1-pro", "openai/o3-pro"]
-            token_param = "max_completion_tokens" if is_reasoning_model else "max_tokens"
+            token_param = (
+                "max_completion_tokens" if is_reasoning_model else "max_tokens"
+            )
 
             if token_param not in default_params:
                 # These limits are carefully chosen to balance comprehensive responses with quality
@@ -389,11 +391,13 @@ class LLMClient:
             if self.model in ["openai/o1-pro", "openai/o3-pro"]:
                 # o1-pro and o3-pro use special handling via OpenRouter
                 # These models require specific parameter filtering since they have very limited parameter support
-                
+
                 # Filter parameters - these models only support max_completion_tokens and reasoning_effort
                 filtered_params = {}
                 if "max_completion_tokens" in params:
-                    filtered_params["max_completion_tokens"] = params["max_completion_tokens"]
+                    filtered_params["max_completion_tokens"] = params[
+                        "max_completion_tokens"
+                    ]
                 if "reasoning_effort" in params and self.model == "openai/o3-pro":
                     filtered_params["reasoning_effort"] = params["reasoning_effort"]
 
@@ -403,23 +407,32 @@ class LLMClient:
                 )
 
                 # Check for errors in the response
-                if (hasattr(response, 'choices') and response.choices and 
-                    hasattr(response.choices[0], 'error') and response.choices[0].error):
+                if (
+                    hasattr(response, "choices")
+                    and response.choices
+                    and hasattr(response.choices[0], "error")
+                    and response.choices[0].error
+                ):
                     error_info = response.choices[0].error
-                    error_message = error_info.get('message', 'Unknown API error')
+                    error_message = error_info.get("message", "Unknown API error")
                     raise Exception(f"API Error: {error_message}")
-                
+
                 # Check for error finish_reason
-                if (hasattr(response, 'choices') and response.choices and 
-                    hasattr(response.choices[0], 'finish_reason') and 
-                    response.choices[0].finish_reason == 'error'):
+                if (
+                    hasattr(response, "choices")
+                    and response.choices
+                    and hasattr(response.choices[0], "finish_reason")
+                    and response.choices[0].finish_reason == "error"
+                ):
                     # Try to get error details
-                    if hasattr(response.choices[0], 'error'):
+                    if hasattr(response.choices[0], "error"):
                         error_info = response.choices[0].error
-                        error_message = error_info.get('message', 'Unknown API error')
+                        error_message = error_info.get("message", "Unknown API error")
                         raise Exception(f"API request failed: {error_message}")
                     else:
-                        raise Exception("API request failed with error finish_reason but no error details")
+                        raise Exception(
+                            "API request failed with error finish_reason but no error details"
+                        )
 
                 # Extract content and usage from chat response
                 content = response.choices[0].message.content or ""
@@ -528,32 +541,56 @@ class LLMClient:
                         # Filter parameters - these models only support max_completion_tokens and reasoning_effort
                         retry_filtered_params = {}
                         if "max_completion_tokens" in params:
-                            retry_filtered_params["max_completion_tokens"] = params["max_completion_tokens"]
-                        if "reasoning_effort" in params and self.model == "openai/o3-pro":
-                            retry_filtered_params["reasoning_effort"] = params["reasoning_effort"]
-                        
+                            retry_filtered_params["max_completion_tokens"] = params[
+                                "max_completion_tokens"
+                            ]
+                        if (
+                            "reasoning_effort" in params
+                            and self.model == "openai/o3-pro"
+                        ):
+                            retry_filtered_params["reasoning_effort"] = params[
+                                "reasoning_effort"
+                            ]
+
                         # Use ChatCompletion API through OpenRouter
                         retry_response = openai.ChatCompletion.create(
-                            model=model_name, messages=enhanced_messages, **retry_filtered_params
+                            model=model_name,
+                            messages=enhanced_messages,
+                            **retry_filtered_params,
                         )
-                        
+
                         # Check for errors in the retry response
-                        if (hasattr(retry_response, 'choices') and retry_response.choices and 
-                            hasattr(retry_response.choices[0], 'error') and retry_response.choices[0].error):
+                        if (
+                            hasattr(retry_response, "choices")
+                            and retry_response.choices
+                            and hasattr(retry_response.choices[0], "error")
+                            and retry_response.choices[0].error
+                        ):
                             error_info = retry_response.choices[0].error
-                            error_message = error_info.get('message', 'Unknown API error')
+                            error_message = error_info.get(
+                                "message", "Unknown API error"
+                            )
                             raise Exception(f"API Error on retry: {error_message}")
-                        
-                        if (hasattr(retry_response, 'choices') and retry_response.choices and 
-                            hasattr(retry_response.choices[0], 'finish_reason') and 
-                            retry_response.choices[0].finish_reason == 'error'):
-                            if hasattr(retry_response.choices[0], 'error'):
+
+                        if (
+                            hasattr(retry_response, "choices")
+                            and retry_response.choices
+                            and hasattr(retry_response.choices[0], "finish_reason")
+                            and retry_response.choices[0].finish_reason == "error"
+                        ):
+                            if hasattr(retry_response.choices[0], "error"):
                                 error_info = retry_response.choices[0].error
-                                error_message = error_info.get('message', 'Unknown API error')
-                                raise Exception(f"API retry request failed: {error_message}")
+                                error_message = error_info.get(
+                                    "message", "Unknown API error"
+                                )
+                                raise Exception(
+                                    f"API retry request failed: {error_message}"
+                                )
                             else:
-                                raise Exception("API retry request failed with error finish_reason")
-                        
+                                raise Exception(
+                                    "API retry request failed with error finish_reason"
+                                )
+
                         retry_content = retry_response.choices[0].message.content or ""
                         retry_usage = getattr(retry_response, "usage", {})
                     else:
@@ -641,6 +678,7 @@ class LLMClient:
 
         return content, usage
 
+    @heartbeat()
     @timed
     def verify(self, primary_text: str) -> str:
         """
@@ -920,6 +958,7 @@ class LLMClient:
 
         return validate_citation_patterns(content, enable_online)
 
+    @heartbeat()
     def verify_with_level(self, primary_text: str, level: str = "medium") -> str:
         """
         Run verification with different depth levels.
