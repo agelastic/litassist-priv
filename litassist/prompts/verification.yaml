@@ -6,7 +6,9 @@ verification:
   # USED BY: llm.py LLMClient.verify() method - default verification for all commands
   # LOCATION: llm.py:528-539
   self_critique: |
-    Review the document above for legal inaccuracies and non-Australian English spellings. Provide a corrected version of the full text. If no corrections are made, return the original text verbatim, prefixed with the confirmation: "No legal soundness issues identified."
+    Review the document above for legal inaccuracies and non-Australian English spellings.
+    First, under the heading "## Issues Found", provide a numbered list of all legal soundness issues you identify. If there are no issues, write "No issues found."
+    Then, under the heading "## Final Verified Text", provide the corrected version of the full text. If no corrections are made, return the original text verbatim, prefixed with the confirmation: "No legal soundness issues identified."
 
   # Enhanced citation instructions for retry attempts
   # USED BY: llm.py LLMClient.complete() method - when citation verification fails and retry is needed

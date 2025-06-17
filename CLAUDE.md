@@ -95,6 +95,11 @@ LitAssist is a command-line tool for automated litigation support workflows, tai
 2. **Testing**: Run tests with `pytest` before committing
 3. **Documentation**: Update TODO.md and relevant docs when making changes
 
+### YAML File Integrity
+- **Rule:** All changes to `.yaml` files, especially prompt templates in `litassist/prompts/`, must be validated with a YAML linter (e.g., `yamllint`) before committing.
+- **Reasoning:** Prevents syntax and indentation errors that can break application workflows.
+- **Action:** Run a linter on any modified `.yaml` files to ensure they are well-formed and properly indented prior to pushing changes.
+
 ### Model Name Protection
 
 **CRITICAL**: Never change model identifiers in the code. These are exact API endpoints:

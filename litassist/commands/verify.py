@@ -270,29 +270,23 @@ def _format_citation_report(verified: list, unverified: list, total_found: int) 
 
 
 def _parse_soundness_issues(soundness_result: str) -> list:
-    """Parse legal soundness issues from verification result."""
+    """Parse legal soundness issues from the structured '## Issues Found' section."""
     issues = []
-
-    # Look for common issue patterns in the result
-    issue_patterns = [
-        r"(?:incorrect|inaccurate|wrong|error|mistake).*?(?:\.|$)",
-        r"(?:should be|must be|needs to be).*?(?:\.|$)",
-        r"(?:not supported|unsupported|questionable).*?(?:\.|$)",
-        r"(?:clarification needed|unclear|ambiguous).*?(?:\.|$)",
-    ]
-
-    for pattern in issue_patterns:
-        matches = re.findall(pattern, soundness_result, re.IGNORECASE)
-        for match in matches:
-            if len(match.strip()) > 10:  # Filter out very short matches
-                issues.append(match.strip())
-
-    # Also check if the result explicitly states no issues
-    if re.search(
-        r"no.*(?:issues?|errors?|problems?|inaccurac)", soundness_result, re.IGNORECASE
-    ):
-        issues = []
-
+    # Find the '## Issues Found' section
+    match = re.search(
+        r"## Issues Found\s*\n(.*?)(?:\n## |\Z)",
+        soundness_result,
+        re.DOTALL | re.IGNORECASE,
+    )
+    if match:
+        issues_block = match.group(1).strip()
+        if "no issues found" in issues_block.lower():
+            return []
+        # Extract numbered list items
+        for line in issues_block.splitlines():
+            m = re.match(r"\s*\d+\.\s+(.*)", line)
+            if m:
+                issues.append(m.group(1).strip())
     return issues
 
 
