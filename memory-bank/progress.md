@@ -1,7 +1,9 @@
 # Progress
 
 ## What works
-- All six core CLI commands (lookup, digest, extractfacts, brainstorm, strategy, draft) fully implemented, stable, and tested
+- All seven core CLI commands (lookup, digest, extractfacts, brainstorm, strategy, draft, verify) fully implemented, stable, and tested
+- Comprehensive post-hoc verification (June 2025): `verify` command performs citation accuracy, legal soundness, and reasoning transparency checks on generated documents. Each check writes a separate timestamped report to outputs/. All steps use the existing logging infrastructure and minimal console output.
+- Research-informed brainstorming (June 2025): `brainstorm` command supports `--research` option to inject lookup report(s) into the orthodox strategies prompt, enabling research-grounded strategy generation. All prompt logic is managed in YAML; no hardcoded LLM templates.
 - Major June 2025 improvements complete:
   - Lookup command overhaul: Jade.io-only, --comprehensive flag, improved extract options, citation integration, code quality/linting
   - Multi-section reasoning traces for brainstorm; enhanced strategy integration
@@ -20,10 +22,9 @@
 - Add cost-tracking, quality-tier system, and workflow compound commands
 - Enhance QA loops (adversarial testing, iterative improvement loops) and performance benchmarking
 - Continue to update Memory Bank after each major feature, bugfix, or workflow change
-- Implement and test the comprehensive `verify` command for post-hoc document quality checks (citations, soundness, reasoning trace), and document the new workflow patterns.
 
 ## Current status
-Core pipeline and all major improvements are complete and stable. Memory Bank, documentation, and codebase are fully synchronized. Focus is now on advanced features, QA, and workflow enhancements.
+Core pipeline, post-hoc verification, and all major improvements are complete and stable. Memory Bank, documentation, and codebase are fully synchronized. Focus is now on advanced features, QA, and workflow enhancements.
 
 ## Known issues
 - Several advanced prompting and verification improvements remain unimplemented
@@ -38,4 +39,5 @@ Core pipeline and all major improvements are complete and stable. Memory Bank, d
 - Clean CLI output, timestamped files, and professional summaries adopted as standard UX
 - Brainstorm vs strategy distinction clarified; integration pattern formalized
 - Two-phase citation verification and selective regeneration (“Option B”) established as quality control standard
+- Post-hoc verification (verify command) added to enable comprehensive quality checks on generated documents, including citation, legal soundness, and reasoning trace validation.
 - Memory Bank practice formalized to preserve context and support onboarding after session resets

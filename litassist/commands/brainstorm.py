@@ -202,8 +202,14 @@ Generate ONLY strategy #{strategy_num} in the exact format:
     is_flag=True,
     help="Enable self-critique pass (auto-enabled for Grok models)",
 )
+@click.option(
+    "--research",
+    multiple=True,
+    type=click.Path(exists=True),
+    help="Optional: One or more lookup report files to inform orthodox strategies (research-informed mode).",
+)
 @timed
-def brainstorm(facts_file, side, area, verify):
+def brainstorm(facts_file, side, area, verify, research):
     """
     Generate comprehensive legal strategies via Grok.
 
@@ -245,12 +251,27 @@ def brainstorm(facts_file, side, area, verify):
             )
         verify = True  # Force verification for Grok models
 
+    # Prepare research context for orthodox strategies
+    if research:
+        research_contexts = []
+        for path in research:
+            try:
+                with open(path, "r", encoding="utf-8") as f:
+                    research_contexts.append(f.read().strip())
+            except Exception as e:
+                raise click.ClickException(f"Error reading research file '{path}': {e}")
+        research_context = "\n\nRESEARCH CONTEXT:\n" + "\n\n".join(research_contexts)
+    else:
+        research_context = ""
+
     # Generate Orthodox Strategies (conservative approach)
     click.echo("Generating orthodox strategies...")
     orthodox_client = LLMClientFactory.for_command("brainstorm", "orthodox")
 
-    # Use centralized orthodox prompt template
-    orthodox_template = PROMPTS.get("strategies.brainstorm.orthodox_prompt")
+    # Use centralized orthodox prompt template with research context
+    orthodox_template = PROMPTS.get(
+        "strategies.brainstorm.orthodox_prompt", research_context=research_context
+    )
     orthodox_base_prompt = f"""Facts:
 {facts}
 

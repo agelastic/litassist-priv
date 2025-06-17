@@ -16,6 +16,8 @@ LitAssist commands form a linear pipeline:
 ```
 Lookup → Digest → ExtractFacts → Brainstorm → Strategy → Draft
 ```
+- **Research-Informed Brainstorm (June 2025):** The `brainstorm` command now supports a `--research` option, allowing one or more lookup report files to be provided. When used, the orthodox strategies prompt is dynamically injected with the research context, enabling research-grounded strategy generation. The unorthodox strategies remain purely creative. All prompt logic is managed via YAML templates; no LLM prompt text is hardcoded in Python.
+
 Each stage:
 1. Reads inputs (files/arguments)
 2. Invokes LLM with structured prompts
