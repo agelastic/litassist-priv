@@ -28,6 +28,7 @@ Maintaining the Memory Bank as the authoritative, up-to-date reference for LitAs
 2. Track progress on advanced features (IRAC/MIRAT enforcement, multi-model consensus, QA loops, cost-tracking, compound commands).
 3. Ensure all new patterns, troubleshooting, and best practices are reflected in systemPatterns.md and techContext.md.
 4. Periodically review Memory Bank for alignment with evolving documentation and codebase.
+5. Implement and test the new `verify` command for post-hoc document quality checks (citations, soundness, reasoning trace). Document all patterns and update progress.md after completion.
 
 ## Active Decisions & Considerations
 - Strict adherence to Memory Bank hierarchy and .clinerules formatting rules.

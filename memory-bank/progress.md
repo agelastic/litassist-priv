@@ -20,6 +20,7 @@
 - Add cost-tracking, quality-tier system, and workflow compound commands
 - Enhance QA loops (adversarial testing, iterative improvement loops) and performance benchmarking
 - Continue to update Memory Bank after each major feature, bugfix, or workflow change
+- Implement and test the comprehensive `verify` command for post-hoc document quality checks (citations, soundness, reasoning trace), and document the new workflow patterns.
 
 ## Current status
 Core pipeline and all major improvements are complete and stable. Memory Bank, documentation, and codebase are fully synchronized. Focus is now on advanced features, QA, and workflow enhancements.

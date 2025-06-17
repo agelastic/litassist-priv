@@ -32,6 +32,15 @@ Each stage:
   - Strategy commands regenerate or discard only the specific items with citation issues.
   - Preserves verified content and avoids manual filtering.
 
+- **Comprehensive Post-Hoc Verification (verify command, June 2025)**:
+  - `verify` command performs three checks: citation accuracy, legal soundness, and reasoning transparency.
+  - Citation check reuses existing citation verification system.
+  - Legal soundness check uses LLM with heavy verification prompt for Australian law compliance.
+  - Reasoning transparency check extracts or generates an IRAC-structured reasoning trace (using LegalReasoningTrace if possible).
+  - If no reasoning trace exists in the file, one is generated and output.
+  - Each check writes a separate timestamped report to outputs/.
+  - All steps use the existing logging infrastructure and minimal console output.
+
 ## Logging and Timing
 
 - **Configuration Centralization**: `config.yaml` controls log format and verbosity.

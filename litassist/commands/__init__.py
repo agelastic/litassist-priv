@@ -8,7 +8,15 @@ available in the LitAssist tool.
 import click
 
 # Import all command modules to make them available
-from litassist.commands import lookup, digest, brainstorm, extractfacts, draft, strategy
+from litassist.commands import (
+    lookup,
+    digest,
+    brainstorm,
+    extractfacts,
+    draft,
+    strategy,
+    verify,
+)
 
 
 def register_commands(cli: click.Group) -> None:
@@ -24,3 +32,4 @@ def register_commands(cli: click.Group) -> None:
     cli.add_command(extractfacts.extractfacts)
     cli.add_command(draft.draft)
     cli.add_command(strategy.strategy)
+    cli.add_command(verify.verify)
