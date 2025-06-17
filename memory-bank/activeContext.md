@@ -19,6 +19,7 @@ Maintaining the Memory Bank as the authoritative, up-to-date reference for LitAs
   - Output file timestamping and organization in outputs/ and logs/
   - Model selection and BYOK requirements for advanced commands
   - Two-phase citation verification and selective regeneration (“Option B”)
+- Added optional --hint argument to digest command (June 2025): allows users to provide a text hint to focus LLM analysis on topics related to the hint, supporting targeted processing of non-legal and general documents.
 - Updated Memory Bank files for consistency with README, User Guide, and config.yaml.template
 - Full Memory Bank review performed on 15 June 2025: all files confirmed up to date and synchronized with codebase and documentation. No changes required.
 - 16 June 2025: Test suite and prompt YAMLs synchronized; all tests for commented-out templates are now commented out in the test code. All tests pass.

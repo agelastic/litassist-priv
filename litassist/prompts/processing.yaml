@@ -15,8 +15,14 @@ processing:
       - **[Date]**: [Event description]
       - **[Date]**: [Event description]
       
+      {hint_instruction}
       Include all significant developments, procedural steps, and factual events in chronological order.
-    
+
+    summary_mode_hint_instruction_with_hint: |
+      Focus your summary only on aspects related to: {hint}
+    summary_mode_hint_instruction_no_hint: |
+      Cover all relevant topics in the document.
+
     issues_mode: |
       Identify and analyze legal issues present in the document. Structure as:
       
@@ -31,7 +37,13 @@ processing:
       **Issue 2: [Issue Name]**
       [Same structure...]
       
+      {hint_instruction}
       Focus on substantive legal questions, procedural issues, and areas requiring legal analysis.
+
+    issues_mode_hint_instruction_with_hint: |
+      Focus your analysis only on issues related to: {hint}
+    issues_mode_hint_instruction_no_hint: |
+      Cover all legal issues present in the document.
     
     system_prompt: |
       Extract and organize information from this document. Focus on being comprehensive, accurate, and well-organized. Use clear paragraph structure and bullet points where appropriate. Maintain a neutral, analytical tone throughout.

@@ -2,6 +2,7 @@
 
 ## What works
 - All seven core CLI commands (lookup, digest, extractfacts, brainstorm, strategy, draft, verify) fully implemented, stable, and tested
+- Digest command supports optional --hint argument (June 2025): users can provide a text hint to focus LLM analysis on topics related to the hint, enabling targeted processing of non-legal and general documents.
 - Comprehensive post-hoc verification (June 2025): `verify` command performs citation accuracy, legal soundness, and reasoning transparency checks on generated documents. Each check writes a separate timestamped report to outputs/. All steps use the existing logging infrastructure and minimal console output.
 - Research-informed brainstorming (June 2025): `brainstorm` command supports `--research` option to inject lookup report(s) into the orthodox strategies prompt, enabling research-grounded strategy generation. All prompt logic is managed in YAML; no hardcoded LLM templates.
 - Major June 2025 improvements complete:
