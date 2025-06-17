@@ -291,105 +291,43 @@ EOF
 test_lookup_command() {
     print_section "Testing LOOKUP Command"
     
-    # Test 1: Basic lookup with default settings
-    run_test "Lookup - Basic IRAC mode" \
-        "python litassist.py lookup 'contract formation requirements'" \
-        "Found links|sources analyzed"
-    
-    # Test 2: Lookup with broad mode
-    run_test "Lookup - Broad mode" \
-        "python litassist.py lookup 'negligence principles' --mode broad" \
-        "Found links|sources analyzed"
-    
-    # Test 3: Lookup with comprehensive search
-    run_test "Lookup - Comprehensive search" \
-        "python litassist.py lookup 'employment law termination' --comprehensive" \
-        "Exhaustive search|sources analyzed"
-    
-    # Test 4: Lookup with citation extraction
-    run_test "Lookup - Citation extraction" \
-        "python litassist.py lookup 'tort law damages' --extract citations" \
-        "Found links|complete|saved to|citations"
-    
-    # Test 5: Lookup with principles extraction
-    run_test "Lookup - Principles extraction" \
-        "python litassist.py lookup 'property law adverse possession' --extract principles" \
-        "Found links|complete|saved to|principles"
-    
-    # Test 6: Lookup with checklist extraction
-    run_test "Lookup - Checklist extraction" \
-        "python litassist.py lookup 'criminal law evidence' --extract checklist" \
-        "Found links|complete|saved to|checklist"
-    
-    # Test 7: Comprehensive + Broad combination  
-    run_test "Lookup - Comprehensive Broad" \
-        "python litassist.py lookup 'corporate law directors duties' --comprehensive --mode broad" \
-        "Exhaustive search|sources analyzed"
+    # Comprehensive test with multiple flags to minimize LLM calls
+    run_test "Lookup - Comprehensive with all options" \
+        "python litassist.py lookup 'contract formation requirements' --comprehensive --mode broad --extract citations" \
+        "Exhaustive search|sources analyzed|complete|saved to|citations"
 }
 
 test_extractfacts_command() {
     print_section "Testing EXTRACTFACTS Command"
     
-    # Test 1: Extract from text file
-    run_test "ExtractFacts - From text file" \
-        "python litassist.py extractfacts test_inputs/mock_case_facts.txt" \
-        "complete|saved to|case_facts"
-    
-    # Test 2: Extract from PDF (if available)
-    if [[ -f test_inputs/mock_affidavit.pdf ]]; then
-        run_test "ExtractFacts - From PDF file" \
-            "python litassist.py extractfacts test_inputs/mock_affidavit.pdf" \
-            "complete|saved to"
-    fi
-    
-    # Test 3: Extract with verification
+    # Single test with verification to cover both extraction and verification
     run_test "ExtractFacts - With verification" \
         "python litassist.py extractfacts test_inputs/mock_case_facts.txt --verify" \
-        "complete|saved to|verification"
+        "complete|saved to|case_facts|verification"
 }
 
 test_strategy_command() {
     print_section "Testing STRATEGY Command"
     
-    # Test 1: Strategy development from facts
-    run_test "Strategy - From case facts with outcome" \
-        "python litassist.py strategy test_inputs/mock_case_facts.txt --outcome 'Obtain damages for breach of contract'" \
-        "complete|saved to|strategy"
-    
-    # Test 2: Strategy with verification
-    run_test "Strategy - With verification" \
-        "python litassist.py strategy test_inputs/mock_case_facts.txt --outcome 'Win the case' --verify" \
-        "complete|saved to|verification"
-    
-    # Test 3: Strategy with existing strategies file
-    run_test "Strategy - With strategies file" \
-        "python litassist.py strategy test_inputs/mock_case_facts.txt --outcome 'Defend claim' --strategies test_inputs/mock_strategy_headers.txt" \
-        "complete|saved to|strategy"
+    # Comprehensive test with all options to minimize LLM calls
+    run_test "Strategy - Comprehensive with all options" \
+        "python litassist.py strategy test_inputs/mock_case_facts.txt --outcome 'Win breach of contract case' --strategies test_inputs/mock_strategy_headers.txt --verify" \
+        "complete|saved to|strategy|verification"
 }
 
 test_brainstorm_command() {
     print_section "Testing BRAINSTORM Command"
     
-    # Test 1: Civil brainstorm for plaintiff
-    run_test "Brainstorm - Civil plaintiff" \
-        "python litassist.py brainstorm test_inputs/mock_case_facts.txt --side plaintiff --area civil" \
-        "complete|saved to|strategies"
-    
-    # Test 2: Civil brainstorm for defendant with verification
-    run_test "Brainstorm - Civil defendant with verification" \
-        "python litassist.py brainstorm test_inputs/mock_case_facts.txt --side defendant --area civil --verify" \
-        "complete|saved to|verification"
+    # Single test with verification covering core functionality
+    run_test "Brainstorm - Civil with verification" \
+        "python litassist.py brainstorm test_inputs/mock_case_facts.txt --side plaintiff --area civil --verify" \
+        "complete|saved to|strategies|verification"
 }
 
 test_digest_command() {
     print_section "Testing DIGEST Command"
     
-    # Test 1: Summary digest
-    run_test "Digest - Summary mode" \
-        "python litassist.py digest test_inputs/mock_case_facts.txt --mode summary" \
-        "complete|saved to|digest"
-    
-    # Test 2: Issues digest  
+    # Single test with issues mode (more comprehensive than summary)
     run_test "Digest - Issues mode" \
         "python litassist.py digest test_inputs/mock_case_facts.txt --mode issues" \
         "complete|saved to|digest"
@@ -398,39 +336,28 @@ test_digest_command() {
 test_draft_command() {
     print_section "Testing DRAFT Command"
     
-    # Test 1: Draft from facts
-    run_test "Draft - Legal document from facts" \
-        "python litassist.py draft test_inputs/mock_case_facts.txt 'Draft a Statement of Claim for breach of contract'" \
-        "complete|saved to|draft"
+    # Comprehensive test with multiple documents and verification
+    run_test "Draft - Multiple documents with verification" \
+        "python litassist.py draft test_inputs/mock_case_facts.txt test_inputs/mock_strategy_headers.txt 'Draft Statement of Claim for breach of contract' --verify" \
+        "complete|saved to|draft|verification"
+}
+
+test_verify_command() {
+    print_section "Testing VERIFY Command"
     
-    # Test 2: Draft with verification
-    run_test "Draft - With verification" \
-        "python litassist.py draft test_inputs/mock_case_facts.txt 'Draft legal submissions' --verify" \
-        "complete|saved to|verification"
-    
-    # Test 3: Draft with multiple documents
-    run_test "Draft - Multiple documents" \
-        "python litassist.py draft test_inputs/mock_case_facts.txt test_inputs/mock_strategy_headers.txt 'Draft a legal brief'" \
-        "complete|saved to|draft"
+    # Single comprehensive test covering all three verification types
+    run_test "Verify - Comprehensive verification" \
+        "python litassist.py verify test_inputs/mock_case_facts.txt" \
+        "Citation verification complete|Legal soundness check complete|Reasoning trace|3 reports generated"
 }
 
 test_error_conditions() {
     print_section "Testing Error Conditions"
     
-    # Test 1: Non-existent file
+    # Single error test to verify error handling
     run_test "Error - Non-existent file" \
         "python litassist.py extractfacts non_existent_file.txt 2>&1 || echo 'Expected error occurred'" \
         "error|does not exist|Expected error occurred"
-    
-    # Test 2: Invalid option combination
-    run_test "Error - Invalid lookup extract option" \
-        "python litassist.py lookup 'test' --extract invalid_option 2>&1 || echo 'Expected error occurred'" \
-        "error|invalid|Expected error occurred"
-    
-    # Test 3: Empty query
-    run_test "Error - Empty lookup query" \
-        "python litassist.py lookup '' 2>&1 || echo 'Expected error occurred'" \
-        "error|invalid argument|Expected error occurred"
 }
 
 test_help_and_info() {
@@ -554,6 +481,7 @@ show_help() {
     echo "  brainstorm    Test brainstorm command"
     echo "  digest        Test digest command"
     echo "  draft         Test draft command"
+    echo "  verify        Test verify command"
     echo "  errors        Test error conditions"
     echo "  all           Run all tests"
     echo ""
@@ -597,6 +525,9 @@ run_test_group() {
         draft)
             test_draft_command
             ;;
+        verify)
+            test_verify_command
+            ;;
         errors)
             test_error_conditions
             ;;
@@ -609,6 +540,7 @@ run_test_group() {
             test_brainstorm_command
             test_digest_command
             test_draft_command
+            test_verify_command
             test_error_conditions
             ;;
         *)

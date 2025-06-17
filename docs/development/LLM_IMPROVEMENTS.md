@@ -3,6 +3,8 @@
 ## Status Update (June 2025)
 
 **Implemented:**
+- Comprehensive post-hoc verification (`verify` command): Performs citation accuracy, legal soundness, and reasoning transparency checks on generated documents. Each check writes a separate timestamped report to outputs/. All steps use the existing logging infrastructure and minimal console output.
+- Research-informed brainstorming: `brainstorm` command supports `--research` option to inject lookup report(s) into the orthodox strategies prompt, enabling research-grounded strategy generation. All prompt logic is managed in YAML; no hardcoded LLM templates.
 - Option B (selective regeneration/discard for citation issues in brainstorm/strategy)
 - Multi-section reasoning traces (brainstorm)
 - Strict two-phase citation verification (AustLII backend)
@@ -30,6 +32,7 @@ LitAssist currently uses 6 different LLM integrations across its commands. While
 - **Claude 3 Sonnet**: Document processing (reliable extraction)
 - **Grok 3 Beta**: Creative strategy generation (high creativity)
 - **GPT-4o**: Strategic planning and drafting (balanced capabilities)
+- **Verify Command**: Uses multiple models for post-hoc verification (citation, legal soundness, reasoning trace) on generated documents.
 
 ### Temperature Settings Philosophy
 - **0.0**: Factual tasks (extraction, summaries)

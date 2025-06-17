@@ -6,27 +6,29 @@ verification:
   # USED BY: llm.py LLMClient.verify() method - default verification for all commands
   # LOCATION: llm.py:528-539
   self_critique: |
-    Identify and correct any legal inaccuracies above, and provide the corrected text only. Ensure all spellings follow Australian English conventions.
-  
+    Review the document above for legal inaccuracies and non-Australian English spellings.
+    First, under the heading "## Issues Found", provide a numbered list of all legal soundness issues you identify. If there are no issues, write "No issues found."
+    Then, under the heading "## Final Verified Text", provide the corrected version of the full text. If no corrections are made, return the original text verbatim, prefixed with the confirmation: "No legal soundness issues identified."
+
   # Enhanced citation instructions for retry attempts
   # USED BY: llm.py LLMClient.complete() method - when citation verification fails and retry is needed
   # LOCATION: llm.py:431-440
   citation_retry_instructions: |
     IMPORTANT: Use only real, verifiable Australian cases that exist in Australian legal databases. Do not invent case names. If unsure about a citation, omit it rather than guess.
-  
+
   # Light verification - Australian English compliance only
   # USED BY: llm.py LLMClient.verify_with_level() method - when level="light"
   # LOCATION: llm.py:744-753
   light_verification: |
     Check only for Australian English spelling and terminology compliance.
     Correct any non-Australian English spellings or terminology.
-  
+
   # Heavy verification - comprehensive legal accuracy
   # USED BY: llm.py LLMClient.verify_with_level() method - when level="heavy"
   # LOCATION: llm.py:758-767
   heavy_verification: |
     Provide comprehensive legal accuracy review: verify all citations, check legal reasoning, identify any errors in law or procedure, and ensure Australian English compliance.
-  
+
   # Standard verification system prompt
   # USED BY: llm.py LLMClient.verify_with_level() method - system prompt for heavy verification
   # LOCATION: llm.py:757-762

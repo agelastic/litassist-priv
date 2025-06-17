@@ -25,8 +25,14 @@ from litassist.llm import LLMClientFactory
 @click.command()
 @click.argument("file", type=click.Path(exists=True))
 @click.option("--mode", type=click.Choice(["summary", "issues"]), default="summary")
+@click.option(
+    "--hint",
+    type=str,
+    default=None,
+    help="Optional hint to focus the analysis on specific topics.",
+)
 @timed
-def digest(file, mode):
+def digest(file, mode, hint):
     """
     Mass-document digestion via Claude.
 
@@ -68,10 +74,34 @@ def digest(file, mode):
         for idx, chunk in enumerate(chunks_bar, start=1):
             # Use centralized digest prompts
             if mode == "summary":
-                digest_prompt = PROMPTS.get("processing.digest.summary_mode")
+                if hint:
+                    hint_instruction = PROMPTS.get(
+                        "processing.digest.summary_mode_hint_instruction_with_hint",
+                        hint=hint,
+                    )
+                else:
+                    hint_instruction = PROMPTS.get(
+                        "processing.digest.summary_mode_hint_instruction_no_hint"
+                    )
+                digest_prompt = PROMPTS.get(
+                    "processing.digest.summary_mode",
+                    hint_instruction=hint_instruction,
+                )
                 prompt = f"{digest_prompt}\n\n{chunk}"
             else:  # issues mode
-                digest_prompt = PROMPTS.get("processing.digest.issues_mode")
+                if hint:
+                    hint_instruction = PROMPTS.get(
+                        "processing.digest.issues_mode_hint_instruction_with_hint",
+                        hint=hint,
+                    )
+                else:
+                    hint_instruction = PROMPTS.get(
+                        "processing.digest.issues_mode_hint_instruction_no_hint"
+                    )
+                digest_prompt = PROMPTS.get(
+                    "processing.digest.issues_mode",
+                    hint_instruction=hint_instruction,
+                )
                 prompt = f"{digest_prompt}\n\n{chunk}"
             # Call the LLM
             try:
@@ -129,8 +159,13 @@ def digest(file, mode):
     save_log(
         f"digest_{mode}",
         {
-            "inputs": {"file": file, "mode": mode, "chunks_processed": len(chunks)},
-            "params": f"mode={mode}, max_chars={CONFIG.max_chars}",
+            "inputs": {
+                "file": file,
+                "mode": mode,
+                "hint": hint,
+                "chunks_processed": len(chunks),
+            },
+            "params": f"mode={mode}, max_chars={CONFIG.max_chars}, hint={hint}",
             "responses": comprehensive_log["responses"],
             "usage": comprehensive_log["total_usage"],
             "output_file": output_file,

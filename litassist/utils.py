@@ -691,7 +691,7 @@ class LegalReasoningTrace:
         self.applicable_law = applicable_law
         self.application = application
         self.conclusion = conclusion
-        self.confidence = max(0, min(100, confidence))  # Clamp to 0-100
+        self.confidence = confidence  # No clamping - let validation catch errors
         self.sources = sources or []
         self.command = command
         self.timestamp = time.strftime("%Y-%m-%d %H:%M:%S")
