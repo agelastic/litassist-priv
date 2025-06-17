@@ -145,6 +145,50 @@ Before labeling something as "overengineering":
 - Decorators that could be simple function calls
 - Abstractions without multiple concrete implementations
 
+### LLM Response Processing Philosophy
+
+**CRITICAL PRINCIPLE: Minimize Local Parsing Through Better Prompt Engineering**
+
+The litassist codebase currently contains extensive local parsing of LLM responses (regex patterns, string manipulation, JSON parsing) that should be eliminated through improved prompt engineering. **LLMs will always return output formatted as they are told - you do not need fallback parsing.**
+
+**Core Guidelines:**
+
+1. **Prompt Engineering First**: Always modify prompts to get properly formatted output rather than writing parsing code
+   - Request structured formats (JSON, YAML, specific delimiters) in prompts
+   - Provide explicit examples of desired output structure
+   - Use clear section markers that don't require regex parsing
+
+2. **Longer Structured Output > Multiple Calls**: Prefer comprehensive structured output in a single LLM call over multiple shorter calls that require complex orchestration
+   - Request complete structured responses with all needed components
+   - Use JSON/YAML for complex data structures
+   - Minimize API costs while maximizing structure
+
+3. **No Fallback Parsing Logic**: LLMs follow format instructions reliably when properly prompted
+   - Eliminate try/catch blocks around parsing
+   - Remove regex pattern matching for data extraction
+   - Trust that well-prompted LLMs will return correctly formatted output
+
+4. **Removal Over Addition**: When refactoring parsing logic, remove code rather than adding more
+   - Delete regex patterns, string manipulation, and complex parsing functions
+   - Replace with improved prompts that generate clean output
+   - Prefer prompt modifications to additional parsing layers
+
+**Forbidden Patterns to Eliminate:**
+- Regex parsing of LLM output for structured data extraction
+- String splitting/manipulation to extract specific content
+- Multi-step parsing workflows with fallback logic
+- JSON parsing with extensive error handling
+- Citation/reference extraction through pattern matching
+
+**Preferred Approaches:**
+- JSON/YAML structured output requests in prompts
+- Self-validating LLM responses (ask LLM to verify format before returning)
+- Explicit section delimiters that are unique and don't need regex
+- Format examples provided directly in prompts
+- LLM self-assessment and correction within the same call
+
+**Reference**: A comprehensive audit of current parsing patterns exists and should be used as a roadmap for systematic elimination of all local LLM response processing logic.
+
 ### Australian Legal Focus
 
 - Always use Australian English spelling (e.g., 'judgement' not 'judgment')
