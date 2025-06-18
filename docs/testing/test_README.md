@@ -16,7 +16,37 @@ While we primarily focus on OpenAI and Pinecone as core dependencies, the OpenRo
 3. **Model Availability**: OpenRouter provides access to models that may not be directly available via OpenAI
 4. **Cost Control**: By creating minimal tests for OpenRouter, we can verify functionality without significant cost impact
 
-## Test Coverage
+## Unit Test Coverage
+
+The project includes comprehensive unit tests for all major commands and utilities:
+
+### Command Tests
+- **test_verify_command.py**: Tests the verify command's citation verification, legal soundness checking, and reasoning trace functionality
+- **test_strategy_command_comprehensive.py**: Validates strategy generation with case facts and brainstormed strategies
+- **test_draft_command_comprehensive.py**: Tests document drafting with various input combinations
+- **test_basic.py**: Basic smoke tests for all CLI commands
+
+### Utility Tests
+- **test_citation_verification_simple.py**: Tests citation pattern matching and validation
+- **test_verification.py**: Tests content verification utilities
+- **test_prompts.py**: Validates prompt management system
+- **test_prompt_templates.py**: Ensures YAML template integrity
+- **test_llm_client_factory.py**: Tests LLM client configuration and restrictions
+- **test_utils_comprehensive.py**: Tests core utilities including LegalReasoningTrace
+
+### Running Unit Tests
+```bash
+# Run all unit tests
+pytest tests/unit/
+
+# Run specific test file
+pytest tests/unit/test_verify_command.py
+
+# Run with coverage
+pytest --cov=litassist tests/unit/
+```
+
+## Integration Test Coverage
 
 | Service | Test Types | Purpose |
 |---------|------------|---------|

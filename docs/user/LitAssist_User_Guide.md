@@ -707,11 +707,12 @@ The `digest` command processes large documents by splitting them into manageable
 ### Command
 
 ```bash
-./litassist.py digest <file> [--mode summary|issues]
+./litassist.py digest <file> [--mode summary|issues] [--hint <hint_text>]
 ```
 
 Options:
 - `--mode`: Choose between chronological summary or issue-spotting (default: summary)
+- `--hint`: Optional guidance to focus the analysis on specific aspects (e.g., "focus on parental alienation claims" or "analyze financial discrepancies")
 
 **Output**: All analysis saved to timestamped files: `digest_[mode]_[filename_slug]_YYYYMMDD_HHMMSS.txt`
 
@@ -738,11 +739,32 @@ While designed for legal content, the `digest` command can process various docum
 
 ### Example Usage
 
+#### Basic Usage
 For the *Smith v Jones* case, we have received a lengthy affidavit from our client that needs to be broken down:
 
 ```bash
 ./litassist.py digest examples/smith_affidavit.pdf --mode issues
 ```
+
+#### Using the --hint Option
+When you need focused analysis on specific aspects of a document:
+
+```bash
+# Focus on parental alienation allegations
+./litassist.py digest examples/smith_affidavit.pdf --mode issues --hint "focus on parental alienation claims and evidence"
+
+# Analyze financial aspects
+./litassist.py digest financial_statements.pdf --mode summary --hint "analyze income discrepancies and hidden assets"
+
+# Medical document analysis
+./litassist.py digest medical_report.pdf --mode summary --hint "identify disability impacts on parenting capacity"
+```
+
+**Benefits of --hint**:
+- Directs AI attention to critical aspects
+- Ensures important details aren't overlooked
+- Particularly useful for lengthy documents
+- Helps when reviewing documents for specific litigation theories
 
 **Output Example**:
 ```
@@ -915,7 +937,7 @@ The `brainstorm` command uses Grok's creative capabilities to generate a compreh
 ### Command
 
 ```bash
-./litassist.py brainstorm <case_facts_file> --side <party_side> --area <legal_area> [--verify]
+./litassist.py brainstorm <case_facts_file> --side <party_side> --area <legal_area> [--verify] [--research <lookup_file>...]
 ```
 
 Required parameters:
@@ -925,16 +947,38 @@ Required parameters:
   - Family/Administrative cases: `plaintiff`, `defendant`, or `respondent`
 - `--area`: Legal area of the matter - `criminal`, `civil`, `family`, `commercial`, or `administrative`
 - `--verify` (optional): Run AI verification to review strategy viability and identify risks. Automatically enabled when using Grok models due to hallucination tendencies (see [Using the --verify Switch](#using-the--verify-switch))
+- `--research` (optional): One or more lookup report files to inform orthodox strategies with case law research (research-informed mode)
 
 **Note**: The command will warn you if you use incompatible side/area combinations (e.g., "plaintiff" in criminal cases) but will still generate strategies.
 
 ### Example Usage
 
+#### Basic Usage
 For the *Smith v Jones* case, we can use the structured facts to generate comprehensive legal strategies:
 
 ```bash
 ./litassist.py brainstorm examples/case_facts.txt --side plaintiff --area family
 ```
+
+#### Research-Informed Mode
+When you have already conducted legal research using the lookup command:
+
+```bash
+# First, conduct research on relevant topics
+./litassist.py lookup "parental alienation family law australia"
+./litassist.py lookup "relocation orders best interests child"
+
+# Then use the research to inform brainstorming
+./litassist.py brainstorm examples/case_facts.txt --side plaintiff --area family \
+  --research outputs/lookup_parental_alienation_*.txt \
+  --research outputs/lookup_relocation_orders_*.txt
+```
+
+**Benefits of Research-Informed Mode**:
+- Orthodox strategies grounded in actual case law
+- More accurate legal precedents and citations
+- Strategies aligned with current judicial thinking
+- Reduced risk of citation hallucinations
 
 **Output Example**:
 ```
@@ -1718,6 +1762,130 @@ This command is particularly useful when:
 - Troubleshooting connectivity issues
 - After updating API keys in your config.yaml
 - Before beginning important work to ensure all services are available
+
+## Workflow 8: Verify - Post-Hoc Document Quality Check
+
+**Pipeline Phase**: Quality Control
+
+### Purpose
+
+The `verify` command performs comprehensive quality checks on generated legal documents. It ensures professional standards by verifying citations, legal soundness, and reasoning transparency. This command is essential for maintaining the integrity of legal work product.
+
+### Command
+
+```bash
+./litassist.py verify <file> [--citations] [--soundness] [--reasoning]
+```
+
+Options:
+- `--citations`: Verify citations only - checks that all legal references are real and verifiable
+- `--soundness`: Verify legal soundness only - validates accuracy and Australian law compliance
+- `--reasoning`: Verify/generate reasoning trace only - ensures transparent IRAC-based reasoning
+- **Default** (no flags): Performs all three verification types
+
+### Verification Types
+
+#### 1. Citation Verification
+- Validates all case citations against AustLII database
+- Identifies hallucinated or incorrect references
+- Provides specific URLs for verified cases
+- Flags international citations appropriately
+
+#### 2. Legal Soundness
+- Reviews legal accuracy and correctness
+- Ensures compliance with Australian law
+- Identifies potential legal errors or misstatements
+- Validates statutory references and interpretations
+
+#### 3. Reasoning Trace
+- Verifies existing reasoning transparency
+- Generates IRAC-based reasoning if missing
+- Ensures accountability in legal analysis
+- Creates structured reasoning documentation
+
+### Example Usage
+
+#### Full Verification (Recommended)
+```bash
+# Verify a draft submission before filing
+./litassist.py verify outputs/draft_submissions_20250606_143022.txt
+```
+
+#### Targeted Verification
+```bash
+# Check only citations in a research memo
+./litassist.py verify outputs/lookup_parental_alienation_20250606_143022.txt --citations
+
+# Verify legal soundness of strategy options
+./litassist.py verify outputs/strategy_interim_orders_20250606_143022.txt --soundness
+
+# Generate reasoning trace for brainstormed strategies
+./litassist.py verify outputs/brainstorm_family_plaintiff_20250606_143022.txt --reasoning
+```
+
+### Output
+
+The verify command creates a comprehensive report saved to:
+`outputs/verify_report_[filename]_YYYYMMDD_HHMMSS.txt`
+
+**Report Contents**:
+```
+📋 VERIFICATION REPORT
+====================
+
+📄 File: draft_submissions_20250606_143022.txt
+🕒 Verified: 2025-06-06 14:45:23
+
+✅ CITATION VERIFICATION
+- Total citations found: 15
+- Verified: 12
+- Unverified: 3
+- Issues:
+  * Smith v Jones [2025] HCA 99 - Future date (impossible)
+  * Brown v Wilson - Generic case name pattern
+  * [2020] XYZ 45 - Court not recognized
+
+✅ LEGAL SOUNDNESS
+- Overall assessment: Generally sound with minor issues
+- Concerns identified:
+  * Misstatement of test in para 3.2
+  * Outdated statutory reference in para 5.1
+- Recommendations provided
+
+✅ REASONING TRACE
+- IRAC structure: Present and well-formed
+- Legal principles: Clearly stated
+- Application to facts: Comprehensive
+- Conclusions: Logically supported
+```
+
+### Integration with Workflow
+
+**Best Practices**:
+1. Run verify on all documents before court filing
+2. Use after draft command to ensure quality
+3. Verify brainstorm/strategy outputs before relying on them
+4. Check lookup results when accuracy is critical
+
+**Quality Assurance Workflow**:
+```bash
+# Generate draft
+./litassist.py draft case_facts.txt strategies.txt "urgent application"
+
+# Verify before filing
+./litassist.py verify outputs/draft_urgent_application_*.txt
+
+# Review report and address any issues
+cat outputs/verify_report_draft_*.txt
+```
+
+### Benefits
+
+- **Professional Protection**: Prevents reliance on incorrect law
+- **Quality Assurance**: Ensures work product meets professional standards
+- **Transparency**: Provides clear reasoning traces for accountability
+- **Efficiency**: Automated checks save manual review time
+- **Confidence**: File documents knowing they've been thoroughly verified
 
 ## End-to-End Pipeline Example
 

@@ -12,12 +12,30 @@
 - Model selection and BYOK requirements for advanced commands
 - Clean CLI output, output timestamping, and professional summaries
 - Comprehensive logging and timing for all operations
+- LLM Response Parsing Audit: Comprehensive analysis documenting all parsing patterns for systematic elimination (see LLM_PARSING_AUDIT_REPORT.md)
 
 **Planned:**
 - IRAC/MIRAT enforcement
 - Multi-model consensus and iterative improvement loops
 - Confidence scoring and advanced QA loops
 - Cost-tracking and workflow compound commands
+- Systematic elimination of LLM response parsing through structured output requests (JSON/YAML)
+
+## LLM Response Parsing Philosophy
+
+**CRITICAL PRINCIPLE: Minimize Local Parsing Through Better Prompt Engineering**
+
+The litassist codebase contains extensive parsing of LLM responses that should be eliminated. A comprehensive audit (see LLM_PARSING_AUDIT_REPORT.md) identified 15+ major parsing patterns across 8 core files.
+
+**Core Guidelines:**
+1. **Prompt Engineering First**: Request structured formats (JSON, YAML) instead of parsing text
+2. **Longer Structured Output > Multiple Calls**: Prefer comprehensive structured responses
+3. **No Fallback Parsing Logic**: Well-prompted LLMs return correctly formatted output
+4. **Removal Over Addition**: Delete parsing code rather than adding more
+
+**Current State**: 200+ lines of regex patterns, string manipulation, and complex parsing
+**Target State**: Direct JSON/YAML responses with simple deserialization
+**Benefits**: Reduced complexity, improved reliability, easier maintenance
 
 This document analyzes all LLM prompts, settings, and processing in LitAssist with recommendations for improvements that prioritize quality over cost.
 
