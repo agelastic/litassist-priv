@@ -1,7 +1,15 @@
 # LitAssist Centralized Prompt Management
 
 **Status**: Phase 1 Complete ✅  
-**Last Updated**: June 7, 2025
+**Last Updated**: June 17, 2025
+
+## Recent Updates (June 2025)
+
+- **Verify Command**: Added comprehensive verification prompts for citation checking, legal soundness, and reasoning trace generation
+- **Digest --hint Option**: Added hint instruction templates for focused document analysis
+- **Brainstorm --research Option**: Added research context injection capability for orthodox strategies
+- **System Feedback**: Consolidated error and warning messages into system_feedback.yaml
+- **Improved Organization**: All verification-related prompts now centralized in verification.yaml
 
 ## Overview
 
@@ -22,6 +30,7 @@ This document describes the centralized prompt management system implemented in 
   - `processing.yaml` - Document processing prompts for digest and draft
   - `strategies.yaml` - Strategic analysis and brainstorming prompts
   - `verification.yaml` - Verification and self-critique prompts
+  - `system_feedback.yaml` - Unified system feedback messages for errors and warnings
 
 ### PromptManager API
 
@@ -95,6 +104,10 @@ composed = PROMPTS.compose_prompt('base.australian_law', 'base.citation_standard
 - **`digest.summary_mode`** - Chronological summary extraction
 - **`digest.issues_mode`** - Legal issues identification
 - **`digest.system_prompt`** - Digest command system prompt
+- **`digest.summary_mode_hint_instruction_with_hint`** - Hint instruction when --hint provided
+- **`digest.summary_mode_hint_instruction_no_hint`** - Default hint instruction
+- **`digest.issues_mode_hint_instruction_with_hint`** - Issues mode hint with user guidance
+- **`digest.issues_mode_hint_instruction_no_hint`** - Default issues mode hint
 - **`draft.system_prompt_base`** - Base system prompt for drafting
 - **`draft.context_aware_prompt`** - Context-aware drafting with strategic alignment
 - **`draft.user_prompt_template`** - User prompt structure
@@ -102,7 +115,7 @@ composed = PROMPTS.compose_prompt('base.australian_law', 'base.citation_standard
 
 ### Strategy Prompts (`strategies.yaml`)
 
-- **`brainstorm.orthodox_prompt`** - Conservative legal strategies generation
+- **`brainstorm.orthodox_prompt`** - Conservative legal strategies generation (supports {research_context} placeholder)
 - **`brainstorm.unorthodox_prompt`** - Creative legal strategies generation
 - **`brainstorm.analysis_prompt`** - Strategy analysis and prioritization
 - **`brainstorm.regeneration_prompt`** - Feedback-based regeneration
