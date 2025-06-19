@@ -414,7 +414,7 @@ cat outputs/lookup_contract_formation_elements_20250606_143022.txt
 
 ### Purpose
 
-The `lookup` command performs rapid searches on Jade.io for relevant case law, then processes the results through Gemini to produce a structured legal answer with citations. All citations are verified in real time against AustLII.
+The `lookup` command performs rapid searches on Jade.io for relevant case law, then processes the results through Gemini to produce a structured legal answer with citations. All citations are verified in real time against Jade.io. When using `--comprehensive`, the command can also search broader Australian legal sources if a secondary CSE is configured.
 
 ### Command
 
@@ -425,7 +425,7 @@ The `lookup` command performs rapid searches on Jade.io for relevant case law, t
 Options:
 - `--mode`: Choose between IRAC (Issue, Rule, Application, Conclusion) or a broader exploration
 - `--extract`: Extract specific information in a structured format for workflow efficiency
-- `--comprehensive`: Use exhaustive analysis with up to 40 sources instead of 5 (default: false)
+- `--comprehensive`: Use exhaustive analysis with up to 40 Jade.io sources instead of 5, plus additional sources from a secondary CSE if configured (default: false)
 - `--context`: Provide contextual information to guide and focus the lookup analysis (new feature)
 
 #### Analysis Modes:
@@ -433,10 +433,10 @@ Options:
 - **Broad**: Creative exploration for more expansive legal thinking
 
 **Recommended Combinations:**
-- **IRAC mode**: Standard research for structured case law analysis (default: 5 sources)
-- **IRAC + comprehensive**: Exhaustive structured analysis (up to 40 sources)
-- **Broad mode**: Creative legal research for novel arguments (default: 5 sources)
-- **Broad + comprehensive**: Exploratory research with maximum coverage (up to 40 sources)
+- **IRAC mode**: Standard research for structured case law analysis (default: 5 Jade.io sources)
+- **IRAC + comprehensive**: Exhaustive structured analysis (up to 40 Jade.io sources + 10 broader sources if secondary CSE configured)
+- **Broad mode**: Creative legal research for novel arguments (default: 5 Jade.io sources)
+- **Broad + comprehensive**: Exploratory research with maximum coverage (up to 40 Jade.io sources + 10 broader sources if secondary CSE configured)
 
 #### Extract Options for Workflow Efficiency
 

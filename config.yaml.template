@@ -9,6 +9,7 @@ openai:
 google_cse:
   api_key:  "YOUR_GOOGLE_API_KEY"
   cse_id:   "YOUR_JADE_CSE_ID"    # Google CSE ID for searching Jade.io legal database
+  cse_id_comprehensive: "YOUR_COMPREHENSIVE_CSE_ID"  # Optional: CSE ID for broader legal sources (austlii.edu.au, *.gov.au, etc.)
 
 pinecone:
   api_key:     "YOUR_PINECONE_KEY"

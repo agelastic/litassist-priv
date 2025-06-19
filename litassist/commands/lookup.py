@@ -323,6 +323,24 @@ def lookup(question, mode, extract, comprehensive, context):
     except Exception as e:
         raise click.ClickException(f"Search error: {e}")
 
+    # Add comprehensive CSE search if configured
+    if comprehensive and CONFIG.cse_id_comprehensive:
+        try:
+            # Create a fresh service instance for the comprehensive search
+            from googleapiclient.discovery import build
+            comp_service = build(
+                "customsearch", "v1", developerKey=CONFIG.g_key, cache_discovery=False
+            )
+            res_comp = (
+                service.cse()
+                .list(q=question, cx=CONFIG.cse_id_comprehensive, num=10)
+                .execute()
+            )
+            links.extend([item.get("link") for item in res_comp.get("items", [])])
+        except Exception as e:
+            click.echo(f"Warning: Comprehensive search failed: {e}")
+            pass  # Continue with existing links
+
     # Display found links
     click.echo("Found links:")
     for link in links:
