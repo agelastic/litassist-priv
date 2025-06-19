@@ -42,13 +42,11 @@ def verify(file, citations, soundness, reasoning):
     By default, performs all three verification types.
     Use flags to run specific verifications only.
     """
-    # Default: run all if no flags specified
     if not any([citations, soundness, reasoning]):
         citations = soundness = reasoning = True
 
     click.echo(f"🔍 Verifying {file}...")
 
-    # Read file content
     try:
         content = read_document(file)
     except click.ClickException as e:
@@ -59,7 +57,6 @@ def verify(file, citations, soundness, reasoning):
     if not content.strip():
         raise click.ClickException("File is empty")
 
-    # Prepare base filename for outputs
     base_name = os.path.splitext(file)[0]
     reports_generated = 0
     extra_files = {}
@@ -68,31 +65,23 @@ def verify(file, citations, soundness, reasoning):
     if citations:
         try:
             verified, unverified = verify_all_citations(content)
-
-            # Create detailed report
             citation_report = _format_citation_report(
                 verified, unverified, total_found=len(extract_citations(content))
             )
-
-            # Save report with consistent naming
             citation_file = os.path.join(
                 os.path.dirname(file) or ".",
-                "verify_" + os.path.basename(base_name) + "_citations.txt",
+                f"verify_{os.path.basename(base_name)}_citations.txt",
             )
             with open(citation_file, "w", encoding="utf-8") as f:
                 f.write(citation_report)
-
-            # Console output
             status = "✅" if not unverified else "⚠️"
             click.echo(f"\n{status} Citation verification complete")
             click.echo(
                 f"   - {len(verified)} citations verified, {len(unverified)} unverified"
             )
             click.echo(f"   - Details: {citation_file}")
-
             extra_files["Citation report"] = citation_file
             reports_generated += 1
-
         except Exception as e:
             click.echo(f"\n❌ Citation verification failed: {e}")
             logging.error(f"Citation verification error: {e}")
@@ -101,37 +90,21 @@ def verify(file, citations, soundness, reasoning):
     if soundness:
         try:
             client = LLMClientFactory.for_command("verify")
-
-            # Use the existing verify method for soundness check
-            # Note: client.verify() already uses verification.self_critique internally
             soundness_result = client.verify(content)
-
-            # Parse issues from the result
             issues = _parse_soundness_issues(soundness_result)
-
-            # Create detailed report
-            soundness_report = _format_soundness_report(
-                issues, soundness_result, content
-            )
-
-            # Save report with consistent naming
+            soundness_report = _format_soundness_report(issues, soundness_result, client.model)
             soundness_file = os.path.join(
                 os.path.dirname(file) or ".",
-                "verify_" + os.path.basename(base_name) + "_soundness.txt",
+                f"verify_{os.path.basename(base_name)}_soundness.txt",
             )
             with open(soundness_file, "w", encoding="utf-8") as f:
                 f.write(soundness_report)
-
-            # Console output
-            issue_count = len(issues)
-            status = "✅" if issue_count == 0 else "⚠️"
+            status = "✅" if not issues else "⚠️"
             click.echo(f"\n{status} Legal soundness check complete")
-            click.echo(f"   - {issue_count} issues identified")
+            click.echo(f"   - {len(issues)} issues identified")
             click.echo(f"   - Details: {soundness_file}")
-
             extra_files["Soundness report"] = soundness_file
             reports_generated += 1
-
         except Exception as e:
             click.echo(f"\n❌ Legal soundness check failed: {e}")
             logging.error(f"Legal soundness error: {e}")
@@ -139,28 +112,18 @@ def verify(file, citations, soundness, reasoning):
     # 3. Reasoning Trace Verification/Generation
     if reasoning:
         try:
-            # Check for existing trace
             existing_trace = extract_reasoning_trace(content)
-
             if existing_trace:
-                # Verify existing trace
                 action = "verified"
                 trace_status = _verify_reasoning_trace(existing_trace)
-
-                # Console output for existing trace
                 click.echo(f"\n✅ Reasoning trace {action}")
                 click.echo(
                     f"   - IRAC structure {'complete' if trace_status['complete'] else 'incomplete'}"
                 )
                 click.echo(f"   - Confidence: {existing_trace.confidence}%")
-
             else:
-                # Generate new trace
                 client = LLMClientFactory.for_command("verify")
-
-                # Create prompt that requests reasoning trace
                 enhanced_prompt = create_reasoning_prompt(content, "verify")
-
                 messages = [
                     {
                         "role": "system",
@@ -168,15 +131,9 @@ def verify(file, citations, soundness, reasoning):
                     },
                     {"role": "user", "content": enhanced_prompt},
                 ]
-
-                # Generate response with reasoning trace
                 response, _ = client.complete(messages, skip_citation_verification=True)
-
-                # Extract the newly generated trace
                 existing_trace = extract_reasoning_trace(response)
-
                 if not existing_trace:
-                    # Fallback: create a basic trace from the response
                     existing_trace = LegalReasoningTrace(
                         issue="Legal document verification",
                         applicable_law="Australian law principles",
@@ -186,32 +143,22 @@ def verify(file, citations, soundness, reasoning):
                         sources=[],
                         command="verify",
                     )
-
                 action = "generated"
-
-                # Console output for new trace
                 click.echo(f"\n✅ Reasoning trace {action}")
                 click.echo("   - IRAC structure complete")
                 click.echo(f"   - Confidence: {existing_trace.confidence}%")
-
-            # Save reasoning trace with consistent naming
             verify_base = os.path.join(
-                os.path.dirname(file) or ".", "verify_" + os.path.basename(base_name)
+                os.path.dirname(file) or ".", f"verify_{os.path.basename(base_name)}"
             )
             reasoning_file = save_reasoning_trace(existing_trace, verify_base)
             click.echo(f"   - Details: {reasoning_file}")
-
             extra_files["Reasoning trace"] = reasoning_file
             reports_generated += 1
-
         except Exception as e:
             click.echo(f"\n❌ Reasoning trace verification failed: {e}")
             logging.error(f"Reasoning trace error: {e}")
 
-    # Summary
     click.echo(f"\nVerification complete. {reports_generated} reports generated.")
-
-    # Save audit log
     save_log(
         "verify",
         {
@@ -239,20 +186,16 @@ def _format_citation_report(verified: list, unverified: list, total_found: int) 
         f"**Unverified citations**: {len(unverified)}",
         "",
     ]
-
     if verified:
         lines.extend(["## Verified Citations", ""])
-        for citation in verified:
-            lines.append(f"- ✅ {citation}")
+        lines += [f"- ✅ {c}" for c in verified]
         lines.append("")
-
     if unverified:
         lines.extend(["## Unverified Citations", ""])
         for citation, reason in unverified:
             lines.append(f"- ❌ {citation}")
             lines.append(f"  - **Reason**: {reason}")
         lines.append("")
-
     lines.extend(
         [
             "## Verification Method",
@@ -265,104 +208,63 @@ def _format_citation_report(verified: list, unverified: list, total_found: int) 
             "*Report generated by LitAssist verify command*",
         ]
     )
-
     return "\n".join(lines)
 
 
 def _parse_soundness_issues(soundness_result: str) -> list:
-    """Parse legal soundness issues from the structured '## Issues Found' section."""
+    """Parse legal soundness issues from the '## Issues Found' section."""
     issues = []
-    # Find the '## Issues Found' section
     match = re.search(
         r"## Issues Found\s*\n(.*?)(?:\n## |\Z)",
         soundness_result,
         re.DOTALL | re.IGNORECASE,
     )
     if match:
-        issues_block = match.group(1).strip()
-        if "no issues found" in issues_block.lower():
+        block = match.group(1).strip()
+        if "no issues found" in block.lower():
             return []
-        # Extract numbered list items
-        for line in issues_block.splitlines():
+        for line in block.splitlines():
             m = re.match(r"\s*\d+\.\s+(.*)", line)
             if m:
                 issues.append(m.group(1).strip())
     return issues
 
 
-def _format_soundness_report(
-    issues: list, full_response: str, original_content: str
-) -> str:
+def _format_soundness_report(issues: list, full_response: str, model: str) -> str:
     """Format legal soundness verification report."""
     lines = [
         "# Legal Soundness Verification Report",
         "",
         f"**Issues identified**: {len(issues)}",
-        "**Verification model**: anthropic/claude-sonnet-4",
+        f"**Verification model**: {model}",
         f"**Australian law compliance**: {'✅ Verified' if not issues else '⚠️ Issues found'}",
         "",
     ]
-
-    if issues:
-        lines.extend(["## Issues Found", ""])
-        for i, issue in enumerate(issues, 1):
-            lines.append(f"{i}. {issue}")
-        lines.append("")
-    else:
-        lines.extend(
-            [
-                "## Verification Result",
-                "",
-                "No legal soundness issues identified. The document appears to be:",
-                "- Legally accurate",
-                "- Compliant with Australian law",
-                "- Using correct legal terminology",
-                "- Properly citing authorities",
-                "",
-            ]
-        )
-
-    lines.extend(
-        [
-            "## Final Verified Text",
-            "",
-            full_response,
-            "",
-            "---",
-            "*Report generated by LitAssist verify command*",
-        ]
-    )
-
+    # Append the LLM’s full response (which already includes its own "## Issues Found" section)
+    lines.append(full_response.strip())
+    lines.append("")
+    lines.append("---")
+    lines.append("*Report generated by LitAssist verify command*")
     return "\n".join(lines)
 
 
 def _verify_reasoning_trace(trace: LegalReasoningTrace) -> dict:
     """Verify completeness and quality of existing reasoning trace."""
     status = {"complete": True, "issues": []}
-
-    # Check each IRAC component
     if not trace.issue or len(trace.issue) < 10:
         status["complete"] = False
         status["issues"].append("Issue statement missing or too brief")
-
     if not trace.applicable_law or len(trace.applicable_law) < 20:
         status["complete"] = False
         status["issues"].append("Applicable law section missing or insufficient")
-
     if not trace.application or len(trace.application) < 30:
         status["complete"] = False
         status["issues"].append("Application to facts missing or insufficient")
-
     if not trace.conclusion or len(trace.conclusion) < 10:
         status["complete"] = False
         status["issues"].append("Conclusion missing or too brief")
-
-    # Check confidence
     if trace.confidence < 0 or trace.confidence > 100:
         status["issues"].append(f"Invalid confidence score: {trace.confidence}")
-
-    # Check sources
     if not trace.sources:
         status["issues"].append("No legal sources cited")
-
     return status

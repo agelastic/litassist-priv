@@ -7,6 +7,7 @@ to produce a structured legal answer citing relevant cases.
 """
 
 import click
+import json
 import re
 import warnings
 import os
@@ -33,6 +34,29 @@ def format_lookup_output(content: str, extract: str = None) -> str:
     Returns:
         Formatted output based on extraction type
     """
+    if extract:
+        # Try JSON parsing first for structured output
+        try:
+            json_data = json.loads(content)
+            if isinstance(json_data, dict) and extract in json_data:
+                items = json_data[extract]
+                if isinstance(items, list) and items:
+                    # Format based on extract type
+                    if extract == "citations":
+                        return "CITATIONS FOUND:\n" + "\n".join(items)
+                    elif extract == "principles":
+                        return "LEGAL PRINCIPLES:\n" + "\n".join(
+                            f"• {item}" for item in items
+                        )
+                    elif extract == "checklist":
+                        return "PRACTICAL CHECKLIST:\n" + "\n".join(
+                            f"□ {item}" for item in items
+                        )
+        except (json.JSONDecodeError, TypeError, KeyError):
+            # Fall back to regex-based extraction if JSON parsing fails
+            pass
+
+    # Fallback regex-based extraction (original logic)
     if extract == "citations":
         # Extract citations using multiple regex patterns
         citations = set()
@@ -215,8 +239,13 @@ def format_lookup_output(content: str, extract: str = None) -> str:
     is_flag=True,
     help="Use exhaustive analysis with maximum sources (40 instead of 5)",
 )
+@click.option(
+    "--context",
+    type=str,
+    help="Contextual information to guide the lookup analysis",
+)
 @timed
-def lookup(question, mode, extract, comprehensive):
+def lookup(question, mode, extract, comprehensive, context):
     """
     Rapid case-law lookup via Jade CSE + Gemini.
 
@@ -240,14 +269,17 @@ def lookup(question, mode, extract, comprehensive):
         num_sources = 10  # Request more for comprehensive search
         max_sources = 40
     else:
-        num_sources = 5   # Standard search
+        num_sources = 5  # Standard search
         max_sources = 5
-    
+
     # Fetch case links using Jade CSE
     try:
         from googleapiclient.discovery import build
-        service = build("customsearch", "v1", developerKey=CONFIG.g_key, cache_discovery=False)
-        
+
+        service = build(
+            "customsearch", "v1", developerKey=CONFIG.g_key, cache_discovery=False
+        )
+
         if comprehensive:
             # Comprehensive Jade CSE search
             all_links = []
@@ -255,13 +287,19 @@ def lookup(question, mode, extract, comprehensive):
                 question,
                 f"{question} case law",
                 f"{question} court decision",
-                f"{question} legal principle"
+                f"{question} legal principle",
             ]
-            
+
             for query in queries:
-                res = service.cse().list(q=query, cx=CONFIG.cse_id, num=num_sources, siteSearch="jade.io").execute()
+                res = (
+                    service.cse()
+                    .list(
+                        q=query, cx=CONFIG.cse_id, num=num_sources, siteSearch="jade.io"
+                    )
+                    .execute()
+                )
                 all_links.extend([item.get("link") for item in res.get("items", [])])
-            
+
             # Remove duplicates while preserving order
             seen = set()
             links = []
@@ -273,11 +311,35 @@ def lookup(question, mode, extract, comprehensive):
                         break
         else:
             # Standard Jade CSE search
-            res = service.cse().list(q=question, cx=CONFIG.cse_id, num=num_sources, siteSearch="jade.io").execute()
+            res = (
+                service.cse()
+                .list(
+                    q=question, cx=CONFIG.cse_id, num=num_sources, siteSearch="jade.io"
+                )
+                .execute()
+            )
             links = [item.get("link") for item in res.get("items", [])]
-            
+
     except Exception as e:
         raise click.ClickException(f"Search error: {e}")
+
+    # Add comprehensive CSE search if configured
+    if comprehensive and CONFIG.cse_id_comprehensive:
+        try:
+            # Create a fresh service instance for the comprehensive search
+            from googleapiclient.discovery import build
+            comp_service = build(
+                "customsearch", "v1", developerKey=CONFIG.g_key, cache_discovery=False
+            )
+            res_comp = (
+                service.cse()
+                .list(q=question, cx=CONFIG.cse_id_comprehensive, num=10)
+                .execute()
+            )
+            links.extend([item.get("link") for item in res_comp.get("items", [])])
+        except Exception as e:
+            click.echo(f"Warning: Comprehensive search failed: {e}")
+            pass  # Continue with existing links
 
     # Display found links
     click.echo("Found links:")
@@ -286,21 +348,31 @@ def lookup(question, mode, extract, comprehensive):
 
     # Prepare prompt
     prompt = f"Question: {question}\nLinks:\n" + "\n".join(links)
+    if context:
+        prompt = f"Context: {context}\n\n{prompt}"
 
     # Add extraction-specific instructions
     if extract:
         if extract == "citations":
             prompt += f"\n\n{PROMPTS.get('lookup.extraction_instructions.citations')}"
         elif extract == "principles":
-            prompt += "\n\nAlso provide a clear 'LEGAL PRINCIPLES' section that lists the key legal rules and principles in a structured format suitable for advice letters."
+            prompt += f"\n\n{PROMPTS.get('lookup.extraction_instructions.principles')}"
         elif extract == "checklist":
-            prompt += "\n\nAlso provide a clear 'PRACTICAL CHECKLIST' section that lists actionable requirements, evidence needed, and steps to take."
+            prompt += f"\n\n{PROMPTS.get('lookup.extraction_instructions.checklist')}"
     # Set parameters based on mode and comprehensive flag
     if comprehensive:
         if mode == "irac":
-            overrides = {"temperature": 0, "top_p": 0.05, "max_tokens": 8192}  # Maximum precision
+            overrides = {
+                "temperature": 0,
+                "top_p": 0.05,
+                "max_tokens": 8192,
+            }  # Maximum precision
         else:  # broad
-            overrides = {"temperature": 0.3, "top_p": 0.7, "max_tokens": 8192}  # Controlled creativity
+            overrides = {
+                "temperature": 0.3,
+                "top_p": 0.7,
+                "max_tokens": 8192,
+            }  # Controlled creativity
     else:
         # Standard parameters
         if mode == "irac":
@@ -313,11 +385,13 @@ def lookup(question, mode, extract, comprehensive):
     call_with_hb = heartbeat(CONFIG.heartbeat_interval)(client.complete)
 
     # Set system prompt based on comprehensive flag
-    base_system = PROMPTS.get('base.australian_law')
+    base_system = PROMPTS.get("base.australian_law")
     if comprehensive:
-        requirements = PROMPTS.get('lookup.comprehensive_analysis.requirements')
-        citation_requirements = PROMPTS.get('lookup.comprehensive_analysis.citation_requirements')
-        output_structure = PROMPTS.get('lookup.comprehensive_analysis.output_structure')
+        requirements = PROMPTS.get("lookup.comprehensive_analysis.requirements")
+        citation_requirements = PROMPTS.get(
+            "lookup.comprehensive_analysis.citation_requirements"
+        )
+        output_structure = PROMPTS.get("lookup.comprehensive_analysis.output_structure")
         system_content = f"""{base_system} Provide exhaustive legal analysis.
 
 {requirements}
@@ -326,7 +400,7 @@ def lookup(question, mode, extract, comprehensive):
 
 {output_structure}"""
     else:
-        standard_instructions = PROMPTS.get('lookup.standard_analysis.instructions')
+        standard_instructions = PROMPTS.get("lookup.standard_analysis.instructions")
         system_content = f"{base_system} {standard_instructions}"
 
     try:
@@ -352,6 +426,8 @@ def lookup(question, mode, extract, comprehensive):
     # Save output using utility
     command_name = f"lookup_{extract}" if extract else "lookup"
     metadata = {"Mode": mode}
+    if context:
+        metadata["Context"] = context
     if extract:
         metadata["Extract"] = extract
     if comprehensive:
@@ -375,6 +451,7 @@ def lookup(question, mode, extract, comprehensive):
             "inputs": {
                 "question": question,
                 "links": "\n".join(links),
+                "context": context,
                 "prompt": prompt,
             },
             "response": content,
@@ -396,12 +473,16 @@ def lookup(question, mode, extract, comprehensive):
         analysis_type = "Exhaustive" if comprehensive else "Standard"
         click.echo(f"\n📊 {analysis_type} legal analysis for: {question}")
 
+    # Show context if provided
+    if context:
+        click.echo(f"ℹ️  Context: '{context}'")
+
     # Show links that were searched
     if comprehensive:
         click.echo(f"\n🔍 Exhaustive search: {len(links)} sources analyzed")
     else:
         click.echo(f"\n🔍 Standard search: {len(links)} sources analyzed")
-    
+
     for i, link in enumerate(links, 1):
         click.echo(f"   {i}. {link}")
 

@@ -7,8 +7,9 @@ verification:
   # LOCATION: llm.py:528-539
   self_critique: |
     Review the document above for legal inaccuracies and non-Australian English spellings.
+    Respond with a clear separation between your findings and the corrected text.
     First, under the heading "## Issues Found", provide a numbered list of all legal soundness issues you identify. If there are no issues, write "No issues found."
-    Then, under the heading "## Final Verified Text", provide the corrected version of the full text. If no corrections are made, return the original text verbatim, prefixed with the confirmation: "No legal soundness issues identified."
+    Then, use a clear separator "---" and after it, provide ONLY the "## Final Verified Text" section with the fully corrected text. Do not repeat the issues list in the second part of your response.
 
   # Enhanced citation instructions for retry attempts
   # USED BY: llm.py LLMClient.complete() method - when citation verification fails and retry is needed

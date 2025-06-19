@@ -103,6 +103,11 @@ VALID_COURTS = {
     },
     "ACTSC": {"name": "ACT Supreme Court", "established": 1934, "max_per_year": 500},
     "NTSC": {"name": "NT Supreme Court", "established": 1911, "max_per_year": 300},
+    "ACTOFOI": {
+        "name": "ACT Office of the Freedom of Information",
+        "established": 1989,
+        "max_per_year": 100,
+    },
     # UK/Privy Council courts (historically relevant to Australian law)
     "AC": {
         "name": "Appeal Cases (Privy Council)",
@@ -548,8 +553,10 @@ def validate_citation_patterns(content: str, enable_online: bool = True) -> List
                             unique_issues.append(
                                 f"COURT NOT RECOGNIZED: {citation} - {reason}\n  → ACTION: Excluding unrecognized court identifier"
                             )
-                        elif ("Invalid citation format" in reason or 
-                              "verification unavailable" in reason):
+                        elif (
+                            "Invalid citation format" in reason
+                            or "verification unavailable" in reason
+                        ):
                             unique_issues.append(
                                 f"CITATION NOT FOUND: {citation} - {reason}\n  → ACTION: Citation does not exist in legal database"
                             )

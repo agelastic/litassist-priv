@@ -31,7 +31,7 @@ Each stage:
 - **Two‑Phase Citation Control**:
   1. **Offline Validation**: Pattern‑based checks for generic names, future dates, malformed citations.
   2. **Online Verification**: HEAD requests to Jade.io/AustLII for real‑time existence checks.
-- **Selective Regeneration (“Option B”)**:
+- **Selective Regeneration ("Option B")**:
   - Strategy commands regenerate or discard only the specific items with citation issues.
   - Preserves verified content and avoids manual filtering.
 
@@ -43,6 +43,15 @@ Each stage:
   - If no reasoning trace exists in the file, one is generated and output.
   - Each check writes a separate timestamped report to outputs/.
   - All steps use the existing logging infrastructure and minimal console output.
+
+## Structured Output Patterns
+
+- **JSON-First Extraction (June 2025)**:
+  - Lookup command implements "Prompt Engineering First" principle for --extract options
+  - LLM instructed to return structured JSON: `{"extract_type": ["item1", "item2", ...]}`
+  - Client-side parsing attempts `json.loads()` first, falls back to regex patterns if JSON parsing fails
+  - Eliminates fragile regex parsing while maintaining backward compatibility
+  - Pattern applicable to other commands requiring structured data extraction
 
 ## Logging and Timing
 

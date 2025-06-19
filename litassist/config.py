@@ -130,6 +130,7 @@ class Config:
             )
             self.g_key = self.cfg["google_cse"]["api_key"]
             self.cse_id = self.cfg["google_cse"]["cse_id"]
+            self.cse_id_comprehensive = self.cfg["google_cse"].get("cse_id_comprehensive", None)
             self.pc_key = self.cfg["pinecone"]["api_key"]
             self.pc_env = self.cfg["pinecone"]["environment"]
             self.pc_index = self.cfg["pinecone"]["index_name"]

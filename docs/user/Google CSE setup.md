@@ -1,4 +1,4 @@
-### Google CSE (Jade.io) Setup & Usage  🔑
+### Google CSE Setup & Usage  🔑
 
 1. **Create a CSE**
 
@@ -17,7 +17,9 @@
 
 4. **Quota considerations**
 
-   * Free tier = **100 requests/day**. Each `lookup` run uses **1 API call**.
+   * Free tier = **100 requests/day**. Each `lookup` run uses:
+     - Standard mode: **1 API call** (5 results)
+     - Comprehensive mode: **up to 4 API calls** (40 results) + **1 additional call** if secondary CSE configured
    * Raise quota in Google Cloud if you need more.
 
 5. **Billing (optional)**
@@ -33,21 +35,69 @@
      ```
    * Fix the key or CSE ID and rerun.
 
-Once these two values are in `config.yaml`:
+Once these values are in `config.yaml`:
 
 ```yaml
 google_cse:
   api_key:  "YOUR_GOOGLE_API_KEY"
   cse_id:   "YOUR_JADE_CSE_ID"
+  cse_id_comprehensive: "YOUR_COMPREHENSIVE_CSE_ID"  # Optional: for broader legal sources
 ```
 
 the **lookup** command will automatically:
 
-1. Query Google CSE for Jade.io pages (max 3).
+1. Query Google CSE for legal sources (default: 5 Jade.io sources, comprehensive: up to 40 Jade.io + 10 broader sources).
 2. Feed the links into **Gemini 2.5 Pro**.
 3. Return an IRAC-style answer with citations.
 
 ---
+
+### Setting Up a Secondary CSE for Comprehensive Mode (Optional)
+
+To enable broader legal searches beyond Jade.io when using `--comprehensive`:
+
+1. **Create a second CSE** at [https://programmablesearchengine.google.com/](https://programmablesearchengine.google.com/)
+2. **Add broader legal sites**:
+   ```
+   austlii.edu.au
+   *.gov.au
+   hcourt.gov.au
+   fedcourt.gov.au
+   lawcouncil.asn.au
+   *.edu.au/law/*
+   ```
+3. **Copy the Search engine ID** and add it to config.yaml as `cse_id_comprehensive`
+4. **Use the same API key** - no need for a separate key
+
+When configured, the `--comprehensive` flag will search both:
+- **Primary CSE**: Up to 40 Jade.io sources for authoritative case law
+- **Secondary CSE**: 10 additional sources from government, courts, and academic sites
+
+---
+
+### Comprehensive Mode
+
+The lookup command supports a `--comprehensive` flag for exhaustive analysis:
+
+```bash
+# Standard search (5 sources)
+./litassist.py lookup "contract formation elements"
+
+# Comprehensive search (up to 40 Jade.io + 10 broader sources if secondary CSE configured)
+./litassist.py lookup "contract formation elements" --comprehensive
+```
+
+**Note**: Comprehensive mode uses significantly more API calls. Consider your daily quota when using this feature.
+
+### Context Option
+
+The lookup command supports a `--context` option to provide additional guidance:
+
+```bash
+./litassist.py lookup "negligence principles" --context "Focus on medical malpractice cases involving surgical errors"
+```
+
+This helps narrow the analysis to specific aspects of your legal question.
 
 ### Example
 
