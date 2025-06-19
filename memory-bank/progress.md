@@ -6,7 +6,7 @@
 - Comprehensive post-hoc verification (June 2025): `verify` command performs citation accuracy, legal soundness, and reasoning transparency checks on generated documents. Each check writes a separate timestamped report to outputs/. All steps use the existing logging infrastructure and minimal console output.
 - Research-informed brainstorming (June 2025): `brainstorm` command supports `--research` option to inject lookup report(s) into the orthodox strategies prompt, enabling research-grounded strategy generation. All prompt logic is managed in YAML; no hardcoded LLM templates.
 - Major June 2025 improvements complete:
-  - Lookup command overhaul: Jade.io-only, --comprehensive flag, improved extract options, citation integration, code quality/linting
+  - Lookup command overhaul: Jade.io-only, --comprehensive flag, improved extract options with JSON-first parsing, --context flag, citation integration, code quality/linting
   - Multi-section reasoning traces for brainstorm; enhanced strategy integration
   - Complete timing coverage and comprehensive logging for all operations
   - Centralized configuration and log format in config.yaml

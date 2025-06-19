@@ -14,13 +14,13 @@ lookup:
   # LOCATION: lookup.py:292-297 (to be extracted)
   extraction_instructions:
     citations: |
-      Also provide a clear 'CITATIONS' section that lists all case citations and legislation references in a format easy to copy and use.
+      Return the citations results as a JSON object with key "citations" mapping to a list of values. Format: {"citations": ["citation1", "citation2", ...]}. Include all case citations and legislation references in the list.
     
-    # principles: |
-    #   Also provide a clear 'LEGAL PRINCIPLES' section that lists the key legal rules and principles in a structured format suitable for advice letters.
+    principles: |
+      Return the principles results as a JSON object with key "principles" mapping to a list of values. Format: {"principles": ["principle1", "principle2", ...]}. Include key legal rules and principles in the list.
     
-    # checklist: |
-    #   Also provide a clear 'PRACTICAL CHECKLIST' section that lists actionable requirements, evidence needed, and steps to take.
+    checklist: |
+      Return the checklist results as a JSON object with key "checklist" mapping to a list of values. Format: {"checklist": ["item1", "item2", ...]}. Include actionable requirements, evidence needed, and steps to take in the list.
   
   # Comprehensive analysis requirements
   # USED BY: lookup.py lookup() - when --comprehensive flag is used

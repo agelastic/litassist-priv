@@ -1,9 +1,17 @@
 # Active Context
 
 ## Current Work Focus
-Maintaining the Memory Bank as the authoritative, up-to-date reference for LitAssist’s architecture, workflows, and development state. Incorporating all June 2025 improvements, workflow clarifications, and best practices from the latest documentation.
+Maintaining the Memory Bank as the authoritative, up-to-date reference for LitAssist's architecture, workflows, and development state. Incorporating all June 2025 improvements, workflow clarifications, and best practices from the latest documentation.
 
-**Latest update (16 June 2025):**
+**Latest update (19 June 2025):**
+- Completed lookup command refactoring to eliminate fragile regex parsing and leverage structured LLM output
+- Implemented JSON-first extraction with regex fallback for --extract options (citations, principles, checklist)
+- Added --context flag to lookup command for targeted analysis guidance
+- Updated prompts to instruct LLM to return structured JSON for extraction requests
+- Enhanced test suite to validate new --context functionality
+- Updated user documentation to reflect improved extraction workflow
+
+**Previous update (16 June 2025):**
 - Synchronized all prompt YAML files and test suites so that tests only validate active (uncommented) templates.
 - Commented out all test code for templates that are commented out in the YAML files, including in `test_prompt_templates.py` and `test_prompts.py`.
 - Fixed all schema and accessibility checks for commented-out prompt keys (including lookup.yaml, documents.yaml, base.yaml).

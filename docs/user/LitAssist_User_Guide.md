@@ -419,13 +419,14 @@ The `lookup` command performs rapid searches on Jade.io for relevant case law, t
 ### Command
 
 ```bash
-./litassist.py lookup "your legal question" [--mode irac|broad] [--extract citations|principles|checklist] [--comprehensive]
+./litassist.py lookup "your legal question" [--mode irac|broad] [--extract citations|principles|checklist] [--comprehensive] [--context "contextual info"]
 ```
 
 Options:
 - `--mode`: Choose between IRAC (Issue, Rule, Application, Conclusion) or a broader exploration
 - `--extract`: Extract specific information in a structured format for workflow efficiency
 - `--comprehensive`: Use exhaustive analysis with up to 40 sources instead of 5 (default: false)
+- `--context`: Provide contextual information to guide and focus the lookup analysis (new feature)
 
 #### Analysis Modes:
 - **IRAC** (default): Structured legal analysis (Issue, Rule, Application, Conclusion) with precise, deterministic answers

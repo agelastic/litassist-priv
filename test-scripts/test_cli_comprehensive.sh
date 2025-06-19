@@ -291,10 +291,10 @@ EOF
 test_lookup_command() {
     print_section "Testing LOOKUP Command"
     
-    # Comprehensive test with multiple flags to minimize LLM calls
-    run_test "Lookup - Comprehensive with all options" \
-        "python litassist.py lookup 'contract formation requirements' --comprehensive --mode broad --extract citations" \
-        "Exhaustive search|sources analyzed|complete|saved to|citations"
+    # Comprehensive test with multiple flags to minimize LLM calls, including new --context flag
+    run_test "Lookup - Comprehensive with all options including context" \
+        "python litassist.py lookup 'contract formation requirements' --comprehensive --mode broad --extract citations --context 'mock context for commercial contract dispute'" \
+        "Exhaustive search|sources analyzed|complete|saved to|citations|Context"
 }
 
 test_extractfacts_command() {
