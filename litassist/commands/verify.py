@@ -92,7 +92,7 @@ def verify(file, citations, soundness, reasoning):
             client = LLMClientFactory.for_command("verify")
             soundness_result = client.verify(content)
             issues = _parse_soundness_issues(soundness_result)
-            soundness_report = _format_soundness_report(issues, soundness_result)
+            soundness_report = _format_soundness_report(issues, soundness_result, client.model)
             soundness_file = os.path.join(
                 os.path.dirname(file) or ".",
                 f"verify_{os.path.basename(base_name)}_soundness.txt",
@@ -230,13 +230,13 @@ def _parse_soundness_issues(soundness_result: str) -> list:
     return issues
 
 
-def _format_soundness_report(issues: list, full_response: str) -> str:
+def _format_soundness_report(issues: list, full_response: str, model: str) -> str:
     """Format legal soundness verification report."""
     lines = [
         "# Legal Soundness Verification Report",
         "",
         f"**Issues identified**: {len(issues)}",
-        "**Verification model**: anthropic/claude-sonnet-4",
+        f"**Verification model**: {model}",
         f"**Australian law compliance**: {'✅ Verified' if not issues else '⚠️ Issues found'}",
         "",
     ]

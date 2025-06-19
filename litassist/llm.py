@@ -92,7 +92,7 @@ class LLMClientFactory:
         },
         # Verify - post-hoc verification command
         "verify": {
-            "model": "anthropic/claude-sonnet-4",
+            "model": "anthropic/claude-opus-4",
             "temperature": 0,
             "top_p": 0.2,
             "force_verify": False,  # Don't double-verify since this IS verification
