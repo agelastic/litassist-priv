@@ -41,14 +41,21 @@ Sources: Hadley v Baxendale (1854) 9 Exch 341; Competition and Consumer Act 2010
 def test_imports():
     """Test that all imports work correctly."""
     print("Testing imports...")
+    import importlib.util
+
     try:
-        from litassist.commands.verify import verify
-        from litassist.commands.verify import _format_citation_report
-        from litassist.commands.verify import _parse_soundness_issues
-        from litassist.commands.verify import _verify_reasoning_trace
+        spec = importlib.util.find_spec("litassist.commands.verify")
+        if spec is None:
+            raise ImportError("verify module not found")
+        module = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(module)  # type: ignore
+        assert hasattr(module, "verify")
+        assert hasattr(module, "_format_citation_report")
+        assert hasattr(module, "_parse_soundness_issues")
+        assert hasattr(module, "_verify_reasoning_trace")
         print("✅ All imports successful")
         return True
-    except ImportError as e:
+    except Exception as e:
         print(f"❌ Import error: {e}")
         return False
 
@@ -90,7 +97,7 @@ def test_helper_functions():
             command="verify"
         )
         status = _verify_reasoning_trace(trace)
-        assert status["complete"] == True
+        assert status["complete"]
         print("✅ Reasoning trace verification works")
         
         return True
@@ -137,7 +144,7 @@ def test_llm_config():
         assert config['model'] == 'anthropic/claude-sonnet-4'
         assert config['temperature'] == 0
         assert config['top_p'] == 0.2
-        assert config['force_verify'] == False
+        assert not config['force_verify']
         
         print("✅ LLM configuration is correct")
         return True

@@ -63,6 +63,12 @@ pipx install -e .
 pipx ensurepath
 source ~/.zshrc
 
+# For local development with pip instead of pipx
+# use the pinned requirements to avoid version issues
+# (openai==0.28.1, google-api-python-client, etc.)
+#
+# pip install -r requirements.txt
+
 # 3. Setup configuration
 cp config.yaml.template config.yaml
 # Edit config.yaml with your API keys
