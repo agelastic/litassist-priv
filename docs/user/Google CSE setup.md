@@ -18,8 +18,8 @@
 4. **Quota considerations**
 
    * Free tier = **100 requests/day**. Each `lookup` run uses:
-     - Standard mode: **1 API call** (5 results)
-     - Comprehensive mode: **up to 4 API calls** (40 results) + **1 additional call** if secondary CSE configured
+     - Standard mode: **1 API call** (5 results from Jade.io)
+     - Comprehensive mode: **2 API calls** (up to 20 results from Jade.io) + **1 additional call** if secondary CSE configured (up to 10 broader legal sources)
    * Raise quota in Google Cloud if you need more.
 
 5. **Billing (optional)**
@@ -46,7 +46,7 @@ google_cse:
 
 the **lookup** command will automatically:
 
-1. Query Google CSE for legal sources (default: 5 Jade.io sources, comprehensive: up to 40 Jade.io + 10 broader sources).
+1. Query Google CSE for legal sources (default: 5 Jade.io sources, comprehensive: up to 20 Jade.io + 10 broader sources).
 2. Feed the links into **Gemini 2.5 Pro**.
 3. Return an IRAC-style answer with citations.
 
@@ -70,7 +70,7 @@ To enable broader legal searches beyond Jade.io when using `--comprehensive`:
 4. **Use the same API key** - no need for a separate key
 
 When configured, the `--comprehensive` flag will search both:
-- **Primary CSE**: Up to 40 Jade.io sources for authoritative case law
+- **Primary CSE**: Up to 20 Jade.io sources for authoritative case law
 - **Secondary CSE**: 10 additional sources from government, courts, and academic sites
 
 ---
@@ -83,7 +83,7 @@ The lookup command supports a `--comprehensive` flag for exhaustive analysis:
 # Standard search (5 sources)
 ./litassist.py lookup "contract formation elements"
 
-# Comprehensive search (up to 40 Jade.io + 10 broader sources if secondary CSE configured)
+# Comprehensive search (up to 20 Jade.io + 10 broader sources if secondary CSE configured)
 ./litassist.py lookup "contract formation elements" --comprehensive
 ```
 
