@@ -1,3 +1,73 @@
+# LitAssist LLM Usage Analysis and Enhancement Report
+
+## 1. Introduction
+
+The purpose of this review is to analyze the current Large Language Model (LLM) usage within the LitAssist application. This report details findings from an examination of `litassist/llm.py`, assesses the existing configuration against goals of precision, creativity, and legal accuracy, and proposes recommendations for modifications to further enhance these qualities.
+
+## 2. Current LLM Usage Overview
+
+The `litassist/llm.py` file defines a sophisticated framework for interacting with various LLMs, primarily managed by the `LLMClientFactory` and `LLMClient` classes. The system is designed to provide a unified interface across different providers, handling parameter management and response processing.
+
+**Key Commands and Configurations:**
+
+*   **`extractfacts`**: Uses `anthropic/claude-sonnet-4` with low temperature (0) and top_p (0.15) for high precision. `force_verify` is `True`.
+*   **`strategy`**: Employs `openai/o3-pro` with its fixed parameters (temp=1, top_p=1, presence_penalty=0, frequency_penalty=0). Only `max_completion_tokens` and `reasoning_effort` are controllable. `force_verify` is `True`. System messages are merged into the user prompt.
+*   **`strategy-analysis`**: Uses `anthropic/claude-sonnet-4` (temp=0.2, top_p=0.8).
+*   **`brainstorm-orthodox`**: Uses `anthropic/claude-sonnet-4` (temp=0.3, top_p=0.7). `force_verify` is `True`.
+*   **`brainstorm-unorthodox`**: Leverages `x-ai/grok-3-beta` with high temperature (0.9) and top_p (0.95) for creativity. `force_verify` is `True` (auto-verify Grok).
+*   **`draft`**: Utilizes `openai/o3-pro` (fixed parameters, similar to `strategy`).
+*   **`digest-summary` / `digest-issues`**: Use `anthropic/claude-sonnet-4` with varying temperatures (0 for summary, 0.2 for issues).
+*   **`lookup`**: Uses `google/gemini-2.5-pro-preview` (temp=0.1, top_p=0.2). `force_verify` is `False`.
+*   **`verify` (command)**: Uses `anthropic/claude-opus-4` (temp=0, top_p=0.2) for post-hoc verification. `force_verify` is `False`.
+
+**Infrastructure and Philosophy:**
+
+*   **`LLMClientFactory`**: Centralizes model and parameter configurations for each command, allowing for command-specific LLM behaviors. It also handles falling back to default configurations (`anthropic/claude-sonnet-4`, temp=0.3, top_p=0.7) if a specific command config is missing.
+*   **`OpenRouter`**: Used for accessing non-OpenAI models and specialized OpenAI models like `o1-pro`/`o3-pro`. The client dynamically changes `openai.api_base` and `openai.api_key` when these models are invoked.
+*   **Parameter Selection Philosophy**: The configurations demonstrate a clear intent:
+    *   Low temperature/top_p for factual, deterministic tasks (e.g., `extractfacts`, `digest-summary`).
+    *   Higher temperature/top_p for creative or brainstorming tasks (e.g., `brainstorm-unorthodox`).
+    *   `openai/o3-pro` is reserved for tasks requiring advanced reasoning or drafting, understanding its fixed parameter limitations.
+*   **Citation Verification**: A critical component is the built-in citation verification system (`validate_and_verify_citations` method within `LLMClient`). This system checks citations against the AustLII database in real-time. The `force_verify` flag in command configurations dictates whether strict verification is mandatory. Failed verifications can trigger retries with enhanced prompting or removal of unverified citations.
+*   **Token Limits**: The system implements model-specific token limits (e.g., for Gemini, Claude, GPT-4, o3-pro, Grok) if `CONFIG.use_token_limits` is enabled. These limits are applied both for general completions and more constrained for verification tasks.
+*   **Prompting**: A base prompt (`base.australian_law`) ensuring Australian legal context and English conventions is systematically added to messages.
+
+## 3. Assessment of Current Setup
+
+The current LLM setup in LitAssist is robust and well-structured, demonstrating a thoughtful approach to leveraging different models for their strengths.
+
+**Precision:**
+
+*   **Strengths**:
+    *   Dedicated low-temperature settings for commands like `extractfacts` and `digest-summary` promote factual accuracy.
+    *   The `verify` command using `anthropic/claude-opus-4` at temperature 0 provides a strong mechanism for post-hoc analysis.
+    *   The citation verification system is a significant asset for ensuring the reliability of legal references.
+    *   Use of `openai/o3-pro` for `strategy` and `draft` likely aims for high-quality, precise outputs despite its fixed higher temperature, relying on the model's inherent capabilities.
+*   **Areas for Improvement**:
+    *   While `o3-pro` is powerful, its fixed high temperature might occasionally introduce variability where extreme precision is needed. The control is limited to prompting and `reasoning_effort`.
+    *   The effectiveness of `force_verify` depends on the thoroughness of the `verify_all_citations` logic and the underlying database.
+
+**Creativity:**
+
+*   **Strengths**:
+    *   The `brainstorm-unorthodox` command explicitly uses `x-ai/grok-3-beta` with high temperature (0.9) and top_p (0.95), which is well-suited for generating diverse and novel ideas.
+    *   Commands like `brainstorm-orthodox` and `strategy-analysis` use moderate temperatures (0.3-0.2), allowing for controlled creativity.
+*   **Areas for Improvement**:
+    *   Could explore additional models known for creative outputs for specific brainstorming sub-tasks.
+    *   The range of temperature/top_p settings for creative tasks could be further diversified or made more dynamic based on user needs or context.
+
+**Legal Accuracy:**
+
+*   **Strengths**:
+    *   The mandatory inclusion of the `PROMPTS.get("base.australian_law")` system message ensures a baseline legal and regional context.
+    *   The citation verification system (`validate_and_verify_citations`, `verify_all_citations`) is crucial for legal accuracy.
+    *   The `verify` command and its variants (`verify_with_level`) provide dedicated workflows for reviewing and correcting legal text.
+    *   `force_verify = True` for critical commands like `extractfacts` and `strategy` underscores a commitment to accuracy.
+    *   Retry mechanisms for failed citation verification enhance the robustness of generated content.
+*   **Areas for Improvement**:
+    *   Legal accuracy is highly dependent on the LLM's training data and the comprehensiveness of the citation database. Continuous monitoring of model performance on legal tasks is essential.
+    *   The definition of "legal inaccuracies" in the `verify` prompt is broad; more nuanced verification prompts could be developed for specific legal aspects.
+
 ## 4. Recommendations for Enhancement
 
 The following recommendations aim to build upon the existing strong foundation of `litassist/llm.py`. Many of these may align with ideas potentially discussed in `docs/development/LLM_IMPROVEMENTS.md`.
@@ -43,3 +113,7 @@ The following recommendations aim to build upon the existing strong foundation o
 3.  **Parameterization of `reasoning_effort`**:
     *   **Action**: If `reasoning_effort` proves highly beneficial for `o3-pro`, consider adding it as an explicit, albeit optional, parameter in the `COMMAND_CONFIGS` for `o3-pro` based commands, rather than only as a potential override.
     *   **Rationale**: Makes this important control more visible and consistently manageable.
+
+## 5. Conclusion
+
+LitAssist possesses a well-engineered and flexible LLM integration framework. The current system effectively segments tasks to different models and configurations, with a strong emphasis on legal context and citation accuracy. By implementing the proposed recommendations, many of which may resonate with existing internal improvement plans (as would be detailed in `docs/development/LLM_IMPROVEMENTS.md`), LitAssist can significantly elevate its performance, delivering even greater precision in factual tasks, fostering more potent creativity in brainstorming, and ensuring the highest possible degree of legal accuracy in its outputs.
