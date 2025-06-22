@@ -79,6 +79,8 @@ LitAssist is a command-line tool for automated litigation support workflows, tai
 5. Don't update related code unless it's broken
 6. Prefer inline fixes over architectural changes
 7. One fix = one narrowly scoped change
+8. **Remove code rather than add** - It's always better to delete unnecessary parsing logic than to add more
+9. **Never add regex/parsing for LLM responses** - Always modify prompts instead (see LLM Response Processing Philosophy)
 
 ### Code Analysis & Verification Requirements
 

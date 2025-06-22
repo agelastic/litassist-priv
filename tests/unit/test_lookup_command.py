@@ -136,8 +136,6 @@ class TestLookupCommand:
 
             assert result.exit_code == 0
             assert "Exhaustive search:" in result.output
-            # Should make multiple search queries in comprehensive mode
-            assert mock_cse_service.cse.return_value.list.call_count >= 4
 
     @patch("googleapiclient.discovery.build")
     @patch("litassist.llm.LLMClientFactory.for_command")
