@@ -93,6 +93,10 @@ class TestLLMClientVerification:
         mock_response = Mock()
         mock_response.choices = [Mock()]
         mock_response.choices[0].message.content = "Corrected text"
+        mock_response.choices[0].error = (
+            None  # Explicitly set error to None for success case
+        )
+        mock_response.choices[0].finish_reason = "stop"  # Set proper finish reason
         # Create a dict-like object that's JSON serializable
         mock_response.usage = {
             "prompt_tokens": 100,
@@ -115,6 +119,10 @@ class TestLLMClientVerification:
         mock_response = Mock()
         mock_response.choices = [Mock()]
         mock_response.choices[0].message.content = "Thoroughly reviewed content"
+        mock_response.choices[0].error = (
+            None  # Explicitly set error to None for success case
+        )
+        mock_response.choices[0].finish_reason = "stop"  # Set proper finish reason
         # Create a dict-like object that's JSON serializable
         mock_response.usage = {
             "prompt_tokens": 200,

@@ -80,6 +80,10 @@ class TestLLMClient:
         mock_response = Mock()
         mock_response.choices = [Mock()]
         mock_response.choices[0].message.content = "Test response content"
+        mock_response.choices[0].error = (
+            None  # Explicitly set error to None for success case
+        )
+        mock_response.choices[0].finish_reason = "stop"  # Set proper finish reason
         # Make usage a proper dictionary to avoid serialization issues
         mock_response.usage = {
             "prompt_tokens": 100,
@@ -175,6 +179,10 @@ class TestLLMClient:
         mock_response = Mock()
         mock_response.choices = [Mock()]
         mock_response.choices[0].message.content = "No corrections needed."
+        mock_response.choices[0].error = (
+            None  # Explicitly set error to None for success case
+        )
+        mock_response.choices[0].finish_reason = "stop"  # Set proper finish reason
         # Make usage a proper dictionary to avoid serialization issues
         mock_response.usage = {
             "prompt_tokens": 50,
@@ -420,6 +428,10 @@ class TestPromptIntegration:
         mock_response = Mock()
         mock_response.choices = [Mock()]
         mock_response.choices[0].message.content = "Generated response"
+        mock_response.choices[0].error = (
+            None  # Explicitly set error to None for success case
+        )
+        mock_response.choices[0].finish_reason = "stop"  # Set proper finish reason
         # Make usage a proper dictionary to avoid serialization issues
         mock_response.usage = {
             "prompt_tokens": 200,

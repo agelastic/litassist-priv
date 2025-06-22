@@ -11,6 +11,7 @@ import json
 import re
 import warnings
 import os
+import logging
 
 from litassist.config import CONFIG
 from litassist.utils import save_log, heartbeat, timed, save_command_output
@@ -259,17 +260,15 @@ def lookup(question, mode, extract, comprehensive, context):
               structured analysis, or 'broad' for more creative exploration.
         extract: Extract specific information - 'citations' for case references,
                 'principles' for legal rules, or 'checklist' for practical items.
-        comprehensive: Use exhaustive analysis with 40 sources instead of 5.
+        comprehensive: Use exhaustive analysis with 20 sources instead of 5.
 
     Raises:
         click.ClickException: If there are errors with the search or LLM API calls.
     """
     # Determine search parameters based on comprehensive flag
     if comprehensive:
-        num_sources = 10  # Request more for comprehensive search
-        max_sources = 40
+        max_sources = 20
     else:
-        num_sources = 5  # Standard search
         max_sources = 5
 
     # Fetch case links using Jade CSE
@@ -281,20 +280,18 @@ def lookup(question, mode, extract, comprehensive, context):
         )
 
         if comprehensive:
-            # Comprehensive Jade CSE search
+            # Comprehensive Jade CSE search - 2 calls for 20 results
             all_links = []
             queries = [
                 question,
                 f"{question} case law",
-                f"{question} court decision",
-                f"{question} legal principle",
             ]
 
             for query in queries:
                 res = (
                     service.cse()
                     .list(
-                        q=query, cx=CONFIG.cse_id, num=num_sources, siteSearch="jade.io"
+                        q=query, cx=CONFIG.cse_id
                     )
                     .execute()
                 )
@@ -314,11 +311,11 @@ def lookup(question, mode, extract, comprehensive, context):
             res = (
                 service.cse()
                 .list(
-                    q=question, cx=CONFIG.cse_id, num=num_sources, siteSearch="jade.io"
+                    q=question, cx=CONFIG.cse_id
                 )
                 .execute()
             )
-            links = [item.get("link") for item in res.get("items", [])]
+            links = [item.get("link") for item in res.get("items", [])][:max_sources]
 
     except Exception as e:
         raise click.ClickException(f"Search error: {e}")
@@ -332,14 +329,15 @@ def lookup(question, mode, extract, comprehensive, context):
                 "customsearch", "v1", developerKey=CONFIG.g_key, cache_discovery=False
             )
             res_comp = (
-                service.cse()
-                .list(q=question, cx=CONFIG.cse_id_comprehensive, num=10)
+                comp_service.cse()
+                .list(q=question, cx=CONFIG.cse_id_comprehensive)
                 .execute()
             )
             links.extend([item.get("link") for item in res_comp.get("items", [])])
         except Exception as e:
             click.echo(f"Warning: Comprehensive search failed: {e}")
-            pass  # Continue with existing links
+            logging.exception("Comprehensive search failed with secondary CSE", exc_info=e)
+            # Continue with existing links from primary search
 
     # Display found links
     click.echo("Found links:")
