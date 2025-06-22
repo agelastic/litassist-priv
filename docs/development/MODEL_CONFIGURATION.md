@@ -139,26 +139,75 @@ llm:
   use_token_limits: false  # Default: let models use natural limits
 ```
 
-## Adding New Models
+## Dynamic Parameter System
 
-### Step 1: Update Model Configuration
+LitAssist uses a dynamic, pattern-based parameter filtering system that automatically handles different model capabilities without hardcoding specific model names.
+
+### How It Works
+
+1. **Model Family Detection**: Models are matched against regex patterns to identify their family
+2. **Parameter Filtering**: Each model family has an allowed parameter list
+3. **Parameter Transformation**: Some parameters are automatically transformed (e.g., `max_tokens` → `max_completion_tokens`)
+4. **System Message Handling**: Automatic detection of system message support
+
+### Model Patterns
+
 ```python
-# In llm.py MODEL_CONFIGS
-"new_command": "provider/model-name"
+MODEL_PATTERNS = {
+    "openai_reasoning": r"openai/o\d+",     # o1, o3, o1-pro, o3-pro, future o5, etc.
+    "anthropic": r"anthropic/claude",       # All Claude models
+    "google": r"google/(gemini|palm|bard)", # Google models
+    "openai_standard": r"openai/(gpt|chatgpt)", # Standard GPT models
+    # ... more patterns
+}
 ```
 
-### Step 2: Configure Parameters
+### Adding New Models
+
+To add a new model, simply:
+
+1. **Update the model name in COMMAND_CONFIGS**:
 ```python
-# In llm.py command-specific configuration
-if command == "new_command":
-    if "specific-model" in model:
-        # Apply model-specific restrictions
+"new_command": "provider/new-model-name"
 ```
 
-### Step 3: Route Through OpenRouter
-- Ensure model is available via OpenRouter
-- Check BYOK requirements
-- Test with small requests first
+2. **If it's a new provider**, add a pattern and profile:
+```python
+# Add to MODEL_PATTERNS
+"new_provider": r"new-provider/",
+
+# Add to PARAMETER_PROFILES
+"new_provider": {
+    "allowed": ["temperature", "max_tokens", ...],
+    "transforms": {"old_param": "new_param"},
+    "system_message_support": True,
+}
+```
+
+3. **That's it!** The system automatically handles parameter filtering
+
+### Examples
+
+**Changing to a future model**:
+```python
+# Just change this:
+"strategy": "openai/o3-pro"
+# To this:
+"strategy": "openai/o5-pro"  # Works automatically!
+```
+
+**Adding a new Claude model**:
+```python
+# Just use it:
+"digest": "anthropic/claude-5-opus"  # Automatically gets Claude parameters
+```
+
+### Benefits
+
+- **Zero hardcoding**: No `if model == "specific-model"` checks
+- **Future-proof**: New model versions work without code changes
+- **Pattern-based**: All `openai/o*` models are treated as reasoning models
+- **Maintainable**: All parameter logic in one place
 
 ## Common Issues & Solutions
 

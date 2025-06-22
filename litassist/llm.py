@@ -20,6 +20,147 @@ from litassist.citation_verify import (
 )
 
 
+# Model family patterns for dynamic parameter handling
+MODEL_PATTERNS = {
+    "openai_reasoning": r"openai/o\d+",  # Matches o1, o3, o1-pro, o3-pro, etc.
+    "anthropic": r"anthropic/claude",
+    "google": r"google/(gemini|palm|bard)",
+    "openai_standard": r"openai/(gpt|chatgpt)",
+    "xai": r"x-ai/grok",
+    "meta": r"meta/(llama|codellama)",
+    "mistral": r"mistral/",
+    "cohere": r"cohere/",
+}
+
+# Parameter profiles by model family
+PARAMETER_PROFILES = {
+    "openai_reasoning": {
+        "allowed": ["max_completion_tokens", "reasoning_effort"],
+        "transforms": {"max_tokens": "max_completion_tokens"},
+        "system_message_support": False,  # o1/o3 models don't support system messages
+    },
+    "anthropic": {
+        "allowed": [
+            "temperature", "top_p", "max_tokens", "stop", "top_k",
+            "stream", "metadata", "stop_sequences"
+        ],
+    },
+    "google": {
+        "allowed": [
+            "temperature", "top_p", "max_tokens", "stop", 
+            "candidate_count", "max_output_tokens", "top_k",
+            "safety_settings", "stop_sequences"
+        ],
+        "transforms": {"max_tokens": "max_output_tokens"},
+    },
+    "openai_standard": {
+        "allowed": [
+            "temperature", "top_p", "max_tokens", "frequency_penalty", 
+            "presence_penalty", "stop", "logit_bias", "seed", 
+            "response_format", "stream", "n", "tools", "tool_choice",
+            "functions", "function_call", "user", "logprobs", "top_logprobs"
+        ],
+    },
+    "xai": {
+        "allowed": [
+            "temperature", "top_p", "max_tokens", "stop",
+            "frequency_penalty", "presence_penalty", "stream"
+        ],
+    },
+    "meta": {
+        "allowed": [
+            "temperature", "top_p", "max_tokens", "stop",
+            "frequency_penalty", "presence_penalty", "stream"
+        ],
+    },
+    "mistral": {
+        "allowed": [
+            "temperature", "top_p", "max_tokens", "stop",
+            "random_seed", "safe_mode", "stream"
+        ],
+        "transforms": {"seed": "random_seed"},
+    },
+    "cohere": {
+        "allowed": [
+            "temperature", "max_tokens", "k", "p", "stop_sequences",
+            "frequency_penalty", "presence_penalty", "stream"
+        ],
+        "transforms": {"top_k": "k", "top_p": "p", "stop": "stop_sequences"},
+    },
+    "default": {
+        "allowed": ["temperature", "top_p", "max_tokens", "stop"],  # Safe defaults
+    }
+}
+
+
+def get_model_family(model_name: str) -> str:
+    """
+    Identify the model family based on pattern matching.
+    
+    Args:
+        model_name: The full model name (e.g., "openai/gpt-4", "anthropic/claude-3")
+    
+    Returns:
+        The model family name (e.g., "openai_standard", "anthropic")
+    """
+    for family, pattern in MODEL_PATTERNS.items():
+        if re.match(pattern, model_name):
+            return family
+    return "default"
+
+
+def get_model_parameters(model_name: str, requested_params: dict) -> dict:
+    """
+    Dynamically filter parameters based on model patterns.
+    
+    Returns only the parameters that the model supports,
+    with any necessary transformations applied.
+    
+    Args:
+        model_name: The full model name
+        requested_params: Dictionary of requested parameters
+        
+    Returns:
+        Filtered dictionary containing only supported parameters
+    """
+    model_family = get_model_family(model_name)
+    profile = PARAMETER_PROFILES.get(model_family, PARAMETER_PROFILES["default"])
+    
+    filtered = {}
+    transforms = profile.get("transforms", {})
+    allowed = profile.get("allowed", [])
+    
+    for param, value in requested_params.items():
+        # Skip None values
+        if value is None:
+            continue
+            
+        # Check if parameter needs transformation
+        if param in transforms:
+            new_param = transforms[param]
+            filtered[new_param] = value
+        elif param in allowed:
+            filtered[param] = value
+        # Silently drop unsupported parameters
+    
+    return filtered
+
+
+def supports_system_messages(model_name: str) -> bool:
+    """
+    Check if a model supports system messages.
+    
+    Args:
+        model_name: The full model name
+        
+    Returns:
+        True if the model supports system messages, False otherwise
+    """
+    model_family = get_model_family(model_name)
+    profile = PARAMETER_PROFILES.get(model_family, PARAMETER_PROFILES["default"])
+    return profile.get("system_message_support", True)  # Default to True
+
+
 class LLMClientFactory:
     """
     Factory class for creating LLMClient instances with command-specific configurations.
@@ -254,34 +395,23 @@ class LLMClient:
 
         # Set model-specific token limits if enabled in config and not explicitly specified
         if CONFIG.use_token_limits:
-            # Check if this is o1-pro or o3-pro which use max_completion_tokens instead of max_tokens
-            is_reasoning_model = model in ["openai/o1-pro", "openai/o3-pro"]
-            token_param = (
-                "max_completion_tokens" if is_reasoning_model else "max_tokens"
-            )
+            # Determine if we need to transform max_tokens to another parameter
+            test_params = {"max_tokens": 1}
+            filtered = get_model_parameters(model, test_params)
+            token_param = "max_completion_tokens" if "max_completion_tokens" in filtered else "max_tokens"
 
             if token_param not in default_params:
                 # These limits are carefully chosen to balance comprehensive responses with quality
                 if "google/gemini" in model.lower():
-                    default_params[token_param] = (
-                        2048  # Gemini - reliable up to this length
-                    )
+                    default_params[token_param] = 2048  # Gemini - reliable up to this length
                 elif "anthropic/claude" in model.lower():
-                    default_params[token_param] = (
-                        4096  # Claude - coherent for longer outputs
-                    )
+                    default_params[token_param] = 4096  # Claude - coherent for longer outputs
                 elif "openai/gpt-4" in model.lower():
-                    default_params[token_param] = (
-                        3072  # GPT-4 - balanced limit for precision
-                    )
-                elif model in ["openai/o1-pro", "openai/o3-pro"]:
-                    default_params[token_param] = (
-                        4096  # o1-pro/o3-pro - high-quality reasoning output
-                    )
+                    default_params[token_param] = 3072  # GPT-4 - balanced limit for precision
+                elif get_model_family(model) == "openai_reasoning":
+                    default_params[token_param] = 4096  # o1-pro/o3-pro - high-quality reasoning output
                 elif "grok" in model.lower():
-                    default_params[token_param] = (
-                        1536  # Grok - more prone to hallucination
-                    )
+                    default_params[token_param] = 1536  # Grok - more prone to hallucination
                 else:
                     default_params[token_param] = 2048  # Default safe limit
 
@@ -312,11 +442,9 @@ class LLMClient:
         Raises:
             Exception: If the API call fails or returns an error.
         """
-        # Check if this is o3-pro which doesn't support system messages
-        is_o3_pro = self.model == "openai/o3-pro"
-
-        if is_o3_pro:
-            # o3-pro doesn't support system messages - merge into first user message
+        # Check if this model supports system messages
+        if not supports_system_messages(self.model):
+            # This model doesn't support system messages - merge into first user message
             modified_messages = []
             system_content = PROMPTS.get("base.australian_law")
 
@@ -380,10 +508,11 @@ class LLMClient:
         # Determine the correct model name
         model_name = self.model
 
-        # Use OpenRouter for non-OpenAI models AND for o1-pro/o3-pro (only available via OpenRouter)
+        # Use OpenRouter for non-OpenAI models AND for reasoning models (only available via OpenRouter)
+        model_family = get_model_family(self.model)
         if (
             "/" in self.model and not self.model.startswith("openai/")
-        ) or self.model in ["openai/o1-pro", "openai/o3-pro"]:
+        ) or model_family == "openai_reasoning":
             openai.api_base = CONFIG.or_base
             openai.api_key = CONFIG.or_key
             # Keep full model name for OpenRouter
@@ -395,63 +524,45 @@ class LLMClient:
 
         # Invoke the appropriate API based on model
         try:
-            if self.model in ["openai/o1-pro", "openai/o3-pro"]:
-                # o1-pro and o3-pro use special handling via OpenRouter
-                # These models require specific parameter filtering since they have very limited parameter support
+            # Filter parameters based on model capabilities
+            filtered_params = get_model_parameters(self.model, params)
+            
+            # Use ChatCompletion API
+            response = openai.ChatCompletion.create(
+                model=model_name, messages=messages, **filtered_params
+            )
 
-                # Filter parameters - these models only support max_completion_tokens and reasoning_effort
-                filtered_params = {}
-                if "max_completion_tokens" in params:
-                    filtered_params["max_completion_tokens"] = params[
-                        "max_completion_tokens"
-                    ]
-                if "reasoning_effort" in params and self.model == "openai/o3-pro":
-                    filtered_params["reasoning_effort"] = params["reasoning_effort"]
+            # Check for errors in the response
+            if (
+                hasattr(response, "choices")
+                and response.choices
+                and hasattr(response.choices[0], "error")
+                and response.choices[0].error
+            ):
+                error_info = response.choices[0].error
+                error_message = error_info.get("message", "Unknown API error")
+                raise Exception(f"API Error: {error_message}")
 
-                # Use ChatCompletion API through OpenRouter (which handles the underlying Responses API)
-                response = openai.ChatCompletion.create(
-                    model=model_name, messages=messages, **filtered_params
-                )
-
-                # Check for errors in the response
-                if (
-                    hasattr(response, "choices")
-                    and response.choices
-                    and hasattr(response.choices[0], "error")
-                    and response.choices[0].error
-                ):
+            # Check for error finish_reason
+            if (
+                hasattr(response, "choices")
+                and response.choices
+                and hasattr(response.choices[0], "finish_reason")
+                and response.choices[0].finish_reason == "error"
+            ):
+                # Try to get error details
+                if hasattr(response.choices[0], "error"):
                     error_info = response.choices[0].error
                     error_message = error_info.get("message", "Unknown API error")
-                    raise Exception(f"API Error: {error_message}")
+                    raise Exception(f"API request failed: {error_message}")
+                else:
+                    raise Exception(
+                        "API request failed with error finish_reason but no error details"
+                    )
 
-                # Check for error finish_reason
-                if (
-                    hasattr(response, "choices")
-                    and response.choices
-                    and hasattr(response.choices[0], "finish_reason")
-                    and response.choices[0].finish_reason == "error"
-                ):
-                    # Try to get error details
-                    if hasattr(response.choices[0], "error"):
-                        error_info = response.choices[0].error
-                        error_message = error_info.get("message", "Unknown API error")
-                        raise Exception(f"API request failed: {error_message}")
-                    else:
-                        raise Exception(
-                            "API request failed with error finish_reason but no error details"
-                        )
-
-                # Extract content and usage from chat response
-                content = response.choices[0].message.content or ""
-                usage = getattr(response, "usage", {})
-            else:
-                # Regular ChatCompletion API for all other models
-                response = openai.ChatCompletion.create(
-                    model=model_name, messages=messages, **params
-                )
-                # Extract content and usage from chat response
-                content = response.choices[0].message.content
-                usage = getattr(response, "usage", {})
+            # Extract content and usage from chat response
+            content = response.choices[0].message.content or ""
+            usage = getattr(response, "usage", {})
         finally:
             # Restore original settings
             openai.api_base = original_api_base
