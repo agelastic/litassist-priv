@@ -200,8 +200,13 @@ def counselnotes(files, extract, verify, output):
                                     combined_data[key] += f"\n{result[key]}"
                 final_output = json.dumps(combined_data, indent=2)
             else:
-                # For other extraction modes, combine appropriately
-                final_output = json.dumps(extraction_results, indent=2)
+                # For other extraction modes, combine list-based results from each chunk.
+                key = extract
+                combined_list = []
+                for r in extraction_results:
+                    if isinstance(r, dict) and isinstance(r.get(key), list):
+                        combined_list.extend(r[key])
+                final_output = json.dumps({key: combined_list}, indent=2)
         else:
             final_output = (
                 json.dumps(extraction_results[0], indent=2)
@@ -213,60 +218,148 @@ def counselnotes(files, extract, verify, output):
 
     else:
         # Strategic analysis mode (non-extraction)
-        with click.progressbar(
-            chunks, label="Generating strategic analysis"
-        ) as chunks_bar:
-            for idx, chunk in enumerate(chunks_bar, start=1):
-                # Use strategic analysis prompt
-                strategic_prompt = PROMPTS.get(
-                    "processing.counselnotes.strategic_analysis", documents=chunk
+        if len(chunks) == 1:
+            # Single chunk - process normally
+            chunk = chunks[0]
+            strategic_prompt = PROMPTS.get(
+                "processing.counselnotes.strategic_analysis", documents=chunk
+            )
+
+            try:
+                content, usage = client.complete(
+                    [
+                        {
+                            "role": "system",
+                            "content": PROMPTS.get(
+                                "processing.counselnotes.system_prompt"
+                            ),
+                        },
+                        {"role": "user", "content": strategic_prompt},
+                    ]
                 )
+            except Exception as e:
+                raise click.ClickException(f"LLM error in analysis: {e}")
 
-                try:
-                    content, usage = client.complete(
-                        [
-                            {
-                                "role": "system",
-                                "content": PROMPTS.get(
-                                    "processing.counselnotes.system_prompt"
-                                ),
-                            },
-                            {"role": "user", "content": strategic_prompt},
-                        ]
-                    )
-                except Exception as e:
-                    raise click.ClickException(
-                        f"LLM error in analysis chunk {idx}: {e}"
+            # Citation verification if requested
+            if verify:
+                citation_issues = client.validate_citations(content)
+                if citation_issues:
+                    citation_warning = "--- CITATION WARNINGS ---\n"
+                    citation_warning += "\n".join(citation_issues)
+                    citation_warning += "\n" + "-" * 40 + "\n\n"
+                    content = citation_warning + content
+
+            # Log response data
+            comprehensive_log["responses"].append(
+                {"chunk": 1, "content": content, "usage": usage}
+            )
+
+            # Accumulate usage statistics
+            for key in comprehensive_log["total_usage"]:
+                comprehensive_log["total_usage"][key] += usage.get(key, 0)
+
+            all_output.append(content)
+
+        else:
+            # Multiple chunks - need consolidation
+            chunk_analyses = []
+
+            with click.progressbar(
+                chunks, label="Analyzing document chunks"
+            ) as chunks_bar:
+                for idx, chunk in enumerate(chunks_bar, start=1):
+                    # Use chunk-specific prompt for partial analysis
+                    chunk_prompt = PROMPTS.get(
+                        "processing.counselnotes.chunk_analysis",
+                        documents=chunk,
+                        chunk_num=idx,
+                        total_chunks=len(chunks),
                     )
 
-                # Citation verification if requested
-                if verify:
-                    citation_issues = client.validate_citations(content)
-                    if citation_issues:
-                        citation_warning = (
-                            "--- CITATION WARNINGS FOR THIS SECTION ---\n"
+                    try:
+                        content, usage = client.complete(
+                            [
+                                {
+                                    "role": "system",
+                                    "content": PROMPTS.get(
+                                        "processing.counselnotes.system_prompt"
+                                    ),
+                                },
+                                {"role": "user", "content": chunk_prompt},
+                            ]
                         )
-                        citation_warning += "\n".join(citation_issues)
-                        citation_warning += "\n" + "-" * 40 + "\n\n"
-                        content = citation_warning + content
+                    except Exception as e:
+                        raise click.ClickException(
+                            f"LLM error in analysis chunk {idx}: {e}"
+                        )
 
-                # Log response data
-                comprehensive_log["responses"].append(
-                    {"chunk": idx, "content": content, "usage": usage}
-                )
+                    chunk_analyses.append(content)
 
-                # Accumulate usage statistics
-                for key in comprehensive_log["total_usage"]:
-                    comprehensive_log["total_usage"][key] += usage.get(key, 0)
-
-                # Collect output
-                if len(chunks) > 1:
-                    chunk_output = (
-                        f"\n=== Strategic Analysis - Section {idx} ===\n{content}"
+                    # Log response data
+                    comprehensive_log["responses"].append(
+                        {"chunk": idx, "content": content, "usage": usage}
                     )
-                else:
-                    chunk_output = content
-                all_output.append(chunk_output)
+
+                    # Accumulate usage statistics
+                    for key in comprehensive_log["total_usage"]:
+                        comprehensive_log["total_usage"][key] += usage.get(key, 0)
+
+            # Now consolidate all chunk analyses into final strategic notes
+            click.echo(
+                "🔄 Consolidating analyses into comprehensive strategic notes..."
+            )
+
+            consolidated_content = "\n\n".join(
+                [
+                    f"=== Analysis from Document Section {i+1} ===\n{analysis}"
+                    for i, analysis in enumerate(chunk_analyses)
+                ]
+            )
+
+            consolidation_prompt = PROMPTS.get(
+                "processing.counselnotes.consolidation",
+                chunk_analyses=consolidated_content,
+                total_chunks=len(chunks),
+            )
+
+            try:
+                final_content, final_usage = client.complete(
+                    [
+                        {
+                            "role": "system",
+                            "content": PROMPTS.get(
+                                "processing.counselnotes.system_prompt"
+                            ),
+                        },
+                        {"role": "user", "content": consolidation_prompt},
+                    ]
+                )
+            except Exception as e:
+                raise click.ClickException(f"LLM error in consolidation: {e}")
+
+            # Citation verification if requested
+            if verify:
+                citation_issues = client.validate_citations(final_content)
+                if citation_issues:
+                    citation_warning = "--- CITATION WARNINGS ---\n"
+                    citation_warning += "\n".join(citation_issues)
+                    citation_warning += "\n" + "-" * 40 + "\n\n"
+                    final_content = citation_warning + final_content
+
+            # Log consolidation response
+            comprehensive_log["responses"].append(
+                {
+                    "chunk": "consolidation",
+                    "content": final_content,
+                    "usage": final_usage,
+                }
+            )
+
+            # Accumulate final usage statistics
+            for key in comprehensive_log["total_usage"]:
+                comprehensive_log["total_usage"][key] += final_usage.get(key, 0)
+
+            all_output.append(final_content)
 
     # Prepare final output
     final_content = "\n\n".join(all_output)

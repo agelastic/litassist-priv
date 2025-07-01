@@ -69,82 +69,169 @@ def digest(file, mode, hint):
         "total_usage": {"prompt_tokens": 0, "completion_tokens": 0, "total_tokens": 0},
     }
 
-    # Process each chunk with a progress bar
-    with click.progressbar(chunks, label="Processing chunks") as chunks_bar:
-        for idx, chunk in enumerate(chunks_bar, start=1):
-            # Use centralized digest prompts
-            if mode == "summary":
-                if hint:
-                    hint_instruction = PROMPTS.get(
-                        "processing.digest.summary_mode_hint_instruction_with_hint",
-                        hint=hint,
-                    )
-                else:
-                    hint_instruction = PROMPTS.get(
-                        "processing.digest.summary_mode_hint_instruction_no_hint"
-                    )
-                digest_prompt = PROMPTS.get(
-                    "processing.digest.summary_mode",
-                    hint_instruction=hint_instruction,
-                )
-                prompt = f"{digest_prompt}\n\n{chunk}"
-            else:  # issues mode
-                if hint:
-                    hint_instruction = PROMPTS.get(
-                        "processing.digest.issues_mode_hint_instruction_with_hint",
-                        hint=hint,
-                    )
-                else:
-                    hint_instruction = PROMPTS.get(
-                        "processing.digest.issues_mode_hint_instruction_no_hint"
-                    )
-                digest_prompt = PROMPTS.get(
-                    "processing.digest.issues_mode",
-                    hint_instruction=hint_instruction,
-                )
-                prompt = f"{digest_prompt}\n\n{chunk}"
-            # Call the LLM
-            try:
-                content, usage = client.complete(
-                    [
-                        {
-                            "role": "system",
-                            "content": PROMPTS.get("processing.digest.system_prompt"),
-                        },
-                        {"role": "user", "content": prompt},
-                    ]
-                )
-            except Exception as e:
-                raise click.ClickException(f"LLM error in digest chunk {idx}: {e}")
+    # Process content based on chunking needs
+    if len(chunks) == 1:
+        # Single chunk - process normally with unified analysis
+        chunk = chunks[0]
 
-            # Note: digest removed verification as it's low-stakes content summarization
-            # However, we still need to validate citations to prevent cascade errors
-
-            # CRITICAL: Validate citations immediately to prevent cascade errors
-            # Even digest can contain legal precedents that need validation
-            if (
-                mode == "issues"
-            ):  # Legal issues mode is more likely to contain citations
-                citation_issues = client.validate_citations(content)
-                if citation_issues:
-                    # Prepend warnings to this chunk's content
-                    citation_warning = "--- CITATION WARNINGS FOR THIS CHUNK ---\n"
-                    citation_warning += "\n".join(citation_issues)
-                    citation_warning += "\n" + "-" * 40 + "\n\n"
-                    content = citation_warning + content
-
-            # Collect data for comprehensive log
-            comprehensive_log["responses"].append(
-                {"chunk": idx, "content": content, "usage": usage}
+        # Use centralized digest prompts for unified analysis
+        if mode == "summary":
+            if hint:
+                hint_instruction = PROMPTS.get(
+                    "processing.digest.summary_mode_hint_instruction_with_hint",
+                    hint=hint,
+                )
+            else:
+                hint_instruction = PROMPTS.get(
+                    "processing.digest.summary_mode_hint_instruction_no_hint"
+                )
+            digest_prompt = PROMPTS.get(
+                "processing.digest.summary_mode",
+                hint_instruction=hint_instruction,
             )
+            prompt = f"{digest_prompt}\n\n{chunk}"
+        else:  # issues mode
+            if hint:
+                hint_instruction = PROMPTS.get(
+                    "processing.digest.issues_mode_hint_instruction_with_hint",
+                    hint=hint,
+                )
+            else:
+                hint_instruction = PROMPTS.get(
+                    "processing.digest.issues_mode_hint_instruction_no_hint"
+                )
+            digest_prompt = PROMPTS.get(
+                "processing.digest.issues_mode",
+                hint_instruction=hint_instruction,
+            )
+            prompt = f"{digest_prompt}\n\n{chunk}"
 
-            # Accumulate usage statistics
-            for key in comprehensive_log["total_usage"]:
-                comprehensive_log["total_usage"][key] += usage.get(key, 0)
+        # Call the LLM
+        try:
+            content, usage = client.complete(
+                [
+                    {
+                        "role": "system",
+                        "content": PROMPTS.get("processing.digest.system_prompt"),
+                    },
+                    {"role": "user", "content": prompt},
+                ]
+            )
+        except Exception as e:
+            raise click.ClickException(f"LLM error in digest: {e}")
 
-            # Collect output
-            chunk_output = f"\n--- Chunk {idx} ---\n{content}"
-            all_output.append(chunk_output)
+        # Citation validation for issues mode
+        if mode == "issues":  # Legal issues mode is more likely to contain citations
+            citation_issues = client.validate_citations(content)
+            if citation_issues:
+                citation_warning = "--- CITATION WARNINGS ---\n"
+                citation_warning += "\n".join(citation_issues)
+                citation_warning += "\n" + "-" * 40 + "\n\n"
+                content = citation_warning + content
+
+        # Collect data for comprehensive log
+        comprehensive_log["responses"].append(
+            {"chunk": 1, "content": content, "usage": usage}
+        )
+
+        # Accumulate usage statistics
+        for key in comprehensive_log["total_usage"]:
+            comprehensive_log["total_usage"][key] += usage.get(key, 0)
+
+        all_output.append(content)
+
+    else:
+        # Multiple chunks - need consolidation approach
+        chunk_analyses = []
+
+        with click.progressbar(
+            chunks, label="Analyzing document sections"
+        ) as chunks_bar:
+            for idx, chunk in enumerate(chunks_bar, start=1):
+                # Use chunk-specific prompt for partial analysis
+                chunk_prompt = PROMPTS.get(
+                    f"processing.digest.chunk_analysis_{mode}",
+                    documents=chunk,
+                    chunk_num=idx,
+                    total_chunks=len(chunks),
+                    hint=hint or "general analysis",
+                )
+
+                try:
+                    content, usage = client.complete(
+                        [
+                            {
+                                "role": "system",
+                                "content": PROMPTS.get(
+                                    "processing.digest.system_prompt"
+                                ),
+                            },
+                            {"role": "user", "content": chunk_prompt},
+                        ]
+                    )
+                except Exception as e:
+                    raise click.ClickException(f"LLM error in digest chunk {idx}: {e}")
+
+                chunk_analyses.append(content)
+
+                # Collect data for comprehensive log
+                comprehensive_log["responses"].append(
+                    {"chunk": idx, "content": content, "usage": usage}
+                )
+
+                # Accumulate usage statistics
+                for key in comprehensive_log["total_usage"]:
+                    comprehensive_log["total_usage"][key] += usage.get(key, 0)
+
+        # Now consolidate all chunk analyses into unified digest
+        click.echo("🔄 Consolidating analyses into unified digest...")
+
+        consolidated_content = "\n\n".join(
+            [
+                f"=== Analysis from Document Section {i+1} ===\n{analysis}"
+                for i, analysis in enumerate(chunk_analyses)
+            ]
+        )
+
+        consolidation_prompt = PROMPTS.get(
+            f"processing.digest.consolidation_{mode}",
+            chunk_analyses=consolidated_content,
+            total_chunks=len(chunks),
+            hint=hint or "comprehensive analysis",
+        )
+
+        try:
+            final_content, final_usage = client.complete(
+                [
+                    {
+                        "role": "system",
+                        "content": PROMPTS.get("processing.digest.system_prompt"),
+                    },
+                    {"role": "user", "content": consolidation_prompt},
+                ]
+            )
+        except Exception as e:
+            raise click.ClickException(f"LLM error in digest consolidation: {e}")
+
+        # Citation validation for issues mode
+        if mode == "issues":
+            citation_issues = client.validate_citations(final_content)
+            if citation_issues:
+                citation_warning = "--- CITATION WARNINGS ---\n"
+                citation_warning += "\n".join(citation_issues)
+                citation_warning += "\n" + "-" * 40 + "\n\n"
+                final_content = citation_warning + final_content
+
+        # Log consolidation response
+        comprehensive_log["responses"].append(
+            {"chunk": "consolidation", "content": final_content, "usage": final_usage}
+        )
+
+        # Accumulate final usage statistics
+        for key in comprehensive_log["total_usage"]:
+            comprehensive_log["total_usage"][key] += final_usage.get(key, 0)
+
+        all_output.append(final_content)
 
     # Save output using utility
     content = "\n".join(all_output)

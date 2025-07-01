@@ -47,6 +47,77 @@ processing:
     
     system_prompt: |
       Extract and organize information from this document. Focus on being comprehensive, accurate, and well-organized. Use clear paragraph structure and bullet points where appropriate. Maintain a neutral, analytical tone throughout.
+
+    chunk_analysis_summary: |
+      Analyze this document section (part {chunk_num} of {total_chunks}) for chronological summary.
+      
+      Extract key events, dates, and developments from this section that should be included in a comprehensive chronological summary.
+      
+      Focus on: {hint}
+      
+      **IMPORTANT**: This is a partial analysis that will be consolidated with other sections.
+      Focus on identifying specific events and dates rather than providing a complete summary.
+      
+      Document section to analyze:
+      {documents}
+
+    chunk_analysis_issues: |
+      Analyze this document section (part {chunk_num} of {total_chunks}) for legal issues identification.
+      
+      Extract legal issues, problems, and concerns from this section that should be included in comprehensive legal issues analysis.
+      
+      Focus on: {hint}
+      
+      **IMPORTANT**: This is a partial analysis that will be consolidated with other sections.
+      Focus on identifying specific legal issues rather than providing complete legal analysis.
+      
+      Document section to analyze:
+      {documents}
+
+    consolidation_summary: |
+      Consolidate the following partial chronological analyses into a unified chronological summary.
+      
+      Create a comprehensive chronological summary that integrates insights from all {total_chunks} document sections.
+      
+      **CHRONOLOGICAL SUMMARY**
+      
+      - **[Date]**: [Event description]
+      - **[Date]**: [Event description]
+      - **[Date]**: [Event description]
+      
+      Focus on: {hint}
+      
+      Synthesize all chronological information, eliminate redundancy, and provide coherent timeline.
+      
+      Partial analyses from {total_chunks} document sections:
+      {chunk_analyses}
+      
+      Provide consolidated chronological summary that integrates all timeline information.
+
+    consolidation_issues: |
+      Consolidate the following partial legal issues analyses into unified legal issues analysis.
+      
+      Create comprehensive legal issues analysis that integrates insights from all {total_chunks} document sections.
+      
+      **LEGAL ISSUES ANALYSIS**
+      
+      **Issue 1: [Issue Name]**
+      - **Description:** [What the issue involves]
+      - **Legal Framework:** [Relevant law/precedent]
+      - **Analysis:** [Discussion of the issue]
+      - **Significance:** [Why this matters]
+      
+      **Issue 2: [Issue Name]**
+      [Same structure...]
+      
+      Focus on: {hint}
+      
+      Synthesize all legal issues, eliminate redundancy, and provide coherent analysis.
+      
+      Partial analyses from {total_chunks} document sections:
+      {chunk_analyses}
+      
+      Provide consolidated legal issues analysis that integrates all identified problems and concerns.
   
   # Draft command prompts
   # USED BY: draft.py draft() - system and user prompts
@@ -166,6 +237,42 @@ processing:
       {documents}
       
       Provide comprehensive strategic counsel's notes addressing each framework element.
+
+    chunk_analysis: |
+      Analyze this document section (part {chunk_num} of {total_chunks}) from a strategic advocate perspective.
+      
+      Extract key strategic insights, focusing on:
+      - Notable factual elements and evidence patterns
+      - Legal issues and strategic considerations specific to this section
+      - Tactical opportunities or risks identified
+      - Critical evidence strengths or weaknesses
+      - Any procedural or substantive concerns
+      
+      **IMPORTANT**: This is a partial analysis that will be consolidated with other sections.
+      Focus on identifying specific strategic elements rather than providing complete strategic framework.
+      Be comprehensive but avoid duplicating standard legal analysis - focus on advocate-specific insights.
+      
+      Document section to analyze:
+      {documents}
+
+    consolidation: |
+      Consolidate the following partial strategic analyses into comprehensive counsel's notes.
+      
+      Create a complete strategic analysis using the standard 5-section framework:
+      
+      **1. CASE OVERVIEW & POSITION**
+      **2. TACTICAL OPPORTUNITIES** 
+      **3. RISK ASSESSMENT**
+      **4. STRATEGIC RECOMMENDATIONS**
+      **5. CASE MANAGEMENT NOTES**
+      
+      Synthesize insights from all sections, eliminate redundancy, and provide coherent strategic guidance.
+      Focus on cross-document synthesis and comprehensive strategic assessment.
+      
+      Partial analyses from {total_chunks} document sections:
+      {chunk_analyses}
+      
+      Provide consolidated strategic counsel's notes that integrate all insights into a cohesive analysis.
 
     extraction:
       all: |
