@@ -18,9 +18,10 @@ LitAssist addresses the manual, time‑intensive nature of litigation support by
 1. **Lookup**: Perform rapid, reliable case‑law searches with zero‑tolerance citation verification.  
 2. **Digest**: Automatically generate summaries or issue‑spotting analyses for large documents.  
 3. **ExtractFacts**: Produce a structured fact sheet with fixed headings to feed downstream workflows.  
-4. **Brainstorm**: Ideate orthodox and unorthodox strategies with transparent reasoning traces.  
-5. **Strategy**: Convert selected strategies into tactical implementation plans with probability assessments.  
-6. **Draft**: Create citation‑verified, professional‑grade legal documents using retrieval‑augmented generation.  
+4. **CounselNotes**: Generate strategic analysis from advocate's perspective with structured extractions.
+5. **Brainstorm**: Ideate orthodox and unorthodox strategies with transparent reasoning traces.  
+6. **Strategy**: Convert selected strategies into tactical implementation plans with probability assessments.  
+7. **Draft**: Create citation‑verified, professional‑grade legal documents using retrieval‑augmented generation.
 
 ## User Experience Goals
 

@@ -4,11 +4,15 @@
 
 ```mermaid
 graph TD
-    A["Lookup – Research"] --> B["Digest – Analyse"]
-    B --> C["ExtractFacts – Structure"]
-    C --> D["Brainstorm – Generate Options"]
-    D --> E["Strategy – Plan Approach"]
-    E --> F["Draft – Create Documents"]
+    A["Lookup – Research"] --> B["Digest – Analyse"]
+    B --> C["ExtractFacts – Structure"]
+    C --> D["Brainstorm – Generate Options"]
+    D --> E["Strategy – Plan Approach"]
+    E --> F["Draft – Create Documents"]
+    
+    B --> G["CounselNotes – Strategic Analysis"]
+    C --> G
+    G --> E
 ```
 
 ## Key Objectives
@@ -22,5 +26,6 @@ graph TD
 
 - Australian case law research and citation verification  
 - Document summarization and structured fact extraction  
+- Strategic counsel's notes with advocate perspective analysis
 - Creative and orthodox strategy brainstorming  
 - Citation‑verified document drafting with retrieval‑augmented generation
