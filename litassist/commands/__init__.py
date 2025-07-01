@@ -16,6 +16,7 @@ from litassist.commands import (
     draft,
     strategy,
     verify,
+    counselnotes,
 )
 
 
@@ -33,3 +34,4 @@ def register_commands(cli: click.Group) -> None:
     cli.add_command(draft.draft)
     cli.add_command(strategy.strategy)
     cli.add_command(verify.verify)
+    cli.add_command(counselnotes.counselnotes)

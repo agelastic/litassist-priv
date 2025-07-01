@@ -115,3 +115,140 @@ processing:
     
     organize_system_prompt: |
       Organize the extracted facts precisely under the requested headings. Ensure consistency and avoid duplication.
+  
+  # Counsel's Notes command prompts
+  # USED BY: counselnotes.py counselnotes() - strategic analysis and extraction modes
+  # LOCATION: counselnotes.py:119-127, 215-223
+  counselnotes:
+    system_prompt: |
+      You are an experienced Australian barrister preparing strategic counsel's notes for litigation.
+      Your analysis should be from an advocate's perspective, focusing on tactical opportunities,
+      risks, and strategic considerations. Consider Australian legal principles and precedents.
+      
+      Maintain professional objectivity while identifying strengths and weaknesses that could
+      impact case strategy. Focus on practical considerations for litigation management.
+
+    strategic_analysis: |
+      Analyze the following legal documents from a strategic advocate perspective.
+      
+      **STRATEGIC ANALYSIS FRAMEWORK:**
+      
+      **1. CASE OVERVIEW & POSITION**
+      - Overall case strength assessment
+      - Client's strategic position
+      - Key factual advantages/disadvantages
+      
+      **2. TACTICAL OPPORTUNITIES**
+      - Procedural advantages to exploit
+      - Evidence strengths to emphasize
+      - Opposing party vulnerabilities
+      - Settlement leverage points
+      
+      **3. RISK ASSESSMENT**
+      - Litigation risks and exposure
+      - Evidence gaps or weaknesses
+      - Potential adverse findings
+      - Cost-benefit considerations
+      
+      **4. STRATEGIC RECOMMENDATIONS**
+      - Recommended litigation approach
+      - Priority actions and next steps
+      - Resource allocation priorities
+      - Alternative dispute resolution considerations
+      
+      **5. CASE MANAGEMENT NOTES**
+      - Key deadlines and milestones
+      - Witness considerations
+      - Expert evidence requirements
+      - Discovery/disclosure strategy
+      
+      Documents to analyze:
+      {documents}
+      
+      Provide comprehensive strategic counsel's notes addressing each framework element.
+
+    extraction:
+      all: |
+        Extract comprehensive counsel's notes in structured JSON format from the following documents.
+        
+        Return ONLY a valid JSON object with this exact structure:
+        {{
+          "strategic_summary": "Brief overview of overall case position and key strategic considerations",
+          "key_citations": ["Case citation 1", "Case citation 2", "Legislative reference 1"],
+          "legal_principles": [
+            {{"principle": "Legal principle description", "authority": "Supporting case/legislation"}},
+            {{"principle": "Another principle", "authority": "Supporting authority"}}
+          ],
+          "tactical_checklist": [
+            "Immediate action item 1",
+            "Strategic consideration 2", 
+            "Procedural requirement 3"
+          ],
+          "risk_assessment": "Assessment of litigation risks, exposure, and mitigation strategies",
+          "recommendations": [
+            "Strategic recommendation 1",
+            "Tactical approach 2",
+            "Resource allocation 3"
+          ]
+        }}
+        
+        Documents to analyze:
+        {documents}
+
+      citations: |
+        Extract only case citations and legislative references in structured JSON format.
+        
+        Return ONLY a valid JSON object with this exact structure:
+        {{
+          "citations": [
+            "Case Name v Other Name [Year] Court Reference",
+            "Another Case (Year) Volume Law Report Page", 
+            "Legislation Name (Jurisdiction) section reference"
+          ]
+        }}
+        
+        Include all legal authorities mentioned in the documents, using proper Australian citation format.
+        
+        Documents to analyze:
+        {documents}
+
+      principles: |
+        Extract legal principles with their supporting authorities in structured JSON format.
+        
+        Return ONLY a valid JSON object with this exact structure:
+        {{
+          "principles": [
+            {{
+              "principle": "Clear statement of the legal principle or rule",
+              "authority": "Supporting case citation or legislation"
+            }},
+            {{
+              "principle": "Another legal principle",
+              "authority": "Supporting authority"
+            }}
+          ]
+        }}
+        
+        Focus on substantive legal principles that could impact litigation strategy.
+        
+        Documents to analyze:
+        {documents}
+
+      checklist: |
+        Create a practical tactical checklist in structured JSON format.
+        
+        Return ONLY a valid JSON object with this exact structure:
+        {{
+          "checklist": [
+            "Review and verify all witness statements for consistency",
+            "Prepare comprehensive discovery plan within 14 days",
+            "Assess prospects for summary judgment application",
+            "Consider mediation timing and strategy",
+            "Evaluate expert evidence requirements"
+          ]
+        }}
+        
+        Include specific, actionable items for case management and strategic implementation.
+        
+        Documents to analyze:
+        {documents}

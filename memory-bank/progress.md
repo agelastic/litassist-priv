@@ -1,7 +1,7 @@
 # Progress
 
 ## What works
-- All seven core CLI commands (lookup, digest, extractfacts, brainstorm, strategy, draft, verify) fully implemented, stable, and tested
+- All eight core CLI commands (lookup, digest, extractfacts, brainstorm, strategy, draft, verify, counselnotes) fully implemented, stable, and tested
 - Digest command supports optional --hint argument (June 2025): users can provide a text hint to focus LLM analysis on topics related to the hint, enabling targeted processing of non-legal and general documents.
 - Comprehensive post-hoc verification (June 2025): `verify` command performs citation accuracy, legal soundness, and reasoning transparency checks on generated documents. Each check writes a separate timestamped report to outputs/. All steps use the existing logging infrastructure and minimal console output.
 - Research-informed brainstorming (June 2025): `brainstorm` command supports `--research` option to inject lookup report(s) into the orthodox strategies prompt, enabling research-grounded strategy generation. All prompt logic is managed in YAML; no hardcoded LLM templates.
@@ -16,6 +16,12 @@
   - Two-phase citation verification and selective regeneration (“Option B”)
 - Robust test suite (unit and integration tests), ruff linting passing
 - Documentation and Memory Bank fully aligned with codebase and user guides
+- Counselnotes command LLMClientFactory integration complete (January 2025):
+  - Added missing configuration entry to COMMAND_CONFIGS
+  - Uses anthropic/claude-sonnet-4 with temperature=0.3, top_p=0.7
+  - Enables force_verify=True for strategic analysis verification
+  - Eliminates "No configuration found" warning
+  - Aligns with brainstorm-orthodox pattern for strategic analysis
 
 ## What’s left to build
 - Implement advanced features from LLM_IMPROVEMENTS.md (e.g., IRAC/MIRAT enforcement, multi-model consensus, confidence scoring)

@@ -1,0 +1,139 @@
+{
+  "extraction_examples": {
+    "extract_all": {
+      "strategic_summary": "Strong contractual position with clear performance breaches by opposing party. Multiple tactical opportunities available including summary judgment application and liquidated damages enforcement. Moderate financial exposure with high probability of favorable outcome.",
+      "key_citations": [
+        "Pacific Carriers Ltd v BNP Paribas (2004) 218 CLR 451",
+        "Tramways Advertising Pty Ltd v Luna Park (NSW) Ltd (1938) 38 SR (NSW) 632",
+        "Legione v Hateley (1983) 152 CLR 406",
+        "Trade Practices Act 1974 (Cth) s 52",
+        "Contract Law Act 1987 (NSW) s 42"
+      ],
+      "legal_principles": [
+        {
+          "principle": "Liquidated damages clauses are enforceable unless proven to be penalty",
+          "authority": "Dunlop Pneumatic Tyre Co Ltd v New Garage & Motor Co Ltd [1915] AC 79"
+        },
+        {
+          "principle": "Parties must comply with contractual dispute resolution procedures",
+          "authority": "United Group Rail Services Ltd v Rail Corporation NSW (2009) 74 NSWLR 618"
+        },
+        {
+          "principle": "Duty to mitigate losses applies but burden on defendant to prove failure",
+          "authority": "Banco de Portugal v Waterlow & Sons Ltd [1932] AC 452"
+        }
+      ],
+      "tactical_checklist": [
+        "Serve formal breach notice under contract clause 15.1",
+        "Engage technical expert for performance assessment within 14 days", 
+        "Quantify actual damages beyond liquidated damages",
+        "Research opposing party's financial capacity and insurance coverage",
+        "Prepare summary judgment application on clear contractual breaches",
+        "Document all mitigation efforts with supplier quotes",
+        "Secure project documentation and preserve electronic records",
+        "Assess prospects for interlocutory injunction against asset dissipation"
+      ],
+      "risk_assessment": "Moderate-low litigation risk with 85% probability of favorable outcome. Primary risks include technical specification disputes (30% probability), contributory factor arguments (25% probability), and mitigation failure claims (40% probability). Financial exposure limited by strong contractual position and comprehensive documentation.",
+      "recommendations": [
+        "Proceed with aggressive pre-trial strategy combining summary judgment with settlement negotiations",
+        "Commission engineering expert report within 45 days for technical assessment",
+        "Attempt mediation as required under contract while maintaining litigation pressure",
+        "File protective claim before limitation period to preserve rights",
+        "Focus discovery on opposing party's other projects for pattern evidence"
+      ]
+    },
+    "extract_citations": {
+      "citations": [
+        "Pacific Carriers Ltd v BNP Paribas (2004) 218 CLR 451",
+        "Tramways Advertising Pty Ltd v Luna Park (NSW) Ltd (1938) 38 SR (NSW) 632", 
+        "Legione v Hateley (1983) 152 CLR 406",
+        "Dunlop Pneumatic Tyre Co Ltd v New Garage & Motor Co Ltd [1915] AC 79",
+        "United Group Rail Services Ltd v Rail Corporation NSW (2009) 74 NSWLR 618",
+        "Banco de Portugal v Waterlow & Sons Ltd [1932] AC 452",
+        "Trade Practices Act 1974 (Cth) s 52",
+        "Contract Law Act 1987 (NSW) s 42",
+        "Federal Court Rules 2011 (Cth) r 26.01",
+        "Supreme Court Rules 1970 (NSW) Pt 13 r 2"
+      ]
+    },
+    "extract_principles": {
+      "principles": [
+        {
+          "principle": "Liquidated damages clauses are enforceable unless proven to be penalty",
+          "authority": "Dunlop Pneumatic Tyre Co Ltd v New Garage & Motor Co Ltd [1915] AC 79"
+        },
+        {
+          "principle": "Parties must comply with contractual dispute resolution procedures before litigation",
+          "authority": "United Group Rail Services Ltd v Rail Corporation NSW (2009) 74 NSWLR 618"
+        },
+        {
+          "principle": "Duty to mitigate losses applies but burden on defendant to prove failure to mitigate",
+          "authority": "Banco de Portugal v Waterlow & Sons Ltd [1932] AC 452"
+        },
+        {
+          "principle": "Contract interpretation requires consideration of commercial purpose and context",
+          "authority": "Pacific Carriers Ltd v BNP Paribas (2004) 218 CLR 451"
+        },
+        {
+          "principle": "Breach must be material and substantial to justify termination",
+          "authority": "Tramways Advertising Pty Ltd v Luna Park (NSW) Ltd (1938) 38 SR (NSW) 632"
+        },
+        {
+          "principle": "Specific performance available where damages inadequate remedy",
+          "authority": "Legione v Hateley (1983) 152 CLR 406"
+        },
+        {
+          "principle": "Misrepresentation requires false statement of existing fact inducing contract",
+          "authority": "Trade Practices Act 1974 (Cth) s 52 (now Competition and Consumer Act 2010)"
+        }
+      ]
+    },
+    "extract_checklist": {
+      "checklist": [
+        "Serve formal breach notice under contract clause 15.1 within 7 days",
+        "Engage technical expert for performance assessment within 14 days",
+        "Quantify actual damages beyond liquidated damages with supporting documentation",
+        "Research opposing party's financial capacity and insurance coverage",
+        "Secure and preserve all project documentation including electronic records",
+        "Document all mitigation efforts with alternative supplier quotes",
+        "Prepare summary judgment application on clear contractual breaches",
+        "Commission comprehensive engineering expert report within 45 days",
+        "Attempt mediation as required under contract clause 15.2",
+        "File protective claim before limitation period (October 2025)",
+        "Assess prospects for interlocutory injunction against asset dissipation",
+        "Focus discovery on opposing party's other projects for pattern evidence",
+        "Obtain industry standard evidence for technical requirements",
+        "Assemble expert evidence panel (engineering + quantum experts)",
+        "Develop witness statements from project manager and technical director",
+        "Calculate total legal costs budget ($93,000-$142,000 estimated)",
+        "Review opposing party's insurance policies and coverage limits",
+        "Prepare for expedited hearing if summary judgment application successful",
+        "Consider cross-claim potential and defensive strategies",
+        "Establish secure document review process for privileged materials"
+      ]
+    }
+  },
+  "usage_notes": {
+    "extract_all": "Provides comprehensive strategic overview in structured JSON format. Ideal for initial case assessment and client reporting. Contains all key elements needed for strategic planning.",
+    "extract_citations": "Clean list of legal authorities for court briefs, research databases, and citation checking. Ready for copy-paste into legal documents.",
+    "extract_principles": "Structured legal principles with supporting authorities. Perfect for client advice letters, training materials, and settlement negotiations.",
+    "extract_checklist": "Actionable tactical items in checkbox format. Essential for case preparation, file review, and ensuring comprehensive coverage of all strategic elements."
+  },
+  "integration_examples": {
+    "court_brief_workflow": [
+      "1. Use 'extract_citations' for 'Cases Cited' section",
+      "2. Use 'extract_principles' for legal argument foundation", 
+      "3. Use 'extract_all' strategic_summary for case overview"
+    ],
+    "client_advice_workflow": [
+      "1. Use 'extract_all' for comprehensive strategic assessment",
+      "2. Use 'extract_principles' for clear legal explanations",
+      "3. Use 'risk_assessment' from 'extract_all' for client risk discussion"
+    ],
+    "case_preparation_workflow": [
+      "1. Use 'extract_checklist' for preparation task management",
+      "2. Use 'extract_all' recommendations for priority setting",
+      "3. Use 'extract_citations' for legal research verification"
+    ]
+  }
+}
