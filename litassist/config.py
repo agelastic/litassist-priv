@@ -12,6 +12,7 @@ from typing import Dict, Any
 
 class ConfigError(Exception):
     """Raised when configuration loading or validation fails."""
+
     pass
 
 
@@ -132,7 +133,9 @@ class Config:
             )
             self.g_key = self.cfg["google_cse"]["api_key"]
             self.cse_id = self.cfg["google_cse"]["cse_id"]
-            self.cse_id_comprehensive = self.cfg["google_cse"].get("cse_id_comprehensive", None)
+            self.cse_id_comprehensive = self.cfg["google_cse"].get(
+                "cse_id_comprehensive", None
+            )
             self.pc_key = self.cfg["pinecone"]["api_key"]
             self.pc_env = self.cfg["pinecone"]["environment"]
             self.pc_index = self.cfg["pinecone"]["index_name"]
@@ -209,3 +212,16 @@ def load_config(config_path: str | None = None) -> "Config":
     if CONFIG is None:
         CONFIG = Config(config_path)
     return CONFIG
+
+
+# Automatically attempt to load configuration on module import.
+# This ensures CONFIG is populated for modules that import CONFIG
+# directly (e.g., litassist.llm, litassist.utils) even when the
+# application is executed outside the main CLI entry point.
+if CONFIG is None:
+    try:
+        CONFIG = Config()
+    except ConfigError:
+        # Leave CONFIG as None; modules should call load_config()
+        # explicitly or handle missing configuration appropriately.
+        pass

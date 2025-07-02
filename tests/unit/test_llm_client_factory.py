@@ -132,8 +132,8 @@ class TestLLMClientFactory:
             strategy_client = LLMClientFactory.for_command("strategy")
             strategy_params = strategy_client.default_params
 
-            # o3-pro should not have reasoning_effort or unsupported params
-            assert "reasoning_effort" not in strategy_params
+            # o3-pro should have reasoning_effort but not unsupported params
+            assert "reasoning_effort" in strategy_params
             assert "temperature" not in strategy_params
             assert "top_p" not in strategy_params
 
@@ -141,8 +141,8 @@ class TestLLMClientFactory:
             draft_client = LLMClientFactory.for_command("draft")
             draft_params = draft_client.default_params
 
-            # o3-pro should not have reasoning_effort
-            assert "reasoning_effort" not in draft_params
+            # o3-pro should have reasoning_effort for draft as well
+            assert "reasoning_effort" in draft_params
 
     def test_environment_variable_override(self):
         """Test that environment variables can override model selection."""
