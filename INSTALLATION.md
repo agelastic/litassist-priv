@@ -61,6 +61,11 @@ source .venv/bin/activate
 # 3. Install dependencies
 pip install -r requirements.txt
 
+# The requirements file pins OpenAI to version 0.28.1
+# and includes google-api-python-client. Using these
+# exact versions avoids AttributeError problems with
+# newer OpenAI releases.
+
 # 4. Make executable
 chmod +x litassist.py
 

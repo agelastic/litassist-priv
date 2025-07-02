@@ -13,8 +13,7 @@ import pinecone
 
 from litassist.commands import register_commands
 
-# Load global configuration
-from litassist.config import CONFIG
+from litassist.config import load_config
 
 
 @click.group()
@@ -44,9 +43,10 @@ def cli(ctx, log_format, verbose):
     """
     # Ensure context object exists
     ctx.ensure_object(dict)
+    config = load_config()
     # Use config.yaml value if no CLI option provided
     if log_format is None:
-        log_format = CONFIG.log_format
+        log_format = config.log_format
     # Store the chosen log format for downstream use
     ctx.obj["log_format"] = log_format
     # Configure logging level
@@ -64,7 +64,8 @@ def validate_credentials(show_progress=True):
     This function attempts to validate credentials for OpenAI, Pinecone, and Google CSE
     by making test API calls. Invalid credentials will result in an early exit.
     """
-    placeholder_checks = CONFIG.using_placeholders()
+    config = load_config()
+    placeholder_checks = config.using_placeholders()
 
     if show_progress:
         print("Verifying API connections...")
@@ -91,7 +92,7 @@ def validate_credentials(show_progress=True):
             if show_progress:
                 print("  - Testing Pinecone API... ", end="", flush=True)
             # Initialize Pinecone before testing
-            pinecone.init(api_key=CONFIG.pc_key, environment=CONFIG.pc_env)
+            pinecone.init(api_key=config.pc_key, environment=config.pc_env)
             _ = pinecone.list_indexes()
             if show_progress:
                 print("OK")
@@ -115,10 +116,10 @@ def validate_credentials(show_progress=True):
                 from googleapiclient.discovery import build
             # Disable cache to avoid warning
             service = build(
-                "customsearch", "v1", developerKey=CONFIG.g_key, cache_discovery=False
+                "customsearch", "v1", developerKey=config.g_key, cache_discovery=False
             )
             # Perform a lightweight test query (no logging)
-            service.cse().list(q="test", cx=CONFIG.cse_id, num=1).execute()
+            service.cse().list(q="test", cx=config.cse_id, num=1).execute()
             if show_progress:
                 print("OK")
         except Exception as e:
@@ -138,7 +139,7 @@ def validate_credentials(show_progress=True):
             import requests
 
             headers = {
-                "Authorization": f"Bearer {CONFIG.or_key}",
+                "Authorization": f"Bearer {config.or_key}",
                 "Content-Type": "application/json",
             }
             # Use the models endpoint which doesn't cost credits

@@ -6,9 +6,13 @@ required for LitAssist's operation.
 """
 
 import os
-import sys
 import yaml
 from typing import Dict, Any
+
+
+class ConfigError(Exception):
+    """Raised when configuration loading or validation fails."""
+    pass
 
 
 class Config:
@@ -22,7 +26,7 @@ class Config:
             config_path: Path to the configuration file.
 
         Raises:
-            SystemExit: If the configuration file is missing or has invalid entries.
+            ConfigError: If the configuration file is missing or has invalid entries.
         """
         # Allow override from environment for testing
         if config_path is None:
@@ -44,7 +48,7 @@ class Config:
             Path to the global configuration file.
 
         Raises:
-            SystemExit: If no configuration file is found.
+            ConfigError: If no configuration file is found.
         """
         from pathlib import Path
 
@@ -71,25 +75,23 @@ class Config:
         config_path = config_dir / "config.yaml"
         template_path = package_dir / "config.yaml.template"
 
+        message = (
+            "Error: No config.yaml found.\n"
+            f"To set up LitAssist:\n  mkdir -p {config_dir}\n  cp {template_path} {config_path}\n  # Edit {config_path} with your API keys\n\n"
+            "LitAssist will look for config.yaml in:\n"
+            f"  1. {config_dir}/config.yaml (recommended)\n"
+            "  2. ~/.litassist/config.yaml\n"
+            "  3. /etc/litassist/config.yaml"
+        )
         if template_path.exists():
-            sys.exit(
-                f"Error: No config.yaml found.\n"
-                f"To set up LitAssist:\n"
-                f"  mkdir -p {config_dir}\n"
-                f"  cp {template_path} {config_path}\n"
-                f"  # Edit {config_path} with your API keys\n"
-                f"\nLitAssist will look for config.yaml in:\n"
-                f"  1. {config_dir}/config.yaml (recommended)\n"
-                f"  2. ~/.litassist/config.yaml\n"
-                f"  3. /etc/litassist/config.yaml"
-            )
+            raise ConfigError(message)
         else:
-            sys.exit(
-                f"Error: config.yaml not found.\n"
-                f"Create a config.yaml file with your API keys in one of:\n"
+            raise ConfigError(
+                "Error: config.yaml not found.\n"
+                "Create a config.yaml file with your API keys in one of:\n"
                 f"  1. {config_dir}/config.yaml (recommended)\n"
-                f"  2. ~/.litassist/config.yaml\n"
-                f"  3. /etc/litassist/config.yaml"
+                "  2. ~/.litassist/config.yaml\n"
+                "  3. /etc/litassist/config.yaml"
             )
 
     def _load_config(self) -> Dict[str, Any]:
@@ -100,23 +102,23 @@ class Config:
             Dictionary containing the configuration values.
 
         Raises:
-            SystemExit: If the configuration file is missing or invalid.
+            ConfigError: If the configuration file is missing or invalid.
         """
         if not os.path.exists(self.config_path):
-            sys.exit(f"Error: Configuration file not found: {self.config_path}")
+            raise ConfigError(f"Configuration file not found: {self.config_path}")
 
         with open(self.config_path) as f:
             try:
                 return yaml.safe_load(f)
             except yaml.YAMLError as e:
-                sys.exit(f"Error: Invalid YAML in {self.config_path}: {e}")
+                raise ConfigError(f"Invalid YAML in {self.config_path}: {e}")
 
     def _validate_config(self):
         """
         Validate all required configuration values.
 
         Raises:
-            SystemExit: If any required configuration is missing or invalid.
+            ConfigError: If any required configuration is missing or invalid.
         """
         # Extract required values with defaults
         try:
@@ -156,7 +158,7 @@ class Config:
         # Jade API key is no longer used - functionality now uses public endpoint
 
         except KeyError as e:
-            sys.exit(f"Error: config.yaml missing key {e}")
+            raise ConfigError(f"config.yaml missing key {e}")
 
         # Validate required entries are non-empty strings
         required_configs = {
@@ -171,7 +173,7 @@ class Config:
         }
         for key, val in required_configs.items():
             if not isinstance(val, str) or not val.strip():
-                sys.exit(f"Error: config '{key}' must be a non-empty string")
+                raise ConfigError(f"config '{key}' must be a non-empty string")
 
     def _setup_api_keys(self):
         """Set API keys for external services."""
@@ -198,12 +200,12 @@ class Config:
         }
 
 
-# Create default instance when module is imported
-try:
-    CONFIG = Config()
-except SystemExit:
-    # During testing, CONFIG might be mocked
-    if os.environ.get("PYTEST_CURRENT_TEST"):
-        CONFIG = None
-    else:
-        raise
+CONFIG = None
+
+
+def load_config(config_path: str | None = None) -> "Config":
+    """Load the global configuration instance if not already loaded."""
+    global CONFIG
+    if CONFIG is None:
+        CONFIG = Config(config_path)
+    return CONFIG

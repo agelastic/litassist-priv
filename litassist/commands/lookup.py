@@ -323,11 +323,7 @@ def lookup(question, mode, extract, comprehensive, context):
     # Add comprehensive CSE search if configured
     if comprehensive and CONFIG.cse_id_comprehensive:
         try:
-            # Create a fresh service instance for the comprehensive search
-            from googleapiclient.discovery import build
-            comp_service = build(
-                "customsearch", "v1", developerKey=CONFIG.g_key, cache_discovery=False
-            )
+            # Reuse the service instance for the comprehensive search
             res_comp = (
                 comp_service.cse()
                 .list(q=question, cx=CONFIG.cse_id_comprehensive)
