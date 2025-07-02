@@ -230,6 +230,7 @@ class LLMClientFactory:
             "model": "openai/o3-pro",
             # o3-pro has fixed parameters: temperature=1, top_p=1, presence_penalty=0, frequency_penalty=0
             # Only max_completion_tokens and reasoning_effort can be controlled
+            "reasoning_effort": "high",
             "force_verify": True,  # Always verify for strategic guidance
         },
         # Strategy sub-type for analysis
@@ -255,11 +256,10 @@ class LLMClientFactory:
             "model": "openai/o3-pro",
             "temperature": 0.2,
             "top_p": 0.8,
+            "reasoning_effort": "high",
         },
         # Draft - superior technical writing (o3 model with very limited parameter support)
-        "draft": {
-            "model": "openai/o3-pro",
-        },
+        "draft": {"model": "openai/o3-pro", "reasoning_effort": "high"},
         # Digest - mode-dependent settings
         "digest-summary": {
             "model": "anthropic/claude-sonnet-4",
@@ -287,7 +287,7 @@ class LLMClientFactory:
         },
         # Counsel's Notes - strategic analysis from advocate's perspective
         "counselnotes": {
-            "model": "anthropic/claude-claude-4",
+            "model": "anthropic/claude-opus-4",
             "temperature": 0.3,
             "top_p": 0.7,
             "force_verify": True,  # Strategic counsel's notes require verification

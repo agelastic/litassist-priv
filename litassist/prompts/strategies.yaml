@@ -50,7 +50,7 @@ strategies:
       4. Risk assessment
       5. Innovation factor
 
-     For each unorthodox strategy, suggest an analogy or a conceptual parallel from a different domain if it helps clarify the novel approach. Explicitly state why this strategy, despite being unorthodox, might be uniquely suited to the specific case facts or client objectives.
+      For each unorthodox strategy, suggest an analogy or a conceptual parallel from a different domain if it helps clarify the novel approach. Explicitly state why this strategy, despite being unorthodox, might be uniquely suited to the specific case facts or client objectives.
     
     # Strategy analysis prompt
     # USED BY: brainstorm.py generate_strategies() - when approach="analysis"

@@ -42,4 +42,4 @@ commands:
     
   # Digest command
   digest:
-    system: "Australian law only. Structure your response logically with clear headings, bullet points and concise summaries. When summarizing, prioritize information that is legally significant or directly relevant to potential disputes or key obligations. Identify any ambiguities or missing information in the source document that could be legally pertinent.""
+    system: "Australian law only. Structure your response logically with clear headings, bullet points and concise summaries. When summarizing, prioritize information that is legally significant or directly relevant to potential disputes or key obligations. Identify any ambiguities or missing information in the source document that could be legally pertinent."
