@@ -351,6 +351,25 @@ test_verify_command() {
         "Citation verification complete|Legal soundness check complete|Reasoning trace|3 reports generated"
 }
 
+test_counselnotes_command() {
+    print_section "Testing COUNSELNOTES Command"
+    
+    # Test basic counselnotes command
+    run_test "Counselnotes - Basic analysis" \
+        "python litassist.py counselnotes test_inputs/mock_case_facts.txt" \
+        "Counselnotes complete|complete|saved to"
+    
+    # Test counselnotes with extraction mode
+    run_test "Counselnotes - With extraction mode" \
+        "python litassist.py counselnotes test_inputs/mock_case_facts.txt --extract citations" \
+        "Counselnotes complete|complete|saved to"
+    
+    # Test counselnotes with output option
+    run_test "Counselnotes - With custom output" \
+        "python litassist.py counselnotes test_inputs/mock_case_facts.txt --output test_output" \
+        "Counselnotes complete|complete|saved to"
+}
+
 test_error_conditions() {
     print_section "Testing Error Conditions"
     
@@ -482,6 +501,7 @@ show_help() {
     echo "  digest        Test digest command"
     echo "  draft         Test draft command"
     echo "  verify        Test verify command"
+    echo "  counselnotes  Test counselnotes command"
     echo "  errors        Test error conditions"
     echo "  all           Run all tests"
     echo ""
@@ -528,6 +548,9 @@ run_test_group() {
         verify)
             test_verify_command
             ;;
+        counselnotes)
+            test_counselnotes_command
+            ;;
         errors)
             test_error_conditions
             ;;
@@ -541,6 +564,7 @@ run_test_group() {
             test_digest_command
             test_draft_command
             test_verify_command
+            test_counselnotes_command
             test_error_conditions
             ;;
         *)

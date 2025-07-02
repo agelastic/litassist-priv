@@ -47,6 +47,77 @@ processing:
     
     system_prompt: |
       Extract and organize information from this document. Focus on being comprehensive, accurate, and well-organized. Use clear paragraph structure and bullet points where appropriate. Maintain a neutral, analytical tone throughout.
+
+    chunk_analysis_summary: |
+      Analyze this document section (part {chunk_num} of {total_chunks}) for chronological summary.
+      
+      Extract key events, dates, and developments from this section that should be included in a comprehensive chronological summary.
+      
+      Focus on: {hint}
+      
+      **IMPORTANT**: This is a partial analysis that will be consolidated with other sections.
+      Focus on identifying specific events and dates rather than providing a complete summary.
+      
+      Document section to analyze:
+      {documents}
+
+    chunk_analysis_issues: |
+      Analyze this document section (part {chunk_num} of {total_chunks}) for legal issues identification.
+      
+      Extract legal issues, problems, and concerns from this section that should be included in comprehensive legal issues analysis.
+      
+      Focus on: {hint}
+      
+      **IMPORTANT**: This is a partial analysis that will be consolidated with other sections.
+      Focus on identifying specific legal issues rather than providing complete legal analysis.
+      
+      Document section to analyze:
+      {documents}
+
+    consolidation_summary: |
+      Consolidate the following partial chronological analyses into a unified chronological summary.
+      
+      Create a comprehensive chronological summary that integrates insights from all {total_chunks} document sections.
+      
+      **CHRONOLOGICAL SUMMARY**
+      
+      - **[Date]**: [Event description]
+      - **[Date]**: [Event description]
+      - **[Date]**: [Event description]
+      
+      Focus on: {hint}
+      
+      Synthesize all chronological information, eliminate redundancy, and provide coherent timeline.
+      
+      Partial analyses from {total_chunks} document sections:
+      {chunk_analyses}
+      
+      Provide consolidated chronological summary that integrates all timeline information.
+
+    consolidation_issues: |
+      Consolidate the following partial legal issues analyses into unified legal issues analysis.
+      
+      Create comprehensive legal issues analysis that integrates insights from all {total_chunks} document sections.
+      
+      **LEGAL ISSUES ANALYSIS**
+      
+      **Issue 1: [Issue Name]**
+      - **Description:** [What the issue involves]
+      - **Legal Framework:** [Relevant law/precedent]
+      - **Analysis:** [Discussion of the issue]
+      - **Significance:** [Why this matters]
+      
+      **Issue 2: [Issue Name]**
+      [Same structure...]
+      
+      Focus on: {hint}
+      
+      Synthesize all legal issues, eliminate redundancy, and provide coherent analysis.
+      
+      Partial analyses from {total_chunks} document sections:
+      {chunk_analyses}
+      
+      Provide consolidated legal issues analysis that integrates all identified problems and concerns.
   
   # Draft command prompts
   # USED BY: draft.py draft() - system and user prompts
@@ -115,3 +186,176 @@ processing:
     
     organize_system_prompt: |
       Organize the extracted facts precisely under the requested headings. Ensure consistency and avoid duplication.
+  
+  # Counsel's Notes command prompts
+  # USED BY: counselnotes.py counselnotes() - strategic analysis and extraction modes
+  # LOCATION: counselnotes.py:119-127, 215-223
+  counselnotes:
+    system_prompt: |
+      You are an experienced Australian barrister preparing strategic counsel's notes for litigation.
+      Your analysis should be from an advocate's perspective, focusing on tactical opportunities,
+      risks, and strategic considerations. Consider Australian legal principles and precedents.
+      
+      Maintain professional objectivity while identifying strengths and weaknesses that could
+      impact case strategy. Focus on practical considerations for litigation management.
+
+    strategic_analysis: |
+      Analyze the following legal documents from a strategic advocate perspective.
+      
+      **STRATEGIC ANALYSIS FRAMEWORK:**
+      
+      **1. CASE OVERVIEW & POSITION**
+      - Overall case strength assessment
+      - Client's strategic position
+      - Key factual advantages/disadvantages
+      
+      **2. TACTICAL OPPORTUNITIES**
+      - Procedural advantages to exploit
+      - Evidence strengths to emphasize
+      - Opposing party vulnerabilities
+      - Settlement leverage points
+      
+      **3. RISK ASSESSMENT**
+      - Litigation risks and exposure
+      - Evidence gaps or weaknesses
+      - Potential adverse findings
+      - Cost-benefit considerations
+      
+      **4. STRATEGIC RECOMMENDATIONS**
+      - Recommended litigation approach
+      - Priority actions and next steps
+      - Resource allocation priorities
+      - Alternative dispute resolution considerations
+      
+      **5. CASE MANAGEMENT NOTES**
+      - Key deadlines and milestones
+      - Witness considerations
+      - Expert evidence requirements
+      - Discovery/disclosure strategy
+      
+      Documents to analyze:
+      {documents}
+      
+      Provide comprehensive strategic counsel's notes addressing each framework element.
+
+    chunk_analysis: |
+      Analyze this document section (part {chunk_num} of {total_chunks}) from a strategic advocate perspective.
+      
+      Extract key strategic insights, focusing on:
+      - Notable factual elements and evidence patterns
+      - Legal issues and strategic considerations specific to this section
+      - Tactical opportunities or risks identified
+      - Critical evidence strengths or weaknesses
+      - Any procedural or substantive concerns
+      
+      **IMPORTANT**: This is a partial analysis that will be consolidated with other sections.
+      Focus on identifying specific strategic elements rather than providing complete strategic framework.
+      Be comprehensive but avoid duplicating standard legal analysis - focus on advocate-specific insights.
+      
+      Document section to analyze:
+      {documents}
+
+    consolidation: |
+      Consolidate the following partial strategic analyses into comprehensive counsel's notes.
+      
+      Create a complete strategic analysis using the standard 5-section framework:
+      
+      **1. CASE OVERVIEW & POSITION**
+      **2. TACTICAL OPPORTUNITIES** 
+      **3. RISK ASSESSMENT**
+      **4. STRATEGIC RECOMMENDATIONS**
+      **5. CASE MANAGEMENT NOTES**
+      
+      Synthesize insights from all sections, eliminate redundancy, and provide coherent strategic guidance.
+      Focus on cross-document synthesis and comprehensive strategic assessment.
+      
+      Partial analyses from {total_chunks} document sections:
+      {chunk_analyses}
+      
+      Provide consolidated strategic counsel's notes that integrate all insights into a cohesive analysis.
+
+    extraction:
+      all: |
+        Extract comprehensive counsel's notes in structured JSON format from the following documents.
+        
+        Return ONLY a valid JSON object with this exact structure:
+        {{
+          "strategic_summary": "Brief overview of overall case position and key strategic considerations",
+          "key_citations": ["Case citation 1", "Case citation 2", "Legislative reference 1"],
+          "legal_principles": [
+            {{"principle": "Legal principle description", "authority": "Supporting case/legislation"}},
+            {{"principle": "Another principle", "authority": "Supporting authority"}}
+          ],
+          "tactical_checklist": [
+            "Immediate action item 1",
+            "Strategic consideration 2", 
+            "Procedural requirement 3"
+          ],
+          "risk_assessment": "Assessment of litigation risks, exposure, and mitigation strategies",
+          "recommendations": [
+            "Strategic recommendation 1",
+            "Tactical approach 2",
+            "Resource allocation 3"
+          ]
+        }}
+        
+        Documents to analyze:
+        {documents}
+
+      citations: |
+        Extract only case citations and legislative references in structured JSON format.
+        
+        Return ONLY a valid JSON object with this exact structure:
+        {{
+          "citations": [
+            "Case Name v Other Name [Year] Court Reference",
+            "Another Case (Year) Volume Law Report Page", 
+            "Legislation Name (Jurisdiction) section reference"
+          ]
+        }}
+        
+        Include all legal authorities mentioned in the documents, using proper Australian citation format.
+        
+        Documents to analyze:
+        {documents}
+
+      principles: |
+        Extract legal principles with their supporting authorities in structured JSON format.
+        
+        Return ONLY a valid JSON object with this exact structure:
+        {{
+          "principles": [
+            {{
+              "principle": "Clear statement of the legal principle or rule",
+              "authority": "Supporting case citation or legislation"
+            }},
+            {{
+              "principle": "Another legal principle",
+              "authority": "Supporting authority"
+            }}
+          ]
+        }}
+        
+        Focus on substantive legal principles that could impact litigation strategy.
+        
+        Documents to analyze:
+        {documents}
+
+      checklist: |
+        Create a practical tactical checklist in structured JSON format.
+        
+        Return ONLY a valid JSON object with this exact structure:
+        {{
+          "checklist": [
+            "Review and verify all witness statements for consistency",
+            "Prepare comprehensive discovery plan within 14 days",
+            "Assess prospects for summary judgment application",
+            "Consider mediation timing and strategy",
+            "Evaluate expert evidence requirements"
+          ]
+        }}
+        
+        Include specific, actionable items for case management and strategic implementation.
+        
+        Documents to analyze:
+        {documents}

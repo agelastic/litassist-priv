@@ -3,7 +3,7 @@
 ## Architecture Overview
 
 - **CLI Entry Point**: `litassist/cli.py` defines the top-level Click commands.
-- **Command Modules**: Each workflow (lookup, digest, extractfacts, brainstorm, strategy, draft) lives under `litassist/commands/`.
+- **Command Modules**: Each workflow (lookup, digest, extractfacts, brainstorm, strategy, draft, counselnotes) lives under `litassist/commands/`.
 - **Core Services**:
   - **LLM Integration** in `litassist/llm.py` with `LLMClientFactory`.
   - **Citation Validation** in `litassist/citation_patterns.py` and `litassist/citation_verify.py`.
@@ -66,6 +66,26 @@ Each stage:
 - **Template Method**: Prompt-loading mechanism from YAML templates.
 - **Strategy Pattern**: Separate reasoning‑trace modules for orthodox, unorthodox, and analysis stages.
 - **Repository Pattern**: Pinecone wrapper for semantic search in a vector store.
+
+## LLMClientFactory Configuration Pattern
+
+Strategic analysis commands follow consistent configuration patterns:
+
+- **CounselNotes**: `anthropic/claude-sonnet-4`, temp=0.3, top_p=0.7, force_verify=True
+- **Brainstorm-Orthodox**: `anthropic/claude-sonnet-4`, temp=0.3, top_p=0.7, force_verify=True  
+- **Strategy-Analysis**: `anthropic/claude-sonnet-4`, temp=0.2, top_p=0.8
+
+**Configuration Philosophy:**
+- Strategic commands use Claude Sonnet 4 for balanced analysis capability
+- Temperature 0.3 provides strategic thinking with controlled creativity
+- Force verification enabled for professional legal accountability
+- Consistent patterns across similar command types for predictable behavior
+
+**CounselNotes Specific Patterns:**
+- Multi-document cross-synthesis capabilities
+- Five-section strategic analysis framework (Overview, Opportunities, Risks, Recommendations, Management)
+- Four JSON extraction modes (all, citations, principles, checklist)
+- Multi-chunk consolidation for large document processing
 
 ## Prompt Management
 

@@ -41,65 +41,112 @@ PARAMETER_PROFILES = {
     },
     "anthropic": {
         "allowed": [
-            "temperature", "top_p", "max_tokens", "stop", "top_k",
-            "stream", "metadata", "stop_sequences"
+            "temperature",
+            "top_p",
+            "max_tokens",
+            "stop",
+            "top_k",
+            "stream",
+            "metadata",
+            "stop_sequences",
         ],
     },
     "google": {
         "allowed": [
-            "temperature", "top_p", "max_tokens", "stop", 
-            "candidate_count", "max_output_tokens", "top_k",
-            "safety_settings", "stop_sequences"
+            "temperature",
+            "top_p",
+            "max_tokens",
+            "stop",
+            "candidate_count",
+            "max_output_tokens",
+            "top_k",
+            "safety_settings",
+            "stop_sequences",
         ],
         "transforms": {"max_tokens": "max_output_tokens"},
     },
     "openai_standard": {
         "allowed": [
-            "temperature", "top_p", "max_tokens", "frequency_penalty", 
-            "presence_penalty", "stop", "logit_bias", "seed", 
-            "response_format", "stream", "n", "tools", "tool_choice",
-            "functions", "function_call", "user", "logprobs", "top_logprobs"
+            "temperature",
+            "top_p",
+            "max_tokens",
+            "frequency_penalty",
+            "presence_penalty",
+            "stop",
+            "logit_bias",
+            "seed",
+            "response_format",
+            "stream",
+            "n",
+            "tools",
+            "tool_choice",
+            "functions",
+            "function_call",
+            "user",
+            "logprobs",
+            "top_logprobs",
         ],
     },
     "xai": {
         "allowed": [
-            "temperature", "top_p", "max_tokens", "stop",
-            "frequency_penalty", "presence_penalty", "stream"
+            "temperature",
+            "top_p",
+            "max_tokens",
+            "stop",
+            "frequency_penalty",
+            "presence_penalty",
+            "stream",
         ],
     },
     "meta": {
         "allowed": [
-            "temperature", "top_p", "max_tokens", "stop",
-            "frequency_penalty", "presence_penalty", "stream"
+            "temperature",
+            "top_p",
+            "max_tokens",
+            "stop",
+            "frequency_penalty",
+            "presence_penalty",
+            "stream",
         ],
     },
     "mistral": {
         "allowed": [
-            "temperature", "top_p", "max_tokens", "stop",
-            "random_seed", "safe_mode", "stream"
+            "temperature",
+            "top_p",
+            "max_tokens",
+            "stop",
+            "random_seed",
+            "safe_mode",
+            "stream",
         ],
         "transforms": {"seed": "random_seed"},
     },
     "cohere": {
         "allowed": [
-            "temperature", "max_tokens", "k", "p", "stop_sequences",
-            "frequency_penalty", "presence_penalty", "stream"
+            "temperature",
+            "max_tokens",
+            "k",
+            "p",
+            "stop_sequences",
+            "frequency_penalty",
+            "presence_penalty",
+            "stream",
         ],
         "transforms": {"top_k": "k", "top_p": "p", "stop": "stop_sequences"},
     },
     "default": {
         "allowed": ["temperature", "top_p", "max_tokens", "stop"],  # Safe defaults
-    }
+    },
 }
 
 
 def get_model_family(model_name: str) -> str:
     """
     Identify the model family based on pattern matching.
-    
+
     Args:
         model_name: The full model name (e.g., "openai/gpt-4", "anthropic/claude-3")
-    
+
     Returns:
         The model family name (e.g., "openai_standard", "anthropic")
     """
@@ -112,29 +159,29 @@ def get_model_family(model_name: str) -> str:
 def get_model_parameters(model_name: str, requested_params: dict) -> dict:
     """
     Dynamically filter parameters based on model patterns.
-    
+
     Returns only the parameters that the model supports,
     with any necessary transformations applied.
-    
+
     Args:
         model_name: The full model name
         requested_params: Dictionary of requested parameters
-        
+
     Returns:
         Filtered dictionary containing only supported parameters
     """
     model_family = get_model_family(model_name)
     profile = PARAMETER_PROFILES.get(model_family, PARAMETER_PROFILES["default"])
-    
+
     filtered = {}
     transforms = profile.get("transforms", {})
     allowed = profile.get("allowed", [])
-    
+
     for param, value in requested_params.items():
         # Skip None values
         if value is None:
             continue
-            
+
         # Check if parameter needs transformation
         if param in transforms:
             new_param = transforms[param]
@@ -142,17 +189,17 @@ def get_model_parameters(model_name: str, requested_params: dict) -> dict:
         elif param in allowed:
             filtered[param] = value
         # Silently drop unsupported parameters
-    
+
     return filtered
 
 
 def supports_system_messages(model_name: str) -> bool:
     """
     Check if a model supports system messages.
-    
+
     Args:
         model_name: The full model name
-        
+
     Returns:
         True if the model supports system messages, False otherwise
     """
@@ -237,6 +284,13 @@ class LLMClientFactory:
             "temperature": 0,
             "top_p": 0.2,
             "force_verify": False,  # Don't double-verify since this IS verification
+        },
+        # Counsel's Notes - strategic analysis from advocate's perspective
+        "counselnotes": {
+            "model": "anthropic/claude-sonnet-4",
+            "temperature": 0.3,
+            "top_p": 0.7,
+            "force_verify": True,  # Strategic counsel's notes require verification
         },
     }
 
@@ -398,20 +452,34 @@ class LLMClient:
             # Determine if we need to transform max_tokens to another parameter
             test_params = {"max_tokens": 1}
             filtered = get_model_parameters(model, test_params)
-            token_param = "max_completion_tokens" if "max_completion_tokens" in filtered else "max_tokens"
+            token_param = (
+                "max_completion_tokens"
+                if "max_completion_tokens" in filtered
+                else "max_tokens"
+            )
 
             if token_param not in default_params:
                 # These limits are carefully chosen to balance comprehensive responses with quality
                 if "google/gemini" in model.lower():
-                    default_params[token_param] = 2048  # Gemini - reliable up to this length
+                    default_params[token_param] = (
+                        2048  # Gemini - reliable up to this length
+                    )
                 elif "anthropic/claude" in model.lower():
-                    default_params[token_param] = 4096  # Claude - coherent for longer outputs
+                    default_params[token_param] = (
+                        4096  # Claude - coherent for longer outputs
+                    )
                 elif "openai/gpt-4" in model.lower():
-                    default_params[token_param] = 3072  # GPT-4 - balanced limit for precision
+                    default_params[token_param] = (
+                        3072  # GPT-4 - balanced limit for precision
+                    )
                 elif get_model_family(model) == "openai_reasoning":
-                    default_params[token_param] = 4096  # o1-pro/o3-pro - high-quality reasoning output
+                    default_params[token_param] = (
+                        4096  # o1-pro/o3-pro - high-quality reasoning output
+                    )
                 elif "grok" in model.lower():
-                    default_params[token_param] = 1536  # Grok - more prone to hallucination
+                    default_params[token_param] = (
+                        1536  # Grok - more prone to hallucination
+                    )
                 else:
                     default_params[token_param] = 2048  # Default safe limit
 
@@ -526,7 +594,7 @@ class LLMClient:
         try:
             # Filter parameters based on model capabilities
             filtered_params = get_model_parameters(self.model, params)
-            
+
             # Use ChatCompletion API
             response = openai.ChatCompletion.create(
                 model=model_name, messages=messages, **filtered_params
@@ -623,7 +691,7 @@ class LLMClient:
                         "Do not invent case names. If unsure about a citation, omit it rather than guess."
                     )
 
-                if is_o3_pro:
+                if self.model == "openai/o3-pro":
                     # For o3 models, append to the enhanced user content from earlier processing
                     if (
                         enhanced_messages

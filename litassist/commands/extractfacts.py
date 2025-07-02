@@ -66,8 +66,9 @@ def extractfacts(file, verify):
         )
     verify = True  # Force verification for critical accuracy
 
-    # For single chunk, use original approach
+    # Process content based on chunking needs (now most documents will be single chunk)
     if len(chunks) == 1:
+        # Single chunk - unified extraction approach
         # Use centralized format template
         format_instructions = PROMPTS.get_format_template("case_facts_10_heading")
         base_prompt = f"Extract under these headings (include all relevant details):\n{format_instructions}\n\n{chunks[0]}"
@@ -88,11 +89,14 @@ def extractfacts(file, verify):
             raise click.ClickException(f"Error extracting facts: {e}")
 
     else:
-        # For multiple chunks, accumulate facts then organize
+        # Multiple chunks - enhanced two-stage approach with better context preservation
+        click.echo(
+            "🔄 Processing large document in sections for comprehensive fact extraction..."
+        )
         accumulated_facts = []
 
         # First, extract relevant facts from each chunk
-        with click.progressbar(chunks, label="Processing document chunks") as bar:
+        with click.progressbar(chunks, label="Extracting facts from sections") as bar:
             for idx, chunk in enumerate(bar, 1):
                 chunk_template = PROMPTS.get("processing.extraction.chunk_facts_prompt")
                 prompt = f"{chunk_template.format(chunk_num=idx, total_chunks=len(chunks))}\n\n{chunk}"
@@ -113,8 +117,10 @@ def extractfacts(file, verify):
                     raise click.ClickException(f"Error processing chunk {idx}: {e}")
                 accumulated_facts.append(content.strip())
 
-        # Now organize all accumulated facts into the required structure
+        # Enhanced organization phase with better synthesis
+        click.echo("🔄 Organizing and synthesizing facts into structured format...")
         all_facts = "\n\n".join(accumulated_facts)
+
         # Use centralized format template for organizing
         format_instructions = PROMPTS.get_format_template("case_facts_10_heading")
         organize_template = PROMPTS.get("processing.extraction.organize_facts_prompt")
