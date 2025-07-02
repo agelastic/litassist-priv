@@ -200,8 +200,13 @@ def counselnotes(files, extract, verify, output):
                                     combined_data[key] += f"\n{result[key]}"
                 final_output = json.dumps(combined_data, indent=2)
             else:
-                # For other extraction modes, combine appropriately
-                final_output = json.dumps(extraction_results, indent=2)
+                # For other extraction modes, combine list-based results from each chunk.
+                key = extract
+                combined_list = []
+                for r in extraction_results:
+                    if isinstance(r, dict) and isinstance(r.get(key), list):
+                        combined_list.extend(r[key])
+                final_output = json.dumps({key: combined_list}, indent=2)
         else:
             final_output = (
                 json.dumps(extraction_results[0], indent=2)
