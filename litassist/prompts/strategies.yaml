@@ -26,7 +26,7 @@ strategies:
       2. Brief description (2-3 sentences)
       3. Legal basis or precedent
       4. Likelihood of success
-      5. Key considerations
+      5. Key considerations. Specifically address potential downsides or limitations even for these orthodox approaches.
     
     # Unorthodox strategies generation prompt
     # USED BY: brainstorm.py generate_strategies() - when approach="unorthodox"
@@ -49,6 +49,8 @@ strategies:
       3. Legal basis or novel interpretation
       4. Risk assessment
       5. Innovation factor
+
+     For each unorthodox strategy, suggest an analogy or a conceptual parallel from a different domain if it helps clarify the novel approach. Explicitly state why this strategy, despite being unorthodox, might be uniquely suited to the specific case facts or client objectives.
     
     # Strategy analysis prompt
     # USED BY: brainstorm.py generate_strategies() - when approach="analysis"
@@ -68,15 +70,15 @@ strategies:
       **REQUIRED ANALYSIS:**
       For each of the 5 selected strategies, provide:
       1. **Why this strategy was selected** (detailed reasoning)
-      2. **Implementation roadmap** (step-by-step approach)
+      2. **Implementation roadmap** (step-by-step approach). Outline 3-5 key sequential steps.
       3. **Resource requirements** (time, cost, expertise needed)
       4. **Risk assessment** (potential downsides and mitigation)
-      5. **Success probability** (realistic percentage with reasoning)
+      5. **Success probability** (realistic percentage with reasoning). Provide a percentage AND a qualitative justification (e.g., '70% - High, because X and Y strengths align well with Z vulnerability of opponent')
 
       **IMPORTANT:** You must return exactly 5 strategies. If you cannot find 5 high-quality strategies, you must still provide 5, but for the lower-quality ones, you must explicitly state why they are not recommended.
       
       **FINAL RECOMMENDATION:**
-      Conclude with your #1 recommended strategy and a compelling 2-3 paragraph justification.
+      Conclude with your #1 recommended strategy and a compelling 2-3 paragraph justification. Also include a brief discussion of the primary alternative strategy considered and why the #1 choice is superior.
     
     # Regeneration prompt with feedback incorporation
     # USED BY: brainstorm.py brainstorm() - when --regenerate flag is used
@@ -119,6 +121,7 @@ strategies:
       - Identify genuine hurdles based on the case facts provided
       - Note actual missing facts from the case materials
       - Do not introduce facts not in the case materials
+      - For each hurdle, also specify if it's a legal, factual, or practical hurdle.
     
     # Next steps generation prompt
     # USED BY: strategy.py strategy() - for generating immediate action items

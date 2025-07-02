@@ -234,13 +234,13 @@ class LLMClientFactory:
         },
         # Strategy sub-type for analysis
         "strategy-analysis": {
-            "model": "anthropic/claude-sonnet-4",
+            "model": "anthropic/claude-opus-4",
             "temperature": 0.2,
             "top_p": 0.8,
         },
         # Brainstorm - varied temperatures for different approaches
         "brainstorm-orthodox": {
-            "model": "anthropic/claude-sonnet-4",
+            "model": "anthropic/claude-opus-4",
             "temperature": 0.3,
             "top_p": 0.7,
             "force_verify": True,  # Conservative analysis requires verification
@@ -252,7 +252,7 @@ class LLMClientFactory:
             "force_verify": True,  # Auto-verify Grok
         },
         "brainstorm-analysis": {
-            "model": "anthropic/claude-sonnet-4",
+            "model": "openai/o3-pro",
             "temperature": 0.2,
             "top_p": 0.8,
         },
@@ -267,7 +267,7 @@ class LLMClientFactory:
             "top_p": 0,
         },
         "digest-issues": {
-            "model": "anthropic/claude-sonnet-4",
+            "model": "anthropic/claude-opus-4",
             "temperature": 0.2,
             "top_p": 0.5,
         },
@@ -287,7 +287,7 @@ class LLMClientFactory:
         },
         # Counsel's Notes - strategic analysis from advocate's perspective
         "counselnotes": {
-            "model": "anthropic/claude-sonnet-4",
+            "model": "anthropic/claude-claude-4",
             "temperature": 0.3,
             "top_p": 0.7,
             "force_verify": True,  # Strategic counsel's notes require verification

@@ -16,7 +16,7 @@ processing:
       - **[Date]**: [Event description]
       
       {hint_instruction}
-      Include all significant developments, procedural steps, and factual events in chronological order.
+      Include all significant developments, procedural steps, and factual events in chronological order. Include full dates (DD/MM/YYYY) where available. If only partial dates are present, represent them as accurately as possible (e.g., 'Mid-2023', 'September 2023'). Note any ambiguities in dating directly.
 
     summary_mode_hint_instruction_with_hint: |
       Focus your summary only on aspects related to: {hint}
@@ -31,7 +31,7 @@ processing:
       **Issue 1: [Issue Name]**
       - **Description:** [What the issue involves]
       - **Legal Framework:** [Relevant law/precedent]
-      - **Analysis:** [Discussion of the issue]
+      - **Analysis:** [Discussion of the issue. Briefly explain how the facts in this document segment relate to the identified legal framework for this issue. State any preliminary conclusions or questions that arise from this connection.]
       - **Significance:** [Why this matters]
       
       **Issue 2: [Issue Name]**
@@ -165,6 +165,7 @@ processing:
       - Applicable laws
       - Client objectives
       
+      Extract verbatim quotes for critical pieces of evidence or statements where precise wording is important, clearly indicating they are quotes.
       Just extract the raw facts found in this excerpt:
     
     chunk_system_prompt: |
@@ -183,6 +184,8 @@ processing:
       - If information for a heading is not available, write "Not specified in the document"
       - Maintain chronological order for events
       - Be comprehensive but factual
+
+      After populating the headings, include a brief 'Confidence Score' section (High/Medium/Low) reflecting the overall clarity and completeness of the information found in the document for this structured summary, with a one-sentence justification.
     
     organize_system_prompt: |
       Organize the extracted facts precisely under the requested headings. Ensure consistency and avoid duplication.
