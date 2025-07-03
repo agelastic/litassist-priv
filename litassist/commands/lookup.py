@@ -325,7 +325,7 @@ def lookup(question, mode, extract, comprehensive, context):
         try:
             # Reuse the service instance for the comprehensive search
             res_comp = (
-                comp_service.cse()
+                service.cse()
                 .list(q=question, cx=CONFIG.cse_id_comprehensive)
                 .execute()
             )

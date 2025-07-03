@@ -7,16 +7,28 @@ verification:
   # LOCATION: llm.py:528-539
   self_critique: |
     Review the document above for legal inaccuracies and non-Australian English spellings.
-    Respond with a clear separation between your findings and the corrected text.
-    First, under the heading "## Issues Found", provide a numbered list of all legal soundness issues you identify. If there are no issues, write "No issues found."
-    Then, use a clear separator "---" and after it, provide ONLY the "## Final Verified Text" section with the fully corrected text. Do not repeat the issues list in the second part of your response.
-    Review the response for logical consistency. Are there any contradictions? Does the reasoning flow clearly? Are there any unstated assumptions that should be made explicit? Provide the corrected text, and if useful, a brief note on the nature of key corrections made.
+    Provide your review in two parts while PRESERVING ALL ORIGINAL MARKDOWN HEADINGS
+    (e.g. "## ORTHODOX STRATEGIES", "## UNORTHODOX STRATEGIES") and their numbering.
+    Do not wrap the entire document in a new heading such as "Final Verified Text" and
+    do not alter section titles. Insert corrections directly in‐place so downstream
+    parsers retain the expected structure.
+
+    Output exactly in this order:
+
+    ## Issues Found
+    1. Describe each legal soundness or citation issue you identify.
+       If there are no issues, write "No issues found."
+
+    ---
+    [Corrected document begins here, with the SAME headings and numbering]
+    (Return the full text with corrections made inline. All unchanged lines may be
+    reproduced verbatim.)
 
   # Enhanced citation instructions for retry attempts
   # USED BY: llm.py LLMClient.complete() method - when citation verification fails and retry is needed
   # LOCATION: llm.py:431-440
   citation_retry_instructions: |
-    IMPORTANT: Use only real, verifiable Australian cases that exist in Australian legal databases. Do not invent case names. If unsure about a citation, omit it rather than guess. Ensure citations are to the most authoritative version of a case (e.g., High Court over a lower court on the same matter if discussing a principle established by HCA). Verify year and court identifiers meticulously. If providing a direct quote, ensure the pinpoint reference is to the exact paragraph/page of the quote.
+    IMPORTANT: Use only real, verifiable Australian cases that exist in Australian legal databases. Do not invent case names. If unsure about a citation, omit it rather than guess.
 
   # Light verification - Australian English compliance only
   # USED BY: llm.py LLMClient.verify_with_level() method - when level="light"
@@ -29,10 +41,10 @@ verification:
   # USED BY: llm.py LLMClient.verify_with_level() method - when level="heavy"
   # LOCATION: llm.py:758-767
   heavy_verification: |
-    Provide comprehensive legal accuracy review: verify all citations, check legal reasoning, identify any errors in law or procedure, and ensure Australian English compliance. Assess the practical applicability of any advice or strategy. Are there any overlooked practical impediments? Is the advice actionable? Consider if alternative interpretations of the law or facts exist and if they have been adequately addressed.
+    Provide comprehensive legal accuracy review: verify all citations, check legal reasoning, identify any errors in law or procedure, and ensure Australian English compliance.
 
   # Standard verification system prompt
   # USED BY: llm.py LLMClient.verify_with_level() method - system prompt for heavy verification
   # LOCATION: llm.py:757-762
   system_prompt: |
-    You are an experienced Australian Barrister acting as a meticulous reviewer. Your task is to identify any errors, omissions, or areas of improvement in the provided legal text. Thoroughly verify legal accuracy, citations, precedents, and reasoning. Focus on legal accuracy, citation correctness (AGLC standards), logical coherence, completeness, and practical applicability in an Australian legal context. Be exacting.
+    Australian law expert. Thoroughly verify legal accuracy, citations, precedents, and reasoning.

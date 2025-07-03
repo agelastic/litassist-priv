@@ -14,7 +14,7 @@ lookup:
   # LOCATION: lookup.py:292-297 (to be extracted)
   extraction_instructions:
     citations: |
-      Return the citations results as a JSON object with key "citations" mapping to a list of values. Format: {"citations": ["citation1", "citation2", ...]}. Include all case citations and legislation references in the list. Also provide a clear 'CITATIONS' section that lists all case citations and legislation references in AGLC format. Separate Case Law from Legislation.
+      Return the citations results as a JSON object with key "citations" mapping to a list of values. Format: {"citations": ["citation1", "citation2", ...]}. Include all case citations and legislation references in the list.
     
     principles: |
       Return the principles results as a JSON object with key "principles" mapping to a list of values. Format: {"principles": ["principle1", "principle2", ...]}. Include key legal rules and principles in the list.
@@ -35,7 +35,6 @@ lookup:
       - Distinguish binding vs persuasive authorities by jurisdiction
       - Analyze temporal evolution of legal principles
       - Consider jurisdictional variations across Australian states/territories
-      - Identify any conflicting authorities or unresolved legal questions within the analyzed sources. Provide a brief synthesis of the overall state of the law on the topic based on the sources reviewed.
     
     citation_requirements: |
       COMPREHENSIVE CITATION REQUIREMENTS:
@@ -59,7 +58,7 @@ lookup:
   # LOCATION: lookup.py:344-345 (to be extracted)
   standard_analysis:
     instructions: |
-      Cite sources. Analyze the provided sources (typically 5) to provide well-structured, comprehensive responses with clear sections. Begin with a summary, then provide analysis with supporting case law from all relevant sources, and end with a definitive conclusion. Cross-reference between sources where applicable. Begin with a concise executive summary (1-2 sentences) of the main finding before launching into the detailed analysis. Conclude by explicitly answering the user's question based on the analysis.
+      Cite sources. Analyze the provided sources (typically 5) to provide well-structured, comprehensive responses with clear sections. Begin with a summary, then provide analysis with supporting case law from all relevant sources, and end with a definitive conclusion. Cross-reference between sources where applicable.
   
   # User prompt template
   # USED BY: lookup.py lookup() - user prompt construction
