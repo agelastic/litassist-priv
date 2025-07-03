@@ -292,6 +292,14 @@ class LLMClientFactory:
             "top_p": 0.7,
             "force_verify": True,  # Strategic counsel's notes require verification
         },
+        # Barrister's brief - comprehensive document generation
+        "barbrief": {
+            "model": "openai/o3-pro",
+            # o3-pro for comprehensive analysis and superior drafting
+            # Extended token limit for detailed briefs
+            "reasoning_effort": "high",
+            "max_completion_tokens": 32768,  # 32K tokens for comprehensive output
+        },
     }
 
     @classmethod
