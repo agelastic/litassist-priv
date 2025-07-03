@@ -491,8 +491,35 @@ Please provide output in EXACTLY this format:
             if correction.strip() and not correction.lower().startswith(
                 "no corrections needed"
             ):
-                # The correction IS the new content
-                combined_content = correction
+                # Parse the verification output to extract only the corrected document
+                # The output format is:
+                # ## Issues Found during Verification
+                # ...
+                # ---
+                # ## Verified and Corrected Document
+                # [actual content]
+
+                if "## Verified and Corrected Document" in correction:
+                    # Extract only the corrected document portion
+                    parts = correction.split("## Verified and Corrected Document")
+                    if len(parts) > 1:
+                        corrected_content = parts[1].strip()
+                        # Remove any leading system instructions that might have leaked
+                        lines = corrected_content.split("\n")
+                        filtered_lines = []
+                        for line in lines:
+                            # Skip lines that are clearly system instructions
+                            if line.strip().startswith("Australian law only."):
+                                continue
+                            filtered_lines.append(line)
+                        combined_content = "\n".join(filtered_lines).strip()
+                    else:
+                        # Fallback if parsing fails
+                        combined_content = correction
+                else:
+                    # Fallback if expected format not found
+                    combined_content = correction
+
                 verification_notes.append(
                     "--- Strategic Review Applied ---\nContent was updated based on verification."
                 )

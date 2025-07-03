@@ -15,12 +15,12 @@ verification:
 
     Output exactly in this order:
 
-    ## Issues Found
+    ## Issues Found during Verification
     1. Describe each legal soundness or citation issue you identify.
        If there are no issues, write "No issues found."
 
     ---
-    [Corrected document begins here, with the SAME headings and numbering]
+    ## Verified and Corrected Document
     (Return the full text with corrections made inline. All unchanged lines may be
     reproduced verbatim.)
 
