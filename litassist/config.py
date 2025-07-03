@@ -221,7 +221,10 @@ def load_config(config_path: str | None = None) -> "Config":
 if CONFIG is None:
     try:
         CONFIG = Config()
-    except ConfigError:
-        # Leave CONFIG as None; modules should call load_config()
-        # explicitly or handle missing configuration appropriately.
+    except ConfigError as e:
+        import sys
+
+        print(
+            f"WARNING: Could not load configuration automatically. {e}", file=sys.stderr
+        )
         pass

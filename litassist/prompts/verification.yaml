@@ -10,7 +10,7 @@ verification:
     Provide your review in two parts while PRESERVING ALL ORIGINAL MARKDOWN HEADINGS
     (e.g. "## ORTHODOX STRATEGIES", "## UNORTHODOX STRATEGIES") and their numbering.
     Do not wrap the entire document in a new heading such as "Final Verified Text" and
-    do not alter section titles. Insert corrections directly in‐place so downstream
+    do not alter section titles. Insert corrections directly in-place so downstream
     parsers retain the expected structure.
 
     Output exactly in this order:
