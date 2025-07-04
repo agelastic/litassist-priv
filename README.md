@@ -10,6 +10,15 @@ graph TD
     D --> E["Strategy - Plan Approach"]
     E --> F["Draft - Create Documents"]
     
+    B --> K["CounselNotes - Strategic Analysis"]
+    C --> K
+    K --> E
+    
+    C --> L["Barbrief - Barrister's Brief"]
+    D --> L
+    E --> L
+    A --> L
+    
     G[Utilities] --> H["Test - API Connectivity"]
     G --> I["Audit Logging"]
     G --> J["Mock Mode"]
@@ -18,13 +27,23 @@ graph TD
 - **Lookup**: Rapid case-law research (Jade.io database via Google Custom Search + Google Gemini)  
 - **Digest**: Mass document processing (chronological summaries or issue-spotting via Claude)  
 - **ExtractFacts**: Automatic extraction of case facts into a structured file  
+- **CounselNotes**: Strategic advocate analysis with structured extractions (Claude)  
 - **Brainstorm**: Creative legal strategy generation (unorthodox strategies via Grok)  
-- **Strategy**: Targeted legal options with probability assessments and draft documents (enhanced reasoning via o1-pro)
+- **Strategy**: Targeted legal options with probability assessments and draft documents (enhanced reasoning via o3)
 - **Draft**: Citation-rich document creation (superior technical writing via o3)  
+- **Barbrief**: Comprehensive barrister's briefs for litigation (extended output via o3-pro)  
 
 For detailed usage guidance, see the [LitAssist User Guide](docs/user/LitAssist_User_Guide.md).
 
-## 🆕 Recent Improvements (June 2025)
+## 🆕 Recent Improvements (January 2025)
+
+### January 2025: Advanced Legal Commands
+- **CounselNotes Command**: Strategic advocate analysis with structured extraction and reasoning traces
+- **Barbrief Command**: Comprehensive barrister's briefs with 10-section structure for litigation proceedings
+- **Extended Output Support**: o3-pro integration with 32K token capacity for comprehensive documents
+- **Enhanced Model Configurations**: Updated Claude 4 Sonnet and o3-pro parameter handling
+
+## Previous Improvements (June 2025)
 
 ### June 2025: Lookup Command Overhaul
 - **Simplified Search Engine**: Removed Google web search option due to anti-bot restrictions; now uses reliable Jade.io database exclusively

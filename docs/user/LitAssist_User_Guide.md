@@ -8,7 +8,7 @@ LitAssist is a comprehensive legal workflow automation tool designed for Austral
 ingest → analyse → structure → brainstorm → strategy → draft
 ```
 
-*New in 2025: Added **counselnotes** command for strategic analysis from an advocate's perspective, complementing the neutral analysis provided by digest.*
+*New in 2025: Added **counselnotes** command for strategic analysis from an advocate's perspective, complementing the neutral analysis provided by digest. Also added **barbrief** command for generating comprehensive barrister's briefs.*
 
 This guide demonstrates how to use each workflow through a running example of a family court case, *Smith v Jones*, involving a complex child custody dispute with issues of interstate relocation and allegations of parental alienation.
 
@@ -217,6 +217,8 @@ Different commands handle citation issues differently:
 | brainstorm | ✓ | ✓ | Regenerates problematic strategies |
 | strategy | ✓ | ✓ | Discards options with bad citations |
 | draft | ✓ | ✓ | Appends warnings to draft |
+| counselnotes | ✓ | ✓ (with --verify) | Warnings in analysis |
+| barbrief | ✓ | ✓ (with --verify) | Verification report generated |
 
 ### Best Practices
 
@@ -1969,6 +1971,8 @@ The `--verify` switch is available for commands that generate substantive legal 
 | brainstorm | ✅ Yes | Optional verification, auto-enabled for Grok models due to hallucination tendency |
 | strategy | ❌ No* | Automatic heavy verification enabled for strategic accuracy (**⚠️ warns if --verify used**) |
 | draft | ✅ Yes | Optional verification, auto-triggered for legal citations/references |
+| counselnotes | ✅ Yes | Optional verification for strategic analysis accuracy |
+| barbrief | ✅ Yes | Optional verification for comprehensive brief accuracy |
 
 *Commands marked with * include automatic verification regardless of the flag and will warn users if they attempt to use --verify.
 
@@ -2204,6 +2208,197 @@ VERIFICATION NOTES:
 - **Zero tolerance for bad citations:** Strategic commands (brainstorm, strategy) automatically regenerate or discard content with citation issues
 - **Enhanced error messages:** Citation failures include specific explanations (e.g., "GENERIC CASE NAME", "FUTURE CITATION") and actions taken
 
+## Workflow 9: CounselNotes - Strategic Analysis from Advocate's Perspective
+
+**Pipeline Phase**: Analysis (Strategic)
+
+### Purpose
+
+The `counselnotes` command provides strategic analysis from an advocate's perspective, focusing on litigation opportunities, risks, and tactical recommendations. Unlike the neutral `digest` command, counselnotes actively evaluates case materials to identify advantages and strategic considerations for advocacy.
+
+### Command
+
+```bash
+./litassist.py counselnotes FILE [FILE...] [--extract all|citations|principles|checklist] [--verify] [--output PREFIX]
+```
+
+Options:
+- `--extract`: Extract structured data in JSON format
+- `--verify`: Enable citation verification
+- `--output`: Custom output filename prefix
+
+### Extract Options
+
+**All (`--extract all`)**
+- Extracts all structured data: citations, principles, and checklist items
+- Output: Comprehensive JSON with all three categories
+
+**Citations (`--extract citations`)**
+- Extract case citations and legislation references
+- Output: JSON array of citations found in analysis
+
+**Principles (`--extract principles`)**  
+- Extract key legal principles and rules
+- Output: JSON array of legal principles
+
+**Checklist (`--extract checklist`)**
+- Extract actionable items and recommendations
+- Output: JSON array of checklist items
+
+### Analysis Framework
+
+CounselNotes provides a 5-section strategic analysis:
+
+1. **Strategic Overview**: Executive summary of the matter from advocate's perspective
+2. **Opportunities**: Identified legal and tactical advantages
+3. **Risks & Challenges**: Potential weaknesses and opposing arguments
+4. **Recommendations**: Specific strategic and tactical advice
+5. **Case Management**: Practical next steps and preparation requirements
+
+### Multi-Document Support
+
+CounselNotes excels at synthesizing multiple documents:
+```bash
+# Single document analysis
+./litassist.py counselnotes judgment.pdf
+
+# Multi-document synthesis
+./litassist.py counselnotes judgment.pdf affidavit1.pdf affidavit2.pdf correspondence.pdf
+
+# With extraction
+./litassist.py counselnotes case_bundle.pdf --extract all --verify
+```
+
+### Example Usage (Smith v Jones)
+
+```bash
+./litassist.py counselnotes smith_v_jones_judgment.pdf witness_statements.pdf --verify
+
+# Output includes:
+# - Strategic advantages in relocation argument
+# - Risks from alienation allegations  
+# - Recommended evidence gathering
+# - Timeline for urgent applications
+# - Cross-examination focus areas
+```
+
+### Best Practices
+
+1. **Use for litigation strategy**: Ideal for preparing counsel briefings
+2. **Combine multiple sources**: Synthesizes complex document sets effectively
+3. **Extract for workflows**: Use JSON extraction for systematic case preparation
+4. **Verify citations**: Always use --verify for court-ready analysis
+
+## Workflow 10: Barbrief - Comprehensive Barrister's Brief Generation
+
+**Pipeline Phase**: Document Preparation
+
+### Purpose
+
+The `barbrief` command generates comprehensive barrister's briefs suitable for briefing counsel in Australian litigation. It consolidates case facts, strategies, research, and supporting documents into a structured 10-section brief tailored to specific hearing types.
+
+### Command
+
+```bash
+./litassist.py barbrief CASE_FACTS --hearing-type TYPE [OPTIONS]
+```
+
+Required:
+- `CASE_FACTS`: Path to structured case facts (10-heading format from extractfacts)
+- `--hearing-type`: One of: trial, directions, interlocutory, appeal
+
+Options:
+- `--strategies FILE`: Include brainstormed strategies
+- `--research FILE`: Include lookup/research reports (multiple allowed)
+- `--documents FILE`: Include supporting documents (multiple allowed)
+- `--instructions TEXT`: Specific instructions for counsel
+- `--verify`: Enable citation verification
+
+### Brief Structure
+
+The generated brief includes 10 comprehensive sections:
+
+1. **Cover Sheet**: Case details, parties, hearing type, dates
+2. **Instructions to Counsel**: Specific tasks and objectives
+3. **Case Summary**: Concise overview of the matter
+4. **Chronology of Events**: Timeline in table format
+5. **Legal Issues**: Primary and secondary issues for determination
+6. **Evidence Summary**: Available evidence organized by issue
+7. **Applicable Law**: Relevant legislation and case authorities
+8. **Strategic Considerations**: Recommended approaches and arguments
+9. **Procedural Matters**: Filing requirements and court rules
+10. **Annexures**: List of all documents in the brief
+
+### Hearing-Type Specific Content
+
+**Trial Briefs** include:
+- Proposed witness order
+- Time estimates
+- Agreed facts
+- Trial bundle index
+
+**Appeal Briefs** include:
+- Grounds of appeal
+- Orders sought
+- Summary of judgment appealed from
+
+**Interlocutory Briefs** include:
+- Urgent relief sought
+- Balance of convenience
+- Undertakings offered/required
+
+### Example Usage (Smith v Jones)
+
+```bash
+# Basic trial brief
+./litassist.py barbrief smith_v_jones_facts.txt --hearing-type trial
+
+# Comprehensive appeal brief with all materials
+./litassist.py barbrief smith_v_jones_facts.txt --hearing-type appeal \
+  --strategies brainstorm_output.txt \
+  --research lookup_relocation_law.txt --research lookup_alienation_cases.txt \
+  --documents affidavit_smith.pdf --documents family_report.pdf \
+  --instructions "Focus on error in applying relocation principles" \
+  --verify
+
+# Output: barbrief_appeal_20250107_152045.txt
+```
+
+### Integration with Pipeline
+
+Barbrief integrates outputs from multiple commands:
+- Uses **extractfacts** output as case facts input
+- Incorporates **brainstorm** strategies
+- Includes **lookup** research reports  
+- Can reference **draft** documents as supporting materials
+
+### Model Configuration
+
+Barbrief uses OpenAI o3-pro model with:
+- Extended output capability (32K tokens)
+- High reasoning effort for comprehensive analysis
+- BYOK requirement (same as draft command)
+
+### Best Practices
+
+1. **Always validate case facts**: Must be in 10-heading format
+2. **Include relevant materials**: More context produces better briefs
+3. **Specify instructions**: Guide counsel's focus areas
+4. **Use appropriate hearing type**: Affects content and formatting
+5. **Verify citations**: Essential for court documents
+
+### Output Files
+
+Brief files are saved as:
+```
+outputs/barbrief_[hearing_type]_YYYYMMDD_HHMMSS.txt
+```
+
+With verification enabled, additional file:
+```
+outputs/barbrief_citation_verification_YYYYMMDD_HHMMSS.txt
+```
+
 ## LLM Models and Parameter Configuration
 
 ### Model Selection by Command
@@ -2218,6 +2413,8 @@ Each LitAssist command uses a specific LLM model chosen for its strengths:
 | brainstorm | *Sub-command specific* | `anthropic/claude-sonnet-4` | Creative generation + expert analysis |
 | strategy | `openai/o3` | `anthropic/claude-sonnet-4` | Enhanced multi-step legal reasoning |
 | draft | `openai/o3` | N/A | Superior technical legal writing (BYOK required) |
+| counselnotes | `anthropic/claude-sonnet-4` | N/A | Strategic analysis from advocate perspective |
+| barbrief | `openai/o3-pro` | N/A | Comprehensive barrister's briefs (BYOK required) |
 
 ### Brainstorm Sub-Command Models
 
@@ -2279,6 +2476,14 @@ temperature=0.2, top_p=0.5
 - **Analysis Purpose**: Intelligent ranking of brainstormed strategies for specific outcomes
 - **Why**: o1-pro provides superior reasoning capabilities for complex strategic analysis
 
+**counselnotes** (`anthropic/claude-sonnet-4`):
+```python
+temperature=0.3, top_p=0.7
+```
+- **Purpose**: Strategic analysis from advocate's perspective
+- **Effect**: Balanced analytical output with controlled creativity
+- **Why**: Provides insightful strategic recommendations while maintaining reliability
+
 #### Creative Commands
 
 **draft** (`openai/o3`):
@@ -2292,6 +2497,18 @@ temperature=0.2, top_p=0.5
 - **Effect**: Advanced reasoning with sophisticated legal arguments  
 - **Why**: o3 provides enhanced technical writing capabilities for complex legal documents
 - **Note**: o3 uses internal reasoning tokens and has very limited parameter support compared to other models
+
+**barbrief** (`openai/o3-pro`):
+```python
+# o3-pro model parameters:
+# - max_completion_tokens: 32768 (32K tokens for comprehensive briefs)
+# - reasoning_effort: "high"
+# - No temperature, top_p, presence_penalty, frequency_penalty support
+```
+- **Purpose**: Comprehensive barrister's brief generation (requires BYOK)
+- **Effect**: Extended analysis with detailed multi-section output
+- **Why**: o3-pro's high token limit enables complete brief generation in single pass
+- **Note**: Uses same limited parameter set as o3 but with much higher token capacity
 
 **brainstorm** (`x-ai/grok-3-beta` for generation, `anthropic/claude-sonnet-4` for analysis):
 ```python
@@ -2318,12 +2535,13 @@ temperature=0, top_p=0.2
 
 - **o1-pro** (strategy command): Requires BYOK setup
 - **o3** (draft command): Requires BYOK setup
+- **o3-pro** (barbrief command): Requires BYOK setup
 
 **Setup Instructions:**
 1. Go to [OpenRouter Settings](https://openrouter.ai/settings/integrations)
 2. Add your OpenAI API key under "OpenAI Integration"
 3. Save the integration
-4. Both o1-pro and o3 will now be available through your OpenRouter API key
+4. All advanced models (o1-pro, o3, o3-pro) will now be available through your OpenRouter API key
 
 Without BYOK setup, the strategy and draft commands will fail with authentication errors.
 

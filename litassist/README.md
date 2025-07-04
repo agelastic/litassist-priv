@@ -19,8 +19,11 @@ litassist/
     ├── digest.py           # Document digestion with Claude
     ├── brainstorm.py       # Legal strategy generation with Grok
     ├── extractfacts.py     # Case facts extraction under 10 headings
-    ├── draft.py            # RAG-based legal drafting with GPT-4o
-    └── strategy.py         # Strategic options and document generation
+    ├── draft.py            # RAG-based legal drafting with o3
+    ├── strategy.py         # Strategic options and document generation
+    ├── verify.py           # Citation verification with Claude
+    ├── counselnotes.py     # Strategic advocate analysis with Claude
+    └── barbrief.py         # Comprehensive barrister's briefs with o3-pro
 ```
 
 ## Core Components
