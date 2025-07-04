@@ -8,14 +8,11 @@ with proper citations and Australian legal formatting.
 """
 
 import click
-import os
 from typing import List, Optional, Dict, Any
 
-from litassist.config import CONFIG
 from litassist.prompts import PROMPTS
 from litassist.utils import (
     read_document,
-    save_log,
     heartbeat,
     timed,
     create_reasoning_prompt,
@@ -198,14 +195,14 @@ def barbrief(
     
     # Get LLM client
     try:
-        client = LLMClientFactory.get_client("barbrief")
+        client = LLMClientFactory.for_command("barbrief")
     except Exception as e:
         raise click.ClickException(f"Failed to initialize LLM client: {e}")
     
     # Create reasoning-enabled prompt
     try:
         base_prompt = PROMPTS.get("barbrief.main", **sections)
-        prompt_with_reasoning = create_reasoning_prompt(base_prompt)
+        prompt_with_reasoning = create_reasoning_prompt(base_prompt, "barbrief")
     except Exception as e:
         raise click.ClickException(f"Failed to prepare prompt: {e}")
     
@@ -242,12 +239,6 @@ def barbrief(
     
     # Extract and save reasoning trace
     reasoning_trace = extract_reasoning_trace(content)
-    if reasoning_trace:
-        reasoning_file = save_reasoning_trace(
-            reasoning_trace, "barbrief", "brief_generation"
-        )
-        click.echo(f"Reasoning trace saved: {reasoning_file}")
-        content = reasoning_trace["conclusion"]
     
     # Run citation verification if requested
     if verify:
@@ -270,19 +261,24 @@ def barbrief(
                     verification_content += f"- {cit}: {reason}\n"
             
             verify_file = save_command_output(
-                verification_content, "barbrief", "citation_verification"
+                "barbrief", verification_content, "citation_verification"
             )
             click.echo(f"Verification report saved: {verify_file}")
     
     # Save the brief
-    output_file = save_command_output(content, "barbrief", hearing_type)
+    output_file = save_command_output("barbrief", content, hearing_type)
+    
+    # Save reasoning trace if we have one
+    if reasoning_trace:
+        reasoning_file = save_reasoning_trace(reasoning_trace, output_file)
+        click.echo(f"Reasoning trace saved: {reasoning_file}")
     
     # Show completion message
     show_command_completion(
         "Barrister's brief generated",
         output_file,
-        usage.get("total_tokens"),
+        stats={"Tokens used": usage.get("total_tokens")},
     )
     
     # Final verification if needed
-    verify_content_if_needed(ctx, content, client.command_context)
+    verify_content_if_needed(client, content, "barbrief", verify)
