@@ -19,28 +19,22 @@ barbrief:
 
   # Main prompt template for brief generation
   main: |
-    Generate a comprehensive barrister's brief for a {{ hearing_type }} hearing using the following materials:
+    Generate a comprehensive barrister's brief for a {hearing_type} hearing using the following materials:
 
     ## CASE FACTS
-    {{ case_facts }}
+    {case_facts}
 
-    {% if has_strategies %}
     ## LEGAL STRATEGIES
-    {{ strategies }}
-    {% endif %}
+    {strategies}
 
-    {% if research_count > 0 %}
-    ## RESEARCH AND AUTHORITIES ({{ research_count }} reports)
-    {{ research_content }}
-    {% endif %}
+    ## RESEARCH AND AUTHORITIES ({research_count} reports)
+    {research_content}
 
-    {% if supporting_count > 0 %}
-    ## SUPPORTING DOCUMENTS ({{ supporting_count }} documents)
-    {{ supporting_content }}
-    {% endif %}
+    ## SUPPORTING DOCUMENTS ({supporting_count} documents)
+    {supporting_content}
 
     ## SPECIFIC INSTRUCTIONS
-    {{ instructions }}
+    {instructions}
 
     ---
 
@@ -49,7 +43,7 @@ barbrief:
     1. **COVER SHEET**
        - Case name and number
        - Court/jurisdiction
-       - Hearing type: {{ hearing_type }}
+       - Hearing type: {hearing_type}
        - Date of brief
        - Instructing solicitor details
        - Counsel details (to be completed)
@@ -88,20 +82,16 @@ barbrief:
        - Distinguish binding vs persuasive authorities
 
     8. **STRATEGIC CONSIDERATIONS**
-       {% if has_strategies %}
-       - Review of brainstormed strategies
-       - Recommended approach for {{ hearing_type }}
+       - Review of brainstormed strategies (if provided)
+       - Recommended approach for {hearing_type}
        - Alternative arguments
        - Anticipated opposing arguments
-       {% else %}
-       - Recommended strategic approach
        - Strengths and weaknesses of case
        - Risk assessment
-       {% endif %}
 
     9. **PROCEDURAL MATTERS**
        - Filing requirements
-       - Court rules applicable to {{ hearing_type }}
+       - Court rules applicable to {hearing_type}
        - Timing considerations
        - Any orders sought
 
@@ -109,22 +99,9 @@ barbrief:
         - List all documents included in brief
         - Tab/reference system for easy navigation
 
-    {% if hearing_type == "trial" %}
-    Additional for trial:
-    - Proposed witness order
-    - Time estimates
-    - Any agreed facts
-    - Trial bundle index
-    {% elif hearing_type == "appeal" %}
-    Additional for appeal:
-    - Grounds of appeal
-    - Orders sought
-    - Summary of judgment appealed from
-    {% elif hearing_type == "interlocutory" %}
-    Additional for interlocutory:
-    - Urgent relief sought
-    - Balance of convenience
-    - Undertakings offered/required
-    {% endif %}
+    Note: Include hearing-specific content as appropriate:
+    - For trials: Proposed witness order, time estimates, agreed facts, trial bundle index
+    - For appeals: Grounds of appeal, orders sought, summary of judgment appealed from
+    - For interlocutory hearings: Urgent relief sought, balance of convenience, undertakings
 
     Format the brief professionally with clear headings, proper numbering, and cross-references where appropriate. All citations must be complete and verifiable.

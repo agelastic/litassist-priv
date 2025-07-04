@@ -197,22 +197,46 @@ def barbrief(
     )
     
     # Get LLM client
-    client = LLMClientFactory.get_client("barbrief")
+    try:
+        client = LLMClientFactory.get_client("barbrief")
+    except Exception as e:
+        raise click.ClickException(f"Failed to initialize LLM client: {e}")
     
     # Create reasoning-enabled prompt
-    base_prompt = PROMPTS.get_prompt("barbrief", "main", **sections)
-    prompt_with_reasoning = create_reasoning_prompt(base_prompt)
+    try:
+        base_prompt = PROMPTS.get("barbrief.main", **sections)
+        prompt_with_reasoning = create_reasoning_prompt(base_prompt)
+    except Exception as e:
+        raise click.ClickException(f"Failed to prepare prompt: {e}")
     
     # Generate the brief
     click.echo("\nGenerating barrister's brief...")
     heartbeat()
     
     messages = [
-        {"role": "system", "content": PROMPTS.get_prompt("barbrief", "system")},
+        {"role": "system", "content": PROMPTS.get("barbrief.system")},
         {"role": "user", "content": prompt_with_reasoning},
     ]
     
-    content, usage = client.complete(messages, skip_citation_verification=True)
+    try:
+        content, usage = client.complete(messages, skip_citation_verification=True)
+    except Exception as e:
+        # Provide helpful error message for common issues
+        if "timeout" in str(e).lower():
+            raise click.ClickException(
+                "Request timed out. The brief may be too large for a single request. "
+                "Try reducing the number of input documents."
+            )
+        elif "rate limit" in str(e).lower():
+            raise click.ClickException(
+                "Rate limit exceeded. Please wait a moment and try again."
+            )
+        elif "api key" in str(e).lower():
+            raise click.ClickException(
+                "API key error. Please check your OpenAI/OpenRouter configuration."
+            )
+        else:
+            raise click.ClickException(f"LLM API error: {e}")
     
     click.echo(f"\nGenerated brief ({usage.get('total_tokens', 'N/A')} tokens used)")
     

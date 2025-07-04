@@ -338,7 +338,13 @@ class TestBarbriefIntegration:
     
     def test_command_registration(self):
         """Test that barbrief is properly registered as a CLI command."""
+        # Import register_commands to ensure commands are registered
         from litassist.cli import cli
+        from litassist.commands import register_commands
+        
+        # Ensure commands are registered
+        if not cli.commands:
+            register_commands(cli)
         
         # Check that barbrief is in the list of commands
         assert "barbrief" in [cmd.name for cmd in cli.commands.values()]
