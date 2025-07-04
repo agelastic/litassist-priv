@@ -255,10 +255,9 @@ def barbrief(
                 f"Valid Citations: {len(verified)}\n"
                 f"Invalid Citations: {len(unverified)}\n\n"
             )
-            if unverified:
-                verification_content += "INVALID CITATIONS:\n"
-                for cit, reason in unverified:
-                    verification_content += f"- {cit}: {reason}\n"
+            verification_content += "INVALID CITATIONS:\n"
+            for cit, reason in unverified:
+                verification_content += f"- {cit}: {reason}\n"
             
             verify_file = save_command_output(
                 "barbrief", verification_content, "citation_verification"
@@ -275,10 +274,10 @@ def barbrief(
     
     # Show completion message
     show_command_completion(
-        "Barrister's brief generated",
+        "Barristers brief generated",
         output_file,
         stats={"Tokens used": usage.get("total_tokens")},
     )
     
-    # Final verification if needed
-    verify_content_if_needed(client, content, "barbrief", verify)
+    # Final verification if needed (skip citation validation if already done)
+    verify_content_if_needed(client, content, "barbrief", verify, citation_already_verified=verify)

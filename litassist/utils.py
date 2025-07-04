@@ -932,7 +932,8 @@ def show_command_completion(
 
 
 def verify_content_if_needed(
-    client: Any, content: str, command_name: str, verify_flag: bool = False
+    client: Any, content: str, command_name: str, verify_flag: bool = False,
+    citation_already_verified: bool = False
 ) -> tuple[str, bool]:
     """
     Handle verification and citation validation.
@@ -942,6 +943,7 @@ def verify_content_if_needed(
         content: Content to verify
         command_name: Name of the command (for context)
         verify_flag: Whether user explicitly requested verification
+        citation_already_verified: Whether citation verification was already performed
 
     Returns:
         Tuple of (possibly modified content, whether verification was performed)
@@ -979,12 +981,13 @@ def verify_content_if_needed(
                     + correction
                 )
 
-            # Run citation validation
-            citation_issues = client.validate_citations(content)
-            if citation_issues:
-                content += "\n\n--- Citation Warnings ---\n" + "\n".join(
-                    citation_issues
-                )
+            # Run citation validation (skip if already verified)
+            if not citation_already_verified:
+                citation_issues = client.validate_citations(content)
+                if citation_issues:
+                    content += "\n\n--- Citation Warnings ---\n" + "\n".join(
+                        citation_issues
+                    )
 
         except Exception as e:
             raise click.ClickException(f"Verification error during {command_name}: {e}")

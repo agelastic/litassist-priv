@@ -24,6 +24,7 @@ The project includes comprehensive unit tests for all major commands and utiliti
 - **test_verify_command.py**: Tests the verify command's citation verification, legal soundness checking, and reasoning trace functionality
 - **test_strategy_command_comprehensive.py**: Validates strategy generation with case facts and brainstormed strategies
 - **test_draft_command_comprehensive.py**: Tests document drafting with various input combinations
+- **test_barbrief.py**: Tests barrister's brief generation with 10-heading validation and verification optimization
 - **test_basic.py**: Basic smoke tests for all CLI commands
 
 ### Utility Tests
@@ -32,7 +33,7 @@ The project includes comprehensive unit tests for all major commands and utiliti
 - **test_prompts.py**: Validates prompt management system
 - **test_prompt_templates.py**: Ensures YAML template integrity
 - **test_llm_client_factory.py**: Tests LLM client configuration and restrictions
-- **test_utils_comprehensive.py**: Tests core utilities including LegalReasoningTrace
+- **test_utils_comprehensive.py**: Tests core utilities including LegalReasoningTrace and verification optimization
 
 ### Running Unit Tests
 ```bash

@@ -475,6 +475,28 @@ class TestContentVerification:
         with pytest.raises(Exception):
             verify_content_if_needed(mock_client, content, "strategy", verify_flag=True)
 
+    def test_verify_content_if_needed_citation_already_verified(self):
+        """Test that citation validation is skipped when already verified."""
+        mock_client = MagicMock()
+        mock_client.should_auto_verify.return_value = False
+        mock_client.verify_with_level.return_value = "Minor corrections needed"
+        mock_client.validate_citations.return_value = ["Citation issue"]
+
+        content = "Legal analysis content"
+        
+        # Test with citation_already_verified=True
+        result_content, verified = verify_content_if_needed(
+            mock_client, content, "strategy", verify_flag=True, 
+            citation_already_verified=True
+        )
+
+        # Should perform verification but skip citation validation
+        assert verified is True
+        assert "Minor corrections needed" in result_content
+        assert "Citation issue" not in result_content
+        mock_client.verify_with_level.assert_called_once()
+        mock_client.validate_citations.assert_not_called()
+
 
 class TestUtilityHelpers:
     """Test miscellaneous utility helper functions."""

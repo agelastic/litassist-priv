@@ -29,6 +29,7 @@ This document describes the centralized prompt management system implemented in 
   - `lookup.yaml` - Lookup command specific prompts
   - `processing.yaml` - Document processing prompts for digest and draft
   - `strategies.yaml` - Strategic analysis and brainstorming prompts
+  - `barbrief.yaml` - Barrister's brief generation templates with 10-section structure
   - `verification.yaml` - Verification and self-critique prompts
   - `system_feedback.yaml` - Unified system feedback messages for errors and warnings
 
@@ -142,6 +143,7 @@ composed = PROMPTS.compose_prompt('base.australian_law', 'base.citation_standard
 ✅ **`strategy.py`** - Fully integrated with centralized prompts  
 ✅ **`draft.py`** - Fully integrated with centralized prompts  
 ✅ **`digest.py`** - Fully integrated with centralized prompts  
+✅ **`barbrief.py`** - Fully integrated with centralized prompts (2025 addition)  
 
 **Integration Status**: All commands now use centralized prompt templates from the YAML files, with comprehensive coverage of system prompts, format templates, and document templates.
 

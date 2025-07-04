@@ -199,7 +199,7 @@ class TestBarbriefCommand:
             mock_read.assert_called_once_with("test_facts.txt")
             mock_factory.for_command.assert_called_once_with("barbrief")
             mock_save.assert_called_once()
-            assert "Barrister'S Brief Generated complete!" in result.output
+            assert "Barristers Brief Generated complete!" in result.output
 
     @patch("litassist.commands.barbrief.read_document")
     def test_barbrief_invalid_case_facts(self, mock_read):
