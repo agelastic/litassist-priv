@@ -142,7 +142,7 @@ LitAssist uses cutting-edge AI models specifically optimized for legal work:
 |---------|-------|--------------|---------|
 | **strategy** | OpenAI o1-pro | No | Enhanced multi-step legal reasoning |
 | **draft** | OpenAI o3 | **Yes** | Superior technical legal writing |
-| **barbrief** | OpenAI o3 | **Yes** | Comprehensive barrister's briefs |
+| **barbrief** | OpenAI o3-pro | **Yes** | Comprehensive barrister's briefs |
 | **brainstorm** | Claude 4 Sonnet / Grok 3 | No | Conservative vs creative strategies |
 | **digest** | Claude 4 Sonnet | No | Document analysis and summarization |
 | **extractfacts** | Claude 4 Sonnet | No | Structured fact extraction |

@@ -2543,7 +2543,7 @@ temperature=0, top_p=0.2
 3. Save the integration
 4. All advanced models (o1-pro, o3, o3-pro) will now be available through your OpenRouter API key
 
-Without BYOK setup, the strategy and draft commands will fail with authentication errors.
+Without BYOK setup, the strategy, draft, and barbrief commands will fail with authentication errors.
 
 ### Understanding the Parameters
 

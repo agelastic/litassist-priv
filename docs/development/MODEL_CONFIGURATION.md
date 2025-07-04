@@ -17,8 +17,8 @@ LitAssist uses multiple specialized LLM models optimized for different legal tas
 | **extractfacts** | `anthropic/claude-sonnet-4` | Structured fact extraction | temperature: 0, top_p: 0.15 |
 | **brainstorm** | `x-ai/grok-3-beta` | Creative strategy generation | temperature: 0.9, top_p: 0.95 |
 | **brainstorm** (analysis) | `anthropic/claude-sonnet-4` | Strategy analysis & ranking | temperature: 0.2, top_p: 0.8 |
-| **strategy** | `openai/o3` | Strategic planning & analysis | max_completion_tokens: varies, reasoning_effort: varies |
-| **draft** | `openai/o3` | Legal document drafting | max_completion_tokens: 4096, reasoning_effort: medium |
+| **strategy** | `openai/o3-pro` | Strategic planning & analysis | max_completion_tokens: varies, reasoning_effort: varies |
+| **draft** | `openai/o3-pro` | Legal document drafting | max_completion_tokens: 4096, reasoning_effort: medium |
 | **counselnotes** | `anthropic/claude-sonnet-4` | Strategic advocate analysis | temperature: 0.3, top_p: 0.7 |
 | **barbrief** | `openai/o3-pro` | Comprehensive barrister's briefs | max_completion_tokens: 32768, reasoning_effort: high |
 | **verify** | `anthropic/claude-sonnet-4` | Document verification | temperature: 0, top_p: 0.2 |

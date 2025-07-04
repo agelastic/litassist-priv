@@ -554,27 +554,27 @@ test_barbrief_command() {
     # Test basic barbrief command for trial
     run_test "Barbrief - Basic trial brief" \
         "python litassist.py barbrief test_inputs/mock_10heading_case_facts.txt --hearing-type trial" \
-        "Barrister'S Brief Generated complete|saved to"
+        "Barristers Brief Generated complete|saved to"
     
     # Test barbrief with strategies
     run_test "Barbrief - With strategies" \
         "python litassist.py barbrief test_inputs/mock_10heading_case_facts.txt --hearing-type directions --strategies test_inputs/mock_strategies.txt" \
-        "Barrister'S Brief Generated complete|saved to"
+        "Barristers Brief Generated complete|saved to"
     
     # Test barbrief with research
     run_test "Barbrief - With research" \
         "python litassist.py barbrief test_inputs/mock_10heading_case_facts.txt --hearing-type interlocutory --research test_inputs/mock_research_output.txt" \
-        "Barrister'S Brief Generated complete|saved to"
+        "Barristers Brief Generated complete|saved to"
     
     # Test barbrief with documents
     run_test "Barbrief - With supporting documents" \
         "python litassist.py barbrief test_inputs/mock_10heading_case_facts.txt --hearing-type appeal --documents test_inputs/mock_affidavit.txt --documents test_inputs/mock_evidence.txt" \
-        "Barrister'S Brief Generated complete|saved to"
+        "Barristers Brief Generated complete|saved to"
     
     # Test barbrief with all options
     run_test "Barbrief - Comprehensive with all options" \
         "python litassist.py barbrief test_inputs/mock_10heading_case_facts.txt --hearing-type trial --strategies test_inputs/mock_strategies.txt --research test_inputs/mock_research_output.txt --documents test_inputs/mock_affidavit.txt --instructions 'Focus on jurisdiction issues' --verify" \
-        "Barrister'S Brief Generated complete|saved to"
+        "Barristers Brief Generated complete|saved to"
 }
 
 test_error_conditions() {
