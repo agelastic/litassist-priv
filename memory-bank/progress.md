@@ -1,7 +1,16 @@
 # Progress
 
 ## What works
-- **All Core Commands**: lookup, digest, extractfacts, brainstorm, strategy, draft, verify, counselnotes fully implemented and stable
+- **All Core Commands**: lookup, digest, extractfacts, brainstorm, strategy, draft, verify, counselnotes, barbrief fully implemented and stable
+- **Barbrief Command (January 2025)**: Comprehensive barrister's brief generation
+  - 10-section structured brief format (Cover Sheet through Annexures)
+  - Validates 10-heading case facts format from extractfacts
+  - Multiple input support: strategies, research reports, supporting documents
+  - Hearing-type specific formatting: trial, directions, interlocutory, appeal
+  - LLMClientFactory integration: openai/o3-pro with 32K token limit
+  - Citation verification integration with --verify flag
+  - Comprehensive error handling for API failures
+  - Full integration test suite and documentation
 - **CounselNotes Command (January 2025)**: Complete strategic analysis implementation
   - Five-section strategic framework: Overview, Opportunities, Risks, Recommendations, Management
   - Four JSON extraction modes: all, citations, principles, checklist
@@ -39,7 +48,7 @@
 - Continue to update Memory Bank after each major feature, bugfix, or workflow change
 
 ## Current status
-**Feature Complete**: All core commands including counselnotes are implemented and production-ready. Currently on `feature/counsel-notes` branch with clean git status, ready for merge to master. Memory Bank, documentation, and codebase fully synchronized. CounselNotes represents the completion of strategic analysis capabilities in the LitAssist ecosystem.
+**Feature Complete**: All core commands including counselnotes and barbrief are implemented and production-ready. Currently on `feature/barbrief-command` branch after completing barbrief implementation. Memory Bank, documentation, and codebase fully synchronized. Barbrief completes the litigation document preparation pipeline, providing comprehensive brief generation for Australian barristers.
 
 ## Known issues
 - Several advanced prompting and verification improvements remain unimplemented

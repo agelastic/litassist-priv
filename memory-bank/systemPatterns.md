@@ -74,18 +74,28 @@ Strategic analysis commands follow consistent configuration patterns:
 - **CounselNotes**: `anthropic/claude-sonnet-4`, temp=0.3, top_p=0.7, force_verify=True
 - **Brainstorm-Orthodox**: `anthropic/claude-sonnet-4`, temp=0.3, top_p=0.7, force_verify=True  
 - **Strategy-Analysis**: `anthropic/claude-sonnet-4`, temp=0.2, top_p=0.8
+- **Barbrief**: `openai/o3-pro`, reasoning_effort=high, max_completion_tokens=32768
 
 **Configuration Philosophy:**
 - Strategic commands use Claude Sonnet 4 for balanced analysis capability
 - Temperature 0.3 provides strategic thinking with controlled creativity
 - Force verification enabled for professional legal accountability
 - Consistent patterns across similar command types for predictable behavior
+- Barbrief uses o3-pro for comprehensive document generation with extended token limits
 
 **CounselNotes Specific Patterns:**
 - Multi-document cross-synthesis capabilities
 - Five-section strategic analysis framework (Overview, Opportunities, Risks, Recommendations, Management)
 - Four JSON extraction modes (all, citations, principles, checklist)
 - Multi-chunk consolidation for large document processing
+
+**Barbrief Specific Patterns:**
+- 10-section structured brief format (Cover Sheet through Annexures)
+- Validates 10-heading case facts from extractfacts command
+- Supports multiple input types: strategies, research, supporting documents
+- Hearing-type specific formatting (trial, directions, interlocutory, appeal)
+- Uses o3-pro's reasoning capabilities with 32K token output limit
+- Integrates citation verification when --verify flag is used
 
 ## Prompt Management
 
