@@ -309,6 +309,13 @@ When debugging cascading issues:
 - Selective regeneration for citation issues
 - Smart deduplication to avoid redundant API calls
 
+## File Naming Convention
+
+When saving Claude-generated files to the project:
+- **Always prefix with `claude_`** to distinguish from user-created files
+- This ensures clear separation between AI-generated and human-authored content
+- Examples: `claude_analysis.md`, `claude_commands.md`, `claude_strategy.md`
+
 ## Common Pitfalls to Avoid
 
 1. **Changing model names**: These are exact API identifiers
