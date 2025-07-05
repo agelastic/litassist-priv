@@ -12,11 +12,10 @@ import openai
 import pinecone
 
 from litassist.config import load_config
+from litassist.commands import register_commands
 
 # Load configuration early so that CONFIG is populated before other modules
 CONFIG = load_config()
-
-from litassist.commands import register_commands
 
 
 @click.group()

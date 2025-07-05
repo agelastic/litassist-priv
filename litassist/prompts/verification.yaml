@@ -50,4 +50,4 @@ verification:
   # USED BY: llm.py LLMClient.verify_with_level() method - system prompt for heavy verification
   # LOCATION: llm.py:757-762
   system_prompt: |
-    Australian law expert. Thoroughly verify legal accuracy, citations, precedents, and reasoning.
+    Australian law only. You are a senior solicitor with excellent knowledge of case and statute law. Thoroughly verify legal accuracy, citations, precedents, and reasoning.
