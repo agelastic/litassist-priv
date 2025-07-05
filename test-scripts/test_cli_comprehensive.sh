@@ -255,6 +255,74 @@ Client Objectives:
 - Establish precedent for future similar disputes
 EOF
 
+    # Mock 10-heading case facts for barbrief
+    cat > test_inputs/mock_10heading_case_facts.txt <<EOF
+CASE FACTS: Johnson v State Rail Authority
+
+Parties:
+- Plaintiff: Sarah Johnson, 45, school teacher
+- Defendant: State Rail Authority of NSW
+
+Background:
+On 15 January 2024, Ms Johnson was traveling on the 8:15am service from Central to Parramatta when the train made an emergency stop. She was thrown forward, striking her head on a pole and sustaining injuries including concussion and whiplash. The emergency stop was caused by a signal failure that had been reported but not repaired for three weeks.
+
+Key Events:
+1. 20 December 2023: Signal fault first reported by train drivers
+2. 15 January 2024: Incident occurred during morning peak hour
+3. 16 January 2024: Ms Johnson attended emergency department
+4. 20 January 2024: MRI revealed soft tissue damage
+5. 1 February 2024: Ms Johnson unable to return to work
+6. 15 March 2024: Independent medical examination conducted
+
+Legal Issues:
+1. Whether State Rail Authority breached its duty of care to passengers
+2. Whether the three-week delay in repairs constitutes negligence
+3. Applicability of Civil Liability Act 2002 (NSW) caps on damages
+4. Whether contributory negligence applies (Ms Johnson was standing)
+5. Assessment of economic loss for future earning capacity
+
+Evidence Available:
+- Medical reports from Royal Prince Alfred Hospital
+- State Rail incident reports and maintenance logs
+- CCTV footage from train carriage
+- Witness statements from 12 passengers
+- Expert engineering report on signal system
+- Ms Johnson's employment and income records
+
+Opposing Arguments:
+1. State Rail claims emergency stop was necessary for safety
+2. Defendant argues Ms Johnson failed to hold handrails
+3. Defendant disputes extent of ongoing injuries
+4. State Rail invokes statutory immunity provisions
+5. Defendant challenges causation between delay and incident
+
+Procedural History:
+- 1 April 2024: Statement of Claim filed in District Court
+- 15 April 2024: Defence filed with cross-claim
+- 1 May 2024: Case management conference held
+- 15 June 2024: Discovery orders made
+- 1 August 2024: Mediation scheduled but failed
+- 15 September 2024: Matter listed for hearing
+
+Jurisdiction:
+District Court of New South Wales, Sydney Registry. Jurisdiction established under District Court Act 1973 (NSW) for personal injury claims up to $750,000. Venue appropriate as incident occurred within Sydney metropolitan area.
+
+Applicable Law:
+- Civil Liability Act 2002 (NSW) - particularly Part 2 (caps on damages)
+- Rail Safety National Law (NSW)
+- Common law negligence principles from Donoghue v Stevenson
+- State Rail Authority Act 1980 (NSW) regarding statutory duties
+- Uniform Civil Procedure Rules 2005 (NSW)
+
+Client Objectives:
+1. Obtain compensation for medical expenses ($25,000 to date)
+2. Recover lost wages and future earning capacity ($150,000)
+3. Secure damages for pain and suffering
+4. Establish State Rail's systemic maintenance failures
+5. Achieve resolution before trial if possible
+6. Set precedent for transport safety accountability
+EOF
+
     # Mock strategy file
     cat > test_inputs/mock_strategy_headers.txt <<EOF
 LEGAL STRATEGY OUTLINE
@@ -283,6 +351,116 @@ LEGAL STRATEGY OUTLINE
    - Evidence requirements
    - Witness statements needed
    - Expert evidence on damages
+EOF
+
+    # Mock strategies file
+    cat > test_inputs/mock_strategies.txt <<EOF
+LEGAL STRATEGIES - Johnson v State Rail Authority
+
+PRIMARY STRATEGY: Negligence and Breach of Statutory Duty
+- Establish State Rail's knowledge of signal fault (20 Dec 2023)
+- Demonstrate three-week delay was unreasonable
+- Link maintenance failure directly to incident
+- Invoke Rail Safety National Law obligations
+- Reference WorkCover v State Rail precedent
+
+ALTERNATIVE STRATEGY: Strict Liability Approach
+- Argue non-delegable duty of care for passenger safety
+- Focus on res ipsa loquitur doctrine
+- Emergency stops should not cause injury if proper
+- Shift burden of proof to defendant
+
+DAMAGES STRATEGY:
+- Lead with special damages (quantifiable losses)
+- Medical expenses: $25,000 (documented)
+- Lost wages: 6 months at $85,000 p.a = $42,500
+- Future earning capacity: actuarial assessment
+- General damages within Civil Liability Act caps
+- Aggravated damages for systemic failure
+EOF
+
+    # Mock research output file
+    cat > test_inputs/mock_research_output.txt <<EOF
+LEGAL RESEARCH REPORT - Transport Liability
+
+Key Cases:
+1. Stevens v Brodribb Sawmilling Co Pty Ltd (1986) 160 CLR 16
+   - Non-delegable duty of care principles
+   - Applicable to passenger transport
+
+2. WorkCover Authority v State Rail Authority (2003) NSWCA 48
+   - Systemic maintenance failures
+   - Breach of statutory duty under rail safety legislation
+
+3. Vairy v Wyong Shire Council (2005) 223 CLR 422
+   - Civil Liability Act interpretation
+   - Obvious risk provisions may not apply
+
+Legislation:
+- Rail Safety National Law (NSW) s.52: Duty to ensure safety
+- Civil Liability Act 2002 (NSW) Part 2: Caps on damages
+- Work Health and Safety Act 2011 (NSW): Parallel duties
+
+Key Principles:
+- Carriers owe high duty of care to passengers
+- Actual knowledge of defect critical
+- Reasonable repair timeframe is question of fact
+- Contributory negligence high threshold for passengers
+EOF
+
+    # Mock evidence file
+    cat > test_inputs/mock_evidence.txt <<EOF
+EVIDENCE SUMMARY - Johnson v State Rail
+
+Documentary Evidence:
+1. Incident Report #SR-2024-0142 dated 15/01/2024
+2. Signal Fault Log entries from 20/12/2023
+3. Maintenance Work Orders (incomplete)
+4. CCTV footage - 2 camera angles, 5 minutes
+5. Hospital admission records
+6. Medical certificates (ongoing treatment)
+
+Witness Evidence:
+- P. Smith: "The train stopped so suddenly, people fell"
+- M. Chen: "I saw the lady hit her head on the pole"
+- Dr. Harrison: "Concussion with post-trauma symptoms"
+- J. Roberts (engineer): "Signal system was overdue for service"
+
+Expert Evidence:
+- Dr. Sarah Mitchell (neurologist): Ongoing symptoms consistent
+- Mr. John Davies (rail engineer): 3-week delay excessive
+- Ms. Lisa Wong (ergonomist): Handrail placement inadequate
+EOF
+
+    # Mock affidavit text file (in addition to PDF)
+    cat > test_inputs/mock_affidavit.txt <<EOF
+AFFIDAVIT OF SARAH JOHNSON
+
+I, SARAH JOHNSON, of 42 Maple Street, Parramatta NSW 2150, Teacher, 
+MAKE OATH AND SAY:
+
+1. I am the Plaintiff in these proceedings and make this affidavit from 
+   my own personal knowledge save where otherwise stated.
+
+2. On 15 January 2024, I was traveling on the 8:15am train service from 
+   Central to Parramatta Station to attend work at Parramatta High School.
+
+3. At approximately 8:32am, while the train was between Strathfield and 
+   Parramatta stations, it came to an extremely sudden stop without warning.
+
+4. I was standing near the doors, holding my bag, preparing to alight at 
+   the next station. The force of the stop threw me forward violently.
+
+5. My head struck a vertical pole with significant force. I immediately 
+   felt severe pain and dizziness.
+
+6. Annexed and marked "SJ-1" is a copy of the medical report from Royal 
+   Prince Alfred Hospital dated 16 January 2024.
+
+SWORN at Sydney
+This 1st day of April 2024
+
+Sarah Johnson
 EOF
 
     echo -e "${GREEN}✓ Mock files created successfully${NC}"
@@ -368,6 +546,35 @@ test_counselnotes_command() {
     run_test "Counselnotes - With custom output" \
         "python litassist.py counselnotes test_inputs/mock_case_facts.txt --output test_output" \
         "Counselnotes complete|complete|saved to"
+}
+
+test_barbrief_command() {
+    print_section "Testing BARBRIEF Command"
+    
+    # Test basic barbrief command for trial
+    run_test "Barbrief - Basic trial brief" \
+        "python litassist.py barbrief test_inputs/mock_10heading_case_facts.txt --hearing-type trial" \
+        "Barristers Brief Generated complete|saved to"
+    
+    # Test barbrief with strategies
+    run_test "Barbrief - With strategies" \
+        "python litassist.py barbrief test_inputs/mock_10heading_case_facts.txt --hearing-type directions --strategies test_inputs/mock_strategies.txt" \
+        "Barristers Brief Generated complete|saved to"
+    
+    # Test barbrief with research
+    run_test "Barbrief - With research" \
+        "python litassist.py barbrief test_inputs/mock_10heading_case_facts.txt --hearing-type interlocutory --research test_inputs/mock_research_output.txt" \
+        "Barristers Brief Generated complete|saved to"
+    
+    # Test barbrief with documents
+    run_test "Barbrief - With supporting documents" \
+        "python litassist.py barbrief test_inputs/mock_10heading_case_facts.txt --hearing-type appeal --documents test_inputs/mock_affidavit.txt --documents test_inputs/mock_evidence.txt" \
+        "Barristers Brief Generated complete|saved to"
+    
+    # Test barbrief with all options
+    run_test "Barbrief - Comprehensive with all options" \
+        "python litassist.py barbrief test_inputs/mock_10heading_case_facts.txt --hearing-type trial --strategies test_inputs/mock_strategies.txt --research test_inputs/mock_research_output.txt --documents test_inputs/mock_affidavit.txt --instructions 'Focus on jurisdiction issues' --verify" \
+        "Barristers Brief Generated complete|saved to"
 }
 
 test_error_conditions() {
@@ -502,6 +709,7 @@ show_help() {
     echo "  draft         Test draft command"
     echo "  verify        Test verify command"
     echo "  counselnotes  Test counselnotes command"
+    echo "  barbrief      Test barbrief command"
     echo "  errors        Test error conditions"
     echo "  all           Run all tests"
     echo ""
@@ -551,6 +759,9 @@ run_test_group() {
         counselnotes)
             test_counselnotes_command
             ;;
+        barbrief)
+            test_barbrief_command
+            ;;
         errors)
             test_error_conditions
             ;;
@@ -565,6 +776,7 @@ run_test_group() {
             test_draft_command
             test_verify_command
             test_counselnotes_command
+            test_barbrief_command
             test_error_conditions
             ;;
         *)

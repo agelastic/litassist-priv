@@ -9,12 +9,21 @@ Located in `tests/unit/`:
 - `test_basic.py` - Basic infrastructure tests
 - `test_real_functionality.py` - Real function tests with proper examples 
 - `test_simple.py` - Simple functionality tests
+- `test_barbrief.py` - Barbrief command unit tests
+- `test_counselnotes.py` - CounselNotes command unit tests
+- `test_llm_client_factory.py` - LLMClientFactory pattern verification
+- `test_prompts.py` - Centralized prompt management system testing
+- `test_prompt_templates.py` - YAML template validation and structure verification
+- `test_citation_verification_simple.py` - Citation validation testing
+- `test_verification.py` - Content verification testing
 
 ## Integration Tests ✅
 Located in test-scripts/:
 - `test_connectivity.py` - Tests basic connectivity to external services
 - `test_integrations.py` - Tests integration with external APIs (OpenAI, Pinecone, OpenRouter)
 - `test_quality.py` - Tests response quality from various commands
+- `test_barbrief_integration.py` - Barbrief command integration tests without API calls
+- `test_cli_comprehensive.sh` - Complete CLI testing suite with mock files
 
 ## Running Tests
 

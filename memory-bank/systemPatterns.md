@@ -3,7 +3,7 @@
 ## Architecture Overview
 
 - **CLI Entry Point**: `litassist/cli.py` defines the top-level Click commands.
-- **Command Modules**: Each workflow (lookup, digest, extractfacts, brainstorm, strategy, draft, counselnotes) lives under `litassist/commands/`.
+- **Command Modules**: Each workflow (lookup, digest, extractfacts, brainstorm, strategy, draft, counselnotes, barbrief) lives under `litassist/commands/`.
 - **Core Services**:
   - **LLM Integration** in `litassist/llm.py` with `LLMClientFactory`.
   - **Citation Validation** in `litassist/citation_patterns.py` and `litassist/citation_verify.py`.
@@ -14,7 +14,9 @@
 
 LitAssist commands form a linear pipeline:
 ```
-Lookup → Digest → ExtractFacts → Brainstorm → Strategy → Draft
+Lookup → Digest → ExtractFacts → Brainstorm → Strategy → Draft → Barbrief
+                                                          ↘
+                                                        CounselNotes
 ```
 - **Digest Command Hinting (June 2025):** The `digest` command now supports an optional `--hint` argument, allowing users to provide a text hint to focus LLM analysis on topics related to the hint. This enables targeted processing of non-legal and general documents.
 - **Research-Informed Brainstorm (June 2025):** The `brainstorm` command now supports a `--research` option, allowing one or more lookup report files to be provided. When used, the orthodox strategies prompt is dynamically injected with the research context, enabling research-grounded strategy generation. The unorthodox strategies remain purely creative. All prompt logic is managed via YAML templates; no LLM prompt text is hardcoded in Python.
@@ -74,18 +76,30 @@ Strategic analysis commands follow consistent configuration patterns:
 - **CounselNotes**: `anthropic/claude-sonnet-4`, temp=0.3, top_p=0.7, force_verify=True
 - **Brainstorm-Orthodox**: `anthropic/claude-sonnet-4`, temp=0.3, top_p=0.7, force_verify=True  
 - **Strategy-Analysis**: `anthropic/claude-sonnet-4`, temp=0.2, top_p=0.8
+- **Barbrief**: `openai/o3-pro`, reasoning_effort=high, max_completion_tokens=32768
 
 **Configuration Philosophy:**
 - Strategic commands use Claude Sonnet 4 for balanced analysis capability
 - Temperature 0.3 provides strategic thinking with controlled creativity
 - Force verification enabled for professional legal accountability
 - Consistent patterns across similar command types for predictable behavior
+- Barbrief uses o3-pro for comprehensive document generation with extended token limits
 
 **CounselNotes Specific Patterns:**
 - Multi-document cross-synthesis capabilities
 - Five-section strategic analysis framework (Overview, Opportunities, Risks, Recommendations, Management)
 - Four JSON extraction modes (all, citations, principles, checklist)
 - Multi-chunk consolidation for large document processing
+
+**Barbrief Specific Patterns:**
+- 10-section structured brief format (Cover Sheet through Annexures)
+- Validates 10-heading case facts from extractfacts command output
+- Supports multiple input types: strategies, research, supporting documents
+- Hearing-type specific formatting (trial, directions, interlocutory, appeal)
+- Uses o3-pro's reasoning capabilities with 32K token output limit (max_completion_tokens)
+- Integrates citation verification when --verify flag is used
+- Captures reasoning trace for transparency and accountability
+- Implementation fixes: LLMClientFactory.for_command method, save_reasoning_trace with 2 args
 
 ## Prompt Management
 

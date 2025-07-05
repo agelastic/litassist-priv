@@ -10,6 +10,15 @@ graph TD
     D --> E["Strategy - Plan Approach"]
     E --> F["Draft - Create Documents"]
     
+    B --> K["CounselNotes - Strategic Analysis"]
+    C --> K
+    K --> E
+    
+    C --> L["Barbrief - Barrister's Brief"]
+    D --> L
+    E --> L
+    A --> L
+    
     G[Utilities] --> H["Test - API Connectivity"]
     G --> I["Audit Logging"]
     G --> J["Mock Mode"]
@@ -18,13 +27,23 @@ graph TD
 - **Lookup**: Rapid case-law research (Jade.io database via Google Custom Search + Google Gemini)  
 - **Digest**: Mass document processing (chronological summaries or issue-spotting via Claude)  
 - **ExtractFacts**: Automatic extraction of case facts into a structured file  
+- **CounselNotes**: Strategic advocate analysis with structured extractions (Claude)  
 - **Brainstorm**: Creative legal strategy generation (unorthodox strategies via Grok)  
-- **Strategy**: Targeted legal options with probability assessments and draft documents (enhanced reasoning via o1-pro)
-- **Draft**: Citation-rich document creation (superior technical writing via o3)  
+- **Strategy**: Targeted legal options with probability assessments and draft documents (enhanced reasoning via o3-pro)
+- **Draft**: Citation-rich document creation (superior technical writing via o3-pro)
+- **Barbrief**: Comprehensive barrister's briefs for litigation (extended output via o3-pro)  
 
 For detailed usage guidance, see the [LitAssist User Guide](docs/user/LitAssist_User_Guide.md).
 
-## 🆕 Recent Improvements (June 2025)
+## 🆕 Recent Improvements (January 2025)
+
+### January 2025: Advanced Legal Commands
+- **CounselNotes Command**: Strategic advocate analysis with structured extraction and reasoning traces
+- **Barbrief Command**: Comprehensive barrister's briefs with 10-section structure for litigation proceedings
+- **Extended Output Support**: o3-pro integration with 32K token capacity for comprehensive documents
+- **Enhanced Model Configurations**: Updated Claude 4 Sonnet and o3-pro parameter handling
+
+## Previous Improvements (June 2025)
 
 ### June 2025: Lookup Command Overhaul
 - **Simplified Search Engine**: Removed Google web search option due to anti-bot restrictions; now uses reliable Jade.io database exclusively
@@ -121,22 +140,23 @@ LitAssist uses cutting-edge AI models specifically optimized for legal work:
 
 | Command | Model | BYOK Required | Purpose |
 |---------|-------|--------------|---------|
-| **strategy** | OpenAI o1-pro | No | Enhanced multi-step legal reasoning |
-| **draft** | OpenAI o3 | **Yes** | Superior technical legal writing |
+| **strategy** | OpenAI o3-pro | **Yes** | Enhanced multi-step legal reasoning |
+| **draft** | OpenAI o3-pro | **Yes** | Superior technical legal writing |
+| **barbrief** | OpenAI o3-pro | **Yes** | Comprehensive barrister's briefs |
 | **brainstorm** | Claude 4 Sonnet / Grok 3 | No | Conservative vs creative strategies |
 | **digest** | Claude 4 Sonnet | No | Document analysis and summarization |
 | **extractfacts** | Claude 4 Sonnet | No | Structured fact extraction |
 
-#### Setting up BYOK for o3 (Draft Command)
+#### Setting up BYOK for o3 (Draft & Barbrief Commands)
 
-The `draft` command uses OpenAI's o3 model, which requires **BYOK (Bring Your Own Key)**:
+The `draft` and `barbrief` commands use OpenAI's o3 model, which requires **BYOK (Bring Your Own Key)**:
 
 1. Go to [OpenRouter Settings](https://openrouter.ai/settings/integrations)
 2. Add your OpenAI API key under "OpenAI Integration"
 3. Save the integration
 4. o3 will now be available through your OpenRouter API key
 
-Without BYOK setup, the draft command will fail with an authentication error.
+Without BYOK setup, the draft and barbrief commands will fail with an authentication error.
 
 ## 🚀 Command Reference
 
@@ -204,6 +224,32 @@ Global options:
    ./litassist.py draft case_facts.txt bundle.pdf "comprehensive submission"
    ```
 
+7. **barbrief** - Generate comprehensive barrister's briefs for litigation
+   ```bash
+   # Basic brief for trial
+   ./litassist.py barbrief case_facts.txt --hearing-type trial
+   # Appeal brief with strategies
+   ./litassist.py barbrief case_facts.txt --hearing-type appeal --strategies strategies.txt
+   # Full brief with all materials
+   ./litassist.py barbrief case_facts.txt --hearing-type interlocutory \
+     --strategies strategies.txt \
+     --research lookup_report1.txt --research lookup_report2.txt \
+     --documents affidavit.pdf --documents exhibit_a.pdf \
+     --instructions "Focus on jurisdictional issues" \
+     --verify
+   ```
+   
+   Required:
+   - Case facts in 10-heading format (from extractfacts)
+   - `--hearing-type [trial|directions|interlocutory|appeal]`
+   
+   Options:
+   - `--strategies FILE`: Brainstormed strategies
+   - `--research FILE`: Lookup/research reports (multiple allowed)
+   - `--documents FILE`: Supporting documents (multiple allowed)
+   - `--instructions TEXT`: Specific instructions for counsel
+   - `--verify`: Enable citation verification
+
 ### Utility Commands
 
 - **test** - Verify API connectivity
@@ -226,6 +272,7 @@ All commands now save their output to timestamped text files without overwriting
 - **extractfacts**: `extractfacts_[filename_slug]_YYYYMMDD_HHMMSS.txt`
 - **strategy**: `strategy_[outcome_slug]_YYYYMMDD_HHMMSS.txt`
 - **draft**: `draft_[query_slug]_YYYYMMDD_HHMMSS.txt`
+- **barbrief**: `barbrief_[hearing_type]_YYYYMMDD_HHMMSS.txt`
 
 Each output file includes metadata headers with command parameters and timestamps.
 

@@ -13,6 +13,11 @@ graph TD
     B --> G["CounselNotes – Strategic Analysis"]
     C --> G
     G --> E
+    
+    C --> H["Barbrief – Barrister's Brief"]
+    D --> H
+    E --> H
+    A --> H
 ```
 
 ## Key Objectives
@@ -29,3 +34,4 @@ graph TD
 - Strategic counsel's notes with advocate perspective analysis
 - Creative and orthodox strategy brainstorming  
 - Citation‑verified document drafting with retrieval‑augmented generation
+- Comprehensive barrister's briefs for litigation proceedings

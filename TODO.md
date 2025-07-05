@@ -3,7 +3,7 @@
 ## Current State Summary
 
 ### Completed Features ✅
-- All 6 core commands (lookup, digest, extractfacts, brainstorm, strategy, draft)
+- All 9 core commands (lookup, digest, extractfacts, brainstorm, strategy, draft, verify, counselnotes, barbrief)
 - Global installation via pipx
 - Single configuration approach
 - Outputs organized in `outputs/` directory
@@ -16,6 +16,8 @@
 - Comprehensive logging and timing instrumentation
 - Fixed all ruff linting errors and removed unused dependencies
 - Memory Bank initialized with core context, patterns, architecture, and technical setup
+- CounselNotes command for strategic advocate analysis (January 2025)
+- Barbrief command for comprehensive barrister's briefs (January 2025)
 
 ### Pending Tasks ⌛
 - Implement advanced LLM prompting improvements from LLM_IMPROVEMENTS.md (IRAC/MIRAT, multi-model consensus, confidence scoring, adversarial testing)

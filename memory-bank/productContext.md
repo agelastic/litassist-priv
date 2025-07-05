@@ -22,6 +22,7 @@ LitAssist addresses the manual, time‑intensive nature of litigation support by
 5. **Brainstorm**: Ideate orthodox and unorthodox strategies with transparent reasoning traces.  
 6. **Strategy**: Convert selected strategies into tactical implementation plans with probability assessments.  
 7. **Draft**: Create citation‑verified, professional‑grade legal documents using retrieval‑augmented generation.
+8. **Barbrief**: Create comprehensive barrister's briefs with 10-section structure for litigation hearings.
 
 ## User Experience Goals
 

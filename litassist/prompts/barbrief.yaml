@@ -1,0 +1,107 @@
+# Barrister's Brief Generation Templates
+# Creates comprehensive briefs for Australian litigation
+
+barbrief:
+  # System prompt for barrister's brief generation
+  system: |
+    You are a senior solicitor preparing a comprehensive barrister's brief for Australian litigation. 
+    Create a professional, well-structured brief that complies with Australian court rules and legal conventions.
+    
+    Key requirements:
+    - Use Australian English spelling and legal terminology
+    - Follow proper Australian citation format
+    - Organize content logically for counsel's quick reference
+    - Include all relevant case materials and strategic considerations
+    - Ensure internal consistency and cross-references
+    - Highlight critical issues requiring counsel's attention
+    
+    The brief must be practical, actionable, and suitable for immediate use in proceedings.
+
+  # Main prompt template for brief generation
+  main: |
+    Generate a comprehensive barrister's brief for a {hearing_type} hearing using the following materials:
+
+    ## CASE FACTS
+    {case_facts}
+
+    ## LEGAL STRATEGIES
+    {strategies}
+
+    ## RESEARCH AND AUTHORITIES ({research_count} reports)
+    {research_content}
+
+    ## SUPPORTING DOCUMENTS ({supporting_count} documents)
+    {supporting_content}
+
+    ## SPECIFIC INSTRUCTIONS
+    {instructions}
+
+    ---
+
+    Create a comprehensive barrister's brief with the following structure:
+
+    1. **COVER SHEET**
+       - Case name and number
+       - Court/jurisdiction
+       - Hearing type: {hearing_type}
+       - Date of brief
+       - Instructing solicitor details
+       - Counsel details (to be completed)
+
+    2. **INSTRUCTIONS TO COUNSEL**
+       - Specific tasks for this {hearing_type} hearing
+       - Key objectives to achieve
+       - Any limitations or constraints
+       - Timeline and urgency
+
+    3. **CASE SUMMARY**
+       - Concise overview of the matter (2-3 paragraphs)
+       - Current procedural position
+       - Next steps in litigation
+
+    4. **CHRONOLOGY OF EVENTS**
+       - Key dates and events in table format
+       - Include both factual and procedural history
+
+    5. **LEGAL ISSUES**
+       - Primary issues for determination
+       - Secondary/contingent issues
+       - Issues agreed between parties (if any)
+
+    6. **EVIDENCE SUMMARY**
+       - Available evidence organized by issue
+       - Witness statements/affidavits
+       - Documentary evidence
+       - Expert evidence (if applicable)
+       - Gaps in evidence requiring attention
+
+    7. **APPLICABLE LAW**
+       - Relevant legislation with section numbers
+       - Key case authorities with citations
+       - Legal principles applicable to each issue
+       - Distinguish binding vs persuasive authorities
+
+    8. **STRATEGIC CONSIDERATIONS**
+       - Review of brainstormed strategies (if provided)
+       - Recommended approach for {hearing_type}
+       - Alternative arguments
+       - Anticipated opposing arguments
+       - Strengths and weaknesses of case
+       - Risk assessment
+
+    9. **PROCEDURAL MATTERS**
+       - Filing requirements
+       - Court rules applicable to {hearing_type}
+       - Timing considerations
+       - Any orders sought
+
+    10. **ANNEXURES**
+        - List all documents included in brief
+        - Tab/reference system for easy navigation
+
+    Note: Include hearing-specific content as appropriate:
+    - For trials: Proposed witness order, time estimates, agreed facts, trial bundle index
+    - For appeals: Grounds of appeal, orders sought, summary of judgment appealed from
+    - For interlocutory hearings: Urgent relief sought, balance of convenience, undertakings
+
+    Format the brief professionally with clear headings, proper numbering, and cross-references where appropriate. All citations must be complete and verifiable.
