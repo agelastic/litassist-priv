@@ -50,8 +50,13 @@ def validate_case_facts(content: str) -> bool:
         "Client Objectives",
     ]
 
+    import re
+
     content_lower = content.lower()
-    return all(heading.lower() in content_lower for heading in required_headings)
+    return all(
+        re.search(f"^\\s*(?:##\\s*)?{heading.lower()}", content_lower, re.MULTILINE)
+        for heading in required_headings
+    )
 
 
 @timed
