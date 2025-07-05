@@ -60,6 +60,24 @@ def cli(ctx, log_format, verbose):
     )
 
 
+@cli.command()
+@click.argument("file_path")
+def verify(file_path):
+    """
+    Verify a document for legal accuracy and citation validity.
+    Always uses heavy verification.
+    """
+    from litassist.llm import llm_client
+
+    with open(file_path, "r") as f:
+        content = f.read()
+    verified = llm_client.verify_with_level(content, level="heavy")
+    output_path = f"verified_{file_path}"
+    with open(output_path, "w") as f:
+        f.write(verified)
+    print(f"Verification complete. Output saved to {output_path}.")
+
+
 def validate_credentials(show_progress=True):
     """
     Test API connections with provided credentials.
