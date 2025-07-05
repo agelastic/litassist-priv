@@ -54,29 +54,25 @@ strategies:
     # USED BY: brainstorm.py generate_strategies() - when approach="analysis"
     # LOCATION: brainstorm.py:368-393 (to be extracted)
     analysis_prompt: |
-      Analyze ALL the strategies above and select EXACTLY 5 of the most promising strategies.
-      
+      Analyze ALL the strategies above and select EXACTLY 5 of the most promising strategies for a detailed review.
+
       **SELECTION CRITERIA:**
       - Legal merit and strength of precedent
-      - Practical feasibility given available resources
-      - Risk/reward ratio
-      - Timeline considerations
-      - Client objectives alignment
-      - Jurisdictional factors
-      - Available evidence strength
-      
-      **REQUIRED ANALYSIS:**
-      For each of the 5 selected strategies, provide:
-      1. **Why this strategy was selected** (detailed reasoning)
-      2. **Implementation roadmap** (step-by-step approach)
-      3. **Resource requirements** (time, cost, expertise needed)
-      4. **Risk assessment** (potential downsides and mitigation)
-      5. **Success probability** (realistic percentage with reasoning)
+      - Practical feasibility and resource requirements
+      - Alignment with client objectives and risk/reward ratio
+      - Strength of available evidence
 
-      **IMPORTANT:** You must return exactly 5 strategies. If you cannot find 5 high-quality strategies, you must still provide 5, but for the lower-quality ones, you must explicitly state why they are not recommended.
-      
-      **FINAL RECOMMENDATION:**
-      Conclude with your #1 recommended strategy and a compelling 2-3 paragraph justification.
+      **REQUIRED ANALYSIS:**
+      For each of the 5 selected strategies, provide a detailed analysis covering:
+      1. **Why this strategy was selected** (detailed reasoning against the criteria)
+      2. **Implementation roadmap** (3-5 key sequential steps)
+      3. **Risk assessment** (potential downsides and mitigation)
+      4. **Success probability** (a percentage with qualitative justification)
+
+      **IMPORTANT:** After the analysis of the 5 strategies, you MUST conclude with a section titled "## MOST LIKELY TO SUCCEED". Under this exact heading, list the top 1-3 strategies from your analysis that you most strongly recommend. This section is critical for downstream processing.
+
+      ## MOST LIKELY TO SUCCEED
+      (List the 1-3 best strategies here, including their titles and brief descriptions)
     
     # Regeneration prompt with feedback incorporation
     # USED BY: brainstorm.py brainstorm() - when --regenerate flag is used
@@ -101,11 +97,13 @@ strategies:
       ## OPTION 1: [Title of Strategy]
       * **Probability of Success**: [X]%
       * **Principal Hurdles**:
-        1. [Description of hurdle] — *[Case citation with pinpoint reference]*
-        2. [Description of hurdle] — *[Case citation with pinpoint reference]*
+        1. [Description of hurdle (specify if legal, factual, or practical)] — *[Case citation with pinpoint reference]*
+        2. [Description of hurdle (specify if legal, factual, or practical)] — *[Case citation with pinpoint reference]*
       * **Critical Missing Facts**:
         - [Missing fact 1]
         - [Missing fact 2]
+      * **Ethical Considerations**:
+        - [Note any ethical implications or duties to be mindful of]
 
       ## OPTION 2: [Title of Strategy]
       [Same format as above]

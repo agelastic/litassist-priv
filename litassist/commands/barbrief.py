@@ -30,10 +30,10 @@ from litassist.citation_verify import verify_all_citations
 def validate_case_facts(content: str) -> bool:
     """
     Validate that case facts follow the 10-heading format.
-
+    
     Args:
         content: The case facts content to validate
-
+        
     Returns:
         True if valid, False otherwise
     """
@@ -49,14 +49,9 @@ def validate_case_facts(content: str) -> bool:
         "Applicable Law",
         "Client Objectives",
     ]
-
-    import re
-
+    
     content_lower = content.lower()
-    return all(
-        re.search(f"^\\s*(?:##\\s*)?{heading.lower()}", content_lower, re.MULTILINE)
-        for heading in required_headings
-    )
+    return all(heading.lower() in content_lower for heading in required_headings)
 
 
 @timed
@@ -70,7 +65,7 @@ def prepare_brief_sections(
 ) -> Dict[str, Any]:
     """
     Prepare the sections and content for the barrister's brief.
-
+    
     Args:
         case_facts: Structured case facts content
         strategies: Optional brainstormed strategies
@@ -78,7 +73,7 @@ def prepare_brief_sections(
         supporting_docs: List of supporting documents
         instructions: Optional specific instructions
         hearing_type: Type of hearing
-
+        
     Returns:
         Dictionary containing prepared sections
     """
@@ -93,7 +88,7 @@ def prepare_brief_sections(
         "supporting_content": "\n\n---\n\n".join(supporting_docs),
         "instructions": instructions or "No specific instructions provided.",
     }
-
+    
     return sections
 
 
@@ -130,7 +125,7 @@ def prepare_brief_sections(
 @click.option(
     "--verify",
     is_flag=True,
-    help="Enable comprehensive verification (citations and legal soundness)",
+    help="Enable citation verification",
 )
 @click.pass_context
 @timed
@@ -146,11 +141,11 @@ def barbrief(
 ):
     """
     Generate comprehensive barrister's brief for Australian litigation.
-
+    
     Creates a structured brief combining case facts, legal strategies,
     research, and supporting documents. The brief follows Australian
     legal conventions and includes proper citation formatting.
-
+    
     Args:
         case_facts: Path to structured case facts (10-heading format)
         strategies: Optional path to brainstormed strategies
@@ -159,35 +154,35 @@ def barbrief(
         instructions: Optional specific instructions for counsel
         hearing_type: Type of hearing (trial/directions/interlocutory/appeal)
         verify: Whether to verify citations
-
+        
     Raises:
         click.ClickException: If case facts are invalid or API calls fail
     """
     # Read and validate case facts
     click.echo("Reading case facts...")
     case_facts_content = read_document(case_facts)
-
+    
     if not validate_case_facts(case_facts_content):
         raise click.ClickException(
             "Case facts must be in 10-heading format from extractfacts command"
         )
-
+    
     # Read optional inputs
     strategies_content = None
     if strategies:
         click.echo("Reading strategies...")
         strategies_content = read_document(strategies)
-
+    
     research_docs = []
     for research_file in research:
         click.echo(f"Reading research: {research_file}")
         research_docs.append(read_document(research_file))
-
+    
     supporting_docs = []
     for doc_file in documents:
         click.echo(f"Reading document: {doc_file}")
         supporting_docs.append(read_document(doc_file))
-
+    
     # Prepare sections
     sections = prepare_brief_sections(
         case_facts_content,
@@ -197,29 +192,29 @@ def barbrief(
         instructions,
         hearing_type,
     )
-
+    
     # Get LLM client
     try:
         client = LLMClientFactory.for_command("barbrief")
     except Exception as e:
         raise click.ClickException(f"Failed to initialize LLM client: {e}")
-
+    
     # Create reasoning-enabled prompt
     try:
         base_prompt = PROMPTS.get("barbrief.main", **sections)
         prompt_with_reasoning = create_reasoning_prompt(base_prompt, "barbrief")
     except Exception as e:
         raise click.ClickException(f"Failed to prepare prompt: {e}")
-
+    
     # Generate the brief
     click.echo("\nGenerating barrister's brief...")
     heartbeat()
-
+    
     messages = [
         {"role": "system", "content": PROMPTS.get("barbrief.system")},
         {"role": "user", "content": prompt_with_reasoning},
     ]
-
+    
     try:
         content, usage = client.complete(messages, skip_citation_verification=True)
     except Exception as e:
@@ -239,19 +234,21 @@ def barbrief(
             )
         else:
             raise click.ClickException(f"LLM API error: {e}")
-
+    
     click.echo(f"\nGenerated brief ({usage.get('total_tokens', 'N/A')} tokens used)")
-
+    
     # Extract and save reasoning trace
     reasoning_trace = extract_reasoning_trace(content)
-
+    
     # Run citation verification if requested
     if verify:
         click.echo("\nVerifying citations...")
         verified, unverified = verify_all_citations(content)
-
+        
         if unverified:
-            click.echo(f"Warning: {len(unverified)} citations could not be verified")
+            click.echo(
+                f"Warning: {len(unverified)} citations could not be verified"
+            )
             # Save verification report
             verification_content = (
                 f"CITATION VERIFICATION REPORT\n\n"
@@ -261,28 +258,26 @@ def barbrief(
             verification_content += "INVALID CITATIONS:\n"
             for cit, reason in unverified:
                 verification_content += f"- {cit}: {reason}\n"
-
+            
             verify_file = save_command_output(
                 "barbrief", verification_content, "citation_verification"
             )
             click.echo(f"Verification report saved: {verify_file}")
-
+    
     # Save the brief
     output_file = save_command_output("barbrief", content, hearing_type)
-
+    
     # Save reasoning trace if we have one
     if reasoning_trace:
         reasoning_file = save_reasoning_trace(reasoning_trace, output_file)
         click.echo(f"Reasoning trace saved: {reasoning_file}")
-
+    
     # Show completion message
     show_command_completion(
         "Barristers brief generated",
         output_file,
         stats={"Tokens used": usage.get("total_tokens")},
     )
-
+    
     # Final verification if needed (skip citation validation if already done)
-    verify_content_if_needed(
-        client, content, "barbrief", verify, citation_already_verified=verify
-    )
+    verify_content_if_needed(client, content, "barbrief", verify, citation_already_verified=verify)

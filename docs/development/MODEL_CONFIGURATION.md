@@ -17,26 +17,30 @@ LitAssist uses multiple specialized LLM models optimized for different legal tas
 | **extractfacts** | `anthropic/claude-sonnet-4` | Structured fact extraction | temperature: 0, top_p: 0.15 |
 | **brainstorm** | `x-ai/grok-3-beta` | Creative strategy generation | temperature: 0.9, top_p: 0.95 |
 | **brainstorm** (analysis) | `anthropic/claude-sonnet-4` | Strategy analysis & ranking | temperature: 0.2, top_p: 0.8 |
-| **strategy** | `openai/o3-pro` | Strategic planning & analysis | reasoning_effort: high |
-| **draft** | `openai/o3-pro` | Legal document drafting | reasoning_effort: high |
+| **strategy** | `openai/o3-pro` | Strategic planning & analysis | max_completion_tokens: varies, reasoning_effort: varies |
+| **draft** | `openai/o3-pro` | Legal document drafting | max_completion_tokens: 4096, reasoning_effort: medium |
 | **counselnotes** | `anthropic/claude-sonnet-4` | Strategic advocate analysis | temperature: 0.3, top_p: 0.7 |
 | **barbrief** | `openai/o3-pro` | Comprehensive barrister's briefs | max_completion_tokens: 32768, reasoning_effort: high |
 | **verify** | `anthropic/claude-sonnet-4` | Document verification | temperature: 0, top_p: 0.2 |
 
 ### Model Capabilities & Restrictions
 
-#### OpenAI o3-pro
+#### OpenAI o3 & o3-pro
+- **o3**: 
+  - **Purpose**: Superior technical legal writing
+  - **Used by**: draft command
+  - **Default max_completion_tokens**: 4096
 - **o3-pro**: 
-  - **Purpose**: Superior technical legal writing and comprehensive document generation
-  - **Used by**: draft, strategy, and barbrief commands
-  - **Default max_completion_tokens**: varies per command (see table above)
-- **Supported Parameters**: 
+  - **Purpose**: Extended comprehensive document generation
+  - **Used by**: barbrief command  
+  - **Default max_completion_tokens**: 32768 (32K)
+- **Supported Parameters (both models)**: 
   - `max_completion_tokens` (NOT `max_tokens`)
   - `reasoning_effort` (low, medium, high)
-- **Restrictions**: 
+- **Restrictions (both models)**: 
   - NO temperature, top_p, or penalty parameters
   - Requires BYOK setup through OpenRouter
-- **Key Difference**: o3-pro supports much longer outputs than standard o3 (up to 32K tokens)
+- **Key Difference**: o3-pro supports much longer outputs (32K vs 4K tokens)
 
 #### Claude 4 Sonnet
 - **Model ID**: `anthropic/claude-sonnet-4`
@@ -239,7 +243,36 @@ To add a new model, simply:
 4. **Monitor Costs**: Premium models (o3-pro) for high-value tasks only
 5. **Test Thoroughly**: Verify model behavior before production use
 
-See the [Citation Verification Implementation Guide](CITATION_VERIFICATION_APPROACH.md#verification-deduplication-2025-enhancement) for details on verification optimization.
+## Verification Optimization (2025 Enhancement)
+
+### Problem: Redundant LLM Verification Calls
+
+Commands with explicit verification (e.g., `barbrief --verify`) were making unnecessary duplicate verification calls:
+
+1. **Explicit verification**: Google CSE API for accurate citation validation
+2. **Auto-verification**: Additional LLM-based validation (redundant)
+
+### Solution: Smart Verification Deduplication
+
+```python
+def verify_content_if_needed(
+    client, content, command_name, verify_flag=False,
+    citation_already_verified=False  # Added parameter
+):
+    # Skip redundant LLM citation validation when Google CSE already verified
+```
+
+### Benefits
+
+- **50% reduction** in LLM calls for verified commands
+- **Preserved accuracy**: Google CSE verification is more reliable
+- **Cost savings**: Fewer premium model API calls
+- **Backward compatible**: No breaking changes to existing workflows
+
+### Implementation
+
+Commands implementing verification optimization:
+- `barbrief`: Passes `citation_already_verified=verify` to avoid double citation checking
 
 ## Future Considerations
 

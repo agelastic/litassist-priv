@@ -8,11 +8,11 @@ formats:
     2. **Background**: Provide context about the relationship between parties and circumstances leading to the dispute
     3. **Key Events**: List significant events in chronological order with dates where available
     4. **Legal Issues**: Enumerate the legal questions that need to be addressed
-    5. **Evidence Available**: Catalog all available evidence, documents, and potential witnesses
+    5. **Evidence Available**: Catalog all available evidence, documents, and potential witnesses. Where possible, group by type (e.g., Documentary, Witness, Expert).
     6. **Opposing Arguments**: Summarize the other party's position and claims
     7. **Procedural History**: Detail any court proceedings, orders, or legal steps taken to date
     8. **Jurisdiction**: Specify the relevant court or tribunal and basis for jurisdiction
-    9. **Applicable Law**: List relevant statutes, regulations, and legal principles
+    9. **Applicable Law**: List relevant statutes, regulations, and legal principles. Where possible, distinguish between 'Statute' and 'Case Law'.
     10. **Client Objectives**: State what the client hopes to achieve
   
   # Strategic options format used by brainstorm and strategy commands

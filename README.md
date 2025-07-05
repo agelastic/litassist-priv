@@ -29,8 +29,8 @@ graph TD
 - **ExtractFacts**: Automatic extraction of case facts into a structured file  
 - **CounselNotes**: Strategic advocate analysis with structured extractions (Claude)  
 - **Brainstorm**: Creative legal strategy generation (unorthodox strategies via Grok)  
-- **Strategy**: Targeted legal options with probability assessments and draft documents (enhanced reasoning via o3-pro)
-- **Draft**: Citation-rich document creation (superior technical writing via o3-pro)
+- **Strategy**: Targeted legal options with probability assessments and draft documents (enhanced reasoning via o3)
+- **Draft**: Citation-rich document creation (superior technical writing via o3)  
 - **Barbrief**: Comprehensive barrister's briefs for litigation (extended output via o3-pro)  
 
 For detailed usage guidance, see the [LitAssist User Guide](docs/user/LitAssist_User_Guide.md).
