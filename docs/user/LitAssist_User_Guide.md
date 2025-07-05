@@ -14,6 +14,8 @@ This guide demonstrates how to use each workflow through a running example of a 
 
 **Important Note**: Many users find the distinction between `brainstorm` and `strategy` commands confusing. In brief: **brainstorm explores all possible legal approaches comprehensively**, while **strategy develops specific tactical implementation plans for particular outcomes**. See [Understanding Brainstormed Strategies vs Strategic Options](#understanding-brainstormed-strategies-vs-strategic-options) for a detailed explanation of these crucial differences.
 
+**Also Important**: Users frequently ask whether to use `extractfacts` or `digest` when processing documents. **ExtractFacts creates structured 10-heading legal foundations for other commands**, while **digest provides flexible document analysis and understanding**. See [Understanding ExtractFacts vs Digest Commands](#understanding-extractfacts-vs-digest-commands) for guidance on choosing the right command.
+
 ```mermaid
 graph TD
     A["Lookup - Research"] --> B["Digest - Analyse"]
@@ -1487,6 +1489,115 @@ litassist strategy case_facts.txt --outcome "custody modification" --strategies 
 6. **Workflow integration**: Each serves a distinct role in the end-to-end legal workflow
 
 **Bottom Line**: Think of brainstorm as your "legal research and ideation assistant" and strategy as your "tactical implementation planner." Both are essential, but they serve fundamentally different purposes in building a winning case.
+
+## Understanding ExtractFacts vs Digest Commands
+
+**Another common source of confusion**: Users often ask whether to use `extractfacts` or `digest` when processing documents. These commands serve completely different purposes and are not interchangeable. Understanding when to use each is crucial for effective document processing.
+
+### Overview of the Two Commands
+
+**ExtractFacts** (`extractfacts`):
+- **Purpose**: Create structured legal foundation documents
+- **Output**: Exactly 10 mandatory headings in a fixed format
+- **Use case**: Feeding structured facts into other commands (brainstorm, strategy, barbrief)
+- **Question answered**: "What are the structured case facts for legal analysis?"
+
+**Digest** (`digest`):
+- **Purpose**: Flexible document analysis and understanding
+- **Output**: Free-form summaries or issue analysis
+- **Use case**: Understanding document content without fixed structure
+- **Question answered**: "What does this document say?" or "What legal issues are present?"
+
+### Key Differences
+
+| Aspect | ExtractFacts | Digest |
+|--------|-------------|--------|
+| **Output Format** | Fixed 10-heading structure | Flexible analysis format |
+| **Available Options** | `--verify` only | `--mode summary/issues`, `--hint` |
+| **Primary Use** | Foundation for other commands | Document understanding |
+| **Structure** | Always produces same 10 headings | Varies based on content and mode |
+| **Citation Focus** | Enhanced verification for accuracy | Standard verification with warnings |
+| **LLM Model** | Claude Sonnet (precise extraction) | Claude Sonnet/Opus (flexible analysis) |
+| **Verification** | Mandatory for foundational accuracy | Optional warnings for low-stakes analysis |
+
+### When to Use Each Command
+
+#### Use **ExtractFacts** when:
+- You need structured case facts for brainstorm, strategy, or barbrief commands
+- Creating a legal case foundation document
+- You want exactly these 10 headings: Parties, Background, Key Events, Legal Issues, Evidence Available, Opposing Arguments, Procedural History, Jurisdiction, Applicable Law, Client Objectives
+- Processing documents for legal workflow pipeline
+
+#### Use **Digest** when:
+- You want to understand what a document contains
+- You need focused analysis with `--hint` (e.g., "focus on Volkswagen VIN details")
+- You want chronological summaries (`--mode summary`) or legal issue identification (`--mode issues`)
+- Processing non-legal documents or documents that don't need structured legal analysis
+- Quick document comprehension without feeding into other commands
+
+### Practical Examples
+
+#### For Legal Case Preparation:
+```bash
+# Use extractfacts to create structured foundation
+litassist extractfacts contract_dispute_docs.pdf
+# → Produces 10-heading case facts for legal analysis
+
+# Then use those facts in other commands
+litassist brainstorm case_facts.txt --side plaintiff
+litassist strategy case_facts.txt --outcome "summary judgment"
+```
+
+#### For Document Understanding:
+```bash
+# Use digest to understand content with specific focus
+litassist digest car_documents.pdf --hint "Volkswagen VIN and identification details"
+# → Provides focused summary about vehicle details
+
+# Or general document analysis
+litassist digest financial_records.pdf --mode summary
+# → Chronological summary of financial events
+```
+
+#### The Wrong Approach:
+```bash
+# ❌ This won't work - extractfacts doesn't have --hint option
+litassist extractfacts car_docs.pdf --hint "VIN details"
+
+# ❌ This won't produce structured facts for other commands
+litassist digest contract.pdf
+litassist brainstorm digest_output.txt  # Won't have proper 10-heading structure
+```
+
+### Command Integration in Workflows
+
+**ExtractFacts Integration:**
+```bash
+# Proper legal workflow integration
+litassist extractfacts source_document.pdf
+litassist brainstorm case_facts.txt --side plaintiff
+litassist strategy case_facts.txt --outcome "damages claim"
+litassist barbrief case_facts.txt --hearing-type trial --strategies strategies.txt
+```
+
+**Digest as Standalone Analysis:**
+```bash
+# Document understanding workflow
+litassist digest large_contract.pdf --mode issues  # Identify problems
+litassist digest financial_data.pdf --mode summary --hint "cash flow analysis"
+litassist digest medical_records.pdf --mode summary  # Timeline of events
+```
+
+### Key Takeaways
+
+1. **ExtractFacts = Structure**: Fixed format for legal pipeline integration
+2. **Digest = Flexibility**: Adaptable analysis for document comprehension
+3. **Different options**: ExtractFacts has no `--hint`, Digest has no fixed structure
+4. **Different purposes**: Foundation building vs. content understanding
+5. **Not interchangeable**: Choose based on your end goal, not document type
+6. **Pipeline integration**: Only ExtractFacts output works reliably with brainstorm/strategy/barbrief
+
+**Bottom Line**: Use ExtractFacts when you need structured legal case facts for further analysis. Use Digest when you need to understand document content with flexibility and focus.
 
 ## Workflow 6: Draft - Retrieval-Augmented Drafting
 

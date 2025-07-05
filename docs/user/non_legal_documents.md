@@ -2,6 +2,8 @@
 
 While LitAssist is optimized for legal documents and Australian litigation workflows, it can be adapted to work with non-legal documents with some limitations and adjustments. This guide provides recommendations for processing various document types.
 
+**Important**: If you're unsure whether to use `extractfacts` or `digest`, see [Understanding ExtractFacts vs Digest Commands](LitAssist_User_Guide.md#understanding-extractfacts-vs-digest-commands) in the main User Guide for a detailed comparison.
+
 ## Digest Command
 
 The `digest` command offers the most flexibility for non-legal documents:
@@ -33,12 +35,14 @@ The `digest` command offers the most flexibility for non-legal documents:
 
 ## ExtractFacts Command
 
-The `extractfacts` command is the most restrictive as it enforces a rigid 10-heading legal structure:
+The `extractfacts` command is the most restrictive as it enforces a rigid 10-heading legal structure required by `strategy` and `brainstorm` commands:
 
 ```bash
 # Not recommended for direct use on non-legal documents
 ./litassist.py extractfacts purchase_agreement.pdf
 ```
+
+**Key Limitations**: ExtractFacts creates structured legal foundations for downstream commands but has no `--hint` option and only supports `--verify`. Use `digest` for flexible document analysis.
 
 ### Forced Categorization Issues
 
@@ -58,11 +62,11 @@ The command will force any content into these legal headings:
 
 For non-legal documents that need to be used with `strategy` or `brainstorm` commands:
 
-1. First run `digest --mode summary` to get a clear understanding of content
-2. Manually create a `case_facts.txt` file with all 10 headings
-3. Fill in relevant sections with appropriate content
-4. For irrelevant headings, add minimal placeholder content to satisfy validation
-5. Save the file as `case_facts.txt`
+1. **Use `digest` first**: Run `digest --mode summary` (optionally with `--hint` for focused analysis) to understand content
+2. **Manual structure creation**: Create a `case_facts.txt` file with all 10 headings
+3. **Adapt content**: Fill relevant sections with content from digest output
+4. **Placeholder strategy**: For irrelevant headings, add minimal placeholder content to satisfy validation
+5. **File naming**: Save as `case_facts.txt` for downstream commands
 
 ## Strategy Command
 
@@ -95,11 +99,20 @@ For handling multiple related but non-legal documents (e.g., financial records, 
    - Ensure all headings are present exactly as listed
    - Run the `strategy` command with appropriate outcome
 
+## Command Choice Quick Reference
+
+| Need | Use Command | Why |
+|------|-------------|-----|
+| **Understand document content** | `digest --mode summary` | Flexible analysis, supports `--hint` |
+| **Focus on specific topics** | `digest --mode summary --hint "payment terms"` | Targeted analysis with hint |
+| **Prepare for strategy/brainstorm** | `digest` → manual `case_facts.txt` | ExtractFacts forces legal structure |
+| **Direct legal structuring** | `extractfacts` (only for legal docs) | Creates required 10-heading format |
+
 ## Example: Processing a Purchase Agreement
 
 ```bash
-# Step 1: Get a summary of the document
-./litassist.py digest purchase_agreement.pdf --mode summary
+# Step 1: Get a summary of the document (optionally with focus)
+./litassist.py digest purchase_agreement.pdf --mode summary --hint "payment terms and obligations"
 
 # Step 2: Manually create case_facts.txt with all 10 headings
 # (Include information from digest output)
