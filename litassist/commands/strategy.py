@@ -708,11 +708,8 @@ Focus on:
                         {"option_number": len(valid_options) + 1, "trace": option_trace}
                     )
 
-                # Remove reasoning trace from option content
-                trace_pattern = r"=== LEGAL REASONING TRACE ===\s*\n(.*?)(?=\n\n|\n=|$)"
-                clean_option_content = re.sub(
-                    trace_pattern, "", option_content, flags=re.DOTALL | re.IGNORECASE
-                ).strip()
+                # Keep reasoning trace in option content (it's also saved separately)
+                clean_option_content = option_content
 
                 valid_options.append(clean_option_content)
 

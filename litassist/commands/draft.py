@@ -45,7 +45,7 @@ def draft(ctx, documents, query, verify, diversity):
     """
     Citation-rich drafting via RAG & GPT-4o.
 
-    For text files under 50KB (like case_facts.txt), passes the entire content
+    For text files under 400KB (like case_facts.txt), passes the entire content
     directly to the LLM for comprehensive drafting. For PDFs or larger files,
     implements a Retrieval-Augmented Generation workflow that embeds document
     chunks, stores them in Pinecone, and retrieves relevant passages using
@@ -85,7 +85,7 @@ def draft(ctx, documents, query, verify, diversity):
         if doc_path.lower().endswith(".txt"):
             # For text files, categorize by content and handle large files appropriately
             if "case_facts" in doc_path.lower():
-                if len(text) < 50000:
+                if len(text) < 400000:
                     structured_content["case_facts"] = text
                     click.echo(
                         f"Using {doc_path} as CASE FACTS ({len(text)} characters)"
@@ -95,7 +95,7 @@ def draft(ctx, documents, query, verify, diversity):
                     structured_content["pdf_documents"].append((doc_path, text))
                     click.echo(f"Will use embedding/retrieval for large {doc_path}")
             elif "strategies" in doc_path.lower() or "# Legal Strategies" in text:
-                if len(text) < 50000:
+                if len(text) < 400000:
                     structured_content["strategies"] = text
                     click.echo(
                         f"Using {doc_path} as LEGAL STRATEGIES ({len(text)} characters)"
@@ -105,7 +105,7 @@ def draft(ctx, documents, query, verify, diversity):
                     structured_content["pdf_documents"].append((doc_path, text))
                     click.echo(f"Will use embedding/retrieval for large {doc_path}")
             else:
-                if len(text) < 50000:
+                if len(text) < 400000:
                     structured_content["other_text"].append((doc_path, text))
                     click.echo(
                         f"Using {doc_path} as supporting document ({len(text)} characters)"

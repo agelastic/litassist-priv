@@ -542,13 +542,8 @@ Please provide output in EXACTLY this format:
     )
     analysis_trace = extract_reasoning_trace(analysis_content, "brainstorm-analysis")
 
-    # Remove reasoning traces from main content
-    # Use a non-greedy pattern to remove each trace block individually
-    trace_pattern = r"=== LEGAL REASONING TRACE ===.*?(?=\n\n##|\Z)"
-    # Ensure clean_content is based on the potentially modified combined_content
-    clean_content = re.sub(
-        trace_pattern, "", combined_content, flags=re.DOTALL | re.IGNORECASE
-    ).strip()
+    # Keep reasoning traces in main content (they're also saved separately)
+    clean_content = combined_content
 
     # Save to timestamped file only
     output_file = save_command_output(
