@@ -147,6 +147,14 @@ Before labeling something as "overengineering":
 - Decorators that could be simple function calls
 - Abstractions without multiple concrete implementations
 
+### Backward Compatibility Policy
+
+**IMPORTANT**: Backward compatibility is NOT required for this project. When refactoring or improving code:
+1. **No Legacy Support**: Don't maintain old code paths or deprecated functionality
+2. **Clean Breaks Allowed**: Feel free to make breaking changes that improve the codebase
+3. **Focus on Future**: Optimize for the current and future state, not past implementations
+4. **Remove Old Code**: Delete legacy code, unused functions, and deprecated patterns without hesitation
+
 ### LLM Response Processing Philosophy
 
 **CRITICAL PRINCIPLE: Minimize Local Parsing Through Better Prompt Engineering**

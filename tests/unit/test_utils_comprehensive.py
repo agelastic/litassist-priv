@@ -20,6 +20,7 @@ from litassist.utils import (
     validate_file_size_limit,
     save_command_output,
     verify_content_if_needed,
+    process_extraction_response,
 )
 
 
@@ -496,6 +497,136 @@ class TestContentVerification:
         assert "Citation issue" not in result_content
         mock_client.verify_with_level.assert_called_once()
         mock_client.validate_citations.assert_not_called()
+
+
+class TestExtractionProcessing:
+    """Test the process_extraction_response function."""
+
+    def test_process_extraction_citations(self):
+        """Test processing citations extraction."""
+        import json
+        import tempfile
+        
+        content = json.dumps({
+            "citations": [
+                "Smith v Jones [2023] HCA 15",
+                "Evidence Act 1995 (Cth) s 79"
+            ]
+        })
+        
+        with tempfile.TemporaryDirectory() as tmpdir:
+            with patch('litassist.utils.OUTPUT_DIR', tmpdir):
+                formatted, data, json_file = process_extraction_response(
+                    content, "citations", "test_cit", "test"
+                )
+                
+                assert "CITATIONS FOUND:" in formatted
+                assert "Smith v Jones [2023] HCA 15" in formatted
+                assert data["citations"] == ["Smith v Jones [2023] HCA 15", "Evidence Act 1995 (Cth) s 79"]
+                assert os.path.exists(json_file)
+
+    def test_process_extraction_principles_dict_format(self):
+        """Test processing principles with dict format."""
+        import json
+        import tempfile
+        
+        content = json.dumps({
+            "principles": [
+                {"principle": "Duty of care exists", "authority": "Donoghue v Stevenson"},
+                {"principle": "Standard of care", "authority": "Wyong v Shirt"}
+            ]
+        })
+        
+        with tempfile.TemporaryDirectory() as tmpdir:
+            with patch('litassist.utils.OUTPUT_DIR', tmpdir):
+                formatted, data, json_file = process_extraction_response(
+                    content, "principles", "test_prin", "test"
+                )
+                
+                assert "LEGAL PRINCIPLES:" in formatted
+                assert "Duty of care exists (Donoghue v Stevenson)" in formatted
+                assert len(data["principles"]) == 2
+
+    def test_process_extraction_checklist(self):
+        """Test processing checklist extraction."""
+        import json
+        import tempfile
+        
+        content = json.dumps({
+            "checklist": ["File defence", "Gather evidence", "Interview witnesses"]
+        })
+        
+        with tempfile.TemporaryDirectory() as tmpdir:
+            with patch('litassist.utils.OUTPUT_DIR', tmpdir):
+                formatted, data, json_file = process_extraction_response(
+                    content, "checklist", "test_check", "test"
+                )
+                
+                assert "PRACTICAL CHECKLIST:" in formatted
+                assert "□ File defence" in formatted
+                assert len(data["checklist"]) == 3
+
+    def test_process_extraction_comprehensive(self):
+        """Test processing comprehensive 'all' extraction."""
+        import json
+        import tempfile
+        
+        content = json.dumps({
+            "strategic_summary": "Strong position",
+            "key_citations": ["Case1 v Case2"],
+            "legal_principles": [{"principle": "Test principle", "authority": "Test case"}],
+            "tactical_checklist": ["Action 1"],
+            "risk_assessment": "Low risk",
+            "recommendations": ["Proceed with claim"]
+        })
+        
+        with tempfile.TemporaryDirectory() as tmpdir:
+            with patch('litassist.utils.OUTPUT_DIR', tmpdir):
+                formatted, data, json_file = process_extraction_response(
+                    content, "all", "test_all", "test"
+                )
+                
+                assert "STRATEGIC SUMMARY:" in formatted
+                assert "KEY CITATIONS:" in formatted
+                assert "LEGAL PRINCIPLES:" in formatted
+                assert "TACTICAL CHECKLIST:" in formatted
+                assert "RISK ASSESSMENT:" in formatted
+                assert "RECOMMENDATIONS:" in formatted
+
+    def test_process_extraction_invalid_json(self):
+        """Test error handling for invalid JSON."""
+        import tempfile
+        
+        content = "This is not JSON"
+        
+        with tempfile.TemporaryDirectory() as tmpdir:
+            with patch('litassist.utils.OUTPUT_DIR', tmpdir):
+                with pytest.raises(Exception) as exc_info:
+                    process_extraction_response(
+                        content, "citations", "test_invalid", "test"
+                    )
+                
+                assert "LLM did not return valid JSON" in str(exc_info.value)
+                assert "prompt needs improvement" in str(exc_info.value)
+
+    def test_process_extraction_markdown_cleanup(self):
+        """Test that markdown code blocks are cleaned."""
+        import json
+        import tempfile
+        
+        # Content wrapped in markdown code block
+        content = f'''```json
+{json.dumps({"citations": ["Test v Case"]})}
+```'''
+        
+        with tempfile.TemporaryDirectory() as tmpdir:
+            with patch('litassist.utils.OUTPUT_DIR', tmpdir):
+                formatted, data, json_file = process_extraction_response(
+                    content, "citations", "test_markdown", "test"
+                )
+                
+                assert data["citations"] == ["Test v Case"]
+                assert "CITATIONS FOUND:" in formatted
 
 
 class TestUtilityHelpers:

@@ -1153,3 +1153,143 @@ def validate_file_size_limit(content: str, max_size: int, context: str):
             f"{context} file too large ({len(content):,} characters). "
             f"Please provide a file under {max_size:,} characters (~{max_size//5:,} words)."
         )
+
+
+def process_extraction_response(
+    content: str, 
+    extract_type: str,
+    output_prefix: str,
+    command: str
+) -> tuple[str, dict, str]:
+    """
+    Process extraction response from LLM with JSON-first approach.
+    
+    Follows CLAUDE.md guidance: LLMs return properly formatted output when prompted correctly.
+    No fallback parsing needed - trust the LLM to follow format instructions.
+    
+    Args:
+        content: Raw LLM response expected to be valid JSON
+        extract_type: Type of extraction (citations/principles/checklist/all)
+        output_prefix: Prefix for output files (e.g., "lookup_citations_20240615_120000")
+        command: Command name for context (lookup/counselnotes)
+        
+    Returns:
+        Tuple of (formatted_text, json_data, json_file_path)
+        
+    Raises:
+        click.ClickException: If JSON parsing fails (indicates prompt needs improvement)
+    """
+    import click
+    
+    # Parse JSON response - no fallbacks per CLAUDE.md
+    try:
+        # Clean content if needed (remove any markdown code blocks)
+        clean_content = content.strip()
+        if clean_content.startswith("```json"):
+            clean_content = clean_content[7:]
+        if clean_content.startswith("```"):
+            clean_content = clean_content[3:]
+        if clean_content.endswith("```"):
+            clean_content = clean_content[:-3]
+        clean_content = clean_content.strip()
+        
+        json_data = json.loads(clean_content)
+    except json.JSONDecodeError as e:
+        # Per CLAUDE.md: Fix prompts, not parsing
+        raise click.ClickException(
+            f"LLM did not return valid JSON for {extract_type} extraction. "
+            f"This indicates the prompt needs improvement. Error: {str(e)}"
+        )
+    
+    # Save JSON file
+    json_file = os.path.join(OUTPUT_DIR, f"{output_prefix}.json")
+    with open(json_file, "w", encoding="utf-8") as f:
+        json.dump(json_data, f, indent=2, ensure_ascii=False)
+    
+    # Generate formatted text based on extraction type
+    if extract_type == "citations":
+        if "citations" in json_data and isinstance(json_data["citations"], list):
+            items = json_data["citations"]
+            formatted_text = "CITATIONS FOUND:\n" + "\n".join(items) if items else "No citations found."
+        else:
+            formatted_text = "No citations found in response."
+            
+    elif extract_type == "principles":
+        if "principles" in json_data:
+            principles = json_data["principles"]
+            if isinstance(principles, list):
+                # Handle both formats: list of dicts or list of strings
+                if principles and isinstance(principles[0], dict):
+                    # Format: [{"principle": "...", "authority": "..."}]
+                    formatted_lines = []
+                    for p in principles:
+                        principle = p.get("principle", "")
+                        authority = p.get("authority", "")
+                        if authority:
+                            formatted_lines.append(f"• {principle} ({authority})")
+                        else:
+                            formatted_lines.append(f"• {principle}")
+                    formatted_text = "LEGAL PRINCIPLES:\n" + "\n".join(formatted_lines)
+                else:
+                    # Format: ["principle1", "principle2"]
+                    formatted_text = "LEGAL PRINCIPLES:\n" + "\n".join(f"• {p}" for p in principles)
+            else:
+                formatted_text = "No legal principles found."
+        else:
+            formatted_text = "No legal principles found in response."
+            
+    elif extract_type == "checklist":
+        if "checklist" in json_data and isinstance(json_data["checklist"], list):
+            items = json_data["checklist"]
+            formatted_text = "PRACTICAL CHECKLIST:\n" + "\n".join(f"□ {item}" for item in items) if items else "No checklist items found."
+        else:
+            formatted_text = "No checklist items found in response."
+            
+    elif extract_type == "all":
+        # Comprehensive extraction with multiple sections
+        sections = []
+        
+        # Strategic summary
+        if "strategic_summary" in json_data:
+            sections.append(f"STRATEGIC SUMMARY:\n{json_data['strategic_summary']}")
+            
+        # Citations
+        if "key_citations" in json_data and json_data["key_citations"]:
+            sections.append("KEY CITATIONS:\n" + "\n".join(f"• {c}" for c in json_data["key_citations"]))
+            
+        # Principles
+        if "legal_principles" in json_data and json_data["legal_principles"]:
+            principles_text = "LEGAL PRINCIPLES:\n"
+            for p in json_data["legal_principles"]:
+                if isinstance(p, dict):
+                    principle = p.get("principle", "")
+                    authority = p.get("authority", "")
+                    if authority:
+                        principles_text += f"• {principle} ({authority})\n"
+                    else:
+                        principles_text += f"• {principle}\n"
+                else:
+                    principles_text += f"• {p}\n"
+            sections.append(principles_text.rstrip())
+            
+        # Checklist
+        if "tactical_checklist" in json_data and json_data["tactical_checklist"]:
+            sections.append("TACTICAL CHECKLIST:\n" + "\n".join(f"□ {item}" for item in json_data["tactical_checklist"]))
+            
+        # Risk assessment
+        if "risk_assessment" in json_data:
+            sections.append(f"RISK ASSESSMENT:\n{json_data['risk_assessment']}")
+            
+        # Recommendations
+        if "recommendations" in json_data and json_data["recommendations"]:
+            sections.append("RECOMMENDATIONS:\n" + "\n".join(f"• {r}" for r in json_data["recommendations"]))
+            
+        formatted_text = "\n\n".join(sections) if sections else "No structured data extracted."
+    
+    else:
+        formatted_text = f"Unknown extraction type: {extract_type}"
+    
+    # Add metadata footer
+    formatted_text += f"\n\n---\nExtracted via {command} command\nJSON data saved to: {json_file}"
+    
+    return formatted_text, json_data, json_file

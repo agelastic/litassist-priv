@@ -17,7 +17,7 @@ lookup:
       Return the citations results as a JSON object with key "citations" mapping to a list of values. Format: {"citations": ["citation1", "citation2", ...]}. Include all case citations and legislation references in the list.
     
     principles: |
-      Return the principles results as a JSON object with key "principles" mapping to a list of values. Format: {"principles": ["principle1", "principle2", ...]}. Include key legal rules and principles in the list.
+      Return the principles results as a JSON object with key "principles" mapping to a list of principle objects. Format: {"principles": [{"principle": "Clear statement of the legal principle or rule", "authority": "Supporting case citation or legislation"}, {"principle": "Another legal principle", "authority": "Supporting authority"}]}. Include key legal rules and principles with their supporting authorities.
     
     checklist: |
       Return the checklist results as a JSON object with key "checklist" mapping to a list of values. Format: {"checklist": ["item1", "item2", ...]}. Include actionable requirements, evidence needed, and steps to take in the list.

@@ -7,14 +7,13 @@ to produce a structured legal answer citing relevant cases.
 """
 
 import click
-import json
-import re
 import warnings
 import os
 import logging
+import time
 
 from litassist.config import CONFIG
-from litassist.utils import save_log, heartbeat, timed, save_command_output
+from litassist.utils import save_log, heartbeat, timed, save_command_output, process_extraction_response
 from litassist.llm import LLMClientFactory
 from litassist.prompts import PROMPTS
 
@@ -23,208 +22,6 @@ os.environ["GOOGLE_API_USE_CLIENT_CERTIFICATE"] = "false"
 warnings.filterwarnings("ignore", message=".*file_cache.*")
 
 
-@timed
-def format_lookup_output(content: str, extract: str = None) -> str:
-    """
-    Add basic structure to lookup output or extract specific information.
-
-    Args:
-        content: The raw LLM response
-        extract: Type of extraction - 'citations', 'principles', or 'checklist'
-
-    Returns:
-        Formatted output based on extraction type
-    """
-    if extract:
-        # Try JSON parsing first for structured output
-        try:
-            json_data = json.loads(content)
-            if isinstance(json_data, dict) and extract in json_data:
-                items = json_data[extract]
-                if isinstance(items, list) and items:
-                    # Format based on extract type
-                    if extract == "citations":
-                        return "CITATIONS FOUND:\n" + "\n".join(items)
-                    elif extract == "principles":
-                        return "LEGAL PRINCIPLES:\n" + "\n".join(
-                            f"• {item}" for item in items
-                        )
-                    elif extract == "checklist":
-                        return "PRACTICAL CHECKLIST:\n" + "\n".join(
-                            f"□ {item}" for item in items
-                        )
-        except (json.JSONDecodeError, TypeError, KeyError):
-            # Fall back to regex-based extraction if JSON parsing fails
-            pass
-
-    # Fallback regex-based extraction (original logic)
-    if extract == "citations":
-        # Extract citations using multiple regex patterns
-        citations = set()
-
-        # Pattern 1: [Year] Court abbreviation number
-        citations.update(re.findall(r"\[\d{4}\]\s+[A-Z]+[A-Za-z]*\s+\d+", content))
-
-        # Pattern 2: (Year) volume court page
-        citations.update(
-            re.findall(r"\(\d{4}\)\s+\d+\s+[A-Z]+[A-Za-z]*\s+\d+", content)
-        )
-
-        # Pattern 3: Act references
-        citations.update(re.findall(r"[A-Za-z\s]+Act\s+\d{4}\s*\([A-Z]+\)", content))
-
-        # Pattern 4: Section references with acts
-        citations.update(
-            re.findall(
-                r"[A-Za-z\s]+Act\s+\d{4}\s*\([A-Z]+\)\s+s\s*\d+[A-Za-z]*", content
-            )
-        )
-
-        if citations:
-            return "CITATIONS FOUND:\n" + "\n".join(sorted(citations))
-        else:
-            return "No clear citations found in the response."
-
-    elif extract == "principles":
-        # Extract sentences that contain legal principles
-        # First try to split by common delimiters
-        principles = []
-
-        # Try multiple splitting strategies
-        # 1. First try newlines
-        lines = content.split("\n")
-
-        # If no newlines or very few lines, try splitting by sentences
-        if len(lines) <= 2:
-            # Split by sentence endings followed by capital letter or number
-            sentences = re.split(r"(?<=[.!?])\s+(?=[A-Z0-9])", content)
-            lines = sentences
-
-        # Also split by bullet points or numbering patterns
-        for line in lines:
-            # Further split by common list patterns
-            sub_lines = re.split(r"(?:^|\s)(?:\d+\.|[•*-])\s*", line)
-            for sub_line in sub_lines:
-                sub_line = sub_line.strip()
-                # Look for lines that contain key legal terms
-                if sub_line and any(
-                    term in sub_line.lower()
-                    for term in [
-                        "must",
-                        "requires",
-                        "establishes",
-                        "principle",
-                        "rule",
-                        "test",
-                        "elements",
-                        "duty",
-                        "breach",
-                        "standard",
-                        "defendant",
-                        "plaintiff",
-                        "court",
-                    ]
-                ):
-                    if len(sub_line) > 20:  # Filter out very short lines
-                        # Clean up the line
-                        clean_line = re.sub(
-                            r"^\d+\.\s*", "", sub_line
-                        )  # Remove numbering
-                        clean_line = re.sub(
-                            r"^[•*-]\s*", "", clean_line
-                        )  # Remove bullets
-                        if clean_line and clean_line not in principles:
-                            principles.append(clean_line)
-
-        if principles:
-            return "LEGAL PRINCIPLES:\n" + "\n".join(
-                f"• {p}" for p in principles[:10]
-            )  # Limit to 10
-        else:
-            return "No clear legal principles extracted from the response."
-
-    elif extract == "checklist":
-        # Extract actionable items or requirements
-        checklist_items = []
-
-        # Try multiple splitting strategies
-        lines = content.split("\n")
-
-        # If no newlines or very few lines, try splitting by sentences
-        if len(lines) <= 2:
-            # Split by sentence endings
-            sentences = re.split(r"(?<=[.!?])\s+(?=[A-Z0-9])", content)
-            lines = sentences
-
-        # Process all lines
-        for line in lines:
-            # Further split by common list patterns
-            sub_lines = re.split(r"(?:^|\s)(?:\d+\.|[•*-])\s*", line)
-            for sub_line in sub_lines:
-                sub_line = sub_line.strip()
-                # Look for lines that suggest requirements or steps
-                if sub_line and any(
-                    word in sub_line.lower()
-                    for word in [
-                        "must",
-                        "should",
-                        "require",
-                        "need",
-                        "evidence",
-                        "prove",
-                        "establish",
-                        "demonstrate",
-                        "ensure",
-                        "verify",
-                        "confirm",
-                        "check",
-                        "assess",
-                    ]
-                ):
-                    if len(sub_line) > 15 and not sub_line.startswith(
-                        "http"
-                    ):  # Filter out URLs and short lines
-                        # Clean up the line
-                        clean_line = re.sub(
-                            r"^[-•*]\s*", "", sub_line
-                        )  # Remove bullet points
-                        clean_line = re.sub(
-                            r"^\d+\.\s*", "", clean_line
-                        )  # Remove numbering
-                        clean_line = clean_line.strip()
-                        # Split very long lines at sentence boundaries
-                        if len(clean_line) > 150:
-                            sub_sentences = re.split(
-                                r"(?<=[.!?])\s+(?=[A-Z])", clean_line
-                            )
-                            for sub_sent in sub_sentences:
-                                if (
-                                    len(sub_sent) > 10
-                                    and sub_sent not in checklist_items
-                                ):
-                                    checklist_items.append(sub_sent)
-                        elif len(clean_line) > 10 and clean_line not in checklist_items:
-                            checklist_items.append(clean_line)
-
-        if checklist_items:
-            return "PRACTICAL CHECKLIST:\n" + "\n".join(
-                f"□ {item}" for item in checklist_items[:15]
-            )  # Limit to 15
-        else:
-            return "No clear checklist items extracted from the response."
-
-    else:
-        # Default: Fix Gemini-specific formatting issues
-        formatted = content
-
-        # Fix Gemini's broken markdown headers where closing ** appears on next line
-        # Pattern: "### **Summary*\n*" -> "### **Summary**"
-        formatted = re.sub(r"(\*)\n(\*)", r"\1\2", formatted)
-
-        # Also fix cases where there's extra spacing
-        formatted = re.sub(r"(\*)\s*\n\s*(\*)", r"\1\2", formatted)
-
-        return formatted
 
 
 @click.command()
@@ -414,22 +211,42 @@ def lookup(question, mode, extract, comprehensive, context):
         else:
             raise click.ClickException(f"LLM error during lookup: {e}")
 
-    # Apply formatting based on extract option
-    formatted_content = format_lookup_output(content, extract)
-
-    # Save output using utility
-    command_name = f"lookup_{extract}" if extract else "lookup"
-    metadata = {"Mode": mode}
-    if context:
-        metadata["Context"] = context
+    # Process extraction if requested
     if extract:
-        metadata["Extract"] = extract
-    if comprehensive:
-        metadata["Comprehensive"] = "True"
-
-    output_file = save_command_output(
-        command_name, formatted_content, question, metadata=metadata
-    )
+        # Generate output prefix for files
+        timestamp = time.strftime("%Y%m%d_%H%M%S")
+        output_prefix = f"lookup_{extract}_{timestamp}"
+        
+        # Use shared extraction utility
+        formatted_content, json_data, json_file = process_extraction_response(
+            content, extract, output_prefix, "lookup"
+        )
+        
+        # Save the formatted text output
+        command_name = f"lookup_{extract}"
+        metadata = {"Mode": mode, "Extract": extract}
+        if context:
+            metadata["Context"] = context
+        if comprehensive:
+            metadata["Comprehensive"] = "True"
+        metadata["JSON File"] = json_file
+        
+        output_file = save_command_output(
+            command_name, formatted_content, question, metadata=metadata
+        )
+    else:
+        # Non-extraction mode - save content as-is
+        formatted_content = content
+        command_name = "lookup"
+        metadata = {"Mode": mode}
+        if context:
+            metadata["Context"] = context
+        if comprehensive:
+            metadata["Comprehensive"] = "True"
+        
+        output_file = save_command_output(
+            command_name, formatted_content, question, metadata=metadata
+        )
 
     # Save audit log
     params_str = f"mode={mode}"
