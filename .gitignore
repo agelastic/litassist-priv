@@ -115,3 +115,6 @@ test_inputs/
 
 **/.claude/settings.local.json
 temp *.md
+
+# Claude-generated files
+claude_*

@@ -263,7 +263,7 @@ class LLMClientFactory:
         # Digest - mode-dependent settings
         "digest-summary": {
             "model": "anthropic/claude-sonnet-4",
-            "temperature": 0,
+            "temperature": 0.1,
             "top_p": 0,
         },
         "digest-issues": {

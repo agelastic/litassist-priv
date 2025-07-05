@@ -250,14 +250,6 @@ Essential for commands involving:
 2. config.yaml settings
 3. Default values in code
 
-## Date Handling
-
-**IMPORTANT**: Always use dates from git commit logs, not from system time or environment variables. When documenting changes or updates:
-1. Check git log for the actual commit date
-2. Use that date in documentation and memory bank updates
-3. Do not rely on "Today's date" from environment or system
-4. Example: Use `git log --pretty=format:"%ad" --date=short -1` to get the last commit date
-
 ## Multi-Layer Debugging Protocol
 
 When debugging cascading issues:
@@ -316,6 +308,13 @@ When debugging cascading issues:
 - Citation verification uses HEAD requests (minimal data)
 - Selective regeneration for citation issues
 - Smart deduplication to avoid redundant API calls
+
+## File Naming Convention
+
+When saving Claude-generated files to the project:
+- **Always prefix with `claude_`** to distinguish from user-created files
+- This ensures clear separation between AI-generated and human-authored content
+- Examples: `claude_analysis.md`, `claude_commands.md`, `claude_strategy.md`
 
 ## Common Pitfalls to Avoid
 

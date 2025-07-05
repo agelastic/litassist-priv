@@ -12,11 +12,10 @@ import openai
 import pinecone
 
 from litassist.config import load_config
+from litassist.commands import register_commands
 
 # Load configuration early so that CONFIG is populated before other modules
 CONFIG = load_config()
-
-from litassist.commands import register_commands
 
 
 @click.group()
@@ -58,6 +57,26 @@ def cli(ctx, log_format, verbose):
     logging.debug(
         f"Log format set to: {log_format} (from {'CLI' if ctx.params.get('log_format') else 'config.yaml'})"
     )
+
+
+@cli.command()
+@cli.command()
+@click.argument("file_path")
+def verify(file_path):
+    """
+    Verify a document for legal accuracy and citation validity.
+    Always uses heavy verification.
+    """
+    import os
+    from litassist.llm import llm_client
+
+    with open(file_path, "r", encoding="utf-8") as f:
+        content = f.read()
+    verified = llm_client.verify_with_level(content, level="heavy")
+    output_path = f"verified_{os.path.basename(file_path)}"
+    with open(output_path, "w", encoding="utf-8") as f:
+        f.write(verified)
+    print(f"Verification complete. Output saved to {output_path}.")
 
 
 def validate_credentials(show_progress=True):

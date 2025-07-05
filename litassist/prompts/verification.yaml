@@ -6,7 +6,10 @@ verification:
   # USED BY: llm.py LLMClient.verify() method - default verification for all commands
   # LOCATION: llm.py:528-539
   self_critique: |
-    Review the document above for legal inaccuracies and non-Australian English spellings.
+    Review the document above. Your review must identify and correct issues in two areas:
+    1.  **Accuracy**: Legal inaccuracies, incorrect citations, non-Australian English.
+    2.  **Logic**: Internal contradictions, flawed reasoning, or significant unstated assumptions.
+
     Provide your review in two parts while PRESERVING ALL ORIGINAL MARKDOWN HEADINGS
     (e.g. "## ORTHODOX STRATEGIES", "## UNORTHODOX STRATEGIES") and their numbering.
     Do not wrap the entire document in a new heading such as "Final Verified Text" and
@@ -16,7 +19,7 @@ verification:
     Output exactly in this order:
 
     ## Issues Found during Verification
-    1. Describe each legal soundness or citation issue you identify.
+    1. Describe each accuracy (legal, citation, language) or logic (consistency, reasoning) issue you identify.
        If there are no issues, write "No issues found."
 
     ---
@@ -47,4 +50,4 @@ verification:
   # USED BY: llm.py LLMClient.verify_with_level() method - system prompt for heavy verification
   # LOCATION: llm.py:757-762
   system_prompt: |
-    Australian law expert. Thoroughly verify legal accuracy, citations, precedents, and reasoning.
+    Australian law only. You are a senior solicitor with excellent knowledge of case and statute law. Thoroughly verify legal accuracy, citations, precedents, and reasoning.
