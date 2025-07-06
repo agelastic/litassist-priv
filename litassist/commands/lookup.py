@@ -175,9 +175,14 @@ def lookup(question, mode, extract, comprehensive, context):
     client = LLMClientFactory.for_command("lookup", **overrides)
     call_with_hb = heartbeat(CONFIG.heartbeat_interval)(client.complete)
 
-    # Set system prompt based on comprehensive flag
+    # Set system prompt based on mode
     base_system = PROMPTS.get("base.australian_law")
-    if comprehensive:
+    
+    # Special system prompt for extraction mode
+    if extract:
+        extraction_system = PROMPTS.get("lookup.extraction_system")
+        system_content = f"{base_system}\n\n{extraction_system}"
+    elif comprehensive:
         requirements = PROMPTS.get("lookup.comprehensive_analysis.requirements")
         citation_requirements = PROMPTS.get(
             "lookup.comprehensive_analysis.citation_requirements"
@@ -192,7 +197,7 @@ def lookup(question, mode, extract, comprehensive, context):
 {output_structure}"""
     else:
         standard_instructions = PROMPTS.get("lookup.standard_analysis.instructions")
-        system_content = f"{base_system} {standard_instructions}"
+        system_content = f"{base_system}\n\n{standard_instructions}"
 
     try:
         content, usage = call_with_hb(

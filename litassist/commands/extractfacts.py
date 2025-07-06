@@ -27,7 +27,7 @@ from litassist.llm import LLMClientFactory
 
 
 @click.command()
-@click.argument("file", type=click.Path(exists=True))
+@click.argument("file", nargs=-1, required=True, type=click.Path(exists=True))
 @click.option(
     "--verify", is_flag=True, help="Enable self-critique pass (default: auto-enabled)"
 )
@@ -36,21 +36,28 @@ def extractfacts(file, verify):
     """
     Auto-generate case_facts.txt under ten structured headings.
 
-    Processes a document to extract relevant case facts and organizes them
+    Processes one or more documents to extract relevant case facts and organizes them
     into a structured format with ten standard headings. This provides a
     foundation for other commands like 'brainstorm' and 'strategy' which require structured facts.
 
     Args:
-        file: Path to the document (PDF or text) to extract facts from.
+        file: Path(s) to the document(s) (PDF or text) to extract facts from.
         verify: Whether to run a self-critique verification pass on the extracted facts.
 
     Raises:
         click.ClickException: If there are errors reading the file, processing chunks,
                              or with the LLM API calls.
     """
-    # Read and validate document, then chunk
-    text = validate_file_size(file, max_size=1000000, file_type="source")
-    chunks = chunk_text(text, max_chars=CONFIG.max_chars)
+    # Process all files
+    all_text = ""
+    source_files = []
+    for f in file:
+        text = validate_file_size(f, max_size=1000000, file_type="source")
+        source_files.append(os.path.basename(f))
+        all_text += f"\n\n--- SOURCE: {os.path.basename(f)} ---\n\n{text}"
+    
+    # Use existing chunking on combined text
+    chunks = chunk_text(all_text, max_chars=CONFIG.max_chars)
 
     # Initialize the LLM client using factory
     client = LLMClientFactory.for_command("extractfacts")
@@ -155,15 +162,18 @@ def extractfacts(file, verify):
     reasoning_trace = extract_reasoning_trace(combined, "extractfacts")
 
     # Save output using utility
+    slug = "_".join(source_files[:3])  # Use first 3 files for slug
+    if len(source_files) > 3:
+        slug += f"_and_{len(source_files)-3}_more"
     output_file = save_command_output(
-        "extractfacts", combined, os.path.basename(file), metadata={"Source File": file}
+        "extractfacts", combined, slug, metadata={"Source Files": ", ".join(source_files)}
     )
 
     # Audit log
     save_log(
         "extractfacts",
         {
-            "inputs": {"source_file": file, "chunks": len(chunks)},
+            "inputs": {"source_files": list(file), "chunks": len(chunks)},
             "params": "verify=True (auto-enabled)",
             "response": combined,
             "output_file": output_file,
@@ -178,8 +188,11 @@ def extractfacts(file, verify):
 
     # Show completion
     chunk_desc = f"{len(chunks)} chunks" if len(chunks) > 1 else "single document"
+    source_desc = ", ".join(source_files[:3])
+    if len(source_files) > 3:
+        source_desc += f" + {len(source_files)-3} more"
     stats = {
-        "Source": os.path.basename(file),
+        "Sources": f"{len(source_files)} files" if len(source_files) > 1 else source_files[0],
         "Processed": chunk_desc,
         "Structure": "10 structured headings",
         "Verification": "Legal accuracy review applied",

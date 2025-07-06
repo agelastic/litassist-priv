@@ -555,24 +555,9 @@ class LLMClient:
             messages = modified_messages
         else:
             # Regular models - handle system messages normally
-            has_system_message = any(msg.get("role") == "system" for msg in messages)
-            if has_system_message:
-                for msg in messages:
-                    if msg.get(
-                        "role"
-                    ) == "system" and "Australian English" not in msg.get(
-                        "content", ""
-                    ):
-                        msg["content"] += "\n" + PROMPTS.get("base.australian_law")
-            else:
-                # Add system message if none exists
-                messages.insert(
-                    0,
-                    {
-                        "role": "system",
-                        "content": PROMPTS.get("base.australian_law"),
-                    },
-                )
+            # Note: Commands already include base.australian_law in their system prompts,
+            # so we don't need to append it here. This prevents prompt corruption.
+            pass
 
         # Merge default and override parameters
         params = {**self.default_params, **overrides}
@@ -602,6 +587,17 @@ class LLMClient:
         try:
             # Filter parameters based on model capabilities
             filtered_params = get_model_parameters(self.model, params)
+
+            # Log the final messages being sent to the API
+            save_log(
+                f"llm_{self.model.replace('/', '_')}_messages",
+                {
+                    "model": self.model,
+                    "messages_sent": messages,
+                    "params": filtered_params,
+                    "timestamp": time.strftime("%Y-%m-%d %H:%M:%S"),
+                },
+            )
 
             # Use ChatCompletion API
             response = openai.ChatCompletion.create(
@@ -688,16 +684,9 @@ class LLMClient:
 
                 # Enhance the last user message with strict citation instructions
                 enhanced_messages = messages.copy()
-                try:
-                    citation_instructions = PROMPTS.get(
-                        "verification.citation_retry_instructions"
-                    )
-                except KeyError:
-                    # Fallback to hardcoded if prompts not available
-                    citation_instructions = (
-                        "IMPORTANT: Use only real, verifiable Australian cases that exist on AustLII. "
-                        "Do not invent case names. If unsure about a citation, omit it rather than guess."
-                    )
+                citation_instructions = PROMPTS.get(
+                    "verification.citation_retry_instructions"
+                )
 
                 if self.model == "openai/o3-pro":
                     # For o3 models, append to the enhanced user content from earlier processing

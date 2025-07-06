@@ -74,7 +74,9 @@ Each stage:
 Strategic analysis commands follow consistent configuration patterns:
 
 - **CounselNotes**: `anthropic/claude-sonnet-4`, temp=0.3, top_p=0.7, force_verify=True
-- **Brainstorm-Orthodox**: `anthropic/claude-sonnet-4`, temp=0.3, top_p=0.7, force_verify=True  
+- **Brainstorm-Orthodox**: `anthropic/claude-sonnet-4`, temp=0.3, top_p=0.7, force_verify=True
+- **Brainstorm-Unorthodox**: `x-ai/grok-3-beta`, temp=0.9, top_p=0.95, force_verify=True
+- **Brainstorm-Analysis**: `anthropic/claude-sonnet-4`, temp=0.2, top_p=0.8
 - **Strategy-Analysis**: `anthropic/claude-sonnet-4`, temp=0.2, top_p=0.8
 - **Barbrief**: `openai/o3-pro`, reasoning_effort=high, max_completion_tokens=32768
 
@@ -84,6 +86,13 @@ Strategic analysis commands follow consistent configuration patterns:
 - Force verification enabled for professional legal accountability
 - Consistent patterns across similar command types for predictable behavior
 - Barbrief uses o3-pro for comprehensive document generation with extended token limits
+
+**Brainstorm Verification Behavior (Updated January 2025):**
+- Verification is ALWAYS performed on all brainstorm outputs automatically
+- No --verify flag needed or available - verification is mandatory
+- All three sub-types (orthodox, unorthodox, analysis) have force_verify=True
+- Clean single message: "🔍 Verifying brainstorm strategies..."
+- Maintains zero-tolerance citation policy across all strategies
 
 **CounselNotes Specific Patterns:**
 - Multi-document cross-synthesis capabilities
