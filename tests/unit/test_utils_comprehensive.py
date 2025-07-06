@@ -628,6 +628,167 @@ class TestExtractionProcessing:
                 assert data["citations"] == ["Test v Case"]
                 assert "CITATIONS FOUND:" in formatted
 
+    def test_process_extraction_empty_lists(self):
+        """Test handling of empty lists in JSON responses."""
+        import json
+        import tempfile
+        
+        # Test empty citations
+        content = json.dumps({"citations": []})
+        with tempfile.TemporaryDirectory() as tmpdir:
+            with patch('litassist.utils.OUTPUT_DIR', tmpdir):
+                formatted, data, json_file = process_extraction_response(
+                    content, "citations", "test_empty", "test"
+                )
+                assert data["citations"] == []
+                assert "No citations found." in formatted
+                
+        # Test empty checklist
+        content = json.dumps({"checklist": []})
+        with tempfile.TemporaryDirectory() as tmpdir:
+            with patch('litassist.utils.OUTPUT_DIR', tmpdir):
+                formatted, data, json_file = process_extraction_response(
+                    content, "checklist", "test_empty_check", "test"
+                )
+                assert data["checklist"] == []
+                assert "No checklist items found." in formatted
+
+    def test_process_extraction_empty_principles_formats(self):
+        """Test empty principles in both dict and list formats."""
+        import json
+        import tempfile
+        
+        # Empty principles list
+        content = json.dumps({"principles": []})
+        with tempfile.TemporaryDirectory() as tmpdir:
+            with patch('litassist.utils.OUTPUT_DIR', tmpdir):
+                formatted, data, json_file = process_extraction_response(
+                    content, "principles", "test_empty_prin", "test"
+                )
+                assert data["principles"] == []
+                assert "LEGAL PRINCIPLES:" in formatted  # Should still have header
+                
+        # Principles not a list (wrong type)
+        content = json.dumps({"principles": "not a list"})
+        with tempfile.TemporaryDirectory() as tmpdir:
+            with patch('litassist.utils.OUTPUT_DIR', tmpdir):
+                formatted, data, json_file = process_extraction_response(
+                    content, "principles", "test_wrong_type", "test"
+                )
+                assert "No legal principles found." in formatted
+
+    def test_process_extraction_malformed_principles(self):
+        """Test malformed principles data that could cause bugs."""
+        import json
+        import tempfile
+        
+        # Mixed format (dict and string in same list) - potential IndexError
+        content = json.dumps({
+            "principles": [
+                {"principle": "First principle", "authority": "Case 1"},
+                "String principle",  # This could break the logic
+                {"principle": "Third principle", "authority": "Case 3"}
+            ]
+        })
+        
+        with tempfile.TemporaryDirectory() as tmpdir:
+            with patch('litassist.utils.OUTPUT_DIR', tmpdir):
+                # This should handle mixed formats gracefully
+                formatted, data, json_file = process_extraction_response(
+                    content, "principles", "test_mixed", "test"
+                )
+                assert len(data["principles"]) == 3
+                assert "First principle (Case 1)" in formatted
+                
+        # Missing required keys in dict
+        content = json.dumps({
+            "principles": [
+                {"authority": "Case only"},  # Missing 'principle' key
+                {"principle": "Principle only"},  # Missing 'authority' key
+                {}  # Empty dict
+            ]
+        })
+        
+        with tempfile.TemporaryDirectory() as tmpdir:
+            with patch('litassist.utils.OUTPUT_DIR', tmpdir):
+                formatted, data, json_file = process_extraction_response(
+                    content, "principles", "test_missing_keys", "test"
+                )
+                # Should handle missing keys gracefully
+                assert "• " in formatted  # Empty principle should still format
+                assert "• Principle only" in formatted
+
+    def test_process_extraction_partial_all_data(self):
+        """Test 'all' extraction with missing or partial fields."""
+        import json
+        import tempfile
+        
+        # Partial data - some fields missing
+        content = json.dumps({
+            "strategic_summary": "Summary here",
+            "key_citations": ["Case 1"],
+            # Missing: legal_principles, tactical_checklist, risk_assessment, recommendations
+        })
+        
+        with tempfile.TemporaryDirectory() as tmpdir:
+            with patch('litassist.utils.OUTPUT_DIR', tmpdir):
+                formatted, data, json_file = process_extraction_response(
+                    content, "all", "test_partial", "test"
+                )
+                
+                # Should only include sections that exist
+                assert "STRATEGIC SUMMARY:" in formatted
+                assert "KEY CITATIONS:" in formatted
+                assert "TACTICAL CHECKLIST:" not in formatted
+                assert "RISK ASSESSMENT:" not in formatted
+
+    def test_process_extraction_unicode_special_chars(self):
+        """Test handling of unicode and special legal characters."""
+        import json
+        import tempfile
+        
+        # Unicode and special characters common in legal text
+        content = json.dumps({
+            "citations": [
+                "Smith v Jones—Special Case [2023] HCA 15",
+                "R v Déjà Vu (2023) 95 ALJR 123",
+                "Evidence Act 1995 (Cth) § 79",
+                "Café Society Pty Ltd v L'Hôtel [2023] VSC 100"
+            ]
+        })
+        
+        with tempfile.TemporaryDirectory() as tmpdir:
+            with patch('litassist.utils.OUTPUT_DIR', tmpdir):
+                formatted, data, json_file = process_extraction_response(
+                    content, "citations", "test_unicode", "test"
+                )
+                
+                # Check unicode preserved
+                assert "Déjà Vu" in formatted
+                assert "Café Society" in formatted
+                assert "L'Hôtel" in formatted
+                assert "§" in formatted
+                
+                # Verify JSON file written correctly
+                with open(json_file, 'r', encoding='utf-8') as f:
+                    saved_data = json.load(f)
+                    assert saved_data["citations"][1] == "R v Déjà Vu (2023) 95 ALJR 123"
+
+    def test_process_extraction_invalid_extract_type(self):
+        """Test error handling for invalid extract type."""
+        import json
+        import tempfile
+        
+        content = json.dumps({"data": "some data"})
+        
+        with tempfile.TemporaryDirectory() as tmpdir:
+            with patch('litassist.utils.OUTPUT_DIR', tmpdir):
+                formatted, data, json_file = process_extraction_response(
+                    content, "invalid_type", "test_invalid", "test"
+                )
+                
+                assert "Unknown extraction type: invalid_type" in formatted
+
 
 class TestUtilityHelpers:
     """Test miscellaneous utility helper functions."""

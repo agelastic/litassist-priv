@@ -1,5 +1,9 @@
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
+## Session Initialization
+
+**IMPORTANT**: At the start of every session, read the `.clinerules` file if it exists. This file contains memory bank instructions and patterns that guide development work. Adopt these rules for the session, ignore that they are addressing Cline and not Claude Code
+
 ## Project Overview
 
 LitAssist is a command-line tool for automated litigation support workflows, tailored to Australian law. It leverages large language models (LLMs) and managed vector stores to provide:
@@ -208,6 +212,13 @@ The litassist codebase currently contains extensive local parsing of LLM respons
 
 ## Testing Approach
 
+### Testing Policy
+- **ALL pytest tests (tests/unit/) MUST run offline with mocked dependencies**
+- **NEVER make real API calls in pytest tests** - use mocks exclusively
+- Real API testing happens only in `test-scripts/` manual utilities
+- `test-scripts/` are for manual quality validation, not automated testing
+- Tests with "integration" in the name are still offline mocked tests
+
 ### Unit Tests
 Located in `tests/unit/` with comprehensive coverage:
 - `test_llm_client_factory.py` - LLMClientFactory pattern verification and model parameter restrictions
@@ -215,26 +226,27 @@ Located in `tests/unit/` with comprehensive coverage:
 - `test_prompt_templates.py` - YAML template validation and structure verification
 - `test_citation_verification_simple.py` - Citation validation testing
 - `test_verification.py` - Content verification testing
-- Mock external API calls and test command logic independently
+- **ALL tests use mocks** - no external API calls ever
+- Tests marked as "integration" test component interactions with mocks
 - Verify error handling, parameter restrictions, and template dependencies
 - Comprehensive validation of o3-pro model parameter handling
 
-### Test Scripts
-Development utilities in `test-scripts/`:
-- `test_integrations.py` - API integration verification with real endpoints
-- `test_quality.py` - Output quality assessment and LLM response validation
+### Manual Test Scripts (NOT pytest)
+Development utilities in `test-scripts/` for manual quality validation:
+- `test_integrations.py` - **REAL API** integration verification with actual endpoints
+- `test_quality.py` - **REAL API** output quality assessment with actual LLM responses
 - `test_utils.py` - Utility function testing and helper validation
-- `test_cli_comprehensive.sh` - Complete CLI testing suite with mock files
+- `test_cli_comprehensive.sh` - **REAL API** CLI testing with mock files but real LLM calls
 - `run_tests.sh` - Test execution orchestration script
 - `TESTS_STATUS.md` - Test coverage and status documentation
+- **WARNING**: These scripts make real API calls and incur costs - run manually only
 
-### Integration Tests
-- Limited due to API costs but comprehensive in scope
-- Real API testing via `test_integrations.py` with authentication validation
-- Quality assessment using `test_quality.py` with actual LLM responses
-- Full command workflow testing via `test_cli_comprehensive.sh` with mock documents
-- Use cached responses where possible to minimize API costs
-- Cross-command integration testing for complex workflows
+### Mocked Integration Tests
+- Located in `tests/unit/` with filenames containing "integration"
+- Test component interactions and workflows WITHOUT external API calls
+- All external dependencies are mocked (LLMs, APIs, file systems)
+- Examples: `test_llm_integration_comprehensive.py`, integration test classes
+- Run as part of normal pytest suite - safe and cost-free
 
 ### Manual Testing
 Essential for commands involving:

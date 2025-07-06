@@ -1218,21 +1218,25 @@ def process_extraction_response(
         if "principles" in json_data:
             principles = json_data["principles"]
             if isinstance(principles, list):
-                # Handle both formats: list of dicts or list of strings
-                if principles and isinstance(principles[0], dict):
-                    # Format: [{"principle": "...", "authority": "..."}]
-                    formatted_lines = []
-                    for p in principles:
+                formatted_lines = []
+                for p in principles:
+                    if isinstance(p, dict):
+                        # Dict format: {"principle": "...", "authority": "..."}
                         principle = p.get("principle", "")
                         authority = p.get("authority", "")
                         if authority:
                             formatted_lines.append(f"• {principle} ({authority})")
                         else:
                             formatted_lines.append(f"• {principle}")
+                    elif isinstance(p, str):
+                        # String format: "principle text"
+                        formatted_lines.append(f"• {p}")
+                    # Skip any other types silently
+                
+                if formatted_lines:
                     formatted_text = "LEGAL PRINCIPLES:\n" + "\n".join(formatted_lines)
                 else:
-                    # Format: ["principle1", "principle2"]
-                    formatted_text = "LEGAL PRINCIPLES:\n" + "\n".join(f"• {p}" for p in principles)
+                    formatted_text = "LEGAL PRINCIPLES:\n(No valid principles found)"
             else:
                 formatted_text = "No legal principles found."
         else:

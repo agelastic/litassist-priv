@@ -1,24 +1,30 @@
-# LitAssist Integration Tests
+# LitAssist Testing Documentation
 
-This test suite validates the key external service integrations used by LitAssist, particularly focusing on:
+This document covers both automated unit tests (pytest) and manual integration validation scripts.
 
-1. **OpenAI API** - Testing embedding generation and completion capabilities
-2. **Pinecone Vector DB** - Testing vector storage and retrieval with MMR
-3. **OpenRouter** - Testing model access and completion via the OpenRouter gateway
-4. **Jade Public Endpoints** - Testing access to Australian case law via Jade's public website
+## Important Testing Policy
 
-## Why Test OpenRouter?
+⚠️ **ALL pytest tests MUST run offline with mocked dependencies** ⚠️
+- No pytest test should EVER make real API calls
+- All external services must be mocked in pytest tests
+- Real API testing happens only through manual scripts in `test-scripts/`
 
-While we primarily focus on OpenAI and Pinecone as core dependencies, the OpenRouter integration warrants testing because:
+## Automated Unit Tests (pytest)
 
-1. **Gateway Architecture**: LitAssist uses OpenRouter as a gateway to access various LLMs, making it a critical part of the execution path
-2. **Completion Flow**: All model completions route through OpenRouter before reaching the application
-3. **Model Availability**: OpenRouter provides access to models that may not be directly available via OpenAI
-4. **Cost Control**: By creating minimal tests for OpenRouter, we can verify functionality without significant cost impact
+The automated test suite uses pytest and runs completely offline:
 
-## Unit Test Coverage
+### What We Test with Mocks
 
-The project includes comprehensive unit tests for all major commands and utilities:
+1. **OpenAI API** - Mocked embedding generation and completion capabilities
+2. **Pinecone Vector DB** - Mocked vector storage and retrieval with MMR
+3. **OpenRouter** - Mocked model access and completion via the OpenRouter gateway
+4. **Google CSE & Jade** - Mocked case law lookup and retrieval
+
+All these integrations are tested using mocks to ensure functionality without API costs.
+
+### Unit Test Coverage
+
+The project includes comprehensive offline unit tests for all major commands and utilities:
 
 ### Command Tests
 - **test_verify_command.py**: Tests the verify command's citation verification, legal soundness checking, and reasoning trace functionality
@@ -37,7 +43,7 @@ The project includes comprehensive unit tests for all major commands and utiliti
 
 ### Running Unit Tests
 ```bash
-# Run all unit tests
+# Run all unit tests (always offline, no API calls)
 pytest tests/unit/
 
 # Run specific test file
@@ -45,9 +51,15 @@ pytest tests/unit/test_verify_command.py
 
 # Run with coverage
 pytest --cov=litassist tests/unit/
+
+# Note: ALL these tests use mocks - no real API calls ever!
 ```
 
-## Integration Test Coverage
+## Manual Integration Validation Scripts
+
+⚠️ **WARNING: These scripts make REAL API calls and incur costs!** ⚠️
+
+Separate from pytest, we have manual validation scripts in `test-scripts/` for testing real API integrations:
 
 | Service | Test Types | Purpose |
 |---------|------------|---------|
@@ -57,10 +69,15 @@ pytest --cov=litassist tests/unit/
 | Google CSE | Basic Connectivity | Verify that Google Custom Search API is accessible for case law lookup |
 | Jade | Public Homepage Access, Specific Case Access | Verify that Jade's public endpoints are accessible for legal case retrieval |
 
-## Running the Tests
+### Running Manual Integration Scripts
+
+**⚠️ These commands make REAL API calls and cost money! ⚠️**
 
 ```bash
-# Run all tests
+# Navigate to test-scripts directory first
+cd test-scripts/
+
+# Run all integration tests (REAL API CALLS)
 python test_integrations.py
 
 # Run just OpenAI tests
@@ -90,7 +107,14 @@ Additionally, a JSON file with detailed results is saved as `test_results_YYYYMM
 
 ## Important Considerations
 
-1. **API Costs**: Running these tests will incur small API usage costs from OpenAI, OpenRouter, and potentially Pinecone
+### For Pytest (Automated Tests)
+1. **No API Costs**: All pytest tests use mocks - zero API costs
+2. **Fast Execution**: Mocked tests run quickly
+3. **Safe to Run**: Can be run anytime without cost concerns
+4. **CI/CD Ready**: Perfect for automated pipelines
+
+### For Manual Integration Scripts
+1. **API Costs**: Running these scripts WILL incur API usage costs from OpenAI, OpenRouter, and Pinecone
 2. **Test Data**: The Pinecone tests create and delete temporary test vectors in a namespace called "test_namespace"
 3. **API Keys**: Valid API keys must be configured in `config.yaml` before running tests
 4. **Dependencies**: Requires the `openai`, `pinecone-client`, `numpy`, and `pyyaml` packages
@@ -107,9 +131,14 @@ The tests are designed to be:
 
 ## When to Run Tests
 
-These tests are valuable in several scenarios:
+### Pytest Tests (Run Frequently)
+1. **Every Code Change**: Before committing any changes
+2. **CI/CD Pipeline**: Automatically on every push
+3. **Pre-deployment**: As part of release process
+4. **Development**: During active development
 
-1. **Initial Setup**: Verifying configuration during new environment setup
-2. **Dependency Updates**: After updating OpenAI or Pinecone client libraries
-3. **Troubleshooting**: When diagnosing issues with LitAssist functionality
-4. **CI/CD Pipeline**: As part of automated testing before deployment
+### Manual Integration Scripts (Run Sparingly)
+1. **Initial Setup**: One-time verification of API credentials
+2. **Major Updates**: After significant dependency changes
+3. **Production Issues**: When debugging real API problems
+4. **Quarterly Validation**: Periodic health checks

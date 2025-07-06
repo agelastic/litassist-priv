@@ -1,11 +1,17 @@
 # Test Status
 
+## Important Testing Policy
+
+⚠️ **ALL pytest tests MUST run offline with mocked dependencies** ⚠️
+- Pytest tests (in `tests/unit/`) NEVER make real API calls
+- Manual test scripts (in `test-scripts/`) make REAL API calls for validation
+
 ## Current Test Architecture
 
-The test suite consists of several layers of tests:
+The test suite consists of two distinct categories:
 
-## Unit Tests ✅
-Located in `tests/unit/`:
+## Automated Unit Tests (pytest) ✅
+Located in `tests/unit/` - ALL run offline with mocks:
 - `test_basic.py` - Basic infrastructure tests
 - `test_real_functionality.py` - Real function tests with proper examples 
 - `test_simple.py` - Simple functionality tests
@@ -17,36 +23,51 @@ Located in `tests/unit/`:
 - `test_citation_verification_simple.py` - Citation validation testing
 - `test_verification.py` - Content verification testing
 
-## Integration Tests ✅
-Located in test-scripts/:
-- `test_connectivity.py` - Tests basic connectivity to external services
-- `test_integrations.py` - Tests integration with external APIs (OpenAI, Pinecone, OpenRouter)
-- `test_quality.py` - Tests response quality from various commands
-- `test_barbrief_integration.py` - Barbrief command integration tests without API calls
-- `test_cli_comprehensive.sh` - Complete CLI testing suite with mock files
+## Manual Integration Validation Scripts ⚠️
+Located in `test-scripts/` - These make REAL API calls:
+- `test_connectivity.py` - **REAL API** basic connectivity to external services
+- `test_integrations.py` - **REAL API** integration with OpenAI, Pinecone, OpenRouter
+- `test_quality.py` - **REAL API** response quality validation
+- `test_barbrief_integration.py` - Integration tests (needs verification if real API)
+- `test_cli_comprehensive.sh` - **REAL API** CLI testing with mock files but real LLM calls
+
+**WARNING**: These scripts incur API costs! Run manually and sparingly.
 
 ## Running Tests
 
-Integration tests can be run using:
+### Automated Unit Tests (Safe, Free, Fast)
 ```bash
-./test-scripts/run_tests.sh --all
-# Or for specific services
-./test-scripts/run_tests.sh --openai --pinecone
+# Run all unit tests - no API calls, no costs
+python -m pytest tests/unit/
+
+# Run with coverage
+python -m pytest --cov=litassist tests/unit/
 ```
 
-Unit tests can be run using:
+### Manual Integration Scripts (Real APIs, Costs Money!)
 ```bash
-python -m pytest
+# ⚠️ WARNING: These make REAL API calls and cost money!
+cd test-scripts/
+python test_integrations.py --all
+# Or for specific services
+python test_integrations.py --openai --pinecone
 ```
 
 ## Test Design Philosophy
 
-Tests are designed to be:
-1. **Lightweight** - Minimizing resource usage, API calls, and costs
-2. **Thorough** - Covering essential functionality
-3. **Non-destructive** - Cleaning up after themselves
-4. **Informative** - Providing clear output about success/failure
-5. **Modular** - Supporting running specific test subsets when needed
+### For Pytest (Automated Tests)
+1. **Offline Only** - ALL tests use mocks, zero API calls
+2. **Fast** - Run in seconds, not minutes
+3. **Free** - No API costs ever
+4. **Reliable** - No network dependencies
+5. **CI/CD Ready** - Safe for automated pipelines
+
+### For Manual Scripts
+1. **Real Validation** - Test actual API connectivity
+2. **Cost Conscious** - Minimize token usage
+3. **Diagnostic** - Provide detailed service status
+4. **Selective** - Run only when needed
+5. **Documented** - Clear warnings about costs
 
 ## Test Template
 
