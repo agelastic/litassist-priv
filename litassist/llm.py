@@ -247,7 +247,7 @@ class LLMClientFactory:
             "force_verify": True,  # Conservative analysis requires verification
         },
         "brainstorm-unorthodox": {
-            "model": "x-ai/grok-3-beta",
+            "model": "x-ai/grok-3",
             "temperature": 0.9,
             "top_p": 0.95,
             "force_verify": True,  # Auto-verify Grok

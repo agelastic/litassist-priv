@@ -75,8 +75,8 @@ Strategic analysis commands follow consistent configuration patterns:
 
 - **CounselNotes**: `anthropic/claude-sonnet-4`, temp=0.3, top_p=0.7, force_verify=True
 - **Brainstorm-Orthodox**: `anthropic/claude-sonnet-4`, temp=0.3, top_p=0.7, force_verify=True
-- **Brainstorm-Unorthodox**: `x-ai/grok-3-beta`, temp=0.9, top_p=0.95, force_verify=True
-- **Brainstorm-Analysis**: `anthropic/claude-sonnet-4`, temp=0.2, top_p=0.8
+- **Brainstorm-Unorthodox**: `x-ai/grok-3`, temp=0.9, top_p=0.95, force_verify=True
+- **Brainstorm-Analysis**: `openai/o3-pro`, temp=0.2, top_p=0.8, reasoning_effort=high
 - **Strategy-Analysis**: `anthropic/claude-sonnet-4`, temp=0.2, top_p=0.8
 - **Barbrief**: `openai/o3-pro`, reasoning_effort=high, max_completion_tokens=32768
 

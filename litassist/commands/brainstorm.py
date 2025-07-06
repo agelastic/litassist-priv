@@ -60,6 +60,8 @@ def regenerate_bad_strategies(
     # Split content into individual strategies using a robust regex
     # This pattern finds all numbered list items (e.g., "1. Strategy Title...")
     # and treats each one as a separate strategy.
+    # Remove any section headers before processing
+    original_content = re.sub(r'^##\s+\w+\s+STRATEGIES\s*\n+', '', original_content.strip())
     strategies = re.split(r"\n(?=\d+\.\s+)", original_content.strip())
     # The first item might be a header, so filter it out if it doesn't start with a number
     strategies = [s.strip() for s in strategies if re.match(r"^\d+\.", s.strip())]
@@ -177,7 +179,9 @@ Generate ONLY strategy #{strategy_num} in the exact format:
             else:
                 renumbered_strategies.append(strategy)
 
-        return "\n\n".join(renumbered_strategies)
+        # Add the appropriate header back
+        header = "## ORTHODOX STRATEGIES" if strategy_type == "orthodox" else "## UNORTHODOX STRATEGIES"
+        return f"{header}\n\n" + "\n\n".join(renumbered_strategies)
     else:
         return (
             f"No {strategy_type} strategies could be generated with verified citations."
@@ -591,7 +595,7 @@ Please provide output in EXACTLY this format:
         "brainstorm",
         {
             "inputs": {"facts_file": facts_file, "method": "three-stage approach"},
-            "params": f"verify={verify} (auto-enabled for Grok), orthodox_temp=0.3, unorthodox_temp=0.9, analysis_temp=0.4",
+            "params": "verify=True (auto-enabled for Grok), orthodox_temp=0.3, unorthodox_temp=0.9, analysis_temp=0.4",
             "response": combined_content,  # Log the final, verified content
             "usage": usage,
             "output_file": output_file,

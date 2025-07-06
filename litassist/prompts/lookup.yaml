@@ -58,6 +58,12 @@ lookup:
   # LOCATION: lookup.py:316-346 (to be extracted)
   comprehensive_analysis:
     requirements: |
+      CRITICAL FORMATTING REQUIREMENTS (MUST FOLLOW):
+      - Put TWO blank lines (press Enter twice) before EVERY header
+      - Put ONE blank line (press Enter once) after EVERY header  
+      - Put ONE blank line between paragraphs within sections
+      - Headers MUST start with ### followed by a space
+      
       EXHAUSTIVE ANALYSIS REQUIREMENTS:
       - Review ALL provided sources thoroughly (expect 20-40 sources)
       - Identify primary and secondary authorities with hierarchy
@@ -66,12 +72,6 @@ lookup:
       - Distinguish binding vs persuasive authorities by jurisdiction
       - Analyze temporal evolution of legal principles
       - Consider jurisdictional variations across Australian states/territories
-      
-      FORMATTING REQUIREMENTS:
-      - Use clear paragraph breaks within each section (double line breaks between paragraphs)
-      - Separate major sections with clear visual spacing
-      - Ensure readability with proper text formatting throughout
-      - Avoid dense, monolithic text blocks
     
     citation_requirements: |
       COMPREHENSIVE CITATION REQUIREMENTS:
@@ -101,32 +101,43 @@ lookup:
       ### Practical Application with Confidence Levels
       (Distinct scenarios or applications, each in its own paragraph)
       
-      ### Conclusion with Confidence Assessment
+      ### Conclusion
       (Final analysis in properly formatted paragraphs)
       
-      IMPORTANT: Each section must use proper paragraph formatting with clear visual separation. Use double line breaks between paragraphs for readability.
+      FINAL CRITICAL REMINDER: 
+      - EVERY header (starting with ###) MUST have TWO blank lines before it
+      - EVERY header MUST have ONE blank line after it
+      - This is MANDATORY - not optional
   
   # Standard analysis instructions
   # USED BY: lookup.py lookup() - standard mode
   # LOCATION: lookup.py:344-345 (to be extracted)
   standard_analysis:
     instructions: |
-      Cite sources. Analyze the provided sources (typically 5) to provide well-structured, comprehensive responses with clear sections and proper formatting.
+      CRITICAL FORMATTING REQUIREMENTS (MUST FOLLOW):
+      - Put TWO blank lines (press Enter twice) before EVERY header
+      - Put ONE blank line (press Enter once) after EVERY header
+      - Put ONE blank line between paragraphs within sections
       
-      FORMATTING REQUIREMENTS:
-      - Use clear paragraph breaks within each section (double line breaks between paragraphs)
-      - Separate major sections with clear visual spacing
-      - Ensure headers start on new lines with proper spacing before and after
-      - Avoid dense, monolithic text blocks
-      - Each paragraph should contain a single coherent idea or point
+      OUTPUT STRUCTURE (USE THESE EXACT HEADERS):
       
-      STRUCTURE:
-      - Begin with a summary (2-3 well-formatted paragraphs)
-      - Provide detailed analysis with supporting case law from all relevant sources (multiple paragraphs with proper spacing)
-      - Cross-reference between sources where applicable
-      - End with a definitive conclusion (1-2 paragraphs)
       
-      IMPORTANT: Use proper paragraph formatting throughout with clear visual separation. Headers must start on new lines with spacing above and below.
+      ### Executive Summary
+      
+      (Write 2-3 paragraphs here, with one blank line between each paragraph)
+      
+      
+      ### Analysis
+      
+      (Write multiple paragraphs examining the legal issues and case law, with one blank line between each paragraph)
+      
+      
+      ### Conclusion
+      
+      (Write 1-2 paragraphs with definitive conclusions, with one blank line between if using two paragraphs)
+      
+      CONTENT REQUIREMENTS:
+      Cite sources. Analyze the provided sources (typically 5) to provide comprehensive legal analysis. Cross-reference between sources where applicable. Each paragraph should contain a single coherent idea or point.
   
   # User prompt template
   # USED BY: lookup.py lookup() - user prompt construction

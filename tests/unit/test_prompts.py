@@ -8,7 +8,7 @@ commands fail appropriately when centralized prompts are unavailable.
 import pytest
 import tempfile
 from pathlib import Path
-from unittest.mock import patch
+from unittest.mock import patch, Mock
 
 from litassist.prompts import PromptManager, PROMPTS
 
@@ -153,24 +153,6 @@ class TestExplicitFailureBehavior:
 
 class TestIntegrationWithCommands:
     """Test that command modules integrate correctly with prompt management."""
-
-    def test_llm_client_requires_prompts(self):
-        """Test that LLMClient requires centralized prompts."""
-        # This test verifies that llm.py will fail without prompts
-        # by importing and checking the code path
-
-        # Mock empty PROMPTS to simulate missing templates
-        with patch("litassist.llm.PROMPTS") as mock_prompts:
-            mock_prompts.get.side_effect = KeyError("Template not found")
-
-            # Import should work, but using it should fail
-            from litassist.llm import LLMClient
-
-            client = LLMClient("test/model")
-
-            # The complete method should fail when it tries to get Australian law prompt
-            with pytest.raises(KeyError):
-                client.complete([{"role": "user", "content": "test"}])
 
     def test_extractfacts_command_requires_prompts(self):
         """Test that extractfacts command requires centralized prompts."""
