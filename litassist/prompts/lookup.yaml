@@ -35,6 +35,12 @@ lookup:
       - Distinguish binding vs persuasive authorities by jurisdiction
       - Analyze temporal evolution of legal principles
       - Consider jurisdictional variations across Australian states/territories
+      
+      FORMATTING REQUIREMENTS:
+      - Use clear paragraph breaks within each section (double line breaks between paragraphs)
+      - Separate major sections with clear visual spacing
+      - Ensure readability with proper text formatting throughout
+      - Avoid dense, monolithic text blocks
     
     citation_requirements: |
       COMPREHENSIVE CITATION REQUIREMENTS:
@@ -45,13 +51,29 @@ lookup:
     
     output_structure: |
       EXHAUSTIVE OUTPUT STRUCTURE:
-      - Executive Summary (2-3 paragraphs)
-      - Comprehensive Legal Framework
-      - Authority Hierarchy Analysis
-      - Detailed Case Analysis by jurisdiction
-      - Synthesis and Conflicts Resolution
-      - Practical Application with confidence levels
-      - Conclusion with Confidence Assessment
+      
+      ### Executive Summary
+      (2-3 well-formatted paragraphs with clear breaks between them)
+      
+      ### Comprehensive Legal Framework
+      (Multiple paragraphs with proper spacing, each covering distinct aspects)
+      
+      ### Authority Hierarchy Analysis
+      (Structured analysis with paragraph breaks between different authority levels)
+      
+      ### Detailed Case Analysis by Jurisdiction
+      (Clear separation between jurisdictions, with paragraph breaks within each)
+      
+      ### Synthesis and Conflicts Resolution
+      (Well-spaced paragraphs discussing different aspects of synthesis)
+      
+      ### Practical Application with Confidence Levels
+      (Distinct scenarios or applications, each in its own paragraph)
+      
+      ### Conclusion with Confidence Assessment
+      (Final analysis in properly formatted paragraphs)
+      
+      IMPORTANT: Each section must use proper paragraph formatting with clear visual separation. Use double line breaks between paragraphs for readability.
   
   # Standard analysis instructions
   # USED BY: lookup.py lookup() - standard mode
