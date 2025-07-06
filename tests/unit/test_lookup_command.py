@@ -5,60 +5,12 @@ Tests for the lookup command functionality.
 from unittest.mock import Mock, patch
 from click.testing import CliRunner
 
-from litassist.commands.lookup import lookup, format_lookup_output
+from litassist.commands.lookup import lookup
 
 
 class TestLookupCommand:
     """Test the lookup command functionality."""
 
-    def test_format_lookup_output_default(self):
-        """Test default formatting (fixes Gemini markdown issues)."""
-        # Test content with broken markdown headers
-        content = "### **Summary*\n*\nSome content here"
-        result = format_lookup_output(content)
-
-        # Should fix broken markdown
-        assert "### **Summary**" in result
-        assert "*\n*" not in result
-
-    def test_format_lookup_output_citations(self):
-        """Test citation extraction."""
-        content = """
-        Some legal analysis with [2021] FCA 737 and [2020] HCA 123.
-        Also references Property Act 1958 (Vic) s 42.
-        """
-        result = format_lookup_output(content, extract="citations")
-
-        assert "CITATIONS FOUND:" in result
-        assert "[2021] FCA 737" in result
-        assert "[2020] HCA 123" in result
-
-    def test_format_lookup_output_principles(self):
-        """Test legal principles extraction."""
-        content = """
-        The court must consider the best interests of the child.
-        A defendant requires proof beyond reasonable doubt.
-        The principle of proportionality establishes limits.
-        """
-        result = format_lookup_output(content, extract="principles")
-
-        assert "LEGAL PRINCIPLES:" in result
-        assert "must consider" in result
-        assert "requires proof" in result
-
-    def test_format_lookup_output_checklist(self):
-        """Test checklist extraction."""
-        content = """
-        You must establish the following elements:
-        1. Duty of care must be proven
-        2. Evidence should include witness statements
-        3. Plaintiff needs to demonstrate causation
-        """
-        result = format_lookup_output(content, extract="checklist")
-
-        assert "PRACTICAL CHECKLIST:" in result
-        assert "□" in result
-        assert "must be proven" in result
 
     @patch("googleapiclient.discovery.build")
     @patch("litassist.llm.LLMClientFactory.for_command")
@@ -156,20 +108,33 @@ class TestLookupCommand:
         )
         mock_factory.return_value = mock_client
 
-        # Mock save functions
+        # Mock save functions and process_extraction_response
         with patch(
             "litassist.commands.lookup.save_command_output"
         ) as mock_save_output, patch(
             "litassist.commands.lookup.save_log"
-        ) as _mock_save_log:
+        ) as _mock_save_log, patch(
+            "litassist.commands.lookup.process_extraction_response"
+        ) as mock_process:
 
             mock_save_output.return_value = "output_file.txt"
+            mock_process.return_value = (
+                "CITATIONS FOUND:\n[2021] FCA 123",
+                {"citations": ["[2021] FCA 123"]},
+                "test.json"
+            )
 
             runner = CliRunner()
             result = runner.invoke(lookup, ["contract law", "--extract", "citations"])
 
             assert result.exit_code == 0
             assert "Citations extracted" in result.output
+            
+            # Verify process_extraction_response was called
+            mock_process.assert_called_once()
+            call_args = mock_process.call_args[0]
+            assert call_args[1] == "citations"  # extract_type
+            assert call_args[3] == "lookup"  # command
 
     def test_lookup_command_irac_vs_broad_mode(self):
         """Test that IRAC and broad modes use different LLM parameters."""

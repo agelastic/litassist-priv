@@ -21,7 +21,7 @@
 
 ### Pending Tasks ⌛
 - Implement advanced LLM prompting improvements from LLM_IMPROVEMENTS.md (IRAC/MIRAT, multi-model consensus, confidence scoring, adversarial testing)
-- Develop integration tests for OpenRouter and extended RAG workflows
+- Develop manual validation scripts for OpenRouter and extended RAG workflows (in test-scripts/)
 - Add cost-tracking system and quality-tier command options
 - Create compound workflow commands (e.g., `workflow initial-advice`)
 - Enhance QA loops: iterative improvement, contingency planning, multi-perspective reviews
@@ -39,7 +39,7 @@
 1. Commit `memory-bank/` directory and its files
 2. Merge initial Memory Bank into main branch
 3. Schedule sprint to implement high-impact prompt and verification enhancements
-4. Begin development of integration testing suite per integration_testing_approach.md
+4. Enhance manual API validation scripts per updated testing approach
 5. Plan cost-tracking and workflow command prototypes
 6. Review and prioritize new TODO items for implementation
 

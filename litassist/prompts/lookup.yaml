@@ -17,7 +17,7 @@ lookup:
       Return the citations results as a JSON object with key "citations" mapping to a list of values. Format: {"citations": ["citation1", "citation2", ...]}. Include all case citations and legislation references in the list.
     
     principles: |
-      Return the principles results as a JSON object with key "principles" mapping to a list of values. Format: {"principles": ["principle1", "principle2", ...]}. Include key legal rules and principles in the list.
+      Return the principles results as a JSON object with key "principles" mapping to a list of principle objects. Format: {"principles": [{"principle": "Clear statement of the legal principle or rule", "authority": "Supporting case citation or legislation"}, {"principle": "Another legal principle", "authority": "Supporting authority"}]}. Include key legal rules and principles with their supporting authorities.
     
     checklist: |
       Return the checklist results as a JSON object with key "checklist" mapping to a list of values. Format: {"checklist": ["item1", "item2", ...]}. Include actionable requirements, evidence needed, and steps to take in the list.
@@ -35,6 +35,12 @@ lookup:
       - Distinguish binding vs persuasive authorities by jurisdiction
       - Analyze temporal evolution of legal principles
       - Consider jurisdictional variations across Australian states/territories
+      
+      FORMATTING REQUIREMENTS:
+      - Use clear paragraph breaks within each section (double line breaks between paragraphs)
+      - Separate major sections with clear visual spacing
+      - Ensure readability with proper text formatting throughout
+      - Avoid dense, monolithic text blocks
     
     citation_requirements: |
       COMPREHENSIVE CITATION REQUIREMENTS:
@@ -45,13 +51,29 @@ lookup:
     
     output_structure: |
       EXHAUSTIVE OUTPUT STRUCTURE:
-      - Executive Summary (2-3 paragraphs)
-      - Comprehensive Legal Framework
-      - Authority Hierarchy Analysis
-      - Detailed Case Analysis by jurisdiction
-      - Synthesis and Conflicts Resolution
-      - Practical Application with confidence levels
-      - Conclusion with Confidence Assessment
+      
+      ### Executive Summary
+      (2-3 well-formatted paragraphs with clear breaks between them)
+      
+      ### Comprehensive Legal Framework
+      (Multiple paragraphs with proper spacing, each covering distinct aspects)
+      
+      ### Authority Hierarchy Analysis
+      (Structured analysis with paragraph breaks between different authority levels)
+      
+      ### Detailed Case Analysis by Jurisdiction
+      (Clear separation between jurisdictions, with paragraph breaks within each)
+      
+      ### Synthesis and Conflicts Resolution
+      (Well-spaced paragraphs discussing different aspects of synthesis)
+      
+      ### Practical Application with Confidence Levels
+      (Distinct scenarios or applications, each in its own paragraph)
+      
+      ### Conclusion with Confidence Assessment
+      (Final analysis in properly formatted paragraphs)
+      
+      IMPORTANT: Each section must use proper paragraph formatting with clear visual separation. Use double line breaks between paragraphs for readability.
   
   # Standard analysis instructions
   # USED BY: lookup.py lookup() - standard mode

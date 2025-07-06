@@ -20,6 +20,7 @@ from litassist.utils import (
     timed,
     save_command_output,
     show_command_completion,
+    process_extraction_response,
 )
 from litassist.llm import LLMClientFactory
 
@@ -137,21 +138,8 @@ def counselnotes(files, extract, verify, output):
                         f"LLM error in extraction chunk {idx}: {e}"
                     )
 
-                # Parse JSON-first, fallback to regex if needed
-                try:
-                    # Attempt JSON parsing first (following June 2025 patterns)
-                    if content.strip().startswith("{") and content.strip().endswith(
-                        "}"
-                    ):
-                        extracted_data = json.loads(content.strip())
-                    else:
-                        # Fallback to text content if not JSON
-                        extracted_data = {"extracted_content": content}
-                except json.JSONDecodeError:
-                    # Keep as text content if JSON parsing fails
-                    extracted_data = {"extracted_content": content}
-
-                extraction_results.append(extracted_data)
+                # Process this chunk's extraction (will be aggregated later)
+                extraction_results.append(content)
 
                 # Citation verification if requested
                 if verify:
@@ -166,7 +154,6 @@ def counselnotes(files, extract, verify, output):
                     {
                         "chunk": idx,
                         "content": content,
-                        "extracted_data": extracted_data,
                         "usage": usage,
                     }
                 )
@@ -175,10 +162,12 @@ def counselnotes(files, extract, verify, output):
                 for key in comprehensive_log["total_usage"]:
                     comprehensive_log["total_usage"][key] += usage.get(key, 0)
 
-        # Synthesize extraction results if multiple chunks
+        # Process extraction results
         if len(extraction_results) > 1:
-            # Combine extracted data intelligently
+            # Multiple chunks - need to consolidate
+            # For counselnotes, we'll concatenate all JSON results into a single structure
             if extract == "all":
+                # Merge all comprehensive extractions
                 combined_data = {
                     "strategic_summary": "",
                     "key_citations": [],
@@ -187,34 +176,57 @@ def counselnotes(files, extract, verify, output):
                     "risk_assessment": "",
                     "recommendations": [],
                 }
-                for result in extraction_results:
-                    if isinstance(result, dict):
+                
+                for chunk_content in extraction_results:
+                    try:
+                        # Parse each chunk's JSON
+                        chunk_data = json.loads(chunk_content.strip())
+                        
+                        # Merge data
                         for key in combined_data.keys():
-                            if key in result:
+                            if key in chunk_data:
                                 if isinstance(combined_data[key], list):
-                                    if isinstance(result[key], list):
-                                        combined_data[key].extend(result[key])
-                                    else:
-                                        combined_data[key].append(result[key])
+                                    if isinstance(chunk_data[key], list):
+                                        combined_data[key].extend(chunk_data[key])
                                 else:
-                                    combined_data[key] += f"\n{result[key]}"
-                final_output = json.dumps(combined_data, indent=2)
+                                    # String fields - concatenate with newline
+                                    if chunk_data[key]:
+                                        if combined_data[key]:
+                                            combined_data[key] += f"\n\n{chunk_data[key]}"
+                                        else:
+                                            combined_data[key] = chunk_data[key]
+                    except json.JSONDecodeError:
+                        # Skip chunks that didn't parse
+                        continue
+                
+                # Convert merged data back to JSON string
+                final_json_content = json.dumps(combined_data, indent=2)
             else:
-                # For other extraction modes, combine list-based results from each chunk.
-                key = extract
+                # For single-type extractions, merge arrays
                 combined_list = []
-                for r in extraction_results:
-                    if isinstance(r, dict) and isinstance(r.get(key), list):
-                        combined_list.extend(r[key])
-                final_output = json.dumps({key: combined_list}, indent=2)
+                for chunk_content in extraction_results:
+                    try:
+                        chunk_data = json.loads(chunk_content.strip())
+                        if extract in chunk_data and isinstance(chunk_data[extract], list):
+                            combined_list.extend(chunk_data[extract])
+                    except json.JSONDecodeError:
+                        continue
+                
+                final_json_content = json.dumps({extract: combined_list}, indent=2)
         else:
-            final_output = (
-                json.dumps(extraction_results[0], indent=2)
-                if extraction_results
-                else "{}"
-            )
-
-        all_output.append(final_output)
+            # Single chunk - use as is
+            final_json_content = extraction_results[0] if extraction_results else "{}"
+        
+        # Generate output prefix
+        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+        output_prefix = f"counselnotes_{extract}_{timestamp}"
+        
+        # Use shared extraction utility to process and save
+        formatted_text, json_data, json_file = process_extraction_response(
+            final_json_content, extract, output_prefix, "counselnotes"
+        )
+        
+        all_output.append(formatted_text)
 
     else:
         # Strategic analysis mode (non-extraction)

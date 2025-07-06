@@ -944,7 +944,7 @@ The `brainstorm` command uses Grok's creative capabilities to generate a compreh
 ### Command
 
 ```bash
-./litassist.py brainstorm <case_facts_file> --side <party_side> --area <legal_area> [--verify] [--research <lookup_file>...]
+./litassist.py brainstorm <case_facts_file> --side <party_side> --area <legal_area> [--research <lookup_file>...]
 ```
 
 Required parameters:
@@ -953,10 +953,11 @@ Required parameters:
   - Civil/Commercial cases: `plaintiff` or `defendant`
   - Family/Administrative cases: `plaintiff`, `defendant`, or `respondent`
 - `--area`: Legal area of the matter - `criminal`, `civil`, `family`, `commercial`, or `administrative`
-- `--verify` (optional): Run AI verification to review strategy viability and identify risks. Automatically enabled when using Grok models due to hallucination tendencies (see [Using the --verify Switch](#using-the--verify-switch))
 - `--research` (optional): One or more lookup report files to inform orthodox strategies with case law research (research-informed mode)
 
 **Note**: The command will warn you if you use incompatible side/area combinations (e.g., "plaintiff" in criminal cases) but will still generate strategies.
+
+**Verification**: All brainstorm outputs are automatically verified to ensure citation accuracy and legal soundness. This verification is always performed to maintain the highest quality standards.
 
 ### Example Usage
 
@@ -2181,8 +2182,8 @@ VERIFICATION NOTES:
 - Consider adding witness availability to "Witnesses" section
 ```
 
-#### brainstorm --verify (optional, auto for Grok)
-**Output location:** Separate file `outputs/brainstorm_verification_[area]_[side]_[timestamp].txt`
+#### brainstorm (automatic verification)
+**Verification Note:** Verification is now automatically performed on all brainstorm outputs.
 
 **What it reviews:**
 - Legal viability of proposed strategies

@@ -470,26 +470,26 @@ class LLMClient:
                 # These limits are carefully chosen to balance comprehensive responses with quality
                 if "google/gemini" in model.lower():
                     default_params[token_param] = (
-                        2048  # Gemini - reliable up to this length
+                        4096  # Gemini - reliable up to this length
                     )
                 elif "anthropic/claude" in model.lower():
                     default_params[token_param] = (
-                        4096  # Claude - coherent for longer outputs
+                        8192  # Claude - coherent for longer outputs
                     )
                 elif "openai/gpt-4" in model.lower():
                     default_params[token_param] = (
-                        3072  # GPT-4 - balanced limit for precision
+                        8192  # GPT-4 - balanced limit for precision
                     )
                 elif get_model_family(model) == "openai_reasoning":
                     default_params[token_param] = (
-                        4096  # o1-pro/o3-pro - high-quality reasoning output
+                        8192  # o1-pro/o3-pro - high-quality reasoning output
                     )
                 elif "grok" in model.lower():
                     default_params[token_param] = (
                         1536  # Grok - more prone to hallucination
                     )
                 else:
-                    default_params[token_param] = 2048  # Default safe limit
+                    default_params[token_param] = 4096  # Default safe limit
 
         self.default_params = default_params
 

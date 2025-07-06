@@ -10,6 +10,7 @@ import click
 import os
 import re
 import time
+import logging
 
 from litassist.config import CONFIG
 from litassist.utils import (
@@ -198,18 +199,13 @@ Generate ONLY strategy #{strategy_num} in the exact format:
     help="Specify the legal area of the matter",
 )
 @click.option(
-    "--verify",
-    is_flag=True,
-    help="Enable self-critique pass (auto-enabled for Grok models)",
-)
-@click.option(
     "--research",
     multiple=True,
     type=click.Path(exists=True),
     help="Optional: One or more lookup report files to inform orthodox strategies (research-informed mode).",
 )
 @timed
-def brainstorm(facts_file, side, area, verify, research):
+def brainstorm(facts_file, side, area, research):
     """
     Generate comprehensive legal strategies via Grok.
 
@@ -225,7 +221,8 @@ def brainstorm(facts_file, side, area, verify, research):
         facts_file: Path to a text file containing structured case facts.
         side: Which side you are representing (plaintiff/defendant/accused/respondent).
         area: The legal area of the matter (criminal/civil/family/commercial/administrative).
-        verify: Whether to run a self-critique verification pass on the generated ideas.
+    
+    Note: Verification is automatically performed on all brainstorm outputs to ensure citation accuracy and legal soundness.
 
     Raises:
         click.ClickException: If there are errors reading the facts file or with the LLM API call.
@@ -238,18 +235,6 @@ def brainstorm(facts_file, side, area, verify, research):
 
     # Check file size to prevent token limit issues
     validate_file_size_limit(facts, 50000, "Case facts")
-
-    # Auto-verify for Grok due to hallucination tendency
-    if "grok" in "x-ai/grok-3-beta".lower():
-        if verify:
-            click.echo(
-                "ℹ️  Note: --verify flag enabled (auto-required for Grok models due to hallucination tendency)"
-            )
-        elif not verify:
-            click.echo(
-                "ℹ️  Note: Verification auto-enabled for Grok models due to hallucination tendency"
-            )
-        verify = True  # Force verification for Grok models
 
     # Prepare research context for orthodox strategies
     if research:
@@ -330,6 +315,10 @@ Please provide output in EXACTLY this format:
     # Generate Unorthodox Strategies (creative approach)
     click.echo("Generating unorthodox strategies...")
     unorthodox_client = LLMClientFactory.for_command("brainstorm", "unorthodox")
+    
+    # Log model usage for future reference (no user-facing message)
+    if "grok" in unorthodox_client.model.lower():
+        logging.debug(f"Using {unorthodox_client.model} for unorthodox strategies")
 
     # Use centralized unorthodox prompt template
     unorthodox_template = PROMPTS.get("strategies.brainstorm.unorthodox_prompt")
@@ -462,78 +451,62 @@ Please provide output in EXACTLY this format:
     usage = total_usage
     verification_notes = []
 
-    # Smart verification - auto-enabled for Grok or when requested
-    # Use analysis_client for verification since it has balanced settings
-    auto_verify = analysis_client.should_auto_verify(combined_content, "brainstorm")
-    needs_verification = verify or auto_verify
+    # Run verification on all brainstorm outputs
+    click.echo("🔍 Verifying brainstorm strategies...")
+    
+    # Always verify brainstorm outputs
+    try:
+        # Use medium verification for creative brainstorming
+        correction = analysis_client.verify_with_level(combined_content, "medium")
 
-    # Inform user about verification status
-    if verify and auto_verify:
-        click.echo(
-            "🔍 Running verification (--verify flag + auto-verification triggered)"
-        )
-    elif verify:
-        click.echo("🔍 Running verification (--verify flag enabled)")
-    elif auto_verify:
-        click.echo(
-            "🔍 Running auto-verification (Grok model or high-risk content detected)"
-        )
-    else:
-        click.echo("ℹ️  No verification performed")
+        # The verification model returns the full, corrected text.
+        # We should replace the content, not append to it.
+        if correction.strip() and not correction.lower().startswith(
+            "no corrections needed"
+        ):
+            # Parse the verification output to extract only the corrected document
+            # The output format is:
+            # ## Issues Found during Verification
+            # ...
+            # ---
+            # ## Verified and Corrected Document
+            # [actual content]
 
-    if needs_verification:
-        try:
-            # Use medium verification for creative brainstorming
-            correction = analysis_client.verify_with_level(combined_content, "medium")
-
-            # The verification model returns the full, corrected text.
-            # We should replace the content, not append to it.
-            if correction.strip() and not correction.lower().startswith(
-                "no corrections needed"
-            ):
-                # Parse the verification output to extract only the corrected document
-                # The output format is:
-                # ## Issues Found during Verification
-                # ...
-                # ---
-                # ## Verified and Corrected Document
-                # [actual content]
-
-                if "## Verified and Corrected Document" in correction:
-                    # Extract only the corrected document portion
-                    parts = correction.split("## Verified and Corrected Document")
-                    if len(parts) > 1:
-                        corrected_content = parts[1].strip()
-                        # Remove any leading system instructions that might have leaked
-                        lines = corrected_content.split("\n")
-                        filtered_lines = []
-                        for line in lines:
-                            # Skip lines that are clearly system instructions
-                            if line.strip().startswith("Australian law only."):
-                                continue
-                            filtered_lines.append(line)
-                        combined_content = "\n".join(filtered_lines).strip()
-                    else:
-                        # Fallback if parsing fails
-                        combined_content = correction
+            if "## Verified and Corrected Document" in correction:
+                # Extract only the corrected document portion
+                parts = correction.split("## Verified and Corrected Document")
+                if len(parts) > 1:
+                    corrected_content = parts[1].strip()
+                    # Remove any leading system instructions that might have leaked
+                    lines = corrected_content.split("\n")
+                    filtered_lines = []
+                    for line in lines:
+                        # Skip lines that are clearly system instructions
+                        if line.strip().startswith("Australian law only."):
+                            continue
+                        filtered_lines.append(line)
+                    combined_content = "\n".join(filtered_lines).strip()
                 else:
-                    # Fallback if expected format not found
+                    # Fallback if parsing fails
                     combined_content = correction
+            else:
+                # Fallback if expected format not found
+                combined_content = correction
 
-                verification_notes.append(
-                    "--- Strategic Review Applied ---\nContent was updated based on verification."
-                )
+            verification_notes.append(
+                "--- Strategic Review Applied ---\nContent was updated based on verification."
+            )
 
-            # Run citation validation on the potentially corrected content
-            citation_issues = analysis_client.validate_citations(combined_content)
-            if citation_issues:
-                # Append warnings, but don't modify the content further here
-                verification_notes.append(
-                    "--- Citation Warnings ---\n" + "\n".join(citation_issues)
-                )
+        # Run citation validation on the potentially corrected content
+        citation_issues = analysis_client.validate_citations(combined_content)
+        if citation_issues:
+            # Append warnings, but don't modify the content further here
+            verification_notes.append(
+                "--- Citation Warnings ---\n" + "\n".join(citation_issues)
+            )
 
-        except Exception as e:
-            raise click.ClickException(f"Verification error during brainstorming: {e}")
+    except Exception as e:
+        raise click.ClickException(f"Verification error during brainstorming: {e}")
 
     # Extract separate reasoning traces for each section
     orthodox_trace = extract_reasoning_trace(orthodox_content, "brainstorm-orthodox")
@@ -542,13 +515,8 @@ Please provide output in EXACTLY this format:
     )
     analysis_trace = extract_reasoning_trace(analysis_content, "brainstorm-analysis")
 
-    # Remove reasoning traces from main content
-    # Use a non-greedy pattern to remove each trace block individually
-    trace_pattern = r"=== LEGAL REASONING TRACE ===.*?(?=\n\n##|\Z)"
-    # Ensure clean_content is based on the potentially modified combined_content
-    clean_content = re.sub(
-        trace_pattern, "", combined_content, flags=re.DOTALL | re.IGNORECASE
-    ).strip()
+    # Keep reasoning traces in main content (they're also saved separately)
+    clean_content = combined_content
 
     # Save to timestamped file only
     output_file = save_command_output(
