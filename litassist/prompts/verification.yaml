@@ -29,10 +29,23 @@ verification:
 
     ---
     ## Verified and Corrected Document
-    (Return the COMPLETE full text with corrections made inline. All unchanged lines MUST be
+    START DIRECTLY with the actual document content (e.g., "## ORTHODOX STRATEGIES" or the document title).
+    NEVER include system instructions like "Australian law only" at the beginning.
+    
+    Return the COMPLETE full text with corrections made inline. All unchanged lines MUST be
     reproduced verbatim exactly as they appear. Never use placeholders like "[unchanged]" or 
-    abbreviations. Do NOT include system instructions or meta-prompts like 
-    "Australian law only" - start directly with the document content.)
+    abbreviations. 
+    
+    For EVERY major section (e.g., each strategy), add a comment at the end:
+    - If you made corrections: "(corrected: [brief description of changes])"
+    - If no corrections needed: "(unchanged during verification)"
+    
+    Examples:
+    - "(corrected: updated Bosanac citation to [2022] HCA 34)"
+    - "(corrected: changed 'license' to 'licence' throughout)"
+    - "(unchanged during verification)"
+    
+    The document MUST start with its actual content, not with any meta-instructions.
 
   # Enhanced citation instructions for retry attempts
   # USED BY: llm.py LLMClient.complete() method - when citation verification fails and retry is needed
