@@ -67,9 +67,14 @@ litassist lookup "detinue conversion motor vehicle remedies" --extract checklist
 
 ## PHASE 4: DIGEST DOCUMENTS (create summaries and issue spotting)
 ```bash
-litassist digest "/Users/witt/Desktop/litassist/Car Docs for civil case 2025" --mode summary
-litassist digest "/Users/witt/Desktop/litassist/Car Docs for civil case 2025" --mode issues --hint "ownership gift presumption advancement"
+# Process all PDFs and text files in the directory
+litassist digest stuff/*.pdf stuff/whatsapp_chat.txt --mode summary
+litassist digest stuff/*.pdf stuff/whatsapp_chat.txt --mode issues --hint "ownership gift presumption advancement"
+
+# Or process specific files
+litassist digest stuff/car_bundle.pdf stuff/suncorp_bundle.pdf stuff/whatsapp_chat.txt --mode summary
 ```
+Note: digest now accepts multiple files and creates a consolidated digest with clear source attribution for each document.
 
 ## PHASE 5: RESEARCH-INFORMED BRAINSTORMING (with lookup results)
 After completing extensive case law research, run brainstorm again with research context:
@@ -240,6 +245,7 @@ The dual brainstorming approach (Phase 1 and Phase 5) ensures:
 
 ## Key Commands and Their Input Capabilities
 - `extractfacts`: NOW accepts multiple files - consolidates into single fact sheet (IMPROVED!)
+- `digest`: NOW accepts multiple files - creates consolidated digest with source attribution (IMPROVED!)
 - `strategy`: Only accepts 1 case facts file + 1 optional strategies file (LIMITED)
 - `counselnotes`: Accepts multiple files (GOOD for synthesis)
 - `barbrief`: Accepts case facts + strategies + multiple research files via --research flag

@@ -19,6 +19,7 @@ Lookup → Digest → ExtractFacts → Brainstorm → Strategy → Draft → Bar
                                                         CounselNotes
 ```
 - **Digest Command Hinting (June 2025):** The `digest` command now supports an optional `--hint` argument, allowing users to provide a text hint to focus LLM analysis on topics related to the hint. This enables targeted processing of non-legal and general documents.
+- **Digest Multiple Files (July 2025):** The `digest` command now accepts multiple input files via repeated FILE arguments. All files are processed individually then combined with clear source attribution, enabling comprehensive document digestion in a single run.
 - **Research-Informed Brainstorm (June 2025):** The `brainstorm` command now supports a `--research` option, allowing one or more lookup report files to be provided. When used, the orthodox strategies prompt is dynamically injected with the research context, enabling research-grounded strategy generation. The unorthodox strategies remain purely creative. All prompt logic is managed via YAML templates; no LLM prompt text is hardcoded in Python.
 - **Multiple Input Files (July 2025):** The `extractfacts` command now accepts multiple input files via repeated FILE arguments. All files are combined with clear source attribution before processing, enabling comprehensive fact extraction from multiple documents in a single run.
 

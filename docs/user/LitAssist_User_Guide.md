@@ -327,8 +327,8 @@ All LitAssist commands save their results to timestamped text files in the `outp
 
 **Timestamped Archive Files** (never overwritten):
 - `lookup_[query_slug]_YYYYMMDD_HHMMSS.txt` - Search results
-- `digest_[mode]_[filename_slug]_YYYYMMDD_HHMMSS.txt` - Document analysis
-- `extractfacts_[filename_slug]_YYYYMMDD_HHMMSS.txt` - Extracted facts from documents
+- `digest_[mode]_YYYYMMDD_HHMMSS.txt` - Document analysis (shows "N files" for multiple)
+- `extractfacts_YYYYMMDD_HHMMSS.txt` - Extracted facts from documents (handles multiple files)
 - `brainstorm_[area]_[side]_YYYYMMDD_HHMMSS.txt` - Generated legal strategies
 - `strategy_[outcome_slug]_YYYYMMDD_HHMMSS.txt` - Strategic analysis and draft documents
 - `draft_[query_slug]_YYYYMMDD_HHMMSS.txt` - Generated legal drafts
@@ -714,14 +714,17 @@ The `digest` command processes large documents by splitting them into manageable
 ### Command
 
 ```bash
-./litassist.py digest <file> [--mode summary|issues] [--hint <hint_text>]
+./litassist.py digest <file>... [--mode summary|issues] [--hint <hint_text>]
 ```
 
 Options:
+- `<file>...`: One or more files to digest (PDFs or text files). Accepts multiple files for consolidated analysis.
 - `--mode`: Choose between chronological summary or issue-spotting (default: summary)
 - `--hint`: Optional guidance to focus the analysis on specific aspects (e.g., "focus on parental alienation claims" or "analyze financial discrepancies")
 
 **Output**: All analysis saved to timestamped files: `digest_[mode]_[filename_slug]_YYYYMMDD_HHMMSS.txt`
+
+**New in July 2025**: The digest command now accepts multiple files, processing each individually and combining results with clear source attribution.
 
 **Citation Quality Control**: All digest outputs undergo automatic citation verification. If any citations are found to be invalid or unverifiable, clear warnings are displayed at the top of each chunk's output explaining the specific issues and actions taken.
 
@@ -765,6 +768,34 @@ When you need focused analysis on specific aspects of a document:
 
 # Medical document analysis
 ./litassist.py digest medical_report.pdf --mode summary --hint "identify disability impacts on parenting capacity"
+```
+
+#### Processing Multiple Files
+You can now digest multiple documents in a single command:
+
+```bash
+# Process all affidavits together
+./litassist.py digest smith_affidavit.pdf jones_affidavit.pdf expert_report.pdf --mode issues
+
+# Using wildcards (shell expands them)
+./litassist.py digest evidence/*.pdf --mode summary --hint "timeline of events"
+
+# Mix different document types
+./litassist.py digest financial_records.pdf correspondence.txt medical_report.pdf --mode issues
+```
+
+Each file is processed individually and the output includes clear source attribution:
+```
+=== DIGEST ISSUES FOR 3 FILES ===
+
+=== SOURCE: smith_affidavit.pdf ===
+[Analysis of smith_affidavit.pdf...]
+
+=== SOURCE: jones_affidavit.pdf ===
+[Analysis of jones_affidavit.pdf...]
+
+=== SOURCE: expert_report.pdf ===
+[Analysis of expert_report.pdf...]
 ```
 
 **Benefits of --hint**:
@@ -1530,6 +1561,7 @@ litassist strategy case_facts.txt --outcome "custody modification" --strategies 
 | **Citation Focus** | Enhanced verification for accuracy | Standard verification with warnings |
 | **LLM Model** | Claude Sonnet (precise extraction) | Claude Sonnet/Opus (flexible analysis) |
 | **Verification** | Mandatory for foundational accuracy | Optional warnings for low-stakes analysis |
+| **Multiple Files** | Yes (consolidated output) | Yes (with source attribution) |
 
 ### When to Use Each Command
 
@@ -1550,9 +1582,9 @@ litassist strategy case_facts.txt --outcome "custody modification" --strategies 
 
 #### For Legal Case Preparation:
 ```bash
-# Use extractfacts to create structured foundation
-litassist extractfacts contract_dispute_docs.pdf
-# → Produces 10-heading case facts for legal analysis
+# Use extractfacts to create structured foundation from multiple sources
+litassist extractfacts contract.pdf correspondence/*.pdf
+# → Produces single 10-heading case facts consolidating all documents
 
 # Then use those facts in other commands
 litassist brainstorm case_facts.txt --side plaintiff
@@ -1561,13 +1593,13 @@ litassist strategy case_facts.txt --outcome "summary judgment"
 
 #### For Document Understanding:
 ```bash
-# Use digest to understand content with specific focus
-litassist digest car_documents.pdf --hint "Volkswagen VIN and identification details"
-# → Provides focused summary about vehicle details
+# Use digest to understand multiple documents with source attribution
+litassist digest car_bundle.pdf suncorp_bundle.pdf whatsapp_chat.txt --hint "vehicle ownership"
+# → Provides analysis of each document with clear source headers
 
-# Or general document analysis
-litassist digest financial_records.pdf --mode summary
-# → Chronological summary of financial events
+# Or general document analysis of a directory
+litassist digest evidence/*.pdf --mode issues
+# → Issue-spotting across all evidence files
 ```
 
 #### The Wrong Approach:

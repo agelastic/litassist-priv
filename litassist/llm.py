@@ -921,7 +921,9 @@ class LLMClient:
             elif "grok" in self.model.lower():
                 params[token_param] = 8192  # Increased for full document verification
             else:
-                params[token_param] = 8192  # Default verification limit for full documents
+                params[token_param] = (
+                    8192  # Default verification limit for full documents
+                )
 
         # Use the complete method which handles o3-pro properly
         verification_result, usage = self.complete(
@@ -1212,7 +1214,7 @@ class LLMClient:
             if "google/gemini" in self.model.lower():
                 params[token_param] = 8192
             elif "anthropic/claude" in self.model.lower():
-                params[token_param] = 16384 if level == "heavy" else 8192
+                params[token_param] = 16384 if level == "heavy" else 16384
             elif "openai/gpt-4" in self.model.lower():
                 params[token_param] = 8192
             elif self.model == "openai/o3-pro":
