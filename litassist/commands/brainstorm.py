@@ -20,7 +20,6 @@ from litassist.utils import (
     timed,
     OUTPUT_DIR,
     create_reasoning_prompt,
-    extract_reasoning_trace,
     parse_strategies_file,
     validate_side_area_combination,
     validate_file_size_limit,
@@ -464,41 +463,16 @@ Please provide output in EXACTLY this format:
     # Always verify brainstorm outputs
     try:
         # Use medium verification for creative brainstorming
-        correction = analysis_client.verify_with_level(combined_content, "medium")
+        correction = analysis_client.verify(combined_content)
 
         # The verification model returns the full, corrected text.
         # We should replace the content, not append to it.
         if correction.strip() and not correction.lower().startswith(
             "no corrections needed"
         ):
-            # Parse the verification output to extract only the corrected document
-            # The output format is:
-            # ## Issues Found during Verification
-            # ...
-            # ---
-            # ## Verified and Corrected Document
-            # [actual content]
-
-            if "## Verified and Corrected Document" in correction:
-                # Extract only the corrected document portion
-                parts = correction.split("## Verified and Corrected Document")
-                if len(parts) > 1:
-                    corrected_content = parts[1].strip()
-                    # Remove any leading system instructions that might have leaked
-                    lines = corrected_content.split("\n")
-                    filtered_lines = []
-                    for line in lines:
-                        # Skip lines that are clearly system instructions
-                        if line.strip().startswith("Australian law only."):
-                            continue
-                        filtered_lines.append(line)
-                    combined_content = "\n".join(filtered_lines).strip()
-                else:
-                    # Fallback if parsing fails
-                    combined_content = correction
-            else:
-                # Fallback if expected format not found
-                combined_content = correction
+            # Trust the well-prompted LLM to return the correct format
+            # Following CLAUDE.md: "minimize local parsing through better prompt engineering"
+            combined_content = correction
 
             verification_notes.append(
                 "--- Strategic Review Applied ---\nContent was updated based on verification."
@@ -515,20 +489,10 @@ Please provide output in EXACTLY this format:
     except Exception as e:
         raise click.ClickException(f"Verification error during brainstorming: {e}")
 
-    # Extract separate reasoning traces for each section
-    orthodox_trace = extract_reasoning_trace(orthodox_content, "brainstorm-orthodox")
-    unorthodox_trace = extract_reasoning_trace(
-        unorthodox_content, "brainstorm-unorthodox"
-    )
-    analysis_trace = extract_reasoning_trace(analysis_content, "brainstorm-analysis")
-
-    # Keep reasoning traces in main content (they're also saved separately)
-    clean_content = combined_content
-
-    # Save to timestamped file only
+    # Save to timestamped file only (reasoning traces remain inline in the content)
     output_file = save_command_output(
         f"brainstorm_{area}_{side}",
-        clean_content,
+        combined_content,
         f"{side} in {area} law",
         metadata={
             "Side": side.capitalize(),
@@ -536,46 +500,6 @@ Please provide output in EXACTLY this format:
             "Source": facts_file,
         },
     )
-
-    # Save separate reasoning traces if extracted
-    reasoning_files = []
-
-    if orthodox_trace:
-        orthodox_reasoning_file = output_file.replace(".txt", "_orthodox_reasoning.txt")
-        with open(orthodox_reasoning_file, "w", encoding="utf-8") as f:
-            f.write("# ORTHODOX STRATEGIES - REASONING TRACE\n")
-            f.write(f"# Generated: {time.strftime('%Y-%m-%d %H:%M:%S')}\n")
-            f.write("# Command: brainstorm-orthodox\n\n")
-            f.write(orthodox_trace.to_markdown())
-        reasoning_files.append(("Orthodox", orthodox_reasoning_file))
-
-    if unorthodox_trace:
-        unorthodox_reasoning_file = output_file.replace(
-            ".txt", "_unorthodox_reasoning.txt"
-        )
-        with open(unorthodox_reasoning_file, "w", encoding="utf-8") as f:
-            f.write("# UNORTHODOX STRATEGIES - REASONING TRACE\n")
-            f.write(f"# Generated: {time.strftime('%Y-%m-%d %H:%M:%S')}\n")
-            f.write("# Command: brainstorm-unorthodox\n\n")
-            f.write(unorthodox_trace.to_markdown())
-        reasoning_files.append(("Unorthodox", unorthodox_reasoning_file))
-
-    if analysis_trace:
-        analysis_reasoning_file = output_file.replace(".txt", "_analysis_reasoning.txt")
-        with open(analysis_reasoning_file, "w", encoding="utf-8") as f:
-            f.write("# MOST LIKELY TO SUCCEED - REASONING TRACE\n")
-            f.write(f"# Generated: {time.strftime('%Y-%m-%d %H:%M:%S')}\n")
-            f.write("# Command: brainstorm-analysis\n\n")
-            f.write(analysis_trace.to_markdown())
-        reasoning_files.append(("Most Likely Analysis", analysis_reasoning_file))
-
-    # Report reasoning files
-    if reasoning_files:
-        click.echo("\n📝 Reasoning traces saved:")
-        for trace_type, file_path in reasoning_files:
-            click.echo(f'   {trace_type}: "{file_path}"')
-    else:
-        click.echo("\n📝 No reasoning traces extracted from this generation")
 
     click.echo(
         "\nTo use these strategies with other commands, manually create or update strategies.txt"

@@ -967,10 +967,10 @@ def verify_content_if_needed(
     if needs_verification:
         try:
             # Use appropriate verification level based on command
-            verification_level = (
-                "heavy" if command_name in ["strategy", "draft"] else "medium"
-            )
-            correction = client.verify_with_level(content, verification_level)
+            if command_name in ["strategy", "draft"]:
+                correction = client.verify_with_level(content, "heavy")
+            else:
+                correction = client.verify(content)
 
             if correction.strip() and not correction.lower().startswith(
                 "no corrections needed"

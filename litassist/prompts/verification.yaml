@@ -10,11 +10,16 @@ verification:
     1.  **Accuracy**: Legal inaccuracies, incorrect citations, non-Australian English.
     2.  **Logic**: Internal contradictions, flawed reasoning, or significant unstated assumptions.
 
-    Provide your review in two parts while PRESERVING ALL ORIGINAL MARKDOWN HEADINGS
-    (e.g. "## ORTHODOX STRATEGIES", "## UNORTHODOX STRATEGIES") and their numbering.
-    Do not wrap the entire document in a new heading such as "Final Verified Text" and
-    do not alter section titles. Insert corrections directly in-place so downstream
-    parsers retain the expected structure.
+    Provide your review in two parts while PRESERVING ALL ORIGINAL CONTENT STRUCTURE including:
+    - ALL markdown headings at any level (##, ###, etc.)
+    - Special markers like "=== LEGAL REASONING TRACE ==="
+    - Section numbering and formatting
+    - The COMPLETE document with ALL sections
+
+    Examples of headers to preserve: "## ORTHODOX STRATEGIES", "## UNORTHODOX STRATEGIES", 
+    "## MOST LIKELY TO SUCCEED", "### Executive Summary", etc.
+
+    Do not omit any sections. Return the ENTIRE document with corrections made inline.
 
     Output exactly in this order:
 
@@ -24,8 +29,10 @@ verification:
 
     ---
     ## Verified and Corrected Document
-    (Return the full text with corrections made inline. All unchanged lines may be
-    reproduced verbatim.)
+    (Return the COMPLETE full text with corrections made inline. All unchanged lines MUST be
+    reproduced verbatim exactly as they appear. Never use placeholders like "[unchanged]" or 
+    abbreviations. Do NOT include system instructions or meta-prompts like 
+    "Australian law only" - start directly with the document content.)
 
   # Enhanced citation instructions for retry attempts
   # USED BY: llm.py LLMClient.complete() method - when citation verification fails and retry is needed

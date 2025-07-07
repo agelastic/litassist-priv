@@ -911,17 +911,17 @@ class LLMClient:
             token_param = "max_completion_tokens" if is_o3_pro else "max_tokens"
 
             if "google/gemini" in self.model.lower():
-                params[token_param] = 1024  # Concise verification for Gemini
+                params[token_param] = 8192  # Increased for full document verification
             elif "anthropic/claude" in self.model.lower():
-                params[token_param] = 1536  # Claude verification
+                params[token_param] = 16384  # Increased for full document verification
             elif "openai/gpt-4" in self.model.lower():
-                params[token_param] = 1024  # GPT-4 verification
+                params[token_param] = 8192  # Increased for full document verification
             elif self.model == "openai/o3-pro":
-                params[token_param] = 1024  # o3-pro verification
+                params[token_param] = 16384  # Increased for full document verification
             elif "grok" in self.model.lower():
-                params[token_param] = 800  # Tighter limit for Grok
+                params[token_param] = 8192  # Increased for full document verification
             else:
-                params[token_param] = 1024  # Default verification limit
+                params[token_param] = 8192  # Default verification limit for full documents
 
         # Use the complete method which handles o3-pro properly
         verification_result, usage = self.complete(
@@ -1148,7 +1148,8 @@ class LLMClient:
 
         Args:
             primary_text: Text to verify
-            level: Verification depth - "light", "medium", or "heavy"
+            level: Verification depth - "light" (spelling only) or "heavy" (comprehensive)
+                  Any other value defaults to standard verification
 
         Returns:
             Verification feedback
@@ -1191,8 +1192,9 @@ class LLMClient:
                     "content": primary_text + "\n\n" + heavy_verification,
                 },
             ]
-        else:  # medium (default)
-            # Standard verification
+        else:
+            # For any other level, use standard verification
+            # This maintains backward compatibility
             return self.verify(primary_text)
 
         # Use same verification logic with custom prompts
@@ -1208,17 +1210,17 @@ class LLMClient:
             token_param = "max_completion_tokens" if is_o3_pro else "max_tokens"
 
             if "google/gemini" in self.model.lower():
-                params[token_param] = 1024
+                params[token_param] = 8192
             elif "anthropic/claude" in self.model.lower():
-                params[token_param] = 1536 if level == "heavy" else 1024
+                params[token_param] = 16384 if level == "heavy" else 8192
             elif "openai/gpt-4" in self.model.lower():
-                params[token_param] = 1024
+                params[token_param] = 8192
             elif self.model == "openai/o3-pro":
-                params[token_param] = 1024
+                params[token_param] = 16384
             elif "grok" in self.model.lower():
-                params[token_param] = 800
+                params[token_param] = 8192
             else:
-                params[token_param] = 1024
+                params[token_param] = 8192
 
         # Use the complete method which handles o3-pro properly
         verification_result, usage = self.complete(
