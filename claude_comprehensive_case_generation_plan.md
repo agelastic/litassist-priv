@@ -9,17 +9,29 @@ litassist brainstorm case_facts.txt --side plaintiff --area civil
 
 ## PHASE 2: EXTRACT FACTS FROM SOURCE DOCUMENTS
 Extract structured facts from all PDF documents in the case bundle with a single command:
+
+**⚠️ IMPORTANT FILE SIZE LIMIT**: Each file must be under 1MB (1,000,000 characters). Large files like WhatsApp chat logs should be processed with `digest` instead.
+
 ```bash
-# Process all PDFs together into one consolidated fact sheet
-litassist extractfacts "/Users/witt/Desktop/litassist/Car Docs for civil case 2025"/*.pdf
+# Process PDFs and case_facts together (if under 1MB each)
+litassist extractfacts case_facts.txt *.pdf
 
-# Or specify individual files if needed
-litassist extractfacts "/Users/witt/Desktop/litassist/Car Docs for civil case 2025/car_bundle.pdf" "/Users/witt/Desktop/litassist/Car Docs for civil case 2025/suncorp_bundle.pdf"
-
-# Or mix case_facts.txt with PDFs to consolidate everything
-litassist extractfacts case_facts.txt "/Users/witt/Desktop/litassist/Car Docs for civil case 2025"/*.pdf
+# For large files like WhatsApp logs, use digest separately
+litassist digest whatsapp_chat_log.txt --mode summary --hint "vehicle ownership gift discussions money transfers"
 ```
-Note: extractfacts now accepts multiple files and creates a single consolidated fact sheet with the 10 required headings from all sources.
+
+### Recommended Approach for Mixed Document Types:
+```bash
+# Step 1: Extract facts from structured documents
+litassist extractfacts case_facts.txt car_bundle.pdf suncorp_bundle.pdf
+
+# Step 2: Digest large/conversational files separately  
+litassist digest whatsapp_chat_log.txt --mode issues --hint "gift intent ownership discussions"
+
+# Step 3: Manually incorporate key findings from digest into case_facts.txt if needed
+```
+
+Note: extractfacts creates structured 10-heading output ideal for legal commands, while digest handles large unstructured content better.
 
 ## PHASE 3: EXTENSIVE CASE LAW RESEARCH (15+ research files)
 
@@ -68,26 +80,38 @@ litassist lookup "detinue conversion motor vehicle remedies" --extract checklist
 ## PHASE 4: DIGEST DOCUMENTS (create summaries and issue spotting)
 ```bash
 # Process all PDFs and text files in the directory
-litassist digest stuff/*.pdf stuff/whatsapp_chat.txt --mode summary
-litassist digest stuff/*.pdf stuff/whatsapp_chat.txt --mode issues --hint "ownership gift presumption advancement"
+litassist digest *.pdf whatsapp_chat.txt --mode summary
+litassist digest *.pdf whatsapp_chat.txt --mode issues --hint "ownership gift presumption advancement"
 
 # Or process specific files
-litassist digest stuff/car_bundle.pdf stuff/suncorp_bundle.pdf stuff/whatsapp_chat.txt --mode summary
+litassist digest car_bundle.pdf suncorp_bundle.pdf whatsapp_chat.txt --mode summary
 ```
 Note: digest now accepts multiple files and creates a consolidated digest with clear source attribution for each document.
 
 ## PHASE 5: RESEARCH-INFORMED BRAINSTORMING (with lookup results)
 After completing extensive case law research, run brainstorm again with research context:
+
+### 🎯 RECOMMENDED for Osipov v Wong case:
 ```bash
-# Run brainstorm with all lookup research files to generate research-grounded strategies
+# Use selective research themes focusing on core legal theories
+litassist brainstorm case_facts.txt --side plaintiff --area civil --research outputs/lookup_*gift*.txt --research outputs/lookup_*presumption*.txt --research outputs/lookup_*constructive*.txt
+```
+
+**Why this approach is best:**
+- Focuses on the three core legal theories: gift elements, presumption of advancement, and constructive trust
+- Avoids information overload from procedural/peripheral research
+- Keeps strategies targeted on strongest arguments
+- Prevents token limit issues
+
+### Alternative approaches (less recommended):
+```bash
+# Option 2: Use ALL research (may be too broad)
 litassist brainstorm case_facts.txt --side plaintiff --area civil --research outputs/lookup_*.txt
 
-# Or be selective with specific research themes
-litassist brainstorm case_facts.txt --side plaintiff --area civil --research outputs/lookup_*gift*.txt --research outputs/lookup_*presumption*.txt --research outputs/lookup_*constructive*.txt
-
-# Or use the extracted facts if available
-litassist brainstorm outputs/extractfacts_*.txt --side plaintiff --area civil --research outputs/lookup_*.txt
+# Option 3: Use extracted facts with selective research
+litassist brainstorm outputs/extractfacts_*.txt --side plaintiff --area civil --research outputs/lookup_*gift*.txt --research outputs/lookup_*presumption*.txt --research outputs/lookup_*constructive*.txt
 ```
+
 Note: The --research flag enriches orthodox strategies with case law precedents while maintaining creative unorthodox strategies. This creates a second brainstorm output that combines early creativity with later research insights.
 
 ## PHASE 6: COUNSEL NOTES (from multiple sources)
@@ -245,8 +269,26 @@ The dual brainstorming approach (Phase 1 and Phase 5) ensures:
 
 ## Key Commands and Their Input Capabilities
 - `extractfacts`: NOW accepts multiple files - consolidates into single fact sheet (IMPROVED!)
+  - ⚠️ Each file must be under 1MB limit
 - `digest`: NOW accepts multiple files - creates consolidated digest with source attribution (IMPROVED!)
+  - Better for large files and unstructured content
 - `strategy`: Only accepts 1 case facts file + 1 optional strategies file (LIMITED)
 - `counselnotes`: Accepts multiple files (GOOD for synthesis)
 - `barbrief`: Accepts case facts + strategies + multiple research files via --research flag
 - `draft`: Accepts unlimited files with RAG support (BEST for final integration)
+
+## Common Issues and Solutions
+
+### File Too Large Error
+**Problem**: "Source file too large (X characters). Please provide a file under 1,000,000 characters."
+
+**Solution**: 
+1. Use `digest` instead of `extractfacts` for large files
+2. Split large files into smaller chunks
+3. Extract only relevant portions of chat logs/correspondence
+
+### Handling Mixed Document Types
+**Best Practice**:
+- Structured legal documents (contracts, affidavits) → `extractfacts`
+- Large conversational files (WhatsApp, emails) → `digest` with `--hint`
+- Combine insights manually in case_facts.txt
