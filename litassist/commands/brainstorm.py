@@ -61,7 +61,7 @@ def regenerate_bad_strategies(
     # This pattern finds all numbered list items (e.g., "1. Strategy Title...")
     # and treats each one as a separate strategy.
     # Remove any section headers before processing
-    original_content = re.sub(r'^##\s+\w+\s+STRATEGIES\s*\n+', '', original_content.strip())
+    original_content = re.sub(r'##\s+\w+\s+STRATEGIES\s*\n+', '', original_content.strip())
     strategies = re.split(r"\n(?=\d+\.\s+)", original_content.strip())
     # The first item might be a header, so filter it out if it doesn't start with a number
     strategies = [s.strip() for s in strategies if re.match(r"^\d+\.", s.strip())]
@@ -118,7 +118,8 @@ def regenerate_bad_strategies(
 Generate ONLY strategy #{strategy_num} in the exact format:
 
 {strategy_num}. [Strategy Title]
-[Strategy content...]
+[Detailed explanation including implementation approach, anticipated challenges, and supporting precedents - aim for 3-5 paragraphs that thoroughly explore the strategy]
+Key principles: [Comprehensive legal principles or precedents with full case citations and pinpoint references]
 """
 
             try:
@@ -138,6 +139,8 @@ Generate ONLY strategy #{strategy_num} in the exact format:
                     click.echo(
                         f"    ✅ Strategy {strategy_num}: Successfully regenerated with clean citations"
                     )
+                    # Strip any headers from the regenerated strategy
+                    new_strategy = re.sub(r'##\s+\w+\s+STRATEGIES\s*\n+', '', new_strategy.strip())
                     strategy_results[strategy_num] = new_strategy
 
             except Exception as e:
@@ -273,14 +276,14 @@ Please provide output in EXACTLY this format:
 ## ORTHODOX STRATEGIES
 
 1. [Strategy Title]
-   [Brief explanation (1-2 sentences)]
-   Key principles: [Legal principles or precedents with citations]
+   [Detailed explanation including implementation approach, anticipated challenges, and supporting precedents - aim for 3-5 paragraphs that thoroughly explore the strategy]
+   Key principles: [Comprehensive legal principles or precedents with full case citations and pinpoint references]
 
 2. [Strategy Title]
-   [Brief explanation]
-   Key principles: [Legal principles with citations]
+   [Detailed explanation with same depth as above]
+   Key principles: [Comprehensive legal principles with full citations]
 
-[Continue for 10 orthodox strategies]"""
+[Continue for 10 orthodox strategies with similar detail]"""
 
     # Add reasoning trace to orthodox prompt
     orthodox_prompt = create_reasoning_prompt(
@@ -338,14 +341,14 @@ Please provide output in EXACTLY this format:
 ## UNORTHODOX STRATEGIES
 
 1. [Strategy Title]
-   [Brief explanation (1-2 sentences)]
-   Key principles: [Legal principles or novel arguments]
+   [Detailed explanation exploring the creative approach, implementation pathway, potential obstacles, and transformative impact - aim for 3-5 paragraphs that fully develop the innovative strategy]
+   Key principles: [Comprehensive legal principles or novel arguments with supporting authorities and creative interpretations]
 
 2. [Strategy Title]
-   [Brief explanation]
-   Key principles: [Legal principles or innovative theories]
+   [Detailed explanation with same depth as above]
+   Key principles: [Comprehensive legal principles or innovative theories with full analysis]
 
-[Continue for 10 unorthodox strategies]"""
+[Continue for 10 unorthodox strategies with similar detail]"""
 
     # Add reasoning trace to unorthodox prompt
     unorthodox_prompt = create_reasoning_prompt(
@@ -594,7 +597,7 @@ Please provide output in EXACTLY this format:
     save_log(
         "brainstorm",
         {
-            "inputs": {"facts_file": facts_file, "method": "three-stage approach"},
+            "inputs": {"facts_file": facts_file},
             "params": "verify=True (auto-enabled for Grok), orthodox_temp=0.3, unorthodox_temp=0.9, analysis_temp=0.4",
             "response": combined_content,  # Log the final, verified content
             "usage": usage,
