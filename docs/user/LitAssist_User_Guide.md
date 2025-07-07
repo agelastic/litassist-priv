@@ -818,8 +818,14 @@ The `extractfacts` command processes a document to extract relevant case facts a
 ### Command
 
 ```bash
+# Single file
 ./litassist.py extractfacts <file>
+
+# Multiple files (July 2025 Update)
+./litassist.py extractfacts file1.pdf file2.txt file3.pdf
 ```
+
+**Multiple Files Support**: As of July 2025, extractfacts accepts multiple input files. All files are combined with clear source attribution before processing, enabling comprehensive fact extraction from document sets in a single run.
 
 **Note:** This command includes automatic verification for accuracy and completeness - no additional flag needed. The --verify flag is ignored as verification is mandatory for this foundational command.
 
@@ -869,7 +875,11 @@ The `extractfacts` command is specifically designed for legal documents and forc
 Now we need to create a structured fact sheet for the *Smith v Jones* case:
 
 ```bash
+# Single document extraction
 ./litassist.py extractfacts examples/smith_jones_file.pdf
+
+# Multiple document extraction (combines all sources)
+./litassist.py extractfacts examples/smith_jones_file.pdf examples/medical_report.pdf examples/financial_records.txt
 ```
 
 **Output Example**:

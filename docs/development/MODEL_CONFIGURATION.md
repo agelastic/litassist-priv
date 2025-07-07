@@ -1,6 +1,6 @@
 # LitAssist Model Configuration Guide
 
-**Last Updated**: January 7, 2025
+**Last Updated**: July 7, 2025
 
 ## Overview
 
@@ -15,7 +15,7 @@ LitAssist uses multiple specialized LLM models optimized for different legal tas
 | **lookup** | `google/gemini-2.5-pro-preview` | Rapid case law research | temperature: 0.1, top_p: 0.2 |
 | **digest** | `anthropic/claude-sonnet-4` | Document processing & summarization | temperature: 0 (summary) or 0.2 (issues) |
 | **extractfacts** | `anthropic/claude-sonnet-4` | Structured fact extraction | temperature: 0, top_p: 0.15 |
-| **brainstorm** | `x-ai/grok-3-beta` | Creative strategy generation | temperature: 0.9, top_p: 0.95 |
+| **brainstorm** | `x-ai/grok-3` | Creative strategy generation | temperature: 0.9, top_p: 0.95 |
 | **brainstorm** (analysis) | `anthropic/claude-sonnet-4` | Strategy analysis & ranking | temperature: 0.2, top_p: 0.8 |
 | **strategy** | `openai/o3-pro` | Strategic planning & analysis | max_completion_tokens: varies, reasoning_effort: varies |
 | **draft** | `openai/o3-pro` | Legal document drafting | max_completion_tokens: 4096, reasoning_effort: medium |
@@ -71,7 +71,7 @@ MODEL_CONFIGS = {
     "lookup": "google/gemini-2.5-pro-preview",
     "digest": "anthropic/claude-sonnet-4",
     "extractfacts": "anthropic/claude-sonnet-4",
-    "brainstorm": "x-ai/grok-3-beta",
+    "brainstorm": "x-ai/grok-3",
     "brainstorm-analysis": "anthropic/claude-sonnet-4",
     "strategy": "openai/o3-pro",
     "draft": "openai/o3-pro",
@@ -86,7 +86,7 @@ Models can be overridden via environment variables:
 export ANTHROPIC_MODEL="anthropic/claude-sonnet-4"
 export OPENAI_MODEL="openai/o3-pro"
 export GOOGLE_MODEL="google/gemini-2.5-pro-preview"
-export XGROK_MODEL="x-ai/grok-3-beta"
+export XGROK_MODEL="x-ai/grok-3"
 ```
 
 ### OpenRouter Configuration
@@ -132,20 +132,28 @@ openai:
 
 ## Token Limits & Configuration
 
-### Conservative Token Limits (when enabled)
+### Generation Token Limits (July 2025 Update)
 
-| Model | Max Tokens | Conservative Limit |
-|-------|------------|-------------------|
-| `google/gemini-*` | 8192 | 2048 |
-| `anthropic/claude-*` | 4096 | 1536 |
-| `openai/gpt-4*` | 4096 | 3072 |
-| `openai/o3-pro` | Uses max_completion_tokens | N/A |
-| `x-ai/grok-*` | 4096 | 1536 |
+All models now use increased token limits for better output quality:
+
+| Model | Generation Limit | Verification Limit |
+|-------|-----------------|-------------------|
+| `google/gemini-*` | 32768 | 8192 |
+| `anthropic/claude-*` | 32768 | 16384 (heavy) / 8192 (standard) |
+| `openai/gpt-4*` | 32768 | 8192 |
+| `openai/o3-pro` | 32768 (max_completion_tokens) | 16384 |
+| `x-ai/grok-*` | 32768 | 8192 |
+
+### Verification Token Limits (July 2025)
+
+Verification limits were increased significantly to handle full document verification:
+- **Previous limits**: 800-1536 tokens (caused truncation)
+- **New limits**: 8192-16384 tokens (preserves full documents)
 
 ### Configuration
 ```yaml
 llm:
-  use_token_limits: false  # Default: let models use natural limits
+  use_token_limits: true  # Enforces model-specific token limits
 ```
 
 ## Dynamic Parameter System

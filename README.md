@@ -192,8 +192,13 @@ Global options:
 
 3. **extractfacts** - Extract structured case facts from documents
    ```bash
+   # Single file
    ./litassist.py extractfacts document.pdf
-   # Creates: extractfacts_document_YYYYMMDD_HHMMSS.txt
+   
+   # Multiple files (July 2025)
+   ./litassist.py extractfacts file1.pdf file2.txt file3.pdf
+   
+   # Creates: extractfacts_[combined_slugs]_YYYYMMDD_HHMMSS.txt
    # Note: case_facts.txt must be created or edited manually
    ```
 

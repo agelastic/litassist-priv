@@ -34,6 +34,7 @@
 - Add thinking trace logging system
 - Integrate o3-pro coding standards
 - Adopt Jules framework for test instrumentation
+- **Refactor verify_with_level (Option B)**: Replace with boolean parameter `verify(content, comprehensive=False)` where comprehensive=True uses heavy verification prompt and comprehensive=False uses standard verification. This simplifies the API and removes the unused "light" level and redundant "medium" wrapper. See plan details from 2025-07-07.
 
 ### Next Steps 🚀
 1. Commit `memory-bank/` directory and its files

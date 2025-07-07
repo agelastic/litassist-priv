@@ -1,12 +1,29 @@
 # Active Context
 
 ## Current Work Focus
-- **Barbrief Feature Branch**: Currently on `feature/barbrief-command` branch - COMPLETED AND READY FOR MERGE
-- **Latest Implementation**: Barbrief command for comprehensive barrister's briefs - FULLY IMPLEMENTED
-- **Memory Bank Maintenance**: Updating Memory Bank with barbrief implementation details
-- **Feature Complete**: Barbrief command tested and documented, ready for integration
+- **Verification System Fixes**: Critical fixes to preserve full document content during verification
+- **Token Limit Improvements**: Increased verification limits to handle full brainstorm outputs
+- **Code Simplification**: Removed redundant verify_with_level usage and local parsing
+- **Memory Bank Maintenance**: Documenting all recent updates and improvements
 
-**Latest update (7 January 2025):**
+**Latest update (7 July 2025 - Verification System):**
+- FIXED: Missing "MOST LIKELY TO SUCCEED" section in brainstorm outputs
+- FIXED: System instructions bleeding into verified content ("Australian law only...")
+- FIXED: Content truncation due to low token limits (800-1536 → 8192-16384)
+- REMOVED: ~25 lines of local parsing in brainstorm.py - trust LLM output
+- SIMPLIFIED: verify_with_level now only used for "heavy" verification
+- UPDATED: Prompt templates to preserve ALL sections and prevent instruction bleeding
+- PRINCIPLE: Following CLAUDE.md - "minimize local parsing through better prompt engineering"
+
+**Recent updates (6-7 July 2025):**
+- ENHANCED: Strategy generation with 3-5 paragraphs per strategy (was 2-3 sentences)
+- ADDED: Multiple input file support for extractfacts command
+- UPDATED: Grok model to x-ai/grok-3
+- INCREASED: Token limits to 32k for all generation models
+- CONVENTION: Claude-generated files now prefixed with claude_
+- CHANGED: Claude files no longer ignored by git
+
+**Previous update (7 January 2025 - Barbrief):**
 - COMPLETED: Barbrief command implementation for comprehensive barrister's briefs
 - IMPLEMENTED: Full command structure with 10-section brief format
 - FIXED: Critical bugs resolved during final testing:
