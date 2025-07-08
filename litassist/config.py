@@ -142,14 +142,14 @@ class Config:
 
             # Extract optional LLM settings with defaults
             self.use_token_limits = self.cfg.get("llm", {}).get(
-                "use_token_limits", False
+                "use_token_limits", True
             )
 
             # Extract optional general settings with defaults
             self.heartbeat_interval = self.cfg.get("general", {}).get(
                 "heartbeat_interval", 10
             )
-            self.max_chars = self.cfg.get("general", {}).get("max_chars", 20000)
+            self.max_chars = self.cfg.get("general", {}).get("max_chars", 200000)
             self.rag_max_chars = self.cfg.get("general", {}).get("rag_max_chars", 8000)
             self.log_format = self.cfg.get("general", {}).get("log_format", "json")
 

@@ -269,7 +269,7 @@ Key configuration options in the `general` section:
 ```yaml
 general:
   heartbeat_interval: 10    # Progress indicator interval in seconds (default: 10)
-  max_chars: 20000          # Maximum characters per chunk for document processing (default: 20000)
+  max_chars: 200000         # Maximum characters per chunk for document processing (default: 200000, ~50K tokens)
   rag_max_chars: 8000       # Maximum characters per chunk for RAG retrieval (default: 8000)
   log_format: "json"        # Format for audit logs: "json" or "markdown" (default: json)
 ```
@@ -2733,21 +2733,22 @@ Without BYOK setup, the strategy, draft, and barbrief commands will fail with au
 
 ### Token Limits
 
-When `use_token_limits: false` (default), models use their default token limits (typically 4096+).
+When `use_token_limits: false`, models use their API default token limits (typically ~4096 tokens).
 
-When `use_token_limits: true` in the `llm` section of config.yaml, LitAssist applies conservative token limits:
+When `use_token_limits: true` (default as of July 2025), LitAssist applies generous token limits:
 
 | Model | Completion Tokens | Verification Tokens |
 |-------|-------------------|---------------------|
-| `google/gemini-*` | 2048 | 1024 |
-| `anthropic/claude-*` | 4096 | 1536 |
-| `openai/gpt-4*` | 3072 | 1024 |
-| `x-ai/grok-*` | 1536 | 800 |
-| Others | 2048 | 1024 |
+| `google/gemini-*` | 32768 | 16384 |
+| `anthropic/claude-*` | 32768 | 16384 |
+| `openai/gpt-4*` | 32768 | 16384 |
+| `x-ai/grok-*` | 32768 | 16384 |
+| `openai/o3-pro` | 32768 | 16384 |
+| Others | 32768 | 16384 |
 
-These limits balance comprehensive responses with model reliability and cost control.
+These generous limits ensure comprehensive responses for complex legal analysis (updated July 2025).
 
-**Note**: Token limits are not directly configurable. You can only enable/disable the conservative limits via `use_token_limits`. Custom token limits would require modifying the source code.
+**Note**: Token limits are not directly configurable. You can only enable/disable these limits via `use_token_limits`. The default is now `true` to ensure complete outputs. Custom token limits would require modifying the source code.
 
 ### Document Chunking vs Token Limits
 
@@ -2759,7 +2760,7 @@ Controls how large documents are split before sending to the AI:
 
 ```yaml
 general:
-  max_chars: 20000       # For digest/extractfacts (default: 20000 ≈ 4000 words)
+  max_chars: 200000      # For digest/extractfacts (default: 200000 ≈ 40,000 words)
   rag_max_chars: 8000    # For draft embeddings (default: 8000 ≈ 1600 words)
 ```
 
@@ -2769,7 +2770,7 @@ general:
 - `draft`: Creates separate embeddings for each chunk in Pinecone
 
 **Example with 100-page PDF:**
-- With `max_chars: 20000`: Creates ~15-20 chunks
+- With `max_chars: 200000`: Creates ~2-3 chunks
 - With `max_chars: 10000`: Creates ~30-40 chunks (more API calls, more focused processing)
 
 #### 2. Token Limits (Output Generation)
@@ -2778,11 +2779,11 @@ Controls how much text the AI can generate in responses:
 
 ```yaml
 llm:
-  use_token_limits: false    # Default: let models use their natural limits
+  use_token_limits: true     # Default since July 2025: enable 32K token limits for comprehensive outputs
 ```
 
-- `false`: Models use their default limits (usually 4096+ tokens)
-- `true`: Applies conservative limits (1536-4096 tokens depending on model)
+- `false`: Models use their API default limits (typically ~4096 tokens)
+- `true`: Applies generous 32K token limits for all models
 
 **Key differences:**
 | Aspect | Document Chunking | Token Limits |
@@ -2801,8 +2802,8 @@ llm:
 - **Trade-off**: Smaller chunks = more API calls but more focused analysis
 
 **Token Limits (`use_token_limits`):**
-- **Enable** (`true`) if responses are too verbose or meandering
-- **Disable** (`false`) if you need comprehensive, detailed outputs
+- **Enable** (`true`, default) for comprehensive, complete outputs
+- **Disable** (`false`) only if you want to use API default limits (~4K tokens)
 - **Trade-off**: Limited tokens = concise but potentially incomplete responses
 
 ### Customization Notes

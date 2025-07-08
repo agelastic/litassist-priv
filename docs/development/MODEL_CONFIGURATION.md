@@ -153,7 +153,7 @@ Verification limits were increased significantly to handle full document verific
 ### Configuration
 ```yaml
 llm:
-  use_token_limits: true  # Enforces model-specific token limits
+  use_token_limits: true  # Default since July 2025 - enforces 32K token limits for comprehensive outputs
 ```
 
 ## Dynamic Parameter System

@@ -6,7 +6,14 @@
 - **Glob Pattern Support**: Added glob expansion for file patterns in both --facts and --research options
 - **Improved User Experience**: Automatic case_facts.txt detection when no facts files specified
 
-**Latest update (8 July 2025 - Brainstorm Command Enhancement & Verification Fix):**
+**Latest update (8 July 2025 - Token Limit Configuration & Brainstorm Enhancement):**
+- CHANGED: Default use_token_limits from False to True in config.py
+- FIXED: Counselnotes empty output issue caused by low API default token limits
+- UPDATED: All models now use 32K token limits when use_token_limits is enabled
+- UPDATED: Documentation to reflect new default behavior
+- INSIGHT: use_token_limits: false doesn't mean "no limits", it means "API defaults" (~4K)
+
+**Previous update (8 July 2025 - Brainstorm Command Enhancement & Verification Fix):**
 - ADDED: Multiple input files support with --facts option (accepts multiple files)
 - ADDED: Glob pattern support for both --facts and --research options
 - CHANGED: Command syntax from positional argument to --facts option
