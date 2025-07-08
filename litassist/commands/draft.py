@@ -22,6 +22,7 @@ from litassist.utils import (
     save_command_output,
     show_command_completion,
     verify_content_if_needed,
+    detect_factual_hallucinations,
 )
 from litassist.llm import LLMClientFactory
 from litassist.helpers.retriever import Retriever, get_pinecone_client
@@ -238,6 +239,18 @@ def draft(ctx, documents, query, verify, diversity):
     content, needs_verification = verify_content_if_needed(
         client, content, "draft", verify
     )
+    
+    # Check for potential hallucinations
+    hallucination_warnings = detect_factual_hallucinations(content, context)
+    if hallucination_warnings:
+        warning_header = "=== FACTUAL ACCURACY WARNING ===\n"
+        warning_header += "The following potentially hallucinated facts were detected:\n"
+        for warning in hallucination_warnings:
+            warning_header += f"- {warning}\n"
+        warning_header += "\nPlease verify all facts against source documents before use.\n"
+        warning_header += "Replace any invented details with placeholders like [TO BE PROVIDED].\n"
+        warning_header += "=" * 32 + "\n\n"
+        content = warning_header + content
 
     # Save output using utility
     output_file = save_command_output(

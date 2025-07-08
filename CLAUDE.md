@@ -223,6 +223,36 @@ The litassist codebase currently contains extensive local parsing of LLM respons
 
 **Reference**: A comprehensive audit of current parsing patterns exists and should be used as a roadmap for systematic elimination of all local LLM response processing logic.
 
+### Anti-Hallucination Guidelines for Legal Drafts
+
+**CRITICAL**: LLMs must NEVER invent factual details when drafting legal documents. This is essential for professional liability and legal accuracy.
+
+**Core Principles:**
+
+1. **Never Invent Facts**: The LLM must not create ages, dates, addresses, account numbers, or any specific details not in source documents
+   - Wrong: "I am 33 years of age" (if age not provided)
+   - Right: "I am [AGE TO BE PROVIDED] years of age"
+
+2. **Use Clear Placeholders**: For any missing information, use obvious placeholders:
+   - Ages: `[AGE TO BE PROVIDED]`
+   - Addresses: `[ADDRESS TO BE CONFIRMED]`
+   - Dates: `[DATE TO BE CONFIRMED]`
+   - Account numbers: `[ACCOUNT NUMBER - CLIENT TO PROVIDE]`
+   - Document exhibits: `[EXHIBIT A]`, `[EXHIBIT B]` (not specific numbering)
+
+3. **Factual Verification**: The draft command includes hallucination detection that warns about:
+   - Potentially invented ages, addresses, or dates
+   - Specific account or reference numbers not in source
+   - Exhibit references that should be generic placeholders
+
+4. **Template Usage**: The `documents.yaml` witness_statement template demonstrates proper placeholder usage
+
+5. **Prompt Engineering**: The `processing.yaml` draft prompts explicitly instruct:
+   - "NEVER invent or assume facts not explicitly provided"
+   - "It is better to produce an incomplete draft with clear placeholders than to invent plausible details"
+
+**Implementation**: The `detect_factual_hallucinations()` function in `utils.py` automatically scans drafts for common hallucination patterns and adds warnings to the output when detected.
+
 ### Australian Legal Focus
 
 - Always use Australian English spelling (e.g., 'judgement' not 'judgment')
