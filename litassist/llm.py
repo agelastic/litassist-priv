@@ -19,6 +19,17 @@ from litassist.citation_verify import (
     CitationVerificationError,
 )
 
+import tenacity
+import logging
+import requests
+
+try:
+    import aiohttp
+except ImportError:
+    aiohttp = None
+
+logger = logging.getLogger(__name__)
+
 
 # Model family patterns for dynamic parameter handling
 MODEL_PATTERNS = {
@@ -493,6 +504,31 @@ class LLMClient:
 
         self.default_params = default_params
 
+    def _execute_api_call_with_retry(self, model_name, messages, filtered_params):
+        retry_errors = (
+            openai.error.APIConnectionError,
+            requests.exceptions.ConnectionError,
+        )
+        if aiohttp:
+            retry_errors = retry_errors + (
+                aiohttp.ClientConnectionError,
+                aiohttp.ClientPayloadError,
+            )
+
+        @tenacity.retry(
+            stop=tenacity.stop_after_attempt(3),
+            wait=tenacity.wait_exponential(multiplier=0.5, max=10),
+            retry=tenacity.retry_if_exception_type(retry_errors),
+            before_sleep=tenacity.before_sleep_log(logger, logging.WARNING),
+            reraise=True,
+        )
+        def _call():
+            return openai.ChatCompletion.create(
+                model=model_name, messages=messages, **filtered_params
+            )
+
+        return _call()
+
     @timed
     def complete(
         self,
@@ -583,7 +619,6 @@ class LLMClient:
             if self.model.startswith("openai/"):
                 model_name = self.model.replace("openai/", "")
 
-        # Invoke the appropriate API based on model
         try:
             # Filter parameters based on model capabilities
             filtered_params = get_model_parameters(self.model, params)
@@ -599,9 +634,9 @@ class LLMClient:
                 },
             )
 
-            # Use ChatCompletion API
-            response = openai.ChatCompletion.create(
-                model=model_name, messages=messages, **filtered_params
+            # Use ChatCompletion API with retry logic
+            response = self._execute_api_call_with_retry(
+                model_name, messages, filtered_params
             )
 
             # Check for errors in the response

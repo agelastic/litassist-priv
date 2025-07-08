@@ -68,6 +68,63 @@ class TestLLMClient:
 
     @patch("openai.ChatCompletion.create")
     @patch("litassist.llm.CONFIG")
+    def test_llm_client_retry_on_connection_error(self, mock_config, mock_openai):
+        """Test retry logic on connection errors."""
+        mock_config.llm_model = "openai/gpt-4o"
+        mock_config.api_key = "test-key"
+        # Simulate connection error for first 3 attempts, then success
+        call_count = {"count": 0}
+
+        def side_effect(*args, **kwargs):
+            if call_count["count"] < 3:
+                call_count["count"] += 1
+                raise openai.error.APIConnectionError("Simulated connection error")
+            mock_response = Mock()
+            mock_response.choices = [Mock()]
+            mock_response.choices[0].message.content = "Retried response"
+            mock_response.choices[0].error = None
+            mock_response.choices[0].finish_reason = "stop"
+            mock_response.usage = {
+                "prompt_tokens": 10,
+                "completion_tokens": 5,
+                "total_tokens": 15,
+            }
+            return mock_response
+
+        mock_openai.side_effect = side_effect
+
+        client = LLMClient("openai/gpt-4o")
+        messages = [{"role": "user", "content": "Test prompt"}]
+        content, usage = client.complete(messages, skip_citation_verification=True)
+        assert content == "Retried response"
+        assert call_count["count"] == 3
+
+    @patch("openai.ChatCompletion.create")
+    @patch("litassist.llm.CONFIG")
+    def test_llm_client_api_config_restoration(self, mock_config, mock_openai):
+        """Test API config restoration after retries."""
+        mock_config.llm_model = "openai/gpt-4o"
+        mock_config.api_key = "test-key"
+        # Save original config
+        import openai as openai_module
+
+        original_api_base = openai_module.api_base
+        original_api_key = openai_module.api_key
+
+        def side_effect(*args, **kwargs):
+            raise openai.error.APIConnectionError("Simulated connection error")
+
+        mock_openai.side_effect = side_effect
+
+        client = LLMClient("openai/gpt-4o")
+        messages = [{"role": "user", "content": "Test prompt"}]
+        with pytest.raises(openai.error.APIConnectionError):
+            client.complete(messages, skip_citation_verification=True)
+        assert openai_module.api_base == original_api_base
+        assert openai_module.api_key == original_api_key
+
+    @patch("openai.ChatCompletion.create")
+    @patch("litassist.llm.CONFIG")
     def test_llm_client_complete_success(self, mock_config, mock_openai):
         """Test successful LLM completion."""
         # Mock config

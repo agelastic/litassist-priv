@@ -1,6 +1,10 @@
 openrouter:
-  api_key:    "YOUR_OPENROUTER_KEY"
+  api_key:    "sk-or-..."   # Your OpenRouter API key
   api_base:   "https://openrouter.ai/api/v1"    # optional override
+  retries: 3                # Max retry attempts for transient errors
+  min_retry_delay: 0.5      # Initial delay (seconds) before first retry
+  max_retry_delay: 10       # Max delay (seconds) between attempts
+  safety_cutoff: 5          # Circuit breaker disables retries after N failures/hour
 
 openai:
   api_key:          "YOUR_OPENAI_KEY"

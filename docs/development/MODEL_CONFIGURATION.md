@@ -107,6 +107,22 @@ openai:
   api_key: "your-openai-api-key"  # Required for o3-pro BYOK
 ```
 
+## Retry Logic Configuration
+
+| Parameter         | Default | Description                                  |
+|-------------------|---------|----------------------------------------------|
+| retries           | 3       | Maximum connection attempts (1 + retries)    |
+| min_retry_delay   | 0.5s    | Initial delay before first retry             |
+| max_retry_delay   | 10s     | Maximum delay between attempts               |
+| safety_cutoff     | 5       | Circuit breaker disables retries after N failures/hour |
+
+**Safety Guarantees:**
+- Original API configuration is always restored after failures
+- No retries for authentication errors (4xx)
+- Circuit breaker activates after 5 failures/hour
+
+The retry logic is implemented in `litassist/llm.py` using the `tenacity` library. Only transient network errors (connection, timeout) are retried. All retry attempts and failures are logged for audit and debugging.
+
 ## Model Selection Philosophy
 
 ### Task-Optimized Selection
