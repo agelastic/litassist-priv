@@ -18,8 +18,6 @@ from litassist.utils import (
     heartbeat,
     timed,
     create_reasoning_prompt,
-    extract_reasoning_trace,
-    save_reasoning_trace,
     save_command_output,
     show_command_completion,
     verify_content_if_needed,
@@ -282,9 +280,6 @@ def barbrief(
     
     click.echo(f"\nGenerated brief ({usage.get('total_tokens', 'N/A')} tokens used)")
     
-    # Extract and save reasoning trace
-    reasoning_trace = extract_reasoning_trace(content)
-    
     # Run citation verification if requested
     if verify:
         click.echo("\nVerifying citations...")
@@ -311,11 +306,6 @@ def barbrief(
     
     # Save the brief
     output_file = save_command_output("barbrief", content, hearing_type)
-    
-    # Save reasoning trace if we have one
-    if reasoning_trace:
-        reasoning_file = save_reasoning_trace(reasoning_trace, output_file)
-        click.echo(f"Reasoning trace saved: {reasoning_file}")
     
     # Show completion message
     show_command_completion(
