@@ -91,6 +91,11 @@
 - All tests now pass after these changes.
 
 ## Recent Changes
+
+### (July 2025 - API Reliability)
+- Implemented robust API retry logic for LLM calls (3 attempts, exponential backoff)
+- Removed unimplemented safety_cutoff parameter from all configs and docs
+- Added TODO for circuit breaker (AG-124) to TODO.md and codebase
 - **MAJOR COMPLETION (January 7, 2025): Barbrief Command**
   - Complete implementation in `litassist/commands/barbrief.py`
   - Comprehensive barrister's brief generation with 10-section structure
@@ -126,13 +131,37 @@
 - 16 June 2025: Test suite and prompt YAMLs synchronized; all tests for commented-out templates are now commented out in the test code. All tests pass.
 
 ## Next Steps
-1. **Branch Merge**: Merge feature/barbrief-command branch to master (ready for merge)
-2. **Production Deployment**: Deploy barbrief command to production environment
-3. **User Training**: Create tutorial materials for barbrief command usage
-4. **Performance Monitoring**: Track o3-pro model performance and token usage
-5. **Advanced Features**: Custom prompt templates for specialized hearing types
-6. **Integration Enhancement**: Streamline workflow between extractfacts → barbrief
-7. **Memory Bank Maintenance**: Continue systematic updates after major changes
+
+1. **[AG-124][P0] Implement circuit breaker for API retries**  
+   - Add safety_cutoff parameter and logic  
+   - TODO.md: "Implement circuit breaker for API retries"
+
+2. **[EPIC-LLM][P1] Implement advanced LLM prompting improvements**  
+   - IRAC/MIRAT, multi-model consensus, confidence scoring  
+   - TODO.md: "Implement advanced LLM prompting improvements"
+
+3. **[QA][P1] Create OpenRouter validation tests**  
+   - TODO.md: "Develop manual validation scripts for OpenRouter"
+
+4. **[UX][P1] Develop workflow commands**  
+   - TODO.md: "Create compound workflow commands"
+
+5. **[MON][P2] Implement performance benchmarking and monitoring**  
+   - TODO.md: "Automate performance benchmarking and monitoring setup"
+
+6. **[TECH][P2] Add --quality-tier flag and config**  
+   - TODO.md: "Add cost-tracking system and quality-tier command options"
+
+7. **[DEBT][P2] Refactor verify_with_level**  
+   - TODO.md: "Refactor verify_with_level (Option B)"
+
+8. **[MB][P2] Memory Bank Maintenance**  
+   - Continue systematic updates after major changes
+
+(AG- tags and priorities correspond to TODO.md and alignment plan.)
+
+**Note:**  
+As of 8 July 2025, TODO.md is maintained as a flat, unannotated list of pending tasks. The Memory Bank (activeContext.md, progress.md) contains the structured, prioritized, and owner-annotated mapping of these tasks for project management and traceability. For authoritative task status, refer to both TODO.md (raw list) and Memory Bank (detailed plan).
 
 ## Active Decisions & Considerations
 - Strict adherence to Memory Bank hierarchy and .clinerules formatting rules.
