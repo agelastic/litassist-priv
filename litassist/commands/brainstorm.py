@@ -208,7 +208,7 @@ Key principles: [Comprehensive legal principles or precedents with full case cit
     "--research",
     multiple=True,
     type=click.Path(exists=True),
-    help="Optional: One or more lookup report files to inform orthodox strategies (research-informed mode).",
+    help="Optional: Lookup report files to inform orthodox strategies. Use multiple times: --research file1.txt --research file2.txt",
 )
 @timed
 def brainstorm(facts_file, side, area, research):

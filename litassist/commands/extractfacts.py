@@ -16,11 +16,8 @@ from litassist.utils import (
     save_log,
     timed,
     create_reasoning_prompt,
-    extract_reasoning_trace,
-    save_reasoning_trace,
     save_command_output,
     show_command_completion,
-    verify_content_if_needed,
     validate_file_size,
 )
 from litassist.llm import LLMClientFactory
@@ -154,14 +151,18 @@ def extractfacts(file, verify):
     # Note: Citation verification now handled automatically in LLMClient.complete()
 
     # Apply verification (always required for extractfacts)
-    combined, _ = verify_content_if_needed(
-        client, combined, "extractfacts", verify_flag=True
-    )
+    click.echo("🔍 Verifying extracted facts...")
+    try:
+        correction = client.verify(combined)
+        if correction.strip() and not correction.lower().startswith(
+            "no corrections needed"
+        ):
+            # Replace content to preserve structure and reasoning trace
+            combined = correction
+    except Exception as e:
+        raise click.ClickException(f"Verification error during extractfacts: {e}")
 
-    # Extract reasoning trace before saving
-    reasoning_trace = extract_reasoning_trace(combined, "extractfacts")
-
-    # Save output using utility
+    # Save output using utility (reasoning trace remains inline)
     slug = "_".join(source_files[:3])  # Use first 3 files for slug
     if len(source_files) > 3:
         slug += f"_and_{len(source_files)-3}_more"
@@ -180,12 +181,6 @@ def extractfacts(file, verify):
         },
     )
 
-    # Save reasoning trace if extracted
-    extra_files = {}
-    if reasoning_trace:
-        reasoning_file = save_reasoning_trace(reasoning_trace, output_file)
-        extra_files["Reasoning trace"] = reasoning_file
-
     # Show completion
     chunk_desc = f"{len(chunks)} chunks" if len(chunks) > 1 else "single document"
     source_desc = ", ".join(source_files[:3])
@@ -198,5 +193,5 @@ def extractfacts(file, verify):
         "Verification": "Legal accuracy review applied",
     }
 
-    show_command_completion("extractfacts", output_file, extra_files, stats)
+    show_command_completion("extractfacts", output_file, None, stats)
     click.echo("📌 To use with other commands, manually copy to case_facts.txt")
