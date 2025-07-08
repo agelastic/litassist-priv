@@ -9,7 +9,6 @@ tailored to the specified party (plaintiff/defendant) and legal area.
 import click
 import os
 import re
-import time
 import logging
 import glob
 
@@ -19,7 +18,6 @@ from litassist.utils import (
     save_log,
     heartbeat,
     timed,
-    OUTPUT_DIR,
     create_reasoning_prompt,
     parse_strategies_file,
     validate_side_area_combination,
@@ -541,7 +539,6 @@ Please provide output in EXACTLY this format:
 
     # Store content before verification
     usage = total_usage
-    verification_notes = []
 
     # Run verification on all brainstorm outputs
     click.echo("🔍 Verifying brainstorm strategies...")
@@ -560,17 +557,11 @@ Please provide output in EXACTLY this format:
             # Following CLAUDE.md: "minimize local parsing through better prompt engineering"
             combined_content = correction
 
-            verification_notes.append(
-                "--- Strategic Review Applied ---\nContent was updated based on verification."
-            )
-
         # Run citation validation on the potentially corrected content
         citation_issues = analysis_client.validate_citations(combined_content)
         if citation_issues:
-            # Append warnings, but don't modify the content further here
-            verification_notes.append(
-                "--- Citation Warnings ---\n" + "\n".join(citation_issues)
-            )
+            # Citation warnings are shown in console but not saved separately
+            click.echo(f"⚠️  {len(citation_issues)} citation warnings found")
 
     except Exception as e:
         raise click.ClickException(f"Verification error during brainstorming: {e}")
@@ -590,18 +581,6 @@ Please provide output in EXACTLY this format:
     click.echo(
         "\nTo use these strategies with other commands, manually create or update strategies.txt"
     )
-
-    # Save verification notes separately if any exist
-    if verification_notes:
-        timestamp = time.strftime("%Y%m%d_%H%M%S")
-        verification_file = os.path.join(
-            OUTPUT_DIR, f"brainstorm_verification_{area}_{side}_{timestamp}.txt"
-        )
-        with open(verification_file, "w", encoding="utf-8") as f:
-            f.write("# Verification Notes for Strategies\n")
-            f.write(f"# Generated: {time.strftime('%Y-%m-%d %H:%M:%S')}\n\n")
-            f.write("\n\n".join(verification_notes))
-        click.echo(f'Verification notes saved to "{verification_file}"')
 
     # Save comprehensive audit log
     save_log(
@@ -623,8 +602,6 @@ Please provide output in EXACTLY this format:
     # Show summary instead of full content
     click.echo("\n✅ Brainstorm complete!")
     click.echo(f'📄 Strategies saved to: "{output_file}"')
-    if verification_notes:
-        click.echo(f'📋 Verification notes: open "{verification_file}"')
 
     # Parse the actual strategies generated
     parsed_result = parse_strategies_file(combined_content)
