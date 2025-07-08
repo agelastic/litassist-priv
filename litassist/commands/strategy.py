@@ -850,11 +850,7 @@ Focus on:
 
     output_file = save_command_output("strategy", output, outcome, metadata=metadata)
 
-    # Save consolidated reasoning trace if we have option traces
-    if consolidated_reasoning:
-        reasoning_file = output_file.replace(".txt", "_reasoning.txt")
-        with open(reasoning_file, "w", encoding="utf-8") as f:
-            f.write(consolidated_reasoning)
+    # Reasoning trace is embedded in the main output, not saved separately
 
     # Save audit log
     save_log(

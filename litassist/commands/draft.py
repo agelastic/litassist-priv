@@ -19,8 +19,6 @@ from litassist.utils import (
     heartbeat,
     timed,
     create_reasoning_prompt,
-    extract_reasoning_trace,
-    save_reasoning_trace,
     save_command_output,
     show_command_completion,
     verify_content_if_needed,
@@ -241,9 +239,6 @@ def draft(ctx, documents, query, verify, diversity):
         client, content, "draft", verify
     )
 
-    # Extract reasoning trace before saving
-    reasoning_trace = extract_reasoning_trace(content, "draft")
-
     # Save output using utility
     output_file = save_command_output(
         "draft",
@@ -252,11 +247,8 @@ def draft(ctx, documents, query, verify, diversity):
         metadata={"Query": query, "Documents": ", ".join(documents)},
     )
 
-    # Save reasoning trace if extracted
-    extra_files = {}
-    if reasoning_trace:
-        reasoning_file = save_reasoning_trace(reasoning_trace, output_file)
-        extra_files["Reasoning trace"] = reasoning_file
+    # Reasoning trace is embedded in the main output, not saved separately
+    extra_files = None
 
     # Save audit log
     save_log(

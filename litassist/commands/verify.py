@@ -24,7 +24,6 @@ from litassist.utils import (
     read_document,
     create_reasoning_prompt,
     extract_reasoning_trace,
-    save_reasoning_trace,
     LegalReasoningTrace,
 )
 
@@ -147,12 +146,8 @@ def verify(file, citations, soundness, reasoning):
                 click.echo(f"\n✅ Reasoning trace {action}")
                 click.echo("   - IRAC structure complete")
                 click.echo(f"   - Confidence: {existing_trace.confidence}%")
-            verify_base = os.path.join(
-                os.path.dirname(file) or ".", f"verify_{os.path.basename(base_name)}"
-            )
-            reasoning_file = save_reasoning_trace(existing_trace, verify_base)
-            click.echo(f"   - Details: {reasoning_file}")
-            extra_files["Reasoning trace"] = reasoning_file
+            # Reasoning trace is embedded in the main output, not saved separately
+            click.echo("   - Reasoning trace embedded in main output")
             reports_generated += 1
         except Exception as e:
             click.echo(f"\n❌ Reasoning trace verification failed: {e}")
