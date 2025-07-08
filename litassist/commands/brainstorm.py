@@ -11,6 +11,7 @@ import os
 import re
 import time
 import logging
+import glob
 
 from litassist.config import CONFIG
 from litassist.utils import (
@@ -190,8 +191,45 @@ Key principles: [Comprehensive legal principles or precedents with full case cit
         )
 
 
+def expand_glob_patterns(ctx, param, value):
+    """Expand glob patterns in file paths."""
+    if not value:
+        return value
+    
+    expanded_paths = []
+    for pattern in value:
+        # Check if it's a glob pattern (contains *, ?, or [)
+        if any(char in pattern for char in ['*', '?', '[']):
+            # Expand the glob pattern
+            matches = glob.glob(pattern)
+            if not matches:
+                raise click.BadParameter(f"No files matching pattern: {pattern}")
+            expanded_paths.extend(matches)
+        else:
+            # Not a glob pattern, just verify the file exists
+            if not os.path.exists(pattern):
+                raise click.BadParameter(f"File not found: {pattern}")
+            expanded_paths.append(pattern)
+    
+    # Remove duplicates while preserving order
+    seen = set()
+    unique_paths = []
+    for path in expanded_paths:
+        if path not in seen:
+            seen.add(path)
+            unique_paths.append(path)
+    
+    return tuple(unique_paths)
+
+
 @click.command()
-@click.argument("facts_file", type=click.Path(exists=True))
+@click.option(
+    "--facts",
+    multiple=True,
+    type=click.Path(),  # Remove exists=True since we'll check in callback
+    callback=expand_glob_patterns,
+    help="Facts files to analyze. Supports glob patterns. Use multiple times: --facts file1.txt --facts 'case_*.txt'. Defaults to case_facts.txt if it exists.",
+)
 @click.option(
     "--side",
     type=click.Choice(["plaintiff", "defendant", "accused", "respondent"]),
@@ -207,11 +245,12 @@ Key principles: [Comprehensive legal principles or precedents with full case cit
 @click.option(
     "--research",
     multiple=True,
-    type=click.Path(exists=True),
-    help="Optional: Lookup report files to inform orthodox strategies. Use multiple times: --research file1.txt --research file2.txt",
+    type=click.Path(),  # Remove exists=True since we'll check in callback
+    callback=expand_glob_patterns,
+    help="Optional: Lookup report files to inform orthodox strategies. Supports glob patterns. Use multiple times: --research file1.txt --research 'outputs/lookup_*.txt'",
 )
 @timed
-def brainstorm(facts_file, side, area, research):
+def brainstorm(facts, side, area, research):
     """
     Generate comprehensive legal strategies via Grok.
 
@@ -221,23 +260,70 @@ def brainstorm(facts_file, side, area, research):
     - A list of strategies most likely to succeed
 
     All strategies are tailored to your specified party side and legal area.
-    The output is automatically saved to strategies.txt for use in other commands.
+    The output is automatically saved with a timestamp for use in other commands.
 
-    Args:
-        facts_file: Path to a text file containing structured case facts.
-        side: Which side you are representing (plaintiff/defendant/accused/respondent).
-        area: The legal area of the matter (criminal/civil/family/commercial/administrative).
+    Usage:
+        # With default case_facts.txt (if exists in current directory)
+        litassist brainstorm --side plaintiff --area civil
+        
+        # With single facts file
+        litassist brainstorm --facts case_facts.txt --side plaintiff --area civil
+        
+        # With multiple facts files
+        litassist brainstorm --facts facts1.txt --facts facts2.txt --side plaintiff --area civil
+        
+        # With multiple research files
+        litassist brainstorm --side plaintiff --area civil --research lookup1.txt --research lookup2.txt
+        
+        # With glob patterns for research files
+        litassist brainstorm --side plaintiff --area civil --research 'outputs/lookup_*gift*.txt'
     
     Note: Verification is automatically performed on all brainstorm outputs to ensure citation accuracy and legal soundness.
 
     Raises:
-        click.ClickException: If there are errors reading the facts file or with the LLM API call.
+        click.ClickException: If there are errors reading the facts files or with the LLM API call.
     """
     # Check for potentially incompatible side/area combinations
     validate_side_area_combination(side, area)
 
-    # Read the structured facts file
-    facts = read_document(facts_file)
+    # Handle facts files - use default case_facts.txt if no facts provided
+    if not facts:
+        default_facts = "case_facts.txt"
+        if os.path.exists(default_facts):
+            facts = (default_facts,)
+            click.echo(f"Using default facts file: {default_facts}")
+        else:
+            raise click.ClickException(
+                "No facts files provided and case_facts.txt not found in current directory. "
+                "Use --facts to specify one or more facts files."
+            )
+
+    # Combine multiple facts files if provided
+    facts_contents = []
+    facts_sources = []
+    for facts_file in facts:
+        content = read_document(facts_file)
+        facts_contents.append(content)
+        facts_sources.append(facts_file)
+        
+    # Log which facts files are being used
+    if len(facts_sources) == 1:
+        click.echo(f"Using facts from: {facts_sources[0]}")
+    else:
+        click.echo(f"Using facts from {len(facts_sources)} files:")
+        for source in facts_sources:
+            click.echo(f"  • {source}")
+    
+    # Combine facts with source attribution if multiple files
+    if len(facts_contents) == 1:
+        combined_facts = facts_contents[0]
+    else:
+        combined_parts = []
+        for i, (source, content) in enumerate(zip(facts_sources, facts_contents)):
+            combined_parts.append(f"=== SOURCE: {source} ===\n{content}")
+        combined_facts = "\n\n".join(combined_parts)
+    
+    facts = combined_facts
 
     # Check file size to prevent token limit issues
     validate_file_size_limit(facts, 50000, "Case facts")
@@ -497,7 +583,7 @@ Please provide output in EXACTLY this format:
         metadata={
             "Side": side.capitalize(),
             "Area": area.capitalize(),
-            "Source": facts_file,
+            "Source": ", ".join(facts_sources) if len(facts_sources) > 1 else facts_sources[0],
         },
     )
 
@@ -521,7 +607,7 @@ Please provide output in EXACTLY this format:
     save_log(
         "brainstorm",
         {
-            "inputs": {"facts_file": facts_file},
+            "inputs": {"facts_files": facts_sources, "research_files": list(research) if research else []},
             "params": "verify=True (auto-enabled for Grok), orthodox_temp=0.3, unorthodox_temp=0.9, analysis_temp=0.4",
             "response": combined_content,  # Log the final, verified content
             "usage": usage,

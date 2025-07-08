@@ -2,9 +2,20 @@
 
 This plan generates 50+ documents for the Osipov v Wong vehicle ownership dispute, maximizing coverage for downstream strategy analysis.
 
+## Important: Updated Command Syntax (as of July 2025)
+The `brainstorm` command has been updated:
+- **NEW**: Uses `--facts` option instead of positional argument
+- **NEW**: Supports glob patterns for both `--facts` and `--research` options
+- **NEW**: Automatically uses `case_facts.txt` if present in current directory
+- **CHANGE**: Quote glob patterns to prevent shell expansion: `'outputs/lookup_*.txt'`
+
 ## PHASE 1: BRAINSTORMING (generates orthodox & unorthodox strategies automatically)
 ```bash
-litassist brainstorm case_facts.txt --side plaintiff --area civil
+# If case_facts.txt exists in current directory
+litassist brainstorm --side plaintiff --area civil
+
+# Or explicitly specify the facts file
+litassist brainstorm --facts case_facts.txt --side plaintiff --area civil
 ```
 
 ## PHASE 2: EXTRACT FACTS FROM SOURCE DOCUMENTS
@@ -93,8 +104,11 @@ After completing extensive case law research, run brainstorm again with research
 
 ### 🎯 RECOMMENDED for Osipov v Wong case:
 ```bash
-# Use selective research themes focusing on core legal theories
-litassist brainstorm case_facts.txt --side plaintiff --area civil --research outputs/lookup_*gift*.txt --research outputs/lookup_*presumption*.txt --research outputs/lookup_*constructive*.txt
+# Use selective research themes focusing on core legal theories with glob patterns
+litassist brainstorm --side plaintiff --area civil --research 'outputs/lookup_*gift*.txt' --research 'outputs/lookup_*presumption*.txt' --research 'outputs/lookup_*constructive*.txt'
+
+# Or if you need to specify facts file explicitly
+litassist brainstorm --facts case_facts.txt --side plaintiff --area civil --research 'outputs/lookup_*gift*.txt' --research 'outputs/lookup_*presumption*.txt' --research 'outputs/lookup_*constructive*.txt'
 ```
 
 **Why this approach is best:**
@@ -105,11 +119,14 @@ litassist brainstorm case_facts.txt --side plaintiff --area civil --research out
 
 ### Alternative approaches (less recommended):
 ```bash
-# Option 2: Use ALL research (may be too broad)
-litassist brainstorm case_facts.txt --side plaintiff --area civil --research outputs/lookup_*.txt
+# Option 2: Use ALL research with glob pattern (may be too broad)
+litassist brainstorm --side plaintiff --area civil --research 'outputs/lookup_*.txt'
 
-# Option 3: Use extracted facts with selective research
-litassist brainstorm outputs/extractfacts_*.txt --side plaintiff --area civil --research outputs/lookup_*gift*.txt --research outputs/lookup_*presumption*.txt --research outputs/lookup_*constructive*.txt
+# Option 3: Use multiple facts files with selective research
+litassist brainstorm --facts 'outputs/extractfacts_*.txt' --side plaintiff --area civil --research 'outputs/lookup_*gift*.txt' --research 'outputs/lookup_*presumption*.txt' --research 'outputs/lookup_*constructive*.txt'
+
+# Option 4: Mix specific and glob patterns
+litassist brainstorm --facts case_facts.txt --facts extracted_facts.txt --side plaintiff --area civil --research specific_research.txt --research 'outputs/lookup_*trust*.txt'
 ```
 
 Note: The --research flag enriches orthodox strategies with case law precedents while maintaining creative unorthodox strategies. This creates a second brainstorm output that combines early creativity with later research insights.

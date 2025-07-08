@@ -1,12 +1,25 @@
 # Active Context
 
 ## Current Work Focus
-- **Verification System Fixes**: Critical fixes to preserve full document content during verification
-- **Token Limit Improvements**: Increased verification limits to handle full brainstorm outputs
-- **Code Simplification**: Removed redundant verify_with_level usage and local parsing
-- **Memory Bank Maintenance**: Documenting all recent updates and improvements
+- **Brainstorm Command Enhancement**: Major update to support multiple input files and glob patterns
+- **Command Syntax Modernization**: Changed from positional arguments to option-based interface
+- **Glob Pattern Support**: Added glob expansion for file patterns in both --facts and --research options
+- **Improved User Experience**: Automatic case_facts.txt detection when no facts files specified
 
-**Latest update (7 July 2025 - Verification System):**
+**Latest update (8 July 2025 - Brainstorm Command Enhancement & Verification Fix):**
+- ADDED: Multiple input files support with --facts option (accepts multiple files)
+- ADDED: Glob pattern support for both --facts and --research options
+- CHANGED: Command syntax from positional argument to --facts option
+- ADDED: Automatic case_facts.txt detection when no --facts provided
+- IMPLEMENTED: expand_glob_patterns callback for intelligent file expansion
+- UPDATED: Help text and documentation to reflect new usage patterns
+- MAINTAINED: Full backward compatibility through option-based approach
+- EXAMPLE: litassist brainstorm --side plaintiff --area civil --research 'outputs/lookup_*.txt'
+- FIXED: Verification prompt causing incomplete "ANALYSIS OF SELECTED STRATEGIES" sections
+- CLARIFIED: Verification comments only for numbered strategies (1-10), not analysis sections
+- PRINCIPLE: Following CLAUDE.md - fix through better prompt engineering, not local parsing
+
+**Previous update (7 July 2025 - Verification System):**
 - FIXED: Missing "MOST LIKELY TO SUCCEED" section in brainstorm outputs
 - FIXED: System instructions bleeding into verified content ("Australian law only...")
 - FIXED: Content truncation due to low token limits (800-1536 → 8192-16384)

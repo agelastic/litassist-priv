@@ -36,9 +36,15 @@ verification:
     reproduced verbatim exactly as they appear. Never use placeholders like "[unchanged]" or 
     abbreviations. 
     
-    For EVERY major section (e.g., each strategy), add a comment at the end:
+    For EVERY numbered strategy (1-10 in Orthodox/Unorthodox sections), add a comment at the end:
     - If you made corrections: "(corrected: [brief description of changes])"
     - If no corrections needed: "(unchanged during verification)"
+    
+    IMPORTANT: For analysis sections (like "MOST LIKELY TO SUCCEED" or "ANALYSIS OF SELECTED STRATEGIES"):
+    - Reproduce the FULL content without any abbreviation
+    - NEVER use "..." or placeholders to shorten content
+    - Add only ONE comment at the very end of the entire section
+    - Preserve ALL strategy analysis text exactly as written
     
     Examples:
     - "(corrected: updated Bosanac citation to [2022] HCA 34)"

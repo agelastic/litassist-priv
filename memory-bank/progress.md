@@ -2,6 +2,14 @@
 
 ## What works
 - **All Core Commands**: lookup, digest, extractfacts, brainstorm, strategy, draft, verify, counselnotes, barbrief fully implemented and stable
+- **Brainstorm Command Enhancement (July 2025)**: Major improvements to input handling
+  - Multiple input files support with --facts option (replaces positional argument)
+  - Glob pattern support for both --facts and --research options
+  - Automatic case_facts.txt detection when no --facts provided
+  - File combination with source attribution for multiple facts files
+  - Intelligent glob expansion with error handling
+  - Updated documentation and help text
+  - Example: litassist brainstorm --side plaintiff --area civil --research 'outputs/lookup_*.txt'
 - **Barbrief Command (January 2025)**: Comprehensive barrister's brief generation - FULLY IMPLEMENTED AND TESTED
   - 10-section structured brief format (Cover Sheet through Annexures)
   - Validates 10-heading case facts format from extractfacts command output
