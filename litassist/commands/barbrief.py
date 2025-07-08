@@ -8,6 +8,8 @@ with proper citations and Australian legal formatting.
 """
 
 import click
+import glob
+import os
 from typing import List, Optional, Dict, Any
 
 from litassist.prompts import PROMPTS
@@ -92,24 +94,59 @@ def prepare_brief_sections(
     return sections
 
 
+def expand_glob_patterns(ctx, param, value):
+    """Expand glob patterns in file paths."""
+    if not value:
+        return value
+    
+    expanded_paths = []
+    for pattern in value:
+        # Check if it's a glob pattern (contains *, ?, or [)
+        if any(char in pattern for char in ['*', '?', '[']):
+            # Expand the glob pattern
+            matches = glob.glob(pattern)
+            if not matches:
+                raise click.BadParameter(f"No files matching pattern: {pattern}")
+            expanded_paths.extend(matches)
+        else:
+            # Not a glob pattern, just verify the file exists
+            if not os.path.exists(pattern):
+                raise click.BadParameter(f"File not found: {pattern}")
+            expanded_paths.append(pattern)
+    
+    # Remove duplicates while preserving order
+    seen = set()
+    unique_paths = []
+    for path in expanded_paths:
+        if path not in seen:
+            seen.add(path)
+            unique_paths.append(path)
+    
+    return tuple(unique_paths)
+
+
 @click.command()
 @click.argument("case_facts", type=click.Path(exists=True))
 @click.option(
     "--strategies",
-    type=click.Path(exists=True),
-    help="Brainstormed strategies file",
+    multiple=True,
+    type=click.Path(),  # Remove exists=True since we check in callback
+    callback=expand_glob_patterns,
+    help="Brainstormed strategies files. Supports glob patterns. Use: --strategies 'outputs/brainstorm_*.txt'",
 )
 @click.option(
     "--research",
     multiple=True,
-    type=click.Path(exists=True),
-    help="Lookup/research reports (can specify multiple)",
+    type=click.Path(),
+    callback=expand_glob_patterns,
+    help="Lookup/research reports. Supports glob patterns. Use: --research 'outputs/lookup_*.txt'",
 )
 @click.option(
     "--documents",
     multiple=True,
-    type=click.Path(exists=True),
-    help="Supporting documents (can specify multiple)",
+    type=click.Path(),
+    callback=expand_glob_patterns,
+    help="Supporting documents. Supports glob patterns. Use: --documents '*.pdf'",
 )
 @click.option(
     "--instructions",
@@ -168,10 +205,18 @@ def barbrief(
         )
     
     # Read optional inputs
-    strategies_content = None
+    strategies_content = ""
     if strategies:
-        click.echo("Reading strategies...")
-        strategies_content = read_document(strategies)
+        if len(strategies) == 1:
+            click.echo("Reading strategies...")
+            strategies_content = read_document(strategies[0])
+        else:
+            click.echo(f"Reading {len(strategies)} strategy files...")
+            strategy_parts = []
+            for strategy_file in strategies:
+                content = read_document(strategy_file)
+                strategy_parts.append(f"=== SOURCE: {strategy_file} ===\n{content}")
+            strategies_content = "\n\n".join(strategy_parts)
     
     research_docs = []
     for research_file in research:

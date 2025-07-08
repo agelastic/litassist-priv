@@ -110,7 +110,11 @@ class Config:
 
         with open(self.config_path) as f:
             try:
-                return yaml.safe_load(f)
+                config = yaml.safe_load(f)
+                # Handle empty or all-commented YAML files
+                if config is None:
+                    config = {}
+                return config
             except yaml.YAMLError as e:
                 raise ConfigError(f"Invalid YAML in {self.config_path}: {e}")
 
@@ -141,22 +145,25 @@ class Config:
             self.pc_index = self.cfg["pinecone"]["index_name"]
 
             # Extract optional LLM settings with defaults
-            self.use_token_limits = self.cfg.get("llm", {}).get(
-                "use_token_limits", True
-            )
+            llm_config = self.cfg.get("llm", {})
+            if llm_config is None:
+                llm_config = {}
+            self.use_token_limits = llm_config.get("use_token_limits", True)
 
             # Extract optional general settings with defaults
-            self.heartbeat_interval = self.cfg.get("general", {}).get(
-                "heartbeat_interval", 10
-            )
-            self.max_chars = self.cfg.get("general", {}).get("max_chars", 200000)
-            self.rag_max_chars = self.cfg.get("general", {}).get("rag_max_chars", 8000)
-            self.log_format = self.cfg.get("general", {}).get("log_format", "json")
+            general_config = self.cfg.get("general", {})
+            if general_config is None:
+                general_config = {}
+            self.heartbeat_interval = general_config.get("heartbeat_interval", 10)
+            self.max_chars = general_config.get("max_chars", 200000)
+            self.rag_max_chars = general_config.get("rag_max_chars", 8000)
+            self.log_format = general_config.get("log_format", "json")
 
             # Extract citation validation settings with defaults
-            self.offline_validation = self.cfg.get("citation_validation", {}).get(
-                "offline_validation", False
-            )
+            citation_config = self.cfg.get("citation_validation", {})
+            if citation_config is None:
+                citation_config = {}
+            self.offline_validation = citation_config.get("offline_validation", False)
 
         # Jade API key is no longer used - functionality now uses public endpoint
 

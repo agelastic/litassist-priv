@@ -3,11 +3,14 @@
 This plan generates 50+ documents for the Osipov v Wong vehicle ownership dispute, maximizing coverage for downstream strategy analysis.
 
 ## Important: Updated Command Syntax (as of July 2025)
-The `brainstorm` command has been updated:
-- **NEW**: Uses `--facts` option instead of positional argument
-- **NEW**: Supports glob patterns for both `--facts` and `--research` options
-- **NEW**: Automatically uses `case_facts.txt` if present in current directory
+The `brainstorm` and `barbrief` commands have been updated:
+- **NEW**: Brainstorm uses `--facts` option instead of positional argument
+- **NEW**: Both commands support glob patterns for all file options
+- **NEW**: Brainstorm automatically uses `case_facts.txt` if present in current directory
+- **NEW**: Barbrief supports glob patterns for `--strategies`, `--research`, and `--documents`
 - **CHANGE**: Quote glob patterns to prevent shell expansion: `'outputs/lookup_*.txt'`
+- **FIXED**: Token limits now default to True (enabling 32K tokens for most models)
+- **FIXED**: Default chunk size increased to 200K characters (~50K tokens)
 
 ## PHASE 1: BRAINSTORMING (generates orthodox & unorthodox strategies automatically)
 ```bash
@@ -152,17 +155,17 @@ Note: Can use either early brainstorm or research-informed brainstorm strategies
 
 ### Basic version
 ```bash
-litassist barbrief case_facts.txt --strategies outputs/brainstorm_*.txt --hearing trial
+litassist barbrief case_facts.txt --strategies 'outputs/brainstorm_*.txt' --hearing-type trial
 ```
 
 ### With research files
 ```bash
-litassist barbrief case_facts.txt --strategies outputs/brainstorm_*.txt --research outputs/lookup_*gift*.txt --research outputs/lookup_*presumption*.txt --hearing trial
+litassist barbrief case_facts.txt --strategies 'outputs/brainstorm_*.txt' --research 'outputs/lookup_*gift*.txt' --research 'outputs/lookup_*presumption*.txt' --hearing-type trial
 ```
 
 ### Comprehensive version
 ```bash
-litassist barbrief case_facts.txt --strategies outputs/brainstorm_*.txt --research outputs/lookup_*.txt --supporting "/Users/witt/Desktop/litassist/Car Docs for civil case 2025/*.pdf" --instructions "Focus on rebutting presumption of advancement and establishing incomplete gift" --hearing trial --verify
+litassist barbrief case_facts.txt --strategies 'outputs/brainstorm_*.txt' --research 'outputs/lookup_*.txt' --documents '*.pdf' --instructions "Focus on rebutting presumption of advancement and establishing incomplete gift" --hearing-type trial --verify
 ```
 
 ## PHASE 8: STRATEGY ANALYSES
@@ -261,7 +264,7 @@ litassist draft outputs/case_facts_*.txt outputs/extractfacts_*.txt outputs/brai
 
 ## Notes
 - All outputs are automatically timestamped and saved in the `outputs/` directory (note: "outputs" not "output")
-- Use wildcards (*.txt) to reference timestamped output files
+- Use wildcards (*.txt) to reference timestamped output files - remember to quote them!
 - The dual brainstorming approach:
   - **Phase 1**: Early creative brainstorm based purely on case facts (generates initial creative thinking)
   - **Phase 5**: Research-informed brainstorm using --research flag (enhances orthodox strategies with precedents)
@@ -272,6 +275,8 @@ litassist draft outputs/case_facts_*.txt outputs/extractfacts_*.txt outputs/brai
 - Brainstorm ALWAYS performs verification automatically (no --verify flag needed or accepted)
 - Many other commands have automatic verification enabled (extractfacts, barbrief, strategy)
 - Commands can accept multiple input files for comprehensive analysis
+- **NEW**: Glob patterns now supported in brainstorm (--facts, --research) and barbrief (--strategies, --research, --documents)
+- **FIXED**: Token limits default to True (32K tokens) and chunk size increased to 200K chars
 
 ## Synthesis Approach (Option B)
 This workflow implements a multi-stage synthesis approach to overcome the strategy command's limitation of only accepting one case facts file and one strategies file:
@@ -309,3 +314,17 @@ The dual brainstorming approach (Phase 1 and Phase 5) ensures:
 - Structured legal documents (contracts, affidavits) → `extractfacts`
 - Large conversational files (WhatsApp, emails) → `digest` with `--hint`
 - Combine insights manually in case_facts.txt
+
+### Token Limit Issues (FIXED July 2025)
+**Previous Issue**: Commands producing empty or truncated output despite having content
+**Solution**: Token limits now default to True in config, enabling 32K tokens for most models
+**Note**: If you still experience issues, ensure your config.yaml has `use_token_limits: true`
+
+### Glob Pattern Usage
+**Best Practice**: Always quote glob patterns to prevent shell expansion
+- ✅ CORRECT: `--research 'outputs/lookup_*.txt'`
+- ❌ WRONG: `--research outputs/lookup_*.txt`
+
+### YAML Configuration Issues
+**Problem**: AttributeError when sections in config.yaml contain only comments
+**Solution**: Fixed in code - commented sections now handled gracefully
