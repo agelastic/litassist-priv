@@ -31,7 +31,7 @@ Extract structured facts from all PDF documents in the case bundle with a single
 litassist extractfacts case_facts.txt *.pdf
 
 # For large files like WhatsApp logs, use digest separately
-litassist digest whatsapp_chat_log.txt --mode summary --hint "vehicle ownership gift discussions money transfers"
+litassist digest whatsapp_chat_log.txt --mode summary --hint "gift intent ownership discussions money transfers bank cheque payment December 2021"
 ```
 
 ### Recommended Approach for Mixed Document Types:
@@ -40,7 +40,7 @@ litassist digest whatsapp_chat_log.txt --mode summary --hint "vehicle ownership 
 litassist extractfacts case_facts.txt car_bundle.pdf suncorp_bundle.pdf
 
 # Step 2: Digest large/conversational files separately  
-litassist digest whatsapp_chat_log.txt --mode issues --hint "gift intent ownership discussions"
+litassist digest whatsapp_chat_log.txt --mode issues --hint "no gift mentioned payment arrangement driver licence Wong name registration"
 
 # Step 3: Manually incorporate key findings from digest into case_facts.txt if needed
 ```
@@ -51,31 +51,30 @@ Note: extractfacts creates structured 10-heading output ideal for legal commands
 
 ### Gift elements research
 ```bash
-litassist lookup "gift valid elements delivery acceptance donative intent motor vehicle" --mode irac --comprehensive
+litassist lookup "gift valid elements delivery acceptance donative intent motor vehicle bank cheque payment third party" --mode irac --comprehensive
 litassist lookup "incomplete gift presumed resulting trust vehicle registration ownership" --mode irac --comprehensive
-litassist lookup "gift delivery constructive symbolic motor vehicle keys possession" --mode irac
+litassist lookup "gift delivery keys retention donor incomplete gift motor vehicle" --mode irac
 ```
 
 ### Presumption of advancement research  
 ```bash
-litassist lookup "presumption advancement de facto relationship same-sex couples property" --mode irac --comprehensive
-litassist lookup "presumption advancement rebuttal evidence contrary intention" --mode irac
-litassist lookup "matrimonial cause de facto property settlement time limits ACT" --mode irac
+litassist lookup "presumption advancement de facto relationship same-sex couples property Property (Relationships) Act ACT" --mode irac --comprehensive
+litassist lookup "presumption advancement rebuttal evidence contrary intention bank cheque payment evidence rebuttal gift presumption" --mode irac --comprehensive
+litassist lookup "matrimonial cause de facto property settlement time limits ACT Property (Relationships) Act" --mode irac --comprehensive
 ```
 
 ### Alternative claims research
 ```bash
-litassist lookup "detinue motor vehicle possession wrongful detention ACT law" --mode irac
-litassist lookup "conversion trespass goods motor vehicle damages ACT" --mode irac
+litassist lookup "detinue motor vehicle possession wrongful detention ACT law owner lacks driver licence registration third party name" --mode irac --comprehensive
+litassist lookup "conversion trespass goods motor vehicle damages ACT" --mode irac --comprehensive
 litassist lookup "constructive trust unjust enrichment vehicle purchase" --mode irac --comprehensive
-litassist lookup "resulting trust purchase money motor vehicle registration" --mode irac
+litassist lookup "resulting trust purchase money motor vehicle registration" --mode irac --comprehensive
 ```
 
 ### Equitable defences research
 ```bash
-litassist lookup "laches acquiescence delay family violence order restraining order excuse" --mode irac --comprehensive
+litassist lookup "laches acquiescence delay family violence order restraining order excuse civil proceedings delay excuse" --mode irac --comprehensive
 litassist lookup "estoppel representation ownership motor vehicle conduct" --mode irac
-litassist lookup "clean hands doctrine equity misconduct assault charges" --mode irac
 ```
 
 ### Procedural research
@@ -84,18 +83,24 @@ litassist lookup "ACT Magistrates Court civil jurisdiction equitable remedies se
 litassist lookup "service process family violence order legal practitioner exemption ACT" --mode irac
 ```
 
+### Payment and ownership evidence research
+```bash
+litassist lookup "bank cheque payment third party ownership evidence motor vehicle" --mode irac --comprehensive
+litassist lookup "family violence order civil proceedings ACT contact restrictions service" --mode irac --comprehensive
+litassist lookup "vehicle registration owner lacks licence third party arrangement" --mode irac
+```
+
 ### Extract specific information
 ```bash
 litassist lookup "gift motor vehicle de facto relationship ACT cases" --extract citations
 litassist lookup "presumption advancement same-sex relationships" --extract principles
-litassist lookup "detinue conversion motor vehicle remedies" --extract checklist
 ```
 
 ## PHASE 4: DIGEST DOCUMENTS (create summaries and issue spotting)
 ```bash
 # Process all PDFs and text files in the directory
 litassist digest *.pdf whatsapp_chat.txt --mode summary
-litassist digest *.pdf whatsapp_chat.txt --mode issues --hint "ownership gift presumption advancement"
+litassist digest *.pdf whatsapp_chat.txt --mode issues --hint "ownership gift presumption advancement bank cheque Osipov payment Wong registration"
 
 # Or process specific files
 litassist digest car_bundle.pdf suncorp_bundle.pdf whatsapp_chat.txt --mode summary
@@ -170,21 +175,58 @@ litassist barbrief case_facts.txt --strategies 'outputs/brainstorm_*.txt' --rese
 
 ## PHASE 8: STRATEGY ANALYSES
 
-### Basic strategy
+**IMPORTANT: Why use brainstormed strategies?**
+The strategy command intelligently uses brainstormed strategies as foundations for generating concrete strategic options. When provided:
+- It extracts "MOST LIKELY TO SUCCEED" strategies first
+- Ranks remaining strategies using LLM analysis
+- Transforms creative legal theories into actionable plans
+- Ensures consistency from ideation through implementation
+
+**Note**: Strategy command accepts only ONE strategies file at a time. Use different brainstorm outputs for different strategic approaches.
+
+### Strategy 1: Use early brainstorm (creative approaches)
 ```bash
-litassist strategy case_facts.txt --outcome "Recover vehicle purchase price of $40,364 from Marcus Wong"
+# Replace [timestamp] with actual timestamp from your early brainstorm file
+litassist strategy case_facts.txt --outcome "Recover vehicle purchase price of $40,364 from Marcus Wong" --strategies outputs/brainstorm_plaintiff_civil_[timestamp].txt
 ```
 
-### With brainstormed strategies
+### Strategy 2: Use research-informed brainstorm (precedent-backed approaches)
 ```bash
-litassist strategy case_facts.txt --outcome "Recover vehicle purchase price through detinue or conversion claim" --strategies outputs/brainstorm_*.txt
+# Replace [timestamp] with actual timestamp from your research-informed brainstorm file
+litassist strategy case_facts.txt --outcome "Establish resulting trust over vehicle" --strategies outputs/brainstorm_plaintiff_civil_[timestamp].txt
 ```
 
-### Multiple strategy runs with different outcomes
+### Strategy 3: Fresh generation for alternative perspectives
 ```bash
-litassist strategy case_facts.txt --outcome "Establish resulting trust over vehicle"
+# Generate without strategies to get fresh perspectives
 litassist strategy case_facts.txt --outcome "Obtain order for return of vehicle or damages"
-litassist strategy case_facts.txt --outcome "Rebut presumption of advancement and prove incomplete gift"
+```
+
+### Strategy 4: Target specific legal theories with appropriate brainstorm
+```bash
+# Use early brainstorm for presumption of advancement strategy
+litassist strategy case_facts.txt --outcome "Rebut presumption of advancement and prove incomplete gift" --strategies outputs/brainstorm_plaintiff_civil_[timestamp].txt
+
+# Use research-informed brainstorm for constructive trust strategy
+litassist strategy case_facts.txt --outcome "Establish constructive trust based on unjust enrichment" --strategies outputs/brainstorm_plaintiff_civil_[timestamp].txt
+```
+
+### Additional strategic variations
+```bash
+# Defensive strategy using early brainstorm
+litassist strategy case_facts.txt --outcome "Defeat any counterclaim for assault damages" --strategies outputs/brainstorm_plaintiff_civil_[timestamp].txt
+
+# Settlement strategy using research-informed brainstorm
+litassist strategy case_facts.txt --outcome "Achieve favorable settlement preserving plaintiff's financial position" --strategies outputs/brainstorm_plaintiff_civil_[timestamp].txt
+
+# FVO/timing defense strategy
+litassist strategy case_facts.txt --outcome "Overcome laches defense using FVO restrictions as excuse for delay" --strategies outputs/brainstorm_plaintiff_civil_[timestamp].txt
+
+# Payment evidence strategy
+litassist strategy case_facts.txt --outcome "Prove ownership through bank cheque payment trail despite registration in Wong's name" --strategies outputs/brainstorm_plaintiff_civil_[timestamp].txt
+
+# Practical enforcement strategy
+litassist strategy case_facts.txt --outcome "Force Wong to sell vehicle and remit proceeds through court order" --strategies outputs/brainstorm_plaintiff_civil_[timestamp].txt
 ```
 
 ## PHASE 9: DRAFT DOCUMENTS
@@ -205,6 +247,18 @@ litassist draft case_facts.txt outputs/strategy_*.txt outputs/lookup_*.txt "Draf
 litassist draft case_facts.txt "Draft letter before action to Marcus Wong demanding return of vehicle"
 litassist draft case_facts.txt outputs/brainstorm_*.txt "Draft particulars of claim for conversion and detinue"
 litassist draft case_facts.txt outputs/barbrief_*.txt "Draft opening submissions for trial"
+```
+
+### FVO-compliant and practical documents
+```bash
+# FVO-compliant service document
+litassist draft case_facts.txt "Draft affidavit of service through legal practitioner complying with FVO restrictions" --verify
+
+# Payment evidence affidavit
+litassist draft case_facts.txt "Draft affidavit exhibiting bank cheque and payment evidence with chain of custody" --verify
+
+# Practical relief orders
+litassist draft case_facts.txt "Draft proposed orders for sale of vehicle and payment of proceeds" --verify
 ```
 
 ## PHASE 10: EXTRACT FACTS (from all generated documents)
