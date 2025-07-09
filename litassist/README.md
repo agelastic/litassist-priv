@@ -23,6 +23,7 @@ litassist/
     ├── strategy.py         # Strategic options and document generation
     ├── verify.py           # Citation verification with Claude
     ├── counselnotes.py     # Strategic advocate analysis with Claude
+    ├── caseplan.py         # Phased workflow planning with command coverage, focus, and rationale (Sonnet/Opus)
     └── barbrief.py         # Comprehensive barrister's briefs with o3-pro
 ```
 

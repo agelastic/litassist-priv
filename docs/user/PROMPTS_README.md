@@ -32,6 +32,7 @@ This document describes the centralized prompt management system implemented in 
   - `barbrief.yaml` - Barrister's brief generation templates with 10-section structure
   - `verification.yaml` - Verification and self-critique prompts
   - `system_feedback.yaml` - Unified system feedback messages for errors and warnings
+  - `caseplan.yaml` - Workflow planning prompt with command coverage, focus, and rationale enforcement (NEW July 2025)
 
 ### PromptManager API
 
@@ -56,6 +57,18 @@ composed = PROMPTS.compose_prompt('base.australian_law', 'base.citation_standard
 ```
 
 ## Implemented Templates
+
+### CasePlan Prompts (`caseplan.yaml`)
+
+- **Purpose**: Drives the `caseplan` command for phased workflow planning.
+- **Key Features**:
+  - Enforces rationale for every command/phase
+  - Requires explicit command coverage analysis (lookup, brainstorm, strategy, counselnotes, draft, barbrief, verify)
+  - Integrates focus area prioritization and relevance scoring
+  - Mandates structured output: Name, Purpose, Commands, Rationale, Focus Relevance, Cost, Tag
+  - Final section: "COMMAND COVERAGE ANALYSIS" with justification for any omitted commands
+- **Prompt Engineering**: Designed to minimize local parsing and maximize LLM-structured output, in line with CLAUDE.md and memory bank principles.
+- **Location**: `litassist/prompts/caseplan.yaml`
 
 ### Base System Prompts (`base.yaml`)
 

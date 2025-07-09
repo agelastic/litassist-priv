@@ -2447,6 +2447,92 @@ CounselNotes excels at synthesizing multiple documents:
 
 **Pipeline Phase**: Document Preparation
 
+## Workflow 11: CasePlan - Litigation Workflow Planning
+
+**Pipeline Phase**: Planning & Orchestration
+
+### Purpose
+
+The `caseplan` command generates a customized, phased litigation workflow plan based on user-provided case facts, budget constraints, and (optionally) a focus area. It ensures all major LitAssist commands are considered, with explicit rationale and justification for any omissions.
+
+### Key Features
+
+- **Two-Mode Operation**:
+  - **Budget Assessment Mode**: (Claude Sonnet) Rapidly analyzes case facts to recommend a budget level (minimal, standard, comprehensive) with justification.
+  - **Full Plan Mode**: (Claude Opus) Generates a detailed, phased workflow plan, including cost/time estimates, dependencies, and a mermaid diagram.
+- **Focus Area Integration**: If `--focus` is specified, every phase is rated for relevance and prioritized accordingly.
+- **Command Coverage Analysis**: The plan must explicitly address all major commands (lookup, brainstorm, strategy, counselnotes, draft, barbrief, verify), with mandatory rationale for inclusion/omission.
+- **Format Enforcement**: Each phase includes: Name, Purpose, Commands, Rationale, Focus Relevance, Cost, Tag (ESSENTIAL/OPTIONAL).
+- **Final Section**: "COMMAND COVERAGE ANALYSIS" justifying any omitted commands.
+
+### Command
+
+```bash
+litassist caseplan <case_facts_file> [--focus <area>] [--budget minimal|standard|comprehensive]
+```
+
+- `<case_facts_file>`: Path to structured case facts (10-heading format)
+- `--focus`: (Optional) Area to prioritize in the plan (e.g., "property dispute")
+- `--budget`: (Optional) Budget constraint; if omitted, the tool recommends one
+
+### Example Usage
+
+#### Budget Assessment
+
+```bash
+litassist caseplan case_facts.txt
+```
+*Outputs a summary, recommended budget, and justification.*
+
+#### Full Plan with Focus
+
+```bash
+litassist caseplan case_facts.txt --focus "parenting arrangements" --budget standard
+```
+*Outputs a detailed, phased workflow plan with focus relevance ratings.*
+
+### Output Example
+
+```
+PHASE 1: Initial Research
+Purpose: Identify key legal issues and relevant precedents
+Commands: lookup "parental alienation family law australia"
+Rationale: Lookup provides authoritative case law for foundational analysis
+Focus Relevance: High
+Cost: $10
+Tag: ESSENTIAL
+
+...
+
+## COMMAND COVERAGE ANALYSIS
+lookup: included
+brainstorm: included
+strategy: included
+counselnotes: omitted - not required for this case (no complex tactical issues)
+draft: included
+barbrief: omitted - not required for interim hearing
+verify: included
+```
+
+### Integration
+
+- **Inputs**: Requires a structured case facts file (see ExtractFacts workflow)
+- **Outputs**: Markdown plan with phases, rationale, cost/time, dependencies, and a workflow diagram
+- **Downstream**: Plan phases can be executed using other LitAssist commands
+
+### Best Practices
+
+- Use after preparing case_facts.txt with ExtractFacts
+- Specify `--focus` to tailor the plan to a particular issue
+- Review the COMMAND COVERAGE ANALYSIS to ensure all major steps are justified
+
+### Smith v Jones Example
+
+```bash
+litassist caseplan examples/case_facts.txt --focus "relocation" --budget comprehensive
+```
+*Generates a comprehensive, focus-prioritized workflow plan for the Smith v Jones case.*
+
 ### Purpose
 
 The `barbrief` command generates comprehensive barrister's briefs suitable for briefing counsel in Australian litigation. It consolidates case facts, strategies, research, and supporting documents into a structured 10-section brief tailored to specific hearing types.

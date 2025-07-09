@@ -3,6 +3,7 @@
 ## Status Update (June 2025)
 
 **Implemented:**
+- **CasePlan prompt engineering (July 2025):** New caseplan.yaml prompt enforces rationale for every phase, explicit command coverage analysis, focus area prioritization, and structured output. Minimizes local parsing in line with CLAUDE.md and memory bank principles.
 - Comprehensive post-hoc verification (`verify` command): Performs citation accuracy, legal soundness, and reasoning transparency checks on generated documents. Each check writes a separate timestamped report to outputs/. All steps use the existing logging infrastructure and minimal console output.
 - Research-informed brainstorming: `brainstorm` command supports `--research` option to inject lookup report(s) into the orthodox strategies prompt, enabling research-grounded strategy generation. All prompt logic is managed in YAML; no hardcoded LLM templates.
 - Option B (selective regeneration/discard for citation issues in brainstorm/strategy)

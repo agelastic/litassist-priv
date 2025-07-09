@@ -9,16 +9,21 @@ graph TD
     C --> D["Brainstorm - Generate Options"]
     D --> E["Strategy - Plan Approach"]
     E --> F["Draft - Create Documents"]
-    
+
+    F --> M["CasePlan - Workflow Planning"]
+    C --> M
+    D --> M
+    E --> M
+
     B --> K["CounselNotes - Strategic Analysis"]
     C --> K
     K --> E
-    
+
     C --> L["Barbrief - Barrister's Brief"]
     D --> L
     E --> L
     A --> L
-    
+
     G[Utilities] --> H["Test - API Connectivity"]
     G --> I["Audit Logging"]
     G --> J["Mock Mode"]
@@ -31,13 +36,21 @@ graph TD
 - **Brainstorm**: Creative legal strategy generation (unorthodox strategies via Grok)  
 - **Strategy**: Targeted legal options with probability assessments and draft documents (enhanced reasoning via o3-pro)
 - **Draft**: Citation-rich document creation (superior technical writing via o3-pro)
-- **Barbrief**: Comprehensive barrister's briefs for litigation (extended output via o3-pro)  
+- **Barbrief**: Comprehensive barrister's briefs for litigation (extended output via o3-pro)
+- **CasePlan**: Automated phased workflow planning with command coverage, focus, and cost analysis (Sonnet/Opus)
 
 For detailed usage guidance, see the [LitAssist User Guide](docs/user/LitAssist_User_Guide.md).
 
 ## 🆕 Recent Improvements (July 2025)
 
 ### July 2025: Enhanced Brainstorm Command
+
+### July 2025: New CasePlan Command
+- **caseplan**: Generates a phased litigation workflow plan from case facts, with budget assessment (Sonnet) and full plan (Opus) modes
+- **Focus area integration**: Prioritizes workflow phases by user-specified focus
+- **Command coverage analysis**: Mandates rationale for inclusion/omission of all major commands
+- **Format enforcement**: Each phase includes rationale, cost, focus relevance, and ESSENTIAL/OPTIONAL tag
+- **Mermaid diagram**: Visualizes workflow dependencies
 - **Multiple Input Files**: Brainstorm now accepts multiple facts files with `--facts` option
 - **Glob Pattern Support**: Both `--facts` and `--research` options support glob patterns (e.g., `'outputs/lookup_*.txt'`)
 - **Automatic Defaults**: Uses `case_facts.txt` automatically if present in current directory
@@ -177,7 +190,16 @@ Global options:
 
 ### Core Pipeline Commands
 
-1. **lookup** - Rapid case-law search with automatic citation
+1. **caseplan** - Generate a phased litigation workflow plan from case facts
+   ```bash
+   ./litassist.py caseplan case_facts.txt [--focus <area>] [--budget minimal|standard|comprehensive]
+   ```
+   Options:
+   - `--focus`: Prioritize plan phases for a specific area (e.g., "property dispute")
+   - `--budget`: Specify or request budget level (minimal, standard, comprehensive)
+   - Outputs: Markdown plan with phases, rationale, cost/time, dependencies, and workflow diagram
+
+2. **lookup** - Rapid case-law search with automatic citation
    ```bash
    ./litassist.py lookup "What defences exist to adverse costs orders?"
    ./litassist.py lookup "Question?" --mode broad --comprehensive
