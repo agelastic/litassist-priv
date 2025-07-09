@@ -18,7 +18,7 @@ LitAssist uses multiple specialized LLM models optimized for different legal tas
 | **lookup** | `google/gemini-2.5-pro-preview` | Rapid case law research | temperature: 0.1, top_p: 0.2 |
 | **digest** | `anthropic/claude-sonnet-4` | Document processing & summarization | temperature: 0 (summary) or 0.2 (issues) |
 | **caseplan** (assessment) | `anthropic/claude-sonnet-4` | Budget assessment for workflow planning | temperature: 0.2 |
-| **caseplan** (full plan) | `openai/o3-pro` | Full phased workflow plan generation | max_completion_tokens: 32768, reasoning_effort: high |
+| **caseplan** (full plan) | `anthropic/claude-opus-4` | Full phased workflow plan generation | max_completion_tokens: 32768, reasoning_effort: high |
 | **extractfacts** | `anthropic/claude-sonnet-4` | Structured fact extraction | temperature: 0, top_p: 0.15 |
 | **brainstorm** | `x-ai/grok-3` | Creative strategy generation | temperature: 0.9, top_p: 0.95 |
 | **brainstorm** (analysis) | `anthropic/claude-sonnet-4` | Strategy analysis & ranking | temperature: 0.2, top_p: 0.8 |
