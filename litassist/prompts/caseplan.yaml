@@ -53,6 +53,15 @@ commands:
          - Decision points
          - Cost-saving alternatives
 
+      6. WORKFLOW DIAGRAM
+         - Provide a comprehensive mermaid flowchart diagram of the entire workflow.
+         - Show all phases as nodes, with arrows for dependencies.
+         - Represent decision points (branching) as diamonds.
+         - Distinguish ESSENTIAL vs OPTIONAL phases (e.g., color/style).
+         - Annotate phases with cost/time where helpful.
+         - Place the diagram after the phased workflow section.
+         - Keep all text-based dependency/decision comments as before.
+
     budget_assessment_system: |
       You are an experienced litigation strategist conducting a rapid case assessment.
       Your task is to quickly evaluate case complexity and recommend an appropriate budget level for the case.
