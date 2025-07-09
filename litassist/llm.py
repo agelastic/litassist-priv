@@ -521,9 +521,20 @@ class LLMClient:
         self.default_params = default_params
 
     def _execute_api_call_with_retry(self, model_name, messages, filtered_params):
+        # --- Begin: Add custom retryable API error for overloaded/rate limit ---
+        class RetryableAPIError(Exception):
+            """API error that should be retried (overloaded, rate limited, etc.)"""
+
+            pass
+
+        # --- End: Add custom retryable API error ---
+
         retry_errors = (
             openai.error.APIConnectionError,
+            openai.error.RateLimitError,
+            openai.error.APIError,
             requests.exceptions.ConnectionError,
+            RetryableAPIError,
         )
         if aiohttp:
             retry_errors = retry_errors + (
@@ -543,9 +554,27 @@ class LLMClient:
 
         def _call_with_streaming_wrap():
             try:
-                return openai.ChatCompletion.create(
+                resp = openai.ChatCompletion.create(
                     model=model_name, messages=messages, **filtered_params
                 )
+                # Check for API-level errors in response (overloaded, rate limit, etc.)
+                if (
+                    hasattr(resp, "choices")
+                    and resp.choices
+                    and hasattr(resp.choices[0], "error")
+                    and resp.choices[0].error
+                ):
+                    error_info = resp.choices[0].error
+                    error_message = error_info.get("message", "Unknown API error")
+                    # Retry on overloaded, rate limit, busy, timeout
+                    if any(
+                        kw in error_message.lower()
+                        for kw in ["overloaded", "rate limit", "timeout", "busy"]
+                    ):
+                        raise RetryableAPIError(f"API Error: {error_message}")
+                    else:
+                        raise Exception(f"API Error: {error_message}")
+                return resp
             except Exception as e:
                 # Retry on "Error processing stream" or similar streaming errors
                 if "Error processing stream" in str(e) or "streaming" in str(e).lower():
