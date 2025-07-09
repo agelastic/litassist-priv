@@ -111,6 +111,7 @@ def caseplan(case_facts, focus, budget):
             litassist_capabilities=PROMPTS.get("capabilities.litassist_capabilities")
         )
 
+        # Build the main user prompt
         user_prompt = f"""CASE FACTS:
 {facts_content}
 
@@ -119,6 +120,13 @@ BUDGET LEVEL: {budget}
 
 {PROMPTS.get("commands.caseplan.analysis_instructions")}
 """
+
+        # Add glob help section if available
+        try:
+            glob_help = PROMPTS.get("glob_help_section")
+            user_prompt = f"{user_prompt}\n\n{glob_help}"
+        except KeyError:
+            pass  # Glob help addon not available
 
         @timed
         def generate_plan():
@@ -134,6 +142,13 @@ BUDGET LEVEL: {budget}
             plan_content, usage = generate_plan()
         except Exception as e:
             raise click.ClickException(f"Plan generation error: {e}")
+
+        # Append glob help to output for user reference
+        try:
+            glob_help = PROMPTS.get("glob_help_section")
+            plan_content = f"{plan_content}\n\n{glob_help}"
+        except KeyError:
+            pass
 
         metadata = {"Case Facts File": case_facts.name, "Budget Level": budget}
         if focus:
