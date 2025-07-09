@@ -112,14 +112,15 @@ def caseplan(case_facts, focus, budget):
         )
 
         # Build the main user prompt
-        user_prompt = f"""CASE FACTS:
-{facts_content}
+        prompt_parts = [
+            f"CASE FACTS:\n{facts_content}",
+            f"BUDGET LEVEL: {budget}",
+        ]
+        if focus:
+            prompt_parts.append(f"FOCUS AREA: {focus}")
 
-BUDGET LEVEL: {budget}
-{f"FOCUS AREA: {focus}" if focus else ""}
-
-{PROMPTS.get("commands.caseplan.analysis_instructions")}
-"""
+        prompt_parts.append(PROMPTS.get("commands.caseplan.analysis_instructions"))
+        user_prompt = "\n\n".join(prompt_parts)
 
         # Add glob help section if available
         try:
