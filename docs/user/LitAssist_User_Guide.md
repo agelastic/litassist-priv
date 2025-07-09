@@ -5,8 +5,11 @@
 LitAssist is a comprehensive legal workflow automation tool designed for Australian legal practice. It provides a structured end-to-end pipeline for litigation support:
 
 ```
-ingest → analyse → structure → brainstorm → strategy → draft
+ingest → plan → analyse → structure → brainstorm → strategy → draft
 ```
+
+**Early Planning with CasePlan:**  
+Before collecting materials or performing deep analysis, use the `caseplan` command with a bare bones `case_facts.txt` file. This generates a phased workflow plan tailored to your case, helping you prioritize which documents to collect and which commands to run next. The plan can be refined as more facts are discovered.
 
 *New in 2025: Added **counselnotes** command for strategic analysis from an advocate's perspective, complementing the neutral analysis provided by digest. Also added **barbrief** command for generating comprehensive barrister's briefs.*
 
@@ -2048,7 +2051,7 @@ cat outputs/verify_report_draft_*.txt
 
 ## End-to-End Pipeline Example
 
-To demonstrate how these five workflows combine into a seamless end-to-end pipeline for the *Smith v Jones* case:
+To demonstrate how these workflows combine into a seamless end-to-end pipeline for the *Smith v Jones* case:
 
 1. **Ingest (Lookup)**: Research legal frameworks for parental alienation and relocation cases in Australian family law.
    ```bash
@@ -2056,24 +2059,30 @@ To demonstrate how these five workflows combine into a seamless end-to-end pipel
    ./litassist.py lookup "What factors do Australian courts consider in relocation cases?" --mode broad
    ```
 
-2. **Analyse (Digest)**: Process and analyze case documents to identify key issues and chronology.
+2. **Plan (CasePlan)**: With even a preliminary or skeleton `case_facts.txt`, run caseplan to generate a phased workflow plan. This helps you decide what materials to collect and which commands to run next.
+   ```bash
+   litassist caseplan case_facts.txt --focus "parenting arrangements"
+   ```
+   *Outputs a detailed, phased workflow plan. Update the plan as you discover more facts.*
+
+3. **Analyse (Digest)**: Process and analyze case documents to identify key issues and chronology.
    ```bash
    ./litassist.py digest examples/smith_affidavit.pdf --mode issues
    ./litassist.py digest examples/jones_response.pdf --mode summary
    ```
 
-3. **Structure (ExtractFacts)**: Extract and organize case facts into a structured format.
+4. **Structure (ExtractFacts)**: Extract and organize case facts into a structured format.
    ```bash
    ./litassist.py extractfacts examples/smith_jones_file.pdf
    ```
 
-4. **Brainstorm**: Generate comprehensive legal strategies tailored to party side and legal area.
+5. **Brainstorm**: Generate comprehensive legal strategies tailored to party side and legal area.
    ```bash
    ./litassist.py brainstorm examples/case_facts.txt --side plaintiff --area family
    ```
    *Produces: Creative exploration of all possible legal approaches with legal foundations*
 
-5. **Strategy**: Generate targeted strategic options and draft documents for specific outcomes.
+6. **Strategy**: Generate targeted strategic options and draft documents for specific outcomes.
    ```bash
    ./litassist.py strategy examples/case_facts.txt --outcome "Secure interim orders allowing children to remain in Brisbane"
    ```
@@ -2081,7 +2090,7 @@ To demonstrate how these five workflows combine into a seamless end-to-end pipel
    
    **Note**: See [Understanding Brainstormed Strategies vs Strategic Options](#understanding-brainstormed-strategies-vs-strategic-options) for the crucial differences between these two approaches.
 
-6. **Draft**: Create comprehensive legal submissions using brainstormed strategies and case facts.
+7. **Draft**: Create comprehensive legal submissions using brainstormed strategies and case facts.
    ```bash
    # RECOMMENDED: Use brainstorm output for rich legal foundation
    ./litassist.py draft case_facts.txt brainstorm_family_plaintiff_20250606_143022.txt "comprehensive outline of submissions"
@@ -2447,13 +2456,13 @@ CounselNotes excels at synthesizing multiple documents:
 
 **Pipeline Phase**: Document Preparation
 
-## Workflow 11: CasePlan - Litigation Workflow Planning
+## Workflow 2: CasePlan - Litigation Workflow Planning
 
-**Pipeline Phase**: Planning & Orchestration
+**Pipeline Phase**: Planning & Orchestration (EARLY STAGE)
 
 ### Purpose
 
-The `caseplan` command generates a customized, phased litigation workflow plan based on user-provided case facts, budget constraints, and (optionally) a focus area. It ensures all major LitAssist commands are considered, with explicit rationale and justification for any omissions.
+The `caseplan` command generates a customized, phased litigation workflow plan based on user-provided case facts, budget constraints, and (optionally) a focus area. It is designed to be run at the very start of a matter, even with a bare bones or preliminary `case_facts.txt` file, to guide the entire litigation approach and inform which materials to collect next.
 
 ### Key Features
 
@@ -2471,7 +2480,7 @@ The `caseplan` command generates a customized, phased litigation workflow plan b
 litassist caseplan <case_facts_file> [--focus <area>] [--budget minimal|standard|comprehensive]
 ```
 
-- `<case_facts_file>`: Path to structured case facts (10-heading format)
+- `<case_facts_file>`: Path to structured case facts (10-heading format, can be minimal/skeleton at this stage)
 - `--focus`: (Optional) Area to prioritize in the plan (e.g., "property dispute")
 - `--budget`: (Optional) Budget constraint; if omitted, the tool recommends one
 
@@ -2494,12 +2503,12 @@ litassist caseplan case_facts.txt --focus "parenting arrangements" --budget stan
 ### Output Example
 
 ```
-PHASE 1: Initial Research
-Purpose: Identify key legal issues and relevant precedents
-Commands: lookup "parental alienation family law australia"
-Rationale: Lookup provides authoritative case law for foundational analysis
+PHASE 1: Initial Planning
+Purpose: Generate a phased workflow plan to guide document collection and analysis
+Commands: caseplan case_facts.txt --focus "parenting arrangements"
+Rationale: Early planning ensures efficient use of resources and targeted document collection
 Focus Relevance: High
-Cost: $10
+Cost: $5
 Tag: ESSENTIAL
 
 ...
@@ -2516,13 +2525,14 @@ verify: included
 
 ### Integration
 
-- **Inputs**: Requires a structured case facts file (see ExtractFacts workflow)
+- **Inputs**: Requires a structured case facts file (see ExtractFacts workflow), but can be minimal at this stage
 - **Outputs**: Markdown plan with phases, rationale, cost/time, dependencies, and a workflow diagram
 - **Downstream**: Plan phases can be executed using other LitAssist commands
 
 ### Best Practices
 
-- Use after preparing case_facts.txt with ExtractFacts
+- Use caseplan as one of the first steps, even with a skeleton case_facts.txt
+- Refine the plan as more facts and documents are collected
 - Specify `--focus` to tailor the plan to a particular issue
 - Review the COMMAND COVERAGE ANALYSIS to ensure all major steps are justified
 
