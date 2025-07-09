@@ -531,6 +531,9 @@ class LLMClient:
                 aiohttp.ClientPayloadError,
             )
 
+        class StreamingAPIError(Exception):
+            pass
+
         # Use no wait time during tests to speed up retry tests
         wait_config = (
             tenacity.wait_none()  # No wait in tests
@@ -538,17 +541,29 @@ class LLMClient:
             else tenacity.wait_exponential(multiplier=0.5, max=10)
         )
 
+        def _call_with_streaming_wrap():
+            try:
+                return openai.ChatCompletion.create(
+                    model=model_name, messages=messages, **filtered_params
+                )
+            except Exception as e:
+                # Retry on "Error processing stream" or similar streaming errors
+                if "Error processing stream" in str(e) or "streaming" in str(e).lower():
+                    raise StreamingAPIError(str(e))
+                raise
+
         @tenacity.retry(
-            stop=tenacity.stop_after_attempt(3),
+            stop=tenacity.stop_after_attempt(5),
             wait=wait_config,
-            retry=tenacity.retry_if_exception_type(retry_errors),
+            retry=(
+                tenacity.retry_if_exception_type(retry_errors)
+                | tenacity.retry_if_exception_type(StreamingAPIError)
+            ),
             before_sleep=tenacity.before_sleep_log(logger, logging.WARNING),
             reraise=True,
         )
         def _call():
-            return openai.ChatCompletion.create(
-                model=model_name, messages=messages, **filtered_params
-            )
+            return _call_with_streaming_wrap()
 
         return _call()
 
