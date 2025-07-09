@@ -59,7 +59,9 @@ def regenerate_bad_strategies(
     # This pattern finds all numbered list items (e.g., "1. Strategy Title...")
     # and treats each one as a separate strategy.
     # Remove any section headers before processing
-    original_content = re.sub(r'##\s+\w+\s+STRATEGIES\s*\n+', '', original_content.strip())
+    original_content = re.sub(
+        r"##\s+\w+\s+STRATEGIES\s*\n+", "", original_content.strip()
+    )
     strategies = re.split(r"\n(?=\d+\.\s+)", original_content.strip())
     # The first item might be a header, so filter it out if it doesn't start with a number
     strategies = [s.strip() for s in strategies if re.match(r"^\d+\.", s.strip())]
@@ -116,7 +118,9 @@ def regenerate_bad_strategies(
 Generate ONLY strategy #{strategy_num} in the exact format:
 
 {strategy_num}. [Strategy Title]
+
 [Detailed explanation including implementation approach, anticipated challenges, and supporting precedents - aim for 3-5 paragraphs that thoroughly explore the strategy]
+
 Key principles: [Comprehensive legal principles or precedents with full case citations and pinpoint references]
 """
 
@@ -138,7 +142,9 @@ Key principles: [Comprehensive legal principles or precedents with full case cit
                         f"    ✅ Strategy {strategy_num}: Successfully regenerated with clean citations"
                     )
                     # Strip any headers from the regenerated strategy
-                    new_strategy = re.sub(r'##\s+\w+\s+STRATEGIES\s*\n+', '', new_strategy.strip())
+                    new_strategy = re.sub(
+                        r"##\s+\w+\s+STRATEGIES\s*\n+", "", new_strategy.strip()
+                    )
                     strategy_results[strategy_num] = new_strategy
 
             except Exception as e:
@@ -181,7 +187,11 @@ Key principles: [Comprehensive legal principles or precedents with full case cit
                 renumbered_strategies.append(strategy)
 
         # Add the appropriate header back
-        header = "## ORTHODOX STRATEGIES" if strategy_type == "orthodox" else "## UNORTHODOX STRATEGIES"
+        header = (
+            "## ORTHODOX STRATEGIES"
+            if strategy_type == "orthodox"
+            else "## UNORTHODOX STRATEGIES"
+        )
         return f"{header}\n\n" + "\n\n".join(renumbered_strategies)
     else:
         return (
@@ -193,11 +203,11 @@ def expand_glob_patterns(ctx, param, value):
     """Expand glob patterns in file paths."""
     if not value:
         return value
-    
+
     expanded_paths = []
     for pattern in value:
         # Check if it's a glob pattern (contains *, ?, or [)
-        if any(char in pattern for char in ['*', '?', '[']):
+        if any(char in pattern for char in ["*", "?", "["]):
             # Expand the glob pattern
             matches = glob.glob(pattern)
             if not matches:
@@ -208,7 +218,7 @@ def expand_glob_patterns(ctx, param, value):
             if not os.path.exists(pattern):
                 raise click.BadParameter(f"File not found: {pattern}")
             expanded_paths.append(pattern)
-    
+
     # Remove duplicates while preserving order
     seen = set()
     unique_paths = []
@@ -216,7 +226,7 @@ def expand_glob_patterns(ctx, param, value):
         if path not in seen:
             seen.add(path)
             unique_paths.append(path)
-    
+
     return tuple(unique_paths)
 
 
@@ -263,19 +273,19 @@ def brainstorm(facts, side, area, research):
     Usage:
         # With default case_facts.txt (if exists in current directory)
         litassist brainstorm --side plaintiff --area civil
-        
+
         # With single facts file
         litassist brainstorm --facts case_facts.txt --side plaintiff --area civil
-        
+
         # With multiple facts files
         litassist brainstorm --facts facts1.txt --facts facts2.txt --side plaintiff --area civil
-        
+
         # With multiple research files
         litassist brainstorm --side plaintiff --area civil --research lookup1.txt --research lookup2.txt
-        
+
         # With glob patterns for research files
         litassist brainstorm --side plaintiff --area civil --research 'outputs/lookup_*gift*.txt'
-    
+
     Note: Verification is automatically performed on all brainstorm outputs to ensure citation accuracy and legal soundness.
 
     Raises:
@@ -303,7 +313,7 @@ def brainstorm(facts, side, area, research):
         content = read_document(facts_file)
         facts_contents.append(content)
         facts_sources.append(facts_file)
-        
+
     # Log which facts files are being used
     if len(facts_sources) == 1:
         click.echo(f"Using facts from: {facts_sources[0]}")
@@ -311,7 +321,7 @@ def brainstorm(facts, side, area, research):
         click.echo(f"Using facts from {len(facts_sources)} files:")
         for source in facts_sources:
             click.echo(f"  • {source}")
-    
+
     # Combine facts with source attribution if multiple files
     if len(facts_contents) == 1:
         combined_facts = facts_contents[0]
@@ -320,7 +330,7 @@ def brainstorm(facts, side, area, research):
         for i, (source, content) in enumerate(zip(facts_sources, facts_contents)):
             combined_parts.append(f"=== SOURCE: {source} ===\n{content}")
         combined_facts = "\n\n".join(combined_parts)
-    
+
     facts = combined_facts
 
     # Check file size to prevent token limit issues
@@ -405,7 +415,7 @@ Please provide output in EXACTLY this format:
     # Generate Unorthodox Strategies (creative approach)
     click.echo("Generating unorthodox strategies...")
     unorthodox_client = LLMClientFactory.for_command("brainstorm", "unorthodox")
-    
+
     # Log model usage for future reference (no user-facing message)
     if "grok" in unorthodox_client.model.lower():
         logging.debug(f"Using {unorthodox_client.model} for unorthodox strategies")
@@ -542,7 +552,7 @@ Please provide output in EXACTLY this format:
 
     # Run verification on all brainstorm outputs
     click.echo("🔍 Verifying brainstorm strategies...")
-    
+
     # Always verify brainstorm outputs
     try:
         # Use medium verification for creative brainstorming
@@ -574,7 +584,9 @@ Please provide output in EXACTLY this format:
         metadata={
             "Side": side.capitalize(),
             "Area": area.capitalize(),
-            "Source": ", ".join(facts_sources) if len(facts_sources) > 1 else facts_sources[0],
+            "Source": (
+                ", ".join(facts_sources) if len(facts_sources) > 1 else facts_sources[0]
+            ),
         },
     )
 
@@ -586,7 +598,10 @@ Please provide output in EXACTLY this format:
     save_log(
         "brainstorm",
         {
-            "inputs": {"facts_files": facts_sources, "research_files": list(research) if research else []},
+            "inputs": {
+                "facts_files": facts_sources,
+                "research_files": list(research) if research else [],
+            },
             "params": "verify=True (auto-enabled for Grok), orthodox_temp=0.3, unorthodox_temp=0.9, analysis_temp=0.4",
             "response": combined_content,  # Log the final, verified content
             "usage": usage,
