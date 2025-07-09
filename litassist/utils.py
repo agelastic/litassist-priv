@@ -638,7 +638,9 @@ def heartbeat(interval: int = 30):
 
             def ping():
                 while not done.is_set():
-                    click.echo("…still working, please wait…", err=True)
+                    # Suppress during pytest runs
+                    if not os.environ.get('PYTEST_CURRENT_TEST'):
+                        click.echo("…still working, please wait…", err=True)
                     time.sleep(interval)
 
             t = threading.Thread(target=ping, daemon=True)
@@ -1017,17 +1019,18 @@ def verify_content_if_needed(
     auto_verify = client.should_auto_verify(content, command_name)
     needs_verification = verify_flag or auto_verify
 
-    # Inform user about verification status
-    if verify_flag and auto_verify:
-        click.echo(
-            "🔍 Running verification (--verify flag + auto-verification triggered)"
-        )
-    elif verify_flag:
-        click.echo("🔍 Running verification (--verify flag enabled)")
-    elif auto_verify:
-        click.echo("🔍 Running auto-verification (high-risk content detected)")
-    else:
-        click.echo("ℹ️  No verification performed")
+    # Inform user about verification status (suppress during tests)
+    if not os.environ.get('PYTEST_CURRENT_TEST'):
+        if verify_flag and auto_verify:
+            click.echo(
+                "🔍 Running verification (--verify flag + auto-verification triggered)"
+            )
+        elif verify_flag:
+            click.echo("🔍 Running verification (--verify flag enabled)")
+        elif auto_verify:
+            click.echo("🔍 Running auto-verification (high-risk content detected)")
+        else:
+            click.echo("ℹ️  No verification performed")
 
     if needs_verification:
         try:

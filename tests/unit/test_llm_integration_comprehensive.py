@@ -72,11 +72,11 @@ class TestLLMClient:
         """Test retry logic on connection errors."""
         mock_config.llm_model = "openai/gpt-4o"
         mock_config.api_key = "test-key"
-        # Simulate connection error for first 3 attempts, then success
+        # Simulate connection error for first 2 attempts, then success
         call_count = {"count": 0}
 
         def side_effect(*args, **kwargs):
-            if call_count["count"] < 3:
+            if call_count["count"] < 2:
                 call_count["count"] += 1
                 raise openai.error.APIConnectionError("Simulated connection error")
             mock_response = Mock()
@@ -97,7 +97,7 @@ class TestLLMClient:
         messages = [{"role": "user", "content": "Test prompt"}]
         content, usage = client.complete(messages, skip_citation_verification=True)
         assert content == "Retried response"
-        assert call_count["count"] == 3
+        assert call_count["count"] == 2
 
     @patch("openai.ChatCompletion.create")
     @patch("litassist.llm.CONFIG")

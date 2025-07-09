@@ -7,6 +7,7 @@ handling parameter management and response processing.
 
 import openai
 import re
+import os
 from typing import List, Dict, Any, Tuple
 
 from litassist.utils import timed, save_log, heartbeat
@@ -354,7 +355,8 @@ class LLMClientFactory:
                 "temperature": 0.3,
                 "top_p": 0.7,
             }
-            print(f"⚠️  No configuration found for '{config_key}', using defaults")
+            # Use default configuration for commands without specific config
+            # This is expected behavior for many commands
         else:
             config = cls.COMMAND_CONFIGS[config_key].copy()
 
@@ -369,12 +371,12 @@ class LLMClientFactory:
         if sub_type:
             env_model_key = f"LITASSIST_{command_name.upper()}_{sub_type.upper()}_MODEL"
 
-        import os
-
         env_model = os.environ.get(env_model_key)
         if env_model:
             config["model"] = env_model
-            print(f"📋 Using model from environment: {env_model}")
+            # Suppress informational message during pytest runs
+            if not os.environ.get('PYTEST_CURRENT_TEST'):
+                print(f"📋 Using model from environment: {env_model}")
 
         # Apply any provided overrides
         config.update(overrides)
@@ -515,9 +517,16 @@ class LLMClient:
                 aiohttp.ClientPayloadError,
             )
 
+        # Use no wait time during tests to speed up retry tests
+        wait_config = (
+            tenacity.wait_none()  # No wait in tests
+            if os.environ.get('PYTEST_CURRENT_TEST')
+            else tenacity.wait_exponential(multiplier=0.5, max=10)
+        )
+
         @tenacity.retry(
             stop=tenacity.stop_after_attempt(3),
-            wait=tenacity.wait_exponential(multiplier=0.5, max=10),
+            wait=wait_config,
             retry=tenacity.retry_if_exception_type(retry_errors),
             before_sleep=tenacity.before_sleep_log(logger, logging.WARNING),
             reraise=True,
