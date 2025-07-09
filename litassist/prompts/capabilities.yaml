@@ -1,0 +1,108 @@
+capabilities:
+  litassist_capabilities: |
+    # LitAssist Command Reference
+
+    ## CRITICAL INSTRUCTION
+    Use ONLY the exact command syntax and options listed below. Never invent or hallucinate command options. If unsure, use the simplest form.
+
+    ## Available Commands
+
+    ### lookup - Legal Research
+    Purpose: Search Australian case law via Jade.io
+    Syntax: litassist lookup "search terms" [options]
+    Options:
+      --mode: irac, broad
+      --comprehensive: Use exhaustive analysis (no fixed result limit)
+      --extract: citations, principles, checklist
+      --context: [string] (optional context for analysis)
+    Cost: ~$0.50-2.00 per search
+    Example: litassist lookup "gift incomplete delivery vehicle" --mode irac --comprehensive
+
+    ### digest - Document Analysis  
+    Purpose: Summarize/analyze documents
+    Syntax: litassist digest FILE [FILE...] [options]
+    Options:
+      --mode: summary, issues
+      --hint: [string] (focus analysis)
+    Cost: ~$1-3 per set
+    Example: litassist digest *.pdf --mode issues --hint "ownership evidence"
+
+    ### extractfacts - Structured Extraction
+    Purpose: Extract into 10-heading format
+    Syntax: litassist extractfacts FILE [FILE...] [options]
+    Options:
+      --verify: (flag, always enabled)
+    Limit: <1MB per file
+    Cost: ~$1-2
+    Example: litassist extractfacts case_facts.txt documents.pdf
+
+    ### brainstorm - Strategy Generation
+    Purpose: Generate legal strategies
+    Syntax: litassist brainstorm --side SIDE --area AREA [options]
+    Options:
+      --side: plaintiff, defendant, accused, respondent (REQUIRED)
+      --area: criminal, civil, family, commercial, administrative (REQUIRED)
+      --facts: [file(s)] (default: case_facts.txt, supports glob)
+      --research: [file(s)] (supports glob)
+    Cost: ~$3-5
+    Example: litassist brainstorm --side plaintiff --area civil --research 'outputs/lookup_*.txt'
+
+    ### strategy - Implementation Planning
+    Purpose: Create tactical plans
+    Syntax: litassist strategy FACTS --outcome "goal" [options]
+    Options:
+      --outcome: [string] (REQUIRED)
+      --strategies: [file] (from brainstorm)
+      --verify: (flag, always enabled)
+    Cost: ~$2-4
+    Example: litassist strategy case_facts.txt --outcome "Recover damages"
+
+    ### counselnotes - Strategic Analysis
+    Purpose: Multi-document synthesis
+    Syntax: litassist counselnotes FILE [FILE...] [options]
+    Options:
+      --extract: all, citations, principles, checklist
+      --verify: (flag)
+      --output: [string] (custom output filename prefix)
+    Cost: ~$2-4
+    Example: litassist counselnotes outputs/brainstorm_*.txt outputs/lookup_*.txt
+
+    ### barbrief - Barrister's Brief
+    Purpose: Comprehensive litigation brief
+    Syntax: litassist barbrief FACTS --hearing-type TYPE [options]
+    Options:
+      --hearing-type: trial, directions, interlocutory, appeal (REQUIRED)
+      --strategies: [file(s)] (supports glob)
+      --research: [file(s)] (supports glob)
+      --documents: [file(s)] (supports glob)
+      --instructions: [string]
+      --verify: (flag)
+    Cost: ~$4-8
+    Example: litassist barbrief case_facts.txt --strategies 'outputs/brainstorm_*.txt' --hearing-type trial
+
+    ### draft - Document Creation
+    Purpose: Generate legal documents
+    Syntax: litassist draft FILE [FILE...] "description" [options]
+    Options:
+      --verify: (flag)
+      --diversity: [float] (0.0-1.0, controls diversity of search results)
+    Cost: ~$2-5
+    Example: litassist draft case_facts.txt "Draft originating application"
+
+    ### verify - Quality Check
+    Purpose: Verify output quality
+    Syntax: litassist verify FILE [options]
+    Options:
+      --citations: (flag, verify citations only)
+      --soundness: (flag, verify legal soundness only)
+      --reasoning: (flag, verify/generate reasoning trace only)
+    Cost: ~$1-2
+    Example: litassist verify outputs/draft_*.txt --citations
+
+    ## Command Selection Principles
+    1. Use minimum commands for maximum effect
+    2. Avoid circular operations (extracting from generated content)  
+    3. Focus research on core issues only
+    4. One strategy command per outcome
+    5. Use counselnotes for multi-file synthesis
+    6. Quote glob patterns: 'outputs/*.txt'

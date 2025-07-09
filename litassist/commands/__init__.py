@@ -18,6 +18,7 @@ from litassist.commands import (
     verify,
     counselnotes,
     barbrief,
+    caseplan,
 )
 
 
@@ -37,3 +38,4 @@ def register_commands(cli: click.Group) -> None:
     cli.add_command(verify.verify)
     cli.add_command(counselnotes.counselnotes)
     cli.add_command(barbrief.barbrief)
+    cli.add_command(caseplan.caseplan)

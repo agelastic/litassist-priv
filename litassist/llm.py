@@ -312,6 +312,20 @@ class LLMClientFactory:
             "reasoning_effort": "high",
             "max_completion_tokens": 32768,  # 32K tokens for comprehensive output
         },
+        # Caseplan - LLM-driven workflow planning
+        "caseplan": {
+            "model": "anthropic/claude-opus-4",
+            "temperature": 0.3,
+            "top_p": 0.7,
+            "force_verify": False,
+        },
+        # Caseplan assessment - budget recommendation (Sonnet)
+        "caseplan-assessment": {
+            "model": "anthropic/claude-sonnet-4",
+            "temperature": 0.2,
+            "top_p": 0.7,
+            "force_verify": False,
+        },
     }
 
     @classmethod
@@ -375,7 +389,7 @@ class LLMClientFactory:
         if env_model:
             config["model"] = env_model
             # Suppress informational message during pytest runs
-            if not os.environ.get('PYTEST_CURRENT_TEST'):
+            if not os.environ.get("PYTEST_CURRENT_TEST"):
                 print(f"📋 Using model from environment: {env_model}")
 
         # Apply any provided overrides
@@ -520,7 +534,7 @@ class LLMClient:
         # Use no wait time during tests to speed up retry tests
         wait_config = (
             tenacity.wait_none()  # No wait in tests
-            if os.environ.get('PYTEST_CURRENT_TEST')
+            if os.environ.get("PYTEST_CURRENT_TEST")
             else tenacity.wait_exponential(multiplier=0.5, max=10)
         )
 
