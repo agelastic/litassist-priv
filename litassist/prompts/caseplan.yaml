@@ -62,6 +62,47 @@ commands:
          - Place the diagram after the phased workflow section.
          - Keep all text-based dependency/decision comments as before.
 
+      7. COMMAND COVERAGE & OMISSION ANALYSIS (MANDATORY)
+         - EVERY phase must include: "Rationale: [why this command over alternatives]"
+         - CRITICAL: If ANY of these major commands are not included, you MUST provide detailed justification under "COMMAND COVERAGE ANALYSIS":
+           * lookup (research)
+           * brainstorm (strategy generation)
+           * strategy (synthesis)
+           * counselnotes (analysis)
+           * draft (document creation)
+           * barbrief (comprehensive brief)
+           * verify (quality control)
+         - COMPLETION REQUIREMENT: Your response is incomplete without a "COMMAND COVERAGE ANALYSIS" section explaining why each omitted major command was not necessary
+         - REQUIRED COVERAGE CHECK: Explicitly address whether each major command type is needed for this case
+
+      FOCUS AREA REQUIREMENTS (if specified):
+         - MANDATORY: Every phase rationale must explain relevance to focus area
+         - PRIORITIZATION: Phases directly advancing focus should be marked ESSENTIAL
+         - COST OPTIMIZATION: Budget allocation should favor high-focus phases
+         - REQUIRED FORMAT: Include "Focus Relevance: [High/Medium/Low]" for each phase
+         - FOCUS COMPLIANCE: Low-relevance phases should be OPTIONAL unless legally essential
+
+      FORMAT ENFORCEMENT:
+         Each phase must follow this structure:
+         - Phase X: [Name]
+         - Purpose: [Value delivered]
+         - Commands: [Exact syntax]
+         - Rationale: [Why this command was chosen over alternatives]
+         - Focus Relevance: [High/Medium/Low]  # If focus specified
+         - Cost: [Estimate]
+         - Tag: [ESSENTIAL/OPTIONAL]
+
+      FINAL SECTION REQUIRED:
+         ## COMMAND COVERAGE ANALYSIS
+         For each major command NOT included in your plan, provide specific justification:
+         - lookup: [included/omitted - if omitted, explain why]
+         - brainstorm: [included/omitted - if omitted, explain why]
+         - strategy: [included/omitted - if omitted, explain why]
+         - counselnotes: [included/omitted - if omitted, explain why]
+         - draft: [included/omitted - if omitted, explain why]
+         - barbrief: [included/omitted - if omitted, explain why]
+         - verify: [included/omitted - if omitted, explain why]
+
     budget_assessment_system: |
       You are an experienced litigation strategist conducting a rapid case assessment.
       Your task is to quickly evaluate case complexity and recommend an appropriate budget level for the case.
