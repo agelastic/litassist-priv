@@ -137,12 +137,10 @@ class TestBarbriefCommand:
     @patch("litassist.commands.barbrief.read_document")
     @patch("litassist.commands.barbrief.LLMClientFactory")
     @patch("litassist.commands.barbrief.save_command_output")
-    @patch("litassist.commands.barbrief.extract_reasoning_trace")
     @patch("litassist.commands.barbrief.verify_content_if_needed")
     def test_barbrief_minimal(
         self,
         mock_verify,
-        mock_extract,
         mock_save,
         mock_factory,
         mock_read,
@@ -168,7 +166,6 @@ class TestBarbriefCommand:
         mock_factory.for_command.return_value = mock_client
 
         mock_save.return_value = "outputs/barbrief_trial_123.txt"
-        mock_extract.return_value = None
 
         # Run command
         runner = CliRunner()
@@ -222,14 +219,10 @@ class TestBarbriefCommand:
     @patch("litassist.commands.barbrief.read_document")
     @patch("litassist.commands.barbrief.LLMClientFactory")
     @patch("litassist.commands.barbrief.save_command_output")
-    @patch("litassist.commands.barbrief.extract_reasoning_trace")
-    @patch("litassist.commands.barbrief.save_reasoning_trace")
     @patch("litassist.commands.barbrief.verify_content_if_needed")
     def test_barbrief_with_all_options(
         self,
         mock_verify,
-        mock_save_trace,
-        mock_extract,
         mock_save,
         mock_factory,
         mock_read,
@@ -263,11 +256,6 @@ class TestBarbriefCommand:
         mock_factory.for_command.return_value = mock_client
 
         mock_save.return_value = "outputs/barbrief_appeal_123.txt"
-        # Mock LegalReasoningTrace object
-        mock_trace = MagicMock()
-        mock_trace.conclusion = "Final brief content"
-        mock_extract.return_value = mock_trace
-        mock_save_trace.return_value = "outputs/reasoning_barbrief_123.txt"
 
         # Run command
         runner = CliRunner()
@@ -308,19 +296,15 @@ class TestBarbriefCommand:
             assert mock_read.call_count == 5
             mock_factory.for_command.assert_called_once_with("barbrief")
             mock_save.assert_called()
-            mock_save_trace.assert_called_once()
-            assert "Reasoning trace saved" in result.output
 
     @patch("litassist.commands.barbrief.read_document")
     @patch("litassist.commands.barbrief.LLMClientFactory")
     @patch("litassist.commands.barbrief.save_command_output")
     @patch("litassist.commands.barbrief.verify_all_citations")
-    @patch("litassist.commands.barbrief.extract_reasoning_trace")
     @patch("litassist.commands.barbrief.verify_content_if_needed")
     def test_barbrief_with_citation_verification(
         self,
         mock_verify_content,
-        mock_extract,
         mock_citation_verify,
         mock_save,
         mock_factory,
@@ -358,7 +342,6 @@ class TestBarbriefCommand:
             "outputs/barbrief_verify_report.txt",
             "outputs/barbrief_interlocutory_123.txt",
         ]
-        mock_extract.return_value = None
 
         # Run command
         runner = CliRunner()

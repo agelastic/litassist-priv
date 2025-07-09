@@ -57,6 +57,26 @@ LitAssist is a command-line tool for automated litigation support workflows, tai
    - Structured extraction and storage with IRAC-based reasoning structure
    - Captures issue, applicable law, application, conclusion, confidence, and sources
 
+### Recent Updates (July 2025)
+
+1. **Enhanced Strategy Generation**: 
+   - Increased detail in strategy outputs (3-5 paragraphs per strategy)
+   - Updated token limits to 32k for all models during generation
+   - Improved formatting and content depth
+
+2. **Multiple Input Files Support**:
+   - `extractfacts` command now accepts multiple files
+   - Files are combined with source attribution
+   - Improved handling of complex fact extraction scenarios
+
+3. **Model Updates**:
+   - Updated Grok model identifier to `x-ai/grok-3`
+   - All models now use increased token limits for better output quality
+
+4. **File Naming Convention**:
+   - Claude-generated files now prefixed with `claude_` for clarity
+   - No longer ignored by git (as of July 7)
+
 ### Recent Simplifications (June 16, 2025)
 
 1. **Removed Inner Classes**: Replaced unnecessary inner classes with simple anonymous objects
@@ -202,6 +222,36 @@ The litassist codebase currently contains extensive local parsing of LLM respons
 - LLM self-assessment and correction within the same call
 
 **Reference**: A comprehensive audit of current parsing patterns exists and should be used as a roadmap for systematic elimination of all local LLM response processing logic.
+
+### Anti-Hallucination Guidelines for Legal Drafts
+
+**CRITICAL**: LLMs must NEVER invent factual details when drafting legal documents. This is essential for professional liability and legal accuracy.
+
+**Core Principles:**
+
+1. **Never Invent Facts**: The LLM must not create ages, dates, addresses, account numbers, or any specific details not in source documents
+   - Wrong: "I am 33 years of age" (if age not provided)
+   - Right: "I am [AGE TO BE PROVIDED] years of age"
+
+2. **Use Clear Placeholders**: For any missing information, use obvious placeholders:
+   - Ages: `[AGE TO BE PROVIDED]`
+   - Addresses: `[ADDRESS TO BE CONFIRMED]`
+   - Dates: `[DATE TO BE CONFIRMED]`
+   - Account numbers: `[ACCOUNT NUMBER - CLIENT TO PROVIDE]`
+   - Document exhibits: `[EXHIBIT A]`, `[EXHIBIT B]` (not specific numbering)
+
+3. **Factual Verification**: The draft command includes hallucination detection that warns about:
+   - Potentially invented ages, addresses, or dates
+   - Specific account or reference numbers not in source
+   - Exhibit references that should be generic placeholders
+
+4. **Template Usage**: The `documents.yaml` witness_statement template demonstrates proper placeholder usage
+
+5. **Prompt Engineering**: The `processing.yaml` draft prompts explicitly instruct:
+   - "NEVER invent or assume facts not explicitly provided"
+   - "It is better to produce an incomplete draft with clear placeholders than to invent plausible details"
+
+**Implementation**: The `detect_factual_hallucinations()` function in `utils.py` automatically scans drafts for common hallucination patterns and adds warnings to the output when detected.
 
 ### Australian Legal Focus
 
@@ -372,5 +422,13 @@ When saving Claude-generated files to the project:
 - Centralized configuration
 - Clean CLI output
 
+### Verification System Improvements (July 7, 2025)
+- **Fixed Missing Content**: "MOST LIKELY TO SUCCEED" section was being lost during verification
+- **Removed Local Parsing**: Eliminated ~25 lines of parsing code in brainstorm.py that was cutting content
+- **Increased Token Limits**: Verification now uses 8192-16384 tokens (was 800-1536) to handle full documents
+- **Fixed System Prompt Bleeding**: Updated prompts to prevent "Australian law only" appearing in output
+- **Simplified API**: verify_with_level now only meaningful for "light" and "heavy" modes
+- **Trust LLM Output**: Following CLAUDE.md principles - no local parsing of verification results
+
 ---
-Last Updated: 2025-06-16 (Model configurations corrected for Claude 4 Sonnet and o3-pro, architecture documentation updated)
+Last Updated: 2025-07-07 (Verification system fixes for full document preservation, token limit increases)

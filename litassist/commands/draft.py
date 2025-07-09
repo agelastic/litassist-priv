@@ -19,11 +19,10 @@ from litassist.utils import (
     heartbeat,
     timed,
     create_reasoning_prompt,
-    extract_reasoning_trace,
-    save_reasoning_trace,
     save_command_output,
     show_command_completion,
     verify_content_if_needed,
+    detect_factual_hallucinations,
 )
 from litassist.llm import LLMClientFactory
 from litassist.helpers.retriever import Retriever, get_pinecone_client
@@ -240,9 +239,18 @@ def draft(ctx, documents, query, verify, diversity):
     content, needs_verification = verify_content_if_needed(
         client, content, "draft", verify
     )
-
-    # Extract reasoning trace before saving
-    reasoning_trace = extract_reasoning_trace(content, "draft")
+    
+    # Check for potential hallucinations
+    hallucination_warnings = detect_factual_hallucinations(content, context)
+    if hallucination_warnings:
+        warning_header = "=== FACTUAL ACCURACY WARNING ===\n"
+        warning_header += "The following potentially hallucinated facts were detected:\n"
+        for warning in hallucination_warnings:
+            warning_header += f"- {warning}\n"
+        warning_header += "\nPlease verify all facts against source documents before use.\n"
+        warning_header += "Replace any invented details with placeholders like [TO BE PROVIDED].\n"
+        warning_header += "=" * 32 + "\n\n"
+        content = warning_header + content
 
     # Save output using utility
     output_file = save_command_output(
@@ -252,11 +260,8 @@ def draft(ctx, documents, query, verify, diversity):
         metadata={"Query": query, "Documents": ", ".join(documents)},
     )
 
-    # Save reasoning trace if extracted
-    extra_files = {}
-    if reasoning_trace:
-        reasoning_file = save_reasoning_trace(reasoning_trace, output_file)
-        extra_files["Reasoning trace"] = reasoning_file
+    # Reasoning trace is embedded in the main output, not saved separately
+    extra_files = None
 
     # Save audit log
     save_log(

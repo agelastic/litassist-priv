@@ -19,7 +19,9 @@ Lookup → Digest → ExtractFacts → Brainstorm → Strategy → Draft → Bar
                                                         CounselNotes
 ```
 - **Digest Command Hinting (June 2025):** The `digest` command now supports an optional `--hint` argument, allowing users to provide a text hint to focus LLM analysis on topics related to the hint. This enables targeted processing of non-legal and general documents.
+- **Digest Multiple Files (July 2025):** The `digest` command now accepts multiple input files via repeated FILE arguments. All files are processed individually then combined with clear source attribution, enabling comprehensive document digestion in a single run.
 - **Research-Informed Brainstorm (June 2025):** The `brainstorm` command now supports a `--research` option, allowing one or more lookup report files to be provided. When used, the orthodox strategies prompt is dynamically injected with the research context, enabling research-grounded strategy generation. The unorthodox strategies remain purely creative. All prompt logic is managed via YAML templates; no LLM prompt text is hardcoded in Python.
+- **Multiple Input Files (July 2025):** The `extractfacts` command now accepts multiple input files via repeated FILE arguments. All files are combined with clear source attribution before processing, enabling comprehensive fact extraction from multiple documents in a single run.
 
 Each stage:
 1. Reads inputs (files/arguments)
@@ -45,6 +47,13 @@ Each stage:
   - If no reasoning trace exists in the file, one is generated and output.
   - Each check writes a separate timestamped report to outputs/.
   - All steps use the existing logging infrastructure and minimal console output.
+
+- **Verification System Improvements (July 2025)**:
+  - **Token Limits**: Increased from 800-1536 to 8192-16384 tokens to handle full documents
+  - **No Local Parsing**: Removed ~25 lines of content parsing in brainstorm.py - trust LLM output
+  - **Prompt Clarity**: Updated prompts to preserve ALL sections and prevent system instruction bleeding
+  - **API Simplification**: verify_with_level now only uses "heavy" for strategy/draft commands
+  - **Full Document Preservation**: Fixed issue where "MOST LIKELY TO SUCCEED" section was being lost
 
 ## Structured Output Patterns
 
@@ -74,7 +83,9 @@ Each stage:
 Strategic analysis commands follow consistent configuration patterns:
 
 - **CounselNotes**: `anthropic/claude-sonnet-4`, temp=0.3, top_p=0.7, force_verify=True
-- **Brainstorm-Orthodox**: `anthropic/claude-sonnet-4`, temp=0.3, top_p=0.7, force_verify=True  
+- **Brainstorm-Orthodox**: `anthropic/claude-sonnet-4`, temp=0.3, top_p=0.7, force_verify=True
+- **Brainstorm-Unorthodox**: `x-ai/grok-3`, temp=0.9, top_p=0.95, force_verify=True
+- **Brainstorm-Analysis**: `openai/o3-pro`, temp=0.2, top_p=0.8, reasoning_effort=high
 - **Strategy-Analysis**: `anthropic/claude-sonnet-4`, temp=0.2, top_p=0.8
 - **Barbrief**: `openai/o3-pro`, reasoning_effort=high, max_completion_tokens=32768
 
@@ -84,6 +95,13 @@ Strategic analysis commands follow consistent configuration patterns:
 - Force verification enabled for professional legal accountability
 - Consistent patterns across similar command types for predictable behavior
 - Barbrief uses o3-pro for comprehensive document generation with extended token limits
+
+**Brainstorm Verification Behavior (Updated January 2025):**
+- Verification is ALWAYS performed on all brainstorm outputs automatically
+- No --verify flag needed or available - verification is mandatory
+- All three sub-types (orthodox, unorthodox, analysis) have force_verify=True
+- Clean single message: "🔍 Verifying brainstorm strategies..."
+- Maintains zero-tolerance citation policy across all strategies
 
 **CounselNotes Specific Patterns:**
 - Multi-document cross-synthesis capabilities

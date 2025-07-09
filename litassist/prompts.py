@@ -7,6 +7,7 @@ prompts directory and provides methods for accessing and composing prompts.
 """
 
 import yaml
+import os
 from pathlib import Path
 from typing import Dict, Any
 
@@ -38,7 +39,9 @@ class PromptManager:
         templates = {}
         
         if not self.prompts_dir.exists():
-            print(f"⚠️  Prompts directory not found at {self.prompts_dir}")
+            # Suppress warning during pytest runs
+            if not os.environ.get('PYTEST_CURRENT_TEST'):
+                print(f"⚠️  Prompts directory not found at {self.prompts_dir}")
             return templates
         
         # Load all YAML files in the prompts directory
@@ -50,7 +53,9 @@ class PromptManager:
                         # Merge templates directly to avoid double nesting
                         templates.update(file_templates)
             except Exception as e:
-                print(f"⚠️  Error loading {yaml_file}: {e}")
+                # Suppress warning during pytest runs
+                if not os.environ.get('PYTEST_CURRENT_TEST'):
+                    print(f"⚠️  Error loading {yaml_file}: {e}")
         
         return templates
     

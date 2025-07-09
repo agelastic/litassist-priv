@@ -32,7 +32,8 @@
 ## Dependencies & Constraints
 
 - **LLM Models**: BYOK required for o3 and o1-pro models (OpenRouter integration)  
-- **Token & Chunk Limits**: Configurable in `general.max_chars`, `general.rag_max_chars`, and `llm.use_token_limits`  
+- **Token & Chunk Limits**: Configurable in `general.max_chars`, `general.rag_max_chars`, and `llm.use_token_limits`
+  - **Verification Token Limits (July 2025)**: Increased to 8192-16384 tokens for full document verification
 - **Citation Verification**: Jade.io primary with offline pattern fallback (`citation_validation.offline_validation`)  
 - **Strict Structure**: `extractfacts` and `strategy` enforce fixed heading formats  
 

@@ -9,8 +9,8 @@ tailored to the specified party (plaintiff/defendant) and legal area.
 import click
 import os
 import re
-import time
 import logging
+import glob
 
 from litassist.config import CONFIG
 from litassist.utils import (
@@ -18,9 +18,7 @@ from litassist.utils import (
     save_log,
     heartbeat,
     timed,
-    OUTPUT_DIR,
     create_reasoning_prompt,
-    extract_reasoning_trace,
     parse_strategies_file,
     validate_side_area_combination,
     validate_file_size_limit,
@@ -60,6 +58,10 @@ def regenerate_bad_strategies(
     # Split content into individual strategies using a robust regex
     # This pattern finds all numbered list items (e.g., "1. Strategy Title...")
     # and treats each one as a separate strategy.
+    # Remove any section headers before processing
+    original_content = re.sub(
+        r"##\s+\w+\s+STRATEGIES\s*\n+", "", original_content.strip()
+    )
     strategies = re.split(r"\n(?=\d+\.\s+)", original_content.strip())
     # The first item might be a header, so filter it out if it doesn't start with a number
     strategies = [s.strip() for s in strategies if re.match(r"^\d+\.", s.strip())]
@@ -116,7 +118,10 @@ def regenerate_bad_strategies(
 Generate ONLY strategy #{strategy_num} in the exact format:
 
 {strategy_num}. [Strategy Title]
-[Strategy content...]
+
+[Detailed explanation including implementation approach, anticipated challenges, and supporting precedents - aim for 3-5 paragraphs that thoroughly explore the strategy]
+
+Key principles: [Comprehensive legal principles or precedents with full case citations and pinpoint references]
 """
 
             try:
@@ -135,6 +140,10 @@ Generate ONLY strategy #{strategy_num} in the exact format:
                 else:
                     click.echo(
                         f"    ✅ Strategy {strategy_num}: Successfully regenerated with clean citations"
+                    )
+                    # Strip any headers from the regenerated strategy
+                    new_strategy = re.sub(
+                        r"##\s+\w+\s+STRATEGIES\s*\n+", "", new_strategy.strip()
                     )
                     strategy_results[strategy_num] = new_strategy
 
@@ -177,15 +186,58 @@ Generate ONLY strategy #{strategy_num} in the exact format:
             else:
                 renumbered_strategies.append(strategy)
 
-        return "\n\n".join(renumbered_strategies)
+        # Add the appropriate header back
+        header = (
+            "## ORTHODOX STRATEGIES"
+            if strategy_type == "orthodox"
+            else "## UNORTHODOX STRATEGIES"
+        )
+        return f"{header}\n\n" + "\n\n".join(renumbered_strategies)
     else:
         return (
             f"No {strategy_type} strategies could be generated with verified citations."
         )
 
 
+def expand_glob_patterns(ctx, param, value):
+    """Expand glob patterns in file paths."""
+    if not value:
+        return value
+
+    expanded_paths = []
+    for pattern in value:
+        # Check if it's a glob pattern (contains *, ?, or [)
+        if any(char in pattern for char in ["*", "?", "["]):
+            # Expand the glob pattern
+            matches = glob.glob(pattern)
+            if not matches:
+                raise click.BadParameter(f"No files matching pattern: {pattern}")
+            expanded_paths.extend(matches)
+        else:
+            # Not a glob pattern, just verify the file exists
+            if not os.path.exists(pattern):
+                raise click.BadParameter(f"File not found: {pattern}")
+            expanded_paths.append(pattern)
+
+    # Remove duplicates while preserving order
+    seen = set()
+    unique_paths = []
+    for path in expanded_paths:
+        if path not in seen:
+            seen.add(path)
+            unique_paths.append(path)
+
+    return tuple(unique_paths)
+
+
 @click.command()
-@click.argument("facts_file", type=click.Path(exists=True))
+@click.option(
+    "--facts",
+    multiple=True,
+    type=click.Path(),  # Remove exists=True since we'll check in callback
+    callback=expand_glob_patterns,
+    help="Facts files to analyze. Supports glob patterns. Use multiple times: --facts file1.txt --facts 'case_*.txt'. Defaults to case_facts.txt if it exists.",
+)
 @click.option(
     "--side",
     type=click.Choice(["plaintiff", "defendant", "accused", "respondent"]),
@@ -201,11 +253,12 @@ Generate ONLY strategy #{strategy_num} in the exact format:
 @click.option(
     "--research",
     multiple=True,
-    type=click.Path(exists=True),
-    help="Optional: One or more lookup report files to inform orthodox strategies (research-informed mode).",
+    type=click.Path(),  # Remove exists=True since we'll check in callback
+    callback=expand_glob_patterns,
+    help="Optional: Lookup report files to inform orthodox strategies. Supports glob patterns. Use multiple times: --research file1.txt --research 'outputs/lookup_*.txt'",
 )
 @timed
-def brainstorm(facts_file, side, area, research):
+def brainstorm(facts, side, area, research):
     """
     Generate comprehensive legal strategies via Grok.
 
@@ -215,23 +268,70 @@ def brainstorm(facts_file, side, area, research):
     - A list of strategies most likely to succeed
 
     All strategies are tailored to your specified party side and legal area.
-    The output is automatically saved to strategies.txt for use in other commands.
+    The output is automatically saved with a timestamp for use in other commands.
 
-    Args:
-        facts_file: Path to a text file containing structured case facts.
-        side: Which side you are representing (plaintiff/defendant/accused/respondent).
-        area: The legal area of the matter (criminal/civil/family/commercial/administrative).
-    
+    Usage:
+        # With default case_facts.txt (if exists in current directory)
+        litassist brainstorm --side plaintiff --area civil
+
+        # With single facts file
+        litassist brainstorm --facts case_facts.txt --side plaintiff --area civil
+
+        # With multiple facts files
+        litassist brainstorm --facts facts1.txt --facts facts2.txt --side plaintiff --area civil
+
+        # With multiple research files
+        litassist brainstorm --side plaintiff --area civil --research lookup1.txt --research lookup2.txt
+
+        # With glob patterns for research files
+        litassist brainstorm --side plaintiff --area civil --research 'outputs/lookup_*gift*.txt'
+
     Note: Verification is automatically performed on all brainstorm outputs to ensure citation accuracy and legal soundness.
 
     Raises:
-        click.ClickException: If there are errors reading the facts file or with the LLM API call.
+        click.ClickException: If there are errors reading the facts files or with the LLM API call.
     """
     # Check for potentially incompatible side/area combinations
     validate_side_area_combination(side, area)
 
-    # Read the structured facts file
-    facts = read_document(facts_file)
+    # Handle facts files - use default case_facts.txt if no facts provided
+    if not facts:
+        default_facts = "case_facts.txt"
+        if os.path.exists(default_facts):
+            facts = (default_facts,)
+            click.echo(f"Using default facts file: {default_facts}")
+        else:
+            raise click.ClickException(
+                "No facts files provided and case_facts.txt not found in current directory. "
+                "Use --facts to specify one or more facts files."
+            )
+
+    # Combine multiple facts files if provided
+    facts_contents = []
+    facts_sources = []
+    for facts_file in facts:
+        content = read_document(facts_file)
+        facts_contents.append(content)
+        facts_sources.append(facts_file)
+
+    # Log which facts files are being used
+    if len(facts_sources) == 1:
+        click.echo(f"Using facts from: {facts_sources[0]}")
+    else:
+        click.echo(f"Using facts from {len(facts_sources)} files:")
+        for source in facts_sources:
+            click.echo(f"  • {source}")
+
+    # Combine facts with source attribution if multiple files
+    if len(facts_contents) == 1:
+        combined_facts = facts_contents[0]
+    else:
+        combined_parts = []
+        for i, (source, content) in enumerate(zip(facts_sources, facts_contents)):
+            combined_parts.append(f"=== SOURCE: {source} ===\n{content}")
+        combined_facts = "\n\n".join(combined_parts)
+
+    facts = combined_facts
 
     # Check file size to prevent token limit issues
     validate_file_size_limit(facts, 50000, "Case facts")
@@ -269,14 +369,14 @@ Please provide output in EXACTLY this format:
 ## ORTHODOX STRATEGIES
 
 1. [Strategy Title]
-   [Brief explanation (1-2 sentences)]
-   Key principles: [Legal principles or precedents with citations]
+   [Detailed explanation including implementation approach, anticipated challenges, and supporting precedents - aim for 3-5 paragraphs that thoroughly explore the strategy]
+   Key principles: [Comprehensive legal principles or precedents with full case citations and pinpoint references]
 
 2. [Strategy Title]
-   [Brief explanation]
-   Key principles: [Legal principles with citations]
+   [Detailed explanation with same depth as above]
+   Key principles: [Comprehensive legal principles with full citations]
 
-[Continue for 10 orthodox strategies]"""
+[Continue for 10 orthodox strategies with similar detail]"""
 
     # Add reasoning trace to orthodox prompt
     orthodox_prompt = create_reasoning_prompt(
@@ -315,7 +415,7 @@ Please provide output in EXACTLY this format:
     # Generate Unorthodox Strategies (creative approach)
     click.echo("Generating unorthodox strategies...")
     unorthodox_client = LLMClientFactory.for_command("brainstorm", "unorthodox")
-    
+
     # Log model usage for future reference (no user-facing message)
     if "grok" in unorthodox_client.model.lower():
         logging.debug(f"Using {unorthodox_client.model} for unorthodox strategies")
@@ -334,14 +434,14 @@ Please provide output in EXACTLY this format:
 ## UNORTHODOX STRATEGIES
 
 1. [Strategy Title]
-   [Brief explanation (1-2 sentences)]
-   Key principles: [Legal principles or novel arguments]
+   [Detailed explanation exploring the creative approach, implementation pathway, potential obstacles, and transformative impact - aim for 3-5 paragraphs that fully develop the innovative strategy]
+   Key principles: [Comprehensive legal principles or novel arguments with supporting authorities and creative interpretations]
 
 2. [Strategy Title]
-   [Brief explanation]
-   Key principles: [Legal principles or innovative theories]
+   [Detailed explanation with same depth as above]
+   Key principles: [Comprehensive legal principles or innovative theories with full analysis]
 
-[Continue for 10 unorthodox strategies]"""
+[Continue for 10 unorthodox strategies with similar detail]"""
 
     # Add reasoning trace to unorthodox prompt
     unorthodox_prompt = create_reasoning_prompt(
@@ -449,149 +549,60 @@ Please provide output in EXACTLY this format:
 
     # Store content before verification
     usage = total_usage
-    verification_notes = []
 
     # Run verification on all brainstorm outputs
     click.echo("🔍 Verifying brainstorm strategies...")
-    
+
     # Always verify brainstorm outputs
     try:
         # Use medium verification for creative brainstorming
-        correction = analysis_client.verify_with_level(combined_content, "medium")
+        correction = analysis_client.verify(combined_content)
 
         # The verification model returns the full, corrected text.
         # We should replace the content, not append to it.
         if correction.strip() and not correction.lower().startswith(
             "no corrections needed"
         ):
-            # Parse the verification output to extract only the corrected document
-            # The output format is:
-            # ## Issues Found during Verification
-            # ...
-            # ---
-            # ## Verified and Corrected Document
-            # [actual content]
-
-            if "## Verified and Corrected Document" in correction:
-                # Extract only the corrected document portion
-                parts = correction.split("## Verified and Corrected Document")
-                if len(parts) > 1:
-                    corrected_content = parts[1].strip()
-                    # Remove any leading system instructions that might have leaked
-                    lines = corrected_content.split("\n")
-                    filtered_lines = []
-                    for line in lines:
-                        # Skip lines that are clearly system instructions
-                        if line.strip().startswith("Australian law only."):
-                            continue
-                        filtered_lines.append(line)
-                    combined_content = "\n".join(filtered_lines).strip()
-                else:
-                    # Fallback if parsing fails
-                    combined_content = correction
-            else:
-                # Fallback if expected format not found
-                combined_content = correction
-
-            verification_notes.append(
-                "--- Strategic Review Applied ---\nContent was updated based on verification."
-            )
+            # Trust the well-prompted LLM to return the correct format
+            # Following CLAUDE.md: "minimize local parsing through better prompt engineering"
+            combined_content = correction
 
         # Run citation validation on the potentially corrected content
         citation_issues = analysis_client.validate_citations(combined_content)
         if citation_issues:
-            # Append warnings, but don't modify the content further here
-            verification_notes.append(
-                "--- Citation Warnings ---\n" + "\n".join(citation_issues)
-            )
+            # Citation warnings are shown in console but not saved separately
+            click.echo(f"⚠️  {len(citation_issues)} citation warnings found")
 
     except Exception as e:
         raise click.ClickException(f"Verification error during brainstorming: {e}")
 
-    # Extract separate reasoning traces for each section
-    orthodox_trace = extract_reasoning_trace(orthodox_content, "brainstorm-orthodox")
-    unorthodox_trace = extract_reasoning_trace(
-        unorthodox_content, "brainstorm-unorthodox"
-    )
-    analysis_trace = extract_reasoning_trace(analysis_content, "brainstorm-analysis")
-
-    # Keep reasoning traces in main content (they're also saved separately)
-    clean_content = combined_content
-
-    # Save to timestamped file only
+    # Save to timestamped file only (reasoning traces remain inline in the content)
     output_file = save_command_output(
         f"brainstorm_{area}_{side}",
-        clean_content,
+        combined_content,
         f"{side} in {area} law",
         metadata={
             "Side": side.capitalize(),
             "Area": area.capitalize(),
-            "Source": facts_file,
+            "Source": (
+                ", ".join(facts_sources) if len(facts_sources) > 1 else facts_sources[0]
+            ),
         },
     )
-
-    # Save separate reasoning traces if extracted
-    reasoning_files = []
-
-    if orthodox_trace:
-        orthodox_reasoning_file = output_file.replace(".txt", "_orthodox_reasoning.txt")
-        with open(orthodox_reasoning_file, "w", encoding="utf-8") as f:
-            f.write("# ORTHODOX STRATEGIES - REASONING TRACE\n")
-            f.write(f"# Generated: {time.strftime('%Y-%m-%d %H:%M:%S')}\n")
-            f.write("# Command: brainstorm-orthodox\n\n")
-            f.write(orthodox_trace.to_markdown())
-        reasoning_files.append(("Orthodox", orthodox_reasoning_file))
-
-    if unorthodox_trace:
-        unorthodox_reasoning_file = output_file.replace(
-            ".txt", "_unorthodox_reasoning.txt"
-        )
-        with open(unorthodox_reasoning_file, "w", encoding="utf-8") as f:
-            f.write("# UNORTHODOX STRATEGIES - REASONING TRACE\n")
-            f.write(f"# Generated: {time.strftime('%Y-%m-%d %H:%M:%S')}\n")
-            f.write("# Command: brainstorm-unorthodox\n\n")
-            f.write(unorthodox_trace.to_markdown())
-        reasoning_files.append(("Unorthodox", unorthodox_reasoning_file))
-
-    if analysis_trace:
-        analysis_reasoning_file = output_file.replace(".txt", "_analysis_reasoning.txt")
-        with open(analysis_reasoning_file, "w", encoding="utf-8") as f:
-            f.write("# MOST LIKELY TO SUCCEED - REASONING TRACE\n")
-            f.write(f"# Generated: {time.strftime('%Y-%m-%d %H:%M:%S')}\n")
-            f.write("# Command: brainstorm-analysis\n\n")
-            f.write(analysis_trace.to_markdown())
-        reasoning_files.append(("Most Likely Analysis", analysis_reasoning_file))
-
-    # Report reasoning files
-    if reasoning_files:
-        click.echo("\n📝 Reasoning traces saved:")
-        for trace_type, file_path in reasoning_files:
-            click.echo(f'   {trace_type}: "{file_path}"')
-    else:
-        click.echo("\n📝 No reasoning traces extracted from this generation")
 
     click.echo(
         "\nTo use these strategies with other commands, manually create or update strategies.txt"
     )
 
-    # Save verification notes separately if any exist
-    if verification_notes:
-        timestamp = time.strftime("%Y%m%d_%H%M%S")
-        verification_file = os.path.join(
-            OUTPUT_DIR, f"brainstorm_verification_{area}_{side}_{timestamp}.txt"
-        )
-        with open(verification_file, "w", encoding="utf-8") as f:
-            f.write("# Verification Notes for Strategies\n")
-            f.write(f"# Generated: {time.strftime('%Y-%m-%d %H:%M:%S')}\n\n")
-            f.write("\n\n".join(verification_notes))
-        click.echo(f'Verification notes saved to "{verification_file}"')
-
     # Save comprehensive audit log
     save_log(
         "brainstorm",
         {
-            "inputs": {"facts_file": facts_file, "method": "three-stage approach"},
-            "params": f"verify={verify} (auto-enabled for Grok), orthodox_temp=0.3, unorthodox_temp=0.9, analysis_temp=0.4",
+            "inputs": {
+                "facts_files": facts_sources,
+                "research_files": list(research) if research else [],
+            },
+            "params": "verify=True (auto-enabled for Grok), orthodox_temp=0.3, unorthodox_temp=0.9, analysis_temp=0.4",
             "response": combined_content,  # Log the final, verified content
             "usage": usage,
             "output_file": output_file,
@@ -606,8 +617,6 @@ Please provide output in EXACTLY this format:
     # Show summary instead of full content
     click.echo("\n✅ Brainstorm complete!")
     click.echo(f'📄 Strategies saved to: "{output_file}"')
-    if verification_notes:
-        click.echo(f'📋 Verification notes: open "{verification_file}"')
 
     # Parse the actual strategies generated
     parsed_result = parse_strategies_file(combined_content)

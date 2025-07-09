@@ -269,7 +269,7 @@ Key configuration options in the `general` section:
 ```yaml
 general:
   heartbeat_interval: 10    # Progress indicator interval in seconds (default: 10)
-  max_chars: 20000          # Maximum characters per chunk for document processing (default: 20000)
+  max_chars: 200000         # Maximum characters per chunk for document processing (default: 200000, ~50K tokens)
   rag_max_chars: 8000       # Maximum characters per chunk for RAG retrieval (default: 8000)
   log_format: "json"        # Format for audit logs: "json" or "markdown" (default: json)
 ```
@@ -327,8 +327,8 @@ All LitAssist commands save their results to timestamped text files in the `outp
 
 **Timestamped Archive Files** (never overwritten):
 - `lookup_[query_slug]_YYYYMMDD_HHMMSS.txt` - Search results
-- `digest_[mode]_[filename_slug]_YYYYMMDD_HHMMSS.txt` - Document analysis
-- `extractfacts_[filename_slug]_YYYYMMDD_HHMMSS.txt` - Extracted facts from documents
+- `digest_[mode]_YYYYMMDD_HHMMSS.txt` - Document analysis (shows "N files" for multiple)
+- `extractfacts_YYYYMMDD_HHMMSS.txt` - Extracted facts from documents (handles multiple files)
 - `brainstorm_[area]_[side]_YYYYMMDD_HHMMSS.txt` - Generated legal strategies
 - `strategy_[outcome_slug]_YYYYMMDD_HHMMSS.txt` - Strategic analysis and draft documents
 - `draft_[query_slug]_YYYYMMDD_HHMMSS.txt` - Generated legal drafts
@@ -714,14 +714,17 @@ The `digest` command processes large documents by splitting them into manageable
 ### Command
 
 ```bash
-./litassist.py digest <file> [--mode summary|issues] [--hint <hint_text>]
+./litassist.py digest <file>... [--mode summary|issues] [--hint <hint_text>]
 ```
 
 Options:
+- `<file>...`: One or more files to digest (PDFs or text files). Accepts multiple files for consolidated analysis.
 - `--mode`: Choose between chronological summary or issue-spotting (default: summary)
 - `--hint`: Optional guidance to focus the analysis on specific aspects (e.g., "focus on parental alienation claims" or "analyze financial discrepancies")
 
 **Output**: All analysis saved to timestamped files: `digest_[mode]_[filename_slug]_YYYYMMDD_HHMMSS.txt`
+
+**New in July 2025**: The digest command now accepts multiple files, processing each individually and combining results with clear source attribution.
 
 **Citation Quality Control**: All digest outputs undergo automatic citation verification. If any citations are found to be invalid or unverifiable, clear warnings are displayed at the top of each chunk's output explaining the specific issues and actions taken.
 
@@ -765,6 +768,34 @@ When you need focused analysis on specific aspects of a document:
 
 # Medical document analysis
 ./litassist.py digest medical_report.pdf --mode summary --hint "identify disability impacts on parenting capacity"
+```
+
+#### Processing Multiple Files
+You can now digest multiple documents in a single command:
+
+```bash
+# Process all affidavits together
+./litassist.py digest smith_affidavit.pdf jones_affidavit.pdf expert_report.pdf --mode issues
+
+# Using wildcards (shell expands them)
+./litassist.py digest evidence/*.pdf --mode summary --hint "timeline of events"
+
+# Mix different document types
+./litassist.py digest financial_records.pdf correspondence.txt medical_report.pdf --mode issues
+```
+
+Each file is processed individually and the output includes clear source attribution:
+```
+=== DIGEST ISSUES FOR 3 FILES ===
+
+=== SOURCE: smith_affidavit.pdf ===
+[Analysis of smith_affidavit.pdf...]
+
+=== SOURCE: jones_affidavit.pdf ===
+[Analysis of jones_affidavit.pdf...]
+
+=== SOURCE: expert_report.pdf ===
+[Analysis of expert_report.pdf...]
 ```
 
 **Benefits of --hint**:
@@ -818,8 +849,14 @@ The `extractfacts` command processes a document to extract relevant case facts a
 ### Command
 
 ```bash
+# Single file
 ./litassist.py extractfacts <file>
+
+# Multiple files (July 2025 Update)
+./litassist.py extractfacts file1.pdf file2.txt file3.pdf
 ```
+
+**Multiple Files Support**: As of July 2025, extractfacts accepts multiple input files. All files are combined with clear source attribution before processing, enabling comprehensive fact extraction from document sets in a single run.
 
 **Note:** This command includes automatic verification for accuracy and completeness - no additional flag needed. The --verify flag is ignored as verification is mandatory for this foundational command.
 
@@ -869,7 +906,11 @@ The `extractfacts` command is specifically designed for legal documents and forc
 Now we need to create a structured fact sheet for the *Smith v Jones* case:
 
 ```bash
+# Single document extraction
 ./litassist.py extractfacts examples/smith_jones_file.pdf
+
+# Multiple document extraction (combines all sources)
+./litassist.py extractfacts examples/smith_jones_file.pdf examples/medical_report.pdf examples/financial_records.txt
 ```
 
 **Output Example**:
@@ -1520,6 +1561,7 @@ litassist strategy case_facts.txt --outcome "custody modification" --strategies 
 | **Citation Focus** | Enhanced verification for accuracy | Standard verification with warnings |
 | **LLM Model** | Claude Sonnet (precise extraction) | Claude Sonnet/Opus (flexible analysis) |
 | **Verification** | Mandatory for foundational accuracy | Optional warnings for low-stakes analysis |
+| **Multiple Files** | Yes (consolidated output) | Yes (with source attribution) |
 
 ### When to Use Each Command
 
@@ -1540,9 +1582,9 @@ litassist strategy case_facts.txt --outcome "custody modification" --strategies 
 
 #### For Legal Case Preparation:
 ```bash
-# Use extractfacts to create structured foundation
-litassist extractfacts contract_dispute_docs.pdf
-# → Produces 10-heading case facts for legal analysis
+# Use extractfacts to create structured foundation from multiple sources
+litassist extractfacts contract.pdf correspondence/*.pdf
+# → Produces single 10-heading case facts consolidating all documents
 
 # Then use those facts in other commands
 litassist brainstorm case_facts.txt --side plaintiff
@@ -1551,13 +1593,13 @@ litassist strategy case_facts.txt --outcome "summary judgment"
 
 #### For Document Understanding:
 ```bash
-# Use digest to understand content with specific focus
-litassist digest car_documents.pdf --hint "Volkswagen VIN and identification details"
-# → Provides focused summary about vehicle details
+# Use digest to understand multiple documents with source attribution
+litassist digest car_bundle.pdf suncorp_bundle.pdf whatsapp_chat.txt --hint "vehicle ownership"
+# → Provides analysis of each document with clear source headers
 
-# Or general document analysis
-litassist digest financial_records.pdf --mode summary
-# → Chronological summary of financial events
+# Or general document analysis of a directory
+litassist digest evidence/*.pdf --mode issues
+# → Issue-spotting across all evidence files
 ```
 
 #### The Wrong Approach:
@@ -2691,21 +2733,22 @@ Without BYOK setup, the strategy, draft, and barbrief commands will fail with au
 
 ### Token Limits
 
-When `use_token_limits: false` (default), models use their default token limits (typically 4096+).
+When `use_token_limits: false`, models use their API default token limits (typically ~4096 tokens).
 
-When `use_token_limits: true` in the `llm` section of config.yaml, LitAssist applies conservative token limits:
+When `use_token_limits: true` (default as of July 2025), LitAssist applies generous token limits:
 
 | Model | Completion Tokens | Verification Tokens |
 |-------|-------------------|---------------------|
-| `google/gemini-*` | 2048 | 1024 |
-| `anthropic/claude-*` | 4096 | 1536 |
-| `openai/gpt-4*` | 3072 | 1024 |
-| `x-ai/grok-*` | 1536 | 800 |
-| Others | 2048 | 1024 |
+| `google/gemini-*` | 32768 | 16384 |
+| `anthropic/claude-*` | 32768 | 16384 |
+| `openai/gpt-4*` | 32768 | 16384 |
+| `x-ai/grok-*` | 32768 | 16384 |
+| `openai/o3-pro` | 32768 | 16384 |
+| Others | 32768 | 16384 |
 
-These limits balance comprehensive responses with model reliability and cost control.
+These generous limits ensure comprehensive responses for complex legal analysis (updated July 2025).
 
-**Note**: Token limits are not directly configurable. You can only enable/disable the conservative limits via `use_token_limits`. Custom token limits would require modifying the source code.
+**Note**: Token limits are not directly configurable. You can only enable/disable these limits via `use_token_limits`. The default is now `true` to ensure complete outputs. Custom token limits would require modifying the source code.
 
 ### Document Chunking vs Token Limits
 
@@ -2717,7 +2760,7 @@ Controls how large documents are split before sending to the AI:
 
 ```yaml
 general:
-  max_chars: 20000       # For digest/extractfacts (default: 20000 ≈ 4000 words)
+  max_chars: 200000      # For digest/extractfacts (default: 200000 ≈ 40,000 words)
   rag_max_chars: 8000    # For draft embeddings (default: 8000 ≈ 1600 words)
 ```
 
@@ -2727,7 +2770,7 @@ general:
 - `draft`: Creates separate embeddings for each chunk in Pinecone
 
 **Example with 100-page PDF:**
-- With `max_chars: 20000`: Creates ~15-20 chunks
+- With `max_chars: 200000`: Creates ~2-3 chunks
 - With `max_chars: 10000`: Creates ~30-40 chunks (more API calls, more focused processing)
 
 #### 2. Token Limits (Output Generation)
@@ -2736,11 +2779,11 @@ Controls how much text the AI can generate in responses:
 
 ```yaml
 llm:
-  use_token_limits: false    # Default: let models use their natural limits
+  use_token_limits: true     # Default since July 2025: enable 32K token limits for comprehensive outputs
 ```
 
-- `false`: Models use their default limits (usually 4096+ tokens)
-- `true`: Applies conservative limits (1536-4096 tokens depending on model)
+- `false`: Models use their API default limits (typically ~4096 tokens)
+- `true`: Applies generous 32K token limits for all models
 
 **Key differences:**
 | Aspect | Document Chunking | Token Limits |
@@ -2759,8 +2802,8 @@ llm:
 - **Trade-off**: Smaller chunks = more API calls but more focused analysis
 
 **Token Limits (`use_token_limits`):**
-- **Enable** (`true`) if responses are too verbose or meandering
-- **Disable** (`false`) if you need comprehensive, detailed outputs
+- **Enable** (`true`, default) for comprehensive, complete outputs
+- **Disable** (`false`) only if you want to use API default limits (~4K tokens)
 - **Trade-off**: Limited tokens = concise but potentially incomplete responses
 
 ### Customization Notes

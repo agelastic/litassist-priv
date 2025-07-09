@@ -1,7 +1,20 @@
 # Progress
 
+## Recent Developments (July 2025 - API Reliability)
+- Implemented robust API retry logic for LLM API calls (3 attempts, exponential backoff)
+- Removed unimplemented safety_cutoff parameter from all configs and docs
+- Added TODO for circuit breaker (AG-124) to TODO.md and codebase
+
 ## What works
 - **All Core Commands**: lookup, digest, extractfacts, brainstorm, strategy, draft, verify, counselnotes, barbrief fully implemented and stable
+- **Brainstorm Command Enhancement (July 2025)**: Major improvements to input handling
+  - Multiple input files support with --facts option (replaces positional argument)
+  - Glob pattern support for both --facts and --research options
+  - Automatic case_facts.txt detection when no --facts provided
+  - File combination with source attribution for multiple facts files
+  - Intelligent glob expansion with error handling
+  - Updated documentation and help text
+  - Example: litassist brainstorm --side plaintiff --area civil --research 'outputs/lookup_*.txt'
 - **Barbrief Command (January 2025)**: Comprehensive barrister's brief generation - FULLY IMPLEMENTED AND TESTED
   - 10-section structured brief format (Cover Sheet through Annexures)
   - Validates 10-heading case facts format from extractfacts command output
@@ -44,19 +57,42 @@
   - Aligns with brainstorm-orthodox pattern for strategic analysis
 
 ## What’s left to build
-- Implement advanced features from LLM_IMPROVEMENTS.md (e.g., IRAC/MIRAT enforcement, multi-model consensus, confidence scoring)
-- Develop integration tests for OpenRouter and extended RAG workflows
-- Add cost-tracking, quality-tier system, and workflow compound commands
-- Enhance QA loops (adversarial testing, iterative improvement loops) and performance benchmarking
-- Continue to update Memory Bank after each major feature, bugfix, or workflow change
+
+- **[AG-124][P0] Implement circuit breaker for API retries**  
+  - TODO.md: "Implement circuit breaker for API retries"
+
+- **[EPIC-LLM][P1] Implement advanced LLM prompting improvements**  
+  - IRAC/MIRAT, multi-model consensus, confidence scoring  
+  - TODO.md: "Implement advanced LLM prompting improvements"
+
+- **[QA][P1] Create OpenRouter validation tests**  
+  - TODO.md: "Develop manual validation scripts for OpenRouter"
+
+- **[UX][P1] Develop workflow commands**  
+  - TODO.md: "Create compound workflow commands"
+
+- **[MON][P2] Implement performance benchmarking and monitoring**  
+  - TODO.md: "Automate performance benchmarking and monitoring setup"
+
+- **[TECH][P2] Add --quality-tier flag and config**  
+  - TODO.md: "Add cost-tracking system and quality-tier command options"
+
+- **[DEBT][P2] Refactor verify_with_level**  
+  - TODO.md: "Refactor verify_with_level (Option B)"
+
+- **[MB][P2] Memory Bank Maintenance**  
+  - Continue systematic updates after major changes
+
+(AG- tags and priorities correspond to TODO.md and alignment plan.)
 
 ## Current status
 **Feature Complete**: All core commands including counselnotes and barbrief are implemented and production-ready. Currently on `feature/barbrief-command` branch after completing barbrief implementation with all tests passing (11 unit tests) and documentation complete. Memory Bank, documentation, and codebase fully synchronized. Barbrief completes the litigation document preparation pipeline, providing comprehensive brief generation for Australian barristers. Ready for merge to master branch.
 
 ## Known issues
-- Several advanced prompting and verification improvements remain unimplemented
-- Integration testing for OpenRouter and Pinecone cleanup not yet automated
-- Cost-tracking and quality-tier features absent
+- [AG-124] Circuit breaker for API retries not yet implemented (see TODO.md)
+- [EPIC-LLM] Advanced prompting and verification improvements remain unimplemented
+- [QA] Integration testing for OpenRouter and Pinecone cleanup not yet automated
+- [TECH] Cost-tracking and quality-tier features absent
 - TODO.md contains additional feature items and technical debt tasks
 
 ## Evolution of project decisions

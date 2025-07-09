@@ -7,6 +7,7 @@ handling parameter management and response processing.
 
 import openai
 import re
+import os
 from typing import List, Dict, Any, Tuple
 
 from litassist.utils import timed, save_log, heartbeat
@@ -18,6 +19,17 @@ from litassist.citation_verify import (
     remove_citation_from_text,
     CitationVerificationError,
 )
+
+import tenacity
+import logging
+import requests
+
+try:
+    import aiohttp
+except ImportError:
+    aiohttp = None
+
+logger = logging.getLogger(__name__)
 
 
 # Model family patterns for dynamic parameter handling
@@ -247,7 +259,7 @@ class LLMClientFactory:
             "force_verify": True,  # Conservative analysis requires verification
         },
         "brainstorm-unorthodox": {
-            "model": "x-ai/grok-3-beta",
+            "model": "x-ai/grok-3",
             "temperature": 0.9,
             "top_p": 0.95,
             "force_verify": True,  # Auto-verify Grok
@@ -343,7 +355,8 @@ class LLMClientFactory:
                 "temperature": 0.3,
                 "top_p": 0.7,
             }
-            print(f"⚠️  No configuration found for '{config_key}', using defaults")
+            # Use default configuration for commands without specific config
+            # This is expected behavior for many commands
         else:
             config = cls.COMMAND_CONFIGS[config_key].copy()
 
@@ -358,12 +371,12 @@ class LLMClientFactory:
         if sub_type:
             env_model_key = f"LITASSIST_{command_name.upper()}_{sub_type.upper()}_MODEL"
 
-        import os
-
         env_model = os.environ.get(env_model_key)
         if env_model:
             config["model"] = env_model
-            print(f"📋 Using model from environment: {env_model}")
+            # Suppress informational message during pytest runs
+            if not os.environ.get('PYTEST_CURRENT_TEST'):
+                print(f"📋 Using model from environment: {env_model}")
 
         # Apply any provided overrides
         config.update(overrides)
@@ -470,28 +483,60 @@ class LLMClient:
                 # These limits are carefully chosen to balance comprehensive responses with quality
                 if "google/gemini" in model.lower():
                     default_params[token_param] = (
-                        4096  # Gemini - reliable up to this length
+                        32768  # Gemini - increased for comprehensive outputs
                     )
                 elif "anthropic/claude" in model.lower():
                     default_params[token_param] = (
-                        8192  # Claude - coherent for longer outputs
+                        32768  # Claude - increased for comprehensive outputs
                     )
                 elif "openai/gpt-4" in model.lower():
                     default_params[token_param] = (
-                        8192  # GPT-4 - balanced limit for precision
+                        32768  # GPT-4 - increased for comprehensive outputs
                     )
                 elif get_model_family(model) == "openai_reasoning":
                     default_params[token_param] = (
-                        8192  # o1-pro/o3-pro - high-quality reasoning output
+                        32768  # o1-pro/o3-pro - increased for comprehensive outputs
                     )
                 elif "grok" in model.lower():
                     default_params[token_param] = (
-                        1536  # Grok - more prone to hallucination
+                        32768  # Grok - increased for comprehensive outputs
                     )
                 else:
-                    default_params[token_param] = 4096  # Default safe limit
+                    default_params[token_param] = 32768  # Default increased limit
 
         self.default_params = default_params
+
+    def _execute_api_call_with_retry(self, model_name, messages, filtered_params):
+        retry_errors = (
+            openai.error.APIConnectionError,
+            requests.exceptions.ConnectionError,
+        )
+        if aiohttp:
+            retry_errors = retry_errors + (
+                aiohttp.ClientConnectionError,
+                aiohttp.ClientPayloadError,
+            )
+
+        # Use no wait time during tests to speed up retry tests
+        wait_config = (
+            tenacity.wait_none()  # No wait in tests
+            if os.environ.get('PYTEST_CURRENT_TEST')
+            else tenacity.wait_exponential(multiplier=0.5, max=10)
+        )
+
+        @tenacity.retry(
+            stop=tenacity.stop_after_attempt(3),
+            wait=wait_config,
+            retry=tenacity.retry_if_exception_type(retry_errors),
+            before_sleep=tenacity.before_sleep_log(logger, logging.WARNING),
+            reraise=True,
+        )
+        def _call():
+            return openai.ChatCompletion.create(
+                model=model_name, messages=messages, **filtered_params
+            )
+
+        return _call()
 
     @timed
     def complete(
@@ -555,24 +600,9 @@ class LLMClient:
             messages = modified_messages
         else:
             # Regular models - handle system messages normally
-            has_system_message = any(msg.get("role") == "system" for msg in messages)
-            if has_system_message:
-                for msg in messages:
-                    if msg.get(
-                        "role"
-                    ) == "system" and "Australian English" not in msg.get(
-                        "content", ""
-                    ):
-                        msg["content"] += "\n" + PROMPTS.get("base.australian_law")
-            else:
-                # Add system message if none exists
-                messages.insert(
-                    0,
-                    {
-                        "role": "system",
-                        "content": PROMPTS.get("base.australian_law"),
-                    },
-                )
+            # Note: Commands already include base.australian_law in their system prompts,
+            # so we don't need to append it here. This prevents prompt corruption.
+            pass
 
         # Merge default and override parameters
         params = {**self.default_params, **overrides}
@@ -598,14 +628,24 @@ class LLMClient:
             if self.model.startswith("openai/"):
                 model_name = self.model.replace("openai/", "")
 
-        # Invoke the appropriate API based on model
         try:
             # Filter parameters based on model capabilities
             filtered_params = get_model_parameters(self.model, params)
 
-            # Use ChatCompletion API
-            response = openai.ChatCompletion.create(
-                model=model_name, messages=messages, **filtered_params
+            # Log the final messages being sent to the API
+            save_log(
+                f"llm_{self.model.replace('/', '_')}_messages",
+                {
+                    "model": self.model,
+                    "messages_sent": messages,
+                    "params": filtered_params,
+                    "timestamp": time.strftime("%Y-%m-%d %H:%M:%S"),
+                },
+            )
+
+            # Use ChatCompletion API with retry logic
+            response = self._execute_api_call_with_retry(
+                model_name, messages, filtered_params
             )
 
             # Check for errors in the response
@@ -688,16 +728,9 @@ class LLMClient:
 
                 # Enhance the last user message with strict citation instructions
                 enhanced_messages = messages.copy()
-                try:
-                    citation_instructions = PROMPTS.get(
-                        "verification.citation_retry_instructions"
-                    )
-                except KeyError:
-                    # Fallback to hardcoded if prompts not available
-                    citation_instructions = (
-                        "IMPORTANT: Use only real, verifiable Australian cases that exist on AustLII. "
-                        "Do not invent case names. If unsure about a citation, omit it rather than guess."
-                    )
+                citation_instructions = PROMPTS.get(
+                    "verification.citation_retry_instructions"
+                )
 
                 if self.model == "openai/o3-pro":
                     # For o3 models, append to the enhanced user content from earlier processing
@@ -922,17 +955,19 @@ class LLMClient:
             token_param = "max_completion_tokens" if is_o3_pro else "max_tokens"
 
             if "google/gemini" in self.model.lower():
-                params[token_param] = 1024  # Concise verification for Gemini
+                params[token_param] = 8192  # Increased for full document verification
             elif "anthropic/claude" in self.model.lower():
-                params[token_param] = 1536  # Claude verification
+                params[token_param] = 16384  # Increased for full document verification
             elif "openai/gpt-4" in self.model.lower():
-                params[token_param] = 1024  # GPT-4 verification
+                params[token_param] = 8192  # Increased for full document verification
             elif self.model == "openai/o3-pro":
-                params[token_param] = 1024  # o3-pro verification
+                params[token_param] = 16384  # Increased for full document verification
             elif "grok" in self.model.lower():
-                params[token_param] = 800  # Tighter limit for Grok
+                params[token_param] = 8192  # Increased for full document verification
             else:
-                params[token_param] = 1024  # Default verification limit
+                params[token_param] = (
+                    8192  # Default verification limit for full documents
+                )
 
         # Use the complete method which handles o3-pro properly
         verification_result, usage = self.complete(
@@ -1159,7 +1194,8 @@ class LLMClient:
 
         Args:
             primary_text: Text to verify
-            level: Verification depth - "light", "medium", or "heavy"
+            level: Verification depth - "light" (spelling only) or "heavy" (comprehensive)
+                  Any other value defaults to standard verification
 
         Returns:
             Verification feedback
@@ -1202,8 +1238,9 @@ class LLMClient:
                     "content": primary_text + "\n\n" + heavy_verification,
                 },
             ]
-        else:  # medium (default)
-            # Standard verification
+        else:
+            # For any other level, use standard verification
+            # This maintains backward compatibility
             return self.verify(primary_text)
 
         # Use same verification logic with custom prompts
@@ -1219,17 +1256,17 @@ class LLMClient:
             token_param = "max_completion_tokens" if is_o3_pro else "max_tokens"
 
             if "google/gemini" in self.model.lower():
-                params[token_param] = 1024
+                params[token_param] = 8192
             elif "anthropic/claude" in self.model.lower():
-                params[token_param] = 1536 if level == "heavy" else 1024
+                params[token_param] = 16384 if level == "heavy" else 16384
             elif "openai/gpt-4" in self.model.lower():
-                params[token_param] = 1024
+                params[token_param] = 8192
             elif self.model == "openai/o3-pro":
-                params[token_param] = 1024
+                params[token_param] = 16384
             elif "grok" in self.model.lower():
-                params[token_param] = 800
+                params[token_param] = 8192
             else:
-                params[token_param] = 1024
+                params[token_param] = 8192
 
         # Use the complete method which handles o3-pro properly
         verification_result, usage = self.complete(

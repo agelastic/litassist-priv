@@ -1,12 +1,49 @@
 # Active Context
 
 ## Current Work Focus
-- **Barbrief Feature Branch**: Currently on `feature/barbrief-command` branch - COMPLETED AND READY FOR MERGE
-- **Latest Implementation**: Barbrief command for comprehensive barrister's briefs - FULLY IMPLEMENTED
-- **Memory Bank Maintenance**: Updating Memory Bank with barbrief implementation details
-- **Feature Complete**: Barbrief command tested and documented, ready for integration
+- **Brainstorm Command Enhancement**: Major update to support multiple input files and glob patterns
+- **Command Syntax Modernization**: Changed from positional arguments to option-based interface
+- **Glob Pattern Support**: Added glob expansion for file patterns in both --facts and --research options
+- **Improved User Experience**: Automatic case_facts.txt detection when no facts files specified
 
-**Latest update (7 January 2025):**
+**Latest update (8 July 2025 - Token Limit Configuration & Brainstorm Enhancement):**
+- CHANGED: Default use_token_limits from False to True in config.py
+- FIXED: Counselnotes empty output issue caused by low API default token limits
+- UPDATED: All models now use 32K token limits when use_token_limits is enabled
+- UPDATED: Documentation to reflect new default behavior
+- INSIGHT: use_token_limits: false doesn't mean "no limits", it means "API defaults" (~4K)
+
+**Previous update (8 July 2025 - Brainstorm Command Enhancement & Verification Fix):**
+- ADDED: Multiple input files support with --facts option (accepts multiple files)
+- ADDED: Glob pattern support for both --facts and --research options
+- CHANGED: Command syntax from positional argument to --facts option
+- ADDED: Automatic case_facts.txt detection when no --facts provided
+- IMPLEMENTED: expand_glob_patterns callback for intelligent file expansion
+- UPDATED: Help text and documentation to reflect new usage patterns
+- MAINTAINED: Full backward compatibility through option-based approach
+- EXAMPLE: litassist brainstorm --side plaintiff --area civil --research 'outputs/lookup_*.txt'
+- FIXED: Verification prompt causing incomplete "ANALYSIS OF SELECTED STRATEGIES" sections
+- CLARIFIED: Verification comments only for numbered strategies (1-10), not analysis sections
+- PRINCIPLE: Following CLAUDE.md - fix through better prompt engineering, not local parsing
+
+**Previous update (7 July 2025 - Verification System):**
+- FIXED: Missing "MOST LIKELY TO SUCCEED" section in brainstorm outputs
+- FIXED: System instructions bleeding into verified content ("Australian law only...")
+- FIXED: Content truncation due to low token limits (800-1536 → 8192-16384)
+- REMOVED: ~25 lines of local parsing in brainstorm.py - trust LLM output
+- SIMPLIFIED: verify_with_level now only used for "heavy" verification
+- UPDATED: Prompt templates to preserve ALL sections and prevent instruction bleeding
+- PRINCIPLE: Following CLAUDE.md - "minimize local parsing through better prompt engineering"
+
+**Recent updates (6-7 July 2025):**
+- ENHANCED: Strategy generation with 3-5 paragraphs per strategy (was 2-3 sentences)
+- ADDED: Multiple input file support for extractfacts command
+- UPDATED: Grok model to x-ai/grok-3
+- INCREASED: Token limits to 32k for all generation models
+- CONVENTION: Claude-generated files now prefixed with claude_
+- CHANGED: Claude files no longer ignored by git
+
+**Previous update (7 January 2025 - Barbrief):**
 - COMPLETED: Barbrief command implementation for comprehensive barrister's briefs
 - IMPLEMENTED: Full command structure with 10-section brief format
 - FIXED: Critical bugs resolved during final testing:
@@ -54,6 +91,11 @@
 - All tests now pass after these changes.
 
 ## Recent Changes
+
+### (July 2025 - API Reliability)
+- Implemented robust API retry logic for LLM calls (3 attempts, exponential backoff)
+- Removed unimplemented safety_cutoff parameter from all configs and docs
+- Added TODO for circuit breaker (AG-124) to TODO.md and codebase
 - **MAJOR COMPLETION (January 7, 2025): Barbrief Command**
   - Complete implementation in `litassist/commands/barbrief.py`
   - Comprehensive barrister's brief generation with 10-section structure
@@ -89,13 +131,37 @@
 - 16 June 2025: Test suite and prompt YAMLs synchronized; all tests for commented-out templates are now commented out in the test code. All tests pass.
 
 ## Next Steps
-1. **Branch Merge**: Merge feature/barbrief-command branch to master (ready for merge)
-2. **Production Deployment**: Deploy barbrief command to production environment
-3. **User Training**: Create tutorial materials for barbrief command usage
-4. **Performance Monitoring**: Track o3-pro model performance and token usage
-5. **Advanced Features**: Custom prompt templates for specialized hearing types
-6. **Integration Enhancement**: Streamline workflow between extractfacts → barbrief
-7. **Memory Bank Maintenance**: Continue systematic updates after major changes
+
+1. **[AG-124][P0] Implement circuit breaker for API retries**  
+   - Add safety_cutoff parameter and logic  
+   - TODO.md: "Implement circuit breaker for API retries"
+
+2. **[EPIC-LLM][P1] Implement advanced LLM prompting improvements**  
+   - IRAC/MIRAT, multi-model consensus, confidence scoring  
+   - TODO.md: "Implement advanced LLM prompting improvements"
+
+3. **[QA][P1] Create OpenRouter validation tests**  
+   - TODO.md: "Develop manual validation scripts for OpenRouter"
+
+4. **[UX][P1] Develop workflow commands**  
+   - TODO.md: "Create compound workflow commands"
+
+5. **[MON][P2] Implement performance benchmarking and monitoring**  
+   - TODO.md: "Automate performance benchmarking and monitoring setup"
+
+6. **[TECH][P2] Add --quality-tier flag and config**  
+   - TODO.md: "Add cost-tracking system and quality-tier command options"
+
+7. **[DEBT][P2] Refactor verify_with_level**  
+   - TODO.md: "Refactor verify_with_level (Option B)"
+
+8. **[MB][P2] Memory Bank Maintenance**  
+   - Continue systematic updates after major changes
+
+(AG- tags and priorities correspond to TODO.md and alignment plan.)
+
+**Note:**  
+As of 8 July 2025, TODO.md is maintained as a flat, unannotated list of pending tasks. The Memory Bank (activeContext.md, progress.md) contains the structured, prioritized, and owner-annotated mapping of these tasks for project management and traceability. For authoritative task status, refer to both TODO.md (raw list) and Memory Bank (detailed plan).
 
 ## Active Decisions & Considerations
 - Strict adherence to Memory Bank hierarchy and .clinerules formatting rules.

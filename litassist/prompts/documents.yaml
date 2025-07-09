@@ -125,6 +125,64 @@ documents:
     _______________________
     Name and qualification of witness
   
+  # Witness Statement template
+  witness_statement: |
+    IN THE {court_name}
+    {jurisdiction}
+    
+    File No: {file_number_or_placeholder}
+    
+    Between:
+    {plaintiff_name}
+                        Plaintiff
+    
+    And:
+    
+    {defendant_name}
+                        Defendant
+    
+    __________________________________________________________________
+    WITNESS STATEMENT OF {witness_full_name}
+    __________________________________________________________________
+    
+    I, {witness_full_name}, of {witness_address_or_placeholder}, {witness_occupation_if_known}, say as follows:
+    
+    A. Personal background
+    1. I am [AGE TO BE PROVIDED] years of age and reside at [ADDRESS TO BE CONFIRMED].
+    2. [Any relevant personal details, licenses, qualifications - USE PLACEHOLDERS FOR MISSING INFO]
+    3. Unless stated otherwise, the facts and matters deposed to are within my personal knowledge.
+    
+    B. [Relevant Topic Heading]
+    4. [Factual statements based ONLY on provided information]
+    5. [Use placeholders like [DATE TO BE CONFIRMED] for any missing dates]
+    6. [Reference documents as [EXHIBIT A], [EXHIBIT B] etc. unless specific exhibit numbers provided]
+    
+    C. [Additional Topic Headings as needed]
+    7. [Continue numbered paragraphs]
+    8. [NEVER invent specific details - use placeholders]
+    
+    [Continue with relevant sections based on provided facts]
+    
+    L. Exhibits
+    [EXHIBIT A]  [Description based on provided information or placeholder]
+    [EXHIBIT B]  [Description based on provided information or placeholder]
+    [List only exhibits actually mentioned in the statement]
+    
+    M. Statement of Truth
+    [Final paragraph number]. I believe that the contents of this statement are true and correct, and I make it knowing that, if it is tendered in evidence, I will be liable to prosecution if I have wilfully stated anything in it that I know to be false.
+    
+    Dated: [DATE TO BE PROVIDED]
+    
+    ……………………………………
+    {witness_full_name}
+    
+    Witnessed by:
+    
+    ……………………………………
+    [Name of authorised witness]
+    [Qualification]
+    [Address]
+  
   # Notice of Motion template
   # notice_of_motion: |
   #   IN THE {court_name}

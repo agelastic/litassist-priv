@@ -591,7 +591,7 @@ def remove_citation_from_text(text: str, citation: str) -> str:
             break
 
     # Clean up any double spaces or awkward punctuation
-    text = re.sub(r"\s+", " ", text)
+    text = re.sub(r"[ \t]+", " ", text)  # Only collapse spaces/tabs, preserve newlines
     text = re.sub(r"\s*\.\s*\.", ".", text)  # Remove double periods
     text = re.sub(r"\s+,", ",", text)  # Fix spacing before commas
     text = re.sub(r"\s+\.", ".", text)  # Fix spacing before periods

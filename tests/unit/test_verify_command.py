@@ -162,17 +162,14 @@ class TestVerifyCommand:
             f.write(sample_text_with_reasoning)
 
         with patch(
-            "litassist.commands.verify.save_reasoning_trace"
-        ) as mock_save_trace, patch(
             "litassist.commands.verify.save_log"
         ) as _mock_save_log:
-
-            mock_save_trace.return_value = temp_file.replace(".txt", "_reasoning.txt")
             result = runner.invoke(verify, [temp_file, "--reasoning"])
             assert result.exit_code == 0
             assert "Reasoning trace verified" in result.output
             assert "IRAC structure complete" in result.output
             assert "Confidence: 85%" in result.output
+            assert "Reasoning trace embedded in main output" in result.output
 
     def test_verify_reasoning_generate_new(self, runner, temp_file, sample_legal_text):
         """Test generation of new reasoning trace."""
@@ -182,8 +179,6 @@ class TestVerifyCommand:
         with patch(
             "litassist.commands.verify.LLMClientFactory"
         ) as mock_llm_factory, patch(
-            "litassist.commands.verify.save_reasoning_trace"
-        ) as mock_save_trace, patch(
             "litassist.commands.verify.save_log"
         ) as _mock_save_log:
 
@@ -202,12 +197,12 @@ class TestVerifyCommand:
                 {},
             )
             mock_llm_factory.for_command.return_value = mock_client
-            mock_save_trace.return_value = temp_file.replace(".txt", "_reasoning.txt")
             result = runner.invoke(verify, [temp_file, "--reasoning"])
             assert result.exit_code == 0
             assert "Reasoning trace generated" in result.output
             assert "IRAC structure complete" in result.output
             assert "Confidence: 90%" in result.output
+            assert "Reasoning trace embedded in main output" in result.output
 
     def test_verify_empty_file(self, runner, temp_file):
         """Test handling of empty file."""
@@ -308,8 +303,6 @@ class TestVerifyCommand:
         ) as mock_citations, patch(
             "litassist.commands.verify.LLMClientFactory"
         ) as mock_llm_factory, patch(
-            "litassist.commands.verify.save_reasoning_trace"
-        ) as mock_save_trace, patch(
             "litassist.commands.verify.save_log"
         ) as _mock_save_log:
 
@@ -318,9 +311,8 @@ class TestVerifyCommand:
             mock_client.verify.return_value = "No issues"
             mock_client.complete.return_value = ("Analysis", {})
             mock_llm_factory.for_command.return_value = mock_client
-            mock_save_trace.return_value = f"{base_name}_reasoning.txt"
             result = runner.invoke(verify, [temp_file])
             assert result.exit_code == 0
             assert "_citations.txt" in result.output
             assert "_soundness.txt" in result.output
-            assert "_reasoning.txt" in result.output
+            # Reasoning trace is now embedded, not saved separately

@@ -28,6 +28,7 @@ class TestPromptTemplates:
             "formats.yaml",
             "processing.yaml",
             "system_feedback.yaml",
+            "barbrief.yaml",
         }
 
     @pytest.fixture

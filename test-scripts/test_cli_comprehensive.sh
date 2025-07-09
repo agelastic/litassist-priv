@@ -496,10 +496,10 @@ test_strategy_command() {
 test_brainstorm_command() {
     print_section "Testing BRAINSTORM Command"
     
-    # Single test with verification covering core functionality
-    run_test "Brainstorm - Civil with verification" \
-        "python litassist.py brainstorm test_inputs/mock_case_facts.txt --side plaintiff --area civil --verify" \
-        "complete|saved to|strategies|verification"
+    # Single test covering core functionality (verification is automatic)
+    run_test "Brainstorm - Civil" \
+        "python litassist.py brainstorm test_inputs/mock_case_facts.txt --side plaintiff --area civil" \
+        "complete|saved to|strategies|Verifying"
 }
 
 test_digest_command() {

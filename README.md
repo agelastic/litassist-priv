@@ -35,7 +35,13 @@ graph TD
 
 For detailed usage guidance, see the [LitAssist User Guide](docs/user/LitAssist_User_Guide.md).
 
-## 🆕 Recent Improvements (January 2025)
+## 🆕 Recent Improvements (July 2025)
+
+### July 2025: Enhanced Brainstorm Command
+- **Multiple Input Files**: Brainstorm now accepts multiple facts files with `--facts` option
+- **Glob Pattern Support**: Both `--facts` and `--research` options support glob patterns (e.g., `'outputs/lookup_*.txt'`)
+- **Automatic Defaults**: Uses `case_facts.txt` automatically if present in current directory
+- **Improved Syntax**: Changed from positional argument to `--facts` option for consistency
 
 ### January 2025: Advanced Legal Commands
 - **CounselNotes Command**: Strategic advocate analysis with structured extraction and reasoning traces
@@ -192,14 +198,33 @@ Global options:
 
 3. **extractfacts** - Extract structured case facts from documents
    ```bash
+   # Single file
    ./litassist.py extractfacts document.pdf
-   # Creates: extractfacts_document_YYYYMMDD_HHMMSS.txt
+   
+   # Multiple files (July 2025)
+   ./litassist.py extractfacts file1.pdf file2.txt file3.pdf
+   
+   # Creates: extractfacts_[combined_slugs]_YYYYMMDD_HHMMSS.txt
    # Note: case_facts.txt must be created or edited manually
    ```
 
 4. **brainstorm** - Generate comprehensive legal strategies with reasoning traces
    ```bash
-   ./litassist.py brainstorm case_facts.txt --side [plaintiff|defendant|accused] --area [criminal|civil|family|commercial|administrative]
+   # Default: uses case_facts.txt if present in current directory
+   ./litassist.py brainstorm --side [plaintiff|defendant|accused] --area [criminal|civil|family|commercial|administrative]
+   
+   # Specify facts file(s) explicitly
+   ./litassist.py brainstorm --facts case_facts.txt --side plaintiff --area civil
+   
+   # Use multiple facts files with glob patterns
+   ./litassist.py brainstorm --facts 'case_*.txt' --side plaintiff --area civil
+   
+   # Add research context (supports glob patterns)
+   ./litassist.py brainstorm --side plaintiff --area civil --research 'outputs/lookup_*.txt'
+   
+   # Multiple research files with selective patterns
+   ./litassist.py brainstorm --side plaintiff --area civil --research 'outputs/lookup_*gift*.txt' --research 'outputs/lookup_*trust*.txt'
+   
    # Creates: brainstorm_[area]_[side]_YYYYMMDD_HHMMSS.txt (main strategies)
    #          brainstorm_[area]_[side]_YYYYMMDD_HHMMSS_orthodox_reasoning.txt
    #          brainstorm_[area]_[side]_YYYYMMDD_HHMMSS_unorthodox_reasoning.txt  

@@ -638,7 +638,9 @@ def heartbeat(interval: int = 30):
 
             def ping():
                 while not done.is_set():
-                    click.echo("…still working, please wait…", err=True)
+                    # Suppress during pytest runs
+                    if not os.environ.get('PYTEST_CURRENT_TEST'):
+                        click.echo("…still working, please wait…", err=True)
                     time.sleep(interval)
 
             t = threading.Thread(target=ping, daemon=True)
@@ -931,6 +933,71 @@ def show_command_completion(
     click.echo(f'\n💡 View full output: open "{output_file}"')
 
 
+def detect_factual_hallucinations(content: str, source_facts: str = "") -> List[str]:
+    """
+    Detect potential hallucinated facts in drafted content.
+    
+    Args:
+        content: The drafted content to check
+        source_facts: The original source facts to compare against
+        
+    Returns:
+        List of potential hallucination warnings
+    """
+    warnings = []
+    
+    # Pattern for ages (e.g., "33 years of age", "aged 45")
+    age_pattern = r'\b(\d{1,3})\s*years?\s*(?:of\s*)?(?:age|old)\b'
+    ages_found = re.findall(age_pattern, content, re.IGNORECASE)
+    if ages_found and source_facts:
+        for age in ages_found:
+            if age not in source_facts:
+                warnings.append(f"Potentially hallucinated age: {age} years")
+    
+    # Pattern for specific addresses (number + street name)
+    address_pattern = r'\b\d+\s+[A-Z][a-z]+(?:\s+[A-Z][a-z]+)*\s+(?:Street|St|Avenue|Ave|Road|Rd|Court|Ct|Drive|Dr|Place|Pl)\b'
+    addresses_found = re.findall(address_pattern, content)
+    if addresses_found and source_facts:
+        for address in addresses_found:
+            # Check if this exact address appears in source
+            if address not in source_facts:
+                warnings.append(f"Potentially hallucinated address: {address}")
+    
+    # Pattern for bank/credit card numbers
+    account_pattern = r'(?:account|a/c|card).*?(?:ending|number|no\.?)\s*(?:in\s*)?[-:\s]*(\d{4,}|\*+\d{4}|-\d{4})'
+    accounts_found = re.findall(account_pattern, content, re.IGNORECASE)
+    if accounts_found:
+        for account in accounts_found:
+            if source_facts and account not in source_facts:
+                warnings.append(f"Potentially hallucinated account/card number: {account}")
+    
+    # Pattern for specific exhibit numbers (e.g., "VO-1", "Exhibit 23")
+    exhibit_pattern = r'(?:exhibit|annexure)\s*(?:marked\s*)?([A-Z]{1,3}-?\d+|\d+)'
+    exhibits_found = re.findall(exhibit_pattern, content, re.IGNORECASE)
+    if exhibits_found:
+        warnings.append(f"Specific exhibit references found: {', '.join(set(exhibits_found))}. Consider using generic placeholders like [EXHIBIT A]")
+    
+    # Pattern for document/reference numbers (e.g., "Order No. 12345", "Cheque No. 67890")
+    ref_pattern = r'(?:order|cheque|check|reference|ref|invoice|receipt)\s*(?:no\.?|number)\s*[:\s]*(\d{4,})'
+    refs_found = re.findall(ref_pattern, content, re.IGNORECASE)
+    if refs_found and source_facts:
+        for ref in refs_found:
+            if ref not in source_facts:
+                warnings.append(f"Potentially hallucinated reference number: {ref}")
+    
+    # Check for suspiciously specific dates not in source
+    date_pattern = r'\b(\d{1,2})\s+(?:January|February|March|April|May|June|July|August|September|October|November|December)\s+(\d{4})\b'
+    dates_found = re.findall(date_pattern, content, re.IGNORECASE)
+    if dates_found and source_facts:
+        for date in dates_found:
+            date_str = f"{date[0]} {date[1]}"
+            # Very basic check - could be improved
+            if date_str not in source_facts and date[0] not in source_facts:
+                warnings.append(f"Potentially hallucinated specific date: {date_str}")
+    
+    return warnings
+
+
 def verify_content_if_needed(
     client: Any, content: str, command_name: str, verify_flag: bool = False,
     citation_already_verified: bool = False
@@ -952,25 +1019,26 @@ def verify_content_if_needed(
     auto_verify = client.should_auto_verify(content, command_name)
     needs_verification = verify_flag or auto_verify
 
-    # Inform user about verification status
-    if verify_flag and auto_verify:
-        click.echo(
-            "🔍 Running verification (--verify flag + auto-verification triggered)"
-        )
-    elif verify_flag:
-        click.echo("🔍 Running verification (--verify flag enabled)")
-    elif auto_verify:
-        click.echo("🔍 Running auto-verification (high-risk content detected)")
-    else:
-        click.echo("ℹ️  No verification performed")
+    # Inform user about verification status (suppress during tests)
+    if not os.environ.get('PYTEST_CURRENT_TEST'):
+        if verify_flag and auto_verify:
+            click.echo(
+                "🔍 Running verification (--verify flag + auto-verification triggered)"
+            )
+        elif verify_flag:
+            click.echo("🔍 Running verification (--verify flag enabled)")
+        elif auto_verify:
+            click.echo("🔍 Running auto-verification (high-risk content detected)")
+        else:
+            click.echo("ℹ️  No verification performed")
 
     if needs_verification:
         try:
             # Use appropriate verification level based on command
-            verification_level = (
-                "heavy" if command_name in ["strategy", "draft"] else "medium"
-            )
-            correction = client.verify_with_level(content, verification_level)
+            if command_name in ["strategy", "draft"]:
+                correction = client.verify_with_level(content, "heavy")
+            else:
+                correction = client.verify(content)
 
             if correction.strip() and not correction.lower().startswith(
                 "no corrections needed"

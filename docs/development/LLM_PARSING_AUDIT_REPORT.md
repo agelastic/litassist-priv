@@ -1,8 +1,17 @@
 # LLM Response Parsing Audit Report
 
 **Date**: June 17, 2025  
+**Last Updated**: July 7, 2025  
 **Purpose**: Comprehensive audit of LLM response parsing throughout the litassist codebase  
-**Goal**: Plan systematic elimination of local parsing through better prompt engineering  
+**Goal**: Plan systematic elimination of local parsing through better prompt engineering
+
+## Update (July 7, 2025)
+
+**Progress on Parsing Removal**:
+- ✅ **COMPLETED**: Removed ~25 lines of verification parsing in `brainstorm.py` (lines 481-500)
+- ✅ **PRINCIPLE APPLIED**: Trust well-prompted LLMs to return correct format
+- ✅ **TOKEN LIMITS**: Increased verification limits to 8192-16384 to avoid truncation
+- 🔄 **ONGOING**: Continue removing parsing patterns identified in this audit  
 
 ## Executive Summary
 

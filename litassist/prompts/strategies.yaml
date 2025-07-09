@@ -23,10 +23,10 @@ strategies:
 
       For each strategy, provide:
       1. Strategy name/title
-      2. Brief description (2-3 sentences)
-      3. Legal basis or precedent
-      4. Likelihood of success
-      5. Key considerations
+      2. Comprehensive explanation (3-5 paragraphs detailing the approach, implementation steps, and anticipated outcomes)
+      3. Legal basis or precedent with specific case citations
+      4. Likelihood of success with detailed reasoning
+      5. Key considerations including risks and mitigation strategies
     
     # Unorthodox strategies generation prompt
     # USED BY: brainstorm.py generate_strategies() - when approach="unorthodox"
@@ -45,10 +45,10 @@ strategies:
       
       For each strategy, provide:
       1. Strategy name/title
-      2. Brief description (2-3 sentences)
-      3. Legal basis or novel interpretation
-      4. Risk assessment
-      5. Innovation factor
+      2. Comprehensive explanation (3-5 paragraphs detailing the creative approach, implementation pathway, and potential impact)
+      3. Legal basis or novel interpretation with supporting authorities
+      4. Risk assessment with detailed analysis of potential challenges
+      5. Innovation factor explaining why this approach is groundbreaking
     
     # Strategy analysis prompt
     # USED BY: brainstorm.py generate_strategies() - when approach="analysis"

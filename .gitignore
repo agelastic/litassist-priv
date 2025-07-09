@@ -117,4 +117,4 @@ test_inputs/
 temp *.md
 
 # Claude-generated files
-claude_*
+# claude_*
