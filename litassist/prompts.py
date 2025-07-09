@@ -163,12 +163,15 @@ class PromptManager:
         """
         return self.get(f"documents.{document_type}", **kwargs)
 
-    def compose_prompt(self, *template_keys: str) -> str:
+    def compose_prompt(
+        self, *template_keys: str, include_glob_help: bool = False
+    ) -> str:
         """
         Compose multiple templates into a single prompt.
 
         Args:
             *template_keys: Variable number of template keys to combine
+            include_glob_help: If True, append the glob help addon (if present)
 
         Returns:
             The combined prompt string
@@ -179,6 +182,13 @@ class PromptManager:
                 parts.append(self.get(key))
             except KeyError:
                 print(f"⚠️  Warning: Template '{key}' not found, skipping")
+
+        # Add glob help section if requested and available
+        if include_glob_help:
+            try:
+                parts.append(self.get("glob_help_section"))
+            except KeyError:
+                pass
 
         return "\n\n".join(parts)
 

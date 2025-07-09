@@ -41,6 +41,46 @@ commands:
          - Plan explicit case_facts.txt enhancement phases after fact-gathering operations
          - Stronger case_facts.txt foundation leads to better brainstorm/strategy/draft outcomes
 
+      2B. COMMAND INPUT/OUTPUT REFERENCE
+         - lookup: Takes legal questions → Produces research reports
+         - digest: Takes source documents (PDFs, etc.) → Produces summaries/issue analysis
+         - extractfacts: Takes source documents (PDFs, etc.) → Produces structured case facts (10-heading format)
+         - brainstorm: Takes structured case facts (case_facts.txt) → Produces comprehensive strategies
+         - strategy: Takes structured case facts (case_facts.txt) → Produces tactical implementation plans
+         - draft: Takes case facts + strategies → Produces legal documents
+         - counselnotes: Takes source documents → Produces strategic analysis
+         - barbrief: Takes structured case facts + strategies → Produces comprehensive briefs
+         - verify: Takes any output → Produces quality verification reports
+
+      2B-1. CRITICAL ERRORS TO AVOID
+         ❌ WRONG: litassist extractfacts case_facts.txt
+         ✅ CORRECT: litassist extractfacts source_documents.pdf
+
+         ❌ WRONG: litassist brainstorm source_documents.pdf
+         ✅ CORRECT: litassist brainstorm case_facts.txt
+
+         - extractfacts ONLY processes source documents (.pdf, .txt, .docx)
+         - case_facts.txt is OUTPUT of extractfacts, never INPUT
+         - If you generate "extractfacts case_facts.txt" - THIS IS ALWAYS WRONG
+
+      2C. WORKFLOW SEQUENCING LOGIC
+         - extractfacts is used on source documents (not on case_facts.txt) to create or enhance case_facts.txt
+         - digest is used on documents to discover facts, which are then manually added to case_facts.txt
+         - brainstorm, strategy, draft, and barbrief all require a structured case_facts.txt as input
+         - Never run extractfacts on case_facts.txt itself
+         - Typical sequence:
+           1. extractfacts bank_statements.pdf vehicle_docs.pdf → Creates/updates case_facts.txt
+           2. digest source_documents.pdf → Summaries/facts for manual case_facts.txt update
+           3. brainstorm case_facts.txt → Creates strategies
+           4. strategy case_facts.txt → Tactical plans
+           5. draft case_facts.txt strategies.txt → Legal documents
+
+      2C-1. WORKFLOW VALIDATION
+         - If any phase generates "extractfacts case_facts.txt" or similar, THIS IS ALWAYS WRONG and must be corrected to use source documents as input.
+         - Phase 1 should always be: Extract Facts from Source Documents
+           Example: litassist extractfacts bank_statements.pdf vehicle_docs.pdf
+         - case_facts.txt is only ever the OUTPUT of extractfacts, and the INPUT to brainstorm/strategy/draft/barbrief.
+
       3. ADAPTIVE STRUCTURE
          - Simple cases: 4-6 essential phases
          - Medium cases: 7-10 phases  
@@ -48,17 +88,16 @@ commands:
          - Budget constraints respected
 
       3A. RECOMMENDED WORKFLOW SEQUENCING
-         Phase 1-3: Case Facts Foundation Building
-         - extractfacts: Structure initial case_facts.txt from available documents
-         - digest: Process any additional documents for supplementary facts
+         Phase 1-3: Case Facts Foundation Building:
+         - Structure initial case_facts.txt from available documents; Process any additional documents for supplementary facts
          - [UPDATE case_facts.txt with digest findings]
          Phase 4-6: Research and Strategy Development
-         - lookup: Research legal framework (now with stronger factual foundation)
-         - brainstorm: Generate strategies (benefits from enhanced case_facts.txt)
-         - strategy: Develop tactical plans (relies on comprehensive facts)
+         - Research legal framework (now with stronger factual foundation)
+         - Generate strategies (benefits from enhanced case_facts.txt)
+         - Develop tactical plans (relies on comprehensive facts)
          Phase 7+: Document Creation and Quality Control
-         - draft/barbrief: Create legal documents (depends on strong case_facts.txt)
-         - verify: Quality control throughout process
+         - Create legal documents (depends on strong case_facts.txt)
+         - Quality control throughout process
 
       4. INTELLIGENT SELECTION
          - Research: 3-5 targeted queries max
@@ -82,7 +121,34 @@ commands:
          - Place the diagram after the phased workflow section.
          - Keep all text-based dependency/decision comments as before.
 
-      7. COMMAND COVERAGE & OMISSION ANALYSIS (MANDATORY)
+      7. DELIVERABLE ALLOCATION
+         For each phase, specify target recipients:
+
+         SOLICITOR DELIVERABLES:
+         - Case facts summaries (extractfacts output)
+         - Client briefing materials (digest summaries)
+         - Strategic recommendations (strategy output)
+         - Draft pleadings and correspondence (draft output)
+         - Research findings for client advice (lookup output)
+
+         BARRISTER DELIVERABLES:
+         - Comprehensive briefs (barbrief output)
+         - Legal research with citations (lookup output)
+         - Strategic analysis for court preparation (counselnotes output)
+         - Structured case facts for hearing prep (extractfacts output)
+         - Precedent analysis (lookup output)
+
+         REFERENCE ARCHIVE:
+         - All intermediate outputs for case file
+         - Comprehensive case analysis (counselnotes output)
+         - Alternative strategies not pursued (brainstorm output)
+         - Verification reports (verify output)
+
+         For each phase, use:
+         - Primary Recipient: [SOLICITOR/BARRISTER/REFERENCE]
+         - Secondary Recipients: [Others who might need it]
+
+      8. COMMAND COVERAGE & OMISSION ANALYSIS (MANDATORY)
          - EVERY phase must include: "Rationale: [why this command over alternatives]"
          - CRITICAL: If ANY of these major commands are not included, you MUST provide detailed justification under "COMMAND COVERAGE ANALYSIS":
            * lookup (research)
@@ -107,6 +173,8 @@ commands:
          - Phase X: [Name]
          - Purpose: [Value delivered]
          - Commands: [Exact syntax]
+         - Primary Recipient: [SOLICITOR/BARRISTER/REFERENCE]
+         - Secondary Recipients: [Others who might need it]
          - Rationale: [Why this command was chosen over alternatives]
          - Focus Relevance: [High/Medium/Low]  # If focus specified
          - Cost: [Estimate]
