@@ -125,11 +125,7 @@ class TestCaseplanCommand:
 
         assert result.exit_code == 1
         # Accept either our error message or a KeyError from missing prompt
-        assert (
-            "Budget assessment error" in result.output
-            or "Plan generation error" in result.output
-            or "Template key" in result.output
-        )
+        assert "Budget assessment error" in result.output
 
     def test_command_registration(self):
         """Test that caseplan is properly registered as a CLI command."""
