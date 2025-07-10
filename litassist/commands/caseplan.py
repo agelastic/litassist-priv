@@ -145,11 +145,7 @@ def caseplan(case_facts, focus, budget):
             raise click.ClickException(f"Plan generation error: {e}")
 
         # Append glob help to output for user reference
-        try:
-            glob_help = PROMPTS.get("glob_help_section")
-            plan_content = f"{plan_content}\n\n{glob_help}"
-        except KeyError:
-            pass
+            glob_help = None  # Glob help addon not available
 
         metadata = {"Case Facts File": case_facts.name, "Budget Level": budget}
         if focus:
