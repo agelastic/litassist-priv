@@ -10,10 +10,15 @@ LitAssist uses multiple specialized LLM models optimized for different legal tas
 
 ### Production Models
 
+#### July 2025: CasePlan Command Added
+- **caseplan**: New command for phased workflow planning. Uses Sonnet for budget assessment and o3-pro for full plan generation. Prompts enforce rationale, command coverage, and focus area integration.
+
 | Command | Model | Purpose | Key Parameters |
 |---------|-------|---------|----------------|
 | **lookup** | `google/gemini-2.5-pro-preview` | Rapid case law research | temperature: 0.1, top_p: 0.2 |
 | **digest** | `anthropic/claude-sonnet-4` | Document processing & summarization | temperature: 0 (summary) or 0.2 (issues) |
+| **caseplan** (assessment) | `anthropic/claude-sonnet-4` | Budget assessment for workflow planning | temperature: 0.2 |
+| **caseplan** (full plan) | `anthropic/claude-opus-4` | Full phased workflow plan generation | max_completion_tokens: 32768, reasoning_effort: high |
 | **extractfacts** | `anthropic/claude-sonnet-4` | Structured fact extraction | temperature: 0, top_p: 0.15 |
 | **brainstorm** | `x-ai/grok-3` | Creative strategy generation | temperature: 0.9, top_p: 0.95 |
 | **brainstorm** (analysis) | `anthropic/claude-sonnet-4` | Strategy analysis & ranking | temperature: 0.2, top_p: 0.8 |
@@ -24,6 +29,13 @@ LitAssist uses multiple specialized LLM models optimized for different legal tas
 | **verify** | `anthropic/claude-sonnet-4` | Document verification | temperature: 0, top_p: 0.2 |
 
 ### Model Capabilities & Restrictions
+
+### CasePlan Command Model Configuration
+
+- **Budget Assessment Mode**: Uses `anthropic/claude-sonnet-4` for rapid case complexity and budget recommendation. Chosen for its reliability and cost-effectiveness for short, analytical outputs.
+- **Full Plan Mode**: Uses `openai/o3-pro` for comprehensive, multi-phase workflow planning. Chosen for its extended output capacity (32K tokens) and advanced reasoning, required for detailed phased plans, rationale, and workflow diagrams.
+- **Prompt Engineering**: Prompts are structured to enforce rationale, command coverage, and focus area integration, minimizing local parsing and maximizing LLM output structure.
+
 
 #### OpenAI o3 & o3-pro
 - **o3**: 

@@ -20,6 +20,8 @@
 - Barbrief command for comprehensive barrister's briefs (January 2025)
 
 ### Pending Tasks ⌛
+- [ ] REMOVE temporary glob help addon after unification (delete glob_help_addon.yaml, remove concatenation logic)
+- [ ] IMPLEMENT full glob unification per claude_glob_unification_plan.md (centralize expand_glob_patterns, update 5+ commands)
 - Implement advanced LLM prompting improvements from LLM_IMPROVEMENTS.md (IRAC/MIRAT, multi-model consensus, confidence scoring, adversarial testing)
 - Develop manual validation scripts for OpenRouter and extended RAG workflows (in test-scripts/)
 - Add cost-tracking system and quality-tier command options

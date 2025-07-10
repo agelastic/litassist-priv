@@ -5,8 +5,11 @@
 LitAssist is a comprehensive legal workflow automation tool designed for Australian legal practice. It provides a structured end-to-end pipeline for litigation support:
 
 ```
-ingest → analyse → structure → brainstorm → strategy → draft
+ingest → plan → analyse → structure → brainstorm → strategy → draft
 ```
+
+**Early Planning with CasePlan:**  
+Before collecting materials or performing deep analysis, use the `caseplan` command with a bare bones `case_facts.txt` file. This generates a phased workflow plan tailored to your case, helping you prioritize which documents to collect and which commands to run next. The plan can be refined as more facts are discovered.
 
 *New in 2025: Added **counselnotes** command for strategic analysis from an advocate's perspective, complementing the neutral analysis provided by digest. Also added **barbrief** command for generating comprehensive barrister's briefs.*
 
@@ -425,7 +428,7 @@ The `lookup` command performs rapid searches on Jade.io for relevant case law, t
 ### Command
 
 ```bash
-./litassist.py lookup "your legal question" [--mode irac|broad] [--extract citations|principles|checklist] [--comprehensive] [--context "contextual info"]
+litassist lookup "your legal question" [--mode irac|broad] [--extract citations|principles|checklist] [--comprehensive] [--context "contextual info"]
 ```
 
 Options:
@@ -489,24 +492,24 @@ The `--extract` option formats output for specific professional workflows:
 In our *Smith v Jones* case, we might need to quickly research the legal framework for parental alienation:
 
 ```bash
-./litassist.py lookup "What is the legal framework for determining parental alienation in Australian family court cases?" --mode irac
+litassist lookup "What is the legal framework for determining parental alienation in Australian family court cases?" --mode irac
 ```
 
 #### Using Extract Options
 
 **For court brief preparation (citations needed):**
 ```bash
-./litassist.py lookup "self defence assault requirements" --extract citations
+litassist lookup "self defence assault requirements" --extract citations
 ```
 
 **For client advice letter (principles needed):**
 ```bash
-./litassist.py lookup "negligence medical malpractice elements" --extract principles
+litassist lookup "negligence medical malpractice elements" --extract principles
 ```
 
 **For case preparation (checklist needed):**
 ```bash
-./litassist.py lookup "unfair dismissal evidence requirements" --extract checklist
+litassist lookup "unfair dismissal evidence requirements" --extract checklist
 ```
 
 **Output Example**:
@@ -571,13 +574,13 @@ PRACTICAL CHECKLIST:
 **Strategic Research Combinations:**
 ```bash
 # For complex constitutional matters - use Jade for landmark cases + broad analysis
-./litassist.py lookup "implied freedom of political communication" --mode broad --extract principles
+litassist lookup "implied freedom of political communication" --mode broad --extract principles
 
 # For urgent court prep - use comprehensive mode for thorough coverage + structured analysis  
-./litassist.py lookup "summary judgment applications" --mode irac --extract checklist --comprehensive
+litassist lookup "summary judgment applications" --mode irac --extract checklist --comprehensive
 
 # For client communications - extract principles in accessible format
-./litassist.py lookup "unfair contract terms consumer law" --mode broad --extract principles
+litassist lookup "unfair contract terms consumer law" --mode broad --extract principles
 ```
 
 #### File Organization and Naming
@@ -603,25 +606,25 @@ outputs/
 **1. Court Brief Preparation Workflow**
 ```bash
 # Step 1: Research legal framework and collect citations
-./litassist.py lookup "negligence medical malpractice" --extract citations
+litassist lookup "negligence medical malpractice" --extract citations
 
 # Step 2: Analyze case documents for facts
-./litassist.py digest case_bundle.pdf --mode issues
+litassist digest case_bundle.pdf --mode issues
 
 # Step 3: Extract structured facts for strategy
-./litassist.py extractfacts medical_reports.pdf
+litassist extractfacts medical_reports.pdf
 
 # Step 4: Draft argument using research and facts
-./litassist.py draft case_facts.txt "negligence argument medical malpractice"
+litassist draft case_facts.txt "negligence argument medical malpractice"
 ```
 
 **2. Client Advice Letter Workflow**
 ```bash
 # Step 1: Research principles in client-friendly format
-./litassist.py lookup "employment termination unfair dismissal" --extract principles
+litassist lookup "employment termination unfair dismissal" --extract principles
 
 # Step 2: Analyze employment documents
-./litassist.py digest employment_file.pdf --mode summary
+litassist digest employment_file.pdf --mode summary
 
 # Step 3: Create advice structure using principles from lookup output
 # Copy principles from outputs/lookup_principles_employment_*.txt into advice letter template
@@ -630,10 +633,10 @@ outputs/
 **3. Due Diligence Workflow**
 ```bash
 # Step 1: Create compliance checklist
-./litassist.py lookup "corporate governance ASX requirements" --extract checklist
+litassist lookup "corporate governance ASX requirements" --extract checklist
 
 # Step 2: Analyze corporate documents against checklist
-./litassist.py digest board_minutes.pdf --mode issues
+litassist digest board_minutes.pdf --mode issues
 
 # Step 3: Cross-reference findings with compliance requirements
 # Use checklist from outputs/lookup_checklist_corporate_*.txt as review framework
@@ -658,12 +661,12 @@ outputs/
 **Copying Output Between Commands:**
 ```bash
 # Extract citations for court brief
-./litassist.py lookup "contract formation requirements" --extract citations
+litassist lookup "contract formation requirements" --extract citations
 
 # Copy citations from outputs/lookup_citations_contract_*.txt
 # Paste into draft command input file for automatic citation inclusion
 
-./litassist.py draft case_facts.txt "contract formation argument" 
+litassist draft case_facts.txt "contract formation argument"
 # LitAssist will incorporate the existing research into the draft
 ```
 
@@ -680,9 +683,9 @@ mv outputs/lookup_*contract* research_contract/
 **Iterative Research Refinement:**
 ```bash
 # Start broad, then narrow focus
-./litassist.py lookup "contract law" --mode broad --extract principles
-./litassist.py lookup "specific performance remedies" --mode irac --extract citations  
-./litassist.py lookup "equity specific performance discretion" --extract checklist --comprehensive
+litassist lookup "contract law" --mode broad --extract principles
+litassist lookup "specific performance remedies" --mode irac --extract citations
+litassist lookup "equity specific performance discretion" --extract checklist --comprehensive
 ```
 
 #### Performance and Cost Considerations
@@ -714,7 +717,7 @@ The `digest` command processes large documents by splitting them into manageable
 ### Command
 
 ```bash
-./litassist.py digest <file>... [--mode summary|issues] [--hint <hint_text>]
+litassist digest <file>... [--mode summary|issues] [--hint <hint_text>]
 ```
 
 Options:
@@ -753,7 +756,7 @@ While designed for legal content, the `digest` command can process various docum
 For the *Smith v Jones* case, we have received a lengthy affidavit from our client that needs to be broken down:
 
 ```bash
-./litassist.py digest examples/smith_affidavit.pdf --mode issues
+litassist extractfacts <file>
 ```
 
 #### Using the --hint Option
@@ -761,13 +764,13 @@ When you need focused analysis on specific aspects of a document:
 
 ```bash
 # Focus on parental alienation allegations
-./litassist.py digest examples/smith_affidavit.pdf --mode issues --hint "focus on parental alienation claims and evidence"
+litassist digest examples/smith_affidavit.pdf --mode issues --hint "focus on parental alienation claims and evidence"
 
 # Analyze financial aspects
-./litassist.py digest financial_statements.pdf --mode summary --hint "analyze income discrepancies and hidden assets"
+litassist digest financial_statements.pdf --mode summary --hint "analyze income discrepancies and hidden assets"
 
 # Medical document analysis
-./litassist.py digest medical_report.pdf --mode summary --hint "identify disability impacts on parenting capacity"
+litassist digest medical_report.pdf --mode summary --hint "identify disability impacts on parenting capacity"
 ```
 
 #### Processing Multiple Files
@@ -775,13 +778,13 @@ You can now digest multiple documents in a single command:
 
 ```bash
 # Process all affidavits together
-./litassist.py digest smith_affidavit.pdf jones_affidavit.pdf expert_report.pdf --mode issues
+litassist digest smith_affidavit.pdf jones_affidavit.pdf expert_report.pdf --mode issues
 
 # Using wildcards (shell expands them)
-./litassist.py digest evidence/*.pdf --mode summary --hint "timeline of events"
+litassist digest evidence/*.pdf --mode summary --hint "timeline of events"
 
 # Mix different document types
-./litassist.py digest financial_records.pdf correspondence.txt medical_report.pdf --mode issues
+litassist digest financial_records.pdf correspondence.txt medical_report.pdf --mode issues
 ```
 
 Each file is processed individually and the output includes clear source attribution:
@@ -850,10 +853,10 @@ The `extractfacts` command processes a document to extract relevant case facts a
 
 ```bash
 # Single file
-./litassist.py extractfacts <file>
+litassist extractfacts <file>
 
 # Multiple files (July 2025 Update)
-./litassist.py extractfacts file1.pdf file2.txt file3.pdf
+litassist extractfacts file1.pdf file2.txt file3.pdf
 ```
 
 **Multiple Files Support**: As of July 2025, extractfacts accepts multiple input files. All files are combined with clear source attribution before processing, enabling comprehensive fact extraction from document sets in a single run.
@@ -907,10 +910,10 @@ Now we need to create a structured fact sheet for the *Smith v Jones* case:
 
 ```bash
 # Single document extraction
-./litassist.py extractfacts examples/smith_jones_file.pdf
+litassist extractfacts examples/smith_jones_file.pdf
 
 # Multiple document extraction (combines all sources)
-./litassist.py extractfacts examples/smith_jones_file.pdf examples/medical_report.pdf examples/financial_records.txt
+litassist extractfacts examples/smith_jones_file.pdf examples/medical_report.pdf examples/financial_records.txt
 ```
 
 **Output Example**:
@@ -985,7 +988,7 @@ The `brainstorm` command uses Grok's creative capabilities to generate a compreh
 ### Command
 
 ```bash
-./litassist.py brainstorm <case_facts_file> --side <party_side> --area <legal_area> [--research <lookup_file>...]
+litassist brainstorm <case_facts_file> --side <party_side> --area <legal_area> [--research <lookup_file>...]
 ```
 
 Required parameters:
@@ -1006,7 +1009,7 @@ Required parameters:
 For the *Smith v Jones* case, we can use the structured facts to generate comprehensive legal strategies:
 
 ```bash
-./litassist.py brainstorm examples/case_facts.txt --side plaintiff --area family
+litassist brainstorm examples/case_facts.txt --side plaintiff --area family
 ```
 
 #### Research-Informed Mode
@@ -1014,11 +1017,11 @@ When you have already conducted legal research using the lookup command:
 
 ```bash
 # First, conduct research on relevant topics
-./litassist.py lookup "parental alienation family law australia"
-./litassist.py lookup "relocation orders best interests child"
+litassist lookup "parental alienation family law australia"
+litassist lookup "relocation orders best interests child"
 
 # Then use the research to inform brainstorming
-./litassist.py brainstorm examples/case_facts.txt --side plaintiff --area family \
+litassist brainstorm examples/case_facts.txt --side plaintiff --area family \
   --research outputs/lookup_parental_alienation_*.txt \
   --research outputs/lookup_relocation_orders_*.txt
 ```
@@ -1100,7 +1103,7 @@ The `strategy` command analyzes case facts to generate strategic legal options, 
 ### Command
 
 ```bash
-./litassist.py strategy <case_facts_file> --outcome <desired_outcome> [--strategies <strategies_file>]
+litassist strategy <case_facts_file> --outcome <desired_outcome> [--strategies <strategies_file>]
 ```
 
 Required parameters:
@@ -1170,10 +1173,10 @@ For the *Smith v Jones* case, we can generate strategic options for specific lit
 
 ```bash
 # Using case facts only
-./litassist.py strategy examples/case_facts.txt --outcome "Secure interim orders allowing children to remain in Brisbane"
+litassist strategy examples/case_facts.txt --outcome "Secure interim orders allowing children to remain in Brisbane"
 
 # Using case facts + brainstormed strategies (recommended workflow)
-./litassist.py strategy examples/case_facts.txt --outcome "Secure interim orders allowing children to remain in Brisbane" --strategies strategies.txt
+litassist strategy examples/case_facts.txt --outcome "Secure interim orders allowing children to remain in Brisbane" --strategies strategies.txt
 ```
 
 **When using --strategies option**: The command uses an efficiency-first approach:
@@ -1668,10 +1671,10 @@ The `draft` command creates well-supported legal drafts with intelligent documen
 
 ```bash
 # ✅ CORRECT - Direct processing, rich context
-./litassist.py draft case_facts.txt strategies.txt "submissions"
+litassist draft case_facts.txt strategies.txt "submissions"
 
 # ❌ INCORRECT - Forces embedding/retrieval, limited context  
-./litassist.py draft case_facts.md strategies.md "submissions"
+litassist draft case_facts.md strategies.md "submissions"
 ```
 
 **Why file extensions matter:**
@@ -1710,7 +1713,7 @@ System instructions change based on document types provided:
 ### Command
 
 ```bash
-./litassist.py draft <document> [<document> ...] <query> [--diversity FLOAT] [--verify]
+litassist draft <document> [<document> ...] <query> [--diversity FLOAT] [--verify]
 ```
 
 Arguments:
@@ -1741,19 +1744,19 @@ Options:
 **Optimal Workflow (Brainstorm → Draft):**
 ```bash
 # 1. Generate comprehensive strategies with legal foundations
-./litassist.py brainstorm case_facts.txt --side plaintiff --area family
+litassist brainstorm case_facts.txt --side plaintiff --area family
 
 # 2. Use brainstorm output for rich legal drafting (automatically recognized)
-./litassist.py draft case_facts.txt brainstorm_family_plaintiff_20250606_143022.txt "comprehensive outline of submissions"
+litassist draft case_facts.txt brainstorm_family_plaintiff_20250606_143022.txt "comprehensive outline of submissions"
 ```
 
 **Alternative Workflow (Strategy → Draft):**
 ```bash
 # 1. Generate tactical analysis for specific outcome
-./litassist.py strategy case_facts.txt --outcome "secure interim orders"
+litassist strategy case_facts.txt --outcome "secure interim orders"
 
 # 2. Use strategy output as supporting document (requires manual integration)
-./litassist.py draft case_facts.txt strategy_interim_orders_20250606_143022.txt "detailed submissions"
+litassist draft case_facts.txt strategy_interim_orders_20250606_143022.txt "detailed submissions"
 ```
 
 **Why brainstorm output is preferred for drafting:**
@@ -1768,26 +1771,26 @@ For our *Smith v Jones* case, we can now draft a submission on the relocation is
 
 ```bash
 # Using just the case facts (basic drafting)
-./litassist.py draft case_facts.txt "outline of submissions regarding relocation of children in Smith v Jones"
+litassist draft case_facts.txt "outline of submissions regarding relocation of children in Smith v Jones"
 
 # Using case facts + brainstorm output (RECOMMENDED - rich legal foundation)
-./litassist.py draft case_facts.txt brainstorm_family_plaintiff_20250606_143022.txt "comprehensive outline of submissions"
+litassist draft case_facts.txt brainstorm_family_plaintiff_20250606_143022.txt "comprehensive outline of submissions"
 
 # Using case facts + strategy output (tactical context)
-./litassist.py draft case_facts.txt strategy_interim_orders_20250606_143022.txt "submissions for interim hearing"
+litassist draft case_facts.txt strategy_interim_orders_20250606_143022.txt "submissions for interim hearing"
 
 # Using multiple sources including PDFs (comprehensive context)
-./litassist.py draft case_facts.txt brainstorm_family_plaintiff_20250606_143022.txt examples/smith_bundle.pdf "comprehensive submission on relocation"
+litassist draft case_facts.txt brainstorm_family_plaintiff_20250606_143022.txt examples/smith_bundle.pdf "comprehensive submission on relocation"
 ```
 
 **File naming for optimal integration:**
 ```bash
 # For automatic recognition, use these patterns:
 cp brainstorm_family_plaintiff_20250606_143022.txt strategies.txt
-./litassist.py draft case_facts.txt strategies.txt "submissions"
+litassist draft case_facts.txt strategies.txt "submissions"
 
 # Or use direct file references (brainstorm auto-recognized by header):
-./litassist.py draft case_facts.txt brainstorm_family_plaintiff_20250606_143022.txt "submissions"
+litassist draft case_facts.txt brainstorm_family_plaintiff_20250606_143022.txt "submissions"
 ```
 
 **Output Example**:
@@ -1835,7 +1838,7 @@ cp case_facts.md case_facts.txt
 cp strategies.md strategies.txt
 
 # Re-run with proper extensions
-./litassist.py draft case_facts.txt strategies.txt "comprehensive outline of submissions"
+litassist draft case_facts.txt strategies.txt "comprehensive outline of submissions"
 ```
 
 **Expected CLI output with correct setup:**
@@ -1865,23 +1868,23 @@ mv strategies.md strategies.txt
 **Multi-stage drafting workflow:**
 ```bash
 # Stage 1: Research and strategy
-./litassist.py lookup "contract formation elements" --extract principles
-./litassist.py brainstorm case_facts.txt --side plaintiff --area commercial
+litassist lookup "contract formation elements" --extract principles
+litassist brainstorm case_facts.txt --side plaintiff --area commercial
 
 # Stage 2: Comprehensive drafting using research foundation
-./litassist.py draft case_facts.txt brainstorm_commercial_plaintiff_*.txt "detailed contract dispute submissions"
+litassist draft case_facts.txt brainstorm_commercial_plaintiff_*.txt "detailed contract dispute submissions"
 
 # Stage 3: Tactical planning for specific outcomes
-./litassist.py strategy case_facts.txt --outcome "summary judgment application" --strategies strategies.txt
+litassist strategy case_facts.txt --outcome "summary judgment application" --strategies strategies.txt
 ```
 
 **Document combination strategies:**
 ```bash
 # Maximum context for complex matters
-./litassist.py draft case_facts.txt strategies.txt expert_reports.pdf witness_statements.pdf "comprehensive submissions"
+litassist draft case_facts.txt strategies.txt expert_reports.pdf witness_statements.pdf "comprehensive submissions"
 
 # Focused drafting for specific applications
-./litassist.py draft case_facts.txt strategy_interim_orders_*.txt "urgent application for interim relief"
+litassist draft case_facts.txt strategy_interim_orders_*.txt "urgent application for interim relief"
 ```
 
 
@@ -1896,7 +1899,7 @@ The `test` command verifies API connectivity with all external services used by 
 ### Command
 
 ```bash
-./litassist.py test
+litassist test
 ```
 
 ### Example Usage
@@ -1904,7 +1907,7 @@ The `test` command verifies API connectivity with all external services used by 
 Before beginning work on the *Smith v Jones* case, you can verify that all API connections are working properly:
 
 ```bash
-./litassist.py test
+litassist test
 ```
 
 **Output Example**:
@@ -1933,7 +1936,7 @@ The `verify` command performs comprehensive quality checks on generated legal do
 ### Command
 
 ```bash
-./litassist.py verify <file> [--citations] [--soundness] [--reasoning]
+litassist verify <file> [--citations] [--soundness] [--reasoning]
 ```
 
 Options:
@@ -1967,19 +1970,19 @@ Options:
 #### Full Verification (Recommended)
 ```bash
 # Verify a draft submission before filing
-./litassist.py verify outputs/draft_submissions_20250606_143022.txt
+litassist verify outputs/draft_submissions_20250606_143022.txt
 ```
 
 #### Targeted Verification
 ```bash
 # Check only citations in a research memo
-./litassist.py verify outputs/lookup_parental_alienation_20250606_143022.txt --citations
+litassist verify outputs/lookup_parental_alienation_20250606_143022.txt --citations
 
 # Verify legal soundness of strategy options
-./litassist.py verify outputs/strategy_interim_orders_20250606_143022.txt --soundness
+litassist verify outputs/strategy_interim_orders_20250606_143022.txt --soundness
 
 # Generate reasoning trace for brainstormed strategies
-./litassist.py verify outputs/brainstorm_family_plaintiff_20250606_143022.txt --reasoning
+litassist verify outputs/brainstorm_family_plaintiff_20250606_143022.txt --reasoning
 ```
 
 ### Output
@@ -2029,10 +2032,10 @@ The verify command creates a comprehensive report saved to:
 **Quality Assurance Workflow**:
 ```bash
 # Generate draft
-./litassist.py draft case_facts.txt strategies.txt "urgent application"
+litassist draft case_facts.txt strategies.txt "urgent application"
 
 # Verify before filing
-./litassist.py verify outputs/draft_urgent_application_*.txt
+litassist verify outputs/draft_urgent_application_*.txt
 
 # Review report and address any issues
 cat outputs/verify_report_draft_*.txt
@@ -2048,49 +2051,55 @@ cat outputs/verify_report_draft_*.txt
 
 ## End-to-End Pipeline Example
 
-To demonstrate how these five workflows combine into a seamless end-to-end pipeline for the *Smith v Jones* case:
+To demonstrate how these workflows combine into a seamless end-to-end pipeline for the *Smith v Jones* case:
 
 1. **Ingest (Lookup)**: Research legal frameworks for parental alienation and relocation cases in Australian family law.
    ```bash
-   ./litassist.py lookup "What is the legal framework for determining parental alienation in Australian family court cases?"
-   ./litassist.py lookup "What factors do Australian courts consider in relocation cases?" --mode broad
+   litassist lookup "What is the legal framework for determining parental alienation in Australian family court cases?"
+   litassist lookup "What factors do Australian courts consider in relocation cases?" --mode broad
    ```
 
-2. **Analyse (Digest)**: Process and analyze case documents to identify key issues and chronology.
+2. **Plan (CasePlan)**: With even a preliminary or skeleton `case_facts.txt`, run caseplan to generate a phased workflow plan. This helps you decide what materials to collect and which commands to run next.
    ```bash
-   ./litassist.py digest examples/smith_affidavit.pdf --mode issues
-   ./litassist.py digest examples/jones_response.pdf --mode summary
+   litassist caseplan case_facts.txt --focus "parenting arrangements"
+   ```
+   *Outputs a detailed, phased workflow plan. Update the plan as you discover more facts.*
+
+3. **Analyse (Digest)**: Process and analyze case documents to identify key issues and chronology.
+   ```bash
+   litassist digest examples/smith_affidavit.pdf --mode issues
+   litassist digest examples/jones_response.pdf --mode summary
    ```
 
-3. **Structure (ExtractFacts)**: Extract and organize case facts into a structured format.
+4. **Structure (ExtractFacts)**: Extract and organize case facts into a structured format.
    ```bash
-   ./litassist.py extractfacts examples/smith_jones_file.pdf
+   litassist extractfacts examples/smith_jones_file.pdf
    ```
 
-4. **Brainstorm**: Generate comprehensive legal strategies tailored to party side and legal area.
+5. **Brainstorm**: Generate comprehensive legal strategies tailored to party side and legal area.
    ```bash
-   ./litassist.py brainstorm examples/case_facts.txt --side plaintiff --area family
+   litassist brainstorm examples/case_facts.txt --side plaintiff --area family
    ```
    *Produces: Creative exploration of all possible legal approaches with legal foundations*
 
-5. **Strategy**: Generate targeted strategic options and draft documents for specific outcomes.
+6. **Strategy**: Generate targeted strategic options and draft documents for specific outcomes.
    ```bash
-   ./litassist.py strategy examples/case_facts.txt --outcome "Secure interim orders allowing children to remain in Brisbane"
+   litassist strategy examples/case_facts.txt --outcome "Secure interim orders allowing children to remain in Brisbane"
    ```
    *Produces: Tactical implementation plans with probability assessments and obstacle analysis*
    
    **Note**: See [Understanding Brainstormed Strategies vs Strategic Options](#understanding-brainstormed-strategies-vs-strategic-options) for the crucial differences between these two approaches.
 
-6. **Draft**: Create comprehensive legal submissions using brainstormed strategies and case facts.
+7. **Draft**: Create comprehensive legal submissions using brainstormed strategies and case facts.
    ```bash
    # RECOMMENDED: Use brainstorm output for rich legal foundation
-   ./litassist.py draft case_facts.txt brainstorm_family_plaintiff_20250606_143022.txt "comprehensive outline of submissions"
+   litassist draft case_facts.txt brainstorm_family_plaintiff_20250606_143022.txt "comprehensive outline of submissions"
    
    # Alternative: Basic drafting with just case facts
-   ./litassist.py draft case_facts.txt "outline of submissions regarding relocation of children in Smith v Jones"
+   litassist draft case_facts.txt "outline of submissions regarding relocation of children in Smith v Jones"
    
    # Or combine with original documents for maximum context
-   ./litassist.py draft case_facts.txt brainstorm_family_plaintiff_20250606_143022.txt examples/smith_bundle.pdf "comprehensive submission on relocation"
+   litassist draft case_facts.txt brainstorm_family_plaintiff_20250606_143022.txt examples/smith_bundle.pdf "comprehensive submission on relocation"
    ```
 
 ## Conclusion
@@ -2102,7 +2111,7 @@ LitAssist streamlines legal workflows by automating research, analysis, and draf
 Options available for all commands:
 
 ```bash
-./litassist.py [GLOBAL OPTIONS] <command> [ARGS] [OPTIONS]
+litassist [GLOBAL OPTIONS] <command> [ARGS] [OPTIONS]
 ```
 
 - `--log-format [json|markdown]` - Set audit log format (default: json)
@@ -2373,7 +2382,7 @@ The `counselnotes` command provides strategic analysis from an advocate's perspe
 ### Command
 
 ```bash
-./litassist.py counselnotes FILE [FILE...] [--extract all|citations|principles|checklist] [--verify] [--output PREFIX]
+litassist counselnotes FILE [FILE...] [--extract all|citations|principles|checklist] [--verify] [--output PREFIX]
 ```
 
 Options:
@@ -2414,19 +2423,19 @@ CounselNotes provides a 5-section strategic analysis:
 CounselNotes excels at synthesizing multiple documents:
 ```bash
 # Single document analysis
-./litassist.py counselnotes judgment.pdf
+litassist counselnotes judgment.pdf
 
 # Multi-document synthesis
-./litassist.py counselnotes judgment.pdf affidavit1.pdf affidavit2.pdf correspondence.pdf
+litassist counselnotes judgment.pdf affidavit1.pdf affidavit2.pdf correspondence.pdf
 
 # With extraction
-./litassist.py counselnotes case_bundle.pdf --extract all --verify
+litassist counselnotes case_bundle.pdf --extract all --verify
 ```
 
 ### Example Usage (Smith v Jones)
 
 ```bash
-./litassist.py counselnotes smith_v_jones_judgment.pdf witness_statements.pdf --verify
+litassist counselnotes smith_v_jones_judgment.pdf witness_statements.pdf --verify
 
 # Output includes:
 # - Strategic advantages in relocation argument
@@ -2447,6 +2456,93 @@ CounselNotes excels at synthesizing multiple documents:
 
 **Pipeline Phase**: Document Preparation
 
+## Workflow 2: CasePlan - Litigation Workflow Planning
+
+**Pipeline Phase**: Planning & Orchestration (EARLY STAGE)
+
+### Purpose
+
+The `caseplan` command generates a customized, phased litigation workflow plan based on user-provided case facts, budget constraints, and (optionally) a focus area. It is designed to be run at the very start of a matter, even with a bare bones or preliminary `case_facts.txt` file, to guide the entire litigation approach and inform which materials to collect next.
+
+### Key Features
+
+- **Two-Mode Operation**:
+  - **Budget Assessment Mode**: (Claude Sonnet) Rapidly analyzes case facts to recommend a budget level (minimal, standard, comprehensive) with justification.
+  - **Full Plan Mode**: (Claude Opus) Generates a detailed, phased workflow plan, including cost/time estimates, dependencies, and a mermaid diagram.
+- **Focus Area Integration**: If `--focus` is specified, every phase is rated for relevance and prioritized accordingly.
+- **Command Coverage Analysis**: The plan must explicitly address all major commands (lookup, brainstorm, strategy, counselnotes, draft, barbrief, verify), with mandatory rationale for inclusion/omission.
+- **Format Enforcement**: Each phase includes: Name, Purpose, Commands, Rationale, Focus Relevance, Cost, Tag (ESSENTIAL/OPTIONAL).
+- **Final Section**: "COMMAND COVERAGE ANALYSIS" justifying any omitted commands.
+
+### Command
+
+```bash
+litassist caseplan <case_facts_file> [--focus <area>] [--budget minimal|standard|comprehensive]
+```
+
+- `<case_facts_file>`: Path to structured case facts (10-heading format, can be minimal/skeleton at this stage)
+- `--focus`: (Optional) Area to prioritize in the plan (e.g., "property dispute")
+- `--budget`: (Optional) Budget constraint; if omitted, the tool recommends one
+
+### Example Usage
+
+#### Budget Assessment
+
+```bash
+litassist caseplan case_facts.txt
+```
+*Outputs a summary, recommended budget, and justification.*
+
+#### Full Plan with Focus
+
+```bash
+litassist caseplan case_facts.txt --focus "parenting arrangements" --budget standard
+```
+*Outputs a detailed, phased workflow plan with focus relevance ratings.*
+
+### Output Example
+
+```
+PHASE 1: Initial Planning
+Purpose: Generate a phased workflow plan to guide document collection and analysis
+Commands: caseplan case_facts.txt --focus "parenting arrangements"
+Rationale: Early planning ensures efficient use of resources and targeted document collection
+Focus Relevance: High
+Cost: $5
+Tag: ESSENTIAL
+
+...
+
+## COMMAND COVERAGE ANALYSIS
+lookup: included
+brainstorm: included
+strategy: included
+counselnotes: omitted - not required for this case (no complex tactical issues)
+draft: included
+barbrief: omitted - not required for interim hearing
+verify: included
+```
+
+### Integration
+
+- **Inputs**: Requires a structured case facts file (see ExtractFacts workflow), but can be minimal at this stage
+- **Outputs**: Markdown plan with phases, rationale, cost/time, dependencies, and a workflow diagram
+- **Downstream**: Plan phases can be executed using other LitAssist commands
+
+### Best Practices
+
+- Use caseplan as one of the first steps, even with a skeleton case_facts.txt
+- Refine the plan as more facts and documents are collected
+- Specify `--focus` to tailor the plan to a particular issue
+- Review the COMMAND COVERAGE ANALYSIS to ensure all major steps are justified
+
+### Smith v Jones Example
+
+```bash
+litassist caseplan examples/case_facts.txt --focus "relocation" --budget comprehensive
+```
+*Generates a comprehensive, focus-prioritized workflow plan for the Smith v Jones case.*
+
 ### Purpose
 
 The `barbrief` command generates comprehensive barrister's briefs suitable for briefing counsel in Australian litigation. It consolidates case facts, strategies, research, and supporting documents into a structured 10-section brief tailored to specific hearing types.
@@ -2454,7 +2550,7 @@ The `barbrief` command generates comprehensive barrister's briefs suitable for b
 ### Command
 
 ```bash
-./litassist.py barbrief CASE_FACTS --hearing-type TYPE [OPTIONS]
+litassist barbrief CASE_FACTS --hearing-type TYPE [OPTIONS]
 ```
 
 Required:
@@ -2513,10 +2609,10 @@ The generated brief includes 10 comprehensive sections:
 
 ```bash
 # Basic trial brief
-./litassist.py barbrief smith_v_jones_facts.txt --hearing-type trial
+litassist barbrief smith_v_jones_facts.txt --hearing-type trial
 
 # Comprehensive appeal brief with all materials
-./litassist.py barbrief smith_v_jones_facts.txt --hearing-type appeal \
+litassist barbrief smith_v_jones_facts.txt --hearing-type appeal \
   --strategies brainstorm_output.txt \
   --research lookup_relocation_law.txt --research lookup_alienation_cases.txt \
   --documents affidavit_smith.pdf --documents family_report.pdf \

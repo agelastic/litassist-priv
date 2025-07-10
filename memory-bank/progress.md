@@ -7,6 +7,12 @@
 
 ## What works
 - **All Core Commands**: lookup, digest, extractfacts, brainstorm, strategy, draft, verify, counselnotes, barbrief fully implemented and stable
+- **Caseplan Command (July 2025)**: Intelligent workflow planning
+  - LLM analyzes case complexity automatically
+  - Generates cost-effective, adaptive plans
+  - Prevents wasteful 50+ document generation
+  - Budget-aware planning (minimal/standard/comprehensive)
+  - Reusable capabilities prompt for future features
 - **Brainstorm Command Enhancement (July 2025)**: Major improvements to input handling
   - Multiple input files support with --facts option (replaces positional argument)
   - Glob pattern support for both --facts and --research options

@@ -130,6 +130,14 @@
 - Full Memory Bank review performed on 15 June 2025: all files confirmed up to date and synchronized with codebase and documentation. No changes required.
 - 16 June 2025: Test suite and prompt YAMLs synchronized; all tests for commented-out templates are now commented out in the test code. All tests pass.
 
+## Latest update (9 July 2025 - Caseplan Command)
+- ADDED: New caseplan command for intelligent workflow generation
+- IMPLEMENTED: LLM-driven case complexity analysis
+- CREATED: Reusable capabilities.yaml for command reference
+- PRINCIPLE: Zero local parsing - LLM generates complete plans
+- EFFICIENCY: Adaptive workflows prevent 50+ document waste
+- EXAMPLE: litassist caseplan case_facts.txt --budget minimal
+
 ## Next Steps
 
 1. **[AG-124][P0] Implement circuit breaker for API retries**  

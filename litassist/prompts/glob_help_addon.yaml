@@ -1,0 +1,20 @@
+# TEMPORARY: Remove after glob unification complete
+# Reference: claude_glob_unification_plan.md
+
+glob_help_section: |
+
+  --- GLOB PATTERNS (TEMPORARY - UNIFIED GLOBBING PLANNED) ---
+  ✅ Built-in glob support:
+  • brainstorm --facts 'outputs/extract_*.txt' --research 'outputs/lookup_*.txt'
+  • barbrief case_facts.txt --strategies 'outputs/brainstorm_*.txt' --documents '*.pdf'
+
+  ⚠️ Shell expansion required (use quotes in some shells):
+  • extractfacts: litassist extractfacts *.pdf docs/*.txt
+  • digest: litassist digest case_files/*.pdf evidence/*.txt
+  • draft: litassist draft case_facts.txt *.pdf "query"
+  • counselnotes: litassist counselnotes case_files/*.pdf
+
+  ❌ Single file only:
+  • strategy: litassist strategy case_facts.txt --strategies single_file.txt
+
+  Note: Unified globbing support planned - see claude_glob_unification_plan.md

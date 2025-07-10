@@ -2,6 +2,10 @@
 
 ## Current State Analysis
 
+### Temporary Help System (July 2025)
+- **Status**: Temporary glob help addon (`litassist/prompts/glob_help_addon.yaml`) provides user guidance
+- **Note**: Must be removed before implementing full unification to avoid confusion
+
 ### Commands WITH Glob Support (2 commands)
 1. **brainstorm.py**
    - `--facts`: multiple=True, type=click.Path(), callback=expand_glob_patterns
@@ -242,6 +246,7 @@ litassist digest 'outputs/lookup_*gift*.txt' 'outputs/lookup_*trust*.txt'
 
 ## Rollout Plan
 
+0. **Phase 0**: Remove temporary help addon (delete `glob_help_addon.yaml`)
 1. **Phase 1**: Implement centralized function (low risk)
 2. **Phase 2**: Update commands that use nargs=-1 (medium risk)
 3. **Phase 3**: Update strategy command (higher risk due to behavior change)

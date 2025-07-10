@@ -81,10 +81,10 @@ The lookup command supports a `--comprehensive` flag for exhaustive analysis:
 
 ```bash
 # Standard search (5 sources)
-./litassist.py lookup "contract formation elements"
+litassist lookup "contract formation elements"
 
 # Comprehensive search (up to 20 Jade.io + 10 broader sources if secondary CSE configured)
-./litassist.py lookup "contract formation elements" --comprehensive
+litassist lookup "contract formation elements" --comprehensive
 ```
 
 **Note**: Comprehensive mode uses significantly more API calls. Consider your daily quota when using this feature.
@@ -94,7 +94,7 @@ The lookup command supports a `--comprehensive` flag for exhaustive analysis:
 The lookup command supports a `--context` option to provide additional guidance:
 
 ```bash
-./litassist.py lookup "negligence principles" --context "Focus on medical malpractice cases involving surgical errors"
+litassist lookup "negligence principles" --context "Focus on medical malpractice cases involving surgical errors"
 ```
 
 This helps narrow the analysis to specific aspects of your legal question.
@@ -102,7 +102,7 @@ This helps narrow the analysis to specific aspects of your legal question.
 ### Example
 
 ```bash
-./litassist.py lookup "Is frustration a defence to costs in Australian contract law?"
+litassist lookup "Is frustration a defence to costs in Australian contract law?"
 ```
 
 *Output* (truncated):
