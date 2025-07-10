@@ -192,7 +192,7 @@ LitAssist uses a dynamic, pattern-based parameter filtering system that automati
 
 1. **Model Family Detection**: Models are matched against regex patterns to identify their family
 2. **Parameter Filtering**: Each model family has an allowed parameter list
-3. **Parameter Transformation**: Some parameters are automatically transformed (e.g., `max_tokens` → `max_completion_tokens`)
+3. **Parameter Transformation**: Some parameters are automatically transformed (e.g., `max_tokens` -> `max_completion_tokens`)
 4. **System Message Handling**: Automatic detection of system message support
 
 ### Model Patterns

@@ -9,10 +9,10 @@
 
 **Progress on Parsing Removal**:
 - **CasePlan prompt (July 2025):** New caseplan.yaml prompt enforces rationale, command coverage, and focus area in LLM output, minimizing local parsing for workflow planning.
-- ✅ **COMPLETED**: Removed ~25 lines of verification parsing in `brainstorm.py` (lines 481-500)
-- ✅ **PRINCIPLE APPLIED**: Trust well-prompted LLMs to return correct format
-- ✅ **TOKEN LIMITS**: Increased verification limits to 8192-16384 to avoid truncation
-- 🔄 **ONGOING**: Continue removing parsing patterns identified in this audit  
+- [DONE] **COMPLETED**: Removed ~25 lines of verification parsing in `brainstorm.py` (lines 481-500)
+- [DONE] **PRINCIPLE APPLIED**: Trust well-prompted LLMs to return correct format
+- [DONE] **TOKEN LIMITS**: Increased verification limits to 8192-16384 to avoid truncation
+- [TODO] **ONGOING**: Continue removing parsing patterns identified in this audit  
 
 ## Executive Summary
 

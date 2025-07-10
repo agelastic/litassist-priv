@@ -24,7 +24,7 @@ litassist brainstorm --facts case_facts.txt --side plaintiff --area civil
 ## PHASE 2: EXTRACT FACTS FROM SOURCE DOCUMENTS
 Extract structured facts from all PDF documents in the case bundle with a single command:
 
-**⚠️ IMPORTANT FILE SIZE LIMIT**: Each file must be under 1MB (1,000,000 characters). Large files like WhatsApp chat logs should be processed with `digest` instead.
+**[WARNING] IMPORTANT FILE SIZE LIMIT**: Each file must be under 1MB (1,000,000 characters). Large files like WhatsApp chat logs should be processed with `digest` instead.
 
 ```bash
 # Process PDFs and case_facts together (if under 1MB each)
@@ -110,7 +110,7 @@ Note: digest now accepts multiple files and creates a consolidated digest with c
 ## PHASE 5: RESEARCH-INFORMED BRAINSTORMING (with lookup results)
 After completing extensive case law research, run brainstorm again with research context:
 
-### 🎯 RECOMMENDED for Osipov v Wong case:
+### [RECOMMENDED] for Osipov v Wong case:
 ```bash
 # Use selective research themes focusing on core legal theories with glob patterns
 litassist brainstorm --side plaintiff --area civil --research 'outputs/lookup_*gift*.txt' --research 'outputs/lookup_*presumption*.txt' --research 'outputs/lookup_*constructive*.txt'
@@ -345,7 +345,7 @@ The dual brainstorming approach (Phase 1 and Phase 5) ensures:
 
 ## Key Commands and Their Input Capabilities
 - `extractfacts`: NOW accepts multiple files - consolidates into single fact sheet (IMPROVED!)
-  - ⚠️ Each file must be under 1MB limit
+  - [WARNING] Each file must be under 1MB limit
 - `digest`: NOW accepts multiple files - creates consolidated digest with source attribution (IMPROVED!)
   - Better for large files and unstructured content
 - `strategy`: Only accepts 1 case facts file + 1 optional strategies file (LIMITED)
@@ -376,8 +376,8 @@ The dual brainstorming approach (Phase 1 and Phase 5) ensures:
 
 ### Glob Pattern Usage
 **Best Practice**: Always quote glob patterns to prevent shell expansion
-- ✅ CORRECT: `--research 'outputs/lookup_*.txt'`
-- ❌ WRONG: `--research outputs/lookup_*.txt`
+- [Y] CORRECT: `--research 'outputs/lookup_*.txt'`
+- [N] WRONG: `--research outputs/lookup_*.txt`
 
 ### YAML Configuration Issues
 **Problem**: AttributeError when sections in config.yaml contain only comments

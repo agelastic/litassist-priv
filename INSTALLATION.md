@@ -40,10 +40,10 @@ litassist --help
 ```
 
 **Benefits of pipx:**
-- ✅ Global availability without virtual environment activation
-- ✅ Isolated from system Python packages
-- ✅ Easy updates with `pipx upgrade litassist`
-- ✅ Clean uninstall with `pipx uninstall litassist`
+- [Y] Global availability without virtual environment activation
+- [Y] Isolated from system Python packages
+- [Y] Easy updates with `pipx upgrade litassist`
+- [Y] Clean uninstall with `pipx uninstall litassist`
 
 ### Method 2: Virtual Environment (Development)
 
@@ -267,7 +267,7 @@ cp config.yaml.template config.yaml
 nano config.yaml
 
 # Verify config loads
-python3 -c "from litassist.config import CONFIG; print('✓ Config loaded from:', CONFIG.config_path)"
+python3 -c "from litassist.config import CONFIG; print('[Y] Config loaded from:', CONFIG.config_path)"
 ```
 
 **Common Mistake:** Creating `config.yaml` in project directories. The config must be in the LitAssist source directory.

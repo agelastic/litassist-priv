@@ -128,12 +128,27 @@ LitAssist is a command-line tool for automated litigation support workflows, tai
 
 ### Emoji Policy and Terminal Output Standards
 
-**CRITICAL**: No emojis are allowed anywhere in the codebase. Use colored ASCII text with ANSI escape codes instead.
+**ABSOLUTE PROHIBITION - NO EMOJIS ANYWHERE**
 
-**Policy:**
-1. **Zero Emoji Tolerance**: No Unicode emojis in Python code, YAML configs, shell scripts, or any source files
-2. **Colored Terminal Output**: Use the color utility functions in `utils.py` for all user-facing messages
-3. **Professional CLI Experience**: Maintain clear visual feedback through colors and text prefixes
+**CRITICAL RULE**: NO emojis are allowed ANYWHERE in this repository. This is a ZERO TOLERANCE policy.
+
+**The emoji ban applies to:**
+1. **ALL Python code** - No emojis in .py files, ever
+2. **ALL YAML/YML files** - No emojis in configuration or prompts
+3. **ALL documentation** - No emojis in .md, .txt, or .rst files
+4. **ALL shell scripts** - No emojis in .sh or bash scripts
+5. **ALL test files** - No emojis in test code or test data
+6. **ALL commit messages** - No emojis in git commits
+7. **ALL code comments** - No emojis in inline or block comments
+8. **ALL error messages** - No emojis in exceptions or logs
+9. **ALL user output** - No emojis in CLI output or responses
+10. **ANYWHERE ELSE** - If it's in this repo, it CANNOT have emojis
+
+**Policy Enforcement:**
+1. **Zero Emoji Tolerance**: Not a single Unicode emoji character is permitted
+2. **ASCII Only**: Use colored ASCII text with ANSI escape codes for visual differentiation
+3. **Professional Standards**: This is legal software - maintain absolute professionalism
+4. **No Exceptions**: This rule has NO exceptions, regardless of context or purpose
 
 **Color Utility Functions (in `utils.py`):**
 - `success_message()` - Green `[SUCCESS]` prefix for successful operations
@@ -167,12 +182,19 @@ print(warning_message("Large file detected"))
 click.echo(verifying_message("Verifying citations..."))
 ```
 
-**Rationale:**
-- Ensures consistent display across all terminal environments
-- Maintains professional appearance in legal software
-- Prevents encoding issues in different systems
-- Provides better accessibility for screen readers
-- Allows users to customize color schemes in their terminals
+**Why This Strict No-Emoji Policy Exists:**
+1. **Job Safety Critical** - The maintainer's employment depends on professional standards
+2. **Legal Software Requirements** - Australian legal profession demands absolute professionalism
+3. **Terminal Compatibility** - Emojis display inconsistently across different systems
+4. **Encoding Issues** - Unicode emojis cause problems in various environments
+5. **Accessibility** - Screen readers handle ASCII text better than emojis
+6. **Professional Standards** - This is enterprise legal software, not a chat app
+
+**Consequences of Emoji Usage:**
+- Any PR with emojis will be REJECTED
+- Any commit with emojis must be reverted
+- This policy is NOT negotiable or flexible
+- There are NO acceptable use cases for emojis in this codebase
 
 ### Model Name Protection
 
@@ -380,7 +402,7 @@ When debugging cascading issues:
 
 ### ABSOLUTELY FORBIDDEN GIT OPERATIONS
 
-**🚨 CRITICAL: NEVER PERFORM ANY GIT COMMITS! 🚨**
+**[CRITICAL WARNING] NEVER PERFORM ANY GIT COMMITS! [CRITICAL WARNING]**
 
 **YOU ARE STRICTLY FORBIDDEN FROM:**
 1. `git commit` - NEVER create commits, even if explicitly asked

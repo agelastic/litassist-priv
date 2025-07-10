@@ -41,7 +41,7 @@ graph TD
 
 For detailed usage guidance, see the [LitAssist User Guide](docs/user/LitAssist_User_Guide.md).
 
-## 🆕 Recent Improvements (July 2025)
+## Recent Improvements (July 2025)
 
 ### July 2025: Enhanced Brainstorm Command
 
@@ -86,7 +86,7 @@ For detailed usage guidance, see the [LitAssist User Guide](docs/user/LitAssist_
 - **Citation Verification**: Enhanced real-time validation via Jade.io database search
 - **File Organization**: Clear file locations with proper shell escaping for paths with spaces
 
-## 🔧 Installation
+## Installation
 
 ### Quick Start
 
@@ -120,9 +120,9 @@ cd ~/any-directory/
 litassist digest document.pdf
 ```
 
-**📖 For detailed installation options, troubleshooting, and advanced setup, see the [Installation Guide](INSTALLATION.md)**
+**For detailed installation options, troubleshooting, and advanced setup, see the [Installation Guide](INSTALLATION.md)**
 
-## ⚙️ Configuration
+## Configuration
 
 Required API keys in `config.yaml` (see [config.yaml.template](config.yaml.template) for reference):
 
@@ -153,7 +153,7 @@ general:
   rag_max_chars: 8000     # Document chunking: characters per chunk for draft command embeddings (default: 8000 ≈ 1600 words)
 ```
 
-### 🤖 Model Configuration & BYOK Requirements
+### Model Configuration & BYOK Requirements
 
 LitAssist uses cutting-edge AI models specifically optimized for legal work:
 
@@ -177,7 +177,7 @@ The `draft` and `barbrief` commands use OpenAI's o3 model, which requires **BYOK
 
 Without BYOK setup, the draft and barbrief commands will fail with an authentication error.
 
-## 🚀 Command Reference
+## Command Reference
 
 Basic usage:
 ```bash
@@ -304,11 +304,11 @@ Global options:
   litassist test
   ```
 
-## 📁 Example Files
+## Example Files
 
 The [`examples/`](examples/) directory contains sample files for testing all commands, based on the fictional *Smith v Jones* family law case.
 
-## 📂 Output Files & Logging
+## Output Files & Logging
 
 ### Command Output Files
 All commands now save their output to timestamped text files without overwriting existing files:
@@ -337,7 +337,7 @@ Each command uses optimized LLM models and parameters:
 
 **Note**: Document chunking (`max_chars`) and AI output limits (`use_token_limits`) are separate systems. See the [LitAssist User Guide](docs/user/LitAssist_User_Guide.md#llm-models-and-parameter-configuration) for details.
 
-## ⚖️ Disclaimer
+## Disclaimer
 
 This tool provides drafts and summaries only. All outputs must be reviewed by qualified legal counsel before filing or submission.
 

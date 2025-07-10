@@ -57,32 +57,32 @@ This running example provides context for understanding how each LitAssist workf
 ## Key Features
 
 **Global Installation Benefits:**
-- ✅ **Use from anywhere** - `litassist` command available in any directory
-- ✅ **Local outputs** - All files created in your current working directory
-- ✅ **Single configuration** - One global config with all your API keys
-- ✅ **Project isolation** - Each case directory gets its own outputs/ and logs/ subdirectories
+- [Y] **Use from anywhere** - `litassist` command available in any directory
+- [Y] **Local outputs** - All files created in your current working directory
+- [Y] **Single configuration** - One global config with all your API keys
+- [Y] **Project isolation** - Each case directory gets its own outputs/ and logs/ subdirectories
 
 **File Management & Organization:**
-- ✅ **Timestamped outputs** - All commands save to unique timestamped files (never overwrites)
-- ✅ **Archive preservation** - Commands like extractfacts and brainstorm maintain both current files and timestamped archives
-- ✅ **API keys in one secure location** - No duplication across projects
-- ✅ **Automatic logging** - Every operation creates detailed audit logs
-- ✅ **Australian English** - All outputs use Australian legal terminology
+- [Y] **Timestamped outputs** - All commands save to unique timestamped files (never overwrites)
+- [Y] **Archive preservation** - Commands like extractfacts and brainstorm maintain both current files and timestamped archives
+- [Y] **API keys in one secure location** - No duplication across projects
+- [Y] **Automatic logging** - Every operation creates detailed audit logs
+- [Y] **Australian English** - All outputs use Australian legal terminology
 
 **Citation Verification & Quality Control:**
-- ✅ **Zero-tolerance citation verification** - All legal references validated against AustLII database
-- ✅ **Real-time online validation** - HEAD requests verify case existence on AustLII during generation
-- ✅ **Intelligent regeneration** - Commands automatically fix citation issues where possible
-- ✅ **Quality over quantity** - Strategy commands discard options with unfixable citation problems
-- ✅ **Enhanced error messages** - Clear explanations of citation failures with specific actions taken
-- ✅ **Verification status transparency** - Always informed when verification runs and why
+- [Y] **Zero-tolerance citation verification** - All legal references validated against AustLII database
+- [Y] **Real-time online validation** - HEAD requests verify case existence on AustLII during generation
+- [Y] **Intelligent regeneration** - Commands automatically fix citation issues where possible
+- [Y] **Quality over quantity** - Strategy commands discard options with unfixable citation problems
+- [Y] **Enhanced error messages** - Clear explanations of citation failures with specific actions taken
+- [Y] **Verification status transparency** - Always informed when verification runs and why
 
 **Legal Reasoning & Analysis (New June 2025):**
-- ✅ **Multi-section reasoning traces** - Brainstorm saves separate reasoning files for orthodox, unorthodox, and analysis sections
-- ✅ **Transparent legal reasoning** - See the logic behind strategy selection and "most likely to succeed" analysis
-- ✅ **Structured analysis** - Each reasoning trace includes issue, applicable law, application to facts, and conclusion
-- ✅ **Comprehensive timing** - All operations timed and logged for performance monitoring
-- ✅ **Centralized configuration** - Log format and other settings moved to config.yaml for consistency
+- [Y] **Multi-section reasoning traces** - Brainstorm saves separate reasoning files for orthodox, unorthodox, and analysis sections
+- [Y] **Transparent legal reasoning** - See the logic behind strategy selection and "most likely to succeed" analysis
+- [Y] **Structured analysis** - Each reasoning trace includes issue, applicable law, application to facts, and conclusion
+- [Y] **Comprehensive timing** - All operations timed and logged for performance monitoring
+- [Y] **Centralized configuration** - Log format and other settings moved to config.yaml for consistency
 
 ## Citation Quality Control
 
@@ -216,14 +216,14 @@ Different commands handle citation issues differently:
 
 | Command | Validation | Verification | Response to Issues |
 |---------|------------|--------------|-------------------|
-| lookup | ✓ | ✓ | Warnings in output (Jade.io-only, AustLII-verified, supports --comprehensive flag) |
-| digest | ✓ | ✓ | Warnings per chunk |
-| extractfacts | ✓ | ✓ | Enhanced error messages |
-| brainstorm | ✓ | ✓ | Regenerates problematic strategies |
-| strategy | ✓ | ✓ | Discards options with bad citations |
-| draft | ✓ | ✓ | Appends warnings to draft |
-| counselnotes | ✓ | ✓ (with --verify) | Warnings in analysis |
-| barbrief | ✓ | ✓ (with --verify) | Verification report generated |
+| lookup | [Y] | [Y] | Warnings in output (Jade.io-only, AustLII-verified, supports --comprehensive flag) |
+| digest | [Y] | [Y] | Warnings per chunk |
+| extractfacts | [Y] | [Y] | Enhanced error messages |
+| brainstorm | [Y] | [Y] | Regenerates problematic strategies |
+| strategy | [Y] | [Y] | Discards options with bad citations |
+| draft | [Y] | [Y] | Appends warnings to draft |
+| counselnotes | [Y] | [Y] (with --verify) | Warnings in analysis |
+| barbrief | [Y] | [Y] (with --verify) | Verification report generated |
 
 ### Best Practices
 
@@ -301,10 +301,10 @@ litassist --log-format json lookup "contract law"
 ```
 
 **Benefits**:
-- ✅ Set your preference once in config.yaml
-- ✅ Consistent logging format across all commands
-- ✅ CLI option still available for overrides
-- ✅ Aligns with other configuration patterns
+- [Y] Set your preference once in config.yaml
+- [Y] Consistent logging format across all commands
+- [Y] CLI option still available for overrides
+- [Y] Aligns with other configuration patterns
 
 ## Working Directory Setup
 
@@ -366,10 +366,10 @@ smith-v-jones-2025/
 Every command follows this consistent, professional output pattern:
 
 ```
-✅ [Command] complete!
-📄 Output saved to: outputs/[filename]_YYYYMMDD_HHMMSS.txt
-📊 [Processing statistics and summary]
-💡 View full [content]: open outputs/[filename]_YYYYMMDD_HHMMSS.txt
+[Y] [Command] complete!
+[DOC] Output saved to: outputs/[filename]_YYYYMMDD_HHMMSS.txt
+[STATS] [Processing statistics and summary]
+[TIP] View full [content]: open outputs/[filename]_YYYYMMDD_HHMMSS.txt
 ```
 
 ### Example: Before vs After
@@ -387,13 +387,13 @@ Found links:
 - https://austlii.edu.au/cgi-bin/viewdoc/au/cases/cth/HCA/1893/23.html
 - https://austlii.edu.au/cgi-bin/viewdoc/au/cases/cth/HCA/1968/1.html
 
-✅ Lookup complete!
-📄 Output saved to: outputs/lookup_contract_formation_elements_20250606_143022.txt
-📊 Legal analysis for: contract formation elements
-🔍 Searched 2 sources:
+[Y] Lookup complete!
+[DOC] Output saved to: outputs/lookup_contract_formation_elements_20250606_143022.txt
+[STATS] Legal analysis for: contract formation elements
+[SEARCH] Searched 2 sources:
    1. Carlill v Carbolic Smoke Ball Co
    2. Australian Woollen Mills v Commonwealth
-💡 View full analysis: open outputs/lookup_contract_formation_elements_20250606_143022.txt
+[TIP] View full analysis: open outputs/lookup_contract_formation_elements_20250606_143022.txt
 ```
 
 ### Benefits of Clean Output
@@ -1183,22 +1183,22 @@ litassist strategy examples/case_facts.txt --outcome "Secure interim orders allo
 
 **Scenario 1 - Complete "Most Likely" Available (Best Case)**:
 ```
-📋 Using 3 pre-analyzed 'most likely to succeed' strategies
+[LIST] Using 3 pre-analyzed 'most likely to succeed' strategies
 ```
 No additional analysis needed - maximum time and cost savings.
 
 **Scenario 2 - Insufficient "Most Likely" (Smart Gap-Filling)**:
 ```
-📋 Using 2 pre-analyzed 'most likely to succeed' strategies
-🧠 Analyzing remaining 15 strategies to fill 2 slots...
-📊 Intelligently selected 2 additional strategies
+[LIST] Using 2 pre-analyzed 'most likely to succeed' strategies
+[ANALYSIS] Analyzing remaining 15 strategies to fill 2 slots...
+[STATS] Intelligently selected 2 additional strategies
 ```
 Minimal additional analysis to complete the strategic options.
 
 **Scenario 3 - No "Most Likely" Section (Full Analysis)**:
 ```
-🧠 No 'most likely' strategies found - analyzing 17 strategies for 'interim orders'...
-📊 Selected top 4 strategies based on legal analysis
+[ANALYSIS] No 'most likely' strategies found - analyzing 17 strategies for 'interim orders'...
+[STATS] Selected top 4 strategies based on legal analysis
 ```
 Comprehensive analysis only when pre-analysis isn't available.
 
@@ -1384,24 +1384,24 @@ gantt
 ### When to Use Each Approach
 
 #### Use Brainstorm When:
-- ✅ **Starting a new matter** and need to explore all possible angles
-- ✅ **Complex legal problem** requiring creative solutions
-- ✅ **Client consultation** to present comprehensive options
-- ✅ **Research phase** to ensure nothing is overlooked
-- ✅ **Building strategy foundation** for later tactical planning
-- ✅ **Teaching/training** to demonstrate legal thinking
-- ✅ **Collaborative planning** with team members
-- ✅ **Uncertain outcomes** requiring multiple approaches
+- [Y] **Starting a new matter** and need to explore all possible angles
+- [Y] **Complex legal problem** requiring creative solutions
+- [Y] **Client consultation** to present comprehensive options
+- [Y] **Research phase** to ensure nothing is overlooked
+- [Y] **Building strategy foundation** for later tactical planning
+- [Y] **Teaching/training** to demonstrate legal thinking
+- [Y] **Collaborative planning** with team members
+- [Y] **Uncertain outcomes** requiring multiple approaches
 
 #### Use Strategy When:
-- ✅ **Specific outcome required** (e.g., "obtain interim injunction")
-- ✅ **Court deadline approaching** and need actionable plan
-- ✅ **Client decision made** about desired approach
-- ✅ **Implementation planning** for chosen strategy
-- ✅ **Resource allocation** decisions required
-- ✅ **Probability assessment** needed for client advice
-- ✅ **Document drafting** preparation with specific goals
-- ✅ **Settlement negotiations** requiring tactical analysis
+- [Y] **Specific outcome required** (e.g., "obtain interim injunction")
+- [Y] **Court deadline approaching** and need actionable plan
+- [Y] **Client decision made** about desired approach
+- [Y] **Implementation planning** for chosen strategy
+- [Y] **Resource allocation** decisions required
+- [Y] **Probability assessment** needed for client advice
+- [Y] **Document drafting** preparation with specific goals
+- [Y] **Settlement negotiations** requiring tactical analysis
 
 ### How They Work Together in Practice
 
@@ -1433,18 +1433,18 @@ When you provide a `--strategies` file to the strategy command, it demonstrates 
 
 **Scenario 1 - Complete "Most Likely" Available:**
 ```
-📋 Using 4 pre-analyzed 'most likely to succeed' strategies
-🎯 Generating option 1...
-    📋 Building on most_likely strategy: 'Resulting Trust Claim'
+[LIST] Using 4 pre-analyzed 'most likely to succeed' strategies
+[TARGET] Generating option 1...
+    [LIST] Building on most_likely strategy: 'Resulting Trust Claim'
 ```
 - **Benefit**: Maximum efficiency - no duplicate analysis
 - **Result**: Direct transformation of brainstormed concepts into tactical plans
 
 **Scenario 2 - Intelligent Gap-Filling:**
 ```
-📋 Using 2 pre-analyzed 'most likely to succeed' strategies
-🧠 Analyzing remaining 15 strategies to fill 2 slots...
-📊 Intelligently selected 2 additional strategies
+[LIST] Using 2 pre-analyzed 'most likely to succeed' strategies
+[ANALYSIS] Analyzing remaining 15 strategies to fill 2 slots...
+[STATS] Intelligently selected 2 additional strategies
 ```
 - **Benefit**: Minimal additional analysis only where needed
 - **Result**: Optimized use of both human and AI analysis
@@ -1607,10 +1607,10 @@ litassist digest evidence/*.pdf --mode issues
 
 #### The Wrong Approach:
 ```bash
-# ❌ This won't work - extractfacts doesn't have --hint option
+# [N] This won't work - extractfacts doesn't have --hint option
 litassist extractfacts car_docs.pdf --hint "VIN details"
 
-# ❌ This won't produce structured facts for other commands
+# [N] This won't produce structured facts for other commands
 litassist digest contract.pdf
 litassist brainstorm digest_output.txt  # Won't have proper 10-heading structure
 ```
@@ -1670,10 +1670,10 @@ The `draft` command creates well-supported legal drafts with intelligent documen
 **CRITICAL: Use .txt extensions for structured documents**
 
 ```bash
-# ✅ CORRECT - Direct processing, rich context
+# [Y] CORRECT - Direct processing, rich context
 litassist draft case_facts.txt strategies.txt "submissions"
 
-# ❌ INCORRECT - Forces embedding/retrieval, limited context  
+# [N] INCORRECT - Forces embedding/retrieval, limited context  
 litassist draft case_facts.md strategies.md "submissions"
 ```
 
@@ -1827,8 +1827,8 @@ litassist draft case_facts.txt brainstorm_family_plaintiff_20250606_143022.txt "
 
 **Diagnosis: Check your CLI output for these indicators:**
 ```bash
-Will use embedding/retrieval for case_facts.md    # ❌ Problem!
-Will use embedding/retrieval for strategies.md    # ❌ Problem!
+Will use embedding/retrieval for case_facts.md    # [N] Problem!
+Will use embedding/retrieval for strategies.md    # [N] Problem!
 ```
 
 **Solution: File format correction**
@@ -1843,8 +1843,8 @@ litassist draft case_facts.txt strategies.txt "comprehensive outline of submissi
 
 **Expected CLI output with correct setup:**
 ```bash
-Using case_facts.txt as CASE FACTS (12,543 characters)      # ✅ Direct processing
-Using strategies.txt as LEGAL STRATEGIES (8,932 characters) # ✅ Direct processing
+Using case_facts.txt as CASE FACTS (12,543 characters)      # [Y] Direct processing
+Using strategies.txt as LEGAL STRATEGIES (8,932 characters) # [Y] Direct processing
 ```
 
 **Why this matters:**
@@ -1992,13 +1992,13 @@ The verify command creates a comprehensive report saved to:
 
 **Report Contents**:
 ```
-📋 VERIFICATION REPORT
+[LIST] VERIFICATION REPORT
 ====================
 
-📄 File: draft_submissions_20250606_143022.txt
-🕒 Verified: 2025-06-06 14:45:23
+[DOC] File: draft_submissions_20250606_143022.txt
+[TIME] Verified: 2025-06-06 14:45:23
 
-✅ CITATION VERIFICATION
+[Y] CITATION VERIFICATION
 - Total citations found: 15
 - Verified: 12
 - Unverified: 3
@@ -2007,14 +2007,14 @@ The verify command creates a comprehensive report saved to:
   * Brown v Wilson - Generic case name pattern
   * [2020] XYZ 45 - Court not recognized
 
-✅ LEGAL SOUNDNESS
+[Y] LEGAL SOUNDNESS
 - Overall assessment: Generally sound with minor issues
 - Concerns identified:
   * Misstatement of test in para 3.2
   * Outdated statutory reference in para 5.1
 - Recommendations provided
 
-✅ REASONING TRACE
+[Y] REASONING TRACE
 - IRAC structure: Present and well-formed
 - Legal principles: Clearly stated
 - Application to facts: Comprehensive
@@ -2128,14 +2128,14 @@ The `--verify` switch is available for commands that generate substantive legal 
 
 | Command | Has --verify | Purpose of Verification |
 |---------|--------------|------------------------|
-| lookup | ❌ No | Simple search results don't need verification |
-| digest | ❌ No | Summaries are straightforward factual extracts |
-| extractfacts | ❌ No* | Automatic heavy verification enabled for foundational accuracy (**⚠️ warns if --verify used**) |
-| brainstorm | ✅ Yes | Optional verification, auto-enabled for Grok models due to hallucination tendency |
-| strategy | ❌ No* | Automatic heavy verification enabled for strategic accuracy (**⚠️ warns if --verify used**) |
-| draft | ✅ Yes | Optional verification, auto-triggered for legal citations/references |
-| counselnotes | ✅ Yes | Optional verification for strategic analysis accuracy |
-| barbrief | ✅ Yes | Optional verification for comprehensive brief accuracy |
+| lookup | [N] No | Simple search results don't need verification |
+| digest | [N] No | Summaries are straightforward factual extracts |
+| extractfacts | [N] No* | Automatic heavy verification enabled for foundational accuracy (**[WARNING] warns if --verify used**) |
+| brainstorm | [Y] Yes | Optional verification, auto-enabled for Grok models due to hallucination tendency |
+| strategy | [N] No* | Automatic heavy verification enabled for strategic accuracy (**[WARNING] warns if --verify used**) |
+| draft | [Y] Yes | Optional verification, auto-triggered for legal citations/references |
+| counselnotes | [Y] Yes | Optional verification for strategic analysis accuracy |
+| barbrief | [Y] Yes | Optional verification for comprehensive brief accuracy |
 
 *Commands marked with * include automatic verification regardless of the flag and will warn users if they attempt to use --verify.
 
@@ -2145,22 +2145,22 @@ The `--verify` switch is available for commands that generate substantive legal 
 ```bash
 # strategy command with --verify flag
 $ litassist strategy case_facts.txt --outcome "..." --verify
-⚠️  Note: --verify flag ignored - strategy command always uses verification for accuracy
+[WARNING]  Note: --verify flag ignored - strategy command always uses verification for accuracy
 
 # extractfacts command with --verify flag  
 $ litassist extractfacts document.pdf --verify
-⚠️  Note: --verify flag ignored - extractfacts command always uses verification for accuracy
+[WARNING]  Note: --verify flag ignored - extractfacts command always uses verification for accuracy
 ```
 
 **When verification is auto-enabled:**
 ```bash
 # brainstorm command (Grok models)
 $ litassist brainstorm case_facts.txt --side plaintiff --area civil
-ℹ️  Note: Verification auto-enabled for Grok models due to hallucination tendency
+[INFO]  Note: Verification auto-enabled for Grok models due to hallucination tendency
 
 # strategy command (always enabled)
 $ litassist strategy case_facts.txt --outcome "..."
-ℹ️  Note: Strategy command automatically uses verification for accuracy
+[INFO]  Note: Strategy command automatically uses verification for accuracy
 ```
 
 These warnings help users understand when their explicit --verify flags are being overridden versus when verification is automatically applied.
@@ -2170,17 +2170,17 @@ These warnings help users understand when their explicit --verify flags are bein
 **For commands that support --verify (brainstorm, draft):**
 
 **Always use for:**
-- 🏛️ Court filings and formal submissions (draft)
-- 💡 Novel or high-risk legal strategies (brainstorm)
-- 📄 Documents that will be relied upon by others
-- 🎯 High-stakes matters with significant consequences
+- [LEGAL] Court filings and formal submissions (draft)
+- [TIP] Novel or high-risk legal strategies (brainstorm)
+- [DOC] Documents that will be relied upon by others
+- [TARGET] High-stakes matters with significant consequences
 
 **Optional for:**
-- 🔍 Initial research and exploration
-- 📝 Early drafts and brainstorming
-- 🔄 Iterative work where you'll manually review
-- 💰 Cost-sensitive projects (verification doubles API costs)
-- ⏱️ Time-critical tasks (adds 10-30+ seconds)
+- [SEARCH] Initial research and exploration
+- [WRITE] Early drafts and brainstorming
+- [PROCESS] Iterative work where you'll manually review
+- [COST] Cost-sensitive projects (verification doubles API costs)
+- [TIME] Time-critical tasks (adds 10-30+ seconds)
 
 **Note:** Some commands (extractfacts, strategy) include automatic verification regardless of this flag.
 
