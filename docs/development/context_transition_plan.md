@@ -31,7 +31,7 @@ This plan outlines steps to evolve the LitAssist codebase from its current promp
 
 1. **Pilot with `draft`**: since `draft.py` already performs retrieval for large documents, extend it to also fetch static instructions from the vector store.
 2. **Apply to other commands**: refactor `lookup`, `brainstorm`, and so on to use the new context module instead of loading large prompt sections directly.
-3. **Fallback behavior**: if retrieval fails, commands should gracefully revert to existing templates to avoid breaking workflows.
+3. **Fallback behavior**: if retrieval fails or is disabled (e.g., via a feature flag), commands should gracefully revert to existing templates to avoid breaking workflows during the transition.
 
 ## 6. Testing and Validation
 
