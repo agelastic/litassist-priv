@@ -522,13 +522,6 @@ class LLMClient:
 
     def _execute_api_call_with_retry(self, model_name, messages, filtered_params):
         # --- Begin: Add custom retryable API error for overloaded/rate limit ---
-        class RetryableAPIError(Exception):
-            """API error that should be retried (overloaded, rate limited, etc.)"""
-
-            pass
-
-        # --- End: Add custom retryable API error ---
-
         retry_errors = (
             openai.error.APIConnectionError,
             openai.error.RateLimitError,
@@ -541,9 +534,6 @@ class LLMClient:
                 aiohttp.ClientConnectionError,
                 aiohttp.ClientPayloadError,
             )
-
-        class StreamingAPIError(Exception):
-            pass
 
         # Use no wait time during tests to speed up retry tests
         wait_config = (
