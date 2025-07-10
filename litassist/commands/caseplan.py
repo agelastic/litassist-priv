@@ -144,9 +144,6 @@ def caseplan(case_facts, focus, budget):
         except Exception as e:
             raise click.ClickException(f"Plan generation error: {e}")
 
-        # Append glob help to output for user reference
-            glob_help = None  # Glob help addon not available
-
         metadata = {"Case Facts File": case_facts.name, "Budget Level": budget}
         if focus:
             metadata["Focus Area"] = focus
