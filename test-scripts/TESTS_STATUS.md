@@ -2,7 +2,7 @@
 
 ## Important Testing Policy
 
-[WARNING] **ALL pytest tests MUST run offline with mocked dependencies** ⚠️
+[WARNING] **ALL pytest tests MUST run offline with mocked dependencies**
 - Pytest tests (in `tests/unit/`) NEVER make real API calls
 - Manual test scripts (in `test-scripts/`) make REAL API calls for validation
 
