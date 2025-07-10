@@ -18,6 +18,7 @@ from litassist.utils import (
     timed,
     save_command_output,
     show_command_completion,
+    saved_message,
 )
 from litassist.llm import LLMClientFactory
 
@@ -69,7 +70,8 @@ def digest(file, mode, hint):
     
     # Process each file
     for file_path in file:
-        click.echo(f"\n📄 Processing: {file_path}")
+        msg = saved_message(f'Processing: {file_path}')
+        click.echo(f"\n{msg}")
         source_files.append(os.path.basename(file_path))
         
         # Read and split the document
@@ -195,7 +197,7 @@ def digest(file, mode, hint):
                         comprehensive_log["total_usage"][key] += usage.get(key, 0)
 
             # Now consolidate all chunk analyses into unified digest
-            click.echo(f"🔄 Consolidating analyses for {os.path.basename(file_path)}...")
+            click.echo(info_message(f"Consolidating analyses for {os.path.basename(file_path)}..."))
 
             consolidated_content = "\n\n".join(
                 [

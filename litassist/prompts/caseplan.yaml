@@ -42,22 +42,22 @@ commands:
          - Stronger case_facts.txt foundation leads to better brainstorm/strategy/draft outcomes
 
       2B. COMMAND INPUT/OUTPUT REFERENCE
-         - lookup: Takes legal questions → Produces research reports
-         - digest: Takes source documents (PDFs, etc.) → Produces summaries/issue analysis
-         - extractfacts: Takes source documents (PDFs, etc.) → Produces structured case facts (10-heading format)
-         - brainstorm: Takes structured case facts (case_facts.txt) → Produces comprehensive strategies
-         - strategy: Takes structured case facts (case_facts.txt) → Produces tactical implementation plans
-         - draft: Takes case facts + strategies → Produces legal documents
-         - counselnotes: Takes source documents → Produces strategic analysis
-         - barbrief: Takes structured case facts + strategies → Produces comprehensive briefs
-         - verify: Takes any output → Produces quality verification reports
+         - lookup: Takes legal questions -> Produces research reports
+         - digest: Takes source documents (PDFs, etc.) -> Produces summaries/issue analysis
+         - extractfacts: Takes source documents (PDFs, etc.) -> Produces structured case facts (10-heading format)
+         - brainstorm: Takes structured case facts (case_facts.txt) -> Produces comprehensive strategies
+         - strategy: Takes structured case facts (case_facts.txt) -> Produces tactical implementation plans
+         - draft: Takes case facts + strategies -> Produces legal documents
+         - counselnotes: Takes source documents -> Produces strategic analysis
+         - barbrief: Takes structured case facts + strategies -> Produces comprehensive briefs
+         - verify: Takes any output -> Produces quality verification reports
 
       2B-1. CRITICAL ERRORS TO AVOID
-         ❌ WRONG: litassist extractfacts case_facts.txt
-         ✅ CORRECT: litassist extractfacts source_documents.pdf
+         [WRONG] litassist extractfacts case_facts.txt
+         [CORRECT] litassist extractfacts source_documents.pdf
 
-         ❌ WRONG: litassist brainstorm source_documents.pdf
-         ✅ CORRECT: litassist brainstorm case_facts.txt
+         [WRONG] litassist brainstorm source_documents.pdf
+         [CORRECT] litassist brainstorm case_facts.txt
 
          - extractfacts ONLY processes source documents (.pdf, .txt, .docx)
          - case_facts.txt is OUTPUT of extractfacts, never INPUT
@@ -69,11 +69,11 @@ commands:
          - brainstorm, strategy, draft, and barbrief all require a structured case_facts.txt as input
          - Never run extractfacts on case_facts.txt itself
          - Typical sequence:
-           1. extractfacts bank_statements.pdf vehicle_docs.pdf → Creates/updates case_facts.txt
-           2. digest source_documents.pdf → Summaries/facts for manual case_facts.txt update
-           3. brainstorm case_facts.txt → Creates strategies
-           4. strategy case_facts.txt → Tactical plans
-           5. draft case_facts.txt strategies.txt → Legal documents
+           1. extractfacts bank_statements.pdf vehicle_docs.pdf -> Creates/updates case_facts.txt
+           2. digest source_documents.pdf -> Summaries/facts for manual case_facts.txt update
+           3. brainstorm case_facts.txt -> Creates strategies
+           4. strategy case_facts.txt -> Tactical plans
+           5. draft case_facts.txt strategies.txt -> Legal documents
 
       2C-1. WORKFLOW VALIDATION
          - If any phase generates "extractfacts case_facts.txt" or similar, THIS IS ALWAYS WRONG and must be corrected to use source documents as input.

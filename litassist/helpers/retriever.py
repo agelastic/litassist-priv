@@ -69,7 +69,7 @@ def get_pinecone_client():
     try:
         stats = pc_index.describe_index_stats()
         print(
-            f"✓ Connected to index '{CONFIG.pc_index}' (dimension: {stats.dimension}, vectors: {stats.total_vector_count})"
+            f"[OK] Connected to index '{CONFIG.pc_index}' (dimension: {stats.dimension}, vectors: {stats.total_vector_count})"
         )
         return pc_index
     except Exception as e:

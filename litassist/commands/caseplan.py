@@ -15,6 +15,7 @@ from litassist.utils import (
     save_command_output,
 )
 from litassist.llm import LLMClientFactory
+from litassist.utils import saved_message, tip_message, success_message
 from litassist.prompts import PROMPTS
 
 
@@ -97,8 +98,9 @@ def caseplan(case_facts, focus, budget):
         click.echo("=" * 60)
         click.echo(assessment)
         click.echo("=" * 60)
-        click.echo(f'\n📄 Recommendation saved to: "{output_file}"')
-        click.echo("\n💡 To generate full plan, run again with recommended budget:")
+        msg = saved_message(f'Recommendation saved to: "{output_file}"')
+        click.echo(f"\n{msg}")
+        click.echo(f"\n{tip_message('To generate full plan, run again with recommended budget:')}")
         click.echo("   e.g., litassist caseplan case_facts.txt --budget standard")
 
     else:
@@ -163,6 +165,7 @@ def caseplan(case_facts, focus, budget):
             },
         )
 
-        click.echo("\n✅ Litigation plan generated successfully!")
-        click.echo(f'📄 Output saved to: "{output_file}"')
-        click.echo(f'\n💡 View plan: open "{output_file}"')
+        click.echo(f"\n{success_message('Litigation plan generated successfully!')}")
+        click.echo(saved_message(f'Output saved to: "{output_file}"'))
+        msg = tip_message(f'View plan: open "{output_file}"')
+        click.echo(f"\n{msg}")

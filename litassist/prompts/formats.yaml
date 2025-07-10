@@ -64,7 +64,7 @@ formats:
   checklist_extraction: |
     **PRACTICAL CHECKLIST**
     
-    □ [Action item with specific requirement]
-    □ [Evidence needed with description]
-    □ [Procedural step with deadline]
-    □ [Document to obtain or prepare]
+    [ ] [Action item with specific requirement]
+    [ ] [Evidence needed with description]
+    [ ] [Procedural step with deadline]
+    [ ] [Document to obtain or prepare]

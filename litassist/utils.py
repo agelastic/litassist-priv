@@ -20,6 +20,56 @@ from pypdf import PdfReader
 
 from litassist.prompts import PROMPTS
 
+# ── Terminal Colors ─────────────────────────────────────────
+class Colors:
+    """ANSI color codes for terminal output."""
+    # Color codes
+    RED = '\033[91m'
+    GREEN = '\033[92m'
+    YELLOW = '\033[93m'
+    BLUE = '\033[94m'
+    MAGENTA = '\033[95m'
+    CYAN = '\033[96m'
+    WHITE = '\033[97m'
+    RESET = '\033[0m'
+    BOLD = '\033[1m'
+
+def colored_message(prefix: str, message: str, color: str) -> str:
+    """Format a message with colored prefix."""
+    return f"{color}{prefix}{Colors.RESET} {message}"
+
+def success_message(message: str) -> str:
+    """Format a success message with green [SUCCESS] prefix."""
+    return colored_message("[SUCCESS]", message, Colors.GREEN)
+
+def warning_message(message: str) -> str:
+    """Format a warning message with yellow [WARNING] prefix."""
+    return colored_message("[WARNING]", message, Colors.YELLOW)
+
+def error_message(message: str) -> str:
+    """Format an error message with red [ERROR] prefix."""
+    return colored_message("[ERROR]", message, Colors.RED)
+
+def info_message(message: str) -> str:
+    """Format an info message with blue [INFO] prefix."""
+    return colored_message("[INFO]", message, Colors.BLUE)
+
+def stats_message(message: str) -> str:
+    """Format a stats message with cyan [STATS] prefix."""
+    return colored_message("[STATS]", message, Colors.CYAN)
+
+def tip_message(message: str) -> str:
+    """Format a tip message with magenta [TIP] prefix."""
+    return colored_message("[TIP]", message, Colors.MAGENTA)
+
+def saved_message(message: str) -> str:
+    """Format a saved file message with blue [SAVED] prefix."""
+    return colored_message("[SAVED]", message, Colors.BLUE)
+
+def verifying_message(message: str) -> str:
+    """Format a verifying message with blue [VERIFYING] prefix."""
+    return colored_message("[VERIFYING]", message, Colors.BLUE)
+
 # ── Directory Setup ─────────────────────────────────────────
 # Use current working directory for logs and outputs when running as global command
 WORKING_DIR = os.getcwd()
@@ -918,19 +968,21 @@ def show_command_completion(
         extra_files: Optional dict of label->path for additional files
         stats: Optional statistics to display
     """
-    click.echo(f"\n✅ {command_name.replace('_', ' ').title()} complete!")
-    click.echo(f'📄 Output saved to: "{output_file}"')
+    success_msg = success_message(f"{command_name.replace('_', ' ').title()} complete!")
+    click.echo(f"\n{success_msg}")
+    click.echo(saved_message(f'Output saved to: "{output_file}"'))
 
     if extra_files:
         for label, path in extra_files.items():
-            click.echo(f'📝 {label}: open "{path}"')
+            click.echo(info_message(f'{label}: open "{path}"'))
 
     if stats:
-        click.echo("\n📊 Statistics:")
+        click.echo(f"\n{stats_message('Statistics:')}")
         for key, value in stats.items():
             click.echo(f"   {key}: {value}")
 
-    click.echo(f'\n💡 View full output: open "{output_file}"')
+    tip_msg = tip_message(f'View full output: open "{output_file}"')
+    click.echo(f"\n{tip_msg}")
 
 
 def detect_factual_hallucinations(content: str, source_facts: str = "") -> List[str]:
@@ -1023,14 +1075,14 @@ def verify_content_if_needed(
     if not os.environ.get('PYTEST_CURRENT_TEST'):
         if verify_flag and auto_verify:
             click.echo(
-                "🔍 Running verification (--verify flag + auto-verification triggered)"
+                verifying_message("Running verification (--verify flag + auto-verification triggered)")
             )
         elif verify_flag:
-            click.echo("🔍 Running verification (--verify flag enabled)")
+            click.echo(verifying_message("Running verification (--verify flag enabled)"))
         elif auto_verify:
-            click.echo("🔍 Running auto-verification (high-risk content detected)")
+            click.echo(verifying_message("Running auto-verification (high-risk content detected)"))
         else:
-            click.echo("ℹ️  No verification performed")
+            click.echo(info_message("No verification performed"))
 
     if needs_verification:
         try:
@@ -1313,7 +1365,7 @@ def process_extraction_response(
     elif extract_type == "checklist":
         if "checklist" in json_data and isinstance(json_data["checklist"], list):
             items = json_data["checklist"]
-            formatted_text = "PRACTICAL CHECKLIST:\n" + "\n".join(f"□ {item}" for item in items) if items else "No checklist items found."
+            formatted_text = "PRACTICAL CHECKLIST:\n" + "\n".join(f"[ ] {item}" for item in items) if items else "No checklist items found."
         else:
             formatted_text = "No checklist items found in response."
             
@@ -1346,7 +1398,7 @@ def process_extraction_response(
             
         # Checklist
         if "tactical_checklist" in json_data and json_data["tactical_checklist"]:
-            sections.append("TACTICAL CHECKLIST:\n" + "\n".join(f"□ {item}" for item in json_data["tactical_checklist"]))
+            sections.append("TACTICAL CHECKLIST:\n" + "\n".join(f"[ ] {item}" for item in json_data["tactical_checklist"]))
             
         # Risk assessment
         if "risk_assessment" in json_data:

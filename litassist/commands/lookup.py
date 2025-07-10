@@ -13,7 +13,11 @@ import logging
 import time
 
 from litassist.config import CONFIG
-from litassist.utils import save_log, heartbeat, timed, save_command_output, process_extraction_response
+from litassist.utils import (
+    save_log, heartbeat, timed, save_command_output, process_extraction_response,
+    warning_message, success_message, saved_message, stats_message,
+    info_message, verifying_message, tip_message
+)
 from litassist.llm import LLMClientFactory
 from litassist.prompts import PROMPTS
 
@@ -210,7 +214,7 @@ def lookup(question, mode, extract, comprehensive, context):
         # Check if it's a citation verification error
         if "Citation verification failed" in str(e):
             # Extract just the error message after any citation warnings
-            click.echo("⚠️  Citation verification issues detected")
+            click.echo(warning_message("Citation verification issues detected"))
             # The error contains the citations that failed - we can still proceed with warnings
             raise click.ClickException(f"LLM error during lookup: {e}")
         else:
@@ -278,28 +282,33 @@ def lookup(question, mode, extract, comprehensive, context):
     )
 
     # Show summary instead of full content
-    click.echo("\n✅ Lookup complete!")
-    click.echo(f'📄 Output saved to: "{output_file}"')
+    click.echo(f"\n{success_message('Lookup complete!')}")
+    click.echo(saved_message(f'Output saved to: "{output_file}"'))
 
     # Show what was found
     if extract:
         extract_type = extract.capitalize()
-        click.echo(f"\n📊 {extract_type} extracted from search results")
+        msg = stats_message(f'{extract_type} extracted from search results')
+        click.echo(f"\n{msg}")
     else:
         analysis_type = "Exhaustive" if comprehensive else "Standard"
-        click.echo(f"\n📊 {analysis_type} legal analysis for: {question}")
+        msg = stats_message(f'{analysis_type} legal analysis for: {question}')
+        click.echo(f"\n{msg}")
 
     # Show context if provided
     if context:
-        click.echo(f"ℹ️  Context: '{context}'")
+        click.echo(info_message(f"Context: '{context}'"))
 
     # Show links that were searched
     if comprehensive:
-        click.echo(f"\n🔍 Exhaustive search: {len(links)} sources analyzed")
+        msg = verifying_message(f'Exhaustive search: {len(links)} sources analyzed')
+        click.echo(f"\n{msg}")
     else:
-        click.echo(f"\n🔍 Standard search: {len(links)} sources analyzed")
+        msg = verifying_message(f'Standard search: {len(links)} sources analyzed')
+        click.echo(f"\n{msg}")
 
     for i, link in enumerate(links, 1):
         click.echo(f"   {i}. {link}")
 
-    click.echo(f'\n💡 View full analysis: open "{output_file}"')
+    tip_msg = tip_message(f'View full analysis: open "{output_file}"')
+    click.echo(f"\n{tip_msg}")

@@ -52,7 +52,7 @@ class PromptManager:
         if not self.prompts_dir.exists():
             # Suppress warning during pytest runs
             if not os.environ.get("PYTEST_CURRENT_TEST"):
-                print(f"⚠️  Prompts directory not found at {self.prompts_dir}")
+                print(f"[WARNING] Prompts directory not found at {self.prompts_dir}")
             return templates
 
         # Load all YAML files in the prompts directory
@@ -66,7 +66,7 @@ class PromptManager:
             except Exception as e:
                 # Suppress warning during pytest runs
                 if not os.environ.get("PYTEST_CURRENT_TEST"):
-                    print(f"⚠️  Error loading {yaml_file}: {e}")
+                    print(f"[WARNING] Error loading {yaml_file}: {e}")
 
         return templates
 
@@ -181,7 +181,7 @@ class PromptManager:
             try:
                 parts.append(self.get(key))
             except KeyError:
-                print(f"⚠️  Warning: Template '{key}' not found, skipping")
+                print(f"[WARNING] Template '{key}' not found, skipping")
 
         # Add glob help section if requested and available
         if include_glob_help:

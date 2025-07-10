@@ -120,7 +120,7 @@ def get_pinecone_client(api_key, environment, index_name):
         index = pinecone.Index(index_name)
         # Test if it works
         index.describe_index_stats()
-        print("✓ Standard Pinecone connection successful")
+        print("[OK] Standard Pinecone connection successful")
         return index
     except Exception:
         # Fall back to wrapper

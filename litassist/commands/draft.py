@@ -18,6 +18,7 @@ from litassist.utils import (
     save_log,
     heartbeat,
     timed,
+    info_message,
     create_reasoning_prompt,
     save_command_output,
     show_command_completion,
@@ -296,6 +297,6 @@ def draft(ctx, documents, query, verify, diversity):
     lines = content.split("\n")
     preview_lines = [line for line in lines[:10] if line.strip()][:5]
     if preview_lines:
-        click.echo("\n📋 Preview:")
+        click.echo(f"\n{info_message('Preview:')}")
         for line in preview_lines:
             click.echo(f"   {line[:80]}..." if len(line) > 80 else f"   {line}")

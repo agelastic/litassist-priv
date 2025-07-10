@@ -290,14 +290,14 @@ def validate_generic_names(content: str, complete_citations: set) -> List[str]:
             and p2_lower in GENERIC_SURNAMES
         ):
             issues.append(
-                f"GENERIC CASE NAME: {party1} v {party2}\n  → FAILURE: Both parties use common surnames (possible AI hallucination)\n  → ACTION: Flagging for manual verification"
+                f"GENERIC CASE NAME: {party1} v {party2}\n  -> FAILURE: Both parties use common surnames (possible AI hallucination)\n  -> ACTION: Flagging for manual verification"
             )
 
         # Check for placeholder patterns
         for pattern in PLACEHOLDER_PATTERNS:
             if re.match(pattern, p1_lower) or re.match(pattern, p2_lower):
                 issues.append(
-                    f"PLACEHOLDER CASE NAME: {party1} v {party2}\n  → FAILURE: Contains placeholder/test-like party names\n  → ACTION: Excluding non-real case reference"
+                    f"PLACEHOLDER CASE NAME: {party1} v {party2}\n  -> FAILURE: Contains placeholder/test-like party names\n  -> ACTION: Excluding non-real case reference"
                 )
                 break
 
@@ -306,7 +306,7 @@ def validate_generic_names(content: str, complete_citations: set) -> List[str]:
             c in "'" for c in party1 + party2
         ):
             issues.append(
-                f"INVALID CASE NAME: {party1} v {party2}\n  → FAILURE: Party name suspiciously short (≤2 characters)\n  → ACTION: Excluding likely invalid case reference"
+                f"INVALID CASE NAME: {party1} v {party2}\n  -> FAILURE: Party name suspiciously short (≤2 characters)\n  -> ACTION: Excluding likely invalid case reference"
             )
 
     return issues
@@ -340,7 +340,7 @@ def validate_court_abbreviations(content: str) -> List[str]:
         # Check if court exists in valid courts
         if court not in VALID_COURTS:
             issues.append(
-                f"UNKNOWN COURT: {citation}\n  → FAILURE: Court abbreviation '{court}' not recognized in Australian legal system\n  → ACTION: Excluding invalid court reference"
+                f"UNKNOWN COURT: {citation}\n  -> FAILURE: Court abbreviation '{court}' not recognized in Australian legal system\n  -> ACTION: Excluding invalid court reference"
             )
             continue
 
@@ -349,19 +349,19 @@ def validate_court_abbreviations(content: str) -> List[str]:
         # Check if court existed in that year
         if year < court_info["established"]:
             issues.append(
-                f"ANACHRONISTIC CITATION: {citation}\n  → FAILURE: {court_info['name']} not established until {court_info['established']}\n  → ACTION: Excluding impossible historical reference"
+                f"ANACHRONISTIC CITATION: {citation}\n  -> FAILURE: {court_info['name']} not established until {court_info['established']}\n  -> ACTION: Excluding impossible historical reference"
             )
 
         # Check if citation number is reasonable
         if number > court_info["max_per_year"]:
             issues.append(
-                f"EXCESSIVE CITATION NUMBER: {citation}\n  → FAILURE: Citation number {number} exceeds typical annual capacity for {court_info['name']}\n  → ACTION: Flagging unlikely citation number"
+                f"EXCESSIVE CITATION NUMBER: {citation}\n  -> FAILURE: Citation number {number} exceeds typical annual capacity for {court_info['name']}\n  -> ACTION: Flagging unlikely citation number"
             )
 
         # Check for future years
         if year > 2025:
             issues.append(
-                f"FUTURE CITATION: {citation}\n  → FAILURE: Citation dated in the future (after 2025)\n  → ACTION: Excluding impossible future case"
+                f"FUTURE CITATION: {citation}\n  -> FAILURE: Citation dated in the future (after 2025)\n  -> ACTION: Excluding impossible future case"
             )
 
     return issues
@@ -551,18 +551,18 @@ def validate_citation_patterns(content: str, enable_online: bool = True) -> List
                         # Distinguish between different types of online failures
                         if "Unknown court" in reason:
                             unique_issues.append(
-                                f"COURT NOT RECOGNIZED: {citation} - {reason}\n  → ACTION: Excluding unrecognized court identifier"
+                                f"COURT NOT RECOGNIZED: {citation} - {reason}\n  -> ACTION: Excluding unrecognized court identifier"
                             )
                         elif (
                             "Invalid citation format" in reason
                             or "verification unavailable" in reason
                         ):
                             unique_issues.append(
-                                f"CITATION NOT FOUND: {citation} - {reason}\n  → ACTION: Citation does not exist in legal database"
+                                f"CITATION NOT FOUND: {citation} - {reason}\n  -> ACTION: Citation does not exist in legal database"
                             )
                         else:
                             unique_issues.append(
-                                f"ONLINE VERIFICATION FAILED: {citation} - {reason}\n  → ACTION: Could not verify citation authenticity"
+                                f"ONLINE VERIFICATION FAILED: {citation} - {reason}\n  -> ACTION: Could not verify citation authenticity"
                             )
 
                 # Add summary of online verification if issues found
@@ -625,14 +625,14 @@ def validate_citation_patterns(content: str, enable_online: bool = True) -> List
         action_msg = f"CITATION VALIDATION FAILURE ({severity} risk): {len(unique_issues)} issues detected.\n"
 
         if offline_issues > 0:
-            action_msg += f"→ PATTERN ANALYSIS: {offline_issues} citations flagged for suspicious patterns\n"
+            action_msg += f"-> PATTERN ANALYSIS: {offline_issues} citations flagged for suspicious patterns\n"
         if online_issues > 0:
-            action_msg += f"→ ONLINE DATABASE VERIFICATION: {online_issues} citations not found in legal database\n"
+            action_msg += f"-> ONLINE DATABASE VERIFICATION: {online_issues} citations not found in legal database\n"
 
         action_msg += (
-            "→ ACTION TAKEN: Flagging questionable citations for manual review\n"
+            "-> ACTION TAKEN: Flagging questionable citations for manual review\n"
         )
-        action_msg += "→ RECOMMENDATION: Verify all citations independently before use"
+        action_msg += "-> RECOMMENDATION: Verify all citations independently before use"
 
         unique_issues.insert(0, action_msg)
 

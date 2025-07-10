@@ -78,7 +78,7 @@ lookup:
       - Cite ALL relevant cases from the sources with parallel citations
       - Reference specific paragraphs/sections when applicable
       - Distinguish between ratio decidendi and obiter dicta
-      - Group citations by authority level (High Court → Federal → State)
+      - Group citations by authority level (High Court -> Federal -> State)
     
     output_structure: |
       EXHAUSTIVE OUTPUT STRUCTURE:

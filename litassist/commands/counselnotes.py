@@ -318,7 +318,7 @@ def counselnotes(files, extract, verify, output):
 
             # Now consolidate all chunk analyses into final strategic notes
             click.echo(
-                "🔄 Consolidating analyses into comprehensive strategic notes..."
+                info_message("Consolidating analyses into comprehensive strategic notes...")
             )
 
             consolidated_content = "\n\n".join(

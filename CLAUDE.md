@@ -126,6 +126,54 @@ LitAssist is a command-line tool for automated litigation support workflows, tai
 - **Reasoning:** Prevents syntax and indentation errors that can break application workflows.
 - **Action:** Run a linter on any modified `.yaml` files to ensure they are well-formed and properly indented prior to pushing changes.
 
+### Emoji Policy and Terminal Output Standards
+
+**CRITICAL**: No emojis are allowed anywhere in the codebase. Use colored ASCII text with ANSI escape codes instead.
+
+**Policy:**
+1. **Zero Emoji Tolerance**: No Unicode emojis in Python code, YAML configs, shell scripts, or any source files
+2. **Colored Terminal Output**: Use the color utility functions in `utils.py` for all user-facing messages
+3. **Professional CLI Experience**: Maintain clear visual feedback through colors and text prefixes
+
+**Color Utility Functions (in `utils.py`):**
+- `success_message()` - Green `[SUCCESS]` prefix for successful operations
+- `warning_message()` - Yellow `[WARNING]` prefix for warnings
+- `error_message()` - Red `[ERROR]` prefix for errors
+- `info_message()` - Blue `[INFO]` prefix for informational messages
+- `stats_message()` - Cyan `[STATS]` prefix for statistics/metrics
+- `tip_message()` - Magenta `[TIP]` prefix for helpful tips
+- `saved_message()` - Blue `[SAVED]` prefix for file save confirmations
+- `verifying_message()` - Blue `[VERIFYING]` prefix for verification operations
+
+**ASCII Alternatives for Common Patterns:**
+- Checkboxes: Use `[ ]` instead of □
+- Success: Use `[SUCCESS]` or `[OK]` instead of ✅
+- Failure: Use `[FAILED]` or `[ERROR]` instead of ❌
+- Warning: Use `[WARNING]` instead of ⚠️
+- Info: Use `[INFO]` instead of ℹ️
+- In Progress: Use `[PROCESSING]` or `[RUNNING]` instead of 🔄
+- Critical: Use `[CRITICAL]` instead of 🚫
+- Verification: Use `[VERIFYING]` or `[CHECKING]` instead of 🔍
+
+**Implementation Examples:**
+```python
+# Instead of: click.echo("✅ Operation complete!")
+click.echo(success_message("Operation complete!"))
+
+# Instead of: print("⚠️ Warning: Large file detected")
+print(warning_message("Large file detected"))
+
+# Instead of: "🔍 Verifying citations..."
+click.echo(verifying_message("Verifying citations..."))
+```
+
+**Rationale:**
+- Ensures consistent display across all terminal environments
+- Maintains professional appearance in legal software
+- Prevents encoding issues in different systems
+- Provides better accessibility for screen readers
+- Allows users to customize color schemes in their terminals
+
 ### Model Name Protection
 
 **CRITICAL**: Never change model identifiers in the code. These are exact API endpoints:

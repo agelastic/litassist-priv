@@ -19,6 +19,10 @@ from litassist.citation_verify import verify_all_citations
 from litassist.citation_patterns import extract_citations
 from litassist.llm import LLMClientFactory
 from litassist.utils import (
+    verifying_message, success_message, warning_message, 
+    error_message, saved_message
+)
+from litassist.utils import (
     timed,
     save_log,
     read_document,
@@ -44,7 +48,7 @@ def verify(file, citations, soundness, reasoning):
     if not any([citations, soundness, reasoning]):
         citations = soundness = reasoning = True
 
-    click.echo(f"🔍 Verifying {file}...")
+    click.echo(verifying_message(f"Verifying {file}..."))
 
     try:
         content = read_document(file)
@@ -73,7 +77,7 @@ def verify(file, citations, soundness, reasoning):
             )
             with open(citation_file, "w", encoding="utf-8") as f:
                 f.write(citation_report)
-            status = "✅" if not unverified else "⚠️"
+            status = "[VERIFIED]" if not unverified else "[WARNING]"
             click.echo(f"\n{status} Citation verification complete")
             click.echo(
                 f"   - {len(verified)} citations verified, {len(unverified)} unverified"
@@ -82,7 +86,8 @@ def verify(file, citations, soundness, reasoning):
             extra_files["Citation report"] = citation_file
             reports_generated += 1
         except Exception as e:
-            click.echo(f"\n❌ Citation verification failed: {e}")
+            msg = error_message(f'Citation verification failed: {e}')
+            click.echo(f"\n{msg}")
             logging.error(f"Citation verification error: {e}")
 
     # 2. Legal Soundness Verification
@@ -98,14 +103,15 @@ def verify(file, citations, soundness, reasoning):
             )
             with open(soundness_file, "w", encoding="utf-8") as f:
                 f.write(soundness_report)
-            status = "✅" if not issues else "⚠️"
+            status = "[VERIFIED]" if not issues else "[WARNING]"
             click.echo(f"\n{status} Legal soundness check complete")
             click.echo(f"   - {len(issues)} issues identified")
             click.echo(f"   - Details: {soundness_file}")
             extra_files["Soundness report"] = soundness_file
             reports_generated += 1
         except Exception as e:
-            click.echo(f"\n❌ Legal soundness check failed: {e}")
+            msg = error_message(f'Legal soundness check failed: {e}')
+            click.echo(f"\n{msg}")
             logging.error(f"Legal soundness error: {e}")
 
     # 3. Reasoning Trace Verification/Generation
@@ -115,7 +121,8 @@ def verify(file, citations, soundness, reasoning):
             if existing_trace:
                 action = "verified"
                 trace_status = _verify_reasoning_trace(existing_trace)
-                click.echo(f"\n✅ Reasoning trace {action}")
+                msg = success_message(f'Reasoning trace {action}')
+                click.echo(f"\n{msg}")
                 click.echo(
                     f"   - IRAC structure {'complete' if trace_status['complete'] else 'incomplete'}"
                 )
@@ -143,14 +150,16 @@ def verify(file, citations, soundness, reasoning):
                         command="verify",
                     )
                 action = "generated"
-                click.echo(f"\n✅ Reasoning trace {action}")
+                msg = success_message(f'Reasoning trace {action}')
+                click.echo(f"\n{msg}")
                 click.echo("   - IRAC structure complete")
                 click.echo(f"   - Confidence: {existing_trace.confidence}%")
             # Reasoning trace is embedded in the main output, not saved separately
             click.echo("   - Reasoning trace embedded in main output")
             reports_generated += 1
         except Exception as e:
-            click.echo(f"\n❌ Reasoning trace verification failed: {e}")
+            msg = error_message(f'Reasoning trace verification failed: {e}')
+            click.echo(f"\n{msg}")
             logging.error(f"Reasoning trace error: {e}")
 
     click.echo(f"\nVerification complete. {reports_generated} reports generated.")
@@ -183,12 +192,12 @@ def _format_citation_report(verified: list, unverified: list, total_found: int) 
     ]
     if verified:
         lines.extend(["## Verified Citations", ""])
-        lines += [f"- ✅ {c}" for c in verified]
+        lines += [f"- [VERIFIED] {c}" for c in verified]
         lines.append("")
     if unverified:
         lines.extend(["## Unverified Citations", ""])
         for citation, reason in unverified:
-            lines.append(f"- ❌ {citation}")
+            lines.append(f"- [UNVERIFIED] {citation}")
             lines.append(f"  - **Reason**: {reason}")
         lines.append("")
     lines.extend(
@@ -232,7 +241,7 @@ def _format_soundness_report(issues: list, full_response: str, model: str) -> st
         "",
         f"**Issues identified**: {len(issues)}",
         f"**Verification model**: {model}",
-        f"**Australian law compliance**: {'✅ Verified' if not issues else '⚠️ Issues found'}",
+        f"**Australian law compliance**: {'[VERIFIED]' if not issues else '[WARNING] Issues found'}",
         "",
     ]
     # Append the LLM’s full response (which already includes its own "## Issues Found" section)
