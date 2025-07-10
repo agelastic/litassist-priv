@@ -24,6 +24,20 @@ import tenacity
 import logging
 import requests
 
+
+# --- Add missing custom exception classes for retry logic ---
+class RetryableAPIError(Exception):
+    """Custom exception for retryable API errors."""
+
+    pass
+
+
+class StreamingAPIError(Exception):
+    """Custom exception for streaming-related API errors."""
+
+    pass
+
+
 try:
     import aiohttp
 except ImportError:
@@ -390,7 +404,7 @@ class LLMClientFactory:
             config["model"] = env_model
             # Suppress informational message during pytest runs
             if not os.environ.get("PYTEST_CURRENT_TEST"):
-                print(f"📋 Using model from environment: {env_model}")
+                logger.info(f"📋 Using model from environment: {env_model}")
 
         # Apply any provided overrides
         config.update(overrides)
