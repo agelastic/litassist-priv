@@ -90,11 +90,11 @@ system_feedback:
         CRITICAL: Multiple attempts to generate content with verified citations failed. The AI model is consistently generating unverifiable legal citations. Manual intervention required.
       
       verification_failed_critical: |
-        🚫 CRITICAL: Citation verification failed:
+        [CRITICAL] Citation verification failed:
         
         {categorized_issues}
         
-        🛑 ACTION REQUIRED: These citations appear to be AI hallucinations.
+        [ACTION REQUIRED] These citations appear to be AI hallucinations.
         Remove these citations and regenerate, or verify them independently.
 
   # USED BY: warning_service.py generate_warnings()  
@@ -102,39 +102,39 @@ system_feedback:
     # USED BY: validation.py check_case_facts()
     validation:
       citation_validation_header: |
-        ⚠️  CITATION VALIDATION WARNING
+        [WARNING] CITATION VALIDATION WARNING
         
         The following potential issues were detected in the generated content:
       
       case_facts_missing_headings: |
-        ⚠️  Warning: case_facts.txt appears incomplete.
+        [WARNING] case_facts.txt appears incomplete.
         Expected 10 headings but found only {found}.
         Missing headings may result in less comprehensive analysis.
       
       side_area_mismatch: |
-        ⚠️  Warning: '{side}' typically applies to {expected_area} law matters.
+        [WARNING] '{side}' typically applies to {expected_area} law matters.
         The specified area is '{area}'. Please verify this combination is correct.
 
     # USED BY: file_operations.py check_file_size()
     file_size:
       brainstorm: |
-        ⚠️  Warning: Large case facts file ({size:,} characters).
+        [WARNING] Large case facts file ({size:,} characters).
         Brainstorm command works best with files under 50,000 characters.
         Consider using 'extractfacts' first to create a structured summary.
       
       strategy: |
-        ⚠️  Warning: Very large case facts file ({size:,} characters).
+        [WARNING] Very large case facts file ({size:,} characters).
         Strategy command has a 100,000 character limit to ensure quality analysis.
         Please use 'extractfacts' first to create a structured summary.
 
     # USED BY: config.py test_api_connections()
     api:
       key_placeholder: |
-        ⚠️  ERROR: API key appears to be a placeholder value.
+        [ERROR] API key appears to be a placeholder value.
         Please set your actual {service} API key in config.yaml or as an environment variable.
       
       byok_required_o1_pro: |
-        ⚠️  ERROR: OpenAI o1-pro requires Bring Your Own Key (BYOK) setup.
+        [ERROR] OpenAI o1-pro requires Bring Your Own Key (BYOK) setup.
         
         To use o1-pro:
         1. Ensure you have o1-pro access on your OpenAI account
@@ -144,7 +144,7 @@ system_feedback:
         Note: o1-pro is expensive (~$15/call) and requires special access.
       
       byok_required_o3: |
-        ⚠️  ERROR: OpenAI o3 requires Bring Your Own Key (BYOK) setup.
+        [ERROR] OpenAI o3 requires Bring Your Own Key (BYOK) setup.
         
         To use o3:
         1. Ensure you have o3 access on your OpenAI account (limited availability)
@@ -156,46 +156,46 @@ system_feedback:
     # USED BY: citation_verify.py validate_citation_format()
     citation:
       not_found_header: |
-        📋 CASES NOT FOUND IN DATABASE:
+        [NOT FOUND] CASES NOT FOUND IN DATABASE:
       
       format_issues_header: |
-        ⚠️  CITATION FORMAT ISSUES:
+        [WARNING] CITATION FORMAT ISSUES:
       
       verification_problems_header: |
-        🔍 VERIFICATION PROBLEMS:
+        [VERIFICATION] VERIFICATION PROBLEMS:
       
       error_item: |
            • {citation}
-             → {reason}
+             -> {reason}
       
       strict_mode_failed: |
-        🚫 {error}
+        [ERROR] {error}
       
       retrying_with_instructions: |
-        🔄 Retrying with enhanced citation instructions...
+        [RETRY] Retrying with enhanced citation instructions...
       
       retry_also_failed: |
-        💥 Retry also failed: {error}
+        [FAILED] Retry also failed: {error}
       
       citation_verification_warning: |
-        ⚠️  Citation verification: {issue}
+        [WARNING] Citation verification: {issue}
       
       retry_successful: |
-        ✅ Retry successful: {issue}
+        [SUCCESS] Retry successful: {issue}
       
       all_citations_verified: |
-        ✅ Retry successful: All citations verified
+        [SUCCESS] Retry successful: All citations verified
 
   # USED BY: status_reporter.py update_status()  
   status:
     # USED BY: strategy_analyzer.py track_progress()
     progress:
       analyzing_strategies: |
-        🔍 Analyzing {strategy_type} strategies for citation issues...
+        [ANALYZING] Analyzing {strategy_type} strategies for citation issues...
       # generating_option: |
-      #   🎯 Generating option {attempt}...
+      #   [TARGET] Generating option {attempt}...
       # regeneration_attempt: |
-      #   🔄 Regeneration attempt {retry_attempt}: {count} strategies need fixing
+      #   [RETRY] Regeneration attempt {retry_attempt}: {count} strategies need fixing
       # will_use_embedding: |
       #   Will use embedding/retrieval for {doc_path}
       # will_use_embedding_large: |
@@ -204,25 +204,25 @@ system_feedback:
     # USED BY: command_runner.py finalize_command()  
     completion:
       strategy_verified: |
-        ✅ Strategy {strategy_num}: Citations verified
+        [SUCCESS] Strategy {strategy_num}: Citations verified
       # strategy_regenerated: |
-      #   ✅ Strategy {strategy_num}: Successfully regenerated with clean citations
+      #   [SUCCESS] Strategy {strategy_num}: Successfully regenerated with clean citations
       strategy_issues_found: |
-        📋 Strategy {strategy_num}: Found {issue_count} citation issues - marking for regeneration
+        [INFO] Strategy {strategy_num}: Found {issue_count} citation issues - marking for regeneration
       # strategy_still_has_issues: |
-      #   ⚠️  Strategy {strategy_num}: Still has citation issues after regeneration
+      #   [WARNING] Strategy {strategy_num}: Still has citation issues after regeneration
       # strategy_regeneration_failed: |
-      #   💥 Strategy {strategy_num}: Regeneration failed - {error}
+      #   [ERROR] Strategy {strategy_num}: Regeneration failed - {error}
       # option_verified: |
-      #   ✅ Option {attempt}: Citations verified - keeping
+      #   [SUCCESS] Option {attempt}: Citations verified - keeping
       # option_issues_found: |
-      #   ❌ Option {attempt}: Found {issue_count} citation issues - discarding
+      #   [FAIL] Option {attempt}: Found {issue_count} citation issues - discarding
       # option_generation_failed: |
-      #   💥 Option {attempt}: Generation failed - {error}
+      #   [ERROR] Option {attempt}: Generation failed - {error}
       # all_strategies_verified: |
-      #   ✅ All {strategy_type} strategies now have verified citations
+      #   [SUCCESS] All {strategy_type} strategies now have verified citations
       # strategies_with_issues: |
-      #   ⚠️  {count} {strategy_type} strategies still have citation issues after {max_retries} attempts
+      #   [WARNING] {count} {strategy_type} strategies still have citation issues after {max_retries} attempts
 
     # USED BY: file_operations.py log_file_activity()  
     file_ops:
@@ -250,16 +250,16 @@ system_feedback:
         {index}. {link}
       
       exhaustive_search: |
-        🔍 Exhaustive search: {count} sources analyzed
+        [SEARCH] Exhaustive search: {count} sources analyzed
       
       standard_search: |
-        🔍 Standard search: {count} sources analyzed
+        [SEARCH] Standard search: {count} sources analyzed
       
       extract_type_summary: |
-        📊 {extract_type} extracted from search results
+        [STATS] {extract_type} extracted from search results
       
       analysis_type_summary: |
-        📊 {analysis_type} legal analysis for: {question}
+        [STATS] {analysis_type} legal analysis for: {question}
 
     # USED BY: strategy.py analyze_strategies()  
     strategy_analysis:
@@ -285,19 +285,19 @@ system_feedback:
         Note: Headings are now case-insensitive and can have punctuation.
       
       strategies_excluded: |
-        📋 Excluding these strategies: {strategy_numbers}
+        [INFO] Excluding these strategies: {strategy_numbers}
       
       final_result: |
-        📊 Final result: {count} verified {strategy_type} strategies
+        [STATS] Final result: {count} verified {strategy_type} strategies
       
       options_generated: |
-        📊 Successfully generated {count} verified strategic options
+        [STATS] Successfully generated {count} verified strategic options
       
       no_options_after_attempts: |
-        ⚠️  Could not generate any options with verified citations after {max_attempts} attempts
+        [WARNING] Could not generate any options with verified citations after {max_attempts} attempts
       
       total_options_for_outcome: |
-        📊 Generated {count} strategic options for: {outcome}
+        [STATS] Generated {count} strategic options for: {outcome}
       
       option_title: |
         {index}. {title}
@@ -305,16 +305,16 @@ system_feedback:
     # USED BY: cli.py show_completion_summary()  
     command_completion:
       command_complete: |
-        ✅ {command_name} complete!
+        [SUCCESS] {command_name} complete!
       
       output_saved: |
-        📄 Output saved to: "{output_file}"
+        [SAVED] Output saved to: "{output_file}"
       
       stat_item: |
         {key}: {value}
       
       strategies_summary: |
-        📊 Generated strategies for {side} in {area} law:
+        [STATS] Generated strategies for {side} in {area} law:
       
       orthodox_summary: |
         • Orthodox strategies: {count}
@@ -343,25 +343,25 @@ system_feedback:
         {log_type} log saved: {path}
       
       config_key_not_found: |
-        ⚠️  No configuration found for '{config_key}', using defaults
+        [WARNING] No configuration found for '{config_key}', using defaults
       
       using_env_model: |
-        📋 Using model from environment: {model}
+        [INFO] Using model from environment: {model}
       
       offline_validation_issues: |
-        ⚠️  Offline validation found {count} potential issues
+        [WARNING] Offline validation found {count} potential issues
 
     # USED BY: citation_processor.py handle_citations()  
     citation_processing:
       citation_warnings_found: |
-        🔄 Found {count} citation issues in {strategy_type} strategies - fixing...
+        [FIXING] Found {count} citation issues in {strategy_type} strategies - fixing...
       
       categorized_error_header: |
         {error_type} ERRORS:
       
       citation_error_detail: |
         • {citation}
-          → {reason}
+          -> {reason}
       
       unverified_citations_removed: |
         CITATION VERIFICATION WARNING: {count} citations removed as unverified

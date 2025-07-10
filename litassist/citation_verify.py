@@ -475,7 +475,7 @@ def verify_single_citation(citation: str) -> Tuple[bool, str, str]:
         pass  # Fall through to offline validation
 
     # If online verification fails, accept with offline validation warning
-    reason = "⚠️ OFFLINE VALIDATION ONLY - Online verification unavailable, passed pattern analysis"
+    reason = "[WARNING] OFFLINE VALIDATION ONLY - Online verification unavailable, passed pattern analysis"
     with _cache_lock:
         _citation_cache[normalized] = {
             "exists": True,

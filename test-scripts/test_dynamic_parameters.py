@@ -32,7 +32,7 @@ def test_model_family_detection():
     print("Testing model family detection...")
     for model, expected_family in test_cases:
         actual_family = get_model_family(model)
-        status = "✓" if actual_family == expected_family else "✗"
+        status = "[Y]" if actual_family == expected_family else "[N]"
         print(f"{status} {model} -> {actual_family} (expected: {expected_family})")
 
 
@@ -92,7 +92,7 @@ def test_parameter_filtering():
     for model, input_params, expected_params in test_cases:
         actual_params = get_model_parameters(model, input_params)
         match = actual_params == expected_params
-        status = "✓" if match else "✗"
+        status = "[Y]" if match else "[N]"
         print(f"{status} {model}")
         if not match:
             print(f"  Expected: {expected_params}")
@@ -114,7 +114,7 @@ def test_system_message_support():
     print("\nTesting system message support...")
     for model, expected_support in test_cases:
         actual_support = supports_system_messages(model)
-        status = "✓" if actual_support == expected_support else "✗"
+        status = "[Y]" if actual_support == expected_support else "[N]"
         support_text = "supports" if actual_support else "no support"
         print(f"{status} {model} -> {support_text}")
 
@@ -135,7 +135,7 @@ def test_future_proofing():
         params = get_model_parameters(model, {"max_tokens": 1000, "temperature": 0.7})
         system_support = supports_system_messages(model)
         
-        print(f"✓ {model}:")
+        print(f"[Y] {model}:")
         print(f"  - Family: {family}")
         print(f"  - Parameters: {params}")
         print(f"  - System messages: {'No' if not system_support else 'Yes'}")
@@ -150,4 +150,4 @@ if __name__ == "__main__":
     test_system_message_support()
     test_future_proofing()
     
-    print("\n✅ All tests completed!")
+    print("\n[PASS] All tests completed!")

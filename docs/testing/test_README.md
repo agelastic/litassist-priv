@@ -4,7 +4,7 @@ This document covers both automated unit tests (pytest) and manual integration v
 
 ## Important Testing Policy
 
-⚠️ **ALL pytest tests MUST run offline with mocked dependencies** ⚠️
+[WARNING] **ALL pytest tests MUST run offline with mocked dependencies** [WARNING]
 - No pytest test should EVER make real API calls
 - All external services must be mocked in pytest tests
 - Real API testing happens only through manual scripts in `test-scripts/`
@@ -57,7 +57,7 @@ pytest --cov=litassist tests/unit/
 
 ## Manual Integration Validation Scripts
 
-⚠️ **WARNING: These scripts make REAL API calls and incur costs!** ⚠️
+[WARNING] **These scripts make REAL API calls and incur costs!** [WARNING]
 
 Separate from pytest, we have manual validation scripts in `test-scripts/` for testing real API integrations:
 
@@ -71,7 +71,7 @@ Separate from pytest, we have manual validation scripts in `test-scripts/` for t
 
 ### Running Manual Integration Scripts
 
-**⚠️ These commands make REAL API calls and cost money! ⚠️**
+**[WARNING] These commands make REAL API calls and cost money! [WARNING]**
 
 ```bash
 # Navigate to test-scripts directory first

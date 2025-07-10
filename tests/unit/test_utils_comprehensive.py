@@ -563,7 +563,7 @@ class TestExtractionProcessing:
                 )
                 
                 assert "PRACTICAL CHECKLIST:" in formatted
-                assert "□ File defence" in formatted
+                assert "[ ] File defence" in formatted
                 assert len(data["checklist"]) == 3
 
     def test_process_extraction_comprehensive(self):

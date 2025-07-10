@@ -25,10 +25,10 @@ def test_barbrief_help():
     code, stdout, stderr = run_command("litassist barbrief --help")
     
     if code == 0 and "Generate comprehensive barrister's brief" in stdout:
-        print("✓ Help command works")
+        print("[Y] Help command works")
         return True
     else:
-        print(f"✗ Help command failed with code {code}")
+        print(f"[N] Help command failed with code {code}")
         print(f"  stderr: {stderr}")
         return False
 
@@ -47,10 +47,10 @@ def test_invalid_case_facts():
         )
         
         if code != 0 and "10-heading format" in stderr:
-            print("✓ Correctly rejected invalid case facts")
+            print("[Y] Correctly rejected invalid case facts")
             return True
         else:
-            print("✗ Failed to reject invalid case facts")
+            print("[N] Failed to reject invalid case facts")
             return False
     finally:
         os.unlink(invalid_file)
@@ -108,10 +108,10 @@ Win the case.
         )
         
         if code == 0:
-            print("✓ Command structure is valid")
+            print("[Y] Command structure is valid")
             return True
         else:
-            print(f"✗ Command failed with code {code}")
+            print(f"[N] Command failed with code {code}")
             print(f"  stderr: {stderr}")
             return False
     finally:
@@ -182,10 +182,10 @@ Test
         code, stdout, stderr = run_command(cmd)
         
         if code == 0:
-            print("✓ All options accepted")
+            print("[Y] All options accepted")
             return True
         else:
-            print(f"✗ Command with all options failed with code {code}")
+            print(f"[N] Command with all options failed with code {code}")
             print(f"  stderr: {stderr}")
             return False
 
@@ -198,10 +198,10 @@ def test_output_directory():
     output_dir = Path("outputs")
     
     if output_dir.exists() or output_dir.parent.exists():
-        print("✓ Output directory is accessible")
+        print("[Y] Output directory is accessible")
         return True
     else:
-        print("✗ Output directory path not accessible")
+        print("[N] Output directory path not accessible")
         return False
 
 
@@ -223,16 +223,16 @@ def main():
             if test():
                 passed += 1
         except Exception as e:
-            print(f"✗ Test {test.__name__} crashed: {e}")
+            print(f"[N] Test {test.__name__} crashed: {e}")
     
     print(f"\n{'='*50}")
     print(f"Tests passed: {passed}/{len(tests)}")
     
     if passed == len(tests):
-        print("All tests passed! ✓")
+        print("All tests passed! [Y]")
         return 0
     else:
-        print(f"{len(tests) - passed} tests failed ✗")
+        print(f"{len(tests) - passed} tests failed [N]")
         return 1
 
 

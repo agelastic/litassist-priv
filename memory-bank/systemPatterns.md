@@ -100,7 +100,7 @@ Strategic analysis commands follow consistent configuration patterns:
 - Verification is ALWAYS performed on all brainstorm outputs automatically
 - No --verify flag needed or available - verification is mandatory
 - All three sub-types (orthodox, unorthodox, analysis) have force_verify=True
-- Clean single message: "🔍 Verifying brainstorm strategies..."
+- Clean single message: "[VERIFYING] Verifying brainstorm strategies..."
 - Maintains zero-tolerance citation policy across all strategies
 
 **CounselNotes Specific Patterns:**

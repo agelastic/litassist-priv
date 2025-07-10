@@ -126,6 +126,76 @@ LitAssist is a command-line tool for automated litigation support workflows, tai
 - **Reasoning:** Prevents syntax and indentation errors that can break application workflows.
 - **Action:** Run a linter on any modified `.yaml` files to ensure they are well-formed and properly indented prior to pushing changes.
 
+### Emoji Policy and Terminal Output Standards
+
+**ABSOLUTE PROHIBITION - NO EMOJIS ANYWHERE**
+
+**CRITICAL RULE**: NO emojis are allowed ANYWHERE in this repository. This is a ZERO TOLERANCE policy.
+
+**The emoji ban applies to:**
+1. **ALL Python code** - No emojis in .py files, ever
+2. **ALL YAML/YML files** - No emojis in configuration or prompts
+3. **ALL documentation** - No emojis in .md, .txt, or .rst files
+4. **ALL shell scripts** - No emojis in .sh or bash scripts
+5. **ALL test files** - No emojis in test code or test data
+6. **ALL commit messages** - No emojis in git commits
+7. **ALL code comments** - No emojis in inline or block comments
+8. **ALL error messages** - No emojis in exceptions or logs
+9. **ALL user output** - No emojis in CLI output or responses
+10. **ANYWHERE ELSE** - If it's in this repo, it CANNOT have emojis
+
+**Policy Enforcement:**
+1. **Zero Emoji Tolerance**: Not a single Unicode emoji character is permitted
+2. **ASCII Only**: Use colored ASCII text with ANSI escape codes for visual differentiation
+3. **Professional Standards**: This is legal software - maintain absolute professionalism
+4. **No Exceptions**: This rule has NO exceptions, regardless of context or purpose
+
+**Color Utility Functions (in `utils.py`):**
+- `success_message()` - Green `[SUCCESS]` prefix for successful operations
+- `warning_message()` - Yellow `[WARNING]` prefix for warnings
+- `error_message()` - Red `[ERROR]` prefix for errors
+- `info_message()` - Blue `[INFO]` prefix for informational messages
+- `stats_message()` - Cyan `[STATS]` prefix for statistics/metrics
+- `tip_message()` - Magenta `[TIP]` prefix for helpful tips
+- `saved_message()` - Blue `[SAVED]` prefix for file save confirmations
+- `verifying_message()` - Blue `[VERIFYING]` prefix for verification operations
+
+**ASCII Alternatives for Common Patterns:**
+- Checkboxes: Use `[ ]` instead of □
+- Success: Use `[SUCCESS]` or `[OK]` instead of ✅
+- Failure: Use `[FAILED]` or `[ERROR]` instead of ❌
+- Warning: Use `[WARNING]` instead of ⚠️
+- Info: Use `[INFO]` instead of ℹ️
+- In Progress: Use `[PROCESSING]` or `[RUNNING]` instead of 🔄
+- Critical: Use `[CRITICAL]` instead of 🚫
+- Verification: Use `[VERIFYING]` or `[CHECKING]` instead of 🔍
+
+**Implementation Examples:**
+```python
+# Instead of: click.echo("✅ Operation complete!")
+click.echo(success_message("Operation complete!"))
+
+# Instead of: print("⚠️ Warning: Large file detected")
+print(warning_message("Large file detected"))
+
+# Instead of: "🔍 Verifying citations..."
+click.echo(verifying_message("Verifying citations..."))
+```
+
+**Why This Strict No-Emoji Policy Exists:**
+1. **Job Safety Critical** - The maintainer's employment depends on professional standards
+2. **Legal Software Requirements** - Australian legal profession demands absolute professionalism
+3. **Terminal Compatibility** - Emojis display inconsistently across different systems
+4. **Encoding Issues** - Unicode emojis cause problems in various environments
+5. **Accessibility** - Screen readers handle ASCII text better than emojis
+6. **Professional Standards** - This is enterprise legal software, not a chat app
+
+**Consequences of Emoji Usage:**
+- Any PR with emojis will be REJECTED
+- Any commit with emojis must be reverted
+- This policy is NOT negotiable or flexible
+- There are NO acceptable use cases for emojis in this codebase
+
 ### Model Name Protection
 
 **CRITICAL**: Never change model identifiers in the code. These are exact API endpoints:
@@ -332,7 +402,7 @@ When debugging cascading issues:
 
 ### ABSOLUTELY FORBIDDEN GIT OPERATIONS
 
-**🚨 CRITICAL: NEVER PERFORM ANY GIT COMMITS! 🚨**
+**[CRITICAL WARNING] NEVER PERFORM ANY GIT COMMITS! [CRITICAL WARNING]**
 
 **YOU ARE STRICTLY FORBIDDEN FROM:**
 1. `git commit` - NEVER create commits, even if explicitly asked

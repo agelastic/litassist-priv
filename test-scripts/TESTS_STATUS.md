@@ -2,7 +2,7 @@
 
 ## Important Testing Policy
 
-⚠️ **ALL pytest tests MUST run offline with mocked dependencies** ⚠️
+[WARNING] **ALL pytest tests MUST run offline with mocked dependencies**
 - Pytest tests (in `tests/unit/`) NEVER make real API calls
 - Manual test scripts (in `test-scripts/`) make REAL API calls for validation
 
@@ -10,7 +10,7 @@
 
 The test suite consists of two distinct categories:
 
-## Automated Unit Tests (pytest) ✅
+## Automated Unit Tests (pytest) [VERIFIED]
 Located in `tests/unit/` - ALL run offline with mocks:
 - `test_basic.py` - Basic infrastructure tests
 - `test_real_functionality.py` - Real function tests with proper examples 
@@ -23,7 +23,7 @@ Located in `tests/unit/` - ALL run offline with mocks:
 - `test_citation_verification_simple.py` - Citation validation testing
 - `test_verification.py` - Content verification testing
 
-## Manual Integration Validation Scripts ⚠️
+## Manual Integration Validation Scripts [WARNING]
 Located in `test-scripts/` - These make REAL API calls:
 - `test_connectivity.py` - **REAL API** basic connectivity to external services
 - `test_integrations.py` - **REAL API** integration with OpenAI, Pinecone, OpenRouter
@@ -46,7 +46,7 @@ python -m pytest --cov=litassist tests/unit/
 
 ### Manual Integration Scripts (Real APIs, Costs Money!)
 ```bash
-# ⚠️ WARNING: These make REAL API calls and cost money!
+# [WARNING] These make REAL API calls and cost money!
 cd test-scripts/
 python test_integrations.py --all
 # Or for specific services

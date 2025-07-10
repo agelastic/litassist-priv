@@ -2,7 +2,7 @@
 
 ## Current State Summary
 
-### Completed Features ✅
+### Completed Features [DONE]
 - All 9 core commands (lookup, digest, extractfacts, brainstorm, strategy, draft, verify, counselnotes, barbrief)
 - Global installation via pipx
 - Single configuration approach
@@ -19,7 +19,7 @@
 - CounselNotes command for strategic advocate analysis (January 2025)
 - Barbrief command for comprehensive barrister's briefs (January 2025)
 
-### Pending Tasks ⌛
+### Pending Tasks [IN PROGRESS]
 - [ ] REMOVE temporary glob help addon after unification (delete glob_help_addon.yaml, remove concatenation logic)
 - [ ] IMPLEMENT full glob unification per claude_glob_unification_plan.md (centralize expand_glob_patterns, update 5+ commands)
 - Implement advanced LLM prompting improvements from LLM_IMPROVEMENTS.md (IRAC/MIRAT, multi-model consensus, confidence scoring, adversarial testing)
@@ -40,7 +40,7 @@
 - **Add optional reasoning trace file output**: Implement `--save-reasoning` flag for commands (strategy, draft, verify, etc.) to optionally save legal reasoning traces as separate files for auditing purposes. Currently reasoning traces are embedded in main output only. Implementation removed 2025-07-08 but may be useful for professional liability requirements.
 - **Implement circuit breaker for API retries**: Add safety_cutoff parameter to disable retries after N failures/hour (see AG-124)
 
-### Next Steps 🚀
+### Next Steps
 1. Commit `memory-bank/` directory and its files
 2. Merge initial Memory Bank into main branch
 3. Schedule sprint to implement high-impact prompt and verification enhancements
@@ -48,7 +48,7 @@
 5. Plan cost-tracking and workflow command prototypes
 6. Review and prioritize new TODO items for implementation
 
-## Future Plans 📅
+## Future Plans
 - See detailed LLM improvements in `docs/development/LLM_IMPROVEMENTS.md`  
 - Integration test strategy in `docs/development/integration_testing_approach.md`  
 - Cost-tracking and quality-tier features (planning in progress)  
@@ -56,9 +56,9 @@
 - Advanced QA loops: adversarial testing, iterative improvement loops, contingency planning  
 - Performance benchmarking and monitoring setup  
 
-## Implementation Concerns & Considerations 🚨
+## Implementation Concerns & Considerations
 
-### Key Architectural Implementation Points 🏗️
+### Key Architectural Implementation Points
 1. **OpenAI Fine-tuning Integration**: Review `litassist/llm.py` integration points, extend LLMClient factory pattern to support fine-tuned model endpoints
 2. **Streaming Implementation**: Update CLI output handlers in `litassist/cli.py`, modify response processing in command modules (`litassist/commands/`), add progress indicators
 3. **Student Mode**: Leverage existing prompt templates in `litassist/prompts/`, extend base.yaml and system_feedback.yaml with beginner-friendly variants

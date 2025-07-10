@@ -18,6 +18,7 @@ from litassist.utils import (
     create_reasoning_prompt,
     save_command_output,
     show_command_completion,
+    warning_message, info_message, verifying_message,
     validate_file_size,
 )
 from litassist.llm import LLMClientFactory
@@ -62,11 +63,11 @@ def extractfacts(file, verify):
     # extractfacts always needs verification as it creates foundational documents
     if verify:
         click.echo(
-            "⚠️  Note: --verify flag ignored - extractfacts command always uses verification for accuracy"
+            warning_message("Note: --verify flag ignored - extractfacts command always uses verification for accuracy")
         )
     elif not verify:
         click.echo(
-            "ℹ️  Note: Extractfacts command automatically uses verification for accuracy"
+            info_message("Note: Extractfacts command automatically uses verification for accuracy")
         )
     verify = True  # Force verification for critical accuracy
 
@@ -95,7 +96,7 @@ def extractfacts(file, verify):
     else:
         # Multiple chunks - enhanced two-stage approach with better context preservation
         click.echo(
-            "🔄 Processing large document in sections for comprehensive fact extraction..."
+            info_message("Processing large document in sections for comprehensive fact extraction...")
         )
         accumulated_facts = []
 
@@ -122,7 +123,7 @@ def extractfacts(file, verify):
                 accumulated_facts.append(content.strip())
 
         # Enhanced organization phase with better synthesis
-        click.echo("🔄 Organizing and synthesizing facts into structured format...")
+        click.echo(info_message("Organizing and synthesizing facts into structured format..."))
         all_facts = "\n\n".join(accumulated_facts)
 
         # Use centralized format template for organizing
@@ -151,7 +152,7 @@ def extractfacts(file, verify):
     # Note: Citation verification now handled automatically in LLMClient.complete()
 
     # Apply verification (always required for extractfacts)
-    click.echo("🔍 Verifying extracted facts...")
+    click.echo(verifying_message("Verifying extracted facts..."))
     try:
         correction = client.verify(combined)
         if correction.strip() and not correction.lower().startswith(
@@ -194,4 +195,4 @@ def extractfacts(file, verify):
     }
 
     show_command_completion("extractfacts", output_file, None, stats)
-    click.echo("📌 To use with other commands, manually copy to case_facts.txt")
+    click.echo(info_message("To use with other commands, manually copy to case_facts.txt"))

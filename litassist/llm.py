@@ -10,7 +10,11 @@ import re
 import os
 from typing import List, Dict, Any, Tuple
 
-from litassist.utils import timed, save_log, heartbeat
+from litassist.utils import (
+    timed, save_log, heartbeat,
+    info_message, warning_message, error_message,
+    success_message, verifying_message
+)
 from litassist.config import CONFIG
 from litassist.prompts import PROMPTS
 import time
@@ -404,7 +408,7 @@ class LLMClientFactory:
             config["model"] = env_model
             # Suppress informational message during pytest runs
             if not os.environ.get("PYTEST_CURRENT_TEST"):
-                logger.info(f"📋 Using model from environment: {env_model}")
+                logger.info(info_message(f"Using model from environment: {env_model}"))
 
         # Apply any provided overrides
         config.update(overrides)
@@ -768,7 +772,7 @@ class LLMClient:
                         )
                     except (KeyError, ValueError):
                         warning_msg = (
-                            f"⚠️  Citation verification: {verification_issues[0]}"
+                            warning_message(f"Citation verification: {verification_issues[0]}")
                         )
 
                     print(warning_msg)
@@ -782,8 +786,8 @@ class LLMClient:
                     )
                     retrying_msg = PROMPTS.get("warnings.retrying_with_instructions")
                 except (KeyError, ValueError):
-                    strict_failed_msg = f"🚫 {str(e)}"
-                    retrying_msg = "🔄 Retrying with enhanced citation instructions..."
+                    strict_failed_msg = error_message(str(e))
+                    retrying_msg = info_message("Retrying with enhanced citation instructions...")
 
                 print(strict_failed_msg)
                 print(retrying_msg)
@@ -906,7 +910,7 @@ class LLMClient:
                                 "warnings.retry_successful", issue=retry_issues[0]
                             )
                         except (KeyError, ValueError):
-                            success_msg = f"✅ Retry successful: {retry_issues[0]}"
+                            success_msg = success_message(f"Retry successful: {retry_issues[0]}")
                         print(success_msg)
                     else:
                         try:
@@ -915,7 +919,7 @@ class LLMClient:
                             )
                         except (KeyError, ValueError):
                             all_verified_msg = (
-                                "✅ Retry successful: All citations verified"
+                                success_message("Retry successful: All citations verified")
                             )
                         print(all_verified_msg)
 
@@ -929,7 +933,7 @@ class LLMClient:
                             "warnings.multiple_attempts_failed"
                         )
                     except (KeyError, ValueError):
-                        retry_failed_msg = f"💥 Retry also failed: {str(retry_error)}"
+                        retry_failed_msg = error_message(f"Retry also failed: {str(retry_error)}")
                         multiple_attempts_msg = (
                             "CRITICAL: Multiple attempts to generate content with verified citations failed. "
                             "The AI model is consistently generating unverifiable legal citations. "
@@ -1062,7 +1066,7 @@ class LLMClient:
             if pattern_issues:
                 issues.extend(pattern_issues)
                 print(
-                    f"⚠️  Offline validation found {len(pattern_issues)} potential issues"
+                    warning_message(f"Offline validation found {len(pattern_issues)} potential issues")
                 )
 
         # Always do real-time online database verification
@@ -1150,27 +1154,27 @@ class LLMClient:
 
                 except (KeyError, ValueError):
                     # Fallback to hardcoded if templates not available
-                    error_msg = "🚫 CRITICAL: Citation verification failed:\n\n"
+                    error_msg = "[CRITICAL] Citation verification failed:\n\n"
 
                     if existence_errors:
-                        error_msg += "📋 CASES NOT FOUND IN DATABASE:\n"
+                        error_msg += "[NOT FOUND] CASES NOT FOUND IN DATABASE:\n"
                         for citation, reason in existence_errors:
-                            error_msg += f"   • {citation}\n     → {reason}\n"
+                            error_msg += f"   • {citation}\n     -> {reason}\n"
                         error_msg += "\n"
 
                     if format_errors:
-                        error_msg += "⚠️  CITATION FORMAT ISSUES:\n"
+                        error_msg += "[WARNING] CITATION FORMAT ISSUES:\n"
                         for citation, reason in format_errors:
-                            error_msg += f"   • {citation}\n     → {reason}\n"
+                            error_msg += f"   • {citation}\n     -> {reason}\n"
                         error_msg += "\n"
 
                     if verification_errors:
-                        error_msg += "🔍 VERIFICATION PROBLEMS:\n"
+                        error_msg += "[VERIFICATION] VERIFICATION PROBLEMS:\n"
                         for citation, reason in verification_errors:
-                            error_msg += f"   • {citation}\n     → {reason}\n"
+                            error_msg += f"   • {citation}\n     -> {reason}\n"
                         error_msg += "\n"
 
-                    error_msg += "🛑 ACTION REQUIRED: These citations appear to be AI hallucinations.\n"
+                    error_msg += "[ACTION REQUIRED] These citations appear to be AI hallucinations.\n"
                     error_msg += "   Remove these citations and regenerate, or verify them independently."
 
                 raise CitationVerificationError(error_msg)

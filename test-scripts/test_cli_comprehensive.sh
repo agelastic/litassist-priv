@@ -48,7 +48,7 @@ run_test() {
     
     # Run the command and capture output
     if output=$(eval "$command" 2>&1); then
-        echo -e "${GREEN}✓ Command executed successfully${NC}"
+        echo -e "${GREEN}[OK] Command executed successfully${NC}"
         
         # Check for expected patterns if provided
         if [[ -n "$expected_patterns" ]]; then
@@ -57,25 +57,25 @@ run_test() {
             
             for pattern in "${patterns[@]}"; do
                 if echo "$output" | grep -q "$pattern"; then
-                    echo -e "${GREEN}  ✓ Found expected pattern: '$pattern'${NC}"
+                    echo -e "${GREEN}  [OK] Found expected pattern: '$pattern'${NC}"
                 else
-                    echo -e "${RED}  ✗ Missing expected pattern: '$pattern'${NC}"
+                    echo -e "${RED}  [N] Missing expected pattern: '$pattern'${NC}"
                     all_patterns_found=false
                 fi
             done
             
             if $all_patterns_found; then
                 PASSED_TESTS=$((PASSED_TESTS + 1))
-                echo -e "${GREEN}✓ PASSED${NC}"
+                echo -e "${GREEN}[PASSED]${NC}"
                 echo "PASSED: $test_name" >> "$TEST_LOG"
             else
                 FAILED_TESTS=$((FAILED_TESTS + 1))
-                echo -e "${RED}✗ FAILED${NC}"
+                echo -e "${RED}[N] FAILED${NC}"
                 echo "FAILED: $test_name - Missing expected patterns" >> "$TEST_LOG"
             fi
         else
             PASSED_TESTS=$((PASSED_TESTS + 1))
-            echo -e "${GREEN}✓ PASSED${NC}"
+            echo -e "${GREEN}[PASSED]${NC}"
             echo "PASSED: $test_name" >> "$TEST_LOG"
         fi
     else
@@ -84,11 +84,11 @@ run_test() {
         # Check if this is a credit limitation error (acceptable for strategy tests)
         if echo "$output" | grep -q "credits\|max_tokens\|afford\|quota"; then
             PASSED_TESTS=$((PASSED_TESTS + 1))
-            echo -e "${YELLOW}✓ PASSED (Credit limitation detected)${NC}"
+            echo -e "${YELLOW}[PASSED] (Credit limitation detected)${NC}"
             echo "PASSED: $test_name - Credit limitation (expected)" >> "$TEST_LOG"
         else
             FAILED_TESTS=$((FAILED_TESTS + 1))
-            echo -e "${RED}✗ FAILED - Command failed with exit code $RET${NC}"
+            echo -e "${RED}[N] FAILED - Command failed with exit code $RET${NC}"
             echo "FAILED: $test_name - Command execution failed" >> "$TEST_LOG"
         fi
         echo "Error output: $output" >> "$TEST_LOG"
@@ -463,7 +463,7 @@ This 1st day of April 2024
 Sarah Johnson
 EOF
 
-    echo -e "${GREEN}✓ Mock files created successfully${NC}"
+    echo -e "${GREEN}[OK] Mock files created successfully${NC}"
 }
 
 test_lookup_command() {
@@ -665,13 +665,13 @@ cleanup_test_files() {
     # Remove test directory
     if [[ -d test_inputs ]]; then
         rm -rf test_inputs
-        echo -e "${GREEN}✓ Test input files cleaned up${NC}"
+        echo -e "${GREEN}[OK] Test input files cleaned up${NC}"
     fi
     
     # Clean up any output files created during tests (but keep logs)
     if [[ -d outputs ]]; then
         find outputs -name "*test*" -type f -delete 2>/dev/null || true
-        echo -e "${GREEN}✓ Test output files cleaned up${NC}"
+        echo -e "${GREEN}[OK] Test output files cleaned up${NC}"
     fi
 }
 
@@ -684,9 +684,9 @@ print_summary() {
     echo -e "Failed: ${RED}${FAILED_TESTS}${NC}"
     
     if [[ $FAILED_TESTS -eq 0 ]]; then
-        echo -e "\n${GREEN}🎉 ALL TESTS PASSED! 🎉${NC}"
+        echo -e "\n${GREEN}[SUCCESS] ALL TESTS PASSED!${NC}"
     else
-        echo -e "\n${YELLOW}⚠️  Some tests failed. Check the log for details.${NC}"
+        echo -e "\n${YELLOW}[WARNING] Some tests failed. Check the log for details.${NC}"
     fi
     
     echo -e "\nDetailed results saved to: ${TEST_LOG}"

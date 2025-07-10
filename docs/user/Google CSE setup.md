@@ -1,4 +1,4 @@
-### Google CSE Setup & Usage  🔑
+### Google CSE Setup & Usage
 
 1. **Create a CSE**
 
