@@ -11,9 +11,12 @@ import os
 from typing import List, Dict, Any, Tuple
 
 from litassist.utils import (
-    timed, save_log, heartbeat,
-    info_message, warning_message, error_message,
-    success_message, verifying_message
+    timed,
+    save_log,
+    heartbeat,
+    info_message,
+    warning_message,
+    success_message,
 )
 from litassist.config import CONFIG
 from litassist.prompts import PROMPTS
@@ -771,8 +774,8 @@ class LLMClient:
                             issue=verification_issues[0],
                         )
                     except (KeyError, ValueError):
-                        warning_msg = (
-                            warning_message(f"Citation verification: {verification_issues[0]}")
+                        warning_msg = warning_message(
+                            f"Citation verification: {verification_issues[0]}"
                         )
 
                     print(warning_msg)
@@ -787,7 +790,9 @@ class LLMClient:
                     retrying_msg = PROMPTS.get("warnings.retrying_with_instructions")
                 except (KeyError, ValueError):
                     strict_failed_msg = error_message(str(e))
-                    retrying_msg = info_message("Retrying with enhanced citation instructions...")
+                    retrying_msg = info_message(
+                        "Retrying with enhanced citation instructions..."
+                    )
 
                 print(strict_failed_msg)
                 print(retrying_msg)
@@ -910,7 +915,9 @@ class LLMClient:
                                 "warnings.retry_successful", issue=retry_issues[0]
                             )
                         except (KeyError, ValueError):
-                            success_msg = success_message(f"Retry successful: {retry_issues[0]}")
+                            success_msg = success_message(
+                                f"Retry successful: {retry_issues[0]}"
+                            )
                         print(success_msg)
                     else:
                         try:
@@ -918,8 +925,8 @@ class LLMClient:
                                 "warnings.all_citations_verified"
                             )
                         except (KeyError, ValueError):
-                            all_verified_msg = (
-                                success_message("Retry successful: All citations verified")
+                            all_verified_msg = success_message(
+                                "Retry successful: All citations verified"
                             )
                         print(all_verified_msg)
 
@@ -933,7 +940,9 @@ class LLMClient:
                             "warnings.multiple_attempts_failed"
                         )
                     except (KeyError, ValueError):
-                        retry_failed_msg = error_message(f"Retry also failed: {str(retry_error)}")
+                        retry_failed_msg = error_message(
+                            f"Retry also failed: {str(retry_error)}"
+                        )
                         multiple_attempts_msg = (
                             "CRITICAL: Multiple attempts to generate content with verified citations failed. "
                             "The AI model is consistently generating unverifiable legal citations. "
@@ -1066,7 +1075,9 @@ class LLMClient:
             if pattern_issues:
                 issues.extend(pattern_issues)
                 print(
-                    warning_message(f"Offline validation found {len(pattern_issues)} potential issues")
+                    warning_message(
+                        f"Offline validation found {len(pattern_issues)} potential issues"
+                    )
                 )
 
         # Always do real-time online database verification
