@@ -181,7 +181,7 @@ Without BYOK setup, the draft and barbrief commands will fail with an authentica
 
 Basic usage:
 ```bash
-./litassist.py [GLOBAL OPTIONS] <command> [ARGS] [OPTIONS]
+litassist [GLOBAL OPTIONS] <command> [ARGS] [OPTIONS]
 ```
 
 Global options:
@@ -192,7 +192,7 @@ Global options:
 
 1. **caseplan** - Generate a phased litigation workflow plan from case facts
    ```bash
-   ./litassist.py caseplan case_facts.txt [--focus <area>] [--budget minimal|standard|comprehensive]
+   litassist caseplan case_facts.txt [--focus <area>] [--budget minimal|standard|comprehensive]
    ```
    Options:
    - `--focus`: Prioritize plan phases for a specific area (e.g., "property dispute")
@@ -201,11 +201,11 @@ Global options:
 
 2. **lookup** - Rapid case-law search with automatic citation
    ```bash
-   ./litassist.py lookup "What defences exist to adverse costs orders?"
-   ./litassist.py lookup "Question?" --mode broad --comprehensive
-   ./litassist.py lookup "contract formation elements" --extract citations
-   ./litassist.py lookup "negligence principles" --extract principles  
-   ./litassist.py lookup "discovery requirements" --extract checklist
+   litassist lookup "What defences exist to adverse costs orders?"
+   litassist lookup "Question?" --mode broad --comprehensive
+   litassist lookup "contract formation elements" --extract citations
+   litassist lookup "negligence principles" --extract principles  
+   litassist lookup "discovery requirements" --extract checklist
    ```
    
    Options:
@@ -215,16 +215,16 @@ Global options:
 
 2. **digest** - Process large documents for summaries or issues
    ```bash
-   ./litassist.py digest bundle.pdf --mode [summary|issues]
+   litassist digest bundle.pdf --mode [summary|issues]
    ```
 
 3. **extractfacts** - Extract structured case facts from documents
    ```bash
    # Single file
-   ./litassist.py extractfacts document.pdf
+   litassist extractfacts document.pdf
    
    # Multiple files (July 2025)
-   ./litassist.py extractfacts file1.pdf file2.txt file3.pdf
+   litassist extractfacts file1.pdf file2.txt file3.pdf
    
    # Creates: extractfacts_[combined_slugs]_YYYYMMDD_HHMMSS.txt
    # Note: case_facts.txt must be created or edited manually
@@ -233,19 +233,19 @@ Global options:
 4. **brainstorm** - Generate comprehensive legal strategies with reasoning traces
    ```bash
    # Default: uses case_facts.txt if present in current directory
-   ./litassist.py brainstorm --side [plaintiff|defendant|accused] --area [criminal|civil|family|commercial|administrative]
+   litassist brainstorm --side [plaintiff|defendant|accused] --area [criminal|civil|family|commercial|administrative]
    
    # Specify facts file(s) explicitly
-   ./litassist.py brainstorm --facts case_facts.txt --side plaintiff --area civil
+   litassist brainstorm --facts case_facts.txt --side plaintiff --area civil
    
    # Use multiple facts files with glob patterns
-   ./litassist.py brainstorm --facts 'case_*.txt' --side plaintiff --area civil
+   litassist brainstorm --facts 'case_*.txt' --side plaintiff --area civil
    
    # Add research context (supports glob patterns)
-   ./litassist.py brainstorm --side plaintiff --area civil --research 'outputs/lookup_*.txt'
+   litassist brainstorm --side plaintiff --area civil --research 'outputs/lookup_*.txt'
    
    # Multiple research files with selective patterns
-   ./litassist.py brainstorm --side plaintiff --area civil --research 'outputs/lookup_*gift*.txt' --research 'outputs/lookup_*trust*.txt'
+   litassist brainstorm --side plaintiff --area civil --research 'outputs/lookup_*gift*.txt' --research 'outputs/lookup_*trust*.txt'
    
    # Creates: brainstorm_[area]_[side]_YYYYMMDD_HHMMSS.txt (main strategies)
    #          brainstorm_[area]_[side]_YYYYMMDD_HHMMSS_orthodox_reasoning.txt
@@ -256,29 +256,29 @@ Global options:
 
 5. **strategy** - Generate targeted legal options and draft documents
    ```bash
-   ./litassist.py strategy case_facts.txt --outcome "Obtain interim injunction against defendant"
+   litassist strategy case_facts.txt --outcome "Obtain interim injunction against defendant"
    # Or incorporate brainstormed strategies
-   ./litassist.py strategy case_facts.txt --outcome "..." --strategies strategies.txt
+   litassist strategy case_facts.txt --outcome "..." --strategies strategies.txt
    ```
 
 6. **draft** - Create citation-rich legal drafts with intelligent document recognition
    ```bash
    # Single document
-   ./litassist.py draft case_facts.txt "skeleton argument on jurisdictional error"
+   litassist draft case_facts.txt "skeleton argument on jurisdictional error"
    # Multiple documents (automatically recognizes case_facts.txt and strategies.txt)
-   ./litassist.py draft case_facts.txt strategies.txt "argument based on strategy #3"
+   litassist draft case_facts.txt strategies.txt "argument based on strategy #3"
    # Mix text files and PDFs
-   ./litassist.py draft case_facts.txt bundle.pdf "comprehensive submission"
+   litassist draft case_facts.txt bundle.pdf "comprehensive submission"
    ```
 
 7. **barbrief** - Generate comprehensive barrister's briefs for litigation
    ```bash
    # Basic brief for trial
-   ./litassist.py barbrief case_facts.txt --hearing-type trial
+   litassist barbrief case_facts.txt --hearing-type trial
    # Appeal brief with strategies
-   ./litassist.py barbrief case_facts.txt --hearing-type appeal --strategies strategies.txt
+   litassist barbrief case_facts.txt --hearing-type appeal --strategies strategies.txt
    # Full brief with all materials
-   ./litassist.py barbrief case_facts.txt --hearing-type interlocutory \
+   litassist barbrief case_facts.txt --hearing-type interlocutory \
      --strategies strategies.txt \
      --research lookup_report1.txt --research lookup_report2.txt \
      --documents affidavit.pdf --documents exhibit_a.pdf \
@@ -301,7 +301,7 @@ Global options:
 
 - **test** - Verify API connectivity
   ```bash
-  ./litassist.py test
+  litassist test
   ```
 
 ## 📁 Example Files

@@ -10,10 +10,10 @@ The `digest` command offers the most flexibility for non-legal documents:
 
 ```bash
 # For financial documents (bank statements, invoices)
-./litassist.py digest financial_statement.pdf --mode summary
+litassist digest financial_statement.pdf --mode summary
 
 # For commercial documents (purchase agreements, contracts)
-./litassist.py digest purchase_agreement.pdf --mode summary
+litassist digest purchase_agreement.pdf --mode summary
 ```
 
 ### Recommendations for Different Document Types
@@ -39,7 +39,7 @@ The `extractfacts` command is the most restrictive as it enforces a rigid 10-hea
 
 ```bash
 # Not recommended for direct use on non-legal documents
-./litassist.py extractfacts purchase_agreement.pdf
+litassist extractfacts purchase_agreement.pdf
 ```
 
 **Key Limitations**: ExtractFacts creates structured legal foundations for downstream commands but has no `--hint` option and only supports `--verify`. Use `digest` for flexible document analysis.
@@ -74,7 +74,7 @@ The `strategy` command strictly enforces the 10-heading structure and will fail 
 
 ```bash
 # Will only work with properly formatted case_facts.txt
-./litassist.py strategy case_facts.txt --outcome "Negotiate improved terms on purchase agreement"
+litassist strategy case_facts.txt --outcome "Negotiate improved terms on purchase agreement"
 ```
 
 ### Processing Mixed Document Sets
@@ -112,13 +112,13 @@ For handling multiple related but non-legal documents (e.g., financial records, 
 
 ```bash
 # Step 1: Get a summary of the document (optionally with focus)
-./litassist.py digest purchase_agreement.pdf --mode summary --hint "payment terms and obligations"
+litassist digest purchase_agreement.pdf --mode summary --hint "payment terms and obligations"
 
 # Step 2: Manually create case_facts.txt with all 10 headings
 # (Include information from digest output)
 
 # Step 3: Run strategy with business-oriented outcome
-./litassist.py strategy case_facts.txt --outcome "Negotiate more favorable payment terms"
+litassist strategy case_facts.txt --outcome "Negotiate more favorable payment terms"
 ```
 
 ## Limitations and Considerations

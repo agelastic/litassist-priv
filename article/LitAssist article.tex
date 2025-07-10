@@ -259,7 +259,7 @@ To evaluate the practical utility and boundaries of LitAssist, it is essential t
 \textbf{Use of LitAssist:} The lawyer uses the \texttt{lookup} command to query Australian legal standards:
 
 \begin{verbatim}
-./litassist.py lookup "What is the legal framework for determining 
+litassist.py lookup "What is the legal framework for determining 
 parental alienation in Australian family court cases?" --mode irac
 \end{verbatim}
 
@@ -276,7 +276,7 @@ LitAssist searches AustLII via Google Custom Search Engine, then processes the r
 \textbf{Use of LitAssist:} The \texttt{digest} command is used to process the document and extract relevant issues:
 
 \begin{verbatim}
-./litassist.py digest smith_affidavit.pdf --mode issues
+litassist.py digest smith_affidavit.pdf --mode issues
 \end{verbatim}
 
 LitAssist processes the document by splitting it into manageable chunks and using Claude to identify potential legal issues in each section.
@@ -292,7 +292,7 @@ LitAssist processes the document by splitting it into manageable chunks and usin
 \textbf{Use of LitAssist:} The \texttt{extractfacts} command is used to create a structured case facts file:
 
 \begin{verbatim}
-./litassist.py extractfacts smith_jones_file.pdf
+litassist.py extractfacts smith_jones_file.pdf
 \end{verbatim}
 
 LitAssist processes the document to extract relevant case facts and organizes them into a structured format with ten standard headings: Parties, Background, Key Events, Legal Issues, Evidence Available, Opposing Arguments, Procedural History, Jurisdiction, Applicable Law, and Client Objectives.
@@ -308,7 +308,7 @@ LitAssist processes the document to extract relevant case facts and organizes th
 \textbf{Use of LitAssist:} The \texttt{brainstorm} command is used to generate strategies based on the structured case facts:
 
 \begin{verbatim}
-./litassist.py brainstorm case_facts.txt --side plaintiff --area family
+litassist.py brainstorm case_facts.txt --side plaintiff --area family
 \end{verbatim}
 
 LitAssist uses Grok's creative capabilities to generate both orthodox and unorthodox litigation strategies tailored to the mother's position in this family law matter.
@@ -324,7 +324,7 @@ LitAssist uses Grok's creative capabilities to generate both orthodox and unorth
 \textbf{Use of LitAssist:} The \texttt{strategy} command is used to analyze options and draft appropriate documents:
 
 \begin{verbatim}
-./litassist.py strategy case_facts.txt 
+litassist.py strategy case_facts.txt 
 --outcome "Secure interim orders allowing children to remain in Brisbane"
 \end{verbatim}
 
@@ -341,7 +341,7 @@ LitAssist analyzes the case facts to generate strategic options, recommend actio
 \textbf{Use of LitAssist:} The \texttt{draft} command implements a Retrieval-Augmented Generation workflow:
 
 \begin{verbatim}
-./litassist.py draft smith_bundle.pdf 
+litassist.py draft smith_bundle.pdf 
 "outline of submissions regarding relocation of children in Smith v Jones"
 \end{verbatim}
 

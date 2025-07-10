@@ -70,7 +70,7 @@ pip install -r requirements.txt
 chmod +x litassist.py
 
 # 5. Use locally
-./litassist.py --help
+litassist --help
 ```
 
 **Note:** With this method, you must activate the virtual environment each time you want to use LitAssist.
