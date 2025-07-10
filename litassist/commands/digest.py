@@ -18,7 +18,7 @@ from litassist.utils import (
     timed,
     save_command_output,
     show_command_completion,
-    saved_message,
+    saved_message, info_message,
 )
 from litassist.llm import LLMClientFactory
 
