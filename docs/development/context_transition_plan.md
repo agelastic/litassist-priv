@@ -13,13 +13,13 @@ This plan outlines steps to evolve the LitAssist codebase from its current promp
 1. **Identify static knowledge**: legal requirements, citation formats, workflow summaries, and other recurring instructions can be stored as retrievable text snippets.
 2. **Embed documents**: convert these snippets and existing documentation into embeddings (e.g., using OpenAI or other models).
 3. **Choose a vector store**: reuse the Pinecone integration currently leveraged for the `draft` command to store and retrieve context.
-4. **Tag metadata**: label each document with categories such as `legal_guidelines`, `formatting`, or command names for targeted retrieval.
+4. **Tag metadata**: label each document with categories such as `legal_guidelines`, `formatting`, `jurisdiction`, `document_type`, or command names for targeted retrieval.
 
 ## 3. Build Retrieval Utilities
 
 1. **Create a `context` module**: implement functions to query the vector store based on command name and user request.
 2. **Implement MMR or similarity search**: use the existing `Retriever` helper to fetch the most relevant snippets.
-3. **Cache results**: store retrieved context locally for faster subsequent access during a single run.
+3. **Cache results**: store retrieved context in an in-memory cache scoped to a single command execution to improve performance.
 
 ## 4. Refactor Prompt Composition
 
@@ -37,11 +37,11 @@ This plan outlines steps to evolve the LitAssist codebase from its current promp
 
 1. **Unit tests**: add tests ensuring that each command’s assembler retrieves the expected context given a set of inputs.
 2. **Integration tests**: simulate end-to-end runs to confirm that documents are correctly embedded, stored, and retrieved.
-3. **Performance checks**: monitor token counts to verify that prompts remain short while context is effectively injected.
+3. **Performance and quality checks**: monitor token counts and latency to verify efficiency, and compare outputs against a baseline to ensure quality is maintained.
 
 ## 7. Documentation
 
-1. **Developer guide**: write documentation describing how to add new context snippets, update embeddings, and maintain the vector store.
+1. **Developer guide**: write documentation describing how to add new context snippets, create new commands with context retrieval, update embeddings, and maintain the vector store.
 2. **User guide updates**: explain any new options or changes in command behavior resulting from context-driven prompts.
 
 By following this plan, LitAssist can transition to a context-engineering approach that leverages dynamic retrieval of relevant information while keeping prompts maintainable and focused on the immediate task.
