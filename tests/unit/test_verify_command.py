@@ -95,7 +95,7 @@ class TestVerifyCommand:
 
             result = runner.invoke(verify, [temp_file])
             assert result.exit_code == 0
-            assert "🔍 Verifying" in result.output
+            assert "[VERIFYING]" in result.output
             assert "Citation verification complete" in result.output
             assert "2 citations verified, 1 unverified" in result.output
             assert "Legal soundness check complete" in result.output
@@ -226,8 +226,8 @@ class TestVerifyCommand:
         assert "**Total citations found**: 3" in report
         assert "**Verified citations**: 2" in report
         assert "**Unverified citations**: 1" in report
-        assert "✅ Case1 [2020] HCA 1" in report
-        assert "❌ Case3 [2025] VSC 999" in report
+        assert "[VERIFIED] Case1 [2020] HCA 1" in report
+        assert "[UNVERIFIED] Case3 [2025] VSC 999" in report
         assert "Future date" in report
 
     def test_parse_soundness_issues(self):

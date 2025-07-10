@@ -53,10 +53,10 @@ def test_imports():
         assert hasattr(module, "_format_citation_report")
         assert hasattr(module, "_parse_soundness_issues")
         assert hasattr(module, "_verify_reasoning_trace")
-        print("✅ All imports successful")
+        print("[PASS] All imports successful")
         return True
     except Exception as e:
-        print(f"❌ Import error: {e}")
+        print(f"[FAIL] Import error: {e}")
         return False
 
 def test_helper_functions():
@@ -78,13 +78,13 @@ def test_helper_functions():
             total_found=2
         )
         assert "# Citation Verification Report" in report
-        assert "✅ Case1 [2020] HCA 1" in report
-        print("✅ Citation report formatting works")
+        assert "[PASS] Case1 [2020] HCA 1" in report
+        print("[PASS] Citation report formatting works")
         
         # Test soundness issue parsing
         issues = _parse_soundness_issues("The document contains an error in citation format.")
         assert len(issues) >= 1
-        print("✅ Soundness issue parsing works")
+        print("[PASS] Soundness issue parsing works")
         
         # Test reasoning trace verification
         trace = LegalReasoningTrace(
@@ -98,11 +98,11 @@ def test_helper_functions():
         )
         status = _verify_reasoning_trace(trace)
         assert status["complete"]
-        print("✅ Reasoning trace verification works")
+        print("[PASS] Reasoning trace verification works")
         
         return True
     except Exception as e:
-        print(f"❌ Helper function test failed: {e}")
+        print(f"[FAIL] Helper function test failed: {e}")
         return False
 
 def test_command_structure():
@@ -123,10 +123,10 @@ def test_command_structure():
         assert 'soundness' in params
         assert 'reasoning' in params
         
-        print("✅ Command structure is correct")
+        print("[PASS] Command structure is correct")
         return True
     except Exception as e:
-        print(f"❌ Command structure test failed: {e}")
+        print(f"[FAIL] Command structure test failed: {e}")
         return False
 
 def test_llm_config():
@@ -146,10 +146,10 @@ def test_llm_config():
         assert config['top_p'] == 0.2
         assert not config['force_verify']
         
-        print("✅ LLM configuration is correct")
+        print("[PASS] LLM configuration is correct")
         return True
     except Exception as e:
-        print(f"❌ LLM configuration test failed: {e}")
+        print(f"[FAIL] LLM configuration test failed: {e}")
         return False
 
 def test_file_operations():
@@ -184,10 +184,10 @@ def test_file_operations():
         os.unlink(temp_path)
         os.unlink(report_path)
         
-        print("✅ File operations work correctly")
+        print("[PASS] File operations work correctly")
         return True
     except Exception as e:
-        print(f"❌ File operations test failed: {e}")
+        print(f"[FAIL] File operations test failed: {e}")
         return False
 
 def main():
@@ -206,15 +206,15 @@ def main():
     total = len(results)
     
     for test_name, result in results:
-        status = "✅ PASS" if result else "❌ FAIL"
+        status = "[PASS] PASS" if result else "[FAIL] FAIL"
         print(f"{test_name}: {status}")
     
     print(f"\nTotal: {passed}/{total} tests passed")
     
     if passed == total:
-        print("\n🎉 All tests passed! The verify command implementation is working correctly.")
+        print("\n[SUCCESS] All tests passed! The verify command implementation is working correctly.")
     else:
-        print("\n⚠️  Some tests failed. Please check the implementation.")
+        print("\n[WARNING]  Some tests failed. Please check the implementation.")
         sys.exit(1)
 
 if __name__ == "__main__":

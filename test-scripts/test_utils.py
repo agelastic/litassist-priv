@@ -78,7 +78,7 @@ class ErrorHandler:
             error_info: Error information dict from format_error()
             prefix: String prefix for the error output
         """
-        print(f"\n🚨 {prefix} DETAILS:")
+        print(f"\n[ERROR] {prefix} DETAILS:")
         print(f"  Type: {error_info['type']}")
         print(f"  Message: {error_info['message']}")
         print(f"  Time: {error_info['timestamp']}")
@@ -180,7 +180,7 @@ def print_result(result):
             elif k == "quality_checks" and isinstance(v, dict):
                 print(f"  {k}:")
                 for check_name, check_result in v.items():
-                    check_symbol = "✓" if check_result else "✗"
+                    check_symbol = "[Y]" if check_result else "[N]"
                     check_color = "\033[92m" if check_result else "\033[91m"
                     print(f"    {check_color}{check_symbol}{color_end} {check_name}")
             else:

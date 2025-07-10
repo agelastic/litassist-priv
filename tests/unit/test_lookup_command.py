@@ -48,7 +48,7 @@ class TestLookupCommand:
 
             assert result.exit_code == 0
             assert "Found links:" in result.output
-            assert "✅ Lookup complete!" in result.output
+            assert "[SUCCESS] Lookup complete!" in result.output
             assert "Standard search: 2 sources analyzed" in result.output
 
     @patch("googleapiclient.discovery.build")

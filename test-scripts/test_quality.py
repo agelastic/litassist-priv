@@ -109,11 +109,11 @@ def suppress_expected_errors():
         captured_err = captured_stderr.getvalue()
 
         if captured_out.strip():
-            print(f"📋 Captured output: {captured_out}")
+            print(f"[OUTPUT] Captured output: {captured_out}")
         if captured_err.strip():
-            print(f"🚨 Error details: {captured_err}")
+            print(f"[ERROR] Error details: {captured_err}")
 
-        print(f"❌ UNEXPECTED ERROR: {e}")
+        print(f"[FAIL] UNEXPECTED ERROR: {e}")
         raise
     finally:
         # Always restore streams
@@ -123,7 +123,7 @@ def suppress_expected_errors():
         # Show captured error content that users should see
         captured_err = captured_stderr.getvalue()
         if captured_err.strip():
-            print(f"🔍 Error details: {captured_err.strip()}")
+            print(f"[CHECKING] Error details: {captured_err.strip()}")
 
 
 # Enhanced error handling now provided by test_utils.py
@@ -1433,13 +1433,13 @@ def test_verification_system():
                     verification_worked = False
                     verification_error = str(e)
 
-            print(f"  ✓ Citation validation: {len(citation_issues)} issues caught")
-            print(f"  ✓ Auto-verification triggered: {should_auto_verify}")
-            print(f"  ✓ Verification feedback provided: {verification_worked}")
+            print(f"  [Y] Citation validation: {len(citation_issues)} issues caught")
+            print(f"  [Y] Auto-verification triggered: {should_auto_verify}")
+            print(f"  [Y] Verification feedback provided: {verification_worked}")
 
             # Show verification error if it occurred
             if verification_error:
-                print(f"  ⚠️  Verification error details: {verification_error}")
+                print(f"  [WARNING]  Verification error details: {verification_error}")
 
             verification_results.append(
                 {
