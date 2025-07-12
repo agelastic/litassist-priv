@@ -20,55 +20,67 @@ from pypdf import PdfReader
 
 from litassist.prompts import PROMPTS
 
+
 # ── Terminal Colors ─────────────────────────────────────────
 class Colors:
     """ANSI color codes for terminal output."""
+
     # Color codes
-    RED = '\033[91m'
-    GREEN = '\033[92m'
-    YELLOW = '\033[93m'
-    BLUE = '\033[94m'
-    MAGENTA = '\033[95m'
-    CYAN = '\033[96m'
-    WHITE = '\033[97m'
-    RESET = '\033[0m'
-    BOLD = '\033[1m'
+    RED = "\033[91m"
+    GREEN = "\033[92m"
+    YELLOW = "\033[93m"
+    BLUE = "\033[94m"
+    MAGENTA = "\033[95m"
+    CYAN = "\033[96m"
+    WHITE = "\033[97m"
+    RESET = "\033[0m"
+    BOLD = "\033[1m"
+
 
 def colored_message(prefix: str, message: str, color: str) -> str:
     """Format a message with colored prefix."""
     return f"{color}{prefix}{Colors.RESET} {message}"
 
+
 def success_message(message: str) -> str:
     """Format a success message with green [SUCCESS] prefix."""
     return colored_message("[SUCCESS]", message, Colors.GREEN)
+
 
 def warning_message(message: str) -> str:
     """Format a warning message with yellow [WARNING] prefix."""
     return colored_message("[WARNING]", message, Colors.YELLOW)
 
+
 def error_message(message: str) -> str:
     """Format an error message with red [ERROR] prefix."""
     return colored_message("[ERROR]", message, Colors.RED)
+
 
 def info_message(message: str) -> str:
     """Format an info message with blue [INFO] prefix."""
     return colored_message("[INFO]", message, Colors.BLUE)
 
+
 def stats_message(message: str) -> str:
     """Format a stats message with cyan [STATS] prefix."""
     return colored_message("[STATS]", message, Colors.CYAN)
+
 
 def tip_message(message: str) -> str:
     """Format a tip message with magenta [TIP] prefix."""
     return colored_message("[TIP]", message, Colors.MAGENTA)
 
+
 def saved_message(message: str) -> str:
     """Format a saved file message with blue [SAVED] prefix."""
     return colored_message("[SAVED]", message, Colors.BLUE)
 
+
 def verifying_message(message: str) -> str:
     """Format a verifying message with blue [VERIFYING] prefix."""
     return colored_message("[VERIFYING]", message, Colors.BLUE)
+
 
 # ── Directory Setup ─────────────────────────────────────────
 # Use current working directory for logs and outputs when running as global command
@@ -512,7 +524,7 @@ def create_embeddings(texts: List[str]) -> List[Any]:
     from litassist.config import CONFIG
 
     # Validate text lengths (8191 tokens ≈ 32000 chars for safety)
-    MAX_CHARS = 32000
+    MAX_CHARS = 64000
     for i, text in enumerate(texts):
         if len(text) > MAX_CHARS:
             raise ValueError(
@@ -689,7 +701,7 @@ def heartbeat(interval: int = 30):
             def ping():
                 while not done.is_set():
                     # Suppress during pytest runs
-                    if not os.environ.get('PYTEST_CURRENT_TEST'):
+                    if not os.environ.get("PYTEST_CURRENT_TEST"):
                         click.echo("…still working, please wait…", err=True)
                     time.sleep(interval)
 
@@ -988,57 +1000,61 @@ def show_command_completion(
 def detect_factual_hallucinations(content: str, source_facts: str = "") -> List[str]:
     """
     Detect potential hallucinated facts in drafted content.
-    
+
     Args:
         content: The drafted content to check
         source_facts: The original source facts to compare against
-        
+
     Returns:
         List of potential hallucination warnings
     """
     warnings = []
-    
+
     # Pattern for ages (e.g., "33 years of age", "aged 45")
-    age_pattern = r'\b(\d{1,3})\s*years?\s*(?:of\s*)?(?:age|old)\b'
+    age_pattern = r"\b(\d{1,3})\s*years?\s*(?:of\s*)?(?:age|old)\b"
     ages_found = re.findall(age_pattern, content, re.IGNORECASE)
     if ages_found and source_facts:
         for age in ages_found:
             if age not in source_facts:
                 warnings.append(f"Potentially hallucinated age: {age} years")
-    
+
     # Pattern for specific addresses (number + street name)
-    address_pattern = r'\b\d+\s+[A-Z][a-z]+(?:\s+[A-Z][a-z]+)*\s+(?:Street|St|Avenue|Ave|Road|Rd|Court|Ct|Drive|Dr|Place|Pl)\b'
+    address_pattern = r"\b\d+\s+[A-Z][a-z]+(?:\s+[A-Z][a-z]+)*\s+(?:Street|St|Avenue|Ave|Road|Rd|Court|Ct|Drive|Dr|Place|Pl)\b"
     addresses_found = re.findall(address_pattern, content)
     if addresses_found and source_facts:
         for address in addresses_found:
             # Check if this exact address appears in source
             if address not in source_facts:
                 warnings.append(f"Potentially hallucinated address: {address}")
-    
+
     # Pattern for bank/credit card numbers
-    account_pattern = r'(?:account|a/c|card).*?(?:ending|number|no\.?)\s*(?:in\s*)?[-:\s]*(\d{4,}|\*+\d{4}|-\d{4})'
+    account_pattern = r"(?:account|a/c|card).*?(?:ending|number|no\.?)\s*(?:in\s*)?[-:\s]*(\d{4,}|\*+\d{4}|-\d{4})"
     accounts_found = re.findall(account_pattern, content, re.IGNORECASE)
     if accounts_found:
         for account in accounts_found:
             if source_facts and account not in source_facts:
-                warnings.append(f"Potentially hallucinated account/card number: {account}")
-    
+                warnings.append(
+                    f"Potentially hallucinated account/card number: {account}"
+                )
+
     # Pattern for specific exhibit numbers (e.g., "VO-1", "Exhibit 23")
-    exhibit_pattern = r'(?:exhibit|annexure)\s*(?:marked\s*)?([A-Z]{1,3}-?\d+|\d+)'
+    exhibit_pattern = r"(?:exhibit|annexure)\s*(?:marked\s*)?([A-Z]{1,3}-?\d+|\d+)"
     exhibits_found = re.findall(exhibit_pattern, content, re.IGNORECASE)
     if exhibits_found:
-        warnings.append(f"Specific exhibit references found: {', '.join(set(exhibits_found))}. Consider using generic placeholders like [EXHIBIT A]")
-    
+        warnings.append(
+            f"Specific exhibit references found: {', '.join(set(exhibits_found))}. Consider using generic placeholders like [EXHIBIT A]"
+        )
+
     # Pattern for document/reference numbers (e.g., "Order No. 12345", "Cheque No. 67890")
-    ref_pattern = r'(?:order|cheque|check|reference|ref|invoice|receipt)\s*(?:no\.?|number)\s*[:\s]*(\d{4,})'
+    ref_pattern = r"(?:order|cheque|check|reference|ref|invoice|receipt)\s*(?:no\.?|number)\s*[:\s]*(\d{4,})"
     refs_found = re.findall(ref_pattern, content, re.IGNORECASE)
     if refs_found and source_facts:
         for ref in refs_found:
             if ref not in source_facts:
                 warnings.append(f"Potentially hallucinated reference number: {ref}")
-    
+
     # Check for suspiciously specific dates not in source
-    date_pattern = r'\b(\d{1,2})\s+(?:January|February|March|April|May|June|July|August|September|October|November|December)\s+(\d{4})\b'
+    date_pattern = r"\b(\d{1,2})\s+(?:January|February|March|April|May|June|July|August|September|October|November|December)\s+(\d{4})\b"
     dates_found = re.findall(date_pattern, content, re.IGNORECASE)
     if dates_found and source_facts:
         for date in dates_found:
@@ -1046,13 +1062,16 @@ def detect_factual_hallucinations(content: str, source_facts: str = "") -> List[
             # Very basic check - could be improved
             if date_str not in source_facts and date[0] not in source_facts:
                 warnings.append(f"Potentially hallucinated specific date: {date_str}")
-    
+
     return warnings
 
 
 def verify_content_if_needed(
-    client: Any, content: str, command_name: str, verify_flag: bool = False,
-    citation_already_verified: bool = False
+    client: Any,
+    content: str,
+    command_name: str,
+    verify_flag: bool = False,
+    citation_already_verified: bool = False,
 ) -> tuple[str, bool]:
     """
     Handle verification and citation validation.
@@ -1072,15 +1091,23 @@ def verify_content_if_needed(
     needs_verification = verify_flag or auto_verify
 
     # Inform user about verification status (suppress during tests)
-    if not os.environ.get('PYTEST_CURRENT_TEST'):
+    if not os.environ.get("PYTEST_CURRENT_TEST"):
         if verify_flag and auto_verify:
             click.echo(
-                verifying_message("Running verification (--verify flag + auto-verification triggered)")
+                verifying_message(
+                    "Running verification (--verify flag + auto-verification triggered)"
+                )
             )
         elif verify_flag:
-            click.echo(verifying_message("Running verification (--verify flag enabled)"))
+            click.echo(
+                verifying_message("Running verification (--verify flag enabled)")
+            )
         elif auto_verify:
-            click.echo(verifying_message("Running auto-verification (high-risk content detected)"))
+            click.echo(
+                verifying_message(
+                    "Running auto-verification (high-risk content detected)"
+                )
+            )
         else:
             click.echo(info_message("No verification performed"))
 
@@ -1276,31 +1303,28 @@ def validate_file_size_limit(content: str, max_size: int, context: str):
 
 
 def process_extraction_response(
-    content: str, 
-    extract_type: str,
-    output_prefix: str,
-    command: str
+    content: str, extract_type: str, output_prefix: str, command: str
 ) -> tuple[str, dict, str]:
     """
     Process extraction response from LLM with JSON-first approach.
-    
+
     Follows CLAUDE.md guidance: LLMs return properly formatted output when prompted correctly.
     No fallback parsing needed - trust the LLM to follow format instructions.
-    
+
     Args:
         content: Raw LLM response expected to be valid JSON
         extract_type: Type of extraction (citations/principles/checklist/all)
         output_prefix: Prefix for output files (e.g., "lookup_citations_20240615_120000")
         command: Command name for context (lookup/counselnotes)
-        
+
     Returns:
         Tuple of (formatted_text, json_data, json_file_path)
-        
+
     Raises:
         click.ClickException: If JSON parsing fails (indicates prompt needs improvement)
     """
     import click
-    
+
     # Parse JSON response - no fallbacks per CLAUDE.md
     try:
         # Clean content if needed (remove any markdown code blocks)
@@ -1312,7 +1336,7 @@ def process_extraction_response(
         if clean_content.endswith("```"):
             clean_content = clean_content[:-3]
         clean_content = clean_content.strip()
-        
+
         json_data = json.loads(clean_content)
     except json.JSONDecodeError as e:
         # Per CLAUDE.md: Fix prompts, not parsing
@@ -1320,20 +1344,24 @@ def process_extraction_response(
             f"LLM did not return valid JSON for {extract_type} extraction. "
             f"This indicates the prompt needs improvement. Error: {str(e)}"
         )
-    
+
     # Save JSON file
     json_file = os.path.join(OUTPUT_DIR, f"{output_prefix}.json")
     with open(json_file, "w", encoding="utf-8") as f:
         json.dump(json_data, f, indent=2, ensure_ascii=False)
-    
+
     # Generate formatted text based on extraction type
     if extract_type == "citations":
         if "citations" in json_data and isinstance(json_data["citations"], list):
             items = json_data["citations"]
-            formatted_text = "CITATIONS FOUND:\n" + "\n".join(items) if items else "No citations found."
+            formatted_text = (
+                "CITATIONS FOUND:\n" + "\n".join(items)
+                if items
+                else "No citations found."
+            )
         else:
             formatted_text = "No citations found in response."
-            
+
     elif extract_type == "principles":
         if "principles" in json_data:
             principles = json_data["principles"]
@@ -1352,7 +1380,7 @@ def process_extraction_response(
                         # String format: "principle text"
                         formatted_lines.append(f"• {p}")
                     # Skip any other types silently
-                
+
                 if formatted_lines:
                     formatted_text = "LEGAL PRINCIPLES:\n" + "\n".join(formatted_lines)
                 else:
@@ -1361,26 +1389,33 @@ def process_extraction_response(
                 formatted_text = "No legal principles found."
         else:
             formatted_text = "No legal principles found in response."
-            
+
     elif extract_type == "checklist":
         if "checklist" in json_data and isinstance(json_data["checklist"], list):
             items = json_data["checklist"]
-            formatted_text = "PRACTICAL CHECKLIST:\n" + "\n".join(f"[ ] {item}" for item in items) if items else "No checklist items found."
+            formatted_text = (
+                "PRACTICAL CHECKLIST:\n" + "\n".join(f"[ ] {item}" for item in items)
+                if items
+                else "No checklist items found."
+            )
         else:
             formatted_text = "No checklist items found in response."
-            
+
     elif extract_type == "all":
         # Comprehensive extraction with multiple sections
         sections = []
-        
+
         # Strategic summary
         if "strategic_summary" in json_data:
             sections.append(f"STRATEGIC SUMMARY:\n{json_data['strategic_summary']}")
-            
+
         # Citations
         if "key_citations" in json_data and json_data["key_citations"]:
-            sections.append("KEY CITATIONS:\n" + "\n".join(f"• {c}" for c in json_data["key_citations"]))
-            
+            sections.append(
+                "KEY CITATIONS:\n"
+                + "\n".join(f"• {c}" for c in json_data["key_citations"])
+            )
+
         # Principles
         if "legal_principles" in json_data and json_data["legal_principles"]:
             principles_text = "LEGAL PRINCIPLES:\n"
@@ -1395,25 +1430,35 @@ def process_extraction_response(
                 else:
                     principles_text += f"• {p}\n"
             sections.append(principles_text.rstrip())
-            
+
         # Checklist
         if "tactical_checklist" in json_data and json_data["tactical_checklist"]:
-            sections.append("TACTICAL CHECKLIST:\n" + "\n".join(f"[ ] {item}" for item in json_data["tactical_checklist"]))
-            
+            sections.append(
+                "TACTICAL CHECKLIST:\n"
+                + "\n".join(f"[ ] {item}" for item in json_data["tactical_checklist"])
+            )
+
         # Risk assessment
         if "risk_assessment" in json_data:
             sections.append(f"RISK ASSESSMENT:\n{json_data['risk_assessment']}")
-            
+
         # Recommendations
         if "recommendations" in json_data and json_data["recommendations"]:
-            sections.append("RECOMMENDATIONS:\n" + "\n".join(f"• {r}" for r in json_data["recommendations"]))
-            
-        formatted_text = "\n\n".join(sections) if sections else "No structured data extracted."
-    
+            sections.append(
+                "RECOMMENDATIONS:\n"
+                + "\n".join(f"• {r}" for r in json_data["recommendations"])
+            )
+
+        formatted_text = (
+            "\n\n".join(sections) if sections else "No structured data extracted."
+        )
+
     else:
         formatted_text = f"Unknown extraction type: {extract_type}"
-    
+
     # Add metadata footer
-    formatted_text += f"\n\n---\nExtracted via {command} command\nJSON data saved to: {json_file}"
-    
+    formatted_text += (
+        f"\n\n---\nExtracted via {command} command\nJSON data saved to: {json_file}"
+    )
+
     return formatted_text, json_data, json_file
