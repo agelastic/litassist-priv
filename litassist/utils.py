@@ -524,7 +524,7 @@ def create_embeddings(texts: List[str]) -> List[Any]:
     from litassist.config import CONFIG
 
     # Validate text lengths (8191 tokens ≈ 32000 chars for safety)
-    MAX_CHARS = 64000
+    MAX_CHARS = 32000
     for i, text in enumerate(texts):
         if len(text) > MAX_CHARS:
             raise ValueError(
