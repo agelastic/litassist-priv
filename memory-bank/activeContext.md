@@ -1,142 +1,48 @@
 # Active Context
 
 ## Current Work Focus
-- **Brainstorm Command Enhancement**: Major update to support multiple input files and glob patterns
-- **Command Syntax Modernization**: Changed from positional arguments to option-based interface
-- **Glob Pattern Support**: Added glob expansion for file patterns in both --facts and --research options
-- **Improved User Experience**: Automatic case_facts.txt detection when no facts files specified
 
-**Latest update (8 July 2025 - Token Limit Configuration & Brainstorm Enhancement):**
+- **Large Document Handling & Token Counting (July 2025):**
+  - Implemented chunk-based processing in `digest` and `strategy` commands to handle large legal documents (split into 50k token chunks for LLM processing).
+  - Integrated `tiktoken` for accurate token counting in research file analysis and input size management.
+  - Brainstorm command now analyzes research file size, warns users for >128k tokens, and displays file/token/word stats.
+  - All commands updated to use improved error handling and user feedback for large input files.
+
+- **Verification & Model Upgrades (July 2025):**
+  - Switched verification system to use Claude 4 Opus for higher accuracy and context window.
+  - Broadened citation search scope and increased file size limits for extractfacts and lookup commands.
+  - Two-phase citation verification and selective regeneration remain standard.
+
+- **Prompt & Policy Refinements (July 2025):**
+  - Major prompt YAML updates: barbrief.yaml, strategies.yaml, verification.yaml, caseplan.yaml, formats.yaml, glob_help_addon.yaml, lookup.yaml, system_feedback.yaml.
+  - Enforced zero-emoji policy and standardized ASCII/ANSI output across all commands and documentation.
+  - Improved code formatting and removed unused imports (e.g., verifying_message from strategy.py).
+  - Enhanced error handling, logging, and user feedback throughout the CLI.
+
+- **Documentation & Planning (July 2025):**
+  - Added new technical and planning docs: `docs/prompts/LLM_PROMPT_EFFICIENCY_AND_PRECISION.md`, `docs/development/context_transition_plan.md`.
+  - Updated INSTALLATION.md, README.md, TODO.md, CLAUDE.md, and user guides to reflect new features, policies, and workflows.
+  - Memory Bank and .clinerules updated for new conventions and patterns.
+
+- **Testing & Infrastructure (July 2025):**
+  - Expanded and refactored test suite: new/updated unit tests, test scripts, and comprehensive coverage for new features.
+  - Improved test output clarity and coverage for all major commands.
+
+**Latest update (13 July 2025 - Large Document Processing, Token Counting, Verification Upgrades):**
+- ADDED: Chunk-based processing for digest/strategy commands (50k token chunks).
+- ADDED: tiktoken for accurate token counting; research file size analysis in brainstorm.
+- UPDATED: Verification now uses Claude 4 Opus; citation search scope broadened.
+- UPDATED: Prompt YAMLs and CLI output for clarity and compliance.
+- ENFORCED: Zero-emoji policy and standardized output.
+- UPDATED: Documentation, planning, and Memory Bank for all new features and conventions.
+- EXPANDED: Test suite and infrastructure for new features.
+
+**Previous update (8 July 2025 - Token Limit Configuration & Brainstorm Enhancement):**
 - CHANGED: Default use_token_limits from False to True in config.py
 - FIXED: Counselnotes empty output issue caused by low API default token limits
 - UPDATED: All models now use 32K token limits when use_token_limits is enabled
 - UPDATED: Documentation to reflect new default behavior
 - INSIGHT: use_token_limits: false doesn't mean "no limits", it means "API defaults" (~4K)
-
-**Previous update (8 July 2025 - Brainstorm Command Enhancement & Verification Fix):**
-- ADDED: Multiple input files support with --facts option (accepts multiple files)
-- ADDED: Glob pattern support for both --facts and --research options
-- CHANGED: Command syntax from positional argument to --facts option
-- ADDED: Automatic case_facts.txt detection when no --facts provided
-- IMPLEMENTED: expand_glob_patterns callback for intelligent file expansion
-- UPDATED: Help text and documentation to reflect new usage patterns
-- MAINTAINED: Full backward compatibility through option-based approach
-- EXAMPLE: litassist brainstorm --side plaintiff --area civil --research 'outputs/lookup_*.txt'
-- FIXED: Verification prompt causing incomplete "ANALYSIS OF SELECTED STRATEGIES" sections
-- CLARIFIED: Verification comments only for numbered strategies (1-10), not analysis sections
-- PRINCIPLE: Following CLAUDE.md - fix through better prompt engineering, not local parsing
-
-**Previous update (7 July 2025 - Verification System):**
-- FIXED: Missing "MOST LIKELY TO SUCCEED" section in brainstorm outputs
-- FIXED: System instructions bleeding into verified content ("Australian law only...")
-- FIXED: Content truncation due to low token limits (800-1536 → 8192-16384)
-- REMOVED: ~25 lines of local parsing in brainstorm.py - trust LLM output
-- SIMPLIFIED: verify_with_level now only used for "heavy" verification
-- UPDATED: Prompt templates to preserve ALL sections and prevent instruction bleeding
-- PRINCIPLE: Following CLAUDE.md - "minimize local parsing through better prompt engineering"
-
-**Recent updates (6-7 July 2025):**
-- ENHANCED: Strategy generation with 3-5 paragraphs per strategy (was 2-3 sentences)
-- ADDED: Multiple input file support for extractfacts command
-- UPDATED: Grok model to x-ai/grok-3
-- INCREASED: Token limits to 32k for all generation models
-- CONVENTION: Claude-generated files now prefixed with claude_
-- CHANGED: Claude files no longer ignored by git
-
-**Previous update (7 January 2025 - Barbrief):**
-- COMPLETED: Barbrief command implementation for comprehensive barrister's briefs
-- IMPLEMENTED: Full command structure with 10-section brief format
-- FIXED: Critical bugs resolved during final testing:
-  - Changed LLMClientFactory method from incorrect `get_client` to correct `for_command`
-  - Fixed save_reasoning_trace to use 2 arguments instead of 3 (removed deprecated third parameter)
-  - Prompt template syntax conversion from Jinja2 to Python format strings
-- ADDED: LLMClientFactory configuration for barbrief using openai/o3-pro model
-- KEY FEATURES:
-  - 10-heading case facts validation from extractfacts command output
-  - Multiple input support: strategies, research reports, supporting documents
-  - Hearing-type specific formatting (trial, directions, interlocutory, appeal)
-  - Citation verification integration with verify flag
-  - 32K token limit (max_completion_tokens) for comprehensive output
-  - Comprehensive error handling for API failures
-  - Reasoning trace capture for transparency
-- TESTING: 
-  - All 11 unit tests passing in test_barbrief.py
-  - CLI comprehensive tests added with mock files in test-scripts/
-  - Integration with existing test suite validated
-- DOCUMENTATION: 
-  - Added to README with BYOK requirements and examples
-  - User Guide updated with barbrief command documentation
-  - Technical documentation complete in docs/commands/barbrief.md
-  - Memory Bank files updated to reflect completion
-
-**Previous update (7 January 2025 - CounselNotes):**
-- COMPLETED: Counsel's Notes command implementation with comprehensive documentation suite
-- Full strategic analysis framework with 5-section structure (Overview, Opportunities, Risks, Recommendations, Management)
-- Four JSON extraction modes (all, citations, principles, checklist) with structured output
-- Multi-document cross-synthesis capabilities for complex case analysis
-- LLMClientFactory integration: anthropic/claude-sonnet-4, temp=0.3, top_p=0.7, force_verify=True
-
-**Previous update (19 June 2025):**
-- Completed lookup command refactoring to eliminate fragile regex parsing and leverage structured LLM output
-- Implemented JSON-first extraction with regex fallback for --extract options (citations, principles, checklist)
-- Added --context flag to lookup command for targeted analysis guidance
-- Updated prompts to instruct LLM to return structured JSON for extraction requests
-- Enhanced test suite to validate new --context functionality
-- Updated user documentation to reflect improved extraction workflow
-
-**Previous update (16 June 2025):**
-- Synchronized all prompt YAML files and test suites so that tests only validate active (uncommented) templates.
-- Commented out all test code for templates that are commented out in the YAML files, including in `test_prompt_templates.py` and `test_prompts.py`.
-- Fixed all schema and accessibility checks for commented-out prompt keys (including lookup.yaml, documents.yaml, base.yaml).
-- All tests now pass after these changes.
-
-## Recent Changes
-
-### (July 2025 - API Reliability)
-- Implemented robust API retry logic for LLM calls (3 attempts, exponential backoff)
-- Removed unimplemented safety_cutoff parameter from all configs and docs
-- Added TODO for circuit breaker (AG-124) to TODO.md and codebase
-- **MAJOR COMPLETION (January 7, 2025): Barbrief Command**
-  - Complete implementation in `litassist/commands/barbrief.py`
-  - Comprehensive barrister's brief generation with 10-section structure
-  - Integration with extractfacts command for case facts validation
-  - Support for multiple input types: strategies, research, supporting documents
-  - Hearing-type specific formatting (trial, directions, interlocutory, appeal)
-  - Full citation verification integration
-  - Fixed critical implementation bugs during testing
-  - Complete test suite with 11 unit tests and CLI integration tests
-  - Full documentation suite: user guide, technical docs, examples
-
-- **MAJOR COMPLETION (January 7, 2025): Counsel's Notes Command**
-  - Complete implementation in `litassist/commands/counselnotes.py`
-  - Strategic analysis framework with advocate perspective vs neutral digest
-  - Four JSON extraction modes for structured data output
-  - Multi-document synthesis and cross-document analysis
-  - Full documentation suite: user guide, technical docs, examples
-  - Integration with existing citation verification and LLM systems
-  - Professional Australian legal context throughout
-
-- Implemented major June 2025 improvements:
-  - Lookup command overhaul: Jade.io-only, new --comprehensive flag, improved extract options, citation integration, code quality/linting
-  - Multi-section reasoning traces for brainstorm; enhanced strategy integration
-  - Complete timing coverage and comprehensive logging for all operations
-  - Centralized configuration and log format in config.yaml
-  - Clean CLI output and professional summaries
-  - Output file timestamping and organization in outputs/ and logs/
-  - Model selection and BYOK requirements for advanced commands
-  - Two-phase citation verification and selective regeneration ("Option B")
-- Added optional --hint argument to digest command (June 2025): allows users to provide a text hint to focus LLM analysis on topics related to the hint, supporting targeted processing of non-legal and general documents.
-- Updated Memory Bank files for consistency with README, User Guide, and config.yaml.template
-- Full Memory Bank review performed on 15 June 2025: all files confirmed up to date and synchronized with codebase and documentation. No changes required.
-- 16 June 2025: Test suite and prompt YAMLs synchronized; all tests for commented-out templates are now commented out in the test code. All tests pass.
-
-## Latest update (9 July 2025 - Caseplan Command)
-- ADDED: New caseplan command for intelligent workflow generation
-- IMPLEMENTED: LLM-driven case complexity analysis
-- CREATED: Reusable capabilities.yaml for command reference
-- PRINCIPLE: Zero local parsing - LLM generates complete plans
-- EFFICIENCY: Adaptive workflows prevent 50+ document waste
-- EXAMPLE: litassist caseplan case_facts.txt --budget minimal
 
 ## Next Steps
 
@@ -168,15 +74,13 @@
 
 (AG- tags and priorities correspond to TODO.md and alignment plan.)
 
-**Note:**  
-As of 8 July 2025, TODO.md is maintained as a flat, unannotated list of pending tasks. The Memory Bank (activeContext.md, progress.md) contains the structured, prioritized, and owner-annotated mapping of these tasks for project management and traceability. For authoritative task status, refer to both TODO.md (raw list) and Memory Bank (detailed plan).
-
 ## Active Decisions & Considerations
 - Strict adherence to Memory Bank hierarchy and .clinerules formatting rules.
 - Use pipx as the default install method; config.yaml in ~/.config/litassist/ for global use.
 - Emphasize two-phase citation verification (Jade.io primary, offline fallback) and selective regeneration for quality control.
 - Clarify brainstorm vs strategy distinction: brainstorm = creative exploration, strategy = tactical implementation.
 - Maintain clean CLI output, timestamped files, and professional summaries as standard UX.
+- Enforce zero-emoji policy and standardized output in all code and documentation.
 
 ## Important Patterns & Preferences
 - Use Markdown for all Memory Bank files.
@@ -189,3 +93,5 @@ As of 8 July 2025, TODO.md is maintained as a flat, unannotated list of pending 
 - Centralizing architecture, workflow, and technical context streamlines future development and QA.
 - Clear distinction and integration pattern between brainstorm and strategy commands improves user understanding and workflow efficiency.
 - Periodic full reviews (as on 15 June 2025) ensure Memory Bank remains the authoritative, up-to-date reference for all development and planning.
+- Large document handling and token counting are now core to all major workflows.
+- Prompt engineering and policy enforcement (e.g., zero-emoji) are critical for professional output and compliance.

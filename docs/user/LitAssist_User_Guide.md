@@ -84,6 +84,14 @@ This running example provides context for understanding how each LitAssist workf
 - [Y] **Comprehensive timing** - All operations timed and logged for performance monitoring
 - [Y] **Centralized configuration** - Log format and other settings moved to config.yaml for consistency
 
+## Verification Model and Policy Updates
+
+**New July 2025:**  
+- Verification now uses Claude 4 Opus for higher accuracy and larger context windows.
+- Citation search scope has been broadened and file size limits increased for extractfacts and lookup commands.
+- All prompt YAMLs have been updated for clarity, compliance, and zero-emoji policy.
+- CLI output and logs are now standardized to ASCII/ANSI only (no emoji).
+
 ## Citation Quality Control
 
 LitAssist employs a comprehensive two-phase citation checking system to ensure all legal references are accurate and verifiable:
@@ -248,6 +256,9 @@ brew install pipx
 pipx install -e /path/to/litassist
 pipx ensurepath && source ~/.zshrc
 
+# Install tiktoken for accurate token counting (required for large document handling)
+pip install tiktoken
+
 # Setup configuration
 cd /path/to/litassist
 cp config.yaml.template config.yaml
@@ -266,7 +277,7 @@ For complete installation instructions, troubleshooting, and alternative methods
 
 ### config.yaml Settings
 
-**New June 2025 - Centralized Configuration**: Log format and other settings have been moved from CLI options to config.yaml for consistency and user convenience.
+**New July 2025 - Large Document Handling and Token Counting**: LitAssist now uses chunk-based processing for large documents (50k token chunks) and tiktoken for accurate token counting. This enables robust handling of large files and provides user warnings for research files exceeding 128k tokens.
 
 Key configuration options in the `general` section:
 ```yaml
@@ -357,6 +368,14 @@ smith-v-jones-2025/
 - **Version history** - Track evolution of strategies and arguments
 - **Easy sharing** - Send specific timestamped files to colleagues
 - **Manual control** - Working files (case_facts.txt, strategies.txt) remain under user control
+
+## Large Document Handling and Token Counting
+
+**New July 2025:**  
+- All major commands (digest, strategy, brainstorm) now process large documents by splitting them into 50k token chunks.
+- The system uses tiktoken for accurate token counting. If a research file exceeds 128k tokens, a warning is displayed and processing may be truncated or chunked.
+- CLI output now includes file, word, and token counts for research/context files.
+- This ensures robust handling of large legal documents and prevents API token limit errors.
 
 ## Clean CLI Output Format
 

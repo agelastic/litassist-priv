@@ -3,6 +3,17 @@
 **Status**: Phase 1 Complete [DONE]  
 **Last Updated**: June 17, 2025
 
+## Recent Updates (July 2025)
+
+- **Prompt YAML Overhaul**: Major updates to barbrief.yaml, strategies.yaml, verification.yaml, caseplan.yaml, formats.yaml, glob_help_addon.yaml, lookup.yaml, system_feedback.yaml for clarity, compliance, and chunk-aware prompting.
+- **Zero-Emoji Policy**: All prompts and system feedback now enforce ASCII/ANSI-only output (no emoji) for professional compliance.
+- **Chunk-Aware Prompting**: Digest, strategy, and brainstorm prompts now include instructions for 50k token chunk processing and user warnings for large files.
+- **Verification Model**: Verification prompts updated for Claude 4 Opus as the default verification model.
+- **File Size Warnings**: New prompt templates for research file size analysis and user warnings when exceeding 128k tokens.
+- **CasePlan**: New and expanded prompts for phased workflow planning and command coverage analysis.
+- **Digest/ExtractFacts**: Prompts updated for multi-file and chunked input handling.
+- **System Feedback**: Expanded error and warning messages for chunking, token limits, and policy compliance.
+
 ## Recent Updates (June 2025)
 
 - **Verify Command**: Added comprehensive verification prompts for citation checking, legal soundness, and reasoning trace generation
@@ -13,7 +24,9 @@
 
 ## Overview
 
-This document describes the centralized prompt management system implemented in Phase 1, designed to improve consistency, maintainability, and quality control across all LitAssist commands.
+This document describes the centralized prompt management system implemented in Phase 1 and expanded in July 2025, designed to improve consistency, maintainability, and quality control across all LitAssist commands.
+
+**July 2025: All prompt templates now support chunk-based processing, token counting, and zero-emoji output. PromptManager and YAMLs have been updated for new verification models and file size handling.**
 
 ## Architecture
 
