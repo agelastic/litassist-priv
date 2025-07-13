@@ -23,8 +23,14 @@ from litassist.utils import (
     validate_side_area_combination,
     validate_file_size_limit,
     save_command_output,
-    warning_message, success_message, saved_message, stats_message,
-    info_message, verifying_message, tip_message
+    warning_message,
+    success_message,
+    saved_message,
+    stats_message,
+    info_message,
+    verifying_message,
+    tip_message,
+    error_message,
 )
 from litassist.llm import LLMClientFactory, LLMClient
 from litassist.prompts import PROMPTS
@@ -101,7 +107,9 @@ def regenerate_bad_strategies(
             break
 
         click.echo(
-            info_message(f"Regeneration attempt {retry_attempt + 1}: {len(strategies_to_regenerate)} strategies need fixing")
+            info_message(
+                f"Regeneration attempt {retry_attempt + 1}: {len(strategies_to_regenerate)} strategies need fixing"
+            )
         )
 
         remaining_to_regenerate = []
@@ -136,12 +144,16 @@ Key principles: [Comprehensive legal principles or precedents with full case cit
                 new_citation_issues = client.validate_citations(new_strategy)
                 if new_citation_issues:
                     click.echo(
-                        warning_message(f"    Strategy {strategy_num}: Still has citation issues after regeneration")
+                        warning_message(
+                            f"    Strategy {strategy_num}: Still has citation issues after regeneration"
+                        )
                     )
                     remaining_to_regenerate.append((strategy_num, bad_strategy))
                 else:
                     click.echo(
-                        success_message(f"    Strategy {strategy_num}: Successfully regenerated with clean citations")
+                        success_message(
+                            f"    Strategy {strategy_num}: Successfully regenerated with clean citations"
+                        )
                     )
                     # Strip any headers from the regenerated strategy
                     new_strategy = re.sub(
@@ -151,7 +163,7 @@ Key principles: [Comprehensive legal principles or precedents with full case cit
 
             except Exception as e:
                 click.echo(
-                    f"    💥 Strategy {strategy_num}: Regeneration failed - {str(e)}"
+                    f"    [FAILED] Strategy {strategy_num}: Regeneration failed - {str(e)}"
                 )
                 remaining_to_regenerate.append((strategy_num, bad_strategy))
 
@@ -160,16 +172,26 @@ Key principles: [Comprehensive legal principles or precedents with full case cit
     # Report final status
     if strategies_to_regenerate:
         click.echo(
-            warning_message(f"  {len(strategies_to_regenerate)} {strategy_type} strategies still have citation issues after {max_retries} attempts")
+            warning_message(
+                f"  {len(strategies_to_regenerate)} {strategy_type} strategies still have citation issues after {max_retries} attempts"
+            )
         )
         click.echo(
-            info_message(f"    Excluding these strategies: {[num for num, _ in strategies_to_regenerate]}")
+            info_message(
+                f"    Excluding these strategies: {[num for num, _ in strategies_to_regenerate]}"
+            )
         )
     else:
-        click.echo(success_message(f"  All {strategy_type} strategies now have verified citations"))
+        click.echo(
+            success_message(
+                f"  All {strategy_type} strategies now have verified citations"
+            )
+        )
 
     click.echo(
-        stats_message(f"  Final result: {len(strategy_results)} verified {strategy_type} strategies")
+        stats_message(
+            f"  Final result: {len(strategy_results)} verified {strategy_type} strategies"
+        )
     )
 
     # Reconstruct content with final verified strategies only
@@ -408,7 +430,9 @@ Please provide output in EXACTLY this format:
     orthodox_citation_issues = orthodox_client.validate_citations(orthodox_content)
     if orthodox_citation_issues:
         click.echo(
-            info_message(f"Found {len(orthodox_citation_issues)-1} citation issues in orthodox strategies - fixing...")
+            info_message(
+                f"Found {len(orthodox_citation_issues)-1} citation issues in orthodox strategies - fixing..."
+            )
         )
         orthodox_content = regenerate_bad_strategies(
             orthodox_client, orthodox_content, orthodox_base_prompt, "orthodox"
@@ -474,7 +498,9 @@ Please provide output in EXACTLY this format:
     )
     if unorthodox_citation_issues:
         click.echo(
-            info_message(f"Found {len(unorthodox_citation_issues)-1} citation issues in unorthodox strategies - fixing...")
+            info_message(
+                f"Found {len(unorthodox_citation_issues)-1} citation issues in unorthodox strategies - fixing..."
+            )
         )
         unorthodox_content = regenerate_bad_strategies(
             unorthodox_client, unorthodox_content, unorthodox_base_prompt, "unorthodox"
@@ -573,7 +599,9 @@ Please provide output in EXACTLY this format:
         citation_issues = analysis_client.validate_citations(combined_content)
         if citation_issues:
             # Citation warnings are shown in console but not saved separately
-            click.echo(warning_message(f"{len(citation_issues)} citation warnings found"))
+            click.echo(
+                warning_message(f"{len(citation_issues)} citation warnings found")
+            )
 
     except Exception as e:
         raise click.ClickException(f"Verification error during brainstorming: {e}")
@@ -623,7 +651,9 @@ Please provide output in EXACTLY this format:
     # Parse the actual strategies generated
     parsed_result = parse_strategies_file(combined_content)
 
-    msg = stats_message(f'Generated strategies for {side.capitalize()} in {area.capitalize()} law:')
+    msg = stats_message(
+        f"Generated strategies for {side.capitalize()} in {area.capitalize()} law:"
+    )
     click.echo(f"\n{msg}")
     click.echo(f"   • Orthodox strategies: {parsed_result.get('orthodox_count', 0)}")
     click.echo(
@@ -635,5 +665,7 @@ Please provide output in EXACTLY this format:
 
     tip_msg = tip_message(f'View full strategies: open "{output_file}"')
     click.echo(f"\n{tip_msg}")
-    info_msg = info_message('To use with strategy command, manually copy to strategies.txt')
+    info_msg = info_message(
+        "To use with strategy command, manually copy to strategies.txt"
+    )
     click.echo(f"\n{info_msg}")
