@@ -18,7 +18,9 @@ from litassist.utils import (
     create_reasoning_prompt,
     save_command_output,
     show_command_completion,
-    warning_message, info_message, verifying_message,
+    warning_message,
+    info_message,
+    verifying_message,
     validate_file_size,
 )
 from litassist.llm import LLMClientFactory
@@ -50,10 +52,10 @@ def extractfacts(file, verify):
     all_text = ""
     source_files = []
     for f in file:
-        text = validate_file_size(f, max_size=1000000, file_type="source")
+        text = validate_file_size(f, max_size=3000000, file_type="source")
         source_files.append(os.path.basename(f))
         all_text += f"\n\n--- SOURCE: {os.path.basename(f)} ---\n\n{text}"
-    
+
     # Use existing chunking on combined text
     chunks = chunk_text(all_text, max_chars=CONFIG.max_chars)
 
@@ -63,11 +65,15 @@ def extractfacts(file, verify):
     # extractfacts always needs verification as it creates foundational documents
     if verify:
         click.echo(
-            warning_message("Note: --verify flag ignored - extractfacts command always uses verification for accuracy")
+            warning_message(
+                "Note: --verify flag ignored - extractfacts command always uses verification for accuracy"
+            )
         )
     elif not verify:
         click.echo(
-            info_message("Note: Extractfacts command automatically uses verification for accuracy")
+            info_message(
+                "Note: Extractfacts command automatically uses verification for accuracy"
+            )
         )
     verify = True  # Force verification for critical accuracy
 
@@ -96,7 +102,9 @@ def extractfacts(file, verify):
     else:
         # Multiple chunks - enhanced two-stage approach with better context preservation
         click.echo(
-            info_message("Processing large document in sections for comprehensive fact extraction...")
+            info_message(
+                "Processing large document in sections for comprehensive fact extraction..."
+            )
         )
         accumulated_facts = []
 
@@ -123,7 +131,9 @@ def extractfacts(file, verify):
                 accumulated_facts.append(content.strip())
 
         # Enhanced organization phase with better synthesis
-        click.echo(info_message("Organizing and synthesizing facts into structured format..."))
+        click.echo(
+            info_message("Organizing and synthesizing facts into structured format...")
+        )
         all_facts = "\n\n".join(accumulated_facts)
 
         # Use centralized format template for organizing
@@ -168,7 +178,10 @@ def extractfacts(file, verify):
     if len(source_files) > 3:
         slug += f"_and_{len(source_files)-3}_more"
     output_file = save_command_output(
-        "extractfacts", combined, slug, metadata={"Source Files": ", ".join(source_files)}
+        "extractfacts",
+        combined,
+        slug,
+        metadata={"Source Files": ", ".join(source_files)},
     )
 
     # Audit log
@@ -188,11 +201,15 @@ def extractfacts(file, verify):
     if len(source_files) > 3:
         source_desc += f" + {len(source_files)-3} more"
     stats = {
-        "Sources": f"{len(source_files)} files" if len(source_files) > 1 else source_files[0],
+        "Sources": (
+            f"{len(source_files)} files" if len(source_files) > 1 else source_files[0]
+        ),
         "Processed": chunk_desc,
         "Structure": "10 structured headings",
         "Verification": "Legal accuracy review applied",
     }
 
     show_command_completion("extractfacts", output_file, None, stats)
-    click.echo(info_message("To use with other commands, manually copy to case_facts.txt"))
+    click.echo(
+        info_message("To use with other commands, manually copy to case_facts.txt")
+    )

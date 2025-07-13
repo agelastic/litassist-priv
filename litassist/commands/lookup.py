@@ -132,8 +132,8 @@ def lookup(question, mode, extract, comprehensive, context):
             )
             links.extend([item.get("link") for item in res_comp.get("items", [])])
         except Exception as e:
-            click.echo(f"Warning: Comprehensive search failed: {e}")
-            logging.exception("Comprehensive search failed with secondary CSE", exc_info=e)
+            click.echo(f"Warning: Secondary CSE search failed: {e}")
+            logging.exception("Secondary CSE search failed", exc_info=e)
             # Continue with existing links from primary search
 
     # Display found links

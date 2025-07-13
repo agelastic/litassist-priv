@@ -273,10 +273,10 @@ def search_jade_via_google_cse(citation: str, timeout: int = 10) -> bool:
             citation.replace("(", "").replace(")", "").replace("[", "").replace("]", "")
         )
 
-        # Search Jade.io specifically
+        # Search using configured CSE
         res = (
             service.cse()
-            .list(q=search_query, cx=CONFIG.cse_id, num=10, siteSearch="jade.io")
+            .list(q=search_query, cx=CONFIG.cse_id, num=10)
             .execute()
         )
 
