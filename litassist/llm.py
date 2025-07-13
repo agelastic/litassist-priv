@@ -1016,39 +1016,16 @@ class LLMClient:
                 "content": primary_text + "\n\n" + self_critique,
             },
         ]
-        # Use deterministic settings for verification with appropriate token limits
-        # Note: o3-pro only supports specific parameters, so skip temperature override
-        if self.model == "openai/o3-pro":
-            params = {}  # o3-pro uses its default parameters
-        else:
-            params = {"temperature": 0, "top_p": 0.2}
-
-        # Add model-specific token limits for verification if enabled in config
+        # Use Claude 4 Opus for all verification, regardless of generation model
+        verification_client = LLMClient(
+            "anthropic/claude-opus-4", **self.default_params
+        )
+        params = {"temperature": 0, "top_p": 0.2}
         if CONFIG.use_token_limits:
-            # o3-pro uses max_completion_tokens instead of max_tokens
-            is_o3_pro = self.model == "openai/o3-pro"
-            token_param = "max_completion_tokens" if is_o3_pro else "max_tokens"
-
-            if "google/gemini" in self.model.lower():
-                params[token_param] = 8192  # Increased for full document verification
-            elif "anthropic/claude" in self.model.lower():
-                params[token_param] = 16384  # Increased for full document verification
-            elif "openai/gpt-4" in self.model.lower():
-                params[token_param] = 8192  # Increased for full document verification
-            elif self.model == "openai/o3-pro":
-                params[token_param] = 16384  # Increased for full document verification
-            elif "grok" in self.model.lower():
-                params[token_param] = 8192  # Increased for full document verification
-            else:
-                params[token_param] = (
-                    8192  # Default verification limit for full documents
-                )
-
-        # Use the complete method which handles o3-pro properly
-        verification_result, usage = self.complete(
+            params["max_tokens"] = 65536  # Large limit for full document verification
+        verification_result, usage = verification_client.complete(
             critique_prompt, skip_citation_verification=True, **params
         )
-
         return verification_result
 
     def validate_and_verify_citations(
@@ -1320,34 +1297,14 @@ class LLMClient:
             # This maintains backward compatibility
             return self.verify(primary_text)
 
-        # Use same verification logic with custom prompts
-        # Note: o3-pro only supports specific parameters, so skip temperature override
-        if self.model == "openai/o3-pro":
-            params = {}  # o3-pro uses its default parameters
-        else:
-            params = {"temperature": 0, "top_p": 0.2}
-
+        # Use Claude 4 Opus for all verification, regardless of generation model
+        verification_client = LLMClient(
+            "anthropic/claude-opus-4", **self.default_params
+        )
+        params = {"temperature": 0, "top_p": 0.2}
         if CONFIG.use_token_limits:
-            # o3-pro uses max_completion_tokens instead of max_tokens
-            is_o3_pro = self.model == "openai/o3-pro"
-            token_param = "max_completion_tokens" if is_o3_pro else "max_tokens"
-
-            if "google/gemini" in self.model.lower():
-                params[token_param] = 8192
-            elif "anthropic/claude" in self.model.lower():
-                params[token_param] = 16384 if level == "heavy" else 16384
-            elif "openai/gpt-4" in self.model.lower():
-                params[token_param] = 8192
-            elif self.model == "openai/o3-pro":
-                params[token_param] = 16384
-            elif "grok" in self.model.lower():
-                params[token_param] = 8192
-            else:
-                params[token_param] = 8192
-
-        # Use the complete method which handles o3-pro properly
-        verification_result, usage = self.complete(
+            params["max_tokens"] = 32768 if level == "light" else 65536
+        verification_result, usage = verification_client.complete(
             critique_prompt, skip_citation_verification=True, **params
         )
-
         return verification_result
