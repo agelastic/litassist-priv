@@ -12,6 +12,15 @@ import re
 import logging
 import glob
 
+# Token counting for research file analysis
+try:
+    import tiktoken
+
+    TIKTOKEN_AVAILABLE = True
+except ImportError:
+    TIKTOKEN_AVAILABLE = False
+    logging.warning("tiktoken not available, using fallback token counting")
+
 from litassist.config import CONFIG
 from litassist.utils import (
     read_document,
@@ -30,10 +39,95 @@ from litassist.utils import (
     info_message,
     verifying_message,
     tip_message,
-    error_message,
 )
 from litassist.llm import LLMClientFactory, LLMClient
 from litassist.prompts import PROMPTS
+
+
+def count_tokens_and_words(text: str) -> tuple[int, int]:
+    """
+    Count both tokens and words in text content.
+
+    Args:
+        text: The text content to analyze
+
+    Returns:
+        Tuple of (token_count, word_count)
+    """
+    if TIKTOKEN_AVAILABLE:
+        try:
+            # Use cl100k_base encoding (used by GPT-4, Claude, most modern models)
+            encoding = tiktoken.get_encoding("cl100k_base")
+            token_count = len(encoding.encode(text))
+        except Exception:
+            # Fallback: rough estimation (1 token ≈ 0.75 words)
+            token_count = int(len(text.split()) * 1.33)
+    else:
+        # Fallback: rough estimation (1 token ≈ 0.75 words)
+        token_count = int(len(text.split()) * 1.33)
+
+    word_count = len(text.split())
+    return token_count, word_count
+
+
+def analyze_research_size(research_contents: list, research_paths: list) -> dict:
+    """
+    Analyze the total size of research content and provide user feedback.
+
+    Args:
+        research_contents: List of research file contents
+        research_paths: List of research file paths for reporting
+
+    Returns:
+        Dictionary with analysis results and combined content
+    """
+    if not research_contents:
+        return {
+            "combined_content": "",
+            "total_tokens": 0,
+            "total_words": 0,
+            "file_count": 0,
+            "exceeds_threshold": False,
+        }
+
+    # Combine all research content
+    combined_content = "\n\nRESEARCH CONTEXT:\n" + "\n\n".join(research_contents)
+
+    # Count tokens and words
+    total_tokens, total_words = count_tokens_and_words(combined_content)
+
+    # Define threshold (128k tokens as conservative estimate)
+    TOKEN_THRESHOLD = 128_000
+    exceeds_threshold = total_tokens > TOKEN_THRESHOLD
+
+    # Display analysis to user
+    click.echo(
+        info_message(
+            f"Research files loaded: {len(research_contents)} files, "
+            f"{total_words:,} words, {total_tokens:,} tokens"
+        )
+    )
+
+    if exceeds_threshold:
+        click.echo(
+            warning_message(
+                f"Research content is very large ({total_tokens:,} tokens). "
+                f"This may impact verification due to context window limits, but proceeding anyway."
+            )
+        )
+        click.echo(
+            info_message(
+                "Consider using fewer or smaller research files if you encounter verification issues."
+            )
+        )
+
+    return {
+        "combined_content": combined_content,
+        "total_tokens": total_tokens,
+        "total_words": total_words,
+        "file_count": len(research_contents),
+        "exceeds_threshold": exceeds_threshold,
+    }
 
 
 def regenerate_bad_strategies(
@@ -279,7 +373,9 @@ def expand_glob_patterns(ctx, param, value):
     multiple=True,
     type=click.Path(),  # Remove exists=True since we'll check in callback
     callback=expand_glob_patterns,
-    help="Optional: Lookup report files to inform orthodox strategies. Supports glob patterns. Use multiple times: --research file1.txt --research 'outputs/lookup_*.txt'",
+    help="Optional: Lookup report files to inform orthodox strategies. Supports glob patterns. "
+    "Use multiple times: --research file1.txt --research 'outputs/lookup_*.txt'. "
+    "Large research files (>128k tokens) may impact verification performance.",
 )
 @timed
 def brainstorm(facts, side, area, research):
@@ -369,9 +465,21 @@ def brainstorm(facts, side, area, research):
                     research_contexts.append(f.read().strip())
             except Exception as e:
                 raise click.ClickException(f"Error reading research file '{path}': {e}")
-        research_context = "\n\nRESEARCH CONTEXT:\n" + "\n\n".join(research_contexts)
+
+        # Analyze research size and provide user feedback
+        research_analysis = analyze_research_size(research_contexts, list(research))
+        research_context = research_analysis["combined_content"]
+
+        # Log research analysis for debugging
+        logging.debug(f"Research analysis: {research_analysis}")
     else:
         research_context = ""
+        research_analysis = {
+            "total_tokens": 0,
+            "total_words": 0,
+            "file_count": 0,
+            "exceeds_threshold": False,
+        }
 
     # Generate Orthodox Strategies (conservative approach)
     click.echo("Generating orthodox strategies...")
@@ -631,6 +739,7 @@ Please provide output in EXACTLY this format:
             "inputs": {
                 "facts_files": facts_sources,
                 "research_files": list(research) if research else [],
+                "research_analysis": research_analysis,
             },
             "params": "verify=True (auto-enabled for Grok), orthodox_temp=0.3, unorthodox_temp=0.9, analysis_temp=0.4",
             "response": combined_content,  # Log the final, verified content
