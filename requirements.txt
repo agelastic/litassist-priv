@@ -1,5 +1,6 @@
 click
 openai==0.28.1
+tiktoken
 tenacity>=8.2.3
 pinecone-client==2.2.4
 pypdf

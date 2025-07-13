@@ -16,8 +16,8 @@ verification:
     MANDATORY: Copy every single word from the original document exactly as written.
     If a section needs no changes, copy it word-for-word in its entirety.
 
-    Example: If you see "## MOST LIKELY TO SUCCEED" followed by 5 paragraphs,
-    you MUST include all 5 paragraphs in full, not a placeholder.
+    Example: If you see "## MOST LIKELY TO SUCCEED" followed by 3-10 paragraphs,
+    you MUST include all these paragraphs in full, not a placeholder.
 
     Review the document above. Your review must identify and correct issues in two areas:
     1.  **Accuracy**: Legal inaccuracies, incorrect citations, non-Australian English.

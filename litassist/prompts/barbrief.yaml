@@ -15,6 +15,23 @@ barbrief:
     - Ensure internal consistency and cross-references
     - Highlight critical issues requiring counsel's attention
     
+    CRITICAL - DO NOT HALLUCINATE:
+    - NEVER invent names of solicitors, barristers, firms, or witnesses
+    - NEVER create specific addresses, phone numbers, or email addresses
+    - NEVER invent procedural history or court actions not explicitly stated
+    - Use placeholders for any information not provided:
+      * Solicitor: [SOLICITOR NAME TO BE PROVIDED]
+      * Firm: [SOLICITOR FIRM TO BE PROVIDED]
+      * Counsel: [COUNSEL TO BE BRIEFED]
+      * Witness names: [WITNESS NAME - TO BE CONFIRMED]
+      * Contact details: [CONTACT DETAILS TO BE PROVIDED]
+      * Case number: [CASE NUMBER TO BE ALLOCATED]
+      * Procedural status: [PROCEDURAL STATUS TO BE CONFIRMED]
+    - For procedural position, ONLY state what is explicitly mentioned in the source documents
+    - If no procedural history is provided, state "No proceedings have yet been commenced" or similar
+    - Do NOT assume pleadings, discovery, subpoenas, or offers have occurred unless explicitly stated
+    - Only use actual names and facts when explicitly provided in the case facts or documents
+    
     The brief must be practical, actionable, and suitable for immediate use in proceedings.
 
   # Main prompt template for brief generation

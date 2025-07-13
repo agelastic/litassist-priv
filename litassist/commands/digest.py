@@ -8,6 +8,9 @@ or identify potential legal issues in each section.
 
 import click
 import os
+import atexit
+import signal
+import sys
 
 from litassist.config import CONFIG
 from litassist.prompts import PROMPTS
@@ -18,9 +21,9 @@ from litassist.utils import (
     timed,
     save_command_output,
     show_command_completion,
-    saved_message, info_message,
+    saved_message, info_message, warning_message, error_message, success_message,
 )
-from litassist.llm import LLMClientFactory
+from litassist.llm import LLMClientFactory, NonRetryableAPIError
 
 
 @click.command()
@@ -55,9 +58,63 @@ def digest(file, mode, hint):
     # Process all files
     all_documents_output = []
     source_files = []
+    all_chunk_errors = []  # Track errors across all files
+    
+    # Emergency save functionality
+    partial_save_data = {
+        'chunks': [],
+        'metadata': {'mode': mode, 'hint': hint}
+    }
+    
+    def emergency_save():
+        """Save partial results on unexpected exit"""
+        if partial_save_data['chunks']:
+            try:
+                content = "\n\n".join([
+                    f"=== Partial Result {i+1} ===\n{chunk}" 
+                    for i, chunk in enumerate(partial_save_data['chunks'])
+                ])
+                emergency_file = save_command_output(
+                    f"digest_{mode}_partial",
+                    content + "\n\n[INCOMPLETE - Process interrupted]",
+                    "emergency_save",
+                    metadata=partial_save_data['metadata']
+                )
+                click.echo(warning_message(f"\nPartial results saved to: {emergency_file}"))
+            except:
+                pass  # Best effort
+    
+    # Register handlers for emergency save
+    atexit.register(emergency_save)
+    
+    def signal_handler(signum, frame):
+        emergency_save()
+        sys.exit(1)
+    
+    signal.signal(signal.SIGINT, signal_handler)
     
     # Create client using factory with mode-specific configuration
     client = LLMClientFactory.for_command("digest", mode)
+    
+    # Model-aware chunk sizing
+    MODEL_CHUNK_LIMITS = {
+        "google": 30000,          # Conservative for Gemini
+        "anthropic": 150000,      # Claude handles larger chunks
+        "openai": 100000,         # GPT-4 limit
+        "x-ai": 100000,           # Grok limit
+    }
+    
+    # Determine appropriate chunk size
+    model_family = client.model.split('/')[0] if '/' in client.model else 'openai'
+    model_chunk_limit = MODEL_CHUNK_LIMITS.get(model_family, 100000)  # Default 100K for unknown models
+    effective_chunk_size = min(CONFIG.max_chars, model_chunk_limit)
+    
+    # Warn user if using reduced chunk size
+    if effective_chunk_size < CONFIG.max_chars:
+        click.echo(info_message(
+            f"Using reduced chunk size of {effective_chunk_size:,} characters "
+            f"for {client.model} (configured: {CONFIG.max_chars:,})"
+        ))
     
     # Collect comprehensive log data for all files
     comprehensive_log = {
@@ -68,15 +125,33 @@ def digest(file, mode, hint):
         "total_usage": {"prompt_tokens": 0, "completion_tokens": 0, "total_tokens": 0},
     }
     
+    # Calculate total size and warn if large
+    total_chars = 0
+    for f in file:
+        try:
+            total_chars += len(read_document(f))
+        except:
+            pass  # Skip files that can't be read
+    
+    if total_chars > 500000:
+        click.echo(warning_message(
+            f"Large input detected ({total_chars:,} characters). "
+            "Processing will continue even if some chunks fail."
+        ))
+        click.echo(info_message("Partial results will be saved in case of errors."))
+    
     # Process each file
     for file_path in file:
         msg = saved_message(f'Processing: {file_path}')
         click.echo(f"\n{msg}")
         source_files.append(os.path.basename(file_path))
         
+        # Update metadata for emergency save
+        partial_save_data['metadata']['Source Files'] = source_files
+        
         # Read and split the document
         text = read_document(file_path)
-        chunks = chunk_text(text, max_chars=CONFIG.max_chars)
+        chunks = chunk_text(text, max_chars=effective_chunk_size)
         comprehensive_log["total_chunks_processed"] += len(chunks)
         
         # Collect output for this file
@@ -156,6 +231,8 @@ def digest(file, mode, hint):
         else:
             # Multiple chunks - need consolidation approach
             chunk_analyses = []
+            failed_chunks = []
+            chunk_errors = []
 
             with click.progressbar(
                 chunks, label=f"Analyzing sections of {os.path.basename(file_path)}"
@@ -182,20 +259,99 @@ def digest(file, mode, hint):
                                 {"role": "user", "content": chunk_prompt},
                             ]
                         )
+                        chunk_analyses.append(content)
+                        
+                        # Update partial save data
+                        partial_save_data['chunks'].append(f"File: {os.path.basename(file_path)}, Chunk {idx}\n{content}")
+
+                        # Collect data for comprehensive log
+                        comprehensive_log["responses"].append(
+                            {"file": file_path, "chunk": idx, "content": content, "usage": usage}
+                        )
+
+                        # Accumulate usage statistics
+                        for key in comprehensive_log["total_usage"]:
+                            comprehensive_log["total_usage"][key] += usage.get(key, 0)
+                    
+                    except NonRetryableAPIError as e:
+                        # Don't retry, but continue processing other chunks
+                        click.echo(error_message(f"\nChunk {idx} too large: {e}"))
+                        failed_chunks.append(idx)
+                        chunk_errors.append((idx, str(e)))
+                        
+                        # Try to process with smaller sub-chunks
+                        if len(chunk) > 50000:
+                            click.echo(info_message(f"Attempting to process chunk {idx} in smaller pieces..."))
+                            sub_chunks = chunk_text(chunk, max_chars=30000)
+                            sub_results = []
+                            
+                            for sub_idx, sub_chunk in enumerate(sub_chunks, 1):
+                                try:
+                                    sub_prompt = PROMPTS.get(
+                                        f"processing.digest.chunk_analysis_{mode}",
+                                        documents=sub_chunk,
+                                        chunk_num=f"{idx}.{sub_idx}",
+                                        total_chunks=len(chunks),
+                                        hint=hint or "general analysis",
+                                    )
+                                    sub_content, sub_usage = client.complete(
+                                        [
+                                            {
+                                                "role": "system",
+                                                "content": PROMPTS.get("processing.digest.system_prompt"),
+                                            },
+                                            {"role": "user", "content": sub_prompt},
+                                        ]
+                                    )
+                                    sub_results.append(sub_content)
+                                    
+                                    # Log sub-chunk usage
+                                    for key in comprehensive_log["total_usage"]:
+                                        comprehensive_log["total_usage"][key] += sub_usage.get(key, 0)
+                                        
+                                except Exception as sub_e:
+                                    click.echo(warning_message(f"Skipping sub-chunk {idx}.{sub_idx}: {sub_e}"))
+                            
+                            if sub_results:
+                                combined_sub_result = f"[Chunk {idx} processed in {len(sub_results)} parts]\n" + "\n---\n".join(sub_results)
+                                chunk_analyses.append(combined_sub_result)
+                                failed_chunks.remove(idx)  # It partially succeeded
+                                
+                                # Update partial save data
+                                partial_save_data['chunks'].append(f"File: {os.path.basename(file_path)}, Chunk {idx} (sub-chunks)\n{combined_sub_result}")
+                                
+                                comprehensive_log["responses"].append({
+                                    "file": file_path, 
+                                    "chunk": f"{idx} (sub-chunks)", 
+                                    "content": combined_sub_result, 
+                                    "usage": {"note": "See individual sub-chunks"}
+                                })
+                        continue
+                        
                     except Exception as e:
-                        raise click.ClickException(f"LLM error in digest chunk {idx} of {file_path}: {e}")
+                        # Other errors - log but continue
+                        click.echo(error_message(f"\nError in chunk {idx}: {e}"))
+                        failed_chunks.append(idx)
+                        chunk_errors.append((idx, str(e)))
+                        continue
 
-                    chunk_analyses.append(content)
-
-                    # Collect data for comprehensive log
-                    comprehensive_log["responses"].append(
-                        {"file": file_path, "chunk": idx, "content": content, "usage": usage}
-                    )
-
-                    # Accumulate usage statistics
-                    for key in comprehensive_log["total_usage"]:
-                        comprehensive_log["total_usage"][key] += usage.get(key, 0)
-
+            # After processing all chunks, check if we have any results
+            if not chunk_analyses:
+                raise click.ClickException("All chunks failed to process. Please try with smaller files or adjust max_chars in config.")
+            
+            # Store errors for later display
+            if chunk_errors:
+                all_chunk_errors.extend([(file_path, idx, err) for idx, err in chunk_errors])
+            
+            # Show summary
+            if failed_chunks:
+                click.echo(warning_message(
+                    f"\nProcessed {len(chunk_analyses)} of {len(chunks)} chunks successfully. "
+                    f"Failed chunks: {failed_chunks}"
+                ))
+            else:
+                click.echo(success_message(f"\nAll {len(chunks)} chunks processed successfully!"))
+            
             # Now consolidate all chunk analyses into unified digest
             click.echo(info_message(f"Consolidating analyses for {os.path.basename(file_path)}..."))
 
@@ -299,3 +455,14 @@ def digest(file, mode, hint):
     }
 
     show_command_completion(f"digest {mode}", output_file, None, stats)
+    
+    # Display any chunk processing errors
+    if all_chunk_errors:
+        click.echo("\n" + error_message("=== CHUNK PROCESSING ERRORS ==="))
+        for file_path, chunk_idx, error in all_chunk_errors:
+            click.echo(f"{os.path.basename(file_path)} - Chunk {chunk_idx}: {error}")
+        click.echo(info_message("\nDespite errors, partial results have been saved."))
+    
+    # Unregister emergency save since we completed successfully
+    atexit.unregister(emergency_save)
+    signal.signal(signal.SIGINT, signal.SIG_DFL)

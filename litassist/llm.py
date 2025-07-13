@@ -45,6 +45,12 @@ class StreamingAPIError(Exception):
     pass
 
 
+class NonRetryableAPIError(Exception):
+    """Errors that should not be retried (413, 400 with specific messages)."""
+
+    pass
+
+
 try:
     import aiohttp
 except ImportError:
@@ -587,9 +593,26 @@ class LLMClient:
                         raise Exception(f"API Error: {error_message}")
                 return resp
             except Exception as e:
+                # Check if it's a 413 or similar non-retryable error
+                error_str = str(e)
+                if any(phrase in error_str.lower() for phrase in 
+                       ["413", "payload too large", "prompt is too long", "request entity too large"]):
+                    raise NonRetryableAPIError(f"Request too large: {error_str}")
+                
+                # Also check response codes in the error if available
+                if hasattr(e, 'response') and hasattr(e.response, 'status_code'):
+                    if e.response.status_code == 413:
+                        raise NonRetryableAPIError(f"HTTP 413: {error_str}")
+                
+                # Check for specific OpenAI error types
+                if hasattr(e, 'error') and isinstance(e.error, dict):
+                    error_code = e.error.get('code', 0)
+                    if error_code == 413:
+                        raise NonRetryableAPIError(f"API Error 413: {error_str}")
+                
                 # Retry on "Error processing stream" or similar streaming errors
-                if "Error processing stream" in str(e) or "streaming" in str(e).lower():
-                    raise StreamingAPIError(str(e))
+                if "Error processing stream" in error_str or "streaming" in error_str.lower():
+                    raise StreamingAPIError(error_str)
                 raise
 
         @tenacity.retry(

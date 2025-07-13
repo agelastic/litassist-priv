@@ -12,6 +12,13 @@ import glob
 import os
 from typing import List, Optional, Dict, Any
 
+# Token counting for input size analysis
+try:
+    import tiktoken
+    TIKTOKEN_AVAILABLE = True
+except ImportError:
+    TIKTOKEN_AVAILABLE = False
+
 from litassist.prompts import PROMPTS
 from litassist.utils import (
     read_document,
@@ -21,6 +28,8 @@ from litassist.utils import (
     save_command_output,
     show_command_completion,
     verify_content_if_needed,
+    warning_message,
+    saved_message,
 )
 from litassist.llm import LLMClientFactory
 from litassist.citation_verify import verify_all_citations
@@ -52,6 +61,32 @@ def validate_case_facts(content: str) -> bool:
     
     content_lower = content.lower()
     return all(heading.lower() in content_lower for heading in required_headings)
+
+
+def count_tokens_and_words(text: str) -> tuple[int, int]:
+    """
+    Count both tokens and words in text content.
+
+    Args:
+        text: The text content to analyze
+
+    Returns:
+        Tuple of (token_count, word_count)
+    """
+    if TIKTOKEN_AVAILABLE:
+        try:
+            # Use cl100k_base encoding (used by GPT-4, Claude, most modern models)
+            encoding = tiktoken.get_encoding("cl100k_base")
+            token_count = len(encoding.encode(text))
+        except Exception:
+            # Fallback: rough estimation (1 token ≈ 0.75 words)
+            token_count = int(len(text.split()) * 1.33)
+    else:
+        # Fallback: rough estimation (1 token ≈ 0.75 words)
+        token_count = int(len(text.split()) * 1.33)
+
+    word_count = len(text.split())
+    return token_count, word_count
 
 
 @timed
@@ -236,6 +271,24 @@ def barbrief(
         hearing_type,
     )
     
+    # Estimate total input size
+    total_content = (
+        case_facts_content + "\n" +
+        strategies_content + "\n" +
+        "\n".join(research_docs) + "\n" +
+        "\n".join(supporting_docs)
+    )
+    total_tokens, _ = count_tokens_and_words(total_content)
+    
+    # Warn if large
+    if total_tokens > 80000:
+        click.echo(
+            warning_message(
+                f"Large input detected ({total_tokens:,} tokens). "
+                f"This may exceed API limits. Consider using fewer documents."
+            )
+        )
+    
     # Get LLM client
     try:
         client = LLMClientFactory.for_command("barbrief")
@@ -274,6 +327,11 @@ def barbrief(
         elif "api key" in str(e).lower():
             raise click.ClickException(
                 "API key error. Please check your OpenAI/OpenRouter configuration."
+            )
+        elif "error occurred while processing" in str(e).lower():
+            raise click.ClickException(
+                f"API processing error (input was {total_tokens:,} tokens). "
+                f"Try with fewer documents. Error: {e}"
             )
         else:
             raise click.ClickException(f"LLM API error: {e}")
@@ -315,4 +373,9 @@ def barbrief(
     )
     
     # Final verification if needed (skip citation validation if already done)
-    verify_content_if_needed(client, content, "barbrief", verify, citation_already_verified=verify)
+    verified_content, was_verified = verify_content_if_needed(client, content, "barbrief", verify, citation_already_verified=verify)
+    
+    # Save verified version if verification was performed
+    if was_verified and verified_content != content:
+        verified_file = save_command_output("barbrief", verified_content, f"{hearing_type}_verified")
+        click.echo(saved_message(f'Verified brief saved to: "{verified_file}"'))
