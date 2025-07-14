@@ -12,13 +12,6 @@ import glob
 import os
 from typing import List, Optional, Dict, Any
 
-# Token counting for input size analysis
-try:
-    import tiktoken
-    TIKTOKEN_AVAILABLE = True
-except ImportError:
-    TIKTOKEN_AVAILABLE = False
-
 from litassist.prompts import PROMPTS
 from litassist.utils import (
     read_document,
@@ -27,9 +20,9 @@ from litassist.utils import (
     create_reasoning_prompt,
     save_command_output,
     show_command_completion,
-    verify_content_if_needed,
     warning_message,
     saved_message,
+    count_tokens_and_words,
 )
 from litassist.llm import LLMClientFactory
 from litassist.citation_verify import verify_all_citations
@@ -61,32 +54,6 @@ def validate_case_facts(content: str) -> bool:
     
     content_lower = content.lower()
     return all(heading.lower() in content_lower for heading in required_headings)
-
-
-def count_tokens_and_words(text: str) -> tuple[int, int]:
-    """
-    Count both tokens and words in text content.
-
-    Args:
-        text: The text content to analyze
-
-    Returns:
-        Tuple of (token_count, word_count)
-    """
-    if TIKTOKEN_AVAILABLE:
-        try:
-            # Use cl100k_base encoding (used by GPT-4, Claude, most modern models)
-            encoding = tiktoken.get_encoding("cl100k_base")
-            token_count = len(encoding.encode(text))
-        except Exception:
-            # Fallback: rough estimation (1 token ≈ 0.75 words)
-            token_count = int(len(text.split()) * 1.33)
-    else:
-        # Fallback: rough estimation (1 token ≈ 0.75 words)
-        token_count = int(len(text.split()) * 1.33)
-
-    word_count = len(text.split())
-    return token_count, word_count
 
 
 @timed
@@ -371,11 +338,3 @@ def barbrief(
         output_file,
         stats={"Tokens used": usage.get("total_tokens")},
     )
-    
-    # Final verification if needed (skip citation validation if already done)
-    verified_content, was_verified = verify_content_if_needed(client, content, "barbrief", verify, citation_already_verified=verify)
-    
-    # Save verified version if verification was performed
-    if was_verified and verified_content != content:
-        verified_file = save_command_output("barbrief", verified_content, f"{hearing_type}_verified")
-        click.echo(saved_message(f'Verified brief saved to: "{verified_file}"'))

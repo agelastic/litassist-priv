@@ -537,6 +537,41 @@ def create_embeddings(texts: List[str]) -> List[Any]:
     return openai.Embedding.create(input=texts, model=CONFIG.emb_model).data
 
 
+def count_tokens_and_words(text: str) -> tuple[int, int]:
+    """
+    Count both tokens and words in text content.
+
+    Args:
+        text: The text content to analyze
+
+    Returns:
+        Tuple of (token_count, word_count)
+    """
+    # Try to import tiktoken if available
+    try:
+        import tiktoken
+        TIKTOKEN_AVAILABLE = True
+    except ImportError:
+        TIKTOKEN_AVAILABLE = False
+        
+    if TIKTOKEN_AVAILABLE:
+        try:
+            # Use cl100k_base encoding (used by GPT-4, Claude, most modern models)
+            encoding = tiktoken.get_encoding("cl100k_base")
+            token_count = len(encoding.encode(text))
+        except Exception as e:
+            # Log warning and fall back to estimation
+            logging.warning(f"tiktoken token counting failed: {e}. Falling back to word count estimation.")
+            # Fallback: rough estimation (1 token ≈ 0.75 words)
+            token_count = int(len(text.split()) * 1.33)
+    else:
+        # Fallback: rough estimation (1 token ≈ 0.75 words)
+        token_count = int(len(text.split()) * 1.33)
+
+    word_count = len(text.split())
+    return token_count, word_count
+
+
 @timed
 def chunk_text(text: str, max_chars: int = 20000) -> List[str]:
     """

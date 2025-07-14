@@ -12,15 +12,6 @@ import re
 import logging
 import glob
 
-# Token counting for research file analysis
-try:
-    import tiktoken
-
-    TIKTOKEN_AVAILABLE = True
-except ImportError:
-    TIKTOKEN_AVAILABLE = False
-    logging.warning("tiktoken not available, using fallback token counting")
-
 from litassist.config import CONFIG
 from litassist.utils import (
     read_document,
@@ -39,35 +30,10 @@ from litassist.utils import (
     info_message,
     verifying_message,
     tip_message,
+    count_tokens_and_words,
 )
 from litassist.llm import LLMClientFactory, LLMClient
 from litassist.prompts import PROMPTS
-
-
-def count_tokens_and_words(text: str) -> tuple[int, int]:
-    """
-    Count both tokens and words in text content.
-
-    Args:
-        text: The text content to analyze
-
-    Returns:
-        Tuple of (token_count, word_count)
-    """
-    if TIKTOKEN_AVAILABLE:
-        try:
-            # Use cl100k_base encoding (used by GPT-4, Claude, most modern models)
-            encoding = tiktoken.get_encoding("cl100k_base")
-            token_count = len(encoding.encode(text))
-        except Exception:
-            # Fallback: rough estimation (1 token ≈ 0.75 words)
-            token_count = int(len(text.split()) * 1.33)
-    else:
-        # Fallback: rough estimation (1 token ≈ 0.75 words)
-        token_count = int(len(text.split()) * 1.33)
-
-    word_count = len(text.split())
-    return token_count, word_count
 
 
 def analyze_research_size(research_contents: list, research_paths: list) -> dict:

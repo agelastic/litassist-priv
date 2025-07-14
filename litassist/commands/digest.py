@@ -8,9 +8,9 @@ or identify potential legal issues in each section.
 
 import click
 import os
+import sys
 import atexit
 import signal
-import sys
 
 from litassist.config import CONFIG
 from litassist.prompts import PROMPTS
@@ -81,8 +81,9 @@ def digest(file, mode, hint):
                     metadata=partial_save_data['metadata']
                 )
                 click.echo(warning_message(f"\nPartial results saved to: {emergency_file}"))
-            except:
-                pass  # Best effort
+            except Exception as e:
+                # Use stderr for last-resort logging as stdout may be redirected
+                print(f"\n[EMERGENCY SAVE FAILED] Could not save partial results: {e}", file=sys.stderr)
     
     # Register handlers for emergency save
     atexit.register(emergency_save)
@@ -130,7 +131,7 @@ def digest(file, mode, hint):
     for f in file:
         try:
             total_chars += len(read_document(f))
-        except:
+        except Exception:
             pass  # Skip files that can't be read
     
     if total_chars > 500000:

@@ -137,10 +137,8 @@ class TestBarbriefCommand:
     @patch("litassist.commands.barbrief.read_document")
     @patch("litassist.commands.barbrief.LLMClientFactory")
     @patch("litassist.commands.barbrief.save_command_output")
-    @patch("litassist.commands.barbrief.verify_content_if_needed")
     def test_barbrief_minimal(
         self,
-        mock_verify,
         mock_save,
         mock_factory,
         mock_read,
@@ -219,10 +217,8 @@ class TestBarbriefCommand:
     @patch("litassist.commands.barbrief.read_document")
     @patch("litassist.commands.barbrief.LLMClientFactory")
     @patch("litassist.commands.barbrief.save_command_output")
-    @patch("litassist.commands.barbrief.verify_content_if_needed")
     def test_barbrief_with_all_options(
         self,
-        mock_verify,
         mock_save,
         mock_factory,
         mock_read,
@@ -301,10 +297,8 @@ class TestBarbriefCommand:
     @patch("litassist.commands.barbrief.LLMClientFactory")
     @patch("litassist.commands.barbrief.save_command_output")
     @patch("litassist.commands.barbrief.verify_all_citations")
-    @patch("litassist.commands.barbrief.verify_content_if_needed")
     def test_barbrief_with_citation_verification(
         self,
-        mock_verify_content,
         mock_citation_verify,
         mock_save,
         mock_factory,
