@@ -23,11 +23,77 @@ from litassist.utils import (
     validate_side_area_combination,
     validate_file_size_limit,
     save_command_output,
-    warning_message, success_message, saved_message, stats_message,
-    info_message, verifying_message, tip_message
+    warning_message,
+    success_message,
+    saved_message,
+    stats_message,
+    info_message,
+    verifying_message,
+    tip_message,
+    count_tokens_and_words,
 )
 from litassist.llm import LLMClientFactory, LLMClient
 from litassist.prompts import PROMPTS
+
+
+def analyze_research_size(research_contents: list, research_paths: list) -> dict:
+    """
+    Analyze the total size of research content and provide user feedback.
+
+    Args:
+        research_contents: List of research file contents
+        research_paths: List of research file paths for reporting
+
+    Returns:
+        Dictionary with analysis results and combined content
+    """
+    if not research_contents:
+        return {
+            "combined_content": "",
+            "total_tokens": 0,
+            "total_words": 0,
+            "file_count": 0,
+            "exceeds_threshold": False,
+        }
+
+    # Combine all research content
+    combined_content = "\n\nRESEARCH CONTEXT:\n" + "\n\n".join(research_contents)
+
+    # Count tokens and words
+    total_tokens, total_words = count_tokens_and_words(combined_content)
+
+    # Define threshold (128k tokens as conservative estimate)
+    TOKEN_THRESHOLD = 128_000
+    exceeds_threshold = total_tokens > TOKEN_THRESHOLD
+
+    # Display analysis to user
+    click.echo(
+        info_message(
+            f"Research files loaded: {len(research_contents)} files, "
+            f"{total_words:,} words, {total_tokens:,} tokens"
+        )
+    )
+
+    if exceeds_threshold:
+        click.echo(
+            warning_message(
+                f"Research content is very large ({total_tokens:,} tokens). "
+                f"This may impact verification due to context window limits, but proceeding anyway."
+            )
+        )
+        click.echo(
+            info_message(
+                "Consider using fewer or smaller research files if you encounter verification issues."
+            )
+        )
+
+    return {
+        "combined_content": combined_content,
+        "total_tokens": total_tokens,
+        "total_words": total_words,
+        "file_count": len(research_contents),
+        "exceeds_threshold": exceeds_threshold,
+    }
 
 
 def regenerate_bad_strategies(
@@ -101,7 +167,9 @@ def regenerate_bad_strategies(
             break
 
         click.echo(
-            info_message(f"Regeneration attempt {retry_attempt + 1}: {len(strategies_to_regenerate)} strategies need fixing")
+            info_message(
+                f"Regeneration attempt {retry_attempt + 1}: {len(strategies_to_regenerate)} strategies need fixing"
+            )
         )
 
         remaining_to_regenerate = []
@@ -136,12 +204,16 @@ Key principles: [Comprehensive legal principles or precedents with full case cit
                 new_citation_issues = client.validate_citations(new_strategy)
                 if new_citation_issues:
                     click.echo(
-                        warning_message(f"    Strategy {strategy_num}: Still has citation issues after regeneration")
+                        warning_message(
+                            f"    Strategy {strategy_num}: Still has citation issues after regeneration"
+                        )
                     )
                     remaining_to_regenerate.append((strategy_num, bad_strategy))
                 else:
                     click.echo(
-                        success_message(f"    Strategy {strategy_num}: Successfully regenerated with clean citations")
+                        success_message(
+                            f"    Strategy {strategy_num}: Successfully regenerated with clean citations"
+                        )
                     )
                     # Strip any headers from the regenerated strategy
                     new_strategy = re.sub(
@@ -151,7 +223,7 @@ Key principles: [Comprehensive legal principles or precedents with full case cit
 
             except Exception as e:
                 click.echo(
-                    f"    💥 Strategy {strategy_num}: Regeneration failed - {str(e)}"
+                    f"    [FAILED] Strategy {strategy_num}: Regeneration failed - {str(e)}"
                 )
                 remaining_to_regenerate.append((strategy_num, bad_strategy))
 
@@ -160,16 +232,26 @@ Key principles: [Comprehensive legal principles or precedents with full case cit
     # Report final status
     if strategies_to_regenerate:
         click.echo(
-            warning_message(f"  {len(strategies_to_regenerate)} {strategy_type} strategies still have citation issues after {max_retries} attempts")
+            warning_message(
+                f"  {len(strategies_to_regenerate)} {strategy_type} strategies still have citation issues after {max_retries} attempts"
+            )
         )
         click.echo(
-            info_message(f"    Excluding these strategies: {[num for num, _ in strategies_to_regenerate]}")
+            info_message(
+                f"    Excluding these strategies: {[num for num, _ in strategies_to_regenerate]}"
+            )
         )
     else:
-        click.echo(success_message(f"  All {strategy_type} strategies now have verified citations"))
+        click.echo(
+            success_message(
+                f"  All {strategy_type} strategies now have verified citations"
+            )
+        )
 
     click.echo(
-        stats_message(f"  Final result: {len(strategy_results)} verified {strategy_type} strategies")
+        stats_message(
+            f"  Final result: {len(strategy_results)} verified {strategy_type} strategies"
+        )
     )
 
     # Reconstruct content with final verified strategies only
@@ -257,7 +339,9 @@ def expand_glob_patterns(ctx, param, value):
     multiple=True,
     type=click.Path(),  # Remove exists=True since we'll check in callback
     callback=expand_glob_patterns,
-    help="Optional: Lookup report files to inform orthodox strategies. Supports glob patterns. Use multiple times: --research file1.txt --research 'outputs/lookup_*.txt'",
+    help="Optional: Lookup report files to inform orthodox strategies. Supports glob patterns. "
+    "Use multiple times: --research file1.txt --research 'outputs/lookup_*.txt'. "
+    "Large research files (>128k tokens) may impact verification performance.",
 )
 @timed
 def brainstorm(facts, side, area, research):
@@ -347,9 +431,21 @@ def brainstorm(facts, side, area, research):
                     research_contexts.append(f.read().strip())
             except Exception as e:
                 raise click.ClickException(f"Error reading research file '{path}': {e}")
-        research_context = "\n\nRESEARCH CONTEXT:\n" + "\n\n".join(research_contexts)
+
+        # Analyze research size and provide user feedback
+        research_analysis = analyze_research_size(research_contexts, list(research))
+        research_context = research_analysis["combined_content"]
+
+        # Log research analysis for debugging
+        logging.debug(f"Research analysis: {research_analysis}")
     else:
         research_context = ""
+        research_analysis = {
+            "total_tokens": 0,
+            "total_words": 0,
+            "file_count": 0,
+            "exceeds_threshold": False,
+        }
 
     # Generate Orthodox Strategies (conservative approach)
     click.echo("Generating orthodox strategies...")
@@ -408,7 +504,9 @@ Please provide output in EXACTLY this format:
     orthodox_citation_issues = orthodox_client.validate_citations(orthodox_content)
     if orthodox_citation_issues:
         click.echo(
-            info_message(f"Found {len(orthodox_citation_issues)-1} citation issues in orthodox strategies - fixing...")
+            info_message(
+                f"Found {len(orthodox_citation_issues)-1} citation issues in orthodox strategies - fixing..."
+            )
         )
         orthodox_content = regenerate_bad_strategies(
             orthodox_client, orthodox_content, orthodox_base_prompt, "orthodox"
@@ -474,7 +572,9 @@ Please provide output in EXACTLY this format:
     )
     if unorthodox_citation_issues:
         click.echo(
-            info_message(f"Found {len(unorthodox_citation_issues)-1} citation issues in unorthodox strategies - fixing...")
+            info_message(
+                f"Found {len(unorthodox_citation_issues)-1} citation issues in unorthodox strategies - fixing..."
+            )
         )
         unorthodox_content = regenerate_bad_strategies(
             unorthodox_client, unorthodox_content, unorthodox_base_prompt, "unorthodox"
@@ -573,7 +673,9 @@ Please provide output in EXACTLY this format:
         citation_issues = analysis_client.validate_citations(combined_content)
         if citation_issues:
             # Citation warnings are shown in console but not saved separately
-            click.echo(warning_message(f"{len(citation_issues)} citation warnings found"))
+            click.echo(
+                warning_message(f"{len(citation_issues)} citation warnings found")
+            )
 
     except Exception as e:
         raise click.ClickException(f"Verification error during brainstorming: {e}")
@@ -603,6 +705,7 @@ Please provide output in EXACTLY this format:
             "inputs": {
                 "facts_files": facts_sources,
                 "research_files": list(research) if research else [],
+                "research_analysis": research_analysis,
             },
             "params": "verify=True (auto-enabled for Grok), orthodox_temp=0.3, unorthodox_temp=0.9, analysis_temp=0.4",
             "response": combined_content,  # Log the final, verified content
@@ -623,7 +726,9 @@ Please provide output in EXACTLY this format:
     # Parse the actual strategies generated
     parsed_result = parse_strategies_file(combined_content)
 
-    msg = stats_message(f'Generated strategies for {side.capitalize()} in {area.capitalize()} law:')
+    msg = stats_message(
+        f"Generated strategies for {side.capitalize()} in {area.capitalize()} law:"
+    )
     click.echo(f"\n{msg}")
     click.echo(f"   • Orthodox strategies: {parsed_result.get('orthodox_count', 0)}")
     click.echo(
@@ -635,5 +740,7 @@ Please provide output in EXACTLY this format:
 
     tip_msg = tip_message(f'View full strategies: open "{output_file}"')
     click.echo(f"\n{tip_msg}")
-    info_msg = info_message('To use with strategy command, manually copy to strategies.txt')
+    info_msg = info_message(
+        "To use with strategy command, manually copy to strategies.txt"
+    )
     click.echo(f"\n{info_msg}")

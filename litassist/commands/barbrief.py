@@ -20,7 +20,9 @@ from litassist.utils import (
     create_reasoning_prompt,
     save_command_output,
     show_command_completion,
-    verify_content_if_needed,
+    warning_message,
+    saved_message,
+    count_tokens_and_words,
 )
 from litassist.llm import LLMClientFactory
 from litassist.citation_verify import verify_all_citations
@@ -236,6 +238,24 @@ def barbrief(
         hearing_type,
     )
     
+    # Estimate total input size
+    total_content = (
+        case_facts_content + "\n" +
+        strategies_content + "\n" +
+        "\n".join(research_docs) + "\n" +
+        "\n".join(supporting_docs)
+    )
+    total_tokens, _ = count_tokens_and_words(total_content)
+    
+    # Warn if large
+    if total_tokens > 80000:
+        click.echo(
+            warning_message(
+                f"Large input detected ({total_tokens:,} tokens). "
+                f"This may exceed API limits. Consider using fewer documents."
+            )
+        )
+    
     # Get LLM client
     try:
         client = LLMClientFactory.for_command("barbrief")
@@ -275,6 +295,11 @@ def barbrief(
             raise click.ClickException(
                 "API key error. Please check your OpenAI/OpenRouter configuration."
             )
+        elif "error occurred while processing" in str(e).lower():
+            raise click.ClickException(
+                f"API processing error (input was {total_tokens:,} tokens). "
+                f"Try with fewer documents. Error: {e}"
+            )
         else:
             raise click.ClickException(f"LLM API error: {e}")
     
@@ -313,6 +338,3 @@ def barbrief(
         output_file,
         stats={"Tokens used": usage.get("total_tokens")},
     )
-    
-    # Final verification if needed (skip citation validation if already done)
-    verify_content_if_needed(client, content, "barbrief", verify, citation_already_verified=verify)

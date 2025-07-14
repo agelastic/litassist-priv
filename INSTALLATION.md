@@ -26,6 +26,9 @@ brew install pipx
 # 3. Install LitAssist globally
 pipx install -e .
 
+# 5. Install tiktoken for accurate token counting (required for large document handling)
+pipx inject litassist tiktoken
+
 # 4. Add pipx to PATH
 pipx ensurepath
 
@@ -61,6 +64,9 @@ source .venv/bin/activate
 # 3. Install dependencies
 pip install -r requirements.txt
 
+# 4. Install tiktoken for accurate token counting (required for large document handling)
+pip install tiktoken
+
 # The requirements file pins OpenAI to version 0.28.1
 # and includes google-api-python-client. Using these
 # exact versions avoids AttributeError problems with
@@ -86,6 +92,9 @@ cd litassist
 
 # 2. Install system-wide (may require --break-system-packages flag)
 pip3 install --user -e . --break-system-packages
+
+# 4. Install tiktoken for accurate token counting (required for large document handling)
+pip3 install --user tiktoken
 
 # 3. Add user bin to PATH
 echo 'export PATH="$HOME/.local/bin:$PATH"' >> ~/.zshrc
@@ -159,6 +168,14 @@ python3 -c "from litassist.config import CONFIG; print('Config location:', CONFI
 
 # Should output: Config location: /path/to/litassist/config.yaml
 ```
+
+## Large Document Handling and Token Counting
+
+**New July 2025:**  
+- LitAssist now uses chunk-based processing for large documents (50k token chunks) and tiktoken for accurate token counting.
+- If a research file exceeds 128k tokens, a warning is displayed and processing may be truncated or chunked.
+- CLI output now includes file, word, and token counts for research/context files.
+- This ensures robust handling of large legal documents and prevents API token limit errors.
 
 ## Usage Examples
 

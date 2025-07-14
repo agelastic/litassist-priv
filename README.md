@@ -43,6 +43,15 @@ For detailed usage guidance, see the [LitAssist User Guide](docs/user/LitAssist_
 
 ## Recent Improvements (July 2025)
 
+### July 2025: Large Document Handling, Token Counting, and Verification Upgrades
+
+- **Chunk-Based Processing**: All major commands (digest, strategy, brainstorm) now process large documents by splitting them into 50k token chunks for robust handling of large files.
+- **tiktoken Integration**: Accurate token counting for research/context files; user warnings for files exceeding 128k tokens.
+- **Verification Model**: Verification now uses Claude 4 Opus for higher accuracy and larger context windows.
+- **Prompt & Policy Refinements**: All prompt YAMLs updated for clarity, compliance, and zero-emoji policy; CLI output and logs are now ASCII/ANSI only.
+- **File Size Warnings**: CLI output includes file, word, and token counts for research/context files.
+- **Expanded Test Coverage**: Test suite expanded for new features and output clarity.
+
 ### July 2025: Enhanced Brainstorm Command
 
 ### July 2025: New CasePlan Command
@@ -98,6 +107,7 @@ cd litassist
 # 2. Install globally with pipx (recommended)
 brew install pipx
 pipx install -e .
+pipx inject litassist tiktoken
 pipx ensurepath
 source ~/.zshrc
 
@@ -149,7 +159,7 @@ llm:
 
 general:
   heartbeat_interval: 10  # Progress indicator interval in seconds (default: 10)
-  max_chars: 20000        # Document chunking: characters per chunk for digest/extractfacts (default: 20000 ≈ 4000 words)
+  max_chars: 200000       # Document chunking: characters per chunk for digest/extractfacts (default: 200000 ≈ 50K tokens)
   rag_max_chars: 8000     # Document chunking: characters per chunk for draft command embeddings (default: 8000 ≈ 1600 words)
 ```
 
@@ -335,7 +345,11 @@ Each command uses optimized LLM models and parameters:
 - **Creative tasks** (brainstorm, draft): `temperature=0.5-0.9` for innovation
 - **Verification**: Always uses `temperature=0` for consistency
 
-**Note**: Document chunking (`max_chars`) and AI output limits (`use_token_limits`) are separate systems. See the [LitAssist User Guide](docs/user/LitAssist_User_Guide.md#llm-models-and-parameter-configuration) for details.
+**Note**:  
+- Document chunking (`max_chars`) and AI output limits (`use_token_limits`) are separate systems.  
+- tiktoken is required for accurate token counting and large document handling.  
+- All output is now ASCII/ANSI only (no emoji).  
+- See the [LitAssist User Guide](docs/user/LitAssist_User_Guide.md#llm-models-and-parameter-configuration) for details.
 
 ## Disclaimer
 

@@ -18,8 +18,13 @@ from litassist.utils import (
     timed,
     create_reasoning_prompt,
     extract_reasoning_trace,
-    warning_message, success_message, saved_message, stats_message,
-    info_message, error_message, tip_message, verifying_message,
+    warning_message,
+    success_message,
+    saved_message,
+    stats_message,
+    info_message,
+    error_message,
+    tip_message,
     parse_strategies_file,
     validate_file_size_limit,
     save_command_output,
@@ -220,11 +225,15 @@ def strategy(case_facts, outcome, strategies, verify):
     # strategy always needs verification as it creates foundational strategic documents
     if verify:
         click.echo(
-            warning_message("Note: --verify flag ignored - strategy command always uses verification for accuracy")
+            warning_message(
+                "Note: --verify flag ignored - strategy command always uses verification for accuracy"
+            )
         )
     elif not verify:
         click.echo(
-            info_message("Note: Strategy command automatically uses verification for accuracy")
+            info_message(
+                "Note: Strategy command automatically uses verification for accuracy"
+            )
         )
     verify = True  # Force verification for critical accuracy
 
@@ -358,7 +367,9 @@ IDENTIFIED LEGAL ISSUES:
         # Fallback: Extract any numbered strategies if no structured sections found
         if not all_strategies and strategies_content:
             click.echo(
-                info_message("  No structured sections found - extracting any numbered strategies")
+                info_message(
+                    "  No structured sections found - extracting any numbered strategies"
+                )
             )
             all_strategy_patterns = re.findall(
                 r"(^\d+\..*?)(?=^\d+\.|\Z)",
@@ -388,7 +399,9 @@ IDENTIFIED LEGAL ISSUES:
             if most_likely_strategies:
                 # Use the pre-analyzed "most likely" strategies directly - no need to re-analyze
                 click.echo(
-                    info_message(f"  Using {len(most_likely_strategies)} pre-analyzed 'most likely to succeed' strategies")
+                    info_message(
+                        f"  Using {len(most_likely_strategies)} pre-analyzed 'most likely to succeed' strategies"
+                    )
                 )
                 priority_strategies = most_likely_strategies[:target_options]
 
@@ -409,13 +422,17 @@ IDENTIFIED LEGAL ISSUES:
                     if other_strategies and remaining_needed > 0:
                         # Intelligently select additional strategies rather than just taking first N
                         click.echo(
-                            info_message(f"    Analyzing remaining {len(other_strategies)} unique strategies to fill {remaining_needed} slots...")
+                            info_message(
+                                f"    Analyzing remaining {len(other_strategies)} unique strategies to fill {remaining_needed} slots..."
+                            )
                         )
                         if len(other_strategies) < len(
                             [s for s in all_strategies if s["source"] != "most_likely"]
                         ):
                             click.echo(
-                                info_message("    Excluded duplicate strategy titles already in 'most likely' selection")
+                                info_message(
+                                    "    Excluded duplicate strategy titles already in 'most likely' selection"
+                                )
                             )
 
                         # Create ranking prompt for remaining strategies
@@ -479,7 +496,9 @@ REASONING: [brief explanation for top selections]"""
                                         priority_strategies.append(strategy)
 
                                 click.echo(
-                                    stats_message(f"    Intelligently selected {len(priority_strategies) - len(most_likely_strategies)} additional strategies")
+                                    stats_message(
+                                        f"    Intelligently selected {len(priority_strategies) - len(most_likely_strategies)} additional strategies"
+                                    )
                                 )
                             else:
                                 # Fallback to first N if parsing fails
@@ -487,7 +506,9 @@ REASONING: [brief explanation for top selections]"""
                                     other_strategies[:remaining_needed]
                                 )
                                 click.echo(
-                                    info_message(f"    Added {min(remaining_needed, len(other_strategies))} additional strategies (fallback)")
+                                    info_message(
+                                        f"    Added {min(remaining_needed, len(other_strategies))} additional strategies (fallback)"
+                                    )
                                 )
 
                         except Exception:
@@ -496,13 +517,17 @@ REASONING: [brief explanation for top selections]"""
                                 other_strategies[:remaining_needed]
                             )
                             click.echo(
-                                info_message(f"    Added {min(remaining_needed, len(other_strategies))} additional strategies (analysis failed)")
+                                info_message(
+                                    f"    Added {min(remaining_needed, len(other_strategies))} additional strategies (analysis failed)"
+                                )
                             )
 
             else:
                 # No "most likely" pre-analysis available - run intelligent ranking
                 click.echo(
-                    info_message(f"  No 'most likely' strategies found - analyzing {len(all_strategies)} strategies for '{outcome}'...")
+                    info_message(
+                        f"  No 'most likely' strategies found - analyzing {len(all_strategies)} strategies for '{outcome}'..."
+                    )
                 )
 
                 # Create ranking prompt
@@ -576,7 +601,9 @@ REASONING: [brief explanation focusing on legal merit, factual support, preceden
                                     priority_strategies.append(strategy)
 
                             click.echo(
-                                stats_message(f"    Selected top {len(priority_strategies)} strategies based on legal analysis")
+                                stats_message(
+                                    f"    Selected top {len(priority_strategies)} strategies based on legal analysis"
+                                )
                             )
 
                             # Show reasoning if available
@@ -595,19 +622,25 @@ REASONING: [brief explanation focusing on legal merit, factual support, preceden
 
                         except (ValueError, IndexError):
                             click.echo(
-                                warning_message("    Could not parse strategy ranking, using fallback selection")
+                                warning_message(
+                                    "    Could not parse strategy ranking, using fallback selection"
+                                )
                             )
                             # Fallback to first target_options strategies
                             priority_strategies = all_strategies[:target_options]
                     else:
                         click.echo(
-                            warning_message("    No ranking found in response, using fallback selection")
+                            warning_message(
+                                "    No ranking found in response, using fallback selection"
+                            )
                         )
                         priority_strategies = all_strategies[:target_options]
 
                 except Exception as e:
                     click.echo(
-                        warning_message(f"    Strategy ranking failed ({str(e)}), using fallback selection")
+                        warning_message(
+                            f"    Strategy ranking failed ({str(e)}), using fallback selection"
+                        )
                     )
                     priority_strategies = all_strategies[:target_options]
 
@@ -634,7 +667,9 @@ REASONING: [brief explanation focusing on legal merit, factual support, preceden
             use_brainstormed = True
             strategy_source = specific_strategy.get("source", "brainstormed")
             click.echo(
-                info_message(f"    Building on {strategy_source} strategy: '{specific_strategy['title']}'")
+                info_message(
+                    f"    Building on {strategy_source} strategy: '{specific_strategy['title']}'"
+                )
             )
 
         # Individual option prompt
@@ -697,11 +732,17 @@ Focus on:
             citation_issues = llm_client.validate_citations(option_content)
             if citation_issues:
                 click.echo(
-                    error_message(f"    Option {attempt}: Found {len(citation_issues)-1} citation issues - discarding")
+                    error_message(
+                        f"    Option {attempt}: Found {len(citation_issues)-1} citation issues - discarding"
+                    )
                 )
                 continue
             else:
-                click.echo(success_message(f"    Option {attempt}: Citations verified - keeping"))
+                click.echo(
+                    success_message(
+                        f"    Option {attempt}: Citations verified - keeping"
+                    )
+                )
 
                 # Extract reasoning trace from this option before cleaning
                 option_trace = extract_reasoning_trace(option_content, "strategy")
@@ -751,14 +792,18 @@ Focus on:
         usage = total_usage
 
         click.echo(
-            stats_message(f"  Successfully generated {len(valid_options)} verified strategic options")
+            stats_message(
+                f"  Successfully generated {len(valid_options)} verified strategic options"
+            )
         )
     else:
         # No valid options could be generated
         strategy_content = f"# STRATEGIC OPTIONS FOR: {outcome.upper()}\n\n## NO VALID OPTIONS GENERATED\n\nUnable to generate strategic options with verified citations after {max_attempts} attempts. Please refine the case facts or desired outcome and try again."
         usage = total_usage
         click.echo(
-            warning_message(f"  Could not generate any options with verified citations after {max_attempts} attempts")
+            warning_message(
+                f"  Could not generate any options with verified citations after {max_attempts} attempts"
+            )
         )
 
     # Generate recommended next steps using centralized prompt
@@ -876,11 +921,15 @@ Focus on:
     click.echo(saved_message(f'Output saved to: "{output_file}"'))
     if consolidated_reasoning:
         click.echo(
-            info_message(f"Reasoning traces: open \"{output_file.replace('.txt', '_reasoning.txt')}\"")
+            info_message(
+                f"Reasoning traces: open \"{output_file.replace('.txt', '_reasoning.txt')}\""
+            )
         )
 
     # Show what was generated
-    msg = stats_message(f'Generated {len(valid_options)} strategic options for: {outcome}')
+    msg = stats_message(
+        f"Generated {len(valid_options)} strategic options for: {outcome}"
+    )
     click.echo(f"\n{msg}")
 
     # Brief preview of options

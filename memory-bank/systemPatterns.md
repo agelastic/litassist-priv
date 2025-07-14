@@ -18,6 +18,7 @@ Lookup → Digest → ExtractFacts → Brainstorm → Strategy → Draft → Bar
                                                           ↘
                                                         CounselNotes
 ```
+- **Chunk-Based Processing (July 2025):** Digest and strategy commands now split large documents into 50k token chunks for LLM processing. This enables handling of documents exceeding API token limits while preserving context.
 - **Digest Command Hinting (June 2025):** The `digest` command now supports an optional `--hint` argument, allowing users to provide a text hint to focus LLM analysis on topics related to the hint. This enables targeted processing of non-legal and general documents.
 - **Digest Multiple Files (July 2025):** The `digest` command now accepts multiple input files via repeated FILE arguments. All files are processed individually then combined with clear source attribution, enabling comprehensive document digestion in a single run.
 - **Research-Informed Brainstorm (June 2025):** The `brainstorm` command now supports a `--research` option, allowing one or more lookup report files to be provided. When used, the orthodox strategies prompt is dynamically injected with the research context, enabling research-grounded strategy generation. The unorthodox strategies remain purely creative. All prompt logic is managed via YAML templates; no LLM prompt text is hardcoded in Python.
@@ -48,12 +49,15 @@ Each stage:
   - Each check writes a separate timestamped report to outputs/.
   - All steps use the existing logging infrastructure and minimal console output.
 
-- **Verification System Improvements (July 2025)**:
-  - **Token Limits**: Increased from 800-1536 to 8192-16384 tokens to handle full documents
-  - **No Local Parsing**: Removed ~25 lines of content parsing in brainstorm.py - trust LLM output
-  - **Prompt Clarity**: Updated prompts to preserve ALL sections and prevent system instruction bleeding
-  - **API Simplification**: verify_with_level now only uses "heavy" for strategy/draft commands
-  - **Full Document Preservation**: Fixed issue where "MOST LIKELY TO SUCCEED" section was being lost
+- **Verification System Improvements (July 2025):**
+  - **Token Limits**: Increased from 800-1536 to 8192-16384 tokens to handle full documents.
+  - **Chunk-Based Processing**: Digest and strategy commands split large documents into 50k token chunks for LLM processing.
+  - **No Local Parsing**: Removed ~25 lines of content parsing in brainstorm.py - trust LLM output.
+  - **Prompt Clarity**: Updated prompts to preserve ALL sections and prevent system instruction bleeding.
+  - **API Simplification**: verify_with_level now only uses "heavy" for strategy/draft commands.
+  - **Full Document Preservation**: Fixed issue where "MOST LIKELY TO SUCCEED" section was being lost.
+  - **Verification Model**: Switched to Claude 4 Opus for verification (July 2025).
+  - **Broadened Citation Search**: Expanded citation search scope and increased file size limits for extractfacts and lookup.
 
 ## Structured Output Patterns
 
@@ -124,3 +128,5 @@ Strategic analysis commands follow consistent configuration patterns:
 - **YAML Prompts**: All system and user prompts stored in `litassist/prompts/`.
 - **Runtime Loading**: Prompts injected into workflows based on command context.
 - **Versioning**: Prompt templates updated centrally to apply improvements across commands.
+- **Major Updates (July 2025)**: barbrief.yaml, strategies.yaml, verification.yaml, caseplan.yaml, formats.yaml, glob_help_addon.yaml, lookup.yaml, system_feedback.yaml updated for clarity, compliance, and new features.
+- **Prompt Engineering**: All prompt logic managed in YAML; no hardcoded LLM templates in Python.

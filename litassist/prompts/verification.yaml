@@ -6,6 +6,19 @@ verification:
   # USED BY: llm.py LLMClient.verify() method - default verification for all commands
   # LOCATION: llm.py:528-539
   self_critique: |
+    CRITICAL INSTRUCTION: You MUST return the COMPLETE document with ALL original text.
+    DO NOT use ANY placeholders, summaries, or abbreviations like:
+    - "[Section reproduced in full...]"
+    - "[unchanged during verification]"
+    - "[no substantive changes]"
+    - "..." or any ellipsis
+
+    MANDATORY: Copy every single word from the original document exactly as written.
+    If a section needs no changes, copy it word-for-word in its entirety.
+
+    Example: If you see "## MOST LIKELY TO SUCCEED" followed by 5 paragraphs,
+    you MUST include all 5 paragraphs in full, not a placeholder.
+
     Review the document above. Your review must identify and correct issues in two areas:
     1.  **Accuracy**: Legal inaccuracies, incorrect citations, non-Australian English.
     2.  **Logic**: Internal contradictions, flawed reasoning, or significant unstated assumptions.
