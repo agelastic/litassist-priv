@@ -54,7 +54,7 @@ strategies:
     # USED BY: brainstorm.py generate_strategies() - when approach="analysis"
     # LOCATION: brainstorm.py:368-393 (to be extracted)
     analysis_prompt: |
-      Analyze ALL the strategies above and select EXACTLY 10 of the most promising strategies for a detailed review.
+      Analyze ALL the strategies above and select EXACTLY 5 of the most promising strategies for a detailed review.
 
       **SELECTION CRITERIA:**
       - Legal merit and strength of precedent
@@ -63,16 +63,16 @@ strategies:
       - Strength of available evidence
 
       **REQUIRED ANALYSIS:**
-      For each of the 10 selected strategies, provide a detailed analysis covering:
+      For each of the 5 selected strategies, provide a detailed analysis covering:
       1. **Why this strategy was selected** (detailed reasoning against the criteria)
       2. **Implementation roadmap** (3-5 key sequential steps)
       3. **Risk assessment** (potential downsides and mitigation)
       4. **Success probability** (a percentage with qualitative justification)
 
-      **IMPORTANT:** After the analysis of the 10 strategies, you MUST conclude with a section titled "## MOST LIKELY TO SUCCEED". Under this exact heading, list the top 4 strategies from your analysis that you most strongly recommend. This section is critical for downstream processing.
+      **IMPORTANT:** After the analysis of the 5 strategies, you MUST conclude with a section titled "## MOST LIKELY TO SUCCEED". Under this exact heading, list the top 1-3 strategies from your analysis that you most strongly recommend. This section is critical for downstream processing.
 
       ## MOST LIKELY TO SUCCEED
-      (List the 4 best strategies here, including their titles and brief descriptions)
+      (List the 1-3 best strategies here, including their titles and brief descriptions)
     
     # Regeneration prompt with feedback incorporation
     # USED BY: brainstorm.py brainstorm() - when --regenerate flag is used

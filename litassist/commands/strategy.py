@@ -287,7 +287,7 @@ IDENTIFIED LEGAL ISSUES:
 
     # Extract and rank strategies using LLM analysis
     priority_strategies = []
-    target_options = 7  # Target 3-5 options, need this defined early
+    target_options = 4  # Target 3-5 options, need this defined early
 
     if parsed_strategies:
         # First, extract all available strategies from the content
