@@ -1,7 +1,7 @@
 # Include template and documentation files
 include config.yaml.template
 include README.md
-include LICENSE
+
 include *.md
 
 # Include example files
