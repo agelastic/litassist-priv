@@ -256,8 +256,7 @@ brew install pipx
 pipx install -e /path/to/litassist
 pipx ensurepath && source ~/.zshrc
 
-# Install tiktoken for accurate token counting (required for large document handling)
-pip install tiktoken
+pipx inject litassist tiktoken
 
 # Setup configuration
 cd /path/to/litassist

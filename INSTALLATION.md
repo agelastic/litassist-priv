@@ -26,7 +26,7 @@ brew install pipx
 # 3. Install LitAssist globally
 pipx install -e .
 
-# 4. Install tiktoken for accurate token counting (required for large document handling)
+# 5. Install tiktoken for accurate token counting (required for large document handling)
 pipx inject litassist tiktoken
 
 # 4. Add pipx to PATH
@@ -93,7 +93,7 @@ cd litassist
 # 2. Install system-wide (may require --break-system-packages flag)
 pip3 install --user -e . --break-system-packages
 
-# 3. Install tiktoken for accurate token counting (required for large document handling)
+# 4. Install tiktoken for accurate token counting (required for large document handling)
 pip3 install --user tiktoken
 
 # 3. Add user bin to PATH
