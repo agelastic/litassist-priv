@@ -3,8 +3,7 @@ Basic tests for the digest command.
 
 Tests focus on core digest functionality without external API calls.
 """
-import tempfile
-import os
+
 from unittest.mock import Mock, patch
 from click.testing import CliRunner
 
@@ -35,6 +34,7 @@ class TestDigestBasic:
         mock_show,
         mock_prompts,
         mock_config,
+        tmp_path,
     ):
         # Arrange: patch document reading and chunking
         mock_read.return_value = "Full document text"
@@ -49,22 +49,20 @@ class TestDigestBasic:
         mock_factory.for_command.return_value = mock_client
         mock_output.return_value = "digest_output.txt"
 
-        # Create temporary input file
-        with tempfile.NamedTemporaryFile(mode="w", delete=False, suffix=".txt") as tmp:
-            tmp.write("irrelevant content")
-            temp_path = tmp.name
-        try:
-            # Act: run the command without explicit mode (defaults to summary)
-            result = self.runner.invoke(digest, [temp_path])
+        # Create temporary input file using pytest's tmp_path fixture
+        temp_file = tmp_path / "input.txt"
+        temp_file.write_text("irrelevant content")
 
-            # Assert: command succeeded and was invoked correctly
-            assert result.exit_code == 0
-            mock_factory.for_command.assert_called_once_with("digest", "summary")
-            mock_client.complete.assert_called_once()
-            mock_output.assert_called_once()
-            mock_show.assert_called_once()
-        finally:
-            os.unlink(temp_path)
+        # Act: run the command without explicit mode (defaults to summary)
+        result = self.runner.invoke(digest, [str(temp_file)])
+
+        # Assert: command succeeded and was invoked correctly
+        assert result.exit_code == 0
+        mock_factory.for_command.assert_called_once_with("digest", "summary")
+        mock_client.complete.assert_called_once()
+        mock_output.assert_called_once()
+        mock_show.assert_called_once()
+        mock_log.assert_called_once()
 
 class TestDigestIssuesMode:
     """Test suite for the digest command in issues mode with citation warnings."""
@@ -91,6 +89,7 @@ class TestDigestIssuesMode:
         mock_show,
         mock_prompts,
         mock_config,
+        tmp_path,
     ):
         # Arrange: patch document reading and single-chunk output
         mock_read.return_value = "Doc text for issues"
@@ -106,23 +105,21 @@ class TestDigestIssuesMode:
         mock_factory.for_command.return_value = mock_client
         mock_output.return_value = "digest_issues_output.txt"
 
-        # Create temporary file
-        with tempfile.NamedTemporaryFile(mode="w", delete=False, suffix=".txt") as tmp:
-            tmp.write("irrelevant content")
-            temp_path = tmp.name
-        try:
-            # Act: run the command in issues mode
-            result = self.runner.invoke(digest, ["--mode", "issues", temp_path])
+        # Create temporary file using pytest's tmp_path fixture
+        temp_file = tmp_path / "input.txt"
+        temp_file.write_text("irrelevant content")
 
-            # Assert: correct mode and citation validation occurred
-            assert result.exit_code == 0
-            mock_factory.for_command.assert_called_once_with("digest", "issues")
-            mock_client.complete.assert_called_once()
-            mock_client.validate_citations.assert_called_once_with("Issue content")
-            mock_output.assert_called_once()
-            mock_show.assert_called_once()
-        finally:
-            os.unlink(temp_path)
+        # Act: run the command in issues mode
+        result = self.runner.invoke(digest, ["--mode", "issues", str(temp_file)])
+
+        # Assert: correct mode and citation validation occurred
+        assert result.exit_code == 0
+        mock_factory.for_command.assert_called_once_with("digest", "issues")
+        mock_client.complete.assert_called_once()
+        mock_client.validate_citations.assert_called_once_with("Issue content")
+        mock_output.assert_called_once()
+        mock_show.assert_called_once()
+        mock_log.assert_called_once()
 
     def test_help_and_errors(self):
         # Help output

@@ -3,8 +3,7 @@ Basic tests for the extractfacts command.
 
 Tests focus on core extractfacts functionality without external API calls.
 """
-import tempfile
-import os
+
 from unittest.mock import Mock, patch
 from click.testing import CliRunner
 
@@ -38,6 +37,7 @@ class TestExtractFactsBasic:
         mock_show,
         mock_prompts,
         mock_config,
+        tmp_path,
     ):
         # Arrange: patch file validation and chunking
         mock_validate.return_value = "Sample document text"
@@ -55,25 +55,22 @@ class TestExtractFactsBasic:
         mock_factory.for_command.return_value = mock_client
         mock_output.return_value = "output_file.txt"
 
-        # Create a temporary input file
-        with tempfile.NamedTemporaryFile(mode="w", delete=False, suffix=".txt") as tmp:
-            tmp.write("irrelevant content")
-            temp_path = tmp.name
-        try:
-            # Act: run the command
-            result = self.runner.invoke(extractfacts, [temp_path])
+        # Create a temporary input file using pytest's tmp_path fixture
+        temp_file = tmp_path / "input.txt"
+        temp_file.write_text("irrelevant content")
 
-            # Assert: command succeeded and LLM was called
-            assert result.exit_code == 0
-            mock_factory.for_command.assert_called_once_with("extractfacts")
-            mock_client.complete.assert_called_once()
-            mock_client.verify.assert_called_once_with("Extracted content")
-            # Ensure output saving and completion display are invoked
-            mock_output.assert_called_once()
-            mock_log.assert_called_once()
-            mock_show.assert_called_once()
-        finally:
-            os.unlink(temp_path)
+        # Act: run the command
+        result = self.runner.invoke(extractfacts, [str(temp_file)])
+
+        # Assert: command succeeded and LLM was called
+        assert result.exit_code == 0
+        mock_factory.for_command.assert_called_once_with("extractfacts")
+        mock_client.complete.assert_called_once()
+        mock_client.verify.assert_called_once_with("Extracted content")
+        # Ensure output saving and completion display are invoked
+        mock_output.assert_called_once()
+        mock_log.assert_called_once()
+        mock_show.assert_called_once()
 
     def test_help_and_errors(self):  # no patches needed for help and error paths
         result_help = self.runner.invoke(extractfacts, ["--help"])
