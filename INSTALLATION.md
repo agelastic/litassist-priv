@@ -4,7 +4,7 @@ This guide provides comprehensive installation instructions for LitAssist, inclu
 
 ## Prerequisites
 
-- **Python 3.8+** (Python 3.9+ recommended)
+- **Python 3.11+**
 - **Git** for cloning the repository
 - **Homebrew** (macOS) or equivalent package manager
 - **API Keys** for OpenAI, OpenRouter, Google CSE, and Pinecone

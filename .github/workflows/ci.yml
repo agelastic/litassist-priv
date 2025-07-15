@@ -1,0 +1,40 @@
+name: Run unit tests
+
+# This workflow runs the test-suite automatically on every pull request
+# (both when it is opened and when additional commits are pushed).
+
+on:
+  pull_request:
+    # Run for all PRs targeting any branch
+    types: [opened, synchronize, reopened, ready_for_review]
+
+jobs:
+  test:
+    name: Python ${{ matrix.python-version }} tests
+    runs-on: ubuntu-latest
+
+    strategy:
+      matrix:
+        # The project officially supports Python >=3.11.
+        # GitHub Actions currently offers 3.11 and 3.12 runners.
+        python-version: ['3.11', '3.12']
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v4
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          # Install runtime and test dependencies if the files are present.
+          if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
+          if [ -f requirements-ci.txt ]; then pip install -r requirements-ci.txt; fi
+          if [ -f requirements-test.txt ]; then pip install -r requirements-test.txt; fi
+
+      - name: Run test suite
+        run: pytest -q
