@@ -76,10 +76,17 @@ composed = PROMPTS.compose_prompt('base.australian_law', 'base.citation_standard
 - **Purpose**: Drives the `caseplan` command for phased workflow planning.
 - **Key Features**:
   - Enforces rationale for every command/phase
+  - **NEW: Switch Explanation Requirements (Section 2F)** - Every command includes `# Switch rationale:` explaining technical choices
+  - **NEW: Improved Parameter Readability** - All examples use coherent phrases instead of keyword strings
   - Requires explicit command coverage analysis (lookup, brainstorm, strategy, counselnotes, draft, barbrief, verify)
   - Integrates focus area prioritization and relevance scoring
   - Mandates structured output: Name, Purpose, Commands, Rationale, Focus Relevance, Cost, Tag
   - Final section: "COMMAND COVERAGE ANALYSIS" with justification for any omitted commands
+- **Switch Explanation Format**:
+  ```bash
+  litassist lookup "query text" --mode irac --comprehensive
+  # Switch rationale: --comprehensive for novel legal area, --mode irac for structured court analysis
+  ```
 - **Prompt Engineering**: Designed to minimize local parsing and maximize LLM-structured output, in line with CLAUDE.md and memory bank principles.
 - **Location**: `litassist/prompts/caseplan.yaml`
 

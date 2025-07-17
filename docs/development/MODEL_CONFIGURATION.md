@@ -11,7 +11,12 @@ LitAssist uses multiple specialized LLM models optimized for different legal tas
 ### Production Models
 
 #### July 2025: CasePlan Command Added
-- **caseplan**: New command for phased workflow planning. Uses Sonnet for budget assessment and o3-pro for full plan generation. Prompts enforce rationale, command coverage, and focus area integration.
+- **caseplan**: New command for phased workflow planning. Uses Sonnet for budget assessment and Claude Opus 4 for full plan generation.
+- **NEW Features (July 17, 2025)**:
+  - Generates executable bash scripts with all commands (`caseplan_commands_{budget}.txt`)
+  - Includes switch rationales explaining technical choices (--comprehensive, --mode, etc.)
+  - Improved parameter readability - all commands use coherent phrases instead of keyword strings
+- Prompts enforce rationale, command coverage, and focus area integration.
 
 | Command | Model | Purpose | Key Parameters |
 |---------|-------|---------|----------------|

@@ -19,6 +19,64 @@ from litassist.utils import saved_message, tip_message, success_message
 from litassist.prompts import PROMPTS
 
 
+def extract_cli_commands(plan_content):
+    """
+    Extract all CLI commands from the caseplan output.
+    
+    Returns a formatted string with commands and their phase context.
+    """
+    commands = []
+    commands.append("#!/bin/bash")
+    commands.append("# Extracted CLI commands from caseplan")
+    commands.append("# Execute commands in order, reviewing output between phases")
+    commands.append("")
+    
+    # Method 1: Extract from ```bash blocks with phase context
+    lines = plan_content.split('\n')
+    current_phase = "Initial Setup"
+    
+    i = 0
+    while i < len(lines):
+        line = lines[i]
+        
+        # Track current phase/section
+        if line.strip().startswith('## Phase') or line.strip().startswith('### Phase'):
+            current_phase = line.strip().replace('#', '').strip()
+        elif line.strip().startswith('Phase ') and ':' in line:
+            current_phase = line.strip()
+        
+        # Look for bash code blocks
+        if line.strip() == '```bash':
+            # Found a bash block
+            i += 1
+            block_commands = []
+            while i < len(lines) and lines[i].strip() != '```':
+                cmd_line = lines[i].strip()
+                if cmd_line and 'litassist' in cmd_line:
+                    block_commands.append(cmd_line)
+                i += 1
+            
+            # Add commands from this block
+            if block_commands:
+                commands.append(f"\n# {current_phase}")
+                commands.extend(block_commands)
+        
+        # Method 2: Also catch any litassist commands not in code blocks
+        elif 'litassist' in line and not line.strip().startswith('#'):
+            # Make sure it's actually a command line
+            if line.strip().startswith('litassist'):
+                commands.append(f"\n# {current_phase}")
+                commands.append(line.strip())
+        
+        i += 1
+    
+    # Add helpful footer
+    commands.append("\n# End of extracted commands")
+    commands.append("# Remember to update case_facts.txt after digest phases")
+    
+    return '\n'.join(commands)
+
+
 @click.command()
 @click.argument("case_facts", type=click.File("r"))
 @click.option("--focus", help="Specific area to focus the plan on")
@@ -121,7 +179,9 @@ def caseplan(case_facts, focus, budget):
         if focus:
             prompt_parts.append(f"FOCUS AREA: {focus}")
 
-        prompt_parts.append(PROMPTS.get("commands.caseplan.analysis_instructions"))
+        # Select appropriate analysis instructions based on budget level
+        analysis_prompt_key = f"commands.caseplan.analysis_instructions_{budget}"
+        prompt_parts.append(PROMPTS.get(analysis_prompt_key))
         user_prompt = "\n\n".join(prompt_parts)
 
         # Add glob help section if available
@@ -154,6 +214,15 @@ def caseplan(case_facts, focus, budget):
             "caseplan", plan_content, case_facts.name, metadata=metadata
         )
 
+        # Extract and save CLI commands
+        extracted_commands = extract_cli_commands(plan_content)
+        commands_file = save_command_output(
+            f"caseplan_commands_{budget}", 
+            extracted_commands, 
+            case_facts.name, 
+            metadata={"Type": "Executable Commands", "Budget": budget}
+        )
+
         save_log(
             "caseplan",
             {
@@ -162,10 +231,12 @@ def caseplan(case_facts, focus, budget):
                 "usage": usage,
                 "response": plan_content,
                 "output_file": output_file,
+                "commands_file": commands_file,
             },
         )
 
         click.echo(f"\n{success_message('Litigation plan generated successfully!')}")
-        click.echo(saved_message(f'Output saved to: "{output_file}"'))
-        msg = tip_message(f'View plan: open "{output_file}"')
+        click.echo(saved_message(f'Plan saved to: "{output_file}"'))
+        click.echo(saved_message(f'Executable commands saved to: "{commands_file}"'))
+        msg = tip_message(f'Execute commands: bash "{commands_file}"')
         click.echo(f"\n{msg}")

@@ -61,7 +61,8 @@ class TestCaseplanCommand:
         assert result.exit_code == 0
         assert "Litigation plan generated successfully" in result.output
         mock_factory.for_command.assert_called_once_with("caseplan")
-        mock_save_output.assert_called_once()
+        # Now saves two files: the plan and the extracted commands
+        assert mock_save_output.call_count == 2
         mock_save_log.assert_called_once()
 
     @patch("litassist.commands.caseplan.LLMClientFactory")
