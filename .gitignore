@@ -9,11 +9,16 @@ __pycache__/
 *.pyo
 .mypy_cache/
 .pytest_cache/
+.ruff_cache/
+.hypothesis/
 
 # --- OS / editor junk ---
 .DS_Store
 Icon?
 Thumbs.db
+*~
+.*.swp
+.*.swo
 
 # --- VS Code ---
 # Share settings.json & extensions.json; ignore launch configurations
@@ -43,6 +48,10 @@ debug_*.py
 # IDE personal bits
 .idea/**/workspace.xml
 .idea/**/tasks.xml
+.idea/
+*.iml
+*.ipr
+*.iws
 
 # Secrets
 .env
@@ -80,9 +89,13 @@ docs/_build/
 
 # --- Testing & coverage ---
 .coverage
+.coverage.*
 htmlcov/
 coverage.xml
+*.cover
 nosetests.xml
+.tox/
+.nox/
 
 # Command outputs
 outputs/
@@ -118,3 +131,61 @@ temp *.md
 
 # Claude-generated files
 # claude_*
+
+# --- Additional Python-related ---
+*.pyd
+*.pdb
+.Python
+pip-log.txt
+pip-delete-this-directory.txt
+.installed.cfg
+*.egg
+*.egg-link
+MANIFEST
+
+# --- Jupyter Notebook ---
+.ipynb_checkpoints/
+*.ipynb_checkpoints
+
+# --- pyenv ---
+.python-version
+
+# --- pipenv ---
+Pipfile.lock
+
+# --- Poetry ---
+poetry.lock
+
+# --- pdm ---
+.pdm.toml
+.pdm-python
+.pdm-build/
+
+# --- Backup files ---
+*.bak
+*.backup
+*.old
+
+# --- macOS specific ---
+.AppleDouble
+.LSOverride
+._*
+
+# --- Windows specific ---
+ehthumbs.db
+Desktop.ini
+$RECYCLE.BIN/
+
+# --- Node.js (if any frontend) ---
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# --- Temporary files ---
+*.tmp
+*.temp
+.tmp/
+.temp/
+tmp/
+temp/
