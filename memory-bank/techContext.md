@@ -2,7 +2,7 @@
 
 ## Technologies Used
 
-- **Python** ≥ 3.8: Core implementation language  
+- **Python** ≥ 3.11: Core implementation language (updated from 3.8 in July 2025)
 - **Click**: CLI framework for command definitions  
 - **OpenAI API**: LLM completions and embeddings via OpenRouter or direct  
 - **Anthropic Claude**: Document summarization, fact extraction, analysis, and now verification (Claude 4 Opus as of July 2025)  
@@ -13,7 +13,10 @@
 - **YAML**: Prompt templates and configuration (PyYAML)  
 - **Requests**: HTTP interactions for citation verification  
 - **ReportLab**: PDF report generation  
-- **tiktoken**: Token counting for GPT models (cl100k_base encoding, added July 2025)  
+- **tiktoken**: Token counting for GPT models (cl100k_base encoding, added July 2025)
+- **pytest**: Unit testing framework with tmp_path fixtures
+- **GitHub Actions**: CI/CD pipeline for automated testing
+- **pre-commit**: Git hooks for code quality checks  
 
 ## Development Setup
 
@@ -26,10 +29,13 @@
 
 - **Testing**: `pytest` for unit and integration tests (see pytest.ini)  
 - **Linting**: `ruff` for code style and static analysis  
+- **CI/CD**: GitHub Actions workflow running tests on Python 3.11 and 3.12
+- **Pre-commit**: Automated pytest runs with fast-fail on every commit
 - **Prompt Templates**: YAML files under `litassist/prompts/` for centralized prompt management  
 - **Logging**: Configurable via `general.log_format` in config.yaml (`json` or `markdown`)  
 - **Performance**: `@timed` decorator records durations for key operations  
-- **Zero-Emoji Policy**: Enforced across all code and documentation (July 2025)  
+- **Zero-Emoji Policy**: Enforced across all code and documentation (July 2025)
+- **Documentation**: LaTeX articles, architectural diagrams, and comprehensive dev docs  
 
 ## Dependencies & Constraints
 
