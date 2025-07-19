@@ -19,6 +19,59 @@ from litassist.utils import saved_message, tip_message, success_message
 from litassist.prompts import PROMPTS
 
 
+def extract_cli_commands(plan_content):
+    """
+    Extract all CLI commands from the caseplan output.
+
+    Returns a formatted string with commands and their phase context.
+    """
+    commands = [
+        "#!/bin/bash",
+        "# Extracted CLI commands from caseplan",
+        "# Execute commands in order, reviewing output between phases",
+        "",
+    ]
+
+    lines = plan_content.split('\n')
+    lines_iter = iter(lines)
+    current_phase = "Initial Setup"
+
+    for line in lines_iter:
+        stripped_line = line.strip()
+
+        # Track current phase/section
+        if stripped_line.startswith(('## Phase', '### Phase')):
+            current_phase = stripped_line.replace('#', '').strip()
+        elif stripped_line.startswith('Phase ') and ':' in stripped_line:
+            current_phase = stripped_line
+
+        # Look for bash code blocks
+        if stripped_line == '```bash':
+            block_commands = []
+            for block_line in lines_iter:
+                stripped_block_line = block_line.strip()
+                if stripped_block_line == '```':
+                    break
+                if 'litassist' in stripped_block_line and stripped_block_line.startswith('litassist'):
+                    block_commands.append(stripped_block_line)
+
+            if block_commands:
+                commands.append(f"\n# {current_phase}")
+                commands.extend(block_commands)
+
+        # Fallback for commands not in a block
+        elif stripped_line.startswith('litassist'):
+            commands.append(f"\n# {current_phase}")
+            commands.append(stripped_line)
+
+    commands.extend([
+        "\n# End of extracted commands",
+        "# Remember to update case_facts.txt after digest phases",
+    ])
+
+    return '\n'.join(commands)
+
+
 @click.command()
 @click.argument("case_facts", type=click.File("r"))
 @click.option("--focus", help="Specific area to focus the plan on")
@@ -121,7 +174,9 @@ def caseplan(case_facts, focus, budget):
         if focus:
             prompt_parts.append(f"FOCUS AREA: {focus}")
 
-        prompt_parts.append(PROMPTS.get("commands.caseplan.analysis_instructions"))
+        # Select appropriate analysis instructions based on budget level
+        analysis_prompt_key = f"commands.caseplan.analysis_instructions_{budget}"
+        prompt_parts.append(PROMPTS.get(analysis_prompt_key))
         user_prompt = "\n\n".join(prompt_parts)
 
         # Add glob help section if available
@@ -154,6 +209,15 @@ def caseplan(case_facts, focus, budget):
             "caseplan", plan_content, case_facts.name, metadata=metadata
         )
 
+        # Extract and save CLI commands
+        extracted_commands = extract_cli_commands(plan_content)
+        commands_file = save_command_output(
+            f"caseplan_commands_{budget}", 
+            extracted_commands, 
+            case_facts.name, 
+            metadata={"Type": "Executable Commands", "Budget": budget}
+        )
+
         save_log(
             "caseplan",
             {
@@ -162,10 +226,12 @@ def caseplan(case_facts, focus, budget):
                 "usage": usage,
                 "response": plan_content,
                 "output_file": output_file,
+                "commands_file": commands_file,
             },
         )
 
         click.echo(f"\n{success_message('Litigation plan generated successfully!')}")
-        click.echo(saved_message(f'Output saved to: "{output_file}"'))
-        msg = tip_message(f'View plan: open "{output_file}"')
+        click.echo(saved_message(f'Plan saved to: "{output_file}"'))
+        click.echo(saved_message(f'Executable commands saved to: "{commands_file}"'))
+        msg = tip_message(f'Execute commands: bash "{commands_file}"')
         click.echo(f"\n{msg}")

@@ -15,14 +15,15 @@
 LitAssist commands form a linear pipeline:
 ```
 Lookup → Digest → ExtractFacts → Brainstorm → Strategy → Draft → Barbrief
-                                                          ↘
-                                                        CounselNotes
+         ↓                                              ↘
+      CasePlan                                      CounselNotes
 ```
 - **Chunk-Based Processing (July 2025):** Digest and strategy commands now split large documents into 50k token chunks for LLM processing. This enables handling of documents exceeding API token limits while preserving context.
 - **Digest Command Hinting (June 2025):** The `digest` command now supports an optional `--hint` argument, allowing users to provide a text hint to focus LLM analysis on topics related to the hint. This enables targeted processing of non-legal and general documents.
 - **Digest Multiple Files (July 2025):** The `digest` command now accepts multiple input files via repeated FILE arguments. All files are processed individually then combined with clear source attribution, enabling comprehensive document digestion in a single run.
 - **Research-Informed Brainstorm (June 2025):** The `brainstorm` command now supports a `--research` option, allowing one or more lookup report files to be provided. When used, the orthodox strategies prompt is dynamically injected with the research context, enabling research-grounded strategy generation. The unorthodox strategies remain purely creative. All prompt logic is managed via YAML templates; no LLM prompt text is hardcoded in Python.
 - **Multiple Input Files (July 2025):** The `extractfacts` command now accepts multiple input files via repeated FILE arguments. All files are combined with clear source attribution before processing, enabling comprehensive fact extraction from multiple documents in a single run.
+- **CasePlan Executable Scripts (July 18, 2025):** The `caseplan` command now generates executable bash scripts that extract all CLI commands from the workflow plan. This enables users to execute the entire recommended workflow automatically, with phase-based organization and helpful comments.
 
 Each stage:
 1. Reads inputs (files/arguments)
@@ -130,3 +131,12 @@ Strategic analysis commands follow consistent configuration patterns:
 - **Versioning**: Prompt templates updated centrally to apply improvements across commands.
 - **Major Updates (July 2025)**: barbrief.yaml, strategies.yaml, verification.yaml, caseplan.yaml, formats.yaml, glob_help_addon.yaml, lookup.yaml, system_feedback.yaml updated for clarity, compliance, and new features.
 - **Prompt Engineering**: All prompt logic managed in YAML; no hardcoded LLM templates in Python.
+- **Capabilities System**: Updated capabilities.yaml to better document command interactions and extraction options (July 18, 2025).
+
+## Infrastructure Patterns (July 18, 2025)
+
+- **CI/CD Pipeline**: GitHub Actions workflow (`ci.yml`) runs pytest on all PRs for Python 3.11 and 3.12.
+- **Pre-commit Hooks**: Configured to run pytest with fast-fail on every commit via `.pre-commit-config.yaml`.
+- **Test Fixtures**: Migrated from `tempfile` to pytest's `tmp_path` fixture for better test isolation.
+- **Python Version**: Updated requirement to >=3.11 to leverage modern Python features and maintain compatibility.
+- **Documentation Organization**: Analysis and planning docs moved to `docs/development/` for clearer structure.

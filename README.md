@@ -54,8 +54,12 @@ For detailed usage guidance, see the [LitAssist User Guide](docs/user/LitAssist_
 
 ### July 2025: Enhanced Brainstorm Command
 
-### July 2025: New CasePlan Command
-- **caseplan**: Generates a phased litigation workflow plan from case facts, with budget assessment (Sonnet) and full plan (Opus) modes
+### July 2025: New CasePlan Command (Updated July 17)
+- **caseplan**: Start here! Generates complete litigation roadmap with executable bash scripts
+- **Executable Scripts**: Saves all commands to `caseplan_commands_{budget}.txt` ready to run
+- **Switch Explanations**: Every technical choice explained (e.g., "# Switch rationale: --comprehensive for novel legal area")
+- **Readable Parameters**: All commands use clear phrases instead of keyword strings
+- **Two Modes**: Budget assessment (no --budget) or full plan generation (with --budget)
 - **Focus area integration**: Prioritizes workflow phases by user-specified focus
 - **Command coverage analysis**: Mandates rationale for inclusion/omission of all major commands
 - **Format enforcement**: Each phase includes rationale, cost, focus relevance, and ESSENTIAL/OPTIONAL tag
@@ -200,9 +204,16 @@ Global options:
 
 ### Core Pipeline Commands
 
-1. **caseplan** - Generate a phased litigation workflow plan from case facts
+1. **caseplan** - START HERE! Generate complete litigation roadmap with executable scripts
    ```bash
-   litassist caseplan case_facts.txt [--focus <area>] [--budget minimal|standard|comprehensive]
+   # Get budget recommendation
+   litassist caseplan case_facts.txt
+   
+   # Generate full plan with executable script
+   litassist caseplan case_facts.txt --budget comprehensive
+   
+   # Run the generated commands
+   bash caseplan_commands_comprehensive_*.txt
    ```
    Options:
    - `--focus`: Prioritize plan phases for a specific area (e.g., "property dispute")

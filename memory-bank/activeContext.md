@@ -2,6 +2,24 @@
 
 ## Current Work Focus
 
+- **Infrastructure & Architecture Improvements (July 18, 2025):**
+  - Added comprehensive architectural documentation (`ARCHITECTURE Codex.md` and `ARCHITECTURE Gemini.md`) detailing system design, component relationships, and data flow.
+  - Implemented GitHub Actions CI/CD pipeline for automated testing on PRs (Python 3.11 and 3.12).
+  - Added pre-commit hooks for running pytest with fast-fail on every commit.
+  - Enhanced caseplan command to generate executable bash scripts extracting all CLI commands from workflow plans.
+  - Created comprehensive LaTeX article documenting the LitAssist workflow system.
+
+- **Testing Infrastructure Updates (July 18, 2025):**
+  - Replaced `tempfile` with pytest's `tmp_path` fixture throughout unit tests for better test isolation.
+  - Added new unit tests: `test_digest_command.py`, `test_extractfacts_command.py`, `test_utils_additional.py`.
+  - Updated Python version requirement to >=3.11 (from 3.8) and refined project licensing information.
+  - Enhanced test coverage for barbrief and caseplan commands.
+
+- **Documentation & Planning (July 18, 2025):**
+  - Created multiple analysis and planning documents: CLI coloring fix plan, high priority bugfix plan, model configuration updates.
+  - Moved various Claude analysis documents to `docs/development/` for better organization.
+  - Updated .gitignore with comprehensive development patterns for better workspace management.
+
 - **Large Document Handling & Token Counting (July 2025):**
   - Implemented chunk-based processing in `digest` and `strategy` commands to handle large legal documents (split into 50k token chunks for LLM processing).
   - Integrated `tiktoken` for accurate token counting in research file analysis and input size management.
@@ -19,23 +37,13 @@
   - Improved code formatting and removed unused imports (e.g., verifying_message from strategy.py).
   - Enhanced error handling, logging, and user feedback throughout the CLI.
 
-- **Documentation & Planning (July 2025):**
-  - Added new technical and planning docs: `docs/prompts/LLM_PROMPT_EFFICIENCY_AND_PRECISION.md`, `docs/development/context_transition_plan.md`.
-  - Updated INSTALLATION.md, README.md, TODO.md, CLAUDE.md, and user guides to reflect new features, policies, and workflows.
-  - Memory Bank and .clinerules updated for new conventions and patterns.
-
-- **Testing & Infrastructure (July 2025):**
-  - Expanded and refactored test suite: new/updated unit tests, test scripts, and comprehensive coverage for new features.
-  - Improved test output clarity and coverage for all major commands.
-
-**Latest update (13 July 2025 - Large Document Processing, Token Counting, Verification Upgrades):**
-- ADDED: Chunk-based processing for digest/strategy commands (50k token chunks).
-- ADDED: tiktoken for accurate token counting; research file size analysis in brainstorm.
-- UPDATED: Verification now uses Claude 4 Opus; citation search scope broadened.
-- UPDATED: Prompt YAMLs and CLI output for clarity and compliance.
-- ENFORCED: Zero-emoji policy and standardized output.
-- UPDATED: Documentation, planning, and Memory Bank for all new features and conventions.
-- EXPANDED: Test suite and infrastructure for new features.
+**Latest update (18 July 2025 - Infrastructure, Testing, and Documentation):**
+- ADDED: GitHub Actions CI/CD pipeline and pre-commit hooks for automated testing.
+- ADDED: Comprehensive architectural documentation and LaTeX article on LitAssist.
+- ENHANCED: caseplan command now generates executable bash scripts from workflow plans.
+- UPDATED: Python requirement to >=3.11, improved test infrastructure with tmp_path.
+- EXPANDED: Documentation with analysis/planning docs moved to proper locations.
+- IMPROVED: .gitignore with comprehensive development patterns.
 
 **Previous update (8 July 2025 - Token Limit Configuration & Brainstorm Enhancement):**
 - CHANGED: Default use_token_limits from False to True in config.py

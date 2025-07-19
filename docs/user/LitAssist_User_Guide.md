@@ -5,11 +5,11 @@
 LitAssist is a comprehensive legal workflow automation tool designed for Australian legal practice. It provides a structured end-to-end pipeline for litigation support:
 
 ```
-ingest → plan → analyse → structure → brainstorm → strategy → draft
+plan → ingest → analyse → structure → brainstorm → strategy → draft
 ```
 
-**Early Planning with CasePlan:**  
-Before collecting materials or performing deep analysis, use the `caseplan` command with a bare bones `case_facts.txt` file. This generates a phased workflow plan tailored to your case, helping you prioritize which documents to collect and which commands to run next. The plan can be refined as more facts are discovered.
+**Start with CasePlan:**  
+ALWAYS begin with the `caseplan` command, even with a skeleton `case_facts.txt` file. It generates a complete litigation roadmap with executable commands, helping you systematically build your case. The plan includes cost estimates, time projections, and explains every technical choice.
 
 *New in 2025: Added **counselnotes** command for strategic analysis from an advocate's perspective, complementing the neutral analysis provided by digest. Also added **barbrief** command for generating comprehensive barrister's briefs.*
 
@@ -21,7 +21,8 @@ This guide demonstrates how to use each workflow through a running example of a 
 
 ```mermaid
 graph TD
-    A["Lookup - Research"] --> B["Digest - Analyse"]
+    CP["CasePlan - Planning"] --> A["Lookup - Research"]
+    A --> B["Digest - Analyse"]
     B --> C["ExtractFacts - Structure"]
     C --> D["Brainstorm - Generate Options"]
     D --> E["Strategy - Plan Approach"]
@@ -30,6 +31,8 @@ graph TD
     G[Utilities] --> H["Test - API Connectivity"]
     G --> I["Audit Logging"]
     G --> J["Mock Mode"]
+    
+    style CP fill:#f9f,stroke:#333,stroke-width:4px
 ```
 
 ## Running Example: Smith v Jones
@@ -55,6 +58,12 @@ To illustrate each workflow in a practical context, we'll use a fictional family
 This running example provides context for understanding how each LitAssist workflow contributes to managing a complex family law matter from initial research through to final submissions.
 
 ## Key Features
+
+**Workflow Planning & Automation (NEW):**
+- [Y] **Start with CasePlan** - Generate complete litigation roadmap from day one
+- [Y] **Executable command scripts** - CasePlan creates bash scripts with all commands ready to run
+- [Y] **Switch explanations** - Every technical choice (--comprehensive, --mode) explained inline
+- [Y] **Readable parameters** - All commands use clear phrases instead of keyword strings
 
 **Global Installation Benefits:**
 - [Y] **Use from anywhere** - `litassist` command available in any directory
@@ -435,7 +444,163 @@ vim outputs/lookup_contract_formation_elements_20250606_143022.txt
 cat outputs/lookup_contract_formation_elements_20250606_143022.txt
 ```
 
-## Workflow 1: Lookup - Rapid Case-Law Search
+## Workflow 1: CasePlan - Litigation Workflow Planning
+
+**Pipeline Phase**: Planning & Orchestration (START HERE)
+
+### Purpose
+
+The `caseplan` command is your starting point for any litigation matter. It generates a customized, phased workflow plan based on your case facts, budget constraints, and focus areas. Run this FIRST, even with a skeleton `case_facts.txt` file, to get a complete roadmap for your entire litigation approach.
+
+### Key Features
+
+- **Two-Mode Operation**:
+  - **Budget Assessment Mode** (no --budget flag): Claude Sonnet rapidly analyzes case facts to recommend a budget level with justification
+  - **Full Plan Mode** (with --budget flag): Claude Opus generates a detailed workflow with all commands ready to execute
+- **Executable Command Extraction** (NEW): Saves all CLI commands to a separate bash script you can run directly
+- **Switch Explanation** (NEW): Every technical switch choice (--comprehensive, --mode, etc.) includes a rationale
+- **Improved Readability** (NEW): All command parameters now use clear, coherent phrases instead of keyword strings
+- **Focus Area Integration**: Rate and prioritize phases based on your specified focus
+- **Command Coverage Analysis**: Explicitly justifies inclusion/omission of all major commands
+- **Cost & Time Estimates**: Each phase includes realistic projections for planning
+
+### Command
+
+```bash
+litassist caseplan <case_facts_file> [--focus <area>] [--budget minimal|standard|comprehensive]
+```
+
+- `<case_facts_file>`: Path to case facts (can be minimal/skeleton initially)
+- `--focus`: (Optional) Area to prioritize (e.g., "custody arrangements", "property settlement")
+- `--budget`: (Optional) If omitted, get rapid budget recommendation; if provided, get full plan
+
+### Example Usage
+
+#### Step 1: Budget Assessment (Smith v Jones)
+
+```bash
+litassist caseplan case_facts_skeleton.txt
+```
+
+Output:
+```
+COMPLEXITY SCORING:
+- Legal Complexity: 7/10 (interstate relocation, parental alienation allegations)
+- Factual Complexity: 6/10 (competing narratives, psychological factors)
+- Procedural Complexity: 8/10 (urgent interim orders, tight timeframes)
+- Strategic Complexity: 7/10 (high-conflict parties, media attention risk)
+
+BUDGET RECOMMENDATION: comprehensive
+
+JUSTIFICATION: Interstate relocation with alienation allegations requires extensive research on recent authorities. High-conflict nature demands multiple strategic approaches. Tight timeframes necessitate parallel workflows.
+```
+
+#### Step 2: Generate Full Plan
+
+```bash
+litassist caseplan case_facts_skeleton.txt --focus "relocation and time arrangements" --budget comprehensive
+```
+
+This generates two files:
+1. `caseplan_starting_filescase_facts_skeletontxt_[timestamp].txt` - Human-readable plan
+2. `caseplan_commands_comprehensive_starting_filescase_facts_skeletontxt_[timestamp].txt` - Executable bash script
+
+### Output Example (Full Plan)
+
+```
+## Phase 1: Extract Initial Facts from Court Documents
+Purpose: Create structured case_facts.txt from existing court materials
+
+### COMMAND:
+```bash
+litassist extractfacts interim_orders_april2025.pdf contravention_application_feb2025.pdf affidavit_smith_jan2025.pdf affidavit_jones_feb2025.pdf
+```
+# Switch rationale: No special switches needed for standard fact extraction
+
+- Information flow: Court documents → structured case facts
+- Primary Recipient: SOLICITOR
+- Rationale: Foundation for all subsequent analysis
+- Focus Relevance: High (captures relocation timeline)
+- Cost: $2
+- Tag: ESSENTIAL
+
+## Phase 2: Research Interstate Relocation Law
+Purpose: Build comprehensive authority on relocation principles
+
+### COMMAND:
+```bash
+litassist lookup "best interests paramount consideration when parent relocates interstate with children family law act" --mode irac --comprehensive
+```
+# Switch rationale: --comprehensive for evolving relocation law, --mode irac for court submission
+
+- Information flow: Legal research → relocation framework
+- Primary Recipient: BARRISTER
+- Rationale: Core legal framework for primary argument
+- Focus Relevance: High (directly addresses relocation)
+- Cost: $2
+- Tag: ESSENTIAL
+```
+
+### Executable Script Output
+
+The second file contains ready-to-run commands:
+
+```bash
+#!/bin/bash
+# Extracted CLI commands from caseplan
+# Execute commands in order, reviewing output between phases
+
+# Phase 1: Extract Initial Facts from Court Documents
+litassist extractfacts interim_orders_april2025.pdf contravention_application_feb2025.pdf affidavit_smith_jan2025.pdf affidavit_jones_feb2025.pdf
+
+# Phase 2: Research Interstate Relocation Law
+litassist lookup "best interests paramount consideration when parent relocates interstate with children family law act" --mode irac --comprehensive
+# Switch rationale: --comprehensive for evolving relocation law, --mode irac for court submission
+
+# Phase 3: Research Parental Alienation Claims
+litassist lookup "parental alienation evidence requirements and court skepticism in Australian family law" --mode irac --comprehensive
+# Switch rationale: --comprehensive for contentious psychological concepts, --mode irac for evidence framework
+```
+
+### Running the Generated Script
+
+```bash
+# Make executable and run
+chmod +x caseplan_commands_comprehensive_*.txt
+./caseplan_commands_comprehensive_*.txt
+
+# Or run directly
+bash caseplan_commands_comprehensive_*.txt
+```
+
+### Integration with Smith v Jones Example
+
+For our running example, the caseplan command helps structure the entire approach:
+
+1. **Initial skeleton facts** → Budget assessment (recommends comprehensive)
+2. **Full plan generation** → 25-phase workflow focusing on relocation/arrangements
+3. **Execute phases** → Run the bash script, updating case_facts.txt between phases
+4. **Iterate** → Regenerate plan as new information emerges
+
+### Best Practices
+
+- **Start Early**: Run caseplan immediately, even with minimal facts
+- **Focus Wisely**: Use --focus to prioritize effort on critical issues
+- **Execute Systematically**: Use the generated bash script for consistency
+- **Review Switch Rationales**: Learn when to use --comprehensive and other options
+- **Update Iteratively**: Regenerate plan as case_facts.txt grows
+
+### Understanding Switch Explanations
+
+Each command now includes rationales for technical switches:
+
+- `--comprehensive for novel legal intersection` - Use when law is developing/complex
+- `--mode irac for structured court analysis` - Use when preparing submissions
+- `--mode broad for exploratory research` - Use for initial investigation
+- `--extract citations for brief preparation` - Use when compiling authorities
+- `--diversity 0.8 for comprehensive coverage` - Use for broad memoranda
+
+## Workflow 2: Lookup - Rapid Case-Law Search
 
 **Pipeline Phase**: Ingest (Research)
 
@@ -2473,93 +2638,6 @@ litassist counselnotes smith_v_jones_judgment.pdf witness_statements.pdf --verif
 ## Workflow 10: Barbrief - Comprehensive Barrister's Brief Generation
 
 **Pipeline Phase**: Document Preparation
-
-## Workflow 2: CasePlan - Litigation Workflow Planning
-
-**Pipeline Phase**: Planning & Orchestration (EARLY STAGE)
-
-### Purpose
-
-The `caseplan` command generates a customized, phased litigation workflow plan based on user-provided case facts, budget constraints, and (optionally) a focus area. It is designed to be run at the very start of a matter, even with a bare bones or preliminary `case_facts.txt` file, to guide the entire litigation approach and inform which materials to collect next.
-
-### Key Features
-
-- **Two-Mode Operation**:
-  - **Budget Assessment Mode**: (Claude Sonnet) Rapidly analyzes case facts to recommend a budget level (minimal, standard, comprehensive) with justification.
-  - **Full Plan Mode**: (Claude Opus) Generates a detailed, phased workflow plan, including cost/time estimates, dependencies, and a mermaid diagram.
-- **Focus Area Integration**: If `--focus` is specified, every phase is rated for relevance and prioritized accordingly.
-- **Command Coverage Analysis**: The plan must explicitly address all major commands (lookup, brainstorm, strategy, counselnotes, draft, barbrief, verify), with mandatory rationale for inclusion/omission.
-- **Format Enforcement**: Each phase includes: Name, Purpose, Commands, Rationale, Focus Relevance, Cost, Tag (ESSENTIAL/OPTIONAL).
-- **Final Section**: "COMMAND COVERAGE ANALYSIS" justifying any omitted commands.
-
-### Command
-
-```bash
-litassist caseplan <case_facts_file> [--focus <area>] [--budget minimal|standard|comprehensive]
-```
-
-- `<case_facts_file>`: Path to structured case facts (10-heading format, can be minimal/skeleton at this stage)
-- `--focus`: (Optional) Area to prioritize in the plan (e.g., "property dispute")
-- `--budget`: (Optional) Budget constraint; if omitted, the tool recommends one
-
-### Example Usage
-
-#### Budget Assessment
-
-```bash
-litassist caseplan case_facts.txt
-```
-*Outputs a summary, recommended budget, and justification.*
-
-#### Full Plan with Focus
-
-```bash
-litassist caseplan case_facts.txt --focus "parenting arrangements" --budget standard
-```
-*Outputs a detailed, phased workflow plan with focus relevance ratings.*
-
-### Output Example
-
-```
-PHASE 1: Initial Planning
-Purpose: Generate a phased workflow plan to guide document collection and analysis
-Commands: caseplan case_facts.txt --focus "parenting arrangements"
-Rationale: Early planning ensures efficient use of resources and targeted document collection
-Focus Relevance: High
-Cost: $5
-Tag: ESSENTIAL
-
-...
-
-## COMMAND COVERAGE ANALYSIS
-lookup: included
-brainstorm: included
-strategy: included
-counselnotes: omitted - not required for this case (no complex tactical issues)
-draft: included
-barbrief: omitted - not required for interim hearing
-verify: included
-```
-
-### Integration
-
-- **Inputs**: Requires a structured case facts file (see ExtractFacts workflow), but can be minimal at this stage
-- **Outputs**: Markdown plan with phases, rationale, cost/time, dependencies, and a workflow diagram
-- **Downstream**: Plan phases can be executed using other LitAssist commands
-
-### Best Practices
-
-- Use caseplan as one of the first steps, even with a skeleton case_facts.txt
-- Refine the plan as more facts and documents are collected
-- Specify `--focus` to tailor the plan to a particular issue
-- Review the COMMAND COVERAGE ANALYSIS to ensure all major steps are justified
-
-### Smith v Jones Example
-
-```bash
-litassist caseplan examples/case_facts.txt --focus "relocation" --budget comprehensive
-```
-*Generates a comprehensive, focus-prioritized workflow plan for the Smith v Jones case.*
 
 ### Purpose
 
