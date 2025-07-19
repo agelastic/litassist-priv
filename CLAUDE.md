@@ -57,40 +57,6 @@ LitAssist is a command-line tool for automated litigation support workflows, tai
    - Structured extraction and storage with IRAC-based reasoning structure
    - Captures issue, applicable law, application, conclusion, confidence, and sources
 
-### Recent Updates (July 2025)
-
-1. **Enhanced Strategy Generation**: 
-   - Increased detail in strategy outputs (3-5 paragraphs per strategy)
-   - Updated token limits to 32k for all models during generation
-   - Improved formatting and content depth
-
-2. **Multiple Input Files Support**:
-   - `extractfacts` command now accepts multiple files
-   - Files are combined with source attribution
-   - Improved handling of complex fact extraction scenarios
-
-3. **Model Updates**:
-   - Updated Grok model identifier to `x-ai/grok-3`
-   - All models now use increased token limits for better output quality
-
-4. **File Naming Convention**:
-   - Claude-generated files now prefixed with `claude_` for clarity
-   - No longer ignored by git (as of July 7)
-
-### Recent Simplifications (June 16, 2025)
-
-1. **Removed Inner Classes**: Replaced unnecessary inner classes with simple anonymous objects
-   - PineconeWrapper: `Stats`, `UpsertResponse`, `QueryResult`
-   - MockPineconeIndex: `MockStats`
-
-2. **Removed Unused Code**:
-   - Config.get_jade_api_key() method (legacy code)
-
-3. **Fixed Linting Issues**:
-   - Removed unused imports
-   - Fixed f-strings without placeholders
-   - Proper exception handling
-
 ## Development Guidelines
 
 ### CRITICAL: Minimal Changes Philosophy
@@ -104,7 +70,7 @@ LitAssist is a command-line tool for automated litigation support workflows, tai
 6. Prefer inline fixes over architectural changes
 7. One fix = one narrowly scoped change
 8. **Remove code rather than add** - It's always better to delete unnecessary parsing logic than to add more
-9. **Never add regex/parsing for LLM responses** - Always modify prompts instead (see LLM Response Processing Philosophy)
+9. **Never add regex/parsing for LLM responses** - Always modify prompts instead as described in "LLM Response Processing Philosophy"
 
 ### Code Analysis & Verification Requirements
 
@@ -207,10 +173,11 @@ click.echo(verifying_message("Verifying citations..."))
 
 ### OpenRouter Usage Policy
 
-**IMPORTANT**: Always use OpenRouter as the primary routing method for all LLM calls. The OpenRouter API key has extensive permissions and multiple BYOK (Bring Your Own Key) configurations attached, providing access to premium models and enhanced capabilities. When adding new models or providers:
+**IMPORTANT**: Always use OpenRouter as the primary routing method for all LLM calls. The OpenRouter API key has extensive permissions and multiple BYOK configurations attached, providing access to premium models and enhanced capabilities.
+When adding new models or providers:
 1. Route through OpenRouter first using the existing OR API key
 2. Only consider direct API access if OpenRouter doesn't support the model
-3. All current production models successfully route through OpenRouter
+3. All current production models successfully route through OpenRouter, but this will change if the developer's BYOKs change
 4. This approach centralizes API management and leverages existing BYOK setups
 
 ### Refactoring Philosophy
@@ -220,6 +187,10 @@ Before labeling something as "overengineering":
 2. Check if it handles edge cases or deployment scenarios
 3. Consider domain-specific requirements
 4. Only simplify if the complexity adds no value
+
+### Documentation Standards
+
+**NEVER add "Recent Changes" or "Recent Improvements" sections**. Documentation should focus on current functionality, not historical changes.
 
 ### Code Simplicity Guidelines
 
