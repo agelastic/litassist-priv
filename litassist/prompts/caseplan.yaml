@@ -121,7 +121,7 @@ commands:
          
          ## Phase 2: Document Intelligence Gathering (Day 1-2)
          Purpose: Deep analysis of financial and ownership evidence
-         Commands: litassist digest "Car Docs for civil case 2025/*.pdf" --mode issues --hint "analyze ownership disputes, gift claims, presumption of advancement, and financial contributions"
+         Commands: litassist digest "Car Docs for civil case 2025/*.pdf" --mode issues --context "analyze ownership disputes, gift claims, presumption of advancement, and financial contributions"
          # Switch rationale: --mode issues for targeted fact discovery over chronological summary
          Cost: $3
          Output feeds: Manual update of case_facts.txt with discovered facts
@@ -214,14 +214,12 @@ commands:
          
          CASE-SPECIFIC PARAMETERS:
          - Extract actual details from case_facts.txt for all parameters:
-           * --hint: Must reference specific evidence, dates, parties from the case
-           * --focus: Must mention actual legal issues and party names
-           * --instructions: Must cite specific claims and amounts
+           * --context: Must reference specific evidence, dates, parties, legal issues, claims and amounts from the case
          - Examples based on case content:
-           * GOOD: --hint "analyze the $40,364 vehicle purchase by Vitaly Osipov on 3 June 2023"
-           * BAD: --hint "focus on vehicle ownership"
-           * GOOD: --instructions "Focus on Marcus Wong's claim of gift despite registration in Osipov name"
-           * BAD: --instructions "Focus on ownership dispute"
+           * GOOD: --context "analyze the $40000 vehicle purchase by Victor Orlov on 3 June 2023"
+           * BAD: --context "focus on vehicle ownership"
+           * GOOD: --context "Focus on Martin Wong's claim of gift despite registration in Orlov's name"
+           * BAD: --context "Focus on ownership dispute"
          
          RESEARCH QUERY CONSTRUCTION:
          - Base queries on three sources from case_facts.txt:
@@ -247,15 +245,15 @@ commands:
            * Phase 5: Counter "Gift Claim" - Research incomplete gift elements
            * Phase 6: Analyze financial records contradicting gift intent
            * Phase 7: Develop strategy to prove retained control over vehicle
-         - Use --hint parameters that specifically target opposing claims:
-           * --hint "identify evidence contradicting Marcus Wong's gift claim from June 2023"
-           * --hint "analyze retained control indicators despite key handover"
+         - Use --context parameters that specifically target opposing claims:
+           * --context "identify evidence contradicting Martin Wong's gift claim from June 2023"
+           * --context "analyze retained control indicators despite key handover"
          
          FINAL DOCUMENT SPECIFICITY:
          - Draft commands must target specific case objectives with amounts/parties:
-           * GOOD: "Draft memorandum analyzing feasibility of recovering $40,364 from Marcus Wong"
+           * GOOD: "Draft memorandum analyzing feasibility of recovering $40000 from Martin Wong"
            * BAD: "Draft feasibility memorandum"
-           * GOOD: "Draft originating application for declaration Vitaly Osipov owns 2023 BMW"
+           * GOOD: "Draft originating application for declaration Victor Orlov owns 2023 BMW"
            * BAD: "Draft originating application"
          
          COMMAND FORMATTING FOR PROMINENCE:
@@ -450,12 +448,12 @@ commands:
          - COMPLETION REQUIREMENT: Your response is incomplete without a "COMMAND COVERAGE ANALYSIS" section explaining why each omitted major command was not necessary
          - REQUIRED COVERAGE CHECK: Explicitly address whether each major command type is needed for this case
 
-      FOCUS AREA REQUIREMENTS (if specified):
-         - MANDATORY: Every phase rationale must explain relevance to focus area
-         - PRIORITIZATION: Phases directly advancing focus should be marked ESSENTIAL
-         - COST OPTIMIZATION: Budget allocation should favor high-focus phases
-         - REQUIRED FORMAT: Include "Focus Relevance: [High/Medium/Low]" for each phase
-         - FOCUS COMPLIANCE: Low-relevance phases should be OPTIONAL unless legally essential
+      CONTEXT REQUIREMENTS (if specified):
+         - MANDATORY: Every phase rationale must explain relevance to additional context
+         - PRIORITIZATION: Phases directly advancing context goals should be marked ESSENTIAL
+         - COST OPTIMIZATION: Budget allocation should favor high-context relevance phases
+         - REQUIRED FORMAT: Include "Context Relevance: [High/Medium/Low]" for each phase
+         - CONTEXT COMPLIANCE: Low-relevance phases should be OPTIONAL unless legally essential
 
       FORMAT ENFORCEMENT:
          Each phase must follow this structure:
@@ -472,7 +470,7 @@ commands:
          - Primary Recipient: [SOLICITOR/BARRISTER/REFERENCE]
          - Secondary Recipients: [Others who might need it]
          - Rationale: [Why this addresses specific case evidence/issues]
-         - Focus Relevance: [High/Medium/Low]  # If focus specified
+         - Context Relevance: [High/Medium/Low]  # If context specified
          - Cost: [Estimate]
          - Tag: [ESSENTIAL/OPTIONAL]
          - Evidence/Opposition addressed: [Which documents analyzed or claims countered]
@@ -609,7 +607,7 @@ commands:
       3. EVIDENCE-BASED APPROACH
          - Create descriptive filenames with dates/parties
          - Examples: employment_contract_2023.pdf, termination_letter_jan2024.pdf
-         - Use --hint for key document analysis
+         - Use --context for key document analysis
          - One manual case_facts.txt update after digest
 
       4. COMPREHENSIVE RESEARCH

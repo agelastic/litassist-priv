@@ -15,12 +15,12 @@ processing:
       - **[Date]**: [Event description]
       - **[Date]**: [Event description]
       
-      {hint_instruction}
+      {context_instruction}
       Include all significant developments, procedural steps, and factual events in chronological order.
 
-    summary_mode_hint_instruction_with_hint: |
-      Focus your summary only on aspects related to: {hint}
-    summary_mode_hint_instruction_no_hint: |
+    summary_mode_context_instruction_with_context: |
+      Focus your summary only on aspects related to: {context}
+    summary_mode_context_instruction_no_context: |
       Cover all relevant topics in the document.
 
     issues_mode: |
@@ -37,12 +37,12 @@ processing:
       **Issue 2: [Issue Name]**
       [Same structure...]
       
-      {hint_instruction}
+      {context_instruction}
       Focus on substantive legal questions, procedural issues, and areas requiring legal analysis.
 
-    issues_mode_hint_instruction_with_hint: |
-      Focus your analysis only on issues related to: {hint}
-    issues_mode_hint_instruction_no_hint: |
+    issues_mode_context_instruction_with_context: |
+      Focus your analysis only on issues related to: {context}
+    issues_mode_context_instruction_no_context: |
       Cover all legal issues present in the document.
     
     system_prompt: |
@@ -53,7 +53,7 @@ processing:
       
       Extract key events, dates, and developments from this section that should be included in a comprehensive chronological summary.
       
-      Focus on: {hint}
+      Focus on: {context}
       
       **IMPORTANT**: This is a partial analysis that will be consolidated with other sections.
       Focus on identifying specific events and dates rather than providing a complete summary.
@@ -66,7 +66,7 @@ processing:
       
       Extract legal issues, problems, and concerns from this section that should be included in comprehensive legal issues analysis.
       
-      Focus on: {hint}
+      Focus on: {context}
       
       **IMPORTANT**: This is a partial analysis that will be consolidated with other sections.
       Focus on identifying specific legal issues rather than providing complete legal analysis.
@@ -85,7 +85,7 @@ processing:
       - **[Date]**: [Event description]
       - **[Date]**: [Event description]
       
-      Focus on: {hint}
+      Focus on: {context}
       
       Synthesize all chronological information, eliminate redundancy, and provide coherent timeline.
       
@@ -110,7 +110,7 @@ processing:
       **Issue 2: [Issue Name]**
       [Same structure...]
       
-      Focus on: {hint}
+      Focus on: {context}
       
       Synthesize all legal issues, eliminate redundancy, and provide coherent analysis.
       

@@ -50,8 +50,8 @@ barbrief:
     ## SUPPORTING DOCUMENTS ({supporting_count} documents)
     {supporting_content}
 
-    ## SPECIFIC INSTRUCTIONS
-    {instructions}
+    ## ADDITIONAL CONTEXT
+    {context}
 
     ---
 

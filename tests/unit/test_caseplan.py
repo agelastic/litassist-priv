@@ -68,10 +68,10 @@ class TestCaseplanCommand:
     @patch("litassist.commands.caseplan.LLMClientFactory")
     @patch("litassist.commands.caseplan.save_command_output")
     @patch("litassist.commands.caseplan.save_log")
-    def test_focus_option(
+    def test_context_option(
         self, mock_save_log, mock_save_output, mock_factory, tmp_path
     ):
-        """Test --focus option is included in prompt."""
+        """Test --context option is included in prompt."""
         case_facts = tmp_path / "case_facts.txt"
         case_facts.write_text("Parties: Test v Test\nBackground: Dispute...")
 
@@ -85,13 +85,13 @@ class TestCaseplanCommand:
 
         runner = CliRunner()
         result = runner.invoke(
-            caseplan, [str(case_facts), "--budget", "minimal", "--focus", "property"]
+            caseplan, [str(case_facts), "--budget", "minimal", "--context", "property"]
         )
 
         assert result.exit_code == 0
         call_args = mock_client.complete.call_args[0][0]
         assert any(
-            "FOCUS AREA: property" in msg["content"]
+            "CONTEXT: property" in msg["content"]
             for msg in call_args
             if msg["role"] == "user"
         )

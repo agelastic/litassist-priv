@@ -1,5 +1,9 @@
 # LitAssist CLI Switch Standardization Plan
 
+**STATUS: IMPLEMENTED - December 2024**
+
+This plan has been implemented. All guidance switches have been standardized to use `--context`.
+
 ## Overview
 This plan proposes standardizing command-line switches across LitAssist commands to improve consistency, reduce user confusion, and maintain backwards compatibility where feasible.
 

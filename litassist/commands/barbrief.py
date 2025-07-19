@@ -21,7 +21,6 @@ from litassist.utils import (
     save_command_output,
     show_command_completion,
     warning_message,
-    saved_message,
     count_tokens_and_words,
 )
 from litassist.llm import LLMClientFactory
@@ -62,7 +61,7 @@ def prepare_brief_sections(
     strategies: Optional[str],
     research_docs: List[str],
     supporting_docs: List[str],
-    instructions: Optional[str],
+    context: Optional[str],
     hearing_type: str,
 ) -> Dict[str, Any]:
     """
@@ -73,7 +72,7 @@ def prepare_brief_sections(
         strategies: Optional brainstormed strategies
         research_docs: List of research/lookup reports
         supporting_docs: List of supporting documents
-        instructions: Optional specific instructions
+        context: Optional additional context
         hearing_type: Type of hearing
         
     Returns:
@@ -88,7 +87,7 @@ def prepare_brief_sections(
         "research_content": "\n\n---\n\n".join(research_docs),
         "supporting_count": len(supporting_docs),
         "supporting_content": "\n\n---\n\n".join(supporting_docs),
-        "instructions": instructions or "No specific instructions provided.",
+        "context": context or "No specific context provided.",
     }
     
     return sections
@@ -149,9 +148,9 @@ def expand_glob_patterns(ctx, param, value):
     help="Supporting documents. Supports glob patterns. Use: --documents '*.pdf'",
 )
 @click.option(
-    "--instructions",
+    "--context",
     type=str,
-    help="Specific instructions for counsel",
+    help="Additional context to guide the analysis",
 )
 @click.option(
     "--hearing-type",
@@ -172,7 +171,7 @@ def barbrief(
     strategies,
     research,
     documents,
-    instructions,
+    context,
     hearing_type,
     verify,
 ):
@@ -188,7 +187,7 @@ def barbrief(
         strategies: Optional path to brainstormed strategies
         research: Optional research/lookup reports (multiple allowed)
         documents: Optional supporting documents (multiple allowed)
-        instructions: Optional specific instructions for counsel
+        context: Optional additional context to guide the analysis
         hearing_type: Type of hearing (trial/directions/interlocutory/appeal)
         verify: Whether to verify citations
         
@@ -234,7 +233,7 @@ def barbrief(
         strategies_content,
         research_docs,
         supporting_docs,
-        instructions,
+        context,
         hearing_type,
     )
     

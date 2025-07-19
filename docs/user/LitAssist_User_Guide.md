@@ -101,6 +101,18 @@ This running example provides context for understanding how each LitAssist workf
 - All prompt YAMLs have been updated for clarity, compliance, and zero-emoji policy.
 - CLI output and logs are now standardized to ASCII/ANSI only (no emoji).
 
+## Switch Migration Reference
+
+**December 2024**: All guidance switches have been standardized to use `--context` for consistency.
+
+| Command   | Old Switch       | New Switch  | Purpose                           |
+|-----------|------------------|-------------|-----------------------------------|
+| digest    | --hint          | --context   | Additional context to guide analysis |
+| caseplan  | --focus         | --context   | Additional context to guide analysis |
+| barbrief  | --instructions  | --context   | Additional context to guide analysis |
+
+**Note**: This change improves consistency across commands. All commands now use the same switch name for providing additional guidance to the AI.
+
 ## Citation Quality Control
 
 LitAssist employs a comprehensive two-phase citation checking system to ensure all legal references are accurate and verifiable:
@@ -467,11 +479,11 @@ The `caseplan` command is your starting point for any litigation matter. It gene
 ### Command
 
 ```bash
-litassist caseplan <case_facts_file> [--focus <area>] [--budget minimal|standard|comprehensive]
+litassist caseplan <case_facts_file> [--context <additional_context>] [--budget minimal|standard|comprehensive]
 ```
 
 - `<case_facts_file>`: Path to case facts (can be minimal/skeleton initially)
-- `--focus`: (Optional) Area to prioritize (e.g., "custody arrangements", "property settlement")
+- `--context`: (Optional) Additional context to guide the analysis (e.g., "custody arrangements", "property settlement")
 - `--budget`: (Optional) If omitted, get rapid budget recommendation; if provided, get full plan
 
 ### Example Usage
@@ -498,7 +510,7 @@ JUSTIFICATION: Interstate relocation with alienation allegations requires extens
 #### Step 2: Generate Full Plan
 
 ```bash
-litassist caseplan case_facts_skeleton.txt --focus "relocation and time arrangements" --budget comprehensive
+litassist caseplan case_facts_skeleton.txt --context "relocation and time arrangements" --budget comprehensive
 ```
 
 This generates two files:
@@ -585,7 +597,7 @@ For our running example, the caseplan command helps structure the entire approac
 ### Best Practices
 
 - **Start Early**: Run caseplan immediately, even with minimal facts
-- **Focus Wisely**: Use --focus to prioritize effort on critical issues
+- **Focus Wisely**: Use --context to prioritize effort on critical issues
 - **Execute Systematically**: Use the generated bash script for consistency
 - **Review Switch Rationales**: Learn when to use --comprehensive and other options
 - **Update Iteratively**: Regenerate plan as case_facts.txt grows
@@ -900,13 +912,13 @@ The `digest` command processes large documents by splitting them into manageable
 ### Command
 
 ```bash
-litassist digest <file>... [--mode summary|issues] [--hint <hint_text>]
+litassist digest <file>... [--mode summary|issues] [--context <context_text>]
 ```
 
 Options:
 - `<file>...`: One or more files to digest (PDFs or text files). Accepts multiple files for consolidated analysis.
 - `--mode`: Choose between chronological summary or issue-spotting (default: summary)
-- `--hint`: Optional guidance to focus the analysis on specific aspects (e.g., "focus on parental alienation claims" or "analyze financial discrepancies")
+- `--context`: Optional additional context to guide the analysis (e.g., "focus on parental alienation claims" or "analyze financial discrepancies")
 
 **Output**: All analysis saved to timestamped files: `digest_[mode]_[filename_slug]_YYYYMMDD_HHMMSS.txt`
 
@@ -942,18 +954,18 @@ For the *Smith v Jones* case, we have received a lengthy affidavit from our clie
 litassist extractfacts <file>
 ```
 
-#### Using the --hint Option
+#### Using the --context Option
 When you need focused analysis on specific aspects of a document:
 
 ```bash
 # Focus on parental alienation allegations
-litassist digest examples/smith_affidavit.pdf --mode issues --hint "focus on parental alienation claims and evidence"
+litassist digest examples/smith_affidavit.pdf --mode issues --context "focus on parental alienation claims and evidence"
 
 # Analyze financial aspects
-litassist digest financial_statements.pdf --mode summary --hint "analyze income discrepancies and hidden assets"
+litassist digest financial_statements.pdf --mode summary --context "analyze income discrepancies and hidden assets"
 
 # Medical document analysis
-litassist digest medical_report.pdf --mode summary --hint "identify disability impacts on parenting capacity"
+litassist digest medical_report.pdf --mode summary --context "identify disability impacts on parenting capacity"
 ```
 
 #### Processing Multiple Files
@@ -964,7 +976,7 @@ You can now digest multiple documents in a single command:
 litassist digest smith_affidavit.pdf jones_affidavit.pdf expert_report.pdf --mode issues
 
 # Using wildcards (shell expands them)
-litassist digest evidence/*.pdf --mode summary --hint "timeline of events"
+litassist digest evidence/*.pdf --mode summary --context "timeline of events"
 
 # Mix different document types
 litassist digest financial_records.pdf correspondence.txt medical_report.pdf --mode issues
@@ -984,7 +996,7 @@ Each file is processed individually and the output includes clear source attribu
 [Analysis of expert_report.pdf...]
 ```
 
-**Benefits of --hint**:
+**Benefits of --context**:
 - Directs AI attention to critical aspects
 - Ensures important details aren't overlooked
 - Particularly useful for lengthy documents
@@ -1741,7 +1753,7 @@ litassist strategy case_facts.txt --outcome "custody modification" --strategies 
 | Aspect | ExtractFacts | Digest |
 |--------|-------------|--------|
 | **Output Format** | Fixed 10-heading structure | Flexible analysis format |
-| **Available Options** | `--verify` only | `--mode summary/issues`, `--hint` |
+| **Available Options** | `--verify` only | `--mode summary/issues`, `--context` |
 | **Primary Use** | Foundation for other commands | Document understanding |
 | **Structure** | Always produces same 10 headings | Varies based on content and mode |
 | **Citation Focus** | Enhanced verification for accuracy | Standard verification with warnings |
@@ -1759,7 +1771,7 @@ litassist strategy case_facts.txt --outcome "custody modification" --strategies 
 
 #### Use **Digest** when:
 - You want to understand what a document contains
-- You need focused analysis with `--hint` (e.g., "focus on Volkswagen VIN details")
+- You need focused analysis with `--context` (e.g., "focus on Volkswagen VIN details")
 - You want chronological summaries (`--mode summary`) or legal issue identification (`--mode issues`)
 - Processing non-legal documents or documents that don't need structured legal analysis
 - Quick document comprehension without feeding into other commands
@@ -1780,7 +1792,7 @@ litassist strategy case_facts.txt --outcome "summary judgment"
 #### For Document Understanding:
 ```bash
 # Use digest to understand multiple documents with source attribution
-litassist digest car_bundle.pdf suncorp_bundle.pdf whatsapp_chat.txt --hint "vehicle ownership"
+litassist digest car_bundle.pdf suncorp_bundle.pdf whatsapp_chat.txt --context "vehicle ownership"
 # → Provides analysis of each document with clear source headers
 
 # Or general document analysis of a directory
@@ -1790,8 +1802,8 @@ litassist digest evidence/*.pdf --mode issues
 
 #### The Wrong Approach:
 ```bash
-# [N] This won't work - extractfacts doesn't have --hint option
-litassist extractfacts car_docs.pdf --hint "VIN details"
+# [N] This won't work - extractfacts doesn't have --context option
+litassist extractfacts car_docs.pdf --context "VIN details"
 
 # [N] This won't produce structured facts for other commands
 litassist digest contract.pdf
@@ -1813,7 +1825,7 @@ litassist barbrief case_facts.txt --hearing-type trial --strategies strategies.t
 ```bash
 # Document understanding workflow
 litassist digest large_contract.pdf --mode issues  # Identify problems
-litassist digest financial_data.pdf --mode summary --hint "cash flow analysis"
+litassist digest financial_data.pdf --mode summary --context "cash flow analysis"
 litassist digest medical_records.pdf --mode summary  # Timeline of events
 ```
 
@@ -1821,7 +1833,7 @@ litassist digest medical_records.pdf --mode summary  # Timeline of events
 
 1. **ExtractFacts = Structure**: Fixed format for legal pipeline integration
 2. **Digest = Flexibility**: Adaptable analysis for document comprehension
-3. **Different options**: ExtractFacts has no `--hint`, Digest has no fixed structure
+3. **Different options**: ExtractFacts has no `--context`, Digest has no fixed structure
 4. **Different purposes**: Foundation building vs. content understanding
 5. **Not interchangeable**: Choose based on your end goal, not document type
 6. **Pipeline integration**: Only ExtractFacts output works reliably with brainstorm/strategy/barbrief
@@ -2657,7 +2669,7 @@ Options:
 - `--strategies FILE`: Include brainstormed strategies
 - `--research FILE`: Include lookup/research reports (multiple allowed)
 - `--documents FILE`: Include supporting documents (multiple allowed)
-- `--instructions TEXT`: Specific instructions for counsel
+- `--context TEXT`: Additional context to guide the analysis
 - `--verify`: Enable citation verification
 
 ### Verification Optimization
@@ -2712,7 +2724,7 @@ litassist barbrief smith_v_jones_facts.txt --hearing-type appeal \
   --strategies brainstorm_output.txt \
   --research lookup_relocation_law.txt --research lookup_alienation_cases.txt \
   --documents affidavit_smith.pdf --documents family_report.pdf \
-  --instructions "Focus on error in applying relocation principles" \
+  --context "Focus on error in applying relocation principles" \
   --verify
 
 # Output: barbrief_appeal_20250107_152045.txt

@@ -94,7 +94,7 @@ class TestPrepareBriefSections:
             strategies=None,
             research_docs=[],
             supporting_docs=[],
-            instructions=None,
+            context=None,
             hearing_type="trial",
         )
 
@@ -106,7 +106,7 @@ class TestPrepareBriefSections:
         assert sections["research_content"] == ""
         assert sections["supporting_count"] == 0
         assert sections["supporting_content"] == ""
-        assert sections["instructions"] == "No specific instructions provided."
+        assert sections["context"] == "No specific context provided."
 
     def test_prepare_sections_full(self):
         """Test with all inputs provided."""
@@ -115,7 +115,7 @@ class TestPrepareBriefSections:
             strategies="Strategy content",
             research_docs=["Research 1", "Research 2"],
             supporting_docs=["Doc 1", "Doc 2", "Doc 3"],
-            instructions="Please focus on X",
+            context="Please focus on X",
             hearing_type="appeal",
         )
 
@@ -128,7 +128,7 @@ class TestPrepareBriefSections:
         assert "Research 2" in sections["research_content"]
         assert sections["supporting_count"] == 3
         assert "Doc 1" in sections["supporting_content"]
-        assert sections["instructions"] == "Please focus on X"
+        assert sections["context"] == "Please focus on X"
 
 
 class TestBarbriefCommand:
@@ -281,7 +281,7 @@ class TestBarbriefCommand:
                     "research2.txt",
                     "--documents",
                     "doc1.txt",
-                    "--instructions",
+                    "--context",
                     "Focus on jurisdiction",
                     "--verify",
                 ],

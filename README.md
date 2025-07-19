@@ -211,7 +211,7 @@ bash caseplan_commands_standard_*.txt
   - `minimal`: Quick matters, 5-7 phases
   - `standard`: Typical litigation, 10-12 phases  
   - `comprehensive`: Complex cases, 15-25 phases
-- **Focus Areas**: Use `--focus "breach of contract"` to prioritize relevant workflow phases
+- **Context**: Use `--context "breach of contract"` to guide analysis and prioritize relevant workflow phases
 - **Executable Output**: Creates bash script with all commands ready to run
 - **Switch Explanations**: Every technical choice explained inline
 
@@ -326,7 +326,7 @@ litassist barbrief case_facts.txt --hearing-type interlocutory \
   --strategies strategies.txt \
   --research lookup_report1.txt --research lookup_report2.txt \
   --documents affidavit.pdf --documents exhibit_a.pdf \
-  --instructions "Focus on jurisdictional issues" \
+  --context "Focus on jurisdictional issues" \
   --verify
 ```
 
@@ -338,7 +338,7 @@ Options:
 - `--strategies FILE`: Brainstormed strategies
 - `--research FILE`: Lookup/research reports (multiple allowed)
 - `--documents FILE`: Supporting documents (multiple allowed)
-- `--instructions TEXT`: Specific instructions for counsel
+- `--context TEXT`: Additional context to guide the analysis
 - `--verify`: Enable citation verification
 
 ### Utility Commands

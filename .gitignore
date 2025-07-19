@@ -63,6 +63,13 @@ config.yaml
 site/
 docs/_build/
 
+# Jekyll
+_site/
+.sass-cache/
+.jekyll-cache/
+.jekyll-metadata
+Gemfile.lock
+
 # --- Project specific ---
 # LaTeX auxiliary files
 *.aux
@@ -127,7 +134,6 @@ sample_*.txt
 test_inputs/
 
 **/.claude/settings.local.json
-temp *.md
 
 # Claude-generated files
 # claude_*
