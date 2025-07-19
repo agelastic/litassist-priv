@@ -1,4 +1,4 @@
-git# Minimal requirements for CI testing
+# Minimal requirements for CI testing
 pytest
 black
 # Core dependencies needed for imports
