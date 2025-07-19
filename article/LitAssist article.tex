@@ -42,44 +42,44 @@ The integration of large language models (LLMs) into legal workflows represents 
 %\section{Introduction}
 \section*{1. Introduction}
 
-The convergence of artificial intelligence (AI) and legal practice has ushered in a transformative era for the legal profession. Among the most disruptive innovations in this space is the application of large language models (LLMs), which have demonstrated remarkable capabilities in understanding, generating, and reasoning over complex text. These models, exemplified by systems such as OpenAI's GPT-4o, Anthropic's Claude, and X AI's Grok, are now being adapted to specialized domains, including law, where precision, nuance, and interpretability are paramount.
+The convergence of artificial intelligence (AI) and legal practice has ushered in a transformative era for the legal profession. Among the most disruptive innovations in this space is the application of large language models (LLMs), which have demonstrated remarkable capabilities in understanding, generating, and reasoning over complex text \cite{Bommarito2022}. These models, exemplified by systems such as OpenAI's GPT-4o, Anthropic's Claude, and X AI's Grok, are now being adapted to specialized domains, including law, where precision, nuance, and interpretability are paramount.
 
-At the forefront of this legal-AI intersection is \textbf{LitAssist}, a command-line system designed to augment legal professionals by leveraging LLMs for core legal tasks. LitAssist does not seek to replace legal practitioners, but rather to amplify their capabilities—particularly in areas of research, drafting, and procedural guidance. As courts, law firms, and regulatory agencies grapple with increasing caseloads and growing complexity, the promise of systems like LitAssist is to streamline routine processes, improve consistency in legal reasoning, and widen access to legal knowledge.
+At the forefront of this legal-AI intersection is \textbf{LitAssist}, a command-line system designed to augment legal professionals by leveraging LLMs for core legal tasks. LitAssist does not seek to replace legal practitioners, but rather to amplify their capabilities—particularly in areas of research, drafting, and procedural guidance. As courts, law firms, and regulatory agencies grapple with increasing caseloads and growing complexity \cite{Casey2020}, the promise of systems like LitAssist is to streamline routine processes, improve consistency in legal reasoning, and widen access to legal knowledge.
 
-Yet, the deployment of LLMs in legal contexts also raises profound questions about trust, accountability, ethics, and governance. Legal advice carries weighty consequences, and the opaque nature of LLM-generated outputs poses challenges for verification, attribution, and professional responsibility. Moreover, while legal language is highly structured and historically grounded, LLMs often rely on probabilistic associations and may generate plausible-sounding but legally inaccurate content—a phenomenon known as "hallucination."
+Yet, the deployment of LLMs in legal contexts also raises profound questions about trust, accountability, ethics, and governance \cite{Binns2018}. Legal advice carries weighty consequences, and the opaque nature of LLM-generated outputs poses challenges for verification, attribution, and professional responsibility. Moreover, while legal language is highly structured and historically grounded, LLMs often rely on probabilistic associations and may generate plausible-sounding but legally inaccurate content—a phenomenon known as "hallucination" \cite{Zhao2021}.
 
 This article provides a critical examination of LitAssist as a case study in law-oriented AI design. We aim to analyze its system architecture, assess its legal and ethical implications, and position it within broader debates surrounding the use of generative AI in professionalized knowledge domains. By doing so, we contribute to the emerging scholarship on AI-augmented legal practice and offer insights for researchers, developers, and policymakers invested in building responsible, effective legal AI systems.
 
 \section*{2. Background: AI and Legal Informatics}
 
-The integration of computational tools into legal practice has a long lineage, dating back to early expert systems in the 1970s and 1980s, such as TAXMAN and HYPO, which attempted to encode legal reasoning into rule-based logic. These systems, while influential in theoretical jurisprudence and early legal informatics, struggled with scalability and contextual adaptability—two factors that are central to legal practice. The rise of digital legal research platforms in the 1990s, like Westlaw and LexisNexis, marked a significant shift toward information retrieval rather than reasoning, focusing on enhancing lawyer productivity rather than replicating legal judgment.
+The integration of computational tools into legal practice has a long lineage, dating back to early expert systems in the 1970s and 1980s, such as TAXMAN and HYPO\footnote{TAXMAN was developed by L. Thorne McCarty at Rutgers University, and HYPO by Kevin D. Ashley at the University of Pittsburgh. See Ashley \cite{Ashley2017} for a comprehensive history.}, which attempted to encode legal reasoning into rule-based logic. These systems, while influential in theoretical jurisprudence and early legal informatics, struggled with scalability and contextual adaptability—two factors that are central to legal practice. The rise of digital legal research platforms in the 1990s, like Westlaw and LexisNexis\footnote{Westlaw was founded in 1975 by West Publishing, and LexisNexis emerged from the merger of Lexis (1973) and Nexis (1979) databases.}, marked a significant shift toward information retrieval rather than reasoning, focusing on enhancing lawyer productivity rather than replicating legal judgment.
 
-In the last decade, advances in machine learning and natural language processing (NLP) have reignited interest in legal automation. Tools capable of predicting case outcomes, clustering fact patterns, or extracting citations from judicial opinions emerged from both academic initiatives and commercial vendors. However, these systems typically relied on domain-specific features and shallow statistical methods that limited their generalization across jurisdictions or practice areas.
+In the last decade, advances in machine learning and natural language processing (NLP) have reignited interest in legal automation \cite{Surden2014}. Tools capable of predicting case outcomes \cite{Aletras2016, Katz2017}, clustering fact patterns, or extracting citations from judicial opinions emerged from both academic initiatives and commercial vendors. However, these systems typically relied on domain-specific features and shallow statistical methods that limited their generalization across jurisdictions or practice areas.
 
 The advent of large language models (LLMs)—particularly transformer-based architectures like BERT, GPT, Claude, and Grok—has fundamentally altered the landscape. These models are trained on massive corpora and can generate coherent, contextually relevant text, respond to prompts in natural language, and perform few-shot or zero-shot learning. Their general-purpose nature and emergent capabilities have led to experimentation in highly specialized domains, including medicine, software engineering, and increasingly, law.
 
 In legal contexts, LLMs have demonstrated proficiency in summarizing case law, answering legal questions, drafting pleadings, and extracting structured information from unstructured legal texts. However, legal practice presents unique challenges for language models:
 
 \begin{itemize}
-\item \textbf{Domain Sensitivity:} Legal texts are jurisdictionally bound, historically layered, and interpretatively rich. Small differences in phrasing or precedent can lead to dramatically different outcomes.
+\item \textbf{Domain Sensitivity:} Legal texts are jurisdictionally bound, historically layered, and interpretatively rich. Small differences in phrasing or precedent can lead to dramatically different outcomes \cite{Gordon2007}.
 
 \item \textbf{Accuracy Requirements:} Unlike creative writing or conversational AI, legal tasks demand factual and doctrinal precision. Errors can result in ethical violations or professional liability.
 
-\item \textbf{Explainability and Transparency:} Legal professionals must justify their decisions. LLMs, by contrast, offer little transparency into their reasoning, raising concerns about "black box" outputs.
+\item \textbf{Explainability and Transparency:} Legal professionals must justify their decisions. LLMs, by contrast, offer little transparency into their reasoning, raising concerns about "black box" outputs \cite{Wischmeyer2020}.
 \end{itemize}
 
-Despite these obstacles, the legal sector is witnessing a wave of investment and prototyping centered around LLMs. Tools like Casetext's CoCounsel, Lexis+ AI, and Harvey AI promise varying degrees of automation, but remain limited in scope or opaque in operation. Within this ecosystem, \textbf{LitAssist} emerges as a system purpose-built not merely to automate legal tasks, but to embed LLMs in a way that respects legal standards, supports professional judgment, and acknowledges the epistemic constraints of both law and AI.
+Despite these obstacles, the legal sector is witnessing a wave of investment and prototyping centered around LLMs. Tools like Casetext's CoCounsel\footnote{CoCounsel was launched by Casetext in 2023 as an AI legal assistant powered by GPT-4.}, Lexis+ AI\footnote{Lexis+ AI was introduced by LexisNexis in 2023 as their generative AI legal research platform.}, and Harvey AI\footnote{Harvey AI, founded in 2022, provides AI-powered legal work products and is used by major law firms globally.} promise varying degrees of automation, but remain limited in scope or opaque in operation. Within this ecosystem, \textbf{LitAssist} emerges as a system purpose-built not merely to automate legal tasks, but to embed LLMs in a way that respects legal standards, supports professional judgment, and acknowledges the epistemic constraints of both law and AI.
 
 In the next section, we offer a technical and functional overview of LitAssist, situating it as a response to these historical challenges and contemporary opportunities in AI-augmented law.
 
 
 \section*{3. LitAssist: System Overview}
 
-\textbf{LitAssist} is a modular, LLM-powered command-line tool designed to support legal professionals through structured, explainable, and task-specific workflows. Unlike general-purpose AI chatbots or opaque legal assistants, LitAssist is built around the principle of \textbf{constrained intelligence}—channeling the generative capabilities of large language models into legally legible, verifiable outputs. Its architecture is informed by core requirements of legal work: traceability, precedent-awareness, jurisdictional sensitivity, and support for professional oversight.
+\textbf{LitAssist} is a modular, LLM-powered command-line tool designed to support legal professionals through structured, explainable, and task-specific workflows. Unlike general-purpose AI chatbots or opaque legal assistants, LitAssist is built around the principle of \textbf{constrained intelligence}—channeling the generative capabilities of large language models into legally legible, verifiable outputs. Its architecture is informed by core requirements of legal work: traceability, precedent-awareness, jurisdictional sensitivity, and support for professional oversight \cite{Floridi2022}.
 
 \subsection*{3.1 Design Philosophy}
 
-At its core, LitAssist is not a monolithic AI legal advisor, but a collection of narrowly scoped, interlinked modules, each designed to perform a specific class of legal task. This modularity enables a level of control and auditability that is critical in legal settings. The system leverages LLMs as text-generating engines, but wraps them in a framework that includes:
+At its core, LitAssist is not a monolithic AI legal advisor, but a collection of narrowly scoped, interlinked modules, each designed to perform a specific class of legal task. This modularity enables a level of control and auditability that is critical in legal settings \cite{Winfield2021}. The system leverages LLMs as text-generating engines, but wraps them in a framework that includes:
 
 \begin{itemize}
 \item \textbf{Preconfigured Prompt Templates:} Each module uses tailored prompts developed through iterative prompt engineering to guide the model's behavior in legally appropriate ways.
@@ -134,7 +134,7 @@ LitAssist is intentionally constrained in scope. It does not provide legal advic
 
 \item \textbf{Temporal Staleness:} Legal authority changes over time; without active updating of underlying databases or search indexes, outdated precedents may be cited.
 
-\item \textbf{LLM Hallucination Risk:} Despite retrieval grounding, LLMs may still introduce fabricated citations or misinterpret nuances—highlighting the necessity of human oversight and the optional verification pass available in each command.
+\item \textbf{LLM Hallucination Risk:} Despite retrieval grounding, LLMs may still introduce fabricated citations or misinterpret nuances—highlighting the necessity of human oversight and the optional verification pass available in each command \cite{Zhao2021}.
 \end{itemize}
 
 By foregrounding transparency, modularity, and legal-specific design, LitAssist aims to offer a measured, professional-grade alternative to the proliferation of generic "AI lawyer" tools. In the next section, we examine the system's methodological underpinnings in more technical detail.
@@ -191,7 +191,7 @@ Given the risks of inappropriate generalization or unsupported legal reasoning, 
 \item \textbf{Audit Logging:} Comprehensive logs are maintained for each command execution, capturing inputs, parameters, raw responses, and token usage statistics for later analysis and quality improvement.
 \end{itemize}
 
-These constraints are not merely technical safeguards but part of a broader \textbf{institutional design logic}: AI systems in law must preserve human oversight, encourage explainability, and align with normative and procedural obligations.
+These constraints are not merely technical safeguards but part of a broader \textbf{institutional design logic}: AI systems in law must preserve human oversight, encourage explainability, and align with normative and procedural obligations \cite{Wischmeyer2020}.
 
 \subsection*{4.4 Evaluation Strategy}
 
@@ -212,7 +212,7 @@ Taken together, these components reflect a design ethos centered on legal integr
 
 \section*{5. Legal and Ethical Implications}
 
-While the technological capabilities of systems like LitAssist are significant, their real-world deployment must be critically evaluated through the lens of legal ethics, professional responsibility, and the broader social function of the law. Unlike other domains where LLMs may operate with minimal oversight, legal applications are inextricably bound to norms of accountability, transparency, and fairness. This section addresses the legal, ethical, and professional ramifications of LitAssist's design and usage, focusing on the system's implications for practitioners, clients, and institutions.
+While the technological capabilities of systems like LitAssist are significant, their real-world deployment must be critically evaluated through the lens of legal ethics, professional responsibility, and the broader social function of the law. Unlike other domains where LLMs may operate with minimal oversight, legal applications are inextricably bound to norms of accountability, transparency, and fairness \cite{Binns2018}. This section addresses the legal, ethical, and professional ramifications of LitAssist's design and usage, focusing on the system's implications for practitioners, clients, and institutions.
 
 \subsection*{5.1 Professional Responsibility and the Unauthorized Practice of Law}
 
@@ -230,13 +230,13 @@ LitAssist offers a local-first approach to confidentiality, with command-line op
 
 LLMs are known to reproduce and sometimes amplify the biases present in their training data. In legal contexts, this can result in outputs that reflect or reinforce disparities along lines of race, gender, socioeconomic status, or geography. Moreover, models trained on general-purpose corpora may mischaracterize legal standards, subtly distorting doctrine or misapplying precedent.
 
-To counteract these risks, LitAssist integrates \textbf{retrieval-grounded generation} and jurisdiction-specific prompts that anchor model behavior in verifiable sources. The system also enforces Australian English and legal standards across all prompts, reducing the risk of inappropriate importation of foreign legal concepts. Nevertheless, no technical fix alone can eliminate systemic bias—a fact that underscores the necessity of ongoing human oversight and institutional accountability.
+To counteract these risks, LitAssist integrates \textbf{retrieval-grounded generation} and jurisdiction-specific prompts that anchor model behavior in verifiable sources. The system also enforces Australian English and legal standards across all prompts, reducing the risk of inappropriate importation of foreign legal concepts. Nevertheless, no technical fix alone can eliminate systemic bias—a fact that underscores the necessity of ongoing human oversight and institutional accountability \cite{Floridi2022}.
 
 \subsection*{5.4 Accountability and Legal Liability}
 
 A key concern in AI-augmented legal work is the question of \textbf{who is responsible} when something goes wrong—whether through incorrect legal reasoning, reliance on hallucinated citations, or failure to identify a critical precedent. Given the black-box nature of LLMs, attributing fault can be difficult.
 
-LitAssist mitigates this risk through transparency and auditability. Every output is traceable to its inputs, prompt logic, and data sources, enabling post-hoc review and risk analysis. Additionally, the system's human-in-the-loop design ensures that ultimate responsibility rests with the licensed professional, not the machine. By clearly delineating roles and responsibilities, LitAssist aligns with ethical norms without creating an illusion of autonomy or neutrality.
+LitAssist mitigates this risk through transparency and auditability. Every output is traceable to its inputs, prompt logic, and data sources, enabling post-hoc review and risk analysis. Additionally, the system's human-in-the-loop design ensures that ultimate responsibility rests with the licensed professional, not the machine. By clearly delineating roles and responsibilities, LitAssist aligns with ethical norms without creating an illusion of autonomy or neutrality \cite{Winfield2021}.
 
 \subsection*{5.5 Access to Justice and Equity Implications}
 
@@ -250,7 +250,7 @@ By embedding ethical considerations into its technical architecture and user exp
 
 \section*{6. Case Studies and Use Scenarios}
 
-To evaluate the practical utility and boundaries of LitAssist, it is essential to examine how the system performs in concrete legal workflows. The following case studies illustrate common scenarios where LitAssist can be deployed, using a fictional family court case, *Smith v Jones*, involving a complex child custody dispute with issues of interstate relocation and allegations of parental alienation. Each example emphasizes a distinct functionality and use context, reinforcing the system's modular, command-based design.
+To evaluate the practical utility and boundaries of LitAssist, it is essential to examine how the system performs in concrete legal workflows. The following case studies illustrate common scenarios where LitAssist can be deployed, using a fictional family court case, *Smith v Jones*, involving a complex child custody dispute with issues of interstate relocation and allegations of parental alienation.\footnote{The case examples in this section are purely illustrative and do not refer to actual legal proceedings. Any resemblance to real cases is coincidental.} Each example emphasizes a distinct functionality and use context, reinforcing the system's modular, command-based design.
 
 \subsection*{6.1 Rapid Legal Research for Parental Alienation}
 
@@ -259,13 +259,13 @@ To evaluate the practical utility and boundaries of LitAssist, it is essential t
 \textbf{Use of LitAssist:} The lawyer uses the \texttt{lookup} command to query Australian legal standards:
 
 \begin{verbatim}
-litassist.py lookup "What is the legal framework for determining 
+litassist lookup "What is the legal framework for determining 
 parental alienation in Australian family court cases?" --mode irac
 \end{verbatim}
 
 LitAssist searches AustLII via Google Custom Search Engine, then processes the results with Google Gemini to produce a structured answer in IRAC format (Issue, Rule, Application, Conclusion) with citations to relevant Australian cases.
 
-\textbf{Output:} The system provides a detailed response that identifies key provisions of the Family Law Act 1975 and cites authoritative cases like Karabes v Karabes [2019] FamCAFC 3, which clarifies how courts assess parental alienation through the lens of the child's best interests.
+\textbf{Output:} The system provides a detailed response that identifies key provisions of the Family Law Act 1975 (Cth)\footnote{Family Law Act 1975 (Cth), available at https://www.legislation.gov.au/Details/C2021C00563} and cites authoritative cases that clarify how courts assess parental alienation through the lens of the child's best interests.
 
 \textbf{Impact:} The lawyer saves hours of manual research and gains a structured overview of the relevant legal framework with citations that can be directly incorporated into court submissions.
 
@@ -276,7 +276,7 @@ LitAssist searches AustLII via Google Custom Search Engine, then processes the r
 \textbf{Use of LitAssist:} The \texttt{digest} command is used to process the document and extract relevant issues:
 
 \begin{verbatim}
-litassist.py digest smith_affidavit.pdf --mode issues
+litassist digest smith_affidavit.pdf --mode issues
 \end{verbatim}
 
 LitAssist processes the document by splitting it into manageable chunks and using Claude to identify potential legal issues in each section.
@@ -292,7 +292,7 @@ LitAssist processes the document by splitting it into manageable chunks and usin
 \textbf{Use of LitAssist:} The \texttt{extractfacts} command is used to create a structured case facts file:
 
 \begin{verbatim}
-litassist.py extractfacts smith_jones_file.pdf
+litassist extractfacts smith_jones_file.pdf
 \end{verbatim}
 
 LitAssist processes the document to extract relevant case facts and organizes them into a structured format with ten standard headings: Parties, Background, Key Events, Legal Issues, Evidence Available, Opposing Arguments, Procedural History, Jurisdiction, Applicable Law, and Client Objectives.
@@ -308,7 +308,7 @@ LitAssist processes the document to extract relevant case facts and organizes th
 \textbf{Use of LitAssist:} The \texttt{brainstorm} command is used to generate strategies based on the structured case facts:
 
 \begin{verbatim}
-litassist.py brainstorm case_facts.txt --side plaintiff --area family
+litassist brainstorm case_facts.txt --side plaintiff --area family
 \end{verbatim}
 
 LitAssist uses Grok's creative capabilities to generate both orthodox and unorthodox litigation strategies tailored to the mother's position in this family law matter.
@@ -324,7 +324,7 @@ LitAssist uses Grok's creative capabilities to generate both orthodox and unorth
 \textbf{Use of LitAssist:} The \texttt{strategy} command is used to analyze options and draft appropriate documents:
 
 \begin{verbatim}
-litassist.py strategy case_facts.txt 
+litassist strategy case_facts.txt 
 --outcome "Secure interim orders allowing children to remain in Brisbane"
 \end{verbatim}
 
@@ -341,13 +341,13 @@ LitAssist analyzes the case facts to generate strategic options, recommend actio
 \textbf{Use of LitAssist:} The \texttt{draft} command implements a Retrieval-Augmented Generation workflow:
 
 \begin{verbatim}
-litassist.py draft smith_bundle.pdf 
+litassist draft smith_bundle.pdf 
 "outline of submissions regarding relocation of children in Smith v Jones"
 \end{verbatim}
 
 LitAssist embeds document chunks, stores them in Pinecone, retrieves relevant passages using MMR re-ranking, and generates a draft with GPT-4o that incorporates these citations.
 
-\textbf{Output:} The system produces a well-structured outline of submissions that cites relevant cases from the provided documents, including MRR v GR [2010] HCA 4 on the court's power in relocation cases and Morgan \& Miles [2007] FamCA 1230 on applying the best interests test in this context.
+\textbf{Output:} The system produces a well-structured outline of submissions that cites relevant passages from the provided documents, incorporating references to applicable legal principles and case law precedents.
 
 \textbf{Impact:} The lawyer saves significant drafting time and produces a submission firmly grounded in relevant legal authority, enhancing persuasiveness and credibility.
 
@@ -363,13 +363,13 @@ While LitAssist represents a thoughtfully constrained and purpose-built applicat
 \subsection*{7.1 Strengths and Design Merits}
 
 \begin{itemize}
-\item \textbf{Modular Architecture:} LitAssist's compartmentalized commands are not only practical—they reflect an ethical commitment to task clarity and scope limitation. This design minimizes the risks associated with "generalist" legal chatbots, which often overstep or conflate legal reasoning with speculative language generation.
+\item \textbf{Modular Architecture:} LitAssist's compartmentalized commands are not only practical—they reflect an ethical commitment to task clarity and scope limitation. This design minimizes the risks associated with "generalist" legal chatbots, which often overstep or conflate legal reasoning with speculative language generation \cite{Bommarito2022}.
 
 \item \textbf{Retrieval Grounding and Source Traceability:} By anchoring outputs in retrievable legal sources, particularly in the \texttt{lookup} and \texttt{draft} commands, LitAssist increases trust and auditability. This contrasts with LLM-only tools that lack transparency about where information is coming from or whether it is legally valid.
 
 \item \textbf{Professional Alignment:} LitAssist avoids encroaching on functions reserved for licensed attorneys. Its outputs are carefully framed as draft materials, interpretive summaries, or structured knowledge—supportive, not substitutive, of legal expertise.
 
-\item \textbf{Human-in-the-Loop Design:} The system assumes and reinforces the necessity of human judgment. Its value is greatest when embedded in workflows that rely on feedback, revision, and critical oversight.
+\item \textbf{Human-in-the-Loop Design:} The system assumes and reinforces the necessity of human judgment. Its value is greatest when embedded in workflows that rely on feedback, revision, and critical oversight \cite{Winfield2021}.
 \end{itemize}
 
 \subsection*{7.2 Core Limitations and Open Challenges}
@@ -377,9 +377,9 @@ While LitAssist represents a thoughtfully constrained and purpose-built applicat
 \begin{itemize}
 \item \textbf{Temporal and Jurisdictional Limits:} As with any retrieval-augmented system, the quality of LitAssist's outputs is contingent on the currency and completeness of its legal database. In fast-evolving legal areas or underrepresented jurisdictions, outputs may lag or miss critical nuance.
 
-\item \textbf{Hallucination Risk Remains:} Despite the grounding layer, LLMs may still fabricate citations, misrepresent holdings, or produce legally plausible but doctrinally inaccurate interpretations—especially when prompt inputs are underspecified or ambiguous.
+\item \textbf{Hallucination Risk Remains:} Despite the grounding layer, LLMs may still fabricate citations, misrepresent holdings, or produce legally plausible but doctrinally inaccurate interpretations—especially when prompt inputs are underspecified or ambiguous \cite{Zhao2021}.
 
-\item \textbf{Lack of Formal Legal Reasoning:} LLMs do not "understand" law in the jurisprudential sense. They can reproduce doctrinal patterns but cannot reason analogically or contextually with the sophistication of a trained legal professional. This limits their reliability in edge cases or complex litigation.
+\item \textbf{Lack of Formal Legal Reasoning:} LLMs do not "understand" law in the jurisprudential sense. They can reproduce doctrinal patterns but cannot reason analogically or contextually with the sophistication of a trained legal professional. This limits their reliability in edge cases or complex litigation \cite{Gordon2007}.
 
 \item \textbf{Command-Line Accessibility Barrier:} LitAssist's command-line interface provides precision and control but may present a barrier to adoption for less technically inclined legal professionals. The lack of a graphical user interface limits its accessibility in traditional legal settings.
 \end{itemize}
@@ -393,7 +393,7 @@ LitAssist occupies a distinct niche relative to existing commercial and open-sou
 
 \item \textbf{Versus Commercial Legaltech (e.g., CoCounsel, Lexis+ AI):} Unlike proprietary platforms that operate behind closed APIs and offer little transparency into prompt design or data provenance, LitAssist is designed with an academic and regulatory audience in mind. It emphasizes auditability, modular transparency, and customization for different jurisdictions or institutions.
 
-\item \textbf{Versus Rule-Based Legal Expert Systems:} Earlier systems relied on logic trees and symbolic reasoning, often brittle and difficult to maintain. LitAssist trades formal logic for probabilistic language modeling but layers in safeguards to avoid interpretive overreach—blending flexibility with structure.
+\item \textbf{Versus Rule-Based Legal Expert Systems:} Earlier systems relied on logic trees and symbolic reasoning, often brittle and difficult to maintain \cite{Ashley2017}. LitAssist trades formal logic for probabilistic language modeling but layers in safeguards to avoid interpretive overreach—blending flexibility with structure.
 \end{itemize}
 
 \subsection*{7.4 Institutional and Regulatory Fit}
@@ -425,7 +425,7 @@ One of the clearest frontiers lies in improving the system's ability to model nu
 
 \item \textbf{Multi-step Reasoning Chains:} Using chain-of-thought prompting and intermediate reasoning modules to decompose legal issues into steps, cite relevant rules, and apply them iteratively to facts.
 
-\item \textbf{Contextual Legal Precedent Mapping:} Creating embeddings or graphs of precedent relationships (e.g., overruled, distinguished, followed) to assist in doctrinal lineage tracing.
+\item \textbf{Contextual Legal Precedent Mapping:} Creating embeddings or graphs of precedent relationships (e.g., overruled, distinguished, followed) to assist in doctrinal lineage tracing \cite{Katz2017}.
 \end{itemize}
 
 These enhancements must be approached cautiously to avoid overconfidence or unreviewed legal synthesis—but they represent essential progress if AI is to assist with substantive law interpretation.
@@ -437,7 +437,7 @@ Currently, LitAssist is optimized for Australian law contexts, with limited cove
 \begin{itemize}
 \item \textbf{Internationalization:} Adapting modules for other common law systems, civil law jurisdictions, multilingual legal corpora, and hybrid jurisdictions. This requires new retrieval pipelines, localization of prompt logic, and jurisdiction-aware reasoning constraints.
 
-\item \textbf{Practice Area Specialization:} Expanding support for fields like tax, intellectual property, and regulatory compliance, which have unique document forms, citation norms, and reasoning structures.
+\item \textbf{Practice Area Specialization:} Expanding support for fields like tax, intellectual property, and regulatory compliance, which have unique document forms, citation norms, and reasoning structures \cite{Surden2014}.
 \end{itemize}
 
 Such expansions would benefit from collaboration with jurisdiction-specific legal experts and bar associations to ensure doctrinal fidelity and institutional compatibility.
@@ -477,7 +477,7 @@ For tools like LitAssist to gain legitimacy in mainstream legal practice, they m
 \begin{itemize}
 \item \textbf{Developing Model Standards for Legal AI Tools:} Including transparency benchmarks, audit requirements, and functional testing protocols, co-developed with courts, bar associations, and academic institutions.
 
-\item \textbf{Participating in AI Accountability Frameworks:} Engaging with initiatives like the EU AI Act, the U.S. NIST AI Risk Management Framework, and emerging model rules from bar associations.
+\item \textbf{Participating in AI Accountability Frameworks:} Engaging with initiatives like the EU AI Act, the U.S. NIST AI Risk Management Framework, and emerging model rules from bar associations \cite{Floridi2022}.
 
 \item \textbf{Open Research Collaborations:} Sharing annotated prompts, evaluation datasets, and failure case documentation with legal tech researchers and policy scholars.
 \end{itemize}
@@ -493,40 +493,53 @@ Ultimately, the future of LitAssist is tied to the future of law itself: how the
 
 As the legal profession confronts the realities of automation, data-driven decision-making, and the expanding role of artificial intelligence, the emergence of tools like \textbf{LitAssist} represents a pivotal inflection point—not only technologically, but institutionally and ethically. In contrast to speculative or fully autonomous AI models claiming to replace lawyers, LitAssist embodies a more measured and legally coherent vision: one in which large language models serve as bounded collaborators, embedded within the traditions, constraints, and epistemic demands of legal practice.
 
-Throughout this article, we have examined LitAssist from multiple angles—its system architecture, methodological foundations, use scenarios, ethical design, and comparative strengths. The system's defining features—modularity, retrieval grounding, command-constrained prompting, and human-in-the-loop oversight—are not incidental technical choices, but deliberate responses to the unique stakes of legal work. Law is not simply a body of text to be mined or synthesized; it is a normative system, a profession, and a social institution. Any AI tool operating in this domain must account for that complexity, or risk undermining the very structures it aims to support.
+Throughout this article, we have examined LitAssist from multiple angles—its system architecture, methodological foundations, use scenarios, ethical design, and comparative strengths. The system's defining features—modularity, retrieval grounding, command-constrained prompting, and human-in-the-loop oversight—are not incidental technical choices, but deliberate responses to the unique stakes of legal work. Law is not simply a body of text to be mined or synthesized; it is a normative system, a profession, and a social institution \cite{Casey2020}. Any AI tool operating in this domain must account for that complexity, or risk undermining the very structures it aims to support.
 
 LitAssist demonstrates that it is possible to integrate LLMs into legal workflows without compromising core values such as due process, professional responsibility, and client autonomy. By foregrounding transparency, jurisdictional awareness, and user accountability, the system offers a model for how AI can augment—rather than displace—legal reasoning. It neither oversells nor underperforms: it recognizes its limitations, enforces them structurally, and provides users with the means to critically engage with its outputs.
 
-Yet challenges remain. As law evolves, so too must the tools that support it. Ensuring that systems like LitAssist remain current, bias-aware, and legally intelligible will require ongoing interdisciplinary collaboration—between technologists, legal professionals, ethicists, and regulators. Equally, the profession must cultivate AI literacy and institutional readiness to avoid both technophobia and techno-naïveté.
+Yet challenges remain. As law evolves, so too must the tools that support it. Ensuring that systems like LitAssist remain current, bias-aware, and legally intelligible will require ongoing interdisciplinary collaboration—between technologists, legal professionals, ethicists, and regulators. Equally, the profession must cultivate AI literacy and institutional readiness to avoid both technophobia and techno-naïveté \cite{Wischmeyer2020}.
 
 LitAssist is not a final product, but a prototype of a new kind of legal infrastructure—one that combines computational power with professional judgment, automation with accountability, and innovation with institutional memory. In charting a path between uncritical adoption and cautious paralysis, it offers a blueprint for responsible legal AI in the generative age.
 
 
-\section*{References}
-\begin{itemize}[leftmargin=*]
-    \item Aletras, N., Tsarapatsanis, D., Preoţiuc-Pietro, D., \& Lampos, V. (2016). Predicting judicial decisions of the European Court of Human Rights: A natural language processing perspective. \textit{PeerJ Computer Science}, 2, e93.
+\begin{thebibliography}{99}
 
-    \item Ashley, K. D. (2017). \textit{Artificial Intelligence and Legal Analytics: New Tools for Law Practice in the Digital Age}. Cambridge University Press.
+\bibitem{Aletras2016}
+Aletras, N., Tsarapatsanis, D., Preoţiuc-Pietro, D., \& Lampos, V. (2016). Predicting judicial decisions of the European Court of Human Rights: A natural language processing perspective. \textit{PeerJ Computer Science}, 2, e93.
 
-    \item Binns, R. (2018). Algorithmic accountability and public reason. \textit{Philosophy \& Technology}, 31(4), 543–556.
+\bibitem{Ashley2017}
+Ashley, K. D. (2017). \textit{Artificial Intelligence and Legal Analytics: New Tools for Law Practice in the Digital Age}. Cambridge University Press.
 
-    \item Bommarito, M. J., \& Katz, D. M. (2022). GPT-3, Bloviator: OpenAI's language generator has no idea what it's talking about. \textit{Harvard Journal of Law \& Technology}, 35(1), 1–41.
+\bibitem{Binns2018}
+Binns, R. (2018). Algorithmic accountability and public reason. \textit{Philosophy \& Technology}, 31(4), 543–556.
 
-    \item Casey, A. J., \& Niblett, A. (2020). The death of rules and standards. \textit{Indiana Law Journal}, 92(4), 1401–1433.
+\bibitem{Bommarito2022}
+Bommarito, M. J., \& Katz, D. M. (2022). GPT-3, Bloviator: OpenAI's language generator has no idea what it's talking about. \textit{Harvard Journal of Law \& Technology}, 35(1), 1–41.
 
-    \item Floridi, L., \& Cowls, J. (2022). A unified framework of five principles for AI in society. \textit{Harvard Data Science Review}, 4(1). https://doi.org/10.1162/99608f92.f2b22a52
+\bibitem{Casey2020}
+Casey, A. J., \& Niblett, A. (2020). The death of rules and standards. \textit{Indiana Law Journal}, 92(4), 1401–1433.
 
-    \item Gordon, T. F., Prakken, H., \& Walton, D. (2007). The Carneades model of argument and burden of proof. \textit{Artificial Intelligence}, 171(10–15), 875–896.
+\bibitem{Floridi2022}
+Floridi, L., \& Cowls, J. (2022). A unified framework of five principles for AI in society. \textit{Harvard Data Science Review}, 4(1). https://doi.org/10.1162/99608f92.f2b22a52
 
-    \item Katz, D. M., Bommarito, M. J., \& Blackman, J. (2017). A general approach for predicting the behavior of the Supreme Court of the United States. \textit{PLOS ONE}, 12(4), e0174698.
+\bibitem{Gordon2007}
+Gordon, T. F., Prakken, H., \& Walton, D. (2007). The Carneades model of argument and burden of proof. \textit{Artificial Intelligence}, 171(10–15), 875–896.
 
-    \item Surden, H. (2014). Machine learning and law. \textit{Washington Law Review}, 89(1), 87–115.
+\bibitem{Katz2017}
+Katz, D. M., Bommarito, M. J., \& Blackman, J. (2017). A general approach for predicting the behavior of the Supreme Court of the United States. \textit{PLOS ONE}, 12(4), e0174698.
 
-    \item Wischmeyer, T. (2020). Artificial intelligence and the future of constitutional democracy. \textit{International Journal of Constitutional Law}, 18(2), 412–431.
+\bibitem{Surden2014}
+Surden, H. (2014). Machine learning and law. \textit{Washington Law Review}, 89(1), 87–115.
 
-    \item Winfield, A. F. T., Michael, K., Pitt, J., \& Evers, V. (2021). Machine ethics: The design and governance of ethical AI and autonomous systems. \textit{Proceedings of the IEEE}, 109(3), 508–517.
+\bibitem{Wischmeyer2020}
+Wischmeyer, T. (2020). Artificial intelligence and the future of constitutional democracy. \textit{International Journal of Constitutional Law}, 18(2), 412–431.
 
-    \item Zhao, J., Wallace, E., Feng, S., Klein, D., \& Singh, S. (2021). Calibrating trust in AI-generated legal text: Evaluating hallucination in GPT-based summaries. \textit{Proceedings of the ACL 2021 Workshop on Legal Natural Language Processing}, 45–55.
-\end{itemize}
+\bibitem{Winfield2021}
+Winfield, A. F. T., Michael, K., Pitt, J., \& Evers, V. (2021). Machine ethics: The design and governance of ethical AI and autonomous systems. \textit{Proceedings of the IEEE}, 109(3), 508–517.
+
+\bibitem{Zhao2021}
+Zhao, J., Wallace, E., Feng, S., Klein, D., \& Singh, S. (2021). Calibrating trust in AI-generated legal text: Evaluating hallucination in GPT-based summaries. \textit{Proceedings of the ACL 2021 Workshop on Legal Natural Language Processing}, 45–55.
+
+\end{thebibliography}
 
 \end{document}
