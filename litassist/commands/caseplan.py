@@ -22,58 +22,53 @@ from litassist.prompts import PROMPTS
 def extract_cli_commands(plan_content):
     """
     Extract all CLI commands from the caseplan output.
-    
+
     Returns a formatted string with commands and their phase context.
     """
-    commands = []
-    commands.append("#!/bin/bash")
-    commands.append("# Extracted CLI commands from caseplan")
-    commands.append("# Execute commands in order, reviewing output between phases")
-    commands.append("")
-    
-    # Method 1: Extract from ```bash blocks with phase context
+    commands = [
+        "#!/bin/bash",
+        "# Extracted CLI commands from caseplan",
+        "# Execute commands in order, reviewing output between phases",
+        "",
+    ]
+
     lines = plan_content.split('\n')
+    lines_iter = iter(lines)
     current_phase = "Initial Setup"
-    
-    i = 0
-    while i < len(lines):
-        line = lines[i]
-        
+
+    for line in lines_iter:
+        stripped_line = line.strip()
+
         # Track current phase/section
-        if line.strip().startswith('## Phase') or line.strip().startswith('### Phase'):
-            current_phase = line.strip().replace('#', '').strip()
-        elif line.strip().startswith('Phase ') and ':' in line:
-            current_phase = line.strip()
-        
+        if stripped_line.startswith(('## Phase', '### Phase')):
+            current_phase = stripped_line.replace('#', '').strip()
+        elif stripped_line.startswith('Phase ') and ':' in stripped_line:
+            current_phase = stripped_line
+
         # Look for bash code blocks
-        if line.strip() == '```bash':
-            # Found a bash block
-            i += 1
+        if stripped_line == '```bash':
             block_commands = []
-            while i < len(lines) and lines[i].strip() != '```':
-                cmd_line = lines[i].strip()
-                if cmd_line and 'litassist' in cmd_line:
-                    block_commands.append(cmd_line)
-                i += 1
-            
-            # Add commands from this block
+            for block_line in lines_iter:
+                stripped_block_line = block_line.strip()
+                if stripped_block_line == '```':
+                    break
+                if 'litassist' in stripped_block_line and stripped_block_line.startswith('litassist'):
+                    block_commands.append(stripped_block_line)
+
             if block_commands:
                 commands.append(f"\n# {current_phase}")
                 commands.extend(block_commands)
-        
-        # Method 2: Also catch any litassist commands not in code blocks
-        elif 'litassist' in line and not line.strip().startswith('#'):
-            # Make sure it's actually a command line
-            if line.strip().startswith('litassist'):
-                commands.append(f"\n# {current_phase}")
-                commands.append(line.strip())
-        
-        i += 1
-    
-    # Add helpful footer
-    commands.append("\n# End of extracted commands")
-    commands.append("# Remember to update case_facts.txt after digest phases")
-    
+
+        # Fallback for commands not in a block
+        elif stripped_line.startswith('litassist'):
+            commands.append(f"\n# {current_phase}")
+            commands.append(stripped_line)
+
+    commands.extend([
+        "\n# End of extracted commands",
+        "# Remember to update case_facts.txt after digest phases",
+    ])
+
     return '\n'.join(commands)
 
 
