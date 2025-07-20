@@ -498,7 +498,7 @@ test_brainstorm_command() {
     
     # Single test covering core functionality (verification is automatic)
     run_test "Brainstorm - Civil" \
-        "python litassist.py brainstorm test_inputs/mock_case_facts.txt --side plaintiff --area civil" \
+        "python litassist.py brainstorm --facts test_inputs/mock_case_facts.txt --side plaintiff --area civil" \
         "complete|saved to|strategies|Verifying"
 }
 
@@ -573,7 +573,7 @@ test_barbrief_command() {
     
     # Test barbrief with all options
     run_test "Barbrief - Comprehensive with all options" \
-        "python litassist.py barbrief test_inputs/mock_10heading_case_facts.txt --hearing-type trial --strategies test_inputs/mock_strategies.txt --research test_inputs/mock_research_output.txt --documents test_inputs/mock_affidavit.txt --instructions 'Focus on jurisdiction issues' --verify" \
+        "python litassist.py barbrief test_inputs/mock_10heading_case_facts.txt --hearing-type trial --strategies test_inputs/mock_strategies.txt --research test_inputs/mock_research_output.txt --documents test_inputs/mock_affidavit.txt --context 'Focus on jurisdiction issues' --verify" \
         "Barristers Brief Generated complete|saved to"
 }
 
@@ -612,7 +612,7 @@ test_help_and_info() {
     # Test 5: Brainstorm help
     run_test "Help - Brainstorm command help" \
         "python litassist.py brainstorm --help" \
-        "Usage|FACTS_FILE|side|area"
+        "Usage|--facts|side|area"
     
     # Test 6: Digest help
     run_test "Help - Digest command help" \

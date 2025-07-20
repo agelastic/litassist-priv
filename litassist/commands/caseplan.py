@@ -95,7 +95,7 @@ def caseplan(case_facts, context, budget):
 
     Examples:
         litassist caseplan case_facts.txt
-        litassist caseplan case_facts.txt --focus "property dispute"
+        litassist caseplan case_facts.txt --context "property dispute"
         litassist caseplan case_facts.txt --budget minimal
     """
     facts_content = case_facts.read()
