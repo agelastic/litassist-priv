@@ -174,7 +174,7 @@ Test
             f"--strategies {files['strat']} "
             f"--research {files['research']} "
             f"--documents {files['doc']} "
-            f"--instructions 'Focus on jurisdiction' "
+            f"--context 'Focus on jurisdiction' "
             f"--verify "
             f"--help"
         )

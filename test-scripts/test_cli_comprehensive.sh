@@ -573,7 +573,7 @@ test_barbrief_command() {
     
     # Test barbrief with all options
     run_test "Barbrief - Comprehensive with all options" \
-        "python litassist.py barbrief test_inputs/mock_10heading_case_facts.txt --hearing-type trial --strategies test_inputs/mock_strategies.txt --research test_inputs/mock_research_output.txt --documents test_inputs/mock_affidavit.txt --instructions 'Focus on jurisdiction issues' --verify" \
+        "python litassist.py barbrief test_inputs/mock_10heading_case_facts.txt --hearing-type trial --strategies test_inputs/mock_strategies.txt --research test_inputs/mock_research_output.txt --documents test_inputs/mock_affidavit.txt --context 'Focus on jurisdiction issues' --verify" \
         "Barristers Brief Generated complete|saved to"
 }
 
