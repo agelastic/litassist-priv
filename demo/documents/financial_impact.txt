@@ -1,0 +1,48 @@
+FINANCIAL IMPACT ASSESSMENT
+TechStart Pty Ltd - October 2023 Outage
+
+Prepared by: Chen & Associates Chartered Accountants
+Date: 25 November 2023
+
+DIRECT LOSSES (15-17 October 2023):
+
+1. Transaction Processing Fees Lost
+   - Normal daily volume: $2.1M
+   - Processing fee: 1.5%
+   - Daily fee income: $31,500
+   - 2.5 days lost: $78,750
+
+2. Failed Transaction Penalties
+   - Failed transactions: 3,847
+   - Average penalty: $25
+   - Total penalties: $96,175
+
+3. Customer Refunds/Compensation
+   - Compensation paid: 127 customers
+   - Total amount: $125,000
+
+4. Emergency Response Costs
+   - Weekend staff overtime: $18,500
+   - Consultant fees: $35,000
+   - Emergency hosting: $21,500
+   - Total: $75,000
+
+SUBTOTAL DIRECT: $374,925
+
+CONSEQUENTIAL LOSSES:
+
+5. Lost Customers
+   - Customers terminated: 12 enterprise accounts
+   - Annual value: $485,000
+   - Projected recovery (60%): $194,000
+   - Net loss: $291,000
+
+6. Reputation Damage
+   - New customer acquisition cost increase: 40%
+   - Projected impact (6 months): $184,075
+
+SUBTOTAL CONSEQUENTIAL: $475,075
+
+TOTAL LOSSES: $850,000
+
+Note: These calculations are conservative and exclude potential regulatory fines.

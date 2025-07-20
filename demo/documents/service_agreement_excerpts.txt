@@ -1,0 +1,29 @@
+MASTER SERVICES AGREEMENT - KEY EXCERPTS
+
+Clause 3.1 - Service Levels
+CloudCorp guarantees 99.9% uptime for all Production Services, measured monthly. 
+Uptime excludes scheduled maintenance windows (max 4 hours/month, with 7 days notice).
+
+Clause 3.4 - Service Credits
+Monthly Uptime | Service Credit
+99.9% - 99.0% | 10% of monthly fee
+99.0% - 95.0% | 25% of monthly fee
+Below 95.0%   | 50% of monthly fee
+
+Clause 8.2 - Limitation of Liability
+CloudCorp's total liability under this Agreement shall not exceed the total fees 
+paid in the 12 months preceding the claim. CloudCorp excludes all liability for 
+consequential, indirect, or special damages.
+
+Clause 8.5 - Exceptions to Limitations
+The limitations in Clause 8.2 do not apply to:
+(a) Breaches of confidentiality
+(b) Wilful misconduct or gross negligence
+(c) Death or personal injury
+
+Clause 12.1 - Termination for Breach
+Either party may terminate for material breach if the breach is not remedied 
+within 30 days of written notice.
+
+Clause 15.3 - Governing Law
+This Agreement is governed by the laws of New South Wales, Australia.
