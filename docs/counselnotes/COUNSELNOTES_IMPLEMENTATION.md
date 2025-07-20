@@ -451,7 +451,7 @@ litassist counselnotes doc1.pdf doc2.pdf doc3.pdf
 # config.yaml
 llm:
   models:
-    counselnotes: "anthropic/claude-sonnet-4"
+    counselnotes: "anthropic/claude-opus-4"
     
   parameters:
     counselnotes:

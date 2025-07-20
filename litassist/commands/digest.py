@@ -30,13 +30,13 @@ from litassist.llm import LLMClientFactory, NonRetryableAPIError
 @click.argument("file", nargs=-1, required=True, type=click.Path(exists=True))
 @click.option("--mode", type=click.Choice(["summary", "issues"]), default="summary")
 @click.option(
-    "--hint",
+    "--context",
     type=str,
     default=None,
-    help="Optional hint to focus the analysis on specific topics.",
+    help="Additional context to guide the analysis.",
 )
 @timed
-def digest(file, mode, hint):
+def digest(file, mode, context):
     """
     Mass-document digestion via Claude.
 
@@ -63,7 +63,7 @@ def digest(file, mode, hint):
     # Emergency save functionality
     partial_save_data = {
         'chunks': [],
-        'metadata': {'mode': mode, 'hint': hint}
+        'metadata': {'mode': mode, 'context': context}
     }
     
     def emergency_save():
@@ -165,33 +165,33 @@ def digest(file, mode, hint):
 
             # Use centralized digest prompts for unified analysis
             if mode == "summary":
-                if hint:
-                    hint_instruction = PROMPTS.get(
-                        "processing.digest.summary_mode_hint_instruction_with_hint",
-                        hint=hint,
+                if context:
+                    context_instruction = PROMPTS.get(
+                        "processing.digest.summary_mode_context_instruction_with_context",
+                        context=context,
                     )
                 else:
-                    hint_instruction = PROMPTS.get(
-                        "processing.digest.summary_mode_hint_instruction_no_hint"
+                    context_instruction = PROMPTS.get(
+                        "processing.digest.summary_mode_context_instruction_no_context"
                     )
                 digest_prompt = PROMPTS.get(
                     "processing.digest.summary_mode",
-                    hint_instruction=hint_instruction,
+                    context_instruction=context_instruction,
                 )
                 prompt = f"{digest_prompt}\n\n{chunk}"
             else:  # issues mode
-                if hint:
-                    hint_instruction = PROMPTS.get(
-                        "processing.digest.issues_mode_hint_instruction_with_hint",
-                        hint=hint,
+                if context:
+                    context_instruction = PROMPTS.get(
+                        "processing.digest.issues_mode_context_instruction_with_context",
+                        context=context,
                     )
                 else:
-                    hint_instruction = PROMPTS.get(
-                        "processing.digest.issues_mode_hint_instruction_no_hint"
+                    context_instruction = PROMPTS.get(
+                        "processing.digest.issues_mode_context_instruction_no_context"
                     )
                 digest_prompt = PROMPTS.get(
                     "processing.digest.issues_mode",
-                    hint_instruction=hint_instruction,
+                    context_instruction=context_instruction,
                 )
                 prompt = f"{digest_prompt}\n\n{chunk}"
 
@@ -245,7 +245,7 @@ def digest(file, mode, hint):
                         documents=chunk,
                         chunk_num=idx,
                         total_chunks=len(chunks),
-                        hint=hint or "general analysis",
+                        context=context or "general analysis",
                     )
 
                     try:
@@ -293,7 +293,7 @@ def digest(file, mode, hint):
                                         documents=sub_chunk,
                                         chunk_num=f"{idx}.{sub_idx}",
                                         total_chunks=len(chunks),
-                                        hint=hint or "general analysis",
+                                        context=context or "general analysis",
                                     )
                                     sub_content, sub_usage = client.complete(
                                         [
@@ -367,7 +367,7 @@ def digest(file, mode, hint):
                 f"processing.digest.consolidation_{mode}",
                 chunk_analyses=consolidated_content,
                 total_chunks=len(chunks),
-                hint=hint or "comprehensive analysis",
+                context=context or "comprehensive analysis",
             )
 
             try:
@@ -423,7 +423,7 @@ def digest(file, mode, hint):
         metadata={
             "Mode": mode.title(), 
             "Source Files": source_files,
-            "Hint": hint or "None"
+            "Context": context or "None"
         },
     )
 
@@ -434,10 +434,10 @@ def digest(file, mode, hint):
             "inputs": {
                 "files": list(file),
                 "mode": mode,
-                "hint": hint,
+                "context": context,
                 "total_chunks_processed": comprehensive_log["total_chunks_processed"],
             },
-            "params": f"mode={mode}, max_chars={CONFIG.max_chars}, hint={hint}",
+            "params": f"mode={mode}, max_chars={CONFIG.max_chars}, context={context}",
             "responses": comprehensive_log["responses"],
             "usage": comprehensive_log["total_usage"],
             "output_file": output_file,

@@ -14,7 +14,7 @@ The `litassist/llm.py` file defines a sophisticated framework for interacting wi
 *   **`strategy`**: Employs `openai/o3-pro` with its fixed parameters (temp=1, top_p=1, presence_penalty=0, frequency_penalty=0). Only `max_completion_tokens` and `reasoning_effort` are controllable. `force_verify` is `True`. System messages are merged into the user prompt.
 *   **`strategy-analysis`**: Uses `anthropic/claude-sonnet-4` (temp=0.2, top_p=0.8).
 *   **`brainstorm-orthodox`**: Uses `anthropic/claude-sonnet-4` (temp=0.3, top_p=0.7). `force_verify` is `True`.
-*   **`brainstorm-unorthodox`**: Leverages `x-ai/grok-3-beta` with high temperature (0.9) and top_p (0.95) for creativity. `force_verify` is `True` (auto-verify Grok).
+*   **`brainstorm-unorthodox`**: Leverages `x-ai/grok-3` with high temperature (0.9) and top_p (0.95) for creativity. `force_verify` is `True` (auto-verify Grok).
 *   **`draft`**: Utilizes `openai/o3-pro` (fixed parameters, similar to `strategy`).
 *   **`digest-summary` / `digest-issues`**: Use `anthropic/claude-sonnet-4` with varying temperatures (0 for summary, 0.2 for issues).
 *   **`lookup`**: Uses `google/gemini-2.5-pro-preview` (temp=0.1, top_p=0.2). `force_verify` is `False`.
@@ -50,7 +50,7 @@ The current LLM setup in LitAssist is robust and well-structured, demonstrating 
 **Creativity:**
 
 *   **Strengths**:
-    *   The `brainstorm-unorthodox` command explicitly uses `x-ai/grok-3-beta` with high temperature (0.9) and top_p (0.95), which is well-suited for generating diverse and novel ideas.
+    *   The `brainstorm-unorthodox` command explicitly uses `x-ai/grok-3` with high temperature (0.9) and top_p (0.95), which is well-suited for generating diverse and novel ideas.
     *   Commands like `brainstorm-orthodox` and `strategy-analysis` use moderate temperatures (0.3-0.2), allowing for controlled creativity.
 *   **Areas for Improvement**:
     *   Could explore additional models known for creative outputs for specific brainstorming sub-tasks.

@@ -23,7 +23,7 @@ class TestLLMClientVerification:
 
     def test_should_auto_verify_grok_model(self):
         """Test auto-verification for Grok models."""
-        grok_client = LLMClient("x-ai/grok-3-beta", temperature=0.9)
+        grok_client = LLMClient("x-ai/grok-3", temperature=0.9)
         content = "Some basic content"
         assert grok_client.should_auto_verify(content, "brainstorm") is True
 
@@ -164,7 +164,7 @@ class TestCommandVerificationIntegration:
         from litassist.llm import LLMClient
 
         # Create a Grok client like brainstorm does
-        grok_client = LLMClient("x-ai/grok-3-beta", temperature=0.9, top_p=0.95)
+        grok_client = LLMClient("x-ai/grok-3", temperature=0.9, top_p=0.95)
         grok_client.command_context = "brainstorm"
 
         # Grok should auto-verify even basic content

@@ -34,15 +34,15 @@ capabilities:
     Strategic Use: Critical for discovering hidden facts and strengthening case_facts.txt
     Options:
       --mode: summary, issues | Choose chronological summary or legal issue-spotting analysis
-      --hint: [string] | Focus AI attention on specific aspects (e.g., "analyze financial discrepancies in bank statements", "identify timeline conflicts in witness statements")
+      --context: [string] | Additional context to guide the analysis (e.g., "analyze financial discrepancies in bank statements", "identify timeline conflicts in witness statements")
     Best Practices:
-      - Use --mode issues with --hint for targeted fact discovery
+      - Use --mode issues with --context for targeted fact discovery
       - Process related documents together for contextual understanding
       - Always follow with manual case_facts.txt updates
       - Group documents logically (financial, correspondence, legal)
     Integration: Findings must be manually incorporated into case_facts.txt before brainstorm/strategy
     Cost: ~$1-3 per set (saves hours of manual review)
-    Example: litassist digest "Bank Statements/*.pdf" "Emails/*.pdf" --mode issues --hint "trace financial contributions and their impact on ownership claims"
+    Example: litassist digest "Bank Statements/*.pdf" "Emails/*.pdf" --mode issues --context "trace financial contributions and their impact on ownership claims"
 
     ### extractfacts - Structured Fact Organizer
     Purpose: Converts raw documents into structured 10-heading case facts format
@@ -132,11 +132,11 @@ capabilities:
       --strategies: [file(s)] | Include brainstorm outputs for strategic foundation (supports glob)
       --research: [file(s)] | Include lookup reports for legal authority (supports glob)
       --documents: [file(s)] | Include supporting evidence and materials (supports glob)
-      --instructions: [string] | Provide specific focus or emphasis for counsel's preparation
+      --context: [string] | Additional context to guide the analysis
       --verify: (flag) | Enable citation verification for all included authorities
     Best Practices:
       - Include ALL relevant materials using glob patterns
-      - Provide specific --instructions for hearing focus
+      - Provide specific --context for hearing focus
       - Always use --verify for citation accuracy
       - Consolidates months of work into single document
     Integration: Culmination of all prior work into single counsel document
@@ -169,7 +169,7 @@ capabilities:
     Outputs: Comprehensive litigation plan with phases, costs, timelines, and command sequences
     Strategic Use: Essential first step - generates roadmap before investing in analysis
     Options:
-      --focus: [string] | Specify particular area to emphasize in the plan (e.g., "property dispute")
+      --context: [string] | Additional context to guide the analysis (e.g., "property dispute")
       --budget: minimal, standard, comprehensive | Set resource constraints (if omitted, LLM recommends)
     Best Practices:
       - Run early with basic case_facts.txt to guide document collection
@@ -178,7 +178,7 @@ capabilities:
       - Re-run as case develops with enhanced facts
     Integration: Provides complete command sequences for systematic case development
     Cost: ~$1-2 for assessment, ~$3-5 for full plan
-    Example: litassist caseplan case_facts.txt --focus "custody arrangements" --budget standard
+    Example: litassist caseplan case_facts.txt --context "custody arrangements" --budget standard
 
     ### verify - Quality Assurance System
     Purpose: Post-hoc verification of citations, legal soundness, and reasoning

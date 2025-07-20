@@ -74,7 +74,7 @@ def extract_cli_commands(plan_content):
 
 @click.command()
 @click.argument("case_facts", type=click.File("r"))
-@click.option("--focus", help="Specific area to focus the plan on")
+@click.option("--context", help="Additional context to guide the analysis")
 @click.option(
     "--budget",
     type=click.Choice(["minimal", "standard", "comprehensive"]),
@@ -82,7 +82,7 @@ def extract_cli_commands(plan_content):
     help="Budget constraint level (if not specified, LLM will recommend)",
 )
 @timed
-def caseplan(case_facts, focus, budget):
+def caseplan(case_facts, context, budget):
     """
     Generate customized litigation workflow plan based on case facts.
 
@@ -95,7 +95,7 @@ def caseplan(case_facts, focus, budget):
 
     Examples:
         litassist caseplan case_facts.txt
-        litassist caseplan case_facts.txt --focus "property dispute"
+        litassist caseplan case_facts.txt --context "property dispute"
         litassist caseplan case_facts.txt --budget minimal
     """
     facts_content = case_facts.read()
@@ -171,8 +171,8 @@ def caseplan(case_facts, focus, budget):
             f"CASE FACTS:\n{facts_content}",
             f"BUDGET LEVEL: {budget}",
         ]
-        if focus:
-            prompt_parts.append(f"FOCUS AREA: {focus}")
+        if context:
+            prompt_parts.append(f"CONTEXT: {context}")
 
         # Select appropriate analysis instructions based on budget level
         analysis_prompt_key = f"commands.caseplan.analysis_instructions_{budget}"
@@ -202,8 +202,8 @@ def caseplan(case_facts, focus, budget):
             raise click.ClickException(f"Plan generation error: {e}")
 
         metadata = {"Case Facts File": case_facts.name, "Budget Level": budget}
-        if focus:
-            metadata["Focus Area"] = focus
+        if context:
+            metadata["Context"] = context
 
         output_file = save_command_output(
             "caseplan", plan_content, case_facts.name, metadata=metadata
@@ -222,7 +222,7 @@ def caseplan(case_facts, focus, budget):
             "caseplan",
             {
                 "inputs": {"case_facts": facts_content},
-                "params": {"model": llm_client.model, "focus": focus, "budget": budget},
+                "params": {"model": llm_client.model, "context": context, "budget": budget},
                 "usage": usage,
                 "response": plan_content,
                 "output_file": output_file,

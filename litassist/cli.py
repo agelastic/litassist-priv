@@ -156,7 +156,7 @@ def validate_credentials(show_progress=True):
             model_ids = [m.get("id", "") for m in models]
             required_models = [
                 "anthropic/claude-sonnet-4",
-                "x-ai/grok-3-beta",
+                "x-ai/grok-3",
                 "google/gemini-2.5-pro-preview",
             ]
 

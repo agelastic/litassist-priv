@@ -26,12 +26,12 @@ LitAssist uses multiple specialized LLM models optimized for different legal tas
 | **caseplan** (full plan) | `anthropic/claude-opus-4` | Full phased workflow plan generation | max_completion_tokens: 32768, reasoning_effort: high |
 | **extractfacts** | `anthropic/claude-sonnet-4` | Structured fact extraction | temperature: 0, top_p: 0.15 |
 | **brainstorm** | `x-ai/grok-3` | Creative strategy generation | temperature: 0.9, top_p: 0.95 |
-| **brainstorm** (analysis) | `anthropic/claude-sonnet-4` | Strategy analysis & ranking | temperature: 0.2, top_p: 0.8 |
+| **brainstorm** (analysis) | `openai/o3-pro` | Strategy analysis & ranking | temperature: 0.2, top_p: 0.8 |
 | **strategy** | `openai/o3-pro` | Strategic planning & analysis | max_completion_tokens: varies, reasoning_effort: varies |
 | **draft** | `openai/o3-pro` | Legal document drafting | max_completion_tokens: 4096, reasoning_effort: medium |
-| **counselnotes** | `anthropic/claude-sonnet-4` | Strategic advocate analysis | temperature: 0.3, top_p: 0.7 |
+| **counselnotes** | `anthropic/claude-opus-4` | Strategic advocate analysis | temperature: 0.3, top_p: 0.7 |
 | **barbrief** | `openai/o3-pro` | Comprehensive barrister's briefs | max_completion_tokens: 32768, reasoning_effort: high |
-| **verify** | `anthropic/claude-sonnet-4` | Document verification | temperature: 0, top_p: 0.2 |
+| **verify** | `anthropic/claude-opus-4` | Document verification | temperature: 0, top_p: 0.2 |
 
 ### Model Capabilities & Restrictions
 
@@ -65,8 +65,8 @@ LitAssist uses multiple specialized LLM models optimized for different legal tas
 - **Strengths**: Structured output, consistency, following complex instructions
 - **Use Cases**: Document processing, fact extraction, strategy analysis
 
-#### Grok 3 Beta
-- **Model ID**: `x-ai/grok-3-beta`
+#### Grok 3
+- **Model ID**: `x-ai/grok-3`
 - **Purpose**: Creative legal strategy generation
 - **Strengths**: Innovative thinking, unorthodox approaches
 - **Note**: Auto-verification enabled due to hallucination tendencies
@@ -88,11 +88,17 @@ MODEL_CONFIGS = {
     "lookup": "google/gemini-2.5-pro-preview",
     "digest": "anthropic/claude-sonnet-4",
     "extractfacts": "anthropic/claude-sonnet-4",
-    "brainstorm": "x-ai/grok-3",
-    "brainstorm-analysis": "anthropic/claude-sonnet-4",
+    "brainstorm-orthodox": "anthropic/claude-opus-4",
+    "brainstorm-unorthodox": "x-ai/grok-3",
+    "brainstorm-analysis": "openai/o3-pro",
     "strategy": "openai/o3-pro",
+    "strategy-analysis": "anthropic/claude-opus-4",
     "draft": "openai/o3-pro",
-    "verify": "anthropic/claude-sonnet-4"
+    "verify": "anthropic/claude-opus-4",
+    "counselnotes": "anthropic/claude-opus-4",
+    "barbrief": "openai/o3-pro",
+    "caseplan": "anthropic/claude-opus-4",
+    "caseplan-assessment": "anthropic/claude-sonnet-4"
 }
 ```
 
@@ -154,7 +160,7 @@ The retry logic is implemented in `litassist/llm.py` using the `tenacity` librar
 
 3. **Creative Tasks** (temperature: 0.9)
    - Brainstorming, unorthodox strategies
-   - Models: Grok 3 Beta
+   - Models: Grok 3
 
 ### Cost-Performance Balance
 

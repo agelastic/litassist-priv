@@ -1,0 +1,73 @@
+EMAIL THREAD: Critical Service Outage - October 2023
+
+From: Sarah Chen <s.chen@techstart.com.au>
+To: Michael Roberts <m.roberts@cloudcorp.com.au>
+Date: 15 October 2023, 9:15 AM
+Subject: URGENT: Complete service outage - need immediate response
+
+Michael,
+
+Our entire platform has been down since 3 AM. This is catastrophic - we process 
+over $2M in payments daily. Our customers cannot access their accounts.
+
+We've raised critical ticket #4521. No response after 6 hours.
+
+This is completely unacceptable. Call me immediately.
+
+Sarah Chen
+CEO, TechStart
+
+---
+
+From: Michael Roberts <m.roberts@cloudcorp.com.au>
+To: Sarah Chen <s.chen@techstart.com.au>
+Date: 15 October 2023, 4:30 PM
+Subject: RE: URGENT: Complete service outage
+
+Sarah,
+
+I've just seen your email. I'm escalating this internally. The technical team 
+is investigating what appears to be a major infrastructure failure affecting 
+multiple customers.
+
+I'll update you within 2 hours.
+
+Michael
+
+---
+
+From: Sarah Chen <s.chen@techstart.com.au>
+To: Michael Roberts <m.roberts@cloudcorp.com.au>
+Date: 16 October 2023, 11:00 AM
+Subject: RE: URGENT: Complete service outage - Day 2
+
+Michael,
+
+It's been over 24 hours. We're losing customers. The Financial Times is asking 
+for comment about our "system failures."
+
+Your 99.9% uptime guarantee is meaningless if you can't even respond to critical 
+issues. We've had to tell customers their funds are "temporarily inaccessible" - 
+do you understand the regulatory implications?
+
+If service isn't restored by EOD, we'll be seeking emergency court orders.
+
+Sarah
+
+---
+
+From: CloudCorp Support <support@cloudcorp.com.au>
+To: Sarah Chen <s.chen@techstart.com.au>
+Date: 17 October 2023, 2:00 PM
+Subject: Ticket #4521 - Service Restored
+
+Dear Valued Customer,
+
+We are pleased to inform you that service has been restored. The issue was caused 
+by a cascading failure in our Sydney data center.
+
+As per our Service Level Agreement, service credits will be applied to your account.
+
+Thank you for your patience.
+
+CloudCorp Support Team

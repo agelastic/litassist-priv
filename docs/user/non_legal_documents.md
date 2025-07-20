@@ -42,7 +42,7 @@ The `extractfacts` command is the most restrictive as it enforces a rigid 10-hea
 litassist extractfacts purchase_agreement.pdf
 ```
 
-**Key Limitations**: ExtractFacts creates structured legal foundations for downstream commands but has no `--hint` option and only supports `--verify`. Use `digest` for flexible document analysis.
+**Key Limitations**: ExtractFacts creates structured legal foundations for downstream commands but has no `--context` option and only supports `--verify`. Use `digest` for flexible document analysis.
 
 ### Forced Categorization Issues
 
@@ -62,7 +62,7 @@ The command will force any content into these legal headings:
 
 For non-legal documents that need to be used with `strategy` or `brainstorm` commands:
 
-1. **Use `digest` first**: Run `digest --mode summary` (optionally with `--hint` for focused analysis) to understand content
+1. **Use `digest` first**: Run `digest --mode summary` (optionally with `--context` for focused analysis) to understand content
 2. **Manual structure creation**: Create a `case_facts.txt` file with all 10 headings
 3. **Adapt content**: Fill relevant sections with content from digest output
 4. **Placeholder strategy**: For irrelevant headings, add minimal placeholder content to satisfy validation
@@ -103,8 +103,8 @@ For handling multiple related but non-legal documents (e.g., financial records, 
 
 | Need | Use Command | Why |
 |------|-------------|-----|
-| **Understand document content** | `digest --mode summary` | Flexible analysis, supports `--hint` |
-| **Focus on specific topics** | `digest --mode summary --hint "payment terms"` | Targeted analysis with hint |
+| **Understand document content** | `digest --mode summary` | Flexible analysis, supports `--context` |
+| **Focus on specific topics** | `digest --mode summary --context "payment terms"` | Targeted analysis with context |
 | **Prepare for strategy/brainstorm** | `digest` → manual `case_facts.txt` | ExtractFacts forces legal structure |
 | **Direct legal structuring** | `extractfacts` (only for legal docs) | Creates required 10-heading format |
 
@@ -112,7 +112,7 @@ For handling multiple related but non-legal documents (e.g., financial records, 
 
 ```bash
 # Step 1: Get a summary of the document (optionally with focus)
-litassist digest purchase_agreement.pdf --mode summary --hint "payment terms and obligations"
+litassist digest purchase_agreement.pdf --mode summary --context "payment terms and obligations"
 
 # Step 2: Manually create case_facts.txt with all 10 headings
 # (Include information from digest output)

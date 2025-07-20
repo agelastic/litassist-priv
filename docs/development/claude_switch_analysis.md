@@ -10,10 +10,10 @@ Based on my analysis of the codebase, here's a complete inventory of all command
 
 ### 1. AI Guidance Switches (provide context/instructions to LLM)
 These switches serve similar purposes of guiding the AI's analysis:
-- **`--hint`** (digest) - Optional hint to focus analysis on specific topics
-- **`--focus`** (caseplan) - Specific area to focus the plan on  
+- **`--context`** (digest) - Optional additional context to guide the analysis
+- **`--context`** (caseplan) - Additional context to guide the analysis  
 - **`--context`** (lookup) - Contextual information to guide the lookup analysis
-- **`--instructions`** (barbrief) - Specific instructions for counsel
+- **`--context`** (barbrief) - Additional context to guide the analysis
 - **`--outcome`** (strategy) - Desired outcome to achieve (required)
 
 ### 2. Verification Switches

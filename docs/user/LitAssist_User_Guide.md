@@ -101,6 +101,18 @@ This running example provides context for understanding how each LitAssist workf
 - All prompt YAMLs have been updated for clarity, compliance, and zero-emoji policy.
 - CLI output and logs are now standardized to ASCII/ANSI only (no emoji).
 
+## Switch Migration Reference
+
+**December 2024**: All guidance switches have been standardized to use `--context` for consistency.
+
+| Command   | Old Switch       | New Switch  | Purpose                           |
+|-----------|------------------|-------------|-----------------------------------|
+| digest    | --hint          | --context   | Additional context to guide analysis |
+| caseplan  | --focus         | --context   | Additional context to guide analysis |
+| barbrief  | --instructions  | --context   | Additional context to guide analysis |
+
+**Note**: This change improves consistency across commands. All commands now use the same switch name for providing additional guidance to the AI.
+
 ## Citation Quality Control
 
 LitAssist employs a comprehensive two-phase citation checking system to ensure all legal references are accurate and verifiable:
@@ -467,11 +479,11 @@ The `caseplan` command is your starting point for any litigation matter. It gene
 ### Command
 
 ```bash
-litassist caseplan <case_facts_file> [--focus <area>] [--budget minimal|standard|comprehensive]
+litassist caseplan <case_facts_file> [--context <additional_context>] [--budget minimal|standard|comprehensive]
 ```
 
 - `<case_facts_file>`: Path to case facts (can be minimal/skeleton initially)
-- `--focus`: (Optional) Area to prioritize (e.g., "custody arrangements", "property settlement")
+- `--context`: (Optional) Additional context to guide the analysis (e.g., "custody arrangements", "property settlement")
 - `--budget`: (Optional) If omitted, get rapid budget recommendation; if provided, get full plan
 
 ### Example Usage
@@ -498,7 +510,7 @@ JUSTIFICATION: Interstate relocation with alienation allegations requires extens
 #### Step 2: Generate Full Plan
 
 ```bash
-litassist caseplan case_facts_skeleton.txt --focus "relocation and time arrangements" --budget comprehensive
+litassist caseplan case_facts_skeleton.txt --context "relocation and time arrangements" --budget comprehensive
 ```
 
 This generates two files:
@@ -585,7 +597,7 @@ For our running example, the caseplan command helps structure the entire approac
 ### Best Practices
 
 - **Start Early**: Run caseplan immediately, even with minimal facts
-- **Focus Wisely**: Use --focus to prioritize effort on critical issues
+- **Focus Wisely**: Use --context to prioritize effort on critical issues
 - **Execute Systematically**: Use the generated bash script for consistency
 - **Review Switch Rationales**: Learn when to use --comprehensive and other options
 - **Update Iteratively**: Regenerate plan as case_facts.txt grows
@@ -900,13 +912,13 @@ The `digest` command processes large documents by splitting them into manageable
 ### Command
 
 ```bash
-litassist digest <file>... [--mode summary|issues] [--hint <hint_text>]
+litassist digest <file>... [--mode summary|issues] [--context <context_text>]
 ```
 
 Options:
 - `<file>...`: One or more files to digest (PDFs or text files). Accepts multiple files for consolidated analysis.
 - `--mode`: Choose between chronological summary or issue-spotting (default: summary)
-- `--hint`: Optional guidance to focus the analysis on specific aspects (e.g., "focus on parental alienation claims" or "analyze financial discrepancies")
+- `--context`: Optional additional context to guide the analysis (e.g., "focus on parental alienation claims" or "analyze financial discrepancies")
 
 **Output**: All analysis saved to timestamped files: `digest_[mode]_[filename_slug]_YYYYMMDD_HHMMSS.txt`
 
@@ -942,18 +954,18 @@ For the *Smith v Jones* case, we have received a lengthy affidavit from our clie
 litassist extractfacts <file>
 ```
 
-#### Using the --hint Option
+#### Using the --context Option
 When you need focused analysis on specific aspects of a document:
 
 ```bash
 # Focus on parental alienation allegations
-litassist digest examples/smith_affidavit.pdf --mode issues --hint "focus on parental alienation claims and evidence"
+litassist digest examples/smith_affidavit.pdf --mode issues --context "focus on parental alienation claims and evidence"
 
 # Analyze financial aspects
-litassist digest financial_statements.pdf --mode summary --hint "analyze income discrepancies and hidden assets"
+litassist digest financial_statements.pdf --mode summary --context "analyze income discrepancies and hidden assets"
 
 # Medical document analysis
-litassist digest medical_report.pdf --mode summary --hint "identify disability impacts on parenting capacity"
+litassist digest medical_report.pdf --mode summary --context "identify disability impacts on parenting capacity"
 ```
 
 #### Processing Multiple Files
@@ -964,7 +976,7 @@ You can now digest multiple documents in a single command:
 litassist digest smith_affidavit.pdf jones_affidavit.pdf expert_report.pdf --mode issues
 
 # Using wildcards (shell expands them)
-litassist digest evidence/*.pdf --mode summary --hint "timeline of events"
+litassist digest evidence/*.pdf --mode summary --context "timeline of events"
 
 # Mix different document types
 litassist digest financial_records.pdf correspondence.txt medical_report.pdf --mode issues
@@ -984,7 +996,7 @@ Each file is processed individually and the output includes clear source attribu
 [Analysis of expert_report.pdf...]
 ```
 
-**Benefits of --hint**:
+**Benefits of --context**:
 - Directs AI attention to critical aspects
 - Ensures important details aren't overlooked
 - Particularly useful for lengthy documents
@@ -1171,8 +1183,13 @@ The `brainstorm` command uses Grok's creative capabilities to generate a compreh
 ### Command
 
 ```bash
-litassist brainstorm <case_facts_file> --side <party_side> --area <legal_area> [--research <lookup_file>...]
+litassist brainstorm --facts <case_facts_file> --side <party_side> --area <legal_area> [--research <lookup_file>...]
 ```
+
+**Breaking Change (July 2025)**: The brainstorm command now uses `--facts` option instead of a positional argument. This change enables:
+- Multiple facts files: `--facts file1.txt --facts file2.txt`
+- Glob patterns: `--facts 'case_*.txt'`
+- Default behavior: If no `--facts` specified, uses `case_facts.txt` if present
 
 Required parameters:
 - `--side`: Which side you are representing (options depend on area):
@@ -1192,7 +1209,7 @@ Required parameters:
 For the *Smith v Jones* case, we can use the structured facts to generate comprehensive legal strategies:
 
 ```bash
-litassist brainstorm examples/case_facts.txt --side plaintiff --area family
+litassist brainstorm --facts examples/case_facts.txt --side plaintiff --area family
 ```
 
 #### Research-Informed Mode
@@ -1204,7 +1221,7 @@ litassist lookup "parental alienation family law australia"
 litassist lookup "relocation orders best interests child"
 
 # Then use the research to inform brainstorming
-litassist brainstorm examples/case_facts.txt --side plaintiff --area family \
+litassist brainstorm --facts examples/case_facts.txt --side plaintiff --area family \
   --research outputs/lookup_parental_alienation_*.txt \
   --research outputs/lookup_relocation_orders_*.txt
 ```
@@ -1593,7 +1610,7 @@ gantt
 **Phase 1: Comprehensive Exploration (Brainstorm)**
 ```bash
 # Generate comprehensive strategic foundation
-litassist brainstorm case_facts.txt --side plaintiff --area civil
+litassist brainstorm --facts case_facts.txt --side plaintiff --area civil
 ```
 - Creates 20+ strategic approaches (orthodox + unorthodox)
 - Identifies "most likely to succeed" strategies
@@ -1660,7 +1677,7 @@ litassist strategy case_facts.txt --outcome "specific goal" --strategies strateg
 #### Pattern 1: Comprehensive Legal Analysis
 ```bash
 # Full exploration → targeted implementation
-litassist brainstorm case_facts.txt --side plaintiff --area commercial
+litassist brainstorm --facts case_facts.txt --side plaintiff --area commercial
 litassist strategy case_facts.txt --outcome "summary judgment" --strategies strategies.txt
 litassist draft case_facts.txt strategies.txt "summary judgment application"
 ```
@@ -1676,7 +1693,7 @@ litassist strategy case_facts.txt --outcome "interim injunction"
 #### Pattern 3: Iterative Development
 ```bash
 # Multiple strategic analyses for different outcomes
-litassist brainstorm case_facts.txt --side defendant --area civil
+litassist brainstorm --facts case_facts.txt --side defendant --area civil
 litassist strategy case_facts.txt --outcome "strike out application" --strategies strategies.txt
 litassist strategy case_facts.txt --outcome "summary judgment defense" --strategies strategies.txt
 litassist strategy case_facts.txt --outcome "counterclaim" --strategies strategies.txt
@@ -1686,7 +1703,7 @@ litassist strategy case_facts.txt --outcome "counterclaim" --strategies strategi
 #### Pattern 4: Client Consultation Preparation
 ```bash
 # Comprehensive options for client discussion
-litassist brainstorm case_facts.txt --side plaintiff --area family
+litassist brainstorm --facts case_facts.txt --side plaintiff --area family
 # Review brainstorm output with client to select preferred approaches
 # Then create implementation plan for chosen direction
 litassist strategy case_facts.txt --outcome "custody modification" --strategies strategies.txt
@@ -1741,7 +1758,7 @@ litassist strategy case_facts.txt --outcome "custody modification" --strategies 
 | Aspect | ExtractFacts | Digest |
 |--------|-------------|--------|
 | **Output Format** | Fixed 10-heading structure | Flexible analysis format |
-| **Available Options** | `--verify` only | `--mode summary/issues`, `--hint` |
+| **Available Options** | `--verify` only | `--mode summary/issues`, `--context` |
 | **Primary Use** | Foundation for other commands | Document understanding |
 | **Structure** | Always produces same 10 headings | Varies based on content and mode |
 | **Citation Focus** | Enhanced verification for accuracy | Standard verification with warnings |
@@ -1759,7 +1776,7 @@ litassist strategy case_facts.txt --outcome "custody modification" --strategies 
 
 #### Use **Digest** when:
 - You want to understand what a document contains
-- You need focused analysis with `--hint` (e.g., "focus on Volkswagen VIN details")
+- You need focused analysis with `--context` (e.g., "focus on Volkswagen VIN details")
 - You want chronological summaries (`--mode summary`) or legal issue identification (`--mode issues`)
 - Processing non-legal documents or documents that don't need structured legal analysis
 - Quick document comprehension without feeding into other commands
@@ -1773,14 +1790,14 @@ litassist extractfacts contract.pdf correspondence/*.pdf
 # → Produces single 10-heading case facts consolidating all documents
 
 # Then use those facts in other commands
-litassist brainstorm case_facts.txt --side plaintiff
+litassist brainstorm --facts case_facts.txt --side plaintiff
 litassist strategy case_facts.txt --outcome "summary judgment"
 ```
 
 #### For Document Understanding:
 ```bash
 # Use digest to understand multiple documents with source attribution
-litassist digest car_bundle.pdf suncorp_bundle.pdf whatsapp_chat.txt --hint "vehicle ownership"
+litassist digest car_bundle.pdf suncorp_bundle.pdf whatsapp_chat.txt --context "vehicle ownership"
 # → Provides analysis of each document with clear source headers
 
 # Or general document analysis of a directory
@@ -1790,8 +1807,8 @@ litassist digest evidence/*.pdf --mode issues
 
 #### The Wrong Approach:
 ```bash
-# [N] This won't work - extractfacts doesn't have --hint option
-litassist extractfacts car_docs.pdf --hint "VIN details"
+# [N] This won't work - extractfacts doesn't have --context option
+litassist extractfacts car_docs.pdf --context "VIN details"
 
 # [N] This won't produce structured facts for other commands
 litassist digest contract.pdf
@@ -1804,7 +1821,7 @@ litassist brainstorm digest_output.txt  # Won't have proper 10-heading structure
 ```bash
 # Proper legal workflow integration
 litassist extractfacts source_document.pdf
-litassist brainstorm case_facts.txt --side plaintiff
+litassist brainstorm --facts case_facts.txt --side plaintiff
 litassist strategy case_facts.txt --outcome "damages claim"
 litassist barbrief case_facts.txt --hearing-type trial --strategies strategies.txt
 ```
@@ -1813,7 +1830,7 @@ litassist barbrief case_facts.txt --hearing-type trial --strategies strategies.t
 ```bash
 # Document understanding workflow
 litassist digest large_contract.pdf --mode issues  # Identify problems
-litassist digest financial_data.pdf --mode summary --hint "cash flow analysis"
+litassist digest financial_data.pdf --mode summary --context "cash flow analysis"
 litassist digest medical_records.pdf --mode summary  # Timeline of events
 ```
 
@@ -1821,7 +1838,7 @@ litassist digest medical_records.pdf --mode summary  # Timeline of events
 
 1. **ExtractFacts = Structure**: Fixed format for legal pipeline integration
 2. **Digest = Flexibility**: Adaptable analysis for document comprehension
-3. **Different options**: ExtractFacts has no `--hint`, Digest has no fixed structure
+3. **Different options**: ExtractFacts has no `--context`, Digest has no fixed structure
 4. **Different purposes**: Foundation building vs. content understanding
 5. **Not interchangeable**: Choose based on your end goal, not document type
 6. **Pipeline integration**: Only ExtractFacts output works reliably with brainstorm/strategy/barbrief
@@ -1927,7 +1944,7 @@ Options:
 **Optimal Workflow (Brainstorm → Draft):**
 ```bash
 # 1. Generate comprehensive strategies with legal foundations
-litassist brainstorm case_facts.txt --side plaintiff --area family
+litassist brainstorm --facts case_facts.txt --side plaintiff --area family
 
 # 2. Use brainstorm output for rich legal drafting (automatically recognized)
 litassist draft case_facts.txt brainstorm_family_plaintiff_20250606_143022.txt "comprehensive outline of submissions"
@@ -2052,7 +2069,7 @@ mv strategies.md strategies.txt
 ```bash
 # Stage 1: Research and strategy
 litassist lookup "contract formation elements" --extract principles
-litassist brainstorm case_facts.txt --side plaintiff --area commercial
+litassist brainstorm --facts case_facts.txt --side plaintiff --area commercial
 
 # Stage 2: Comprehensive drafting using research foundation
 litassist draft case_facts.txt brainstorm_commercial_plaintiff_*.txt "detailed contract dispute submissions"
@@ -2338,7 +2355,7 @@ $ litassist extractfacts document.pdf --verify
 **When verification is auto-enabled:**
 ```bash
 # brainstorm command (Grok models)
-$ litassist brainstorm case_facts.txt --side plaintiff --area civil
+$ litassist brainstorm --facts case_facts.txt --side plaintiff --area civil
 [INFO]  Note: Verification auto-enabled for Grok models due to hallucination tendency
 
 # strategy command (always enabled)
@@ -2657,7 +2674,7 @@ Options:
 - `--strategies FILE`: Include brainstormed strategies
 - `--research FILE`: Include lookup/research reports (multiple allowed)
 - `--documents FILE`: Include supporting documents (multiple allowed)
-- `--instructions TEXT`: Specific instructions for counsel
+- `--context TEXT`: Additional context to guide the analysis
 - `--verify`: Enable citation verification
 
 ### Verification Optimization
@@ -2712,7 +2729,7 @@ litassist barbrief smith_v_jones_facts.txt --hearing-type appeal \
   --strategies brainstorm_output.txt \
   --research lookup_relocation_law.txt --research lookup_alienation_cases.txt \
   --documents affidavit_smith.pdf --documents family_report.pdf \
-  --instructions "Focus on error in applying relocation principles" \
+  --context "Focus on error in applying relocation principles" \
   --verify
 
 # Output: barbrief_appeal_20250107_152045.txt
@@ -2764,10 +2781,10 @@ Each LitAssist command uses a specific LLM model chosen for its strengths:
 | lookup | `google/gemini-2.5-pro-preview` | N/A | Fast, accurate legal research |
 | digest | `anthropic/claude-sonnet-4` | N/A | Reliable document summarization |
 | extractfacts | `anthropic/claude-sonnet-4` | N/A | Precise fact extraction |
-| brainstorm | *Sub-command specific* | `anthropic/claude-sonnet-4` | Creative generation + expert analysis |
-| strategy | `openai/o3` | `anthropic/claude-sonnet-4` | Enhanced multi-step legal reasoning |
-| draft | `openai/o3` | N/A | Superior technical legal writing (BYOK required) |
-| counselnotes | `anthropic/claude-sonnet-4` | N/A | Strategic analysis from advocate perspective |
+| brainstorm | *Sub-command specific* | `openai/o3-pro` | Creative generation + expert analysis |
+| strategy | `openai/o3-pro` | `anthropic/claude-opus-4` | Enhanced multi-step legal reasoning |
+| draft | `openai/o3-pro` | N/A | Superior technical legal writing (BYOK required) |
+| counselnotes | `anthropic/claude-opus-4` | N/A | Strategic analysis from advocate perspective |
 | barbrief | `openai/o3-pro` | N/A | Comprehensive barrister's briefs (BYOK required) |
 
 ### Brainstorm Sub-Command Models
@@ -2776,9 +2793,9 @@ The brainstorm command uses different models for different types of strategy gen
 
 | Sub-Command | Model | Temperature | Top-P | Purpose |
 |-------------|-------|-------------|-------|---------|
-| Orthodox strategies | `anthropic/claude-sonnet-4` | 0.3 | 0.7 | Conservative, proven legal approaches |
-| Unorthodox strategies | `x-ai/grok-3-beta` | 0.9 | 0.95 | Creative, novel legal arguments |
-| Analysis ("Most Likely") | `anthropic/claude-sonnet-4` | 0.2 | 0.8 | Expert evaluation and ranking |
+| Orthodox strategies | `anthropic/claude-opus-4` | 0.3 | 0.7 | Conservative, proven legal approaches |
+| Unorthodox strategies | `x-ai/grok-3` | 0.9 | 0.95 | Creative, novel legal arguments |
+| Analysis ("Most Likely") | `openai/o3-pro` | 0.2 | 0.8 | Expert evaluation and ranking |
 
 ### Temperature and Sampling Parameters
 
@@ -2830,7 +2847,7 @@ temperature=0.2, top_p=0.5
 - **Analysis Purpose**: Intelligent ranking of brainstormed strategies for specific outcomes
 - **Why**: o1-pro provides superior reasoning capabilities for complex strategic analysis
 
-**counselnotes** (`anthropic/claude-sonnet-4`):
+**counselnotes** (`anthropic/claude-opus-4`):
 ```python
 temperature=0.3, top_p=0.7
 ```
@@ -2840,7 +2857,7 @@ temperature=0.3, top_p=0.7
 
 #### Creative Commands
 
-**draft** (`openai/o3`):
+**draft** (`openai/o3-pro`):
 ```python
 # o3 model supports very limited parameters:
 # - max_completion_tokens (instead of max_tokens, default: 4096)
@@ -2864,7 +2881,7 @@ temperature=0.3, top_p=0.7
 - **Why**: o3-pro's high token limit enables complete brief generation in single pass
 - **Note**: Uses same limited parameter set as o3 but with much higher token capacity
 
-**brainstorm** (`x-ai/grok-3-beta` for generation, `anthropic/claude-sonnet-4` for analysis):
+**brainstorm** (`x-ai/grok-3` for generation, `openai/o3-pro` for analysis):
 ```python
 # Generation: temperature=0.9, top_p=0.95
 # Analysis: temperature=0.2, top_p=0.8

@@ -1,0 +1,257 @@
+/* Custom styles for LitAssist Documentation */
+
+:root {
+  --primary-color: #2c5282;
+  --secondary-color: #3182ce;
+  --accent-color: #ed8936;
+  --text-color: #2d3748;
+  --bg-color: #f7fafc;
+  --code-bg: #2d3748;
+  --border-color: #e2e8f0;
+}
+
+/* Hero Section */
+.hero-section {
+  background: linear-gradient(135deg, var(--primary-color) 0%, var(--secondary-color) 100%);
+  color: white;
+  padding: 3rem 2rem;
+  border-radius: 8px;
+  margin: 2rem 0;
+  text-align: center;
+}
+
+.hero-section h2 {
+  color: white;
+  margin-bottom: 1rem;
+}
+
+.hero-section pre {
+  background: rgba(0, 0, 0, 0.2);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  color: white;
+  padding: 1rem;
+  border-radius: 4px;
+  margin: 1.5rem auto;
+  max-width: 600px;
+}
+
+/* Buttons */
+.btn {
+  display: inline-block;
+  padding: 0.75rem 1.5rem;
+  margin: 0.5rem;
+  text-decoration: none;
+  border-radius: 4px;
+  font-weight: 600;
+  transition: all 0.3s ease;
+}
+
+.btn-primary {
+  background: var(--accent-color);
+  color: white;
+}
+
+.btn-primary:hover {
+  background: #dd7b1f;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+}
+
+.btn-secondary {
+  background: white;
+  color: var(--primary-color);
+  border: 2px solid white;
+}
+
+.btn-secondary:hover {
+  background: rgba(255, 255, 255, 0.9);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+}
+
+/* Site Header Enhancement */
+.site-header {
+  border-bottom: 2px solid var(--border-color);
+  background: white;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+}
+
+.site-logo {
+  font-size: 1.5rem;
+  margin-right: 0.5rem;
+}
+
+.site-title {
+  font-weight: 700;
+  color: var(--primary-color) !important;
+}
+
+/* Navigation */
+.site-nav .page-link {
+  color: var(--text-color);
+  font-weight: 500;
+  margin-left: 1.5rem;
+  transition: color 0.3s ease;
+}
+
+.site-nav .page-link:hover {
+  color: var(--secondary-color);
+}
+
+/* Content Styling */
+h1, h2, h3, h4, h5, h6 {
+  color: var(--primary-color);
+  margin-top: 2rem;
+  margin-bottom: 1rem;
+}
+
+h1 {
+  font-size: 2.5rem;
+  border-bottom: 3px solid var(--border-color);
+  padding-bottom: 0.5rem;
+}
+
+h2 {
+  font-size: 2rem;
+}
+
+h3 {
+  font-size: 1.5rem;
+}
+
+/* Code Blocks */
+pre {
+  background: var(--code-bg);
+  color: #e2e8f0;
+  padding: 1rem;
+  border-radius: 4px;
+  overflow-x: auto;
+  line-height: 1.5;
+}
+
+code {
+  background: #edf2f7;
+  padding: 0.2rem 0.4rem;
+  border-radius: 3px;
+  font-size: 0.9em;
+  color: var(--primary-color);
+}
+
+pre code {
+  background: none;
+  padding: 0;
+  color: inherit;
+}
+
+/* Features Grid */
+.home h2 {
+  margin-top: 3rem;
+}
+
+.home h3 {
+  margin-top: 2rem;
+  color: var(--secondary-color);
+}
+
+/* Blockquotes */
+blockquote {
+  border-left: 4px solid var(--accent-color);
+  padding-left: 1rem;
+  margin: 1.5rem 0;
+  font-style: italic;
+  color: #4a5568;
+}
+
+/* Tables */
+table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 1.5rem 0;
+}
+
+th, td {
+  padding: 0.75rem;
+  text-align: left;
+  border-bottom: 1px solid var(--border-color);
+}
+
+th {
+  background: var(--bg-color);
+  font-weight: 600;
+  color: var(--primary-color);
+}
+
+tr:hover {
+  background: #f8fafc;
+}
+
+/* Footer Enhancement */
+.site-footer {
+  background: var(--bg-color);
+  border-top: 2px solid var(--border-color);
+  margin-top: 4rem;
+}
+
+.footer-bottom {
+  text-align: center;
+  padding-top: 2rem;
+  margin-top: 2rem;
+  border-top: 1px solid var(--border-color);
+  color: #718096;
+}
+
+/* Responsive Design */
+@media screen and (max-width: 768px) {
+  .hero-section {
+    padding: 2rem 1rem;
+  }
+  
+  h1 {
+    font-size: 2rem;
+  }
+  
+  .btn {
+    display: block;
+    width: 100%;
+    margin: 0.5rem 0;
+  }
+}
+
+/* Syntax Highlighting Enhancement */
+.highlight .k { color: #ff79c6; } /* Keyword */
+.highlight .s { color: #f1fa8c; } /* String */
+.highlight .c { color: #6272a4; } /* Comment */
+.highlight .n { color: #f8f8f2; } /* Name */
+.highlight .o { color: #ff79c6; } /* Operator */
+
+/* Alert Boxes */
+.alert {
+  padding: 1rem;
+  margin: 1.5rem 0;
+  border-radius: 4px;
+  border-left: 4px solid;
+}
+
+.alert-info {
+  background: #e3f2fd;
+  border-left-color: #2196f3;
+  color: #0d47a1;
+}
+
+.alert-warning {
+  background: #fff3cd;
+  border-left-color: #ffc107;
+  color: #856404;
+}
+
+.alert-success {
+  background: #d4edda;
+  border-left-color: #28a745;
+  color: #155724;
+}
+
+.alert-danger {
+  background: #f8d7da;
+  border-left-color: #dc3545;
+  color: #721c24;
+}
