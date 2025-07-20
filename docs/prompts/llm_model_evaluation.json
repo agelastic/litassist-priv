@@ -2,7 +2,7 @@
   {
     "prompt_name": "base.australian_law",
     "associated_commands": ["all"],
-    "current_model": "Varies by command (lookup: google/gemini-2.5-pro-preview, digest/extractfacts: anthropic/claude-sonnet-4, brainstorm: x-ai/grok-3-beta & anthropic/claude-sonnet-4, strategy: openai/o1-pro & anthropic/claude-sonnet-4, draft: openai/o3)",
+    "current_model": "Varies by command (lookup: google/gemini-2.5-pro-preview, digest/extractfacts: anthropic/claude-sonnet-4, brainstorm: x-ai/grok-3 & anthropic/claude-sonnet-4, strategy: openai/o1-pro & anthropic/claude-sonnet-4, draft: openai/o3)",
     "appropriateness_evaluation": "Generally appropriate as this is a foundational instruction. All listed models are capable of understanding and applying such a general constraint. The suggested improvement for jurisdictional specificity is also within their capabilities.",
     "alternative_model_suggestions": []
   },
@@ -54,7 +54,7 @@
   {
     "prompt_name": "commands.brainstorm.system",
     "associated_commands": ["brainstorm"],
-    "current_model": "x-ai/grok-3-beta (generation), anthropic/claude-sonnet-4 (analysis)",
+    "current_model": "x-ai/grok-3 (generation), anthropic/claude-sonnet-4 (analysis)",
     "appropriateness_evaluation": "Generation (Grok): Appropriate, as Grok is highlighted for creative capabilities. The suggested improvements aim to broaden this creativity. Analysis (Claude Sonnet): Appropriate for the structured analysis part. The suggested improvement for a more compelling justification for the #1 strategy would be handled by Claude Sonnet.",
     "alternative_model_suggestions": [
       {
@@ -66,14 +66,14 @@
   {
     "prompt_name": "commands.brainstorm.orthodox_system",
     "associated_commands": ["brainstorm"],
-    "current_model": "x-ai/grok-3-beta",
+    "current_model": "x-ai/grok-3",
     "appropriateness_evaluation": "Appropriate. Grok should be able to generate conservative strategies when properly guided. The suggested improvement to cite primary legal authority reinforces this.",
     "alternative_model_suggestions": []
   },
   {
     "prompt_name": "commands.brainstorm.unorthodox_system",
     "associated_commands": ["brainstorm"],
-    "current_model": "x-ai/grok-3-beta",
+    "current_model": "x-ai/grok-3",
     "appropriateness_evaluation": "Highly appropriate. Grok's strength is creativity, which is exactly what's needed for unorthodox strategies. The suggested improvements to articulate novelty and consider counter-arguments should leverage Grok's capabilities well.",
     "alternative_model_suggestions": []
   },
@@ -179,7 +179,7 @@
   {
     "prompt_name": "formats.strategic_options",
     "associated_commands": ["brainstorm", "strategy"],
-    "current_model": "x-ai/grok-3-beta / anthropic/claude-sonnet-4 (brainstorm), openai/o1-pro (strategy)",
+    "current_model": "x-ai/grok-3 / anthropic/claude-sonnet-4 (brainstorm), openai/o1-pro (strategy)",
     "appropriateness_evaluation": "N/A (Format definition.) These models are capable of populating this structured format. The suggested additions (Key Assumptions, Metrics for Success) would require more nuanced generation, which o1-pro and Grok/Claude-Sonnet are suited for.",
     "alternative_model_suggestions": []
   },
@@ -259,14 +259,14 @@
   {
     "prompt_name": "strategies.brainstorm.orthodox_prompt",
     "associated_commands": ["brainstorm"],
-    "current_model": "x-ai/grok-3-beta",
+    "current_model": "x-ai/grok-3",
     "appropriateness_evaluation": "Appropriate. Grok should be able to generate these, and the prompt already provides strong guidance. Adding a 'downsides' consideration is a minor tweak.",
     "alternative_model_suggestions": []
   },
   {
     "prompt_name": "strategies.brainstorm.unorthodox_prompt",
     "associated_commands": ["brainstorm"],
-    "current_model": "x-ai/grok-3-beta",
+    "current_model": "x-ai/grok-3",
     "appropriateness_evaluation": "Highly appropriate for Grok's creative strengths. The suggestions to use analogies and stronger justifications leverage this well.",
     "alternative_model_suggestions": []
   },

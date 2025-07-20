@@ -1616,7 +1616,7 @@ This report provides a comprehensive analysis of the LLM prompts used in the Lit
 ## V. Evaluation of LLM Model Appropriateness
 ### base.australian_law
 - **Associated Command(s)**: all
-- **Current LLM Model**: Varies by command (lookup: google/gemini-2.5-pro-preview, digest/extractfacts: anthropic/claude-sonnet-4, brainstorm: x-ai/grok-3-beta & anthropic/claude-sonnet-4, strategy: openai/o1-pro & anthropic/claude-sonnet-4, draft: openai/o3)
+- **Current LLM Model**: Varies by command (lookup: google/gemini-2.5-pro-preview, digest/extractfacts: anthropic/claude-sonnet-4, brainstorm: x-ai/grok-3 & anthropic/claude-sonnet-4, strategy: openai/o1-pro & anthropic/claude-sonnet-4, draft: openai/o3)
 - **Appropriateness Evaluation**: Generally appropriate as this is a foundational instruction. All listed models are capable of understanding and applying such a general constraint. The suggested improvement for jurisdictional specificity is also within their capabilities.
 - **Alternative Model Suggestions**: None.
 
@@ -1656,7 +1656,7 @@ This report provides a comprehensive analysis of the LLM prompts used in the Lit
 
 ### commands.brainstorm.system
 - **Associated Command(s)**: brainstorm
-- **Current LLM Model**: x-ai/grok-3-beta (generation), anthropic/claude-sonnet-4 (analysis)
+- **Current LLM Model**: x-ai/grok-3 (generation), anthropic/claude-sonnet-4 (analysis)
 - **Appropriateness Evaluation**: Generation (Grok): Appropriate, as Grok is highlighted for creative capabilities. The suggested improvements aim to broaden this creativity. Analysis (Claude Sonnet): Appropriate for the structured analysis part. The suggested improvement for a more compelling justification for the #1 strategy would be handled by Claude Sonnet.
 - **Alternative Model Suggestions**:
   - **Model**: anthropic/claude-3-opus-20240229 (for analysis if Sonnet is insufficient)
@@ -1664,13 +1664,13 @@ This report provides a comprehensive analysis of the LLM prompts used in the Lit
 
 ### commands.brainstorm.orthodox_system
 - **Associated Command(s)**: brainstorm
-- **Current LLM Model**: x-ai/grok-3-beta
+- **Current LLM Model**: x-ai/grok-3
 - **Appropriateness Evaluation**: Appropriate. Grok should be able to generate conservative strategies when properly guided. The suggested improvement to cite primary legal authority reinforces this.
 - **Alternative Model Suggestions**: None.
 
 ### commands.brainstorm.unorthodox_system
 - **Associated Command(s)**: brainstorm
-- **Current LLM Model**: x-ai/grok-3-beta
+- **Current LLM Model**: x-ai/grok-3
 - **Appropriateness Evaluation**: Highly appropriate. Grok's strength is creativity, which is exactly what's needed for unorthodox strategies. The suggested improvements to articulate novelty and consider counter-arguments should leverage Grok's capabilities well.
 - **Alternative Model Suggestions**: None.
 
@@ -1754,7 +1754,7 @@ This report provides a comprehensive analysis of the LLM prompts used in the Lit
 
 ### formats.strategic_options
 - **Associated Command(s)**: brainstorm, strategy
-- **Current LLM Model**: x-ai/grok-3-beta / anthropic/claude-sonnet-4 (brainstorm), openai/o1-pro (strategy)
+- **Current LLM Model**: x-ai/grok-3 / anthropic/claude-sonnet-4 (brainstorm), openai/o1-pro (strategy)
 - **Appropriateness Evaluation**: N/A (Format definition.) These models are capable of populating this structured format. The suggested additions (Key Assumptions, Metrics for Success) would require more nuanced generation, which o1-pro and Grok/Claude-Sonnet are suited for.
 - **Alternative Model Suggestions**: None.
 
@@ -1818,13 +1818,13 @@ This report provides a comprehensive analysis of the LLM prompts used in the Lit
 
 ### strategies.brainstorm.orthodox_prompt
 - **Associated Command(s)**: brainstorm
-- **Current LLM Model**: x-ai/grok-3-beta
+- **Current LLM Model**: x-ai/grok-3
 - **Appropriateness Evaluation**: Appropriate. Grok should be able to generate these, and the prompt already provides strong guidance. Adding a 'downsides' consideration is a minor tweak.
 - **Alternative Model Suggestions**: None.
 
 ### strategies.brainstorm.unorthodox_prompt
 - **Associated Command(s)**: brainstorm
-- **Current LLM Model**: x-ai/grok-3-beta
+- **Current LLM Model**: x-ai/grok-3
 - **Appropriateness Evaluation**: Highly appropriate for Grok's creative strengths. The suggestions to use analogies and stronger justifications leverage this well.
 - **Alternative Model Suggestions**: None.
 

@@ -274,7 +274,7 @@ def test_litassist_models():
             "extractfacts": "anthropic/claude-sonnet-4",
             "strategy": "openai/o3-pro",  # Default model
             "brainstorm-orthodox": "anthropic/claude-sonnet-4",
-            "brainstorm-unorthodox": "x-ai/grok-3-beta",
+            "brainstorm-unorthodox": "x-ai/grok-3",
             "draft": "openai/o3",
             "digest-summary": "anthropic/claude-sonnet-4",
             "lookup": "google/gemini-2.5-pro-preview",
@@ -1469,7 +1469,7 @@ def test_verification_system():
             "critical_commands_auto_verify": test_client.should_auto_verify(
                 "test", "extractfacts"
             ),
-            "grok_auto_verify": LLMClient("x-ai/grok-3-beta").should_auto_verify(
+            "grok_auto_verify": LLMClient("x-ai/grok-3").should_auto_verify(
                 "test"
             ),
             "real_llm_verification_works": any(

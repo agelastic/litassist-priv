@@ -222,7 +222,7 @@ Categorize each fact as:
 ### 4. Brainstorm Command - Strategy Generation
 
 **Current State:**
-- Model: `x-ai/grok-3-beta`
+- Model: `x-ai/grok-3`
 - Temperature: 0.9, top_p: 0.95
 - Orthodox/Unorthodox/Most Likely structure
 - Auto-verification for Grok

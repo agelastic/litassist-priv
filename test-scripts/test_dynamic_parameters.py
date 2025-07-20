@@ -22,7 +22,7 @@ def test_model_family_detection():
         ("google/palm-2", "google"),
         ("openai/gpt-4", "openai_standard"),
         ("openai/gpt-4-turbo", "openai_standard"),
-        ("x-ai/grok-3-beta", "xai"),
+        ("x-ai/grok-3", "xai"),
         ("meta/llama-2-70b", "meta"),
         ("mistral/mixtral-8x7b", "mistral"),
         ("cohere/command", "cohere"),

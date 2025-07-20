@@ -165,7 +165,7 @@ click.echo(verifying_message("Verifying citations..."))
 ### Model Name Protection
 
 **CRITICAL**: Never change model identifiers in the code. These are exact API endpoints:
-- `x-ai/grok-3-beta` (NOT grok-beta or any variation)
+- `x-ai/grok-3` (NOT grok-beta or any variation)
 - `anthropic/claude-sonnet-4` (current Claude 4 Sonnet)
 - `openai/o3-pro` (strategic reasoning and advanced technical writing model, requires BYOK)
 - `google/gemini-2.5-pro-preview` (lookup research)

@@ -2776,10 +2776,10 @@ Each LitAssist command uses a specific LLM model chosen for its strengths:
 | lookup | `google/gemini-2.5-pro-preview` | N/A | Fast, accurate legal research |
 | digest | `anthropic/claude-sonnet-4` | N/A | Reliable document summarization |
 | extractfacts | `anthropic/claude-sonnet-4` | N/A | Precise fact extraction |
-| brainstorm | *Sub-command specific* | `anthropic/claude-sonnet-4` | Creative generation + expert analysis |
-| strategy | `openai/o3` | `anthropic/claude-sonnet-4` | Enhanced multi-step legal reasoning |
-| draft | `openai/o3` | N/A | Superior technical legal writing (BYOK required) |
-| counselnotes | `anthropic/claude-sonnet-4` | N/A | Strategic analysis from advocate perspective |
+| brainstorm | *Sub-command specific* | `openai/o3-pro` | Creative generation + expert analysis |
+| strategy | `openai/o3-pro` | `anthropic/claude-opus-4` | Enhanced multi-step legal reasoning |
+| draft | `openai/o3-pro` | N/A | Superior technical legal writing (BYOK required) |
+| counselnotes | `anthropic/claude-opus-4` | N/A | Strategic analysis from advocate perspective |
 | barbrief | `openai/o3-pro` | N/A | Comprehensive barrister's briefs (BYOK required) |
 
 ### Brainstorm Sub-Command Models
@@ -2788,9 +2788,9 @@ The brainstorm command uses different models for different types of strategy gen
 
 | Sub-Command | Model | Temperature | Top-P | Purpose |
 |-------------|-------|-------------|-------|---------|
-| Orthodox strategies | `anthropic/claude-sonnet-4` | 0.3 | 0.7 | Conservative, proven legal approaches |
-| Unorthodox strategies | `x-ai/grok-3-beta` | 0.9 | 0.95 | Creative, novel legal arguments |
-| Analysis ("Most Likely") | `anthropic/claude-sonnet-4` | 0.2 | 0.8 | Expert evaluation and ranking |
+| Orthodox strategies | `anthropic/claude-opus-4` | 0.3 | 0.7 | Conservative, proven legal approaches |
+| Unorthodox strategies | `x-ai/grok-3` | 0.9 | 0.95 | Creative, novel legal arguments |
+| Analysis ("Most Likely") | `openai/o3-pro` | 0.2 | 0.8 | Expert evaluation and ranking |
 
 ### Temperature and Sampling Parameters
 
@@ -2842,7 +2842,7 @@ temperature=0.2, top_p=0.5
 - **Analysis Purpose**: Intelligent ranking of brainstormed strategies for specific outcomes
 - **Why**: o1-pro provides superior reasoning capabilities for complex strategic analysis
 
-**counselnotes** (`anthropic/claude-sonnet-4`):
+**counselnotes** (`anthropic/claude-opus-4`):
 ```python
 temperature=0.3, top_p=0.7
 ```
@@ -2852,7 +2852,7 @@ temperature=0.3, top_p=0.7
 
 #### Creative Commands
 
-**draft** (`openai/o3`):
+**draft** (`openai/o3-pro`):
 ```python
 # o3 model supports very limited parameters:
 # - max_completion_tokens (instead of max_tokens, default: 4096)
@@ -2876,7 +2876,7 @@ temperature=0.3, top_p=0.7
 - **Why**: o3-pro's high token limit enables complete brief generation in single pass
 - **Note**: Uses same limited parameter set as o3 but with much higher token capacity
 
-**brainstorm** (`x-ai/grok-3-beta` for generation, `anthropic/claude-sonnet-4` for analysis):
+**brainstorm** (`x-ai/grok-3` for generation, `openai/o3-pro` for analysis):
 ```python
 # Generation: temperature=0.9, top_p=0.95
 # Analysis: temperature=0.2, top_p=0.8
