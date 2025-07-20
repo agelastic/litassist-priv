@@ -1183,8 +1183,13 @@ The `brainstorm` command uses Grok's creative capabilities to generate a compreh
 ### Command
 
 ```bash
-litassist brainstorm <case_facts_file> --side <party_side> --area <legal_area> [--research <lookup_file>...]
+litassist brainstorm --facts <case_facts_file> --side <party_side> --area <legal_area> [--research <lookup_file>...]
 ```
+
+**Breaking Change (July 2025)**: The brainstorm command now uses `--facts` option instead of a positional argument. This change enables:
+- Multiple facts files: `--facts file1.txt --facts file2.txt`
+- Glob patterns: `--facts 'case_*.txt'`
+- Default behavior: If no `--facts` specified, uses `case_facts.txt` if present
 
 Required parameters:
 - `--side`: Which side you are representing (options depend on area):
@@ -1204,7 +1209,7 @@ Required parameters:
 For the *Smith v Jones* case, we can use the structured facts to generate comprehensive legal strategies:
 
 ```bash
-litassist brainstorm examples/case_facts.txt --side plaintiff --area family
+litassist brainstorm --facts examples/case_facts.txt --side plaintiff --area family
 ```
 
 #### Research-Informed Mode
@@ -1216,7 +1221,7 @@ litassist lookup "parental alienation family law australia"
 litassist lookup "relocation orders best interests child"
 
 # Then use the research to inform brainstorming
-litassist brainstorm examples/case_facts.txt --side plaintiff --area family \
+litassist brainstorm --facts examples/case_facts.txt --side plaintiff --area family \
   --research outputs/lookup_parental_alienation_*.txt \
   --research outputs/lookup_relocation_orders_*.txt
 ```
@@ -1605,7 +1610,7 @@ gantt
 **Phase 1: Comprehensive Exploration (Brainstorm)**
 ```bash
 # Generate comprehensive strategic foundation
-litassist brainstorm case_facts.txt --side plaintiff --area civil
+litassist brainstorm --facts case_facts.txt --side plaintiff --area civil
 ```
 - Creates 20+ strategic approaches (orthodox + unorthodox)
 - Identifies "most likely to succeed" strategies
@@ -1672,7 +1677,7 @@ litassist strategy case_facts.txt --outcome "specific goal" --strategies strateg
 #### Pattern 1: Comprehensive Legal Analysis
 ```bash
 # Full exploration → targeted implementation
-litassist brainstorm case_facts.txt --side plaintiff --area commercial
+litassist brainstorm --facts case_facts.txt --side plaintiff --area commercial
 litassist strategy case_facts.txt --outcome "summary judgment" --strategies strategies.txt
 litassist draft case_facts.txt strategies.txt "summary judgment application"
 ```
@@ -1688,7 +1693,7 @@ litassist strategy case_facts.txt --outcome "interim injunction"
 #### Pattern 3: Iterative Development
 ```bash
 # Multiple strategic analyses for different outcomes
-litassist brainstorm case_facts.txt --side defendant --area civil
+litassist brainstorm --facts case_facts.txt --side defendant --area civil
 litassist strategy case_facts.txt --outcome "strike out application" --strategies strategies.txt
 litassist strategy case_facts.txt --outcome "summary judgment defense" --strategies strategies.txt
 litassist strategy case_facts.txt --outcome "counterclaim" --strategies strategies.txt
@@ -1698,7 +1703,7 @@ litassist strategy case_facts.txt --outcome "counterclaim" --strategies strategi
 #### Pattern 4: Client Consultation Preparation
 ```bash
 # Comprehensive options for client discussion
-litassist brainstorm case_facts.txt --side plaintiff --area family
+litassist brainstorm --facts case_facts.txt --side plaintiff --area family
 # Review brainstorm output with client to select preferred approaches
 # Then create implementation plan for chosen direction
 litassist strategy case_facts.txt --outcome "custody modification" --strategies strategies.txt
@@ -1785,7 +1790,7 @@ litassist extractfacts contract.pdf correspondence/*.pdf
 # → Produces single 10-heading case facts consolidating all documents
 
 # Then use those facts in other commands
-litassist brainstorm case_facts.txt --side plaintiff
+litassist brainstorm --facts case_facts.txt --side plaintiff
 litassist strategy case_facts.txt --outcome "summary judgment"
 ```
 
@@ -1816,7 +1821,7 @@ litassist brainstorm digest_output.txt  # Won't have proper 10-heading structure
 ```bash
 # Proper legal workflow integration
 litassist extractfacts source_document.pdf
-litassist brainstorm case_facts.txt --side plaintiff
+litassist brainstorm --facts case_facts.txt --side plaintiff
 litassist strategy case_facts.txt --outcome "damages claim"
 litassist barbrief case_facts.txt --hearing-type trial --strategies strategies.txt
 ```
@@ -1939,7 +1944,7 @@ Options:
 **Optimal Workflow (Brainstorm → Draft):**
 ```bash
 # 1. Generate comprehensive strategies with legal foundations
-litassist brainstorm case_facts.txt --side plaintiff --area family
+litassist brainstorm --facts case_facts.txt --side plaintiff --area family
 
 # 2. Use brainstorm output for rich legal drafting (automatically recognized)
 litassist draft case_facts.txt brainstorm_family_plaintiff_20250606_143022.txt "comprehensive outline of submissions"
@@ -2064,7 +2069,7 @@ mv strategies.md strategies.txt
 ```bash
 # Stage 1: Research and strategy
 litassist lookup "contract formation elements" --extract principles
-litassist brainstorm case_facts.txt --side plaintiff --area commercial
+litassist brainstorm --facts case_facts.txt --side plaintiff --area commercial
 
 # Stage 2: Comprehensive drafting using research foundation
 litassist draft case_facts.txt brainstorm_commercial_plaintiff_*.txt "detailed contract dispute submissions"
@@ -2350,7 +2355,7 @@ $ litassist extractfacts document.pdf --verify
 **When verification is auto-enabled:**
 ```bash
 # brainstorm command (Grok models)
-$ litassist brainstorm case_facts.txt --side plaintiff --area civil
+$ litassist brainstorm --facts case_facts.txt --side plaintiff --area civil
 [INFO]  Note: Verification auto-enabled for Grok models due to hallucination tendency
 
 # strategy command (always enabled)
