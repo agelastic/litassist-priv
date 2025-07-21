@@ -19,8 +19,7 @@ from litassist.citation_verify import verify_all_citations
 from litassist.citation_patterns import extract_citations
 from litassist.llm import LLMClientFactory
 from litassist.utils import (
-    verifying_message, success_message, warning_message, 
-    error_message, saved_message
+    verifying_message, success_message, error_message
 )
 from litassist.utils import (
     timed,
@@ -63,6 +62,7 @@ def verify(file, citations, soundness, reasoning):
     base_name = os.path.splitext(file)[0]
     reports_generated = 0
     extra_files = {}
+    reasoning_response = None  # Track reasoning response for potential combination
 
     # 1. Citation Verification
     if citations:
@@ -90,31 +90,7 @@ def verify(file, citations, soundness, reasoning):
             click.echo(f"\n{msg}")
             logging.error(f"Citation verification error: {e}")
 
-    # 2. Legal Soundness Verification
-    if soundness:
-        try:
-            client = LLMClientFactory.for_command("verify")
-            soundness_result = client.verify(content)
-            issues = _parse_soundness_issues(soundness_result)
-            soundness_report = _format_soundness_report(issues, soundness_result, client.model)
-            soundness_file = os.path.join(
-                os.path.dirname(file) or ".",
-                f"verify_{os.path.basename(base_name)}_soundness.txt",
-            )
-            with open(soundness_file, "w", encoding="utf-8") as f:
-                f.write(soundness_report)
-            status = "[VERIFIED]" if not issues else "[WARNING]"
-            click.echo(f"\n{status} Legal soundness check complete")
-            click.echo(f"   - {len(issues)} issues identified")
-            click.echo(f"   - Details: {soundness_file}")
-            extra_files["Soundness report"] = soundness_file
-            reports_generated += 1
-        except Exception as e:
-            msg = error_message(f'Legal soundness check failed: {e}')
-            click.echo(f"\n{msg}")
-            logging.error(f"Legal soundness error: {e}")
-
-    # 3. Reasoning Trace Verification/Generation
+    # 2. Reasoning Trace Verification/Generation (run BEFORE soundness to allow combination)
     if reasoning:
         try:
             existing_trace = extract_reasoning_trace(content)
@@ -127,6 +103,18 @@ def verify(file, citations, soundness, reasoning):
                     f"   - IRAC structure {'complete' if trace_status['complete'] else 'incomplete'}"
                 )
                 click.echo(f"   - Confidence: {existing_trace.confidence}%")
+                # Create a verification report for existing trace
+                reasoning_response = "## Reasoning Trace Verification\n\n"
+                reasoning_response += "**Status**: Existing trace verified\n"
+                reasoning_response += f"**IRAC Structure**: {'Complete' if trace_status['complete'] else 'Incomplete'}\n"
+                reasoning_response += f"**Confidence**: {existing_trace.confidence}%\n\n"
+                if trace_status['issues']:
+                    reasoning_response += "### Issues Found\n\n"
+                    for issue in trace_status['issues']:
+                        reasoning_response += f"- {issue}\n"
+                    reasoning_response += "\n"
+                reasoning_response += "### Original Document with Reasoning Trace\n\n"
+                reasoning_response += content
             else:
                 client = LLMClientFactory.for_command("verify")
                 enhanced_prompt = create_reasoning_prompt(content, "verify")
@@ -138,6 +126,7 @@ def verify(file, citations, soundness, reasoning):
                     {"role": "user", "content": enhanced_prompt},
                 ]
                 response, _ = client.complete(messages, skip_citation_verification=True)
+                reasoning_response = response  # Store for potential combination with soundness
                 existing_trace = extract_reasoning_trace(response)
                 if not existing_trace:
                     existing_trace = LegalReasoningTrace(
@@ -154,13 +143,51 @@ def verify(file, citations, soundness, reasoning):
                 click.echo(f"\n{msg}")
                 click.echo("   - IRAC structure complete")
                 click.echo(f"   - Confidence: {existing_trace.confidence}%")
-            # Reasoning trace is embedded in the main output, not saved separately
-            click.echo("   - Reasoning trace embedded in main output")
-            reports_generated += 1
+            
+            # Save the reasoning trace to a file only if soundness is not being run
+            if reasoning_response and not soundness:
+                reasoning_file = os.path.join(
+                    os.path.dirname(file) or ".",
+                    f"verify_{os.path.basename(base_name)}_reasoning.txt",
+                )
+                with open(reasoning_file, "w", encoding="utf-8") as f:
+                    f.write(f"# Legal Reasoning Analysis\n\n{reasoning_response}")
+                click.echo(f"   - Details: {reasoning_file}")
+                extra_files["Reasoning analysis"] = reasoning_file
+                reports_generated += 1
+            elif reasoning_response and soundness:
+                # When both flags are used, reasoning will be included in soundness report
+                click.echo("   - Reasoning will be included in soundness report")
+            else:
+                reports_generated += 1
         except Exception as e:
             msg = error_message(f'Reasoning trace verification failed: {e}')
             click.echo(f"\n{msg}")
             logging.error(f"Reasoning trace error: {e}")
+
+    # 3. Legal Soundness Verification
+    if soundness:
+        try:
+            client = LLMClientFactory.for_command("verify")
+            soundness_result = client.verify(content)
+            issues = _parse_soundness_issues(soundness_result)
+            soundness_report = _format_soundness_report(issues, soundness_result, client.model, reasoning_response)
+            soundness_file = os.path.join(
+                os.path.dirname(file) or ".",
+                f"verify_{os.path.basename(base_name)}_soundness.txt",
+            )
+            with open(soundness_file, "w", encoding="utf-8") as f:
+                f.write(soundness_report)
+            status = "[VERIFIED]" if not issues else "[WARNING]"
+            click.echo(f"\n{status} Legal soundness check complete")
+            click.echo(f"   - {len(issues)} issues identified")
+            click.echo(f"   - Details: {soundness_file}")
+            extra_files["Soundness report"] = soundness_file
+            reports_generated += 1
+        except Exception as e:
+            msg = error_message(f'Legal soundness check failed: {e}')
+            click.echo(f"\n{msg}")
+            logging.error(f"Legal soundness error: {e}")
 
     click.echo(f"\nVerification complete. {reports_generated} reports generated.")
     save_log(
@@ -234,7 +261,7 @@ def _parse_soundness_issues(soundness_result: str) -> list:
     return issues
 
 
-def _format_soundness_report(issues: list, full_response: str, model: str) -> str:
+def _format_soundness_report(issues: list, full_response: str, model: str, reasoning_response: str = None) -> str:
     """Format legal soundness verification report."""
     lines = [
         "# Legal Soundness Verification Report",
@@ -244,8 +271,18 @@ def _format_soundness_report(issues: list, full_response: str, model: str) -> st
         f"**Australian law compliance**: {'[VERIFIED]' if not issues else '[WARNING] Issues found'}",
         "",
     ]
-    # Append the LLM’s full response (which already includes its own "## Issues Found" section)
+    # Append the LLM's full response (which already includes its own "## Issues Found" section)
     lines.append(full_response.strip())
+    
+    # If reasoning response is provided, append it
+    if reasoning_response:
+        lines.append("")
+        lines.append("---")
+        lines.append("")
+        lines.append("## Legal Reasoning Analysis")
+        lines.append("")
+        lines.append(reasoning_response.strip())
+    
     lines.append("")
     lines.append("---")
     lines.append("*Report generated by LitAssist verify command*")
