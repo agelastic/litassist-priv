@@ -31,6 +31,13 @@ from litassist.utils import (
 )
 
 
+def _handle_verification_error(step_name: str, exception: Exception) -> None:
+    """Handle verification step errors with consistent formatting and logging."""
+    msg = error_message(f'{step_name} failed: {exception}')
+    click.echo(f"\n{msg}")
+    logging.error(f"{step_name} error: {exception}")
+
+
 @click.command()
 @click.argument("file", type=click.Path(exists=True))
 @click.option("--citations", is_flag=True, help="Verify citations only")
@@ -86,9 +93,7 @@ def verify(file, citations, soundness, reasoning):
             extra_files["Citation report"] = citation_file
             reports_generated += 1
         except Exception as e:
-            msg = error_message(f'Citation verification failed: {e}')
-            click.echo(f"\n{msg}")
-            logging.error(f"Citation verification error: {e}")
+            _handle_verification_error("Citation verification", e)
 
     # 2. Reasoning Trace Verification/Generation (run BEFORE soundness to allow combination)
     if reasoning:
@@ -158,12 +163,8 @@ def verify(file, citations, soundness, reasoning):
             elif reasoning_response and soundness:
                 # When both flags are used, reasoning will be included in soundness report
                 click.echo("   - Reasoning will be included in soundness report")
-            else:
-                reports_generated += 1
         except Exception as e:
-            msg = error_message(f'Reasoning trace verification failed: {e}')
-            click.echo(f"\n{msg}")
-            logging.error(f"Reasoning trace error: {e}")
+            _handle_verification_error("Reasoning trace verification", e)
 
     # 3. Legal Soundness Verification
     if soundness:
@@ -185,9 +186,7 @@ def verify(file, citations, soundness, reasoning):
             extra_files["Soundness report"] = soundness_file
             reports_generated += 1
         except Exception as e:
-            msg = error_message(f'Legal soundness check failed: {e}')
-            click.echo(f"\n{msg}")
-            logging.error(f"Legal soundness error: {e}")
+            _handle_verification_error("Legal soundness check", e)
 
     click.echo(f"\nVerification complete. {reports_generated} reports generated.")
     save_log(
