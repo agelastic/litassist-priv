@@ -583,10 +583,10 @@ class TestReasoningTrace:
 
         result = create_consolidated_reasoning_trace(trace_data, "Obtain damages")
 
-        assert "CONSOLIDATED LEGAL REASONING TRACE" in result
+        assert "CONSOLIDATED REASONING" in result
         assert "Strategic Options for: Obtain damages" in result
-        assert "STRATEGIC OPTION 1 - REASONING TRACE" in result
-        assert "STRATEGIC OPTION 2 - REASONING TRACE" in result
+        assert "STRATEGIC OPTION 1 - REASONING" in result
+        assert "STRATEGIC OPTION 2 - REASONING" in result
         assert "Contract breach" in result
         assert "Negligence claim" in result
         assert "85%" in result
@@ -601,7 +601,7 @@ class TestReasoningTrace:
 
         result = create_consolidated_reasoning_trace(trace_data, "Test outcome")
 
-        assert "CONSOLIDATED LEGAL REASONING TRACE" in result
+        assert "CONSOLIDATED REASONING" in result
         assert "No reasoning trace available" in result
 
 

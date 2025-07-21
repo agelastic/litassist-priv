@@ -115,7 +115,7 @@ def extract_legal_issues(case_text: str) -> List[str]:
 def create_consolidated_reasoning_trace(option_traces, outcome):
     """Create a consolidated reasoning trace from multiple strategy options."""
 
-    consolidated_content = "# CONSOLIDATED LEGAL REASONING TRACE\n"
+    consolidated_content = "# CONSOLIDATED REASONING\n"
     consolidated_content += f"# Strategic Options for: {outcome}\n"
     consolidated_content += f"# Generated: {time.strftime('%Y-%m-%d %H:%M:%S')}\n\n"
 
@@ -124,7 +124,7 @@ def create_consolidated_reasoning_trace(option_traces, outcome):
         trace = trace_data["trace"]
 
         consolidated_content += (
-            f"## STRATEGIC OPTION {option_num} - REASONING TRACE\n\n"
+            f"## STRATEGIC OPTION {option_num} - REASONING\n\n"
         )
 
         if trace:

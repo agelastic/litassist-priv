@@ -837,7 +837,7 @@ class LegalReasoningTrace:
         if self.sources:
             sources_text = f"\nSources: {'; '.join(self.sources)}"
 
-        return f"""=== LEGAL REASONING TRACE ===
+        return f"""=== REASONING ===
 Issue: {self.issue}
 Applicable Law: {self.applicable_law}
 Application to Facts: {self.application}
@@ -862,13 +862,20 @@ def create_reasoning_prompt(base_prompt: str, command: str) -> str:
 
 IMPORTANT: After your main analysis, provide a clear legal reasoning trace using this exact format (DO NOT repeat any sections):
 
-=== LEGAL REASONING TRACE ===
+=== REASONING ===
+
 Issue: [State the primary legal question or issue being analyzed - write this only once]
+
 Applicable Law: [Identify the relevant legal principles, statutes, cases, or rules - write this only once]
+
 Application to Facts: [Explain how the law applies to the specific facts presented - write this only once]
+
 Conclusion: [State your legal conclusion clearly - write this only once]
+
 Confidence: [Your confidence level as a percentage, 0-100%]
+
 Sources: [List key legal authorities cited, separated by semicolons]
+
 Each section should appear exactly once. Do not repeat sections or content. This reasoning trace helps ensure transparency and accountability in legal analysis for the {command} command."""
 
     return base_prompt + reasoning_instruction
@@ -889,7 +896,7 @@ def extract_reasoning_trace(
     """
     # The pattern now looks for the start of the trace and captures everything
     # until the end of the content or another major header. It is non-greedy.
-    trace_pattern = r"=== LEGAL REASONING TRACE ===\s*\n(.*?)(?=\n===|$)"
+    trace_pattern = r"=== REASONING ===\s*\n(.*?)(?=\n===|$)"
     match = re.search(trace_pattern, content, re.DOTALL | re.IGNORECASE)
 
     if not match:
