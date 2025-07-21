@@ -15,7 +15,7 @@ This demo showcases LitAssist's complete workflow for a modern commercial disput
 ## Phase 1: Base Documents to Create
 
 ### 1.1 Core Case File
-**File**: `demo/case_facts.txt`
+**File**: `case_facts.txt`
 ```
 CLIENT DETAILS
 - Name: TechStart Pty Ltd (ACN 123 456 789)
@@ -68,7 +68,7 @@ EVIDENCE AVAILABLE
 ```
 
 ### 1.2 Contract Excerpts
-**File**: `demo/documents/service_agreement_excerpts.txt`
+**File**: `documents/service_agreement_excerpts.txt`
 ```
 MASTER SERVICES AGREEMENT - KEY EXCERPTS
 
@@ -102,7 +102,7 @@ This Agreement is governed by the laws of New South Wales, Australia.
 ```
 
 ### 1.3 Email Correspondence
-**File**: `demo/documents/email_correspondence.txt`
+**File**: `documents/email_correspondence.txt`
 ```
 EMAIL THREAD: Critical Service Outage - October 2023
 
@@ -180,7 +180,7 @@ CloudCorp Support Team
 ```
 
 ### 1.4 Expert Report Summary
-**File**: `demo/documents/expert_report_summary.txt`
+**File**: `documents/expert_report_summary.txt`
 ```
 EXPERT REPORT - EXECUTIVE SUMMARY
 Dr. James Wu, Cloud Infrastructure Specialist
@@ -223,7 +223,7 @@ industry standards, demonstrating negligence in infrastructure management.
 ```
 
 ### 1.5 Financial Impact Assessment
-**File**: `demo/documents/financial_impact.txt`
+**File**: `documents/financial_impact.txt`
 ```
 FINANCIAL IMPACT ASSESSMENT
 TechStart Pty Ltd - October 2023 Outage
@@ -277,10 +277,12 @@ Note: These calculations are conservative and exclude potential regulatory fines
 
 ## Phase 2: LitAssist Commands to Run
 
+**Note on Output Files**: LitAssist generates timestamped output files using a pattern of `command_slug_YYYYMMDD_HHMMSS.txt`. The slug is derived from the input (e.g., first 40 chars of query text, cleaned to alphanumeric). All outputs go to the `outputs/` directory.
+
 ### Step 1: Initial Case Planning
 ```bash
 # Generate comprehensive case plan
-litassist caseplan demo/case_facts.txt --budget standard
+litassist caseplan case_facts.txt --budget standard
 
 # This will create:
 # - caseplan_output.md (detailed workflow)
@@ -302,43 +304,46 @@ litassist lookup "consequential loss contractual damages technology agreements" 
 ### Step 3: Document Analysis
 ```bash
 # Analyze the service agreement
-litassist digest demo/documents/service_agreement_excerpts.txt --mode issues --context "breach, liability, termination"
+litassist digest documents/service_agreement_excerpts.txt --mode issues --context "breach, liability, termination"
 
 # Analyze email correspondence
-litassist digest demo/documents/email_correspondence.txt --mode summary --context "notice, acknowledgment, response times"
+litassist digest documents/email_correspondence.txt --mode summary --context "notice, acknowledgment, response times"
 
 # Analyze expert report
-litassist digest demo/documents/expert_report_summary.txt --mode issues --context "negligence, industry standards"
+litassist digest documents/expert_report_summary.txt --mode issues --context "negligence, industry standards"
 
-# Extract comprehensive facts
-litassist extractfacts demo/documents/*.txt --output demo/case_facts_extracted.txt --verify
+# Extract comprehensive facts (creates timestamped output file)
+litassist extractfacts documents/*.txt --verify
+# Note: Creates extractfacts_service_agreement_excerpts_txt_email_YYYYMMDD_HHMMSS.txt in outputs/
 ```
 
 ### Step 4: Strategy Development
 ```bash
-# Generate litigation strategies
-litassist brainstorm --facts demo/case_facts_extracted.txt --mode both
+# Generate litigation strategies (requires --side and --area)
+# Use the extractfacts output file from previous step
+litassist brainstorm --facts outputs/extractfacts_service_agreement_excerpts_txt_email_*.txt --side plaintiff --area commercial
 
-# Develop targeted approach
-litassist strategy --facts demo/case_facts_extracted.txt --reasoning-effort high
+# Develop targeted approach (requires --outcome)
+# Use the extractfacts output file from previous step
+litassist strategy outputs/extractfacts_service_agreement_excerpts_txt_email_*.txt --outcome "Recover $850,000 in damages for breach of contract and negligence"
 ```
 
 ### Step 5: Document Drafting
 ```bash
-# Draft statement of claim
-litassist draft --type statement_of_claim --facts demo/case_facts_extracted.txt --instructions "Focus on: 1) Material breach of uptime guarantee, 2) Gross negligence exception to liability cap, 3) Misleading conduct regarding infrastructure capabilities" --verify
+# Draft statement of claim (documents query format)
+litassist draft outputs/extractfacts_service_agreement_excerpts_txt_email_*.txt "Draft a statement of claim focusing on: 1) Material breach of uptime guarantee, 2) Gross negligence exception to liability cap, 3) Misleading conduct regarding infrastructure capabilities" --verify
 
 # Draft CEO affidavit
-litassist draft --type affidavit --facts demo/case_facts_extracted.txt --instructions "Sarah Chen affidavit focusing on business impact, customer loss, emergency response efforts" --verify
+litassist draft outputs/extractfacts_service_agreement_excerpts_txt_email_*.txt "Draft Sarah Chen affidavit focusing on business impact, customer loss, emergency response efforts" --verify
 
 # Draft outline of submissions for urgent injunction
-litassist draft --type outline_of_submissions --facts demo/case_facts_extracted.txt --instructions "Urgent injunction to preserve evidence and prevent disposal of infrastructure logs" --verify
+litassist draft outputs/extractfacts_service_agreement_excerpts_txt_email_*.txt "Draft outline of submissions for urgent injunction to preserve evidence and prevent disposal of infrastructure logs" --verify
 ```
 
 ### Step 6: Barrister's Brief
 ```bash
-# Comprehensive brief for summary judgment application
-litassist barbrief --case-name "TechStart v CloudCorp" --facts demo/case_facts_extracted.txt --hearing-type "summary judgment" --context "Clear breach of SLA, extensive documentary evidence, no factual disputes" --documents demo/documents/*.txt --verify
+# Comprehensive brief for interlocutory application (summary judgment)
+litassist barbrief outputs/extractfacts_service_agreement_excerpts_txt_email_*.txt --hearing-type "interlocutory" --context "Summary judgment application - clear breach of SLA, extensive documentary evidence, no factual disputes" --documents documents/*.txt --verify
 ```
 
 ## Phase 3: Expected Outputs Structure
@@ -347,33 +352,28 @@ litassist barbrief --case-name "TechStart v CloudCorp" --facts demo/case_facts_e
 demo/
 ├── README.md                           # Demo overview and guide
 ├── case_facts.txt                      # Initial client interview
-├── case_facts_extracted.txt            # Structured facts after extraction
 ├── documents/
 │   ├── service_agreement_excerpts.txt
 │   ├── email_correspondence.txt
 │   ├── expert_report_summary.txt
 │   └── financial_impact.txt
-├── outputs/
-│   ├── 01_planning/
-│   │   ├── caseplan_output.md
-│   │   └── caseplan_commands_standard.sh
-│   ├── 02_research/
-│   │   ├── lookup_breach_of_contract.md
-│   │   ├── lookup_limitation_clauses.md
-│   │   └── lookup_consequential_loss.md
-│   ├── 03_analysis/
-│   │   ├── digest_agreement_issues.md
-│   │   ├── digest_correspondence_summary.md
-│   │   └── digest_expert_issues.md
-│   ├── 04_strategy/
-│   │   ├── brainstorm_strategies.md
-│   │   └── strategy_analysis.md
-│   ├── 05_drafts/
-│   │   ├── statement_of_claim.md
-│   │   ├── affidavit_sarah_chen.md
-│   │   └── outline_urgent_injunction.md
-│   └── 06_brief/
-│       └── barbrief_summary_judgment.md
+├── outputs/                            # All timestamped outputs go here
+│   ├── caseplan_case_facts_txt_YYYYMMDD_HHMMSS.txt
+│   ├── caseplan_assessment_case_facts_txt_YYYYMMDD_HHMMSS.json
+│   ├── caseplan_commands_standard_case_facts_txt_YYYYMMDD_HHMMSS.txt
+│   ├── extractfacts_service_agreement_excerpts_txt_email_YYYYMMDD_HHMMSS.txt
+│   ├── lookup_breach_of_contract_service_level_agr_YYYYMMDD_HHMMSS.txt
+│   ├── lookup_limitation_of_liability_clauses_gros_YYYYMMDD_HHMMSS.txt
+│   ├── lookup_consequential_loss_contractual_damag_YYYYMMDD_HHMMSS.txt
+│   ├── digest_issues_1_files_YYYYMMDD_HHMMSS.txt (3 files)
+│   ├── digest_summary_1_files_YYYYMMDD_HHMMSS.txt
+│   ├── brainstorm_commercial_plaintiff_plaintiff_in_commercial_law_YYYYMMDD_HHMMSS.txt
+│   ├── strategy_recover_850000_in_damages_for_breach_YYYYMMDD_HHMMSS.txt
+│   ├── draft_draft_a_statement_of_claim_focusing_o_YYYYMMDD_HHMMSS.txt
+│   ├── draft_draft_sarah_chen_affidavit_focusing_o_YYYYMMDD_HHMMSS.txt
+│   ├── draft_draft_outline_of_submissions_for_urge_YYYYMMDD_HHMMSS.txt
+│   └── barbrief_interlocutory_YYYYMMDD_HHMMSS.txt
+├── logs/                               # JSON/markdown logs for each command
 └── educational/
     ├── workflow_guide.md               # How this case demonstrates LitAssist
     ├── legal_principles.md             # Key legal concepts illustrated
