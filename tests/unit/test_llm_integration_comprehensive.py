@@ -313,7 +313,7 @@ class TestReasoningTraceExtraction:
         content = """
         Analysis of the legal issue...
         
-        === LEGAL REASONING TRACE ===
+        === REASONING ===
         Issue: Contract breach claim
         Applicable Law: Contract law principles from Australian Contract Law
         Application to Facts: The defendant's failure to deliver goods constitutes breach
@@ -343,7 +343,7 @@ class TestReasoningTraceExtraction:
     def test_extract_reasoning_trace_partial(self):
         """Test extraction of partial reasoning trace."""
         content = """
-        === LEGAL REASONING TRACE ===
+        === REASONING ===
         Issue: Negligence claim
         Applicable Law: Tort law
         Application to Facts: Duty of care was breached
@@ -520,7 +520,7 @@ class TestPromptIntegration:
         base_prompt = "Analyze this legal issue"
         enhanced_prompt = create_reasoning_prompt(base_prompt, "strategy")
 
-        assert "LEGAL REASONING TRACE" in enhanced_prompt
+        assert "REASONING" in enhanced_prompt
         assert "Issue:" in enhanced_prompt
         assert "Applicable Law:" in enhanced_prompt
         assert "Application to Facts:" in enhanced_prompt
