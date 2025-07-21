@@ -109,17 +109,19 @@ def verify(file, citations, soundness, reasoning):
                 )
                 click.echo(f"   - Confidence: {existing_trace.confidence}%")
                 # Create a verification report for existing trace
-                reasoning_response = "## Reasoning Trace Verification\n\n"
-                reasoning_response += "**Status**: Existing trace verified\n"
-                reasoning_response += f"**IRAC Structure**: {'Complete' if trace_status['complete'] else 'Incomplete'}\n"
-                reasoning_response += f"**Confidence**: {existing_trace.confidence}%\n\n"
+                report_parts = [
+                    "## Reasoning Trace Verification\n\n",
+                    "**Status**: Existing trace verified\n",
+                    f"**IRAC Structure**: {'Complete' if trace_status['complete'] else 'Incomplete'}\n",
+                    f"**Confidence**: {existing_trace.confidence}%\n\n",
+                ]
                 if trace_status['issues']:
-                    reasoning_response += "### Issues Found\n\n"
-                    for issue in trace_status['issues']:
-                        reasoning_response += f"- {issue}\n"
-                    reasoning_response += "\n"
-                reasoning_response += "### Original Document with Reasoning Trace\n\n"
-                reasoning_response += content
+                    report_parts.append("### Issues Found\n\n")
+                    report_parts.extend(f"- {issue}\n" for issue in trace_status['issues'])
+                    report_parts.append("\n")
+                report_parts.append("### Original Document with Reasoning Trace\n\n")
+                report_parts.append(content)
+                reasoning_response = "".join(report_parts)
             else:
                 client = LLMClientFactory.for_command("verify")
                 enhanced_prompt = create_reasoning_prompt(content, "verify")
