@@ -1,0 +1,58 @@
+Counselnotes All
+Mode: extraction (all)
+Documents: 1
+Extraction Type: all
+Citation Verification: False
+Timestamp: 2025-07-23 07:20:46
+--------------------------------------------------------------------------------
+
+# Counsel's Notes - Extraction (All)
+
+**Documents Analyzed:** barbrief_directions_20250723_071911.txt
+**Analysis Date:** 23/07/2025 07:20:46
+**Processing Mode:** unified
+
+---
+
+STRATEGIC SUMMARY:
+Strong prima facie case for nuisance and trespass with quantified damages of $4,650 and clear evidence trail. Key strategic priorities are securing rapid timetable, preserving injunctive relief options before Garden Festival deadline (1 Sept 2024), and managing costs proportionality. Main risks arise from boundary complications and potential jurisdictional challenges.
+
+KEY CITATIONS:
+• Sedleigh-Denfield v O'Callaghan [1940] AC 880
+• Hargrave v Goldman (1963) 110 CLR 40
+• Plenty v Dillon (1991) 171 CLR 635
+• League Against Cruel Sports Ltd v Scott [1986] QB 240
+• Bendal Pty Ltd v Mirvac Project Pty Ltd (1991) 23 NSWLR 464
+• Companion Animals Act 1998 (NSW) ss 30-32A
+• Willowdale Council Animal Control Bylaws Pt 7 ss 31-32, 47; Sch 19
+
+LEGAL PRINCIPLES:
+• Continuing nuisance requires substantial and unreasonable interference judged objectively (Sedleigh-Denfield v O'Callaghan [1940] AC 880)
+• Trespass to land actionable per se without proof of damage (Plenty v Dillon (1991) 171 CLR 635)
+• Animal owners liable in trespass for their animals' incursions (League Against Cruel Sports Ltd v Scott [1986] QB 240)
+• Quia timet injunctions available where damages inadequate for irreplaceable property (Bendal Pty Ltd v Mirvac Project Pty Ltd (1991) 23 NSWLR 464)
+• Statutory duty on cat owners to prevent nuisance behaviour (Companion Animals Act 1998 (NSW) ss 30-32A)
+
+TACTICAL CHECKLIST:
+[ ] Obtain Cat Mediation Panel certificate before filing (mandatory prerequisite)
+[ ] File Statement of Claim immediately upon certificate receipt to meet Garden Festival deadline
+[ ] Seek urgent interlocutory injunction timetable if trespass continues
+[ ] Secure leave for all three experts at directions hearing
+[ ] Resist any NCAT transfer unless strategically advantageous
+[ ] Propose joint expert conclave on boundary issues to narrow disputes
+[ ] Consider early Calderbank offer to manage costs exposure
+
+RISK ASSESSMENT:
+Primary risks: (1) Boundary ambiguity inviting jurisdictional challenges - mitigate by pleading possessory occupation and focusing on damage within occupied area; (2) Costs disproportionality given $4,650 quantum - maintain Local Court scale and consider early settlement offers; (3) Easement defence - counter with heritage bylaw exception (Sch 19) overriding general transit rights. Secondary risks include delay in obtaining mediation certificate affecting Garden Festival entry. Overall litigation risk assessed as low given strong evidence base.
+
+RECOMMENDATIONS:
+• Plead nuisance and trespass as primary causes, negligence in alternative only
+• Prioritise interlocutory relief given Garden Festival deadline and ongoing damage risk
+• Maintain Local Court jurisdiction to control costs - resist NCAT transfer
+• Deploy veterinary evidence early to neutralise 'uncontrollable cat' defence
+• Prepare Calderbank offer at 80% of claim value post-defence to incentivise settlement
+• Brief junior counsel for directions hearing given straightforward procedural nature
+
+---
+Extracted via counselnotes command
+JSON data saved to: /Users/witt/Projects/litassist/demo/outputs/counselnotes_all_20250723_072046.json

@@ -1,0 +1,28 @@
+Digest Summary
+Mode: Summary
+Source Files: ['complaint_letter.txt']
+Context: None
+Timestamp: 2025-07-22 10:57:38
+--------------------------------------------------------------------------------
+
+=== SOURCE: complaint_letter.txt ===
+
+**CHRONOLOGICAL SUMMARY**
+
+- **3 September 2023**: Gerald Henderson attempted to discuss the cat trespass issue with Margaret Chen; Chen responded that "cats will be cats"
+
+- **17 October 2023**: Henderson made second attempt to discuss the matter with Chen; Chen suggested Henderson "should appreciate the free fertilizer"
+
+- **2023 (specific date not provided)**: Henderson's prize-winning 'Queen Elizabeth' rose won Best in Show at the Willowdale Garden Festival
+
+- **5 December 2023**: Henderson made third attempt to discuss the issue with Chen; Chen claimed Mr. Whiskers has "historical access rights"
+
+- **Past six months (ending January 2024)**: Mr. Whiskers repeatedly trespassed on Henderson's property, using his heritage rose garden as a toilet facility, resulting in destruction of 12 heritage roses valued at $200 each and contamination of organic soil
+
+- **Date unspecified**: Henderson installed a $300 ultrasonic cat deterrent system, which Mr. Whiskers ignores
+
+- **Date unspecified**: Henderson obtained CCTV footage showing Mr. Whiskers deliberately walking past the deterrent while maintaining eye contact with the camera
+
+- **15 January 2024**: Henderson sent formal letter of complaint to Chen demanding she confine Mr. Whiskers to her property and threatening legal action if the trespassing continues
+
+- **15 January 2024**: Henderson indicated he checked his property deeds following Chen's mention of "historical access rights" and identified a need to discuss boundary issues

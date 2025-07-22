@@ -1,0 +1,16 @@
+Lookup Principles
+Mode: irac
+Extract: principles
+Comprehensive: True
+JSON File: /Users/witt/Projects/litassist/demo/outputs/lookup_principles_20250722_122644.json
+Timestamp: 2025-07-22 12:26:44
+--------------------------------------------------------------------------------
+
+LEGAL PRINCIPLES:
+• In the context of a statutory grazing easement under the Lake Bennett Land Title Act, 'livestock' is defined to mean cattle, horses, sheep, goats, pigs, deer, buffalo, camels and donkeys, which does not include common domestic pets. (Lake Bennett Land Title Act 2005 (NT) Sch 2, Pt 2, cl 6)
+• Victorian local government by-laws typically define 'livestock' distinctly from the general term 'animal', with 'livestock' encompassing farm animals like horses, cattle, sheep, goats, and poultry, thereby excluding common domestic pets from the definition. (Community Local Law 2018 (City of Brimbank) cl 3; Community Local Law 2024 (Cardinia Shire Council) s 5)
+• New South Wales legislation concerning rural land management and wildlife has historically defined 'stock' to mean animals such as cattle, horses, asses, mules, camels, sheep, goats or swine, indicating a legislative focus on agricultural animals rather than domestic pets. (Rural Lands Protection Act 1998 (NSW) Sch 1 (repealed); National Parks and Wildlife Act 1974 (NSW) s 5)
+
+---
+Extracted via lookup command
+JSON data saved to: /Users/witt/Projects/litassist/demo/outputs/lookup_principles_20250722_122644.json

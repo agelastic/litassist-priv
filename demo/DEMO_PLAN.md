@@ -281,6 +281,8 @@ litassist digest complaint_letter.txt --mode summary
 # Quick legal research on cat trespass
 litassist lookup "cat trespass property damage NSW" --mode broad
 # Output reveals: Surprisingly complex area of law with bylaws and precedents
+litassist lookup "cat trespass property damage NSW" --mode broad --comprehensive
+# Lets research the area in all its complexity
 ```
 
 ### Step 2: Down the Rabbit Hole - "Wait, What?"
@@ -311,6 +313,8 @@ litassist brainstorm --facts outputs/extractfacts_*.txt --side defendant --area 
 # Can we extract specific legal principles?
 litassist lookup "easement livestock includes domestic animals cases" --comprehensive --extract principles
 # Output reveals: The famous "Chicken Case" of 1923 might classify cats as livestock!
+litassist lookup "easement livestock includes domestic animals cases" --comprehensive
+# A longer narrative for those inclined to read through the analysis
 ```
 
 ### Step 4: Deep Legal Research - "This Can't Be Real"
@@ -361,7 +365,7 @@ litassist draft outputs/extractfacts_*.txt "Draft outline of argument that Mr. W
 ### Step 7: The Full Brief - "This Escalated Quickly"
 ```bash
 # Prepare comprehensive brief for initial directions
-litassist barbrief outputs/extractfacts_*.txt --hearing-type "directions" --context "Ostensibly cat trespass, actually constitutional property law question" --documents *.txt --strategies outputs/brainstorm_*.txt
+litassist barbrief outputs/extractfacts_*.txt  --strategies outputs/brainstorm_civil_plaintiff_*.txt --hearing-type "directions" --context "Ostensibly cat trespass, actually constitutional property law question" --documents '*.txt'
 # Output reveals: This case needs immediate judicial case management
 
 # Research historical cases
@@ -380,7 +384,7 @@ litassist brainstorm --facts outputs/extractfacts_*.txt --side plaintiff --area 
 # Output: "Environmental vandalism charges" (not recommended)
 
 # What would a defendant lawyer do?
-litassist barbrief outputs/extractfacts_*.txt --hearing-type "trial" --context "Defending heritage status of roses, asserting cat's prescriptive rights" --documents *.txt
+litassist barbrief outputs/extractfacts_*.txt --hearing-type "trial" --context "Defending heritage status of roses, asserting cat's prescriptive rights" --documents '*.txt'
 # Output: Fascinating argument about inter-species property rights
 
 # Maximum complexity mode
