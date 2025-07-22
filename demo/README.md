@@ -81,7 +81,7 @@ demo/
 
 ### The Best Part?
 
-Every absurd detail is legally sound. The Heritage Rose Protection Act? Real legislation. The principle that cats can't form criminal intent? Actual law. The possibility that Mr. Whiskers qualifies as "livestock" under an 1887 easement? Genuinely arguable based on the 1923 "Chicken Case."
+Every absurd detail is legally plausible. Does the Heritage Rose Protection Act actually exist? Is R v Mittens a real case? Run the demo to see how LitAssist verifies these facts and uncovers the truth. The possibility that Mr. Whiskers qualifies as "livestock" under an 1887 easement? Genuinely arguable based on the 1923 "Chicken Case."
 
 ### Run the Demo Yourself
 
