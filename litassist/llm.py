@@ -17,6 +17,7 @@ from litassist.utils import (
     info_message,
     warning_message,
     success_message,
+    error_message,
 )
 from litassist.config import CONFIG
 from litassist.prompts import PROMPTS
@@ -582,15 +583,15 @@ class LLMClient:
                     and resp.choices[0].error
                 ):
                     error_info = resp.choices[0].error
-                    error_message = error_info.get("message", "Unknown API error")
+                    error_msg = error_info.get("message", "Unknown API error")
                     # Retry on overloaded, rate limit, busy, timeout
                     if any(
-                        kw in error_message.lower()
+                        kw in error_msg.lower()
                         for kw in ["overloaded", "rate limit", "timeout", "busy"]
                     ):
-                        raise RetryableAPIError(f"API Error: {error_message}")
+                        raise RetryableAPIError(f"API Error: {error_msg}")
                     else:
-                        raise Exception(f"API Error: {error_message}")
+                        raise Exception(f"API Error: {error_msg}")
                 return resp
             except Exception as e:
                 # Check if it's a 413 or similar non-retryable error
@@ -748,8 +749,8 @@ class LLMClient:
                 and response.choices[0].error
             ):
                 error_info = response.choices[0].error
-                error_message = error_info.get("message", "Unknown API error")
-                raise Exception(f"API Error: {error_message}")
+                error_msg = error_info.get("message", "Unknown API error")
+                raise Exception(f"API Error: {error_msg}")
 
             # Check for error finish_reason
             if (
@@ -761,8 +762,8 @@ class LLMClient:
                 # Try to get error details
                 if hasattr(response.choices[0], "error"):
                     error_info = response.choices[0].error
-                    error_message = error_info.get("message", "Unknown API error")
-                    raise Exception(f"API request failed: {error_message}")
+                    error_msg = error_info.get("message", "Unknown API error")
+                    raise Exception(f"API request failed: {error_msg}")
                 else:
                     raise Exception(
                         "API request failed with error finish_reason but no error details"
@@ -888,10 +889,10 @@ class LLMClient:
                             and retry_response.choices[0].error
                         ):
                             error_info = retry_response.choices[0].error
-                            error_message = error_info.get(
+                            error_msg = error_info.get(
                                 "message", "Unknown API error"
                             )
-                            raise Exception(f"API Error on retry: {error_message}")
+                            raise Exception(f"API Error on retry: {error_msg}")
 
                         if (
                             hasattr(retry_response, "choices")
@@ -901,11 +902,11 @@ class LLMClient:
                         ):
                             if hasattr(retry_response.choices[0], "error"):
                                 error_info = retry_response.choices[0].error
-                                error_message = error_info.get(
+                                error_msg = error_info.get(
                                     "message", "Unknown API error"
                                 )
                                 raise Exception(
-                                    f"API retry request failed: {error_message}"
+                                    f"API retry request failed: {error_msg}"
                                 )
                             else:
                                 raise Exception(
