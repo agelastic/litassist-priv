@@ -1,0 +1,61 @@
+Caseplan Commands Comprehensive
+Type: Executable Commands
+Budget: comprehensive
+Timestamp: 2025-07-23 07:58:30
+--------------------------------------------------------------------------------
+
+#!/bin/bash
+# Extracted CLI commands from caseplan
+# Execute commands in order, reviewing output between phases
+
+
+# Phase 1: Extract Facts from Source Documents
+litassist extractfacts complaint_letter_15jan2024.pdf damage_assessment_willowdale_valuers.pdf survey_report_modern_consultants.pdf veterinary_assessment_pawsworthy.pdf cctv_footage_transcript.txt
+
+# Phase 2: Document Intelligence - Property and Damage Analysis
+litassist digest property_deeds_1887_vol127_folio45.pdf survey_report_modern_consultants.pdf damage_assessment_willowdale_valuers.pdf --mode issues --context "analyze McGregor's Passage easement validity, boundary complications affecting trespass claims, and detailed breakdown of $4650 heritage rose damages"
+
+# Phase 3: Council Bylaws and Cat Behavior Analysis
+litassist digest willowdale_council_bylaws_animal_control.pdf veterinary_assessment_pawsworthy.pdf cctv_footage_stills.pdf --mode issues --context "identify heritage rose protection provisions, mandatory mediation requirements, cat territorial behavior patterns, and evidence of deliberate trespass with eye contact incident"
+
+# Phase 5: Legal Research - Nuisance and Trespass Fundamentals
+litassist lookup "cat trespass constituting private nuisance NSW residential property repeated defecation damage" --mode irac --extract citations
+
+# Phase 6: Legal Research - Heritage Property Protection
+litassist lookup "heritage garden protection local council bylaws enforcement private nuisance NSW" --mode irac
+
+# Phase 7: Legal Research - Historical Easements and Cat Access
+litassist lookup "historical easement McGregor's Passage 1887 deed animal access rights extinguishment NSW" --mode broad --comprehensive
+
+# Phase 8: Legal Research - Damages Quantification
+litassist lookup "quantification damages heritage roses replacement cost soil remediation consequential loss garden competition NSW" --mode irac --extract citations
+
+# Phase 9: Initial Strategy Generation
+litassist brainstorm --side plaintiff --area civil --facts case_facts.txt
+
+# Phase 10: Research-Informed Strategy Generation
+litassist brainstorm --side plaintiff --area civil --facts case_facts.txt --research 'outputs/lookup_*.txt'
+
+# Phase 11: Research and Strategy Synthesis
+litassist counselnotes outputs/lookup_*.txt outputs/brainstorm_*.txt --extract all
+
+# Phase 12: Tactical Plan - Achieving Cessation
+litassist strategy case_facts.txt --outcome "Obtain enforceable agreement at Cat Mediation Panel requiring Chen to contain Mr. Whiskers within her property" --strategies outputs/brainstorm_20250713_133724.txt
+
+# Phase 13: Tactical Plan - Damage Recovery
+litassist strategy case_facts.txt --outcome "Recover $4650 in quantified damages for heritage rose destruction and soil remediation at mediation" --strategies outputs/brainstorm_20250713_133724.txt
+
+# Phase 14: Comprehensive Multi-Source Synthesis
+litassist counselnotes outputs/brainstorm_*.txt outputs/lookup_*.txt outputs/digest_*.txt outputs/strategy_*.txt --extract all --verify
+
+# Phase 15: Draft Mediation Position Paper
+litassist draft case_facts.txt outputs/counselnotes_*.txt outputs/strategy_*.txt "Draft comprehensive mediation position paper for Willowdale Cat Mediation Panel including: (1) heritage rose damage claim for $4650 with supporting evidence, (2) legal basis for cat owner liability under nuisance law, (3) rebuttal of historical access rights defense, (4) proposed settlement terms requiring cat containment and damage payment" --verify
+
+# Phase 16: Draft Demand Letter
+litassist draft outputs/counselnotes_*.txt outputs/lookup_*citations*.txt "Draft formal demand letter to Margaret Chen requiring: (1) immediate cessation of Mr. Whiskers' trespass, (2) payment of $4650 damages within 14 days, (3) written undertaking to contain cat, warning of mediation and legal proceedings if not resolved" --verify
+
+# Phase 17: Verify All Documents
+litassist verify outputs/draft_mediation_position_*.txt --citations --soundness
+
+# End of extracted commands
+# Remember to update case_facts.txt after digest phases

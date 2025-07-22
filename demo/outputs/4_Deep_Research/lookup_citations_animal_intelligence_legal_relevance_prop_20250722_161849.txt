@@ -1,0 +1,200 @@
+Lookup Citations
+Mode: broad
+Extract: citations
+JSON File: /Users/witt/Projects/litassist/demo/outputs/lookup_citations_20250722_161849.json
+Timestamp: 2025-07-22 16:18:49
+--------------------------------------------------------------------------------
+
+CITATIONS FOUND:
+Acts Interpretation Act 1915 (SA)
+Acts Interpretation Act 1984 (WA)
+Al-Janabi v Amaca Pty Ltd [2019] NSWCA 134
+Alcock v Chief Constable of South Yorkshire Police [1992] 1 AC 310
+Amaca Pty Ltd v Latz (2018) 264 CLR 505
+Animal Research Act 1985 (NSW)
+Animal Welfare Act 2002 (WA)
+Animal Welfare Act 1985 (SA)
+Annetts v Australian Stations Pty Ltd (2000) 23 WAR 35
+Annetts v Australian Stations Pty Limited [2002] HCA 35
+Baltic Shipping Co v Dillon (1993) 176 CLR 344
+Barrett v Enfield London Borough Council [2001] 2 AC 550
+Bennett v Minister of Community Welfare (1992) 176 CLR 408
+Benson v Lee [1972] VR 879
+Biosecurity Act 2015 (NSW)
+Biosecurity and Agriculture Management Act 2007 (WA)
+Boral Bricks Pty Ltd v Frost [1983] NSWCA 219
+Bourhill v Young [1943] AC 92
+Bryan v Maloney (1995) 182 CLR 609
+Bunyan v Jordan (1937) 57 CLR 1
+Caltex Oil (Australia) Pty Ltd v The Dredge 'Willemstad' (1976) 136 CLR 529
+Campbelltown City Council v Mackay (1989) 15 NSWLR 501
+Caparo Industries Plc v Dickman [1990] 2 AC 605
+Carrier v Bonham [2002] 1 Qd R 474
+Cat Act 2011 (WA)
+Cattle Trespass, Fencing, and Impounding Act 1882 (WA)
+Chappel v Hart (1998) 195 CLR 232
+Chester v The Council of the Municipality of Waverley (1939) 62 CLR 1
+Civil Liability Act 1936 (SA)
+Civil Liability Act 2002 (NSW)
+Coates v GIO of NSW (1995) 36 NSWLR 1
+Companion Animals Act 1998 (NSW)
+Companion Animals Regulation 2018 (NSW)
+Conservation and Land Management Act 1984 (WA)
+Consolidated Broken Hill Ltd v Edwards [2005] NSWCA 380
+Cook v Cook (1986) 162 CLR 376
+Crimes Act 1900 (NSW)
+Criminal Code (WA)
+Criminal Procedure Act 1986 (NSW)
+CSR Ltd v Eddy (2005) 226 CLR 1
+Defamation Act 1974 (NSW)
+Disability Discrimination Act 1992 (Cth)
+Disability Services Act 1993 (WA)
+Dog Act 1903 (WA)
+Dog Act 1976 (WA)
+Dog and Cat Management Act 1995 (SA)
+Dog Control Act 1979 (SA)
+Dog Fence Act 1946 (SA)
+Donoghue v Stevenson [1932] AC 562
+Environment Protection Authority v Caltex Refining Co Pty Ltd (1993) 178 CLR 477
+Equal Opportunity Act 1984 (SA)
+Equal Opportunity Act 1984 (WA)
+Exhibited Animals Protection Act 1986 (NSW)
+Expiation of Offences Act 1996 (SA)
+F v R (1983) 33 SASR 189
+FAI General Insurance Co Ltd v Lucre (2000) 50 NSWLR 261
+Fatal Accidents Act 1959 (Tas) s 4
+Fines Act 1996 (NSW)
+Firearms Act 1973 (WA)
+Firearms Act 2015 (SA)
+Firth v State of New South Wales [2021] NSWDC 52
+Firth v State of New South Wales [2023] NSWSC 419
+Gala v Preston (1991) 172 CLR 243
+Geaghan v D’Aubert [2002] NSWCA 260
+Gifford v Strang Patrick Stevedoring Pty Ltd [2003] HCA 33
+GIO (NSW) v Oakley (1990) 10 MVR 353
+Graffiti Control Act 2008 (NSW)
+Graham Barclay Oysters Pty Ltd v Ryan (2002) 211 CLR 540
+Graham v Baker (1961) 106 CLR 340
+Greyhound Racing Act 2017 (NSW)
+Griffiths v Kerkemeyer (1977) 139 CLR 161
+Hambrook v Stokes Brothers [1925] 1 KB 141
+Harbors and Navigation Act 1993 (SA)
+Hawkins v Clayton (1988) 164 CLR 539
+Health (Miscellaneous Provisions) Act 1911 (WA)
+Hedley Byrne & Co Ltd v Heller & Partners Ltd [1964] AC 465
+Hegarty v The Queen (1994) 1 Tas R 354
+Hill v Chief Constable of West Yorkshire [1989] AC 53
+Hill v Forrester [2010] NSWCA 170
+Home Office v Dorset Yacht Co Ltd [1970] AC 1004
+Hunt v Severs [1994] 2 AC 350
+Hunter v Canary Wharf Ltd [1997] AC 655
+Impounding Act 1920 (SA)
+Impounding Act 1993 (NSW)
+Interpretation Act 1987 (NSW)
+Jaensch v Coffey (1984) 155 CLR 549
+Kallianiotis v State of New South Wales [2013] NSWDC 208
+Kars v Kars (1996) 187 CLR 354
+Kavanagh v Akhtar (1998) 45 NSWLR 588
+Kriz v King [2006] NSWCA 251
+Landscape South Australia Act 2019 (SA)
+Latz v Amaca Pty Ltd [2017] SASCFC 48
+Law Enforcement (Powers and Responsibilities) Act 2002 (NSW)
+Law of Property Act 1936 (SA)
+Law Reform (Miscellaneous Provisions) Act 1941 (WA) s 3A
+Law Reform (Miscellaneous Provisions) Act 1944 (NSW) s 4(1)
+Law Reform (Miscellaneous Provisions) Act 1955 (ACT) s 23
+Law Reform (Miscellaneous Provisions) Act 1956 (NT) s 24
+Law Reform (Miscellaneous Provisions) Act 1965 (NSW)
+Leys v State of New South Wales [2022] NSWDC 170
+Limitation Act 1969 (NSW)
+Livestock Act 1997 (SA)
+Local Government Act 1993 (NSW)
+Local Government Act 1995 (WA)
+Local Government Act 1999 (SA)
+Mahony v J Kruschich (Demolitions) Pty Ltd (1985) 156 CLR 522
+Malec v JC Hutton Pty Ltd (1990) 169 CLR 638
+March v E & M H Stramare Pty Ltd (1991) 171 CLR 506
+McLoughlin v O'Brian [1983] 1 AC 410
+Medlin v State Government Insurance Commission (1995) 182 CLR 1
+Morgan v Tame (2000) 49 NSWLR 21
+Motor Accident Injuries Act 2017 (NSW)
+Motor Accidents Act 1988 (NSW)
+Motor Accidents Compensation Act 1999 (NSW)
+Mount Isa Mines Ltd v Pusey (1970) 125 CLR 383
+Mutual Life & Citizens' Assurance Co Ltd v Evatt (1968) 122 CLR 556
+Nader v Urban Transit Authority of NSW (1985) 2 NSWLR 501
+Najdovski v Crnojlovic [2008] NSWCA 175
+National Parks and Wildlife Act 1972 (SA)
+National Parks and Wildlife Act 1974 (NSW)
+Northern Territory v Mengel (1995) 185 CLR 307
+Page v Smith [1996] AC 155
+Pastoral Land Management and Conservation Act 1989 (SA)
+Pennington v Norris (1956) 96 CLR 10
+Perre v Apand Pty Ltd (1999) 198 CLR 180
+Petrie v Dowling [1992] 1 Qd R 284
+Pham v Lawson (1997) 68 SASR 124
+Phelps v Hillingdon London Borough Council [2001] 2 AC 619
+Platt v Nutt (1988) 12 NSWLR 231
+Podrebersek v Australian Iron and Steel Pty Ltd (1985) 59 ALJR 492
+Poisons and Therapeutic Goods Act 1966 (NSW)
+Pratt v Pratt (1975) 5 ALR 367
+Prevention of Cruelty to Animals Act 1979 (NSW)
+Prevention of Cruelty to Animals Act 1985 (SA)
+Public and Bank Holidays Act 1972 (WA)
+Racing Act 1976 (SA)
+Racing and Wagering Western Australia Act 2003 (WA)
+Reeve v Brisbane City Council [2000] 1 Qd R 661
+Restraining Orders Act 1997 (WA)
+Road Traffic (Administration) Act 2008 (WA)
+Road Traffic (Authorisation to Drive) Act 2008 (WA)
+Road Traffic (Vehicles) Act 2012 (WA)
+Roads Act 1993 (NSW)
+Rowe v McCartney [1976] 2 NSWLR 72
+San Sebastian Pty Ltd v The Minister (1986) 162 CLR 340
+Sentencing Act 1995 (WA)
+Shaddock & Associates Pty Ltd v Parramatta City Council [No 1] (1981) 150 CLR 225
+Sharman v Evans (1977) 138 CLR 563
+Shaw v State of New South Wales [2014] NSWDC 105
+Skelton v Collins (1966) 115 CLR 94
+Spence v Percy [1992] 2 Qd R 299
+Spring v Guardian Assurance Plc [1995] 2 AC 296
+State Administrative Tribunal Act 2004 (WA)
+State of New South Wales v Corby [2010] NSWCA 27
+State of New South Wales v Firth [2021] NSWCA 291
+State of New South Wales v Kallianiotis [2014] NSWCA 211
+State of New South Wales v Leys [2023] NSWCA 38
+State of New South Wales v Shaw [2015] NSWCA 97
+State Rail Authority of New South Wales v Wiegold (1991) 25 NSWLR 500
+Statutes Amendment (Aggravated Offences) Act 2005 (SA)
+Statutes Repeal and Amendment (Development) Act 1993 (SA)
+Stovin v Wise [1996] AC 923
+Storm v Geeves [1965] Tas SR 252
+Subordinate Legislation Act 1978 (SA)
+Subordinate Legislation Act 1989 (NSW)
+Sullivan v Moody (2001) 207 CLR 562
+Summary Offences Act 1953 (SA)
+Sutherland Shire Council v Heyman (1985) 157 CLR 424
+Tame v New South Wales [2002] HCA 35
+The Insurance Commissioner v Joyce (1948) 77 CLR 39
+Todorovic v Waller (1981) 150 CLR 402
+Uniform Civil Procedure Rules 2005 (NSW)
+Van Gervan v Fenton (1992) 175 CLR 327
+Veterinary Practice Act 2003 (NSW)
+Veterinary Practice Act 2003 (SA)
+Veterinary Practice Act 2021 (WA)
+W v Essex County Council [2001] 2 AC 592
+Wainwright v Home Office [2004] 2 AC 406
+White v Chief Constable of South Yorkshire Police [1999] 2 AC 455
+Wilderness Protection Act 1992 (SA)
+Wilkinson v Downton [1897] 2 QB 57
+Woolworths Ltd v Lawlor [2004] NSWCA 209
+Workers Compensation Act 1987 (NSW)
+Wrongs Act 1936 (SA) s 35a
+Wrongs Act 1958 (Vic) s 23
+Wynn v NSW Insurance Ministerial Corporation (1995) 184 CLR 485
+Wynbergen v Hoyts Corporation Pty Ltd (1997) 149 ALR 25
+X (Minors) v Bedfordshire County Council [1995] 2 AC 633
+
+---
+Extracted via lookup command
+JSON data saved to: /Users/witt/Projects/litassist/demo/outputs/lookup_citations_20250722_161849.json
