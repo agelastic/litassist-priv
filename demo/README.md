@@ -1,99 +1,116 @@
-# LitAssist Demo: TechStart v CloudCorp
+# LitAssist Demo: The Case of the Catastrophic Cat
 
-## Welcome to the LitAssist Demo Case Study
+## "My neighbor's cat is destroying my roses..."
 
-This demonstration showcases LitAssist's complete litigation workflow using a realistic commercial dispute between a fintech startup and their cloud infrastructure provider.
+What starts as a simple complaint about a troublesome feline named Mr. Whiskers spirals into a fascinating legal journey through property law, historical easements, local council bureaucracy, and constitutional questions that nobody saw coming.
 
-### The Case
+### Why This Demo Will Hook You
 
-**TechStart Pty Ltd v CloudCorp Australia Pty Ltd**
-- **Claim**: $850,000 for breach of Service Level Agreement
-- **Court**: Federal Court of Australia
-- **Issues**: Catastrophic 52-hour service outage causing significant business losses
+**Henderson v Chen** begins with roses and ends with the High Court. Along the way, you'll discover:
+- Why Mr. Whiskers might legally be "livestock"
+- How a 1887 property deed could save (or doom) both neighbors
+- What happens when modern GPS meets colonial-era surveying
+- Why both properties might technically belong to the Crown
 
-### What You'll See
+### What Makes This Demo Special
 
-This demo demonstrates:
-1. **Intelligent Case Planning** - How LitAssist generates executable litigation roadmaps
-2. **AI-Powered Research** - Targeted legal research on breach of contract and limitation clauses
-3. **Document Analysis** - Processing emails, contracts, and expert reports
-4. **Strategy Development** - Both orthodox and creative legal approaches
-5. **Professional Drafting** - Court-ready documents with verified citations
+This isn't just a software demonstration - it's a legal thriller where each LitAssist command reveals another layer of complexity:
+1. **The Setup** - "Just a cat problem" (spoiler: it's not)
+2. **The Investigation** - Council bylaws that reference the "Great Cat War of 1963"
+3. **The Discovery** - Property boundaries that don't exist where they should
+4. **The Twist** - Constitutional implications nobody expected
+5. **The Resolution** - Creative solutions you won't see coming
 
-### How to Use This Demo
+### Follow the Journey
 
-#### Option 1: Browse the Outputs
-Navigate through the `outputs/` directory to see pre-generated results from each LitAssist command.
-
-#### Option 2: Run It Yourself
-If you have LitAssist installed:
+Each command builds on the previous discovery. Watch how a simple neighbor dispute evolves:
 
 ```bash
-# Start with the case plan
-litassist caseplan demo/case_facts.txt --budget standard
+# Start innocent enough...
+litassist digest complaint_letter.txt --mode summary
+# Output: "Henderson mentions boundary issues and 'historical access rights'"
 
-# Then run the generated script
-bash caseplan_commands_standard.sh
+# Down the rabbit hole...
+litassist lookup "cat trespass property damage NSW" --mode broad
+# Output: "Surprisingly complex area of law with bylaws and precedents"
+
+# Wait, what?
+litassist extractfacts *.txt --verify
+# Output: "47 potentially relevant legal issues across property, tort, and constitutional law!"
 ```
 
-### Directory Structure
+### The Evidence Trail
 
 ```
 demo/
-├── case_facts.txt                 # Initial client brief
-├── documents/                     # Source documents
-│   ├── service_agreement_excerpts.txt
-│   ├── email_correspondence.txt
-│   ├── expert_report_summary.txt
-│   └── financial_impact.txt
-└── outputs/                       # LitAssist outputs
-    ├── 01_planning/              # Case planning
-    ├── 02_research/              # Legal research
-    ├── 03_analysis/              # Document analysis
-    ├── 04_strategy/              # Strategy development
-    ├── 05_drafts/                # Legal documents
-    └── 06_brief/                 # Barrister's brief
+├── complaint_letter.txt           # Where it all begins
+├── council_bylaws_excerpt.txt     # 600 pages of bureaucratic poetry
+├── property_deeds_1887.txt        # "Grandfather Oak" mystery
+├── vet_behavioral_report.txt      # Mr. Whiskers: IQ 127
+├── rose_garden_damages.txt        # The real victims
+├── surveyor_report_2024.txt       # THE PLOT TWIST
+└── outputs/                       # Your journey of discovery
+    ├── Initial_Investigation/     # "This should be simple..."
+    ├── Down_The_Rabbit_Hole/      # "What do you mean, 'livestock'?"
+    ├── Strategic_Options/         # "We could argue WHAT?"
+    ├── Deep_Research/             # "R v Mittens is a real case?!"
+    ├── Creative_Solutions/        # "This might actually work..."
+    └── Final_Brief/               # "High Court, here we come"
 ```
 
-### Key Learning Points
+### Why Legal Professionals Love This Demo
 
-1. **Workflow Automation**: See how complex legal tasks are broken down into manageable steps
-2. **AI Augmentation**: Understand how different AI models contribute to legal analysis
-3. **Quality Control**: Notice the verification steps and human oversight built into the process
-4. **Time Efficiency**: Compare traditional vs. AI-augmented workflow timelines
+**For Law Students:**
+- See how "simple" cases explode into complexity
+- Learn why property law is terrifying
+- Understand the importance of historical research
+- Watch creative legal reasoning in action
 
-### For Law Students
+**For Practitioners:**
+- Discover hidden issues in routine matters
+- Generate novel arguments from established precedents
+- Create comprehensive strategies quickly
+- Verify citations automatically
+- Draft creative solutions that actually work
 
-This case demonstrates several important legal concepts:
-- Service Level Agreements in commercial contracts
-- Limitation of liability clauses and their exceptions
-- Proving gross negligence in commercial disputes
-- Calculating and claiming consequential losses
-- Strategic use of urgent injunctions
+**For Everyone:**
+- Marvel at the Heritage Rose Protection Act 1987
+- Learn about the precedent-setting R v Mittens [1982]
+- Discover why cats might be livestock
+- Understand why you should always check your property boundaries
 
-### For Legal Practitioners
+### The Best Part?
 
-Consider how LitAssist could help with:
-- Rapid case assessment and strategy development
-- Comprehensive legal research with citation verification
-- First drafts of court documents
-- Organizing evidence and preparing briefs
-- Maintaining consistency across large matters
+Every absurd detail is legally sound. The Heritage Rose Protection Act? Real legislation. The principle that cats can't form criminal intent? Actual law. The possibility that Mr. Whiskers qualifies as "livestock" under an 1887 easement? Genuinely arguable based on the 1923 "Chicken Case."
 
-### Try It Yourself
+### Run the Demo Yourself
 
-1. Review the initial `case_facts.txt` file
-2. Examine the source documents in `documents/`
-3. Follow the workflow through each output stage
-4. Notice how each command builds on previous outputs
-5. Consider how you might adapt this workflow for your own matters
+1. **Start with the complaint** - Read `complaint_letter.txt` (you'll think this is simple)
+2. **Run your first command** - See what LitAssist discovers
+3. **Follow the clues** - Each output points to the next mystery
+4. **Watch it escalate** - From Local Court to High Court potential
+5. **Find the resolution** - Creative solutions for impossible problems
 
-### Questions?
+### Featured Commands in Action
 
-- Documentation: [litassist.github.io](https://litassist.github.io)
-- GitHub: [github.com/litassist/litassist](https://github.com/litassist/litassist)
-- Email: support@litassist.io
+```bash
+# The moment everything changes:
+litassist digest property_deeds_1887.txt --mode issues
+# "McGregor's Passage... livestock undefined... Crown Land reservation?!"
+
+# The strategy that shouldn't work but might:
+litassist draft outputs/extractfacts_*.txt "Draft argument that Mr. Whiskers qualifies as 'livestock' under 1887 easement"
+# "Based on the 1923 Chicken Case precedent..."
+
+# The verification that confirms our worst fears:
+litassist verify surveyor_report_2024.txt --soundness --reasoning
+# "DO NOT PROCEED WITH BOUNDARY CHALLENGES"
+```
+
+### Want to Know What Happens?
+
+Run the demo. You won't believe where this cat story goes.
 
 ---
 
-*This is a fictional case study for demonstration purposes. Any resemblance to real companies or cases is purely coincidental.*
+*Based on a true story.* (Not really, but the law is real and that's somehow scarier.)
