@@ -453,7 +453,7 @@ class LLMClientFactory:
         """
         config_key = f"{command_name}-{sub_type}" if sub_type else command_name
         config = cls.COMMAND_CONFIGS.get(
-            config_key, {"model": "anthropic/claude-3-sonnet"}
+            config_key, {"model": "anthropic/claude-sonnet-4"}
         )
         return config["model"]
 
@@ -596,23 +596,33 @@ class LLMClient:
             except Exception as e:
                 # Check if it's a 413 or similar non-retryable error
                 error_str = str(e)
-                if any(phrase in error_str.lower() for phrase in 
-                       ["413", "payload too large", "prompt is too long", "request entity too large"]):
+                if any(
+                    phrase in error_str.lower()
+                    for phrase in [
+                        "413",
+                        "payload too large",
+                        "prompt is too long",
+                        "request entity too large",
+                    ]
+                ):
                     raise NonRetryableAPIError(f"Request too large: {error_str}")
-                
+
                 # Also check response codes in the error if available
-                if hasattr(e, 'response') and hasattr(e.response, 'status_code'):
+                if hasattr(e, "response") and hasattr(e.response, "status_code"):
                     if e.response.status_code == 413:
                         raise NonRetryableAPIError(f"HTTP 413: {error_str}")
-                
+
                 # Check for specific OpenAI error types
-                if hasattr(e, 'error') and isinstance(e.error, dict):
-                    error_code = e.error.get('code', 0)
+                if hasattr(e, "error") and isinstance(e.error, dict):
+                    error_code = e.error.get("code", 0)
                     if error_code == 413:
                         raise NonRetryableAPIError(f"API Error 413: {error_str}")
-                
+
                 # Retry on "Error processing stream" or similar streaming errors
-                if "Error processing stream" in error_str or "streaming" in error_str.lower():
+                if (
+                    "Error processing stream" in error_str
+                    or "streaming" in error_str.lower()
+                ):
                     raise StreamingAPIError(error_str)
                 raise
 
@@ -889,9 +899,7 @@ class LLMClient:
                             and retry_response.choices[0].error
                         ):
                             error_info = retry_response.choices[0].error
-                            error_msg = error_info.get(
-                                "message", "Unknown API error"
-                            )
+                            error_msg = error_info.get("message", "Unknown API error")
                             raise Exception(f"API Error on retry: {error_msg}")
 
                         if (

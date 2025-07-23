@@ -521,10 +521,7 @@ def validate_citation_patterns(content: str, enable_online: bool = True) -> List
     try:
         from litassist.citation_verify import verify_all_citations
 
-        all_citations = extract_citations(content)
-
-        if all_citations:
-            verified_citations, unverified_citations = verify_all_citations(content)
+        verified_citations, unverified_citations = verify_all_citations(content)
 
             # Add online verification results to issues
             for citation, reason in unverified_citations:
