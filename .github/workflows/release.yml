@@ -30,13 +30,17 @@ jobs:
         pip install build twine
         pip install -r requirements.txt
     
+    - name: Install test dependencies
+      run: |
+        pip install pytest
+    
     - name: Extract version from tag
       id: get_version
       run: echo "VERSION=${GITHUB_REF#refs/tags/v}" >> $GITHUB_OUTPUT
     
     - name: Verify version matches setup.py
       run: |
-        SETUP_VERSION=$(python -c "import re; print(re.search(r'version=[\"\\']([^\"\\']*)[\"\\'']', open('setup.py').read()).group(1))")
+        SETUP_VERSION=$(python -c "import ast; tree=ast.parse(open('setup.py').read()); print([node.value.s for node in ast.walk(tree) if isinstance(node, ast.Assign) and any(isinstance(t, ast.Name) and t.id == 'version' for t in node.targets)][0])")
         TAG_VERSION=${{ steps.get_version.outputs.VERSION }}
         if [ "$SETUP_VERSION" != "$TAG_VERSION" ]; then
           echo "Version mismatch: setup.py has $SETUP_VERSION, tag is $TAG_VERSION"
@@ -64,36 +68,43 @@ jobs:
       id: release_notes
       run: |
         VERSION=${{ steps.get_version.outputs.VERSION }}
+        echo "## LitAssist v$VERSION" > release_notes.md
+        echo "" >> release_notes.md
+        echo "### Release Notes" >> release_notes.md
+        echo "" >> release_notes.md
+        
+        # Try to use the generate-release-notes.py script if it exists and works
         if [ -f "scripts/release/generate-release-notes.py" ]; then
-          python scripts/release/generate-release-notes.py "$VERSION" --format github > release_notes.md
-        else
-          # Fallback: extract from CHANGELOG.md
-          echo "## LitAssist v$VERSION" > release_notes.md
-          echo "" >> release_notes.md
-          if [ -f "CHANGELOG.md" ]; then
-            awk "/## \[$VERSION\]/,/## \[/" CHANGELOG.md | tail -n +2 | head -n -1 >> release_notes.md
+          if python scripts/release/generate-release-notes.py "$VERSION" --format github 2>/dev/null; then
+            python scripts/release/generate-release-notes.py "$VERSION" --format github >> release_notes.md
           else
-            echo "No CHANGELOG.md found" >> release_notes.md
+            echo "This is an automated release of LitAssist v$VERSION" >> release_notes.md
           fi
+        else
+          echo "This is an automated release of LitAssist v$VERSION" >> release_notes.md
         fi
         
         # Add installation instructions
-        cat >> release_notes.md << EOF
+        cat >> release_notes.md << 'EOF'
         
         ### Installation
-        \`\`\`bash
-        pip install litassist==$VERSION
-        \`\`\`
+        ```bash
+        pip install litassist==VERSION
+        ```
         
         ### Upgrading
-        \`\`\`bash
+        ```bash
         pip install --upgrade litassist
-        \`\`\`
+        ```
         
         ### Documentation
-        - [User Guide](https://github.com/${{ github.repository }}/blob/main/docs/user/LitAssist_User_Guide.md)
-        - [Installation Guide](https://github.com/${{ github.repository }}/blob/main/INSTALLATION.md)
+        - [User Guide](https://github.com/REPO/blob/main/docs/user/LitAssist_User_Guide.md)
+        - [Installation Guide](https://github.com/REPO/blob/main/INSTALLATION.md)
         EOF
+        
+        # Replace placeholders
+        sed -i "s/VERSION/$VERSION/g" release_notes.md
+        sed -i "s|REPO|${{ github.repository }}|g" release_notes.md
     
     - name: Create GitHub Release
       uses: softprops/action-gh-release@v1
