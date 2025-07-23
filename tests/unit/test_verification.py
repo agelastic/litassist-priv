@@ -47,44 +47,7 @@ class TestLLMClientVerification:
         content = "This is a simple summary of events"
         assert self.client.should_auto_verify(content, "digest") is False
 
-    def test_validate_citations_suspicious_year(self):
-        """Test citation validation catches anachronistic citations."""
-        content = "In [1850] HCA 5, the court decided..."
-        issues = self.client.validate_citations(content)
-        assert len(issues) > 0
-        # Check for anachronistic citation (HCA established 1903)
-        anachronistic_issues = [i for i in issues if "ANACHRONISTIC CITATION" in i]
-        assert len(anachronistic_issues) > 0
 
-    def test_validate_citations_future_year(self):
-        """Test citation validation catches future years."""
-        content = "In [2030] HCA 5, the court will decide..."
-        issues = self.client.validate_citations(content)
-        assert len(issues) > 0
-        # Check for future year citation
-        future_issues = [i for i in issues if "FUTURE CITATION" in i]
-        assert len(future_issues) > 0
-
-    def test_validate_citations_fabricated_names(self):
-        """Test citation validation catches generic case names."""
-        content = "In Smith v Jones [2020] HCA 999..."
-        issues = self.client.validate_citations(content)
-        assert len(issues) > 0
-        # Should flag either generic case name or high citation number
-        generic_issues = [
-            i
-            for i in issues
-            if "GENERIC CASE NAME" in i or "EXCESSIVE CITATION NUMBER" in i
-        ]
-        assert len(generic_issues) > 0
-
-    def test_validate_citations_valid_citation(self):
-        """Test citation validation passes valid citations."""
-        content = "In Commonwealth v Tasmania [2020] HCA 5..."
-        issues = self.client.validate_citations(content)
-        # Should not flag legitimate case names
-        fabricated_issues = [i for i in issues if "fabricated" in i]
-        assert len(fabricated_issues) == 0
 
     @patch("litassist.utils.save_log")
     @patch("openai.ChatCompletion.create")

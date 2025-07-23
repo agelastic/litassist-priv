@@ -493,98 +493,59 @@ def extract_complete_citations(content: str) -> set:
 
 def validate_citation_patterns(content: str, enable_online: bool = True) -> List[str]:
     """
-    Enhanced validation of Australian legal citations with pattern detection and optional online verification.
+    Validation of Australian legal citations using online database verification.
 
-    This function performs two phases of validation:
-    1. Offline pattern detection (Phase 1) - Always runs
-    2. Online database verification (Phase 2) - Runs if enable_online=True
+    This function relies on online verification to check if citations actually exist
+    in legal databases, as pattern validation cannot determine if a citation is real
+    or hallucinated.
 
     Args:
         content: Text content to validate
-        enable_online: Whether to perform online database verification after offline checks
+        enable_online: Whether to perform online database verification (default: True)
 
     Returns:
         List of potential citation issues found
     """
-    issues = []
+    unique_issues = []
 
-    # ── Phase 1: Enhanced Pattern Detection ──────────────────────────
+    # Skip pattern validation entirely - it causes false positives and doesn't
+    # determine if citations are real. Go directly to online verification.
 
-    # First, identify all complete citations to exclude their case names from generic checking
-    complete_citations = extract_complete_citations(content)
+    # If online verification is disabled, return empty list since we can't
+    # determine if citations are real without checking the database
+    if not enable_online:
+        return []
 
-    # 1. Generic/Common Name Detection
-    issues.extend(validate_generic_names(content, complete_citations))
+    # ── Online Database Verification ────────────────
+    # Perform online verification for ALL citations
+    try:
+        from litassist.citation_verify import verify_all_citations
 
-    # 2. Court Identifier Validation
-    issues.extend(validate_court_abbreviations(content))
+        verified_citations, unverified_citations = verify_all_citations(content)
 
-    # 3. Report Series Validation
-    issues.extend(validate_report_series(content))
+        # Add online verification results to issues
+        for citation, reason in unverified_citations:
+            # Distinguish between different types of online failures
+            if "Unknown court" in reason:
+                unique_issues.append(
+                    f"COURT NOT RECOGNIZED: {citation} - {reason}\n  -> ACTION: Excluding unrecognized court identifier"
+                )
+            elif (
+                "Invalid citation format" in reason
+                or "verification unavailable" in reason
+            ):
+                unique_issues.append(
+                    f"CITATION NOT FOUND: {citation} - {reason}\n  -> ACTION: Citation does not exist in legal database"
+                )
+            else:
+                unique_issues.append(
+                    f"ONLINE VERIFICATION FAILED: {citation} - {reason}\n  -> ACTION: Could not verify citation authenticity"
+                )
+    except Exception as e:
+        # If online verification fails, just note it and continue
+        unique_issues.append(f"Online verification unavailable: {str(e)}")
 
-    # 4. Additional Validation Patterns
-    issues.extend(validate_page_numbers(content))
-    issues.extend(validate_parallel_citations(content))
-
-    # 5. Known Hallucination Patterns
-    issues.extend(detect_hallucination_patterns(content))
-
-    # Remove duplicates from issues list
-    unique_issues = list(dict.fromkeys(issues))
-
-    # ── Phase 2: Online Database Verification (if enabled) ────────────────
-    if enable_online:
-        # Perform online verification for ALL citations, not just those flagged offline
-        try:
-            from litassist.citation_verify import verify_all_citations
-
-            all_citations = extract_citations(content)
-
-            if all_citations:
-                verified_citations, unverified_citations = verify_all_citations(content)
-
-                # Add online verification results to issues
-                for citation, reason in unverified_citations:
-                    # Check if this citation was already flagged by offline validation
-                    already_flagged = any(citation in issue for issue in unique_issues)
-                    if not already_flagged:
-                        # Distinguish between different types of online failures
-                        if "Unknown court" in reason:
-                            unique_issues.append(
-                                f"COURT NOT RECOGNIZED: {citation} - {reason}\n  -> ACTION: Excluding unrecognized court identifier"
-                            )
-                        elif (
-                            "Invalid citation format" in reason
-                            or "verification unavailable" in reason
-                        ):
-                            unique_issues.append(
-                                f"CITATION NOT FOUND: {citation} - {reason}\n  -> ACTION: Citation does not exist in legal database"
-                            )
-                        else:
-                            unique_issues.append(
-                                f"ONLINE VERIFICATION FAILED: {citation} - {reason}\n  -> ACTION: Could not verify citation authenticity"
-                            )
-
-                # Add summary of online verification if issues found
-                if unverified_citations:
-                    online_only_issues = len(
-                        [
-                            c
-                            for c, r in unverified_citations
-                            if not any(
-                                c in issue for issue in unique_issues[: len(issues)]
-                            )
-                        ]
-                    )
-                    if online_only_issues > 0:
-                        unique_issues.append(
-                            f"Online database check: {online_only_issues} citations not found in database"
-                        )
-        except Exception as e:
-            # If online verification fails, just note it and continue
-            unique_issues.append(f"Online verification unavailable: {str(e)}")
-
-    # Add summary assessment if significant issues found
+    # Add summary assessment if issues found
     if len(unique_issues) > 0:
         severity = (
             "high"
@@ -592,43 +553,9 @@ def validate_citation_patterns(content: str, enable_online: bool = True) -> List
             else "medium" if len(unique_issues) > 2 else "low"
         )
 
-        # Count different types of issues for better messaging
-        offline_issues = len(
-            [
-                issue
-                for issue in unique_issues
-                if not issue.startswith(
-                    (
-                        "COURT NOT RECOGNIZED:",
-                        "CITATION NOT FOUND:",
-                        "ONLINE VERIFICATION FAILED:",
-                        "Online database check:",
-                    )
-                )
-            ]
-        )
-        online_issues = len(
-            [
-                issue
-                for issue in unique_issues
-                if issue.startswith(
-                    (
-                        "COURT NOT RECOGNIZED:",
-                        "CITATION NOT FOUND:",
-                        "ONLINE VERIFICATION FAILED:",
-                    )
-                )
-            ]
-        )
-
         # Create detailed action message
         action_msg = f"CITATION VALIDATION FAILURE ({severity} risk): {len(unique_issues)} issues detected.\n"
-
-        if offline_issues > 0:
-            action_msg += f"-> PATTERN ANALYSIS: {offline_issues} citations flagged for suspicious patterns\n"
-        if online_issues > 0:
-            action_msg += f"-> ONLINE DATABASE VERIFICATION: {online_issues} citations not found in legal database\n"
-
+        action_msg += f"-> ONLINE DATABASE VERIFICATION: {len(unique_issues)} citations not found in legal database\n"
         action_msg += (
             "-> ACTION TAKEN: Flagging questionable citations for manual review\n"
         )

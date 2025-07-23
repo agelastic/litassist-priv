@@ -13,6 +13,7 @@ import os
 from typing import List, Optional, Dict, Any
 
 from litassist.prompts import PROMPTS
+from litassist.config import CONFIG
 from litassist.utils import (
     read_document,
     heartbeat,
@@ -270,7 +271,6 @@ def barbrief(
     
     # Generate the brief
     click.echo("\nGenerating barrister's brief...")
-    heartbeat()
     
     messages = [
         {"role": "system", "content": PROMPTS.get("barbrief.system")},
@@ -278,7 +278,8 @@ def barbrief(
     ]
     
     try:
-        content, usage = client.complete(messages, skip_citation_verification=True)
+        call_with_hb = heartbeat(CONFIG.heartbeat_interval)(client.complete)
+        content, usage = call_with_hb(messages, skip_citation_verification=True)
     except Exception as e:
         # Provide helpful error message for common issues
         if "timeout" in str(e).lower():
