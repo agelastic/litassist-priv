@@ -309,6 +309,7 @@ The litassist codebase currently contains extensive local parsing of LLM respons
 - Real API testing happens only in `test-scripts/` manual utilities
 - `test-scripts/` are for manual quality validation, not automated testing
 - Tests with "integration" in the name are still offline mocked tests
+- **REMOVE tests that no longer test anything** - When refactoring removes functionality, delete associated tests that now only assert empty/trivial behavior
 
 ### Unit Tests
 Located in `tests/unit/` with comprehensive coverage:

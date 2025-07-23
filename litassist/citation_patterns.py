@@ -510,12 +510,12 @@ def validate_citation_patterns(content: str, enable_online: bool = True) -> List
 
     # Skip pattern validation entirely - it causes false positives and doesn't
     # determine if citations are real. Go directly to online verification.
-    
+
     # If online verification is disabled, return empty list since we can't
     # determine if citations are real without checking the database
     if not enable_online:
         return []
-    
+
     # ── Online Database Verification ────────────────
     # Perform online verification for ALL citations
     try:
@@ -523,24 +523,24 @@ def validate_citation_patterns(content: str, enable_online: bool = True) -> List
 
         verified_citations, unverified_citations = verify_all_citations(content)
 
-            # Add online verification results to issues
-            for citation, reason in unverified_citations:
-                # Distinguish between different types of online failures
-                if "Unknown court" in reason:
-                    unique_issues.append(
-                        f"COURT NOT RECOGNIZED: {citation} - {reason}\n  -> ACTION: Excluding unrecognized court identifier"
-                    )
-                elif (
-                    "Invalid citation format" in reason
-                    or "verification unavailable" in reason
-                ):
-                    unique_issues.append(
-                        f"CITATION NOT FOUND: {citation} - {reason}\n  -> ACTION: Citation does not exist in legal database"
-                    )
-                else:
-                    unique_issues.append(
-                        f"ONLINE VERIFICATION FAILED: {citation} - {reason}\n  -> ACTION: Could not verify citation authenticity"
-                    )
+        # Add online verification results to issues
+        for citation, reason in unverified_citations:
+            # Distinguish between different types of online failures
+            if "Unknown court" in reason:
+                unique_issues.append(
+                    f"COURT NOT RECOGNIZED: {citation} - {reason}\n  -> ACTION: Excluding unrecognized court identifier"
+                )
+            elif (
+                "Invalid citation format" in reason
+                or "verification unavailable" in reason
+            ):
+                unique_issues.append(
+                    f"CITATION NOT FOUND: {citation} - {reason}\n  -> ACTION: Citation does not exist in legal database"
+                )
+            else:
+                unique_issues.append(
+                    f"ONLINE VERIFICATION FAILED: {citation} - {reason}\n  -> ACTION: Could not verify citation authenticity"
+                )
     except Exception as e:
         # If online verification fails, just note it and continue
         unique_issues.append(f"Online verification unavailable: {str(e)}")
