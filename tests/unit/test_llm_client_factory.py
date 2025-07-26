@@ -226,5 +226,5 @@ class TestLLMClientFactoryIntegration:
             assert "o3-pro" in models["strategy"].lower()  # Uses o3-pro for strategy
             assert "o3-pro" in models["draft"].lower()  # Uses o3-pro for drafting
             assert (
-                "claude" in models["extractfacts"].lower()
+                "o4-mini-high" in models["extractfacts"].lower()
             )  # Uses Claude for extraction
