@@ -260,9 +260,9 @@ class LLMClientFactory:
     COMMAND_CONFIGS = {
         # Extract facts - deterministic, focused on accuracy
         "extractfacts": {
-            "model": "anthropic/claude-sonnet-4",
+            "model": "openai/o4-mini-high",
             "temperature": 0,
-            "top_p": 0.15,
+            "top_p": 0,
             "force_verify": True,  # Always verify for foundational docs
         },
         # Strategy - enhanced multi-step legal reasoning (o3-pro has limited parameters)
@@ -275,22 +275,23 @@ class LLMClientFactory:
         },
         # Strategy sub-type for analysis
         "strategy-analysis": {
-            "model": "anthropic/claude-opus-4",
+            "model": "openai/o3-pro",
             "temperature": 0.2,
             "top_p": 0.8,
+            "reasoning_effort": "high",
         },
         # Brainstorm - varied temperatures for different approaches
         "brainstorm-orthodox": {
-            "model": "anthropic/claude-opus-4",
-            "temperature": 0.3,
-            "top_p": 0.7,
+            "model": "openai/o4-mini-high",
+            "temperature": 0.7,
+            "top_p": 0.9,
             "force_verify": True,  # Conservative analysis requires verification
         },
         "brainstorm-unorthodox": {
-            "model": "x-ai/grok-3",
+            "model": "moonshot/kimi-k2",
             "temperature": 0.9,
-            "top_p": 0.95,
-            "force_verify": True,  # Auto-verify Grok
+            "top_p": 1,
+            "force_verify": True,  # Auto-verify creative outputs
         },
         "brainstorm-analysis": {
             "model": "openai/o3-pro",
@@ -302,14 +303,14 @@ class LLMClientFactory:
         "draft": {"model": "openai/o3-pro", "reasoning_effort": "high"},
         # Digest - mode-dependent settings
         "digest-summary": {
-            "model": "anthropic/claude-sonnet-4",
-            "temperature": 0.1,
-            "top_p": 0,
+            "model": "openai/o4-mini-high",
+            "temperature": 0.3,
+            "top_p": 0.5,
         },
         "digest-issues": {
-            "model": "anthropic/claude-opus-4",
-            "temperature": 0.2,
-            "top_p": 0.5,
+            "model": "openai/o4-mini-high",
+            "temperature": 0.1,
+            "top_p": 0,
         },
         # Lookup - uses Gemini for rapid processing with verification
         "lookup": {
@@ -320,16 +321,18 @@ class LLMClientFactory:
         },
         # Verify - post-hoc verification command
         "verify": {
-            "model": "anthropic/claude-opus-4",
+            "model": "openai/o3-pro",
             "temperature": 0,
             "top_p": 0.2,
+            "reasoning_effort": "high",
             "force_verify": False,  # Don't double-verify since this IS verification
         },
         # Counsel's Notes - strategic analysis from advocate's perspective
         "counselnotes": {
-            "model": "anthropic/claude-opus-4",
-            "temperature": 0.3,
+            "model": "openai/o3-pro",
+            "temperature": 0.5,
             "top_p": 0.7,
+            "reasoning_effort": "high",
             "force_verify": True,  # Strategic counsel's notes require verification
         },
         # Barrister's brief - comprehensive document generation
@@ -342,14 +345,14 @@ class LLMClientFactory:
         },
         # Caseplan - LLM-driven workflow planning
         "caseplan": {
-            "model": "anthropic/claude-opus-4",
-            "temperature": 0.3,
-            "top_p": 0.7,
+            "model": "openai/o4-mini-high",
+            "temperature": 0.4,
+            "top_p": 0.8,
             "force_verify": False,
         },
         # Caseplan assessment - budget recommendation (Sonnet)
         "caseplan-assessment": {
-            "model": "anthropic/claude-sonnet-4",
+            "model": "openai/o4-mini-high",
             "temperature": 0.2,
             "top_p": 0.7,
             "force_verify": False,
