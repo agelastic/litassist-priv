@@ -18,7 +18,7 @@ This document outlines the complete implementation plan for optimizing all LitAs
 | **digest-summary** | Claude Sonnet 4 | openai/o4-mini-high | 0.3 | 0.5 | Balanced coherence & brevity |
 | **digest-issues** | Claude Sonnet 4 | openai/o4-mini-high | 0.1 | 0 | Focused issue-spotting |
 | **brainstorm-orthodox** | Claude Sonnet 4 | openai/o4-mini-high | 0.7 | 0.9 | Fast creative breadth |
-| **brainstorm-unorthodox** | Grok 3 | moonshot/kimi-k2 | 0.9 | 1 | Highly diverse creative angles |
+| **brainstorm-unorthodox** | Grok 3 | moonshotai/kimi-k2 | 0.9 | 1 | Highly diverse creative angles |
 | **brainstorm-analysis** | OpenAI o3-pro | openai/o3-pro | 0.2 | 0.8 | Reasoning analysis (unchanged) |
 | **caseplan** | Claude Sonnet 4 | openai/o4-mini-high | 0.4 | 0.8 | Rapid creative planning |
 | **strategy** | Claude Sonnet 4 | openai/o3-pro | 0.2 | 0.8 | Deep legal reasoning (unchanged) |
@@ -55,7 +55,7 @@ This document outlines the complete implementation plan for optimizing all LitAs
 
 #### brainstorm-unorthodox
 - **Current**: Grok 3
-- **New**: moonshot/kimi-k2, temp=0.9, top_p=1
+- **New**: moonshotai/kimi-k2, temp=0.9, top_p=1
 - **Benefit**: Sparse MoE generates highly diverse, unexpected legal angles
 - **Implementation**: Direct OpenRouter integration, no self-host needed
 
@@ -97,7 +97,7 @@ MODEL_CONFIGURATIONS = {
     },
     
     "kimi-creative": {
-        "model": "moonshot/kimi-k2",
+        "model": "moonshotai/kimi-k2",
         "temperature": 0.9,
         "top_p": 1,
         "max_tokens": 8192
@@ -131,7 +131,7 @@ commands:
   brainstorm:
     orthodox_model: "openai/o4-mini-high"
     orthodox_temp: 0.7
-    unorthodox_model: "moonshot/kimi-k2"
+    unorthodox_model: "moonshotai/kimi-k2"
     unorthodox_temp: 0.9
     
   caseplan:
@@ -248,7 +248,7 @@ TEST_SCENARIOS = {
 FALLBACK_MODELS = {
     "openai/o4-mini-high": "anthropic/claude-sonnet-4",
     "google/gemini-2.5-pro-preview": "anthropic/claude-sonnet-4", 
-    "moonshot/kimi-k2": "x-ai/grok-3",
+    "moonshotai/kimi-k2": "x-ai/grok-3",
     "openai/o3-pro": "anthropic/claude-opus-4"
 }
 ```

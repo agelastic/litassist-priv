@@ -488,6 +488,10 @@ Please provide output in EXACTLY this format:
         {"role": "user", "content": orthodox_prompt},
     ]
 
+    # Wrap the orthodox client with a heartbeat so the user gets periodic
+    # feedback while the request is in-flight.  The wrapper must be recreated
+    # for each distinct client or we will end up invoking the wrong model
+    # later on (e.g. for the unorthodox and analysis phases).
     call_with_hb = heartbeat(CONFIG.heartbeat_interval)(orthodox_client.complete)
     try:
         orthodox_content, orthodox_usage = call_with_hb(orthodox_messages)
@@ -555,8 +559,18 @@ Please provide output in EXACTLY this format:
         {"role": "user", "content": unorthodox_prompt},
     ]
 
+    # Create a new heartbeat wrapper for the unorthodox client (see comment
+    # above).  Re-using the previous wrapper would still call the orthodox
+    # client and therefore use its model (openai/o4-mini-high) instead of the
+    # configured moonshotai/kimi-k2 model.
+    call_with_hb_unorthodox = heartbeat(CONFIG.heartbeat_interval)(
+        unorthodox_client.complete
+    )
+
     try:
-        unorthodox_content, unorthodox_usage = call_with_hb(unorthodox_messages)
+        unorthodox_content, unorthodox_usage = call_with_hb_unorthodox(
+            unorthodox_messages
+        )
     except Exception as e:
         raise click.ClickException(
             PROMPTS.get(
@@ -622,8 +636,16 @@ Please provide output in EXACTLY this format:
         {"role": "user", "content": analysis_prompt},
     ]
 
+    # Independent heartbeat for analysis phase to avoid accidentally invoking
+    # a previously created client wrapper.
+    call_with_hb_analysis = heartbeat(CONFIG.heartbeat_interval)(
+        analysis_client.complete
+    )
+
     try:
-        analysis_content, analysis_usage = call_with_hb(analysis_messages)
+        analysis_content, analysis_usage = call_with_hb_analysis(
+            analysis_messages
+        )
     except Exception as e:
         raise click.ClickException(f"Error analyzing strategies: {e}")
 

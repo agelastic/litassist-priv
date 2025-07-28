@@ -70,6 +70,7 @@ MODEL_PATTERNS = {
     "meta": r"meta/(llama|codellama)",
     "mistral": r"mistral/",
     "cohere": r"cohere/",
+    "moonshotai": r"moonshotai/",
 }
 
 # Parameter profiles by model family
@@ -173,6 +174,17 @@ PARAMETER_PROFILES = {
             "stream",
         ],
         "transforms": {"top_k": "k", "top_p": "p", "stop": "stop_sequences"},
+    },
+    "moonshotai": {
+        "allowed": [
+            "temperature",
+            "top_p",
+            "max_tokens",
+            "stop",
+            "frequency_penalty",
+            "presence_penalty",
+            "stream",
+        ],
     },
     "default": {
         "allowed": ["temperature", "top_p", "max_tokens", "stop"],  # Safe defaults
@@ -288,9 +300,13 @@ class LLMClientFactory:
             "force_verify": True,  # Conservative analysis requires verification
         },
         "brainstorm-unorthodox": {
-            "model": "moonshot/kimi-k2",
+            "model": "moonshotai/kimi-k2",
             "temperature": 0.9,
             "top_p": 1,
+            # Kimi-K2 currently has an 8K context window. Supplying an
+            # excessively high `max_tokens` causes “Error processing stream”.
+            # Explicitly cap it so the request succeeds.
+            "max_tokens": 4096,
             "force_verify": True,  # Auto-verify creative outputs
         },
         "brainstorm-analysis": {
