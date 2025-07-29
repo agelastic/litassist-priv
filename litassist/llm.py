@@ -301,6 +301,7 @@ class LLMClientFactory:
         },
         "brainstorm-unorthodox": {
             "model": "x-ai/grok-4",
+
             "temperature": 0.8,
             "top_p": 0.95,
             # Kimi-K2 currently has an 8K context window. Supplying an
