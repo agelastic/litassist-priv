@@ -272,9 +272,9 @@ class LLMClientFactory:
     COMMAND_CONFIGS = {
         # Extract facts - deterministic, focused on accuracy
         "extractfacts": {
-            "model": "openai/o4-mini-high",
+            "model": "anthropic/claude-sonnet-4",
             "temperature": 0,
-            "top_p": 0,
+            "top_p": 0.15,
             "force_verify": True,  # Always verify for foundational docs
         },
         # Strategy - enhanced multi-step legal reasoning (o3-pro has limited parameters)
@@ -294,19 +294,19 @@ class LLMClientFactory:
         },
         # Brainstorm - varied temperatures for different approaches
         "brainstorm-orthodox": {
-            "model": "openai/o4-mini-high",
-            "temperature": 0.7,
-            "top_p": 0.9,
+            "model": "anthropic/claude-opus-4",
+            "temperature": 0.3,
+            "top_p": 0.7,
             "force_verify": True,  # Conservative analysis requires verification
         },
         "brainstorm-unorthodox": {
-            "model": "moonshotai/kimi-k2",
-            "temperature": 0.9,
-            "top_p": 1,
+            "model": "x-ai/grok-4",
+            "temperature": 0.8,
+            "top_p": 0.95,
             # Kimi-K2 currently has an 8K context window. Supplying an
             # excessively high `max_tokens` causes “Error processing stream”.
             # Explicitly cap it so the request succeeds.
-            "max_tokens": 4096,
+            # "max_tokens": 4096,
             "force_verify": True,  # Auto-verify creative outputs
         },
         "brainstorm-analysis": {
@@ -319,18 +319,18 @@ class LLMClientFactory:
         "draft": {"model": "openai/o3-pro", "reasoning_effort": "high"},
         # Digest - mode-dependent settings
         "digest-summary": {
-            "model": "openai/o4-mini-high",
-            "temperature": 0.3,
-            "top_p": 0.5,
-        },
-        "digest-issues": {
-            "model": "openai/o4-mini-high",
+            "model": "anthropic/claude-sonnet-4",
             "temperature": 0.1,
             "top_p": 0,
         },
+        "digest-issues": {
+            "model": "anthropic/claude-opus-4",
+            "temperature": 0.2,
+            "top_p": 0.5,
+        },
         # Lookup - uses Gemini for rapid processing with verification
         "lookup": {
-            "model": "google/gemini-2.5-pro-preview",
+            "model": "google/gemini-2.5-pro",
             "temperature": 0.1,
             "top_p": 0.2,
             "force_verify": False,  # Don't force strict verification
@@ -346,7 +346,7 @@ class LLMClientFactory:
         # Counsel's Notes - strategic analysis from advocate's perspective
         "counselnotes": {
             "model": "openai/o3-pro",
-            "temperature": 0.5,
+            "temperature": 0.3,
             "top_p": 0.7,
             "reasoning_effort": "high",
             "force_verify": True,  # Strategic counsel's notes require verification
@@ -362,8 +362,8 @@ class LLMClientFactory:
         # Caseplan - LLM-driven workflow planning
         "caseplan": {
             "model": "openai/o4-mini-high",
-            "temperature": 0.4,
-            "top_p": 0.8,
+            "temperature": 0.3,
+            "top_p": 0.7,
             "force_verify": False,
         },
         # Caseplan assessment - budget recommendation (Sonnet)
@@ -660,6 +660,17 @@ class LLMClient:
 
         return _call()
 
+    # Add heartbeat messages so users see progress during lengthy LLM calls
+    # The verification helpers already had their own heartbeat wrapper, but that
+    # resulted in progress messages only during the verification stage.  By
+    # moving the heartbeat decorator to the main `complete` method we ensure
+    # that all long-running LLM invocations – including the initial content
+    # generation used by commands such as `extractfacts` – emit "…still working,
+    # please wait…" notifications.  Down-stream helpers that themselves call
+    # `complete` therefore no longer need their own heartbeat wrappers.
+    # The enclosing `complete` method now emits heartbeat updates, so we no
+    # longer need a second heartbeat layer here. Retaining only the timing
+    # decorator avoids duplicated progress messages.
     @timed
     def complete(
         self,
@@ -1292,7 +1303,7 @@ class LLMClient:
 
         return validate_citation_patterns(content, enable_online)
 
-    @heartbeat()
+    # Heartbeat now handled in `complete`; remove to prevent duplicate messages.
     def verify_with_level(self, primary_text: str, level: str = "medium") -> str:
         """
         Run verification with different depth levels.
