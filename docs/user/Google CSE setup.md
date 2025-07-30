@@ -18,8 +18,8 @@
 4. **Quota considerations**
 
    * Free tier = **100 requests/day**. Each `lookup` run uses:
-     - Standard mode: **1 API call** (5 results from Jade.io)
-     - Comprehensive mode: **2 API calls** (up to 20 results from Jade.io) + **1 additional call** if secondary CSE configured (up to 10 broader legal sources)
+     - Standard mode: **2 API calls** (5 results each from Jade.io and AustLII CSE if configured)
+     - Comprehensive mode: **3 API calls** (10 results each from Jade.io, AustLII CSE if configured, and secondary CSE)
    * Raise quota in Google Cloud if you need more.
 
 5. **Billing (optional)**
@@ -46,7 +46,9 @@ google_cse:
 
 the **lookup** command will automatically:
 
-1. Query Google CSE for legal sources (default: 5 Jade.io sources, comprehensive: up to 20 Jade.io + 10 broader sources).
+1. Query Google CSE for legal sources:
+   - Standard: up to 5 Jade.io + 5 AustLII sources
+   - Comprehensive: up to 10 Jade.io + 10 AustLII + 10 broader sources
 2. Feed the links into **Gemini 2.5 Pro**.
 3. Return an IRAC-style answer with citations.
 
@@ -70,8 +72,9 @@ To enable broader legal searches beyond Jade.io when using `--comprehensive`:
 4. **Use the same API key** - no need for a separate key
 
 When configured, the `--comprehensive` flag will search both:
-- **Primary CSE**: Up to 20 Jade.io sources for authoritative case law
-- **Secondary CSE**: 10 additional sources from government, courts, and academic sites
+- **Primary CSE (Jade)**: Up to 10 Jade.io sources
+- **AustLII CSE**: Up to 10 AustLII sources
+- **Secondary CSE**: Up to 10 additional sources from government, courts, and academic sites
 
 ---
 
@@ -80,12 +83,12 @@ When configured, the `--comprehensive` flag will search both:
 The lookup command supports a `--comprehensive` flag for exhaustive analysis:
 
 ```bash
-# Standard search (5 sources)
+# Standard search (up to 5 Jade.io + 5 AustLII sources)
 litassist lookup "contract formation elements"
 
-# Comprehensive search (up to 20 Jade.io + 10 broader sources if secondary CSE configured)
+# Comprehensive search (up to 10 Jade.io + 10 AustLII + 10 broader sources)
 litassist lookup "contract formation elements" --comprehensive
-```
+``` 
 
 **Note**: Comprehensive mode uses significantly more API calls. Consider your daily quota when using this feature.
 

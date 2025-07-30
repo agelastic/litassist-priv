@@ -25,6 +25,24 @@ from litassist.prompts import PROMPTS
 os.environ["GOOGLE_API_USE_CLIENT_CERTIFICATE"] = "false"
 warnings.filterwarnings("ignore", message=".*file_cache.*")
 
+def _perform_cse_search(service, query, cse_id, limit, primary=False):
+    """Perform a Google Custom Search Engine lookup and return a list of links."""
+    from googleapiclient.errors import Error as GoogleApiError
+
+    if not cse_id:
+        return []
+    try:
+        res = service.cse().list(q=query, cx=cse_id, num=limit).execute()
+        items = res.get("items", [])
+        return [item.get("link") for item in items]
+    except GoogleApiError as e:
+        msg = f"CSE search failed for '{cse_id}': {e}"
+        if primary:
+            raise click.ClickException(msg)
+        click.echo(f"Warning: {msg}")
+        logging.exception(msg)
+        return []
+
 
 
 
@@ -39,7 +57,10 @@ warnings.filterwarnings("ignore", message=".*file_cache.*")
 @click.option(
     "--comprehensive",
     is_flag=True,
-    help="Use exhaustive analysis with maximum sources (40 instead of 5)",
+    help=(
+        "Enable comprehensive mode: standard searches yield up to 5 results each from Jade and AustLII; "
+        "comprehensive mode yields up to 10 results each from Jade, AustLII, and a secondary CSE."
+    ),
 )
 @click.option(
     "--context",
@@ -61,81 +82,45 @@ def lookup(question, mode, extract, comprehensive, context):
               structured analysis, or 'broad' for more creative exploration.
         extract: Extract specific information - 'citations' for case references,
                 'principles' for legal rules, or 'checklist' for practical items.
-        comprehensive: Use exhaustive analysis with 20 sources instead of 5.
+    comprehensive: If True, switches to comprehensive mode: standard searches yield up to
+        5 results each from Jade and AustLII; comprehensive searches yield up to
+        10 results each from Jade, AustLII, and an additional CSE.
 
     Raises:
         click.ClickException: If there are errors with the search or LLM API calls.
     """
-    # Determine search parameters based on comprehensive flag
-    if comprehensive:
-        max_sources = 20
-    else:
-        max_sources = 5
-
-    # Fetch case links using Jade CSE
+    # Fetch case links using configured Custom Search Engines
     try:
         from googleapiclient.discovery import build
 
         service = build(
             "customsearch", "v1", developerKey=CONFIG.g_key, cache_discovery=False
         )
-
-        if comprehensive:
-            # Comprehensive Jade CSE search - 2 calls for 20 results
-            all_links = []
-            queries = [
-                question,
-                f"{question} case law",
-            ]
-
-            for query in queries:
-                res = (
-                    service.cse()
-                    .list(
-                        q=query, cx=CONFIG.cse_id
-                    )
-                    .execute()
-                )
-                all_links.extend([item.get("link") for item in res.get("items", [])])
-
-            # Remove duplicates while preserving order
-            seen = set()
-            links = []
-            for link in all_links:
-                if link and link not in seen:
-                    seen.add(link)
-                    links.append(link)
-                    if len(links) >= max_sources:
-                        break
-        else:
-            # Standard Jade CSE search
-            res = (
-                service.cse()
-                .list(
-                    q=question, cx=CONFIG.cse_id
-                )
-                .execute()
-            )
-            links = [item.get("link") for item in res.get("items", [])][:max_sources]
-
     except Exception as e:
-        raise click.ClickException(f"Search error: {e}")
+        raise click.ClickException(f"Search initialization error: {e}")
 
-    # Add comprehensive CSE search if configured
-    if comprehensive and CONFIG.cse_id_comprehensive:
-        try:
-            # Reuse the service instance for the comprehensive search
-            res_comp = (
-                service.cse()
-                .list(q=question, cx=CONFIG.cse_id_comprehensive)
-                .execute()
-            )
-            links.extend([item.get("link") for item in res_comp.get("items", [])])
-        except Exception as e:
-            click.echo(f"Warning: Secondary CSE search failed: {e}")
-            logging.exception("Secondary CSE search failed", exc_info=e)
-            # Continue with existing links from primary search
-
+    # Collect links from configured Custom Search Engines
+    links = []
+    # Determine per-source limits
+    if comprehensive:
+        jade_limit = austlii_limit = comp_limit = 10
+    else:
+        jade_limit = austlii_limit = 5
+    # Primary Jade CSE search
+    links.extend(_perform_cse_search(
+        service, question, CONFIG.cse_id, jade_limit, primary=True
+    ))
+    # AustLII CSE search (optional)
+    links.extend(_perform_cse_search(
+        service, question, getattr(CONFIG, "cse_id_austlii", None), austlii_limit
+    ))
+    # Comprehensive CSE search (optional)
+    if comprehensive:
+        links.extend(_perform_cse_search(
+            service, question, getattr(CONFIG, "cse_id_comprehensive", None), comp_limit
+        ))
+    # Remove duplicate and empty links while preserving order
+    links = list(dict.fromkeys(filter(None, links)))
     # Display found links
     click.echo("Found links:")
     for link in links:

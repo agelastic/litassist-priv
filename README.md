@@ -120,8 +120,10 @@ openai:
   embedding_model:  "text-embedding-3-small"
 
 google_cse:
-  api_key:  "YOUR_GOOGLE_API_KEY"
-  cse_id:   "YOUR_JADE_CSE_ID"    # Google CSE for Jade.io
+  api_key:                "YOUR_GOOGLE_API_KEY"         # API key for Google Custom Search
+  cse_id:                 "YOUR_JADE_CSE_ID"           # Google CSE for Jade.io
+  cse_id_comprehensive:   "YOUR_COMPREHENSIVE_CSE_ID"  # Optional: broader legal sources (gov.au etc.)
+  cse_id_austlii:         "YOUR_AUSTLII_CSE_ID"        # Optional: AustLII CSE for Australian legal cases
 
 pinecone:
   api_key:     "YOUR_PINECONE_KEY"
@@ -238,7 +240,9 @@ litassist lookup "elements of contract breach and damages" --mode irac --compreh
    Options:
    - `--mode [irac|broad]`: Analysis format (default: irac)
    - `--extract [citations|principles|checklist]`: Extract specific information in structured format
-   - `--comprehensive`: Use exhaustive analysis with up to 40 sources (vs 5 standard)
+   - `--comprehensive`: Enable comprehensive mode: standard searches yield up to 5
+     results each from Jade and AustLII; comprehensive mode yields up to 10 results
+     each from Jade, AustLII, and a secondary CSE.
 
 ### 3. digest - Process large documents for summaries or issues
 
