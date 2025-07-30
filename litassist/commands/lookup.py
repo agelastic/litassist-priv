@@ -27,14 +27,16 @@ warnings.filterwarnings("ignore", message=".*file_cache.*")
 
 def _perform_cse_search(service, query, cse_id, limit, primary=False):
     """Perform a Google Custom Search Engine lookup and return a list of links."""
+    from googleapiclient.errors import Error as GoogleApiError
+
     if not cse_id:
         return []
     try:
         res = service.cse().list(q=query, cx=cse_id, num=limit).execute()
         items = res.get("items", [])
         return [item.get("link") for item in items]
-    except Exception as e:
-        msg = f"CSE search failed for '{cse_id}' ({type(e).__name__}): {e}"
+    except GoogleApiError as e:
+        msg = f"CSE search failed for '{cse_id}': {e}"
         if primary:
             raise click.ClickException(msg)
         click.echo(f"Warning: {msg}")
