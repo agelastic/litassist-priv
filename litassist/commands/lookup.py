@@ -56,9 +56,8 @@ def _perform_cse_search(service, query, cse_id, limit, primary=False):
     "--comprehensive",
     is_flag=True,
     help=(
-        "Enable exhaustive analysis by adding broader legal sources (10 additional "
-        "results from a secondary CSE) on top of the standard Jade and AustLII "
-        "searches."
+        "Enable comprehensive mode: standard searches yield up to 5 results each from Jade and AustLII; "
+        "comprehensive mode yields up to 10 results each from Jade, AustLII, and a secondary CSE."
     ),
 )
 @click.option(
@@ -81,10 +80,9 @@ def lookup(question, mode, extract, comprehensive, context):
               structured analysis, or 'broad' for more creative exploration.
         extract: Extract specific information - 'citations' for case references,
                 'principles' for legal rules, or 'checklist' for practical items.
-        comprehensive: If True, performs an exhaustive analysis by also querying a
-            secondary "comprehensive" CSE (up to 10 additional results) in
-            addition to the standard Jade and AustLII searches which always run
-            when the relevant CSE IDs are configured.
+    comprehensive: If True, switches to comprehensive mode: standard searches yield up to
+        5 results each from Jade and AustLII; comprehensive searches yield up to
+        10 results each from Jade, AustLII, and an additional CSE.
 
     Raises:
         click.ClickException: If there are errors with the search or LLM API calls.
@@ -101,18 +99,23 @@ def lookup(question, mode, extract, comprehensive, context):
 
     # Collect links from configured Custom Search Engines
     links = []
+    # Determine per-source limits
+    if comprehensive:
+        jade_limit = austlii_limit = comp_limit = 10
+    else:
+        jade_limit = austlii_limit = 5
     # Primary Jade CSE search
     links.extend(_perform_cse_search(
-        service, question, CONFIG.cse_id, 10, primary=True
+        service, question, CONFIG.cse_id, jade_limit, primary=True
     ))
     # AustLII CSE search (optional)
     links.extend(_perform_cse_search(
-        service, question, getattr(CONFIG, "cse_id_austlii", None), 10
+        service, question, getattr(CONFIG, "cse_id_austlii", None), austlii_limit
     ))
     # Comprehensive CSE search (optional)
     if comprehensive:
         links.extend(_perform_cse_search(
-            service, question, getattr(CONFIG, "cse_id_comprehensive", None), 10
+            service, question, getattr(CONFIG, "cse_id_comprehensive", None), comp_limit
         ))
     # Remove duplicate and empty links while preserving order
     links = list(dict.fromkeys(filter(None, links)))

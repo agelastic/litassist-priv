@@ -240,8 +240,9 @@ litassist lookup "elements of contract breach and damages" --mode irac --compreh
    Options:
    - `--mode [irac|broad]`: Analysis format (default: irac)
    - `--extract [citations|principles|checklist]`: Extract specific information in structured format
-   - `--comprehensive`: Adds up to 10 extra sources from a "comprehensive" CSE for an
-     exhaustive analysis, in addition to standard Jade and AustLII searches.
+   - `--comprehensive`: Enable comprehensive mode: standard searches yield up to 5
+     results each from Jade and AustLII; comprehensive mode yields up to 10 results
+     each from Jade, AustLII, and a secondary CSE.
 
 ### 3. digest - Process large documents for summaries or issues
 
