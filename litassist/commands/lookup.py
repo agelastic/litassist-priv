@@ -34,7 +34,7 @@ def _perform_cse_search(service, query, cse_id, limit, primary=False):
         items = res.get("items", [])
         return [item.get("link") for item in items]
     except Exception as e:
-        msg = f"CSE search failed for '{cse_id}': {e}"
+        msg = f"CSE search failed for '{cse_id}' ({type(e).__name__}): {e}"
         if primary:
             raise click.ClickException(msg)
         click.echo(f"Warning: {msg}")
