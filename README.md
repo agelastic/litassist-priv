@@ -120,8 +120,10 @@ openai:
   embedding_model:  "text-embedding-3-small"
 
 google_cse:
-  api_key:  "YOUR_GOOGLE_API_KEY"
-  cse_id:   "YOUR_JADE_CSE_ID"    # Google CSE for Jade.io
+  api_key:                "YOUR_GOOGLE_API_KEY"         # API key for Google Custom Search
+  cse_id:                 "YOUR_JADE_CSE_ID"           # Google CSE for Jade.io
+  cse_id_comprehensive:   "YOUR_COMPREHENSIVE_CSE_ID"  # Optional: broader legal sources (gov.au etc.)
+  cse_id_austlii:         "YOUR_AUSTLII_CSE_ID"        # Optional: AustLII CSE for Australian legal cases
 
 pinecone:
   api_key:     "YOUR_PINECONE_KEY"
