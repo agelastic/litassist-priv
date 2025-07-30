@@ -25,6 +25,22 @@ from litassist.prompts import PROMPTS
 os.environ["GOOGLE_API_USE_CLIENT_CERTIFICATE"] = "false"
 warnings.filterwarnings("ignore", message=".*file_cache.*")
 
+def _perform_cse_search(service, query, cse_id, limit, primary=False):
+    """Perform a Google Custom Search Engine lookup and return a list of links."""
+    if not cse_id:
+        return []
+    try:
+        res = service.cse().list(q=query, cx=cse_id, num=limit).execute()
+        items = res.get("items", [])
+        return [item.get("link") for item in items]
+    except Exception as e:
+        msg = f"CSE search failed for '{cse_id}': {e}"
+        if primary:
+            raise click.ClickException(msg)
+        click.echo(f"Warning: {msg}")
+        logging.exception(msg, exc_info=e)
+        return []
+
 
 
 
@@ -39,7 +55,11 @@ warnings.filterwarnings("ignore", message=".*file_cache.*")
 @click.option(
     "--comprehensive",
     is_flag=True,
-    help="Use comprehensive analysis with multiple sources (10 Jade, 10 AustLII, 10 broader CSE)",
+    help=(
+        "Enable exhaustive analysis by adding broader legal sources (10 additional "
+        "results from a secondary CSE) on top of the standard Jade and AustLII "
+        "searches."
+    ),
 )
 @click.option(
     "--context",
@@ -61,7 +81,10 @@ def lookup(question, mode, extract, comprehensive, context):
               structured analysis, or 'broad' for more creative exploration.
         extract: Extract specific information - 'citations' for case references,
                 'principles' for legal rules, or 'checklist' for practical items.
-        comprehensive: Use comprehensive analysis with multiple sources (10 Jade, 10 AustLII, 10 broader CSE).
+        comprehensive: If True, performs an exhaustive analysis by also querying a
+            secondary "comprehensive" CSE (up to 10 additional results) in
+            addition to the standard Jade and AustLII searches which always run
+            when the relevant CSE IDs are configured.
 
     Raises:
         click.ClickException: If there are errors with the search or LLM API calls.
@@ -76,41 +99,29 @@ def lookup(question, mode, extract, comprehensive, context):
     except Exception as e:
         raise click.ClickException(f"Search initialization error: {e}")
 
+    # Collect links from configured Custom Search Engines
     links = []
-    # Jade CSE search (primary)
-    jade_limit = 10
-    try:
-        res_jade = service.cse().list(q=question, cx=CONFIG.cse_id, num=jade_limit).execute()
-        jade_links = [item.get("link") for item in res_jade.get("items", [])][:jade_limit]
-        links.extend(jade_links)
-    except Exception as e:
-        raise click.ClickException(f"Jade CSE search error: {e}")
-
+    # Primary Jade CSE search
+    links.extend(_perform_cse_search(
+        service, question, CONFIG.cse_id, 10, primary=True
+    ))
     # AustLII CSE search (optional)
-    austlii_id = getattr(CONFIG, "cse_id_austlii", None)
-    if isinstance(austlii_id, str) and austlii_id:
-        aus_limit = 10
-        try:
-            res_aus = service.cse().list(q=question, cx=austlii_id, num=aus_limit).execute()
-            aus_links = [item.get("link") for item in res_aus.get("items", [])][:aus_limit]
-            links.extend(aus_links)
-        except Exception as e:
-            click.echo(f"Warning: AustLII CSE search failed: {e}")
-            logging.exception("AustLII CSE search failed", exc_info=e)
-
-    # Comprehensive CSE search (optional, only for comprehensive mode)
+    links.extend(_perform_cse_search(
+        service, question, getattr(CONFIG, "cse_id_austlii", None), 10
+    ))
+    # Comprehensive CSE search (optional)
     if comprehensive:
-        comp_id = getattr(CONFIG, "cse_id_comprehensive", None)
-        if isinstance(comp_id, str) and comp_id:
-            comp_limit = 10
-            try:
-                res_comp = service.cse().list(q=question, cx=comp_id, num=comp_limit).execute()
-                comp_links = [item.get("link") for item in res_comp.get("items", [])][:comp_limit]
-                links.extend(comp_links)
-            except Exception as e:
-                click.echo(f"Warning: Secondary CSE search failed: {e}")
-                logging.exception("Secondary CSE search failed", exc_info=e)
-
+        links.extend(_perform_cse_search(
+            service, question, getattr(CONFIG, "cse_id_comprehensive", None), 10
+        ))
+    # Remove duplicate links while preserving order
+    seen = set()
+    unique_links = []
+    for link in links:
+        if link and link not in seen:
+            seen.add(link)
+            unique_links.append(link)
+    links = unique_links
     # Display found links
     click.echo("Found links:")
     for link in links:
