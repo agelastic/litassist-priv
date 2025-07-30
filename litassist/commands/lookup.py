@@ -38,7 +38,7 @@ def _perform_cse_search(service, query, cse_id, limit, primary=False):
         if primary:
             raise click.ClickException(msg)
         click.echo(f"Warning: {msg}")
-        logging.exception(msg, exc_info=e)
+        logging.exception(msg)
         return []
 
 
@@ -114,14 +114,8 @@ def lookup(question, mode, extract, comprehensive, context):
         links.extend(_perform_cse_search(
             service, question, getattr(CONFIG, "cse_id_comprehensive", None), 10
         ))
-    # Remove duplicate links while preserving order
-    seen = set()
-    unique_links = []
-    for link in links:
-        if link and link not in seen:
-            seen.add(link)
-            unique_links.append(link)
-    links = unique_links
+    # Remove duplicate and empty links while preserving order
+    links = list(dict.fromkeys(filter(None, links)))
     # Display found links
     click.echo("Found links:")
     for link in links:
