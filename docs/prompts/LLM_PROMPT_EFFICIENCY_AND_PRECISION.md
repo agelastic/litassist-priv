@@ -1,5 +1,7 @@
 # LLM Prompt Efficiency and Precision Guide
 
+**Last Updated**: July 15, 2025
+
 This guide summarizes recent large language models (LLMs) and provides concise strategies for crafting prompts that balance speed and accuracy. It incorporates the latest releases currently referenced in the project, including Grok 4, Anthropic's Claude/Sonnet 4, OpenAI O3 and O3Pro, and Gemini Pro 2.5.
 
 ## Overview of Current LLMs

@@ -1,5 +1,7 @@
 # Comprehensive Model Optimization Plan
 
+**Last Updated**: July 31, 2025
+
 **Date**: 26 July 2025  
 **Status**: Planned - Ready for Implementation  
 **Priority**: P1 - Performance & Accuracy Enhancement
@@ -10,23 +12,23 @@ This document outlines the complete implementation plan for optimizing all LitAs
 
 ## Model Optimization Matrix
 
-| Command | Current Model | New Model | Temperature | Top_p | Rationale |
-|---------|---------------|-----------|-------------|--------|-----------|
-| **lookup-retrieval** | Claude Sonnet 4 | google/gemini-2.5-pro-preview | 0.1 | 0.9 | Fastest broad retrieval |
-| **lookup-verification** | Jade.io only | openai/o4-mini-high | 0 | 0 | Zero-hallucination verification |
-| **extractfacts** | Claude Sonnet 4 | openai/o4-mini-high | 0 | 0 | Sub-second deterministic extraction |
-| **digest-summary** | Claude Sonnet 4 | openai/o4-mini-high | 0.3 | 0.5 | Balanced coherence & brevity |
-| **digest-issues** | Claude Sonnet 4 | openai/o4-mini-high | 0.1 | 0 | Focused issue-spotting |
-| **brainstorm-orthodox** | Claude Sonnet 4 | openai/o4-mini-high | 0.7 | 0.9 | Fast creative breadth |
-| **brainstorm-unorthodox** | Grok 3 | moonshotai/kimi-k2 | 0.9 | 1 | Highly diverse creative angles |
-| **brainstorm-analysis** | OpenAI o3-pro | openai/o3-pro | 0.2 | 0.8 | Reasoning analysis (unchanged) |
-| **caseplan** | Claude Sonnet 4 | openai/o4-mini-high | 0.4 | 0.8 | Rapid creative planning |
-| **strategy** | Claude Sonnet 4 | openai/o3-pro | 0.2 | 0.8 | Deep legal reasoning (unchanged) |
-| **strategy-analysis** | Claude Sonnet 4 | openai/o3-pro | 0.2 | 0.8 | Detailed pros/cons (unchanged) |
-| **draft** | OpenAI o3-pro | openai/o3-pro | reasoning_effort=high | - | Flawless drafting (unchanged) |
-| **counselnotes** | Claude Opus 4 | openai/o3-pro | reasoning_effort=high, 0.5 | - | Advocacy-style analysis |
-| **barbrief** | OpenAI o3-pro | openai/o3-pro | reasoning_effort=high, 32768 tokens | - | Comprehensive briefs (unchanged) |
-| **verify** | Claude Opus 4 | openai/o3-pro | reasoning_effort=high | - | Enhanced verification |
+| Command | Current Model | New Model | Temperature | Top_p | Status | Rationale |
+|---------|---------------|-----------|-------------|--------|--------|-----------|
+| **lookup-retrieval** | Claude Sonnet 4 | google/gemini-2.5-pro-preview | 0.1 | 0.9 | Planned | Fastest broad retrieval |
+| **lookup-verification** | Jade.io only | openai/o4-mini-high | 0 | 0 | Planned | Zero-hallucination verification |
+| **extractfacts** | Claude Sonnet 4 | openai/o4-mini-high | 0 | 0 | Planned | Sub-second deterministic extraction |
+| **digest-summary** | Claude Sonnet 4 | openai/o4-mini-high | 0.3 | 0.5 | Planned | Balanced coherence & brevity |
+| **digest-issues** | Claude Sonnet 4 | openai/o4-mini-high | 0.1 | 0 | Planned | Focused issue-spotting |
+| **brainstorm-orthodox** | Claude Sonnet 4 | openai/o4-mini-high | 0.7 | 0.9 | Planned | Fast creative breadth |
+| **brainstorm-unorthodox** | Grok 3 | x-ai/grok-4 | 0.8 | 0.95 | Implemented | Highly diverse creative angles |
+| **brainstorm-analysis** | OpenAI o3-pro | openai/o3-pro | - | - | Implemented | Reasoning analysis (unchanged) |
+| **caseplan** | Claude Sonnet 4 | openai/o4-mini-high | 0.4 | 0.8 | Planned | Rapid creative planning |
+| **strategy** | Claude Sonnet 4 | openai/o3-pro | - | - | Implemented | Deep legal reasoning (unchanged) |
+| **strategy-analysis** | Claude Sonnet 4 | openai/o3-pro | - | - | Implemented | Detailed pros/cons (unchanged) |
+| **draft** | OpenAI o3-pro | openai/o3-pro | reasoning_effort=high | - | Implemented | Flawless drafting (unchanged) |
+| **counselnotes** | Claude Opus 4 | openai/o3-pro | reasoning_effort=high, 0.5 | - | Implemented | Advocacy-style analysis |
+| **barbrief** | OpenAI o3-pro | openai/o3-pro | reasoning_effort=high, 32768 tokens | - | Implemented | Comprehensive briefs (unchanged) |
+| **verify** | Claude Opus 4 | openai/o3-pro | reasoning_effort=high | - | Implemented | Enhanced verification |
 
 ## Implementation Phases
 
@@ -55,7 +57,7 @@ This document outlines the complete implementation plan for optimizing all LitAs
 
 #### brainstorm-unorthodox
 - **Current**: Grok 3
-- **New**: moonshotai/kimi-k2, temp=0.9, top_p=1
+- **New**: x-ai/grok-4, temp=0.8, top_p=0.95
 - **Benefit**: Sparse MoE generates highly diverse, unexpected legal angles
 - **Implementation**: Direct OpenRouter integration, no self-host needed
 
@@ -68,8 +70,8 @@ This document outlines the complete implementation plan for optimizing all LitAs
 - **Benefit**: Superior adversarial reasoning for verification tasks
 
 #### counselnotes Command
-- **Current**: Claude Opus 4
-- **New**: openai/o3-pro, reasoning_effort=high, temp=0.5
+ - **Current**: Claude Opus 4
+ - **New**: openai/o3-pro, reasoning_effort=high
 - **Benefit**: Enhanced advocacy-style analysis with tactical insights
 
 ### Phase 4: Lookup Pipeline (Week 4)
@@ -300,5 +302,5 @@ METRICS = {
 ---
 
 **Document Owner**: Cline  
-**Last Updated**: 26 July 2025  
+**Last Updated**: July 31, 2025  
 **Review Date**: Post-implementation analysis

@@ -1,5 +1,7 @@
 # LitAssist Verification Plan v1.0
 
+**Last Updated**: July 15, 2025
+
 ## 1. Glob Implementation Validation
 ```mermaid
 graph TD

@@ -1,6 +1,6 @@
 # LitAssist Model Configuration Guide
 
-**Last Updated**: July 7, 2025
+**Last Updated**: July 31, 2025
 
 ## Overview
 
@@ -25,8 +25,8 @@ LitAssist uses multiple specialized LLM models optimized for different legal tas
 | **caseplan** (assessment) | `anthropic/claude-sonnet-4` | Budget assessment for workflow planning | temperature: 0.2 |
 | **caseplan** (full plan) | `anthropic/claude-opus-4` | Full phased workflow plan generation | max_completion_tokens: 32768, reasoning_effort: high |
 | **extractfacts** | `anthropic/claude-sonnet-4` | Structured fact extraction | temperature: 0, top_p: 0.15 |
-| **brainstorm** | `x-ai/grok-3` | Creative strategy generation | temperature: 0.9, top_p: 0.95 |
-| **brainstorm** (analysis) | `openai/o3-pro` | Strategy analysis & ranking | temperature: 0.2, top_p: 0.8 |
+| **brainstorm** | `x-ai/grok-4` | Creative strategy generation | temperature: 0.8, top_p: 0.95 |
+| **brainstorm** (analysis) | `openai/o3-pro` | Strategy analysis & ranking | reasoning_effort: high |
 | **strategy** | `openai/o3-pro` | Strategic planning & analysis | max_completion_tokens: varies, reasoning_effort: varies |
 | **draft** | `openai/o3-pro` | Legal document drafting | max_completion_tokens: 4096, reasoning_effort: medium |
 | **counselnotes** | `anthropic/claude-opus-4` | Strategic advocate analysis | temperature: 0.3, top_p: 0.7 |
@@ -65,8 +65,8 @@ LitAssist uses multiple specialized LLM models optimized for different legal tas
 - **Strengths**: Structured output, consistency, following complex instructions
 - **Use Cases**: Document processing, fact extraction, strategy analysis
 
-#### Grok 3
-- **Model ID**: `x-ai/grok-3`
+#### Grok 4
+ - **Model ID**: `x-ai/grok-4`
 - **Purpose**: Creative legal strategy generation
 - **Strengths**: Innovative thinking, unorthodox approaches
 - **Note**: Auto-verification enabled due to hallucination tendencies
@@ -89,7 +89,7 @@ MODEL_CONFIGS = {
     "digest": "anthropic/claude-sonnet-4",
     "extractfacts": "anthropic/claude-sonnet-4",
     "brainstorm-orthodox": "anthropic/claude-opus-4",
-    "brainstorm-unorthodox": "x-ai/grok-3",
+    "brainstorm-unorthodox": "x-ai/grok-4",
     "brainstorm-analysis": "openai/o3-pro",
     "strategy": "openai/o3-pro",
     "strategy-analysis": "anthropic/claude-opus-4",
@@ -109,7 +109,7 @@ Models can be overridden via environment variables:
 export ANTHROPIC_MODEL="anthropic/claude-sonnet-4"
 export OPENAI_MODEL="openai/o3-pro"
 export GOOGLE_MODEL="google/gemini-2.5-pro-preview"
-export XGROK_MODEL="x-ai/grok-3"
+export XGROK_MODEL="x-ai/grok-4"
 ```
 
 ### OpenRouter Configuration
@@ -158,9 +158,9 @@ The retry logic is implemented in `litassist/llm.py` using the `tenacity` librar
    - Strategy analysis, drafting
    - Models: o3-pro, Claude Sonnet
 
-3. **Creative Tasks** (temperature: 0.9)
+3. **Creative Tasks** (temperature: 0.8)
    - Brainstorming, unorthodox strategies
-   - Models: Grok 3
+   - Models: Grok 4
 
 ### Cost-Performance Balance
 

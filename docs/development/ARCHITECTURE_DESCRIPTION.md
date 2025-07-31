@@ -1,3 +1,5 @@
+**Last Updated**: July 23, 2025
+
 The LitAssist application is a command-line tool built with Python and the Click library. It's designed to assist with legal workflows by leveraging Large Language Models (LLMs). The architecture is modular, with a clear separation of concerns.
 
 ### High-Level Architecture
