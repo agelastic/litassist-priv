@@ -438,6 +438,12 @@ When saving Claude-generated files to the project:
    - o3-pro: Only max_completion_tokens and reasoning_effort (no temperature, top_p, penalties)
    - Uses max_completion_tokens instead of max_tokens for token limit control
 
+## Development Philosophy
+
+### Core Development Rule
+
+- **Broken tests are always your fault. Never stop until all unit tests are green. Assume the breakage is caused by your recent changes**
+
 ## Recent Major Features
 
 ### Citation Verification System
