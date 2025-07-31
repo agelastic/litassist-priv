@@ -473,4 +473,4 @@ When saving Claude-generated files to the project:
 - **Trust LLM Output**: Following CLAUDE.md principles - no local parsing of verification results
 
 ---
-Last Updated: 2025-07-07 (Verification system fixes for full document preservation, token limit increases)
+Last Updated: 2025-07-31

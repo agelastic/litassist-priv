@@ -1,5 +1,7 @@
 # Counsel's Notes Command Guide
 
+**Last Updated**: July 15, 2025
+
 The `counselnotes` command provides strategic analysis and tactical insights for legal documents from an advocate's perspective, complementing the neutral analysis provided by the `digest` command.
 
 ## Overview

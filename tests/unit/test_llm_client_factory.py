@@ -18,7 +18,7 @@ class TestLLMClientFactory:
             client = LLMClientFactory.for_command("lookup")
 
             assert isinstance(client, LLMClient)
-            assert client.model == "google/gemini-2.5-pro-preview"
+            assert client.model == "google/gemini-2.5-pro"
             assert hasattr(client, "_force_verify")
             assert client._force_verify is False
 
@@ -226,5 +226,5 @@ class TestLLMClientFactoryIntegration:
             assert "o3-pro" in models["strategy"].lower()  # Uses o3-pro for strategy
             assert "o3-pro" in models["draft"].lower()  # Uses o3-pro for drafting
             assert (
-                "claude" in models["extractfacts"].lower()
+                "anthropic/claude-sonnet-4" in models["extractfacts"].lower()
             )  # Uses Claude for extraction

@@ -70,6 +70,7 @@ MODEL_PATTERNS = {
     "meta": r"meta/(llama|codellama)",
     "mistral": r"mistral/",
     "cohere": r"cohere/",
+    "moonshotai": r"moonshotai/",
 }
 
 # Parameter profiles by model family
@@ -174,6 +175,17 @@ PARAMETER_PROFILES = {
         ],
         "transforms": {"top_k": "k", "top_p": "p", "stop": "stop_sequences"},
     },
+    "moonshotai": {
+        "allowed": [
+            "temperature",
+            "top_p",
+            "max_tokens",
+            "stop",
+            "frequency_penalty",
+            "presence_penalty",
+            "stream",
+        ],
+    },
     "default": {
         "allowed": ["temperature", "top_p", "max_tokens", "stop"],  # Safe defaults
     },
@@ -275,9 +287,10 @@ class LLMClientFactory:
         },
         # Strategy sub-type for analysis
         "strategy-analysis": {
-            "model": "anthropic/claude-opus-4",
+            "model": "openai/o3-pro",
             "temperature": 0.2,
             "top_p": 0.8,
+            "reasoning_effort": "high",
         },
         # Brainstorm - varied temperatures for different approaches
         "brainstorm-orthodox": {
@@ -287,10 +300,14 @@ class LLMClientFactory:
             "force_verify": True,  # Conservative analysis requires verification
         },
         "brainstorm-unorthodox": {
-            "model": "x-ai/grok-3",
-            "temperature": 0.9,
+            "model": "x-ai/grok-4",
+            "temperature": 0.8,
             "top_p": 0.95,
-            "force_verify": True,  # Auto-verify Grok
+            # Kimi-K2 currently has an 8K context window. Supplying an
+            # excessively high `max_tokens` causes “Error processing stream”.
+            # Explicitly cap it so the request succeeds.
+            # "max_tokens": 4096,
+            "force_verify": True,  # Auto-verify creative outputs
         },
         "brainstorm-analysis": {
             "model": "openai/o3-pro",
@@ -313,23 +330,25 @@ class LLMClientFactory:
         },
         # Lookup - uses Gemini for rapid processing with verification
         "lookup": {
-            "model": "google/gemini-2.5-pro-preview",
+            "model": "google/gemini-2.5-pro",
             "temperature": 0.1,
             "top_p": 0.2,
             "force_verify": False,  # Don't force strict verification
         },
         # Verify - post-hoc verification command
         "verify": {
-            "model": "anthropic/claude-opus-4",
+            "model": "openai/o3-pro",
             "temperature": 0,
             "top_p": 0.2,
+            "reasoning_effort": "high",
             "force_verify": False,  # Don't double-verify since this IS verification
         },
         # Counsel's Notes - strategic analysis from advocate's perspective
         "counselnotes": {
-            "model": "anthropic/claude-opus-4",
+            "model": "openai/o3-pro",
             "temperature": 0.3,
             "top_p": 0.7,
+            "reasoning_effort": "high",
             "force_verify": True,  # Strategic counsel's notes require verification
         },
         # Barrister's brief - comprehensive document generation
@@ -342,14 +361,14 @@ class LLMClientFactory:
         },
         # Caseplan - LLM-driven workflow planning
         "caseplan": {
-            "model": "anthropic/claude-opus-4",
+            "model": "openai/o4-mini-high",
             "temperature": 0.3,
             "top_p": 0.7,
             "force_verify": False,
         },
         # Caseplan assessment - budget recommendation (Sonnet)
         "caseplan-assessment": {
-            "model": "anthropic/claude-sonnet-4",
+            "model": "openai/o4-mini-high",
             "temperature": 0.2,
             "top_p": 0.7,
             "force_verify": False,
@@ -641,6 +660,18 @@ class LLMClient:
 
         return _call()
 
+    # Add heartbeat messages so users see progress during lengthy LLM calls
+    # The verification helpers already had their own heartbeat wrapper, but that
+    # resulted in progress messages only during the verification stage.  By
+    # moving the heartbeat decorator to the main `complete` method we ensure
+    # that all long-running LLM invocations – including the initial content
+    # generation used by commands such as `extractfacts` – emit "…still working,
+    # please wait…" notifications.  Down-stream helpers that themselves call
+    # `complete` therefore no longer need their own heartbeat wrappers.
+    # The enclosing `complete` method now emits heartbeat updates, so we no
+    # longer need a second heartbeat layer here. Retaining only the timing
+    # decorator avoids duplicated progress messages.
+    @heartbeat(CONFIG.heartbeat_interval)
     @timed
     def complete(
         self,
@@ -1273,7 +1304,7 @@ class LLMClient:
 
         return validate_citation_patterns(content, enable_online)
 
-    @heartbeat()
+    # Heartbeat now handled in `complete`; remove to prevent duplicate messages.
     def verify_with_level(self, primary_text: str, level: str = "medium") -> str:
         """
         Run verification with different depth levels.

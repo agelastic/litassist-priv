@@ -1,5 +1,7 @@
 # High‑Priority Bugfix Plan
 
+**Last Updated**: July 15, 2025
+
 This document outlines the five top‑priority issues in LitAssist and the plan to resolve them.
 
 ## 1. Sync `lookup --comprehensive` help text with actual behavior

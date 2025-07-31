@@ -1,4 +1,7 @@
 # Comprehensive LLM Prompt Analysis Report
+
+**Last Updated**: July 20, 2025
+
 ## I. Introduction
 This report provides a comprehensive analysis of the LLM prompts used in the LitAssist tool. It covers identified prompts, their associated commands, purposes, effectiveness, suggested improvements, and an evaluation of the LLM models used for each.
 

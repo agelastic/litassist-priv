@@ -12,11 +12,9 @@ import re
 import logging
 import glob
 
-from litassist.config import CONFIG
 from litassist.utils import (
     read_document,
     save_log,
-    heartbeat,
     timed,
     create_reasoning_prompt,
     parse_strategies_file,
@@ -488,9 +486,9 @@ Please provide output in EXACTLY this format:
         {"role": "user", "content": orthodox_prompt},
     ]
 
-    call_with_hb = heartbeat(CONFIG.heartbeat_interval)(orthodox_client.complete)
+    # Execute the query, heartbeat decorator handles progress notifications
     try:
-        orthodox_content, orthodox_usage = call_with_hb(orthodox_messages)
+        orthodox_content, orthodox_usage = orthodox_client.complete(orthodox_messages)
     except Exception as e:
         raise click.ClickException(
             PROMPTS.get(
@@ -555,8 +553,9 @@ Please provide output in EXACTLY this format:
         {"role": "user", "content": unorthodox_prompt},
     ]
 
+    # Execute the query for unorthodox strategies
     try:
-        unorthodox_content, unorthodox_usage = call_with_hb(unorthodox_messages)
+        unorthodox_content, unorthodox_usage = unorthodox_client.complete(unorthodox_messages)
     except Exception as e:
         raise click.ClickException(
             PROMPTS.get(
@@ -622,8 +621,9 @@ Please provide output in EXACTLY this format:
         {"role": "user", "content": analysis_prompt},
     ]
 
+    # Execute analysis query for most promising strategies
     try:
-        analysis_content, analysis_usage = call_with_hb(analysis_messages)
+        analysis_content, analysis_usage = analysis_client.complete(analysis_messages)
     except Exception as e:
         raise click.ClickException(f"Error analyzing strategies: {e}")
 
