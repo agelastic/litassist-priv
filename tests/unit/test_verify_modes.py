@@ -1,0 +1,196 @@
+"""
+Tests for verify_with_level modes in LLMClient.
+
+Tests different verification modes: light (spelling only) vs heavy (full verification).
+"""
+
+from unittest.mock import Mock, patch, call
+import pytest
+
+from litassist.llm import LLMClient
+
+
+class TestVerifyModes:
+    """Test different verification modes in verify_with_level."""
+    
+    def setup_method(self):
+        """Set up test fixtures."""
+        # Create client with minimal setup
+        with patch("litassist.llm.CONFIG") as mock_config:
+            mock_config.openrouter_key = "test_key"
+            mock_config.openai_key = "test_key"
+            self.client = LLMClient("anthropic/claude-sonnet-4")
+    
+    @patch("litassist.llm.LLMClient")
+    @patch("litassist.llm.CONFIG")
+    def test_light_verification_mode(self, mock_config, mock_llm_client):
+        """Test that light mode only uses spelling verification prompt."""
+        # Configure mock
+        mock_config.use_token_limits = True
+        
+        # Create a mock instance that will be returned when LLMClient is instantiated
+        mock_instance = Mock()
+        mock_instance.complete.return_value = ("Spelling check complete. All correct.", {"total_tokens": 100})
+        mock_llm_client.return_value = mock_instance
+        
+        # Call verify_with_level in light mode
+        result = self.client.verify_with_level("This is a test text with judgement.", level="light")
+        
+        # Check the result
+        assert result == "Spelling check complete. All correct."
+        
+        # Verify LLMClient was instantiated with correct model
+        mock_llm_client.assert_called_once()
+        args, kwargs = mock_llm_client.call_args
+        assert args[0] == "anthropic/claude-opus-4"
+        
+        # Verify complete was called once
+        assert mock_instance.complete.call_count == 1
+        
+        # Get the messages passed to complete
+        messages = mock_instance.complete.call_args[0][0]
+        
+        # Check that it has system and user messages
+        assert len(messages) == 2
+        assert messages[0]["role"] == "system"
+        assert messages[1]["role"] == "user"
+        
+        # Verify the system message is about Australian English
+        assert "Australian English" in messages[0]["content"]
+        
+        # Verify the user message contains the text to check
+        assert "This is a test text with judgement." in messages[1]["content"]
+        
+        # Check that parameters were passed correctly
+        kwargs = mock_instance.complete.call_args[1]
+        assert kwargs.get("temperature") == 0
+        assert kwargs.get("top_p") == 0.2
+        assert kwargs.get("max_tokens") == 32768  # light mode uses smaller limit
+        assert kwargs.get("skip_citation_verification") is True
+    
+    @patch("litassist.llm.LLMClient")
+    @patch("litassist.llm.CONFIG")
+    def test_heavy_verification_mode(self, mock_config, mock_llm_client):
+        """Test that heavy mode uses full legal verification prompt."""
+        # Configure mock
+        mock_config.use_token_limits = True
+        
+        # Create a mock instance
+        mock_instance = Mock()
+        mock_instance.complete.return_value = ("Comprehensive legal review complete. Found issues with citations.", {"total_tokens": 200})
+        mock_llm_client.return_value = mock_instance
+        
+        # Call verify_with_level in heavy mode
+        result = self.client.verify_with_level("Legal text with [2024] HCA 1 citation.", level="heavy")
+        
+        # Check the result
+        assert result == "Comprehensive legal review complete. Found issues with citations."
+        
+        # Verify LLMClient was instantiated with correct model
+        mock_llm_client.assert_called_once()
+        args, kwargs = mock_llm_client.call_args
+        assert args[0] == "anthropic/claude-opus-4"
+        
+        # Verify complete was called once
+        assert mock_instance.complete.call_count == 1
+        
+        # Get the messages passed to complete
+        messages = mock_instance.complete.call_args[0][0]
+        
+        # Check message structure
+        assert len(messages) == 2
+        assert messages[0]["role"] == "system"
+        assert messages[1]["role"] == "user"
+        
+        # Verify the system message is about legal verification
+        assert "law" in messages[0]["content"].lower()
+        
+        # Verify the user message contains the text and verification request
+        assert "Legal text with [2024] HCA 1 citation." in messages[1]["content"]
+        assert "legal" in messages[1]["content"].lower()
+        assert "citation" in messages[1]["content"].lower() or "accuracy" in messages[1]["content"].lower()
+        
+        # Check parameters
+        kwargs = mock_instance.complete.call_args[1]
+        assert kwargs.get("temperature") == 0
+        assert kwargs.get("top_p") == 0.2
+        assert kwargs.get("max_tokens") == 65536  # heavy mode uses larger limit
+    
+    @patch("litassist.llm.LLMClient.verify")
+    def test_default_verification_mode(self, mock_verify):
+        """Test that unrecognized level defaults to standard verification."""
+        # Mock the verify method
+        mock_verify.return_value = "Standard verification complete."
+        
+        # Call verify_with_level with invalid level
+        result = self.client.verify_with_level("Test text", level="medium")
+        
+        # Check the result
+        assert result == "Standard verification complete."
+        
+        # Verify that the standard verify method was called
+        mock_verify.assert_called_once_with("Test text")
+    
+    @patch("litassist.llm.LLMClient")
+    @patch("litassist.llm.CONFIG")
+    def test_prompts_fallback(self, mock_config, mock_llm_client):
+        """Test that prompts have proper fallbacks when PROMPTS.get fails."""
+        # Configure mock
+        mock_config.use_token_limits = False
+        
+        # Create a mock instance
+        mock_instance = Mock()
+        mock_instance.complete.return_value = ("Verified", {"total_tokens": 50})
+        mock_llm_client.return_value = mock_instance
+        
+        # Mock PROMPTS to raise KeyError
+        with patch("litassist.llm.PROMPTS") as mock_prompts:
+            mock_prompts.get.side_effect = KeyError("Not found")
+            
+            # Call light verification
+            result = self.client.verify_with_level("colour vs color", level="light")
+            
+            # Should still work with fallback prompt
+            assert result == "Verified"
+            
+            # Check the fallback prompt was used
+            messages = mock_instance.complete.call_args[0][0]
+            assert "Check only for Australian English spelling" in messages[0]["content"]
+    
+    @patch("litassist.llm.LLMClient")
+    @patch("litassist.llm.CONFIG")
+    def test_token_limits_disabled(self, mock_config, mock_llm_client):
+        """Test behavior when token limits are disabled."""
+        # Configure mock with token limits disabled
+        mock_config.use_token_limits = False
+        
+        # Create a mock instance
+        mock_instance = Mock()
+        mock_instance.complete.return_value = ("Verified", {"total_tokens": 100})
+        mock_llm_client.return_value = mock_instance
+        
+        # Test both modes
+        for level in ["light", "heavy"]:
+            mock_instance.complete.reset_mock()
+            
+            self.client.verify_with_level("Test text", level=level)
+            
+            # Check that max_tokens was NOT set
+            kwargs = mock_instance.complete.call_args[1]
+            assert "max_tokens" not in kwargs
+            assert kwargs.get("temperature") == 0
+            assert kwargs.get("top_p") == 0.2
+    
+    @patch("litassist.llm.LLMClient.verify")
+    def test_unknown_level_calls_standard_verify(self, mock_verify):
+        """Test that unknown levels call the standard verify method."""
+        mock_verify.return_value = "Standard verification"
+        
+        # Test various unknown levels
+        for level in ["unknown", "standard", None, "", "xyz"]:
+            mock_verify.reset_mock()
+            
+            result = self.client.verify_with_level("Test", level=level)
+            
+            assert result == "Standard verification"
+            mock_verify.assert_called_once_with("Test")
