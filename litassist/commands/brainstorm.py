@@ -12,11 +12,9 @@ import re
 import logging
 import glob
 
-from litassist.config import CONFIG
 from litassist.utils import (
     read_document,
     save_log,
-    heartbeat,
     timed,
     create_reasoning_prompt,
     parse_strategies_file,
@@ -488,13 +486,9 @@ Please provide output in EXACTLY this format:
         {"role": "user", "content": orthodox_prompt},
     ]
 
-    # Wrap the orthodox client with a heartbeat so the user gets periodic
-    # feedback while the request is in-flight.  The wrapper must be recreated
-    # for each distinct client or we will end up invoking the wrong model
-    # later on (e.g. for the unorthodox and analysis phases).
-    call_with_hb = heartbeat(CONFIG.heartbeat_interval)(orthodox_client.complete)
+    # Execute the query, heartbeat decorator handles progress notifications
     try:
-        orthodox_content, orthodox_usage = call_with_hb(orthodox_messages)
+        orthodox_content, orthodox_usage = orthodox_client.complete(orthodox_messages)
     except Exception as e:
         raise click.ClickException(
             PROMPTS.get(
@@ -559,18 +553,9 @@ Please provide output in EXACTLY this format:
         {"role": "user", "content": unorthodox_prompt},
     ]
 
-    # Create a new heartbeat wrapper for the unorthodox client (see comment
-    # above).  Re-using the previous wrapper would still call the orthodox
-    # client and therefore use its model (openai/o4-mini-high) instead of the
-    # configured moonshotai/kimi-k2 model.
-    call_with_hb_unorthodox = heartbeat(CONFIG.heartbeat_interval)(
-        unorthodox_client.complete
-    )
-
+    # Execute the query for unorthodox strategies
     try:
-        unorthodox_content, unorthodox_usage = call_with_hb_unorthodox(
-            unorthodox_messages
-        )
+        unorthodox_content, unorthodox_usage = unorthodox_client.complete(unorthodox_messages)
     except Exception as e:
         raise click.ClickException(
             PROMPTS.get(
@@ -636,16 +621,9 @@ Please provide output in EXACTLY this format:
         {"role": "user", "content": analysis_prompt},
     ]
 
-    # Independent heartbeat for analysis phase to avoid accidentally invoking
-    # a previously created client wrapper.
-    call_with_hb_analysis = heartbeat(CONFIG.heartbeat_interval)(
-        analysis_client.complete
-    )
-
+    # Execute analysis query for most promising strategies
     try:
-        analysis_content, analysis_usage = call_with_hb_analysis(
-            analysis_messages
-        )
+        analysis_content, analysis_usage = analysis_client.complete(analysis_messages)
     except Exception as e:
         raise click.ClickException(f"Error analyzing strategies: {e}")
 

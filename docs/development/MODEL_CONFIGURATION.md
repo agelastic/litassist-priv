@@ -20,7 +20,7 @@ LitAssist uses multiple specialized LLM models optimized for different legal tas
 
 | Command | Model | Purpose | Key Parameters |
 |---------|-------|---------|----------------|
-| **lookup** | `google/gemini-2.5-pro-preview` | Rapid case law research | temperature: 0.1, top_p: 0.2 |
+| **lookup** | `google/gemini-2.5-pro` | Rapid case law research | temperature: 0.1, top_p: 0.2 |
 | **digest** | `anthropic/claude-sonnet-4` | Document processing & summarization | temperature: 0 (summary) or 0.2 (issues) |
 | **caseplan** (assessment) | `anthropic/claude-sonnet-4` | Budget assessment for workflow planning | temperature: 0.2 |
 | **caseplan** (full plan) | `anthropic/claude-opus-4` | Full phased workflow plan generation | max_completion_tokens: 32768, reasoning_effort: high |
@@ -71,8 +71,8 @@ LitAssist uses multiple specialized LLM models optimized for different legal tas
 - **Strengths**: Innovative thinking, unorthodox approaches
 - **Note**: Auto-verification enabled due to hallucination tendencies
 
-#### Gemini 2.5 Pro Preview
-- **Model ID**: `google/gemini-2.5-pro-preview`
+-#### Gemini 2.5 Pro
+ - **Model ID**: `google/gemini-2.5-pro`
 - **Purpose**: Fast, accurate case law research
 - **Strengths**: Web-aware, comprehensive analysis
 - **Use Cases**: Legal research with real-time verification
@@ -85,7 +85,7 @@ All model configurations are centralized in `litassist/llm.py`:
 
 ```python
 MODEL_CONFIGS = {
-    "lookup": "google/gemini-2.5-pro-preview",
+    "lookup": "google/gemini-2.5-pro",
     "digest": "anthropic/claude-sonnet-4",
     "extractfacts": "anthropic/claude-sonnet-4",
     "brainstorm-orthodox": "anthropic/claude-opus-4",
@@ -108,7 +108,7 @@ Models can be overridden via environment variables:
 ```bash
 export ANTHROPIC_MODEL="anthropic/claude-sonnet-4"
 export OPENAI_MODEL="openai/o3-pro"
-export GOOGLE_MODEL="google/gemini-2.5-pro-preview"
+export GOOGLE_MODEL="google/gemini-2.5-pro"
 export XGROK_MODEL="x-ai/grok-4"
 ```
 

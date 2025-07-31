@@ -11,14 +11,14 @@ The `litassist/llm.py` file defines a sophisticated framework for interacting wi
 **Key Commands and Configurations:**
 
 *   **`extractfacts`**: Uses `anthropic/claude-sonnet-4` with low temperature (0) and top_p (0.15) for high precision. `force_verify` is `True`.
-*   **`strategy`**: Employs `openai/o3-pro` with its fixed parameters (temp=1, top_p=1, presence_penalty=0, frequency_penalty=0). Only `max_completion_tokens` and `reasoning_effort` are controllable. `force_verify` is `True`. System messages are merged into the user prompt.
-*   **`strategy-analysis`**: Uses `anthropic/claude-sonnet-4` (temp=0.2, top_p=0.8).
-*   **`brainstorm-orthodox`**: Uses `anthropic/claude-sonnet-4` (temp=0.3, top_p=0.7). `force_verify` is `True`.
+*   **`strategy`**: Employs `openai/o3-pro` with `reasoning_effort` set to high. System messages are merged into the user prompt. `force_verify` is `True`.
+*   **`strategy-analysis`**: Uses `openai/o3-pro` with `reasoning_effort` set to high.
+*   **`brainstorm-orthodox`**: Uses `anthropic/claude-opus-4` (temp=0.3, top_p=0.7). `force_verify` is `True`.
 *   **`brainstorm-unorthodox`**: Leverages `x-ai/grok-3` with high temperature (0.9) and top_p (0.95) for creativity. `force_verify` is `True` (auto-verify Grok).
 *   **`draft`**: Utilizes `openai/o3-pro` (fixed parameters, similar to `strategy`).
-*   **`digest-summary` / `digest-issues`**: Use `anthropic/claude-sonnet-4` with varying temperatures (0 for summary, 0.2 for issues).
-*   **`lookup`**: Uses `google/gemini-2.5-pro-preview` (temp=0.1, top_p=0.2). `force_verify` is `False`.
-*   **`verify` (command)**: Uses `anthropic/claude-opus-4` (temp=0, top_p=0.2) for post-hoc verification. `force_verify` is `False`.
+*   **`digest-summary` / `digest-issues`**: Use `anthropic/claude-sonnet-4` (temp=0.1, top_p=0) for summary and `anthropic/claude-opus-4` (temp=0.2, top_p=0.5) for issues.
+*   **`lookup`**: Uses `google/gemini-2.5-pro` (temp=0.1, top_p=0.2). `force_verify` is `False`.
+*   **`verify` (command)**: Uses `openai/o3-pro` (temp=0, top_p=0.2, reasoning_effort=high) for post-hoc verification. `force_verify` is `False`.
 
 **Infrastructure and Philosophy:**
 

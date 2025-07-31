@@ -14,21 +14,21 @@ This document outlines the complete implementation plan for optimizing all LitAs
 
 | Command | Current Model | New Model | Temperature | Top_p | Status | Rationale |
 |---------|---------------|-----------|-------------|--------|--------|-----------|
-| **lookup-retrieval** | Claude Sonnet 4 | google/gemini-2.5-pro-preview | 0.1 | 0.9 | Planned | Fastest broad retrieval |
+| **lookup-retrieval** | google/gemini-2.5-pro | - | 0.1 | 0.2 | Implemented | Fastest broad retrieval |
 | **lookup-verification** | Jade.io only | openai/o4-mini-high | 0 | 0 | Planned | Zero-hallucination verification |
-| **extractfacts** | Claude Sonnet 4 | openai/o4-mini-high | 0 | 0 | Planned | Sub-second deterministic extraction |
-| **digest-summary** | Claude Sonnet 4 | openai/o4-mini-high | 0.3 | 0.5 | Planned | Balanced coherence & brevity |
-| **digest-issues** | Claude Sonnet 4 | openai/o4-mini-high | 0.1 | 0 | Planned | Focused issue-spotting |
-| **brainstorm-orthodox** | Claude Sonnet 4 | openai/o4-mini-high | 0.7 | 0.9 | Planned | Fast creative breadth |
-| **brainstorm-unorthodox** | Grok 3 | x-ai/grok-4 | 0.8 | 0.95 | Implemented | Highly diverse creative angles |
-| **brainstorm-analysis** | OpenAI o3-pro | openai/o3-pro | - | - | Implemented | Reasoning analysis (unchanged) |
-| **caseplan** | Claude Sonnet 4 | openai/o4-mini-high | 0.4 | 0.8 | Planned | Rapid creative planning |
-| **strategy** | Claude Sonnet 4 | openai/o3-pro | - | - | Implemented | Deep legal reasoning (unchanged) |
-| **strategy-analysis** | Claude Sonnet 4 | openai/o3-pro | - | - | Implemented | Detailed pros/cons (unchanged) |
-| **draft** | OpenAI o3-pro | openai/o3-pro | reasoning_effort=high | - | Implemented | Flawless drafting (unchanged) |
-| **counselnotes** | Claude Opus 4 | openai/o3-pro | reasoning_effort=high, 0.5 | - | Implemented | Advocacy-style analysis |
-| **barbrief** | OpenAI o3-pro | openai/o3-pro | reasoning_effort=high, 32768 tokens | - | Implemented | Comprehensive briefs (unchanged) |
-| **verify** | Claude Opus 4 | openai/o3-pro | reasoning_effort=high | - | Implemented | Enhanced verification |
+| **extractfacts** | anthropic/claude-sonnet-4 | - | 0 | 0.15 | Implemented | Sub-second deterministic extraction |
+| **digest-summary** | anthropic/claude-sonnet-4 | - | 0.1 | 0 | Implemented | Balanced coherence & brevity |
+| **digest-issues** | anthropic/claude-opus-4 | - | 0.2 | 0.5 | Implemented | Focused issue-spotting |
+| **brainstorm-orthodox** | anthropic/claude-opus-4 | - | 0.3 | 0.7 | Implemented | Fast creative breadth |
+| **brainstorm-unorthodox** | x-ai/grok-4 | - | 0.8 | 0.95 | Implemented | Highly diverse creative angles |
+| **brainstorm-analysis** | openai/o3-pro | - | - | - | Implemented | Reasoning analysis (unchanged) |
+| **caseplan** | openai/o4-mini-high | - | 0.3 | 0.7 | Implemented | LLM-driven workflow planning |
+| **strategy** | openai/o3-pro | - | - | - | Implemented | Deep legal reasoning (unchanged) |
+| **strategy-analysis** | openai/o3-pro | - | - | - | Implemented | Detailed pros/cons (unchanged) |
+| **draft** | openai/o3-pro | - | - | - | Implemented | Flawless drafting (unchanged) |
+| **counselnotes** | openai/o3-pro | - | - | - | Implemented | Advocacy-style analysis |
+| **barbrief** | openai/o3-pro | - | - | - | Implemented | Comprehensive briefs (unchanged) |
+| **verify** | openai/o3-pro | - | - | - | Implemented | Enhanced verification |
 
 ## Implementation Phases
 
