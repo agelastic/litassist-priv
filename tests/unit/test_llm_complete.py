@@ -22,7 +22,7 @@ class TestLLMClientComplete:
         # Setup config
         mock_config.openrouter_key = "test_key"
         mock_config.openai_key = "test_key"
-        
+
         # Setup mock response - ensure no error attribute
         mock_response = Mock()
         mock_response.choices = [Mock()]
@@ -31,59 +31,64 @@ class TestLLMClientComplete:
         # Explicitly set error to None to avoid error handling
         mock_response.choices[0].error = None
         mock_response.usage = Mock(
-            total_tokens=100, 
-            prompt_tokens=50, 
+            total_tokens=100,
+            prompt_tokens=50,
             completion_tokens=50,
-            _asdict=lambda: {"total_tokens": 100, "prompt_tokens": 50, "completion_tokens": 50}
+            _asdict=lambda: {
+                "total_tokens": 100,
+                "prompt_tokens": 50,
+                "completion_tokens": 50,
+            },
         )
-        
+
         mock_execute.return_value = mock_response
-        
+
         # Create client
         client = LLMClient(model="gpt-4", temperature=0.7)
-        
+
         # Call complete
         messages = [{"role": "user", "content": "Hello"}]
         response, stats = client.complete(messages)
-        
+
         # Verify response
         assert response == "Test response"
         assert stats["total_tokens"] == 100
-        
+
         # Verify API was called
         assert mock_execute.called
 
     @patch("litassist.llm.CONFIG")
     @patch("litassist.llm.LLMClient._execute_api_call_with_retry")
-    def test_complete_system_message_merging_no_system_support(self, mock_execute, mock_config):
+    def test_complete_system_message_merging_no_system_support(
+        self, mock_execute, mock_config
+    ):
         """Test system message merging for models without system support."""
         mock_config.openrouter_key = "test_key"
         mock_config.openai_key = "test_key"
-        
+
         mock_response = Mock()
         mock_response.choices = [Mock()]
         mock_response.choices[0].message = Mock(content="Response")
         mock_response.choices[0].finish_reason = "stop"
         mock_response.choices[0].error = None
         mock_response.usage = Mock(
-            total_tokens=50,
-            _asdict=lambda: {"total_tokens": 50}
+            total_tokens=50, _asdict=lambda: {"total_tokens": 50}
         )
-        
+
         mock_execute.return_value = mock_response
-        
+
         # Create client with model that doesn't support system messages
         # Need to use the correct model name pattern for openai_reasoning family
         client = LLMClient(model="openai/o1-preview", temperature=0.7)
-        
+
         # Call with system message
         messages = [
             {"role": "system", "content": "You are helpful"},
-            {"role": "user", "content": "Hello"}
+            {"role": "user", "content": "Hello"},
         ]
-        
+
         response, stats = client.complete(messages)
-        
+
         # Check that system message was merged into user message
         called_messages = mock_execute.call_args[0][1]
         assert len(called_messages) == 1
@@ -93,72 +98,75 @@ class TestLLMClientComplete:
 
     @patch("litassist.llm.CONFIG")
     @patch("litassist.llm.LLMClient._execute_api_call_with_retry")
-    def test_complete_system_message_preserved_with_support(self, mock_execute, mock_config):
+    def test_complete_system_message_preserved_with_support(
+        self, mock_execute, mock_config
+    ):
         """Test system message preserved for models with system support."""
         mock_config.openrouter_key = "test_key"
         mock_config.openai_key = "test_key"
-        
+
         mock_response = Mock()
         mock_response.choices = [Mock()]
         mock_response.choices[0].message = Mock(content="Response")
         mock_response.choices[0].finish_reason = "stop"
         mock_response.choices[0].error = None
         mock_response.usage = Mock(
-            total_tokens=50,
-            _asdict=lambda: {"total_tokens": 50}
+            total_tokens=50, _asdict=lambda: {"total_tokens": 50}
         )
-        
+
         mock_execute.return_value = mock_response
-        
+
         # Create client with model that supports system messages
         client = LLMClient(model="gpt-4", temperature=0.7)
-        
+
         # Call with system message
         messages = [
             {"role": "system", "content": "You are helpful"},
-            {"role": "user", "content": "Hello"}
+            {"role": "user", "content": "Hello"},
         ]
-        
+
         response, stats = client.complete(messages)
-        
-        # Check that system message was preserved
+
+        # Check that system message was preserved with Australian law prompt prepended
         called_messages = mock_execute.call_args[0][1]
         assert len(called_messages) == 2
         assert called_messages[0]["role"] == "system"
-        assert called_messages[0]["content"] == "You are helpful"
+        assert "Australian law only" in called_messages[0]["content"]
+        assert "You are helpful" in called_messages[0]["content"]
         assert called_messages[1]["role"] == "user"
         assert called_messages[1]["content"] == "Hello"
 
     @patch("litassist.llm.CONFIG")
     @patch("litassist.llm.save_log")
     @patch("litassist.llm.LLMClient._execute_api_call_with_retry")
-    def test_complete_with_verification_enabled(self, mock_execute, mock_save_log, mock_config):
+    def test_complete_with_verification_enabled(
+        self, mock_execute, mock_save_log, mock_config
+    ):
         """Test complete with verification enabled."""
         mock_config.openrouter_key = "test_key"
         mock_config.openai_key = "test_key"
-        
+
         mock_response = Mock()
         mock_response.choices = [Mock()]
         mock_response.choices[0].message = Mock(content="Response with [2023] FCA 123")
         mock_response.choices[0].finish_reason = "stop"
         mock_response.choices[0].error = None
         mock_response.usage = Mock(
-            total_tokens=50,
-            _asdict=lambda: {"total_tokens": 50}
+            total_tokens=50, _asdict=lambda: {"total_tokens": 50}
         )
-        
+
         mock_execute.return_value = mock_response
-        
+
         # Create client with force_verify
         client = LLMClient(model="gpt-4", temperature=0.7)
         client._force_verify = True
-        
+
         with patch.object(client, "validate_and_verify_citations") as mock_verify:
             # Return tuple of (cleaned_content, issues_list, verified_bool)
             mock_verify.return_value = ("Verified response", ["warning"])
-            
+
             response, stats = client.complete([{"role": "user", "content": "Test"}])
-            
+
             assert response == "Verified response"
             assert mock_verify.called
 
@@ -168,7 +176,7 @@ class TestLLMClientComplete:
         """Test token counting in response stats."""
         mock_config.openrouter_key = "test_key"
         mock_config.openai_key = "test_key"
-        
+
         mock_response = Mock()
         mock_response.choices = [Mock()]
         mock_response.choices[0].message = Mock(content="Response")
@@ -178,14 +186,18 @@ class TestLLMClientComplete:
             total_tokens=150,
             prompt_tokens=50,
             completion_tokens=100,
-            _asdict=lambda: {"total_tokens": 150, "prompt_tokens": 50, "completion_tokens": 100}
+            _asdict=lambda: {
+                "total_tokens": 150,
+                "prompt_tokens": 50,
+                "completion_tokens": 100,
+            },
         )
-        
+
         mock_execute.return_value = mock_response
-        
+
         client = LLMClient(model="gpt-4")
         response, stats = client.complete([{"role": "user", "content": "Test"}])
-        
+
         assert stats["total_tokens"] == 150
         assert stats["prompt_tokens"] == 50
         assert stats["completion_tokens"] == 100
@@ -196,27 +208,25 @@ class TestLLMClientComplete:
         """Test complete with tool definitions."""
         mock_config.openrouter_key = "test_key"
         mock_config.openai_key = "test_key"
-        
+
         mock_response = Mock()
         mock_response.choices = [Mock()]
         mock_response.choices[0].message = Mock(content="Response", tool_calls=None)
         mock_response.choices[0].finish_reason = "stop"
         mock_response.choices[0].error = None
         mock_response.usage = Mock(
-            total_tokens=50,
-            _asdict=lambda: {"total_tokens": 50}
+            total_tokens=50, _asdict=lambda: {"total_tokens": 50}
         )
-        
+
         mock_execute.return_value = mock_response
-        
+
         tools = [{"type": "function", "function": {"name": "test_tool"}}]
-        
+
         client = LLMClient(model="gpt-4")
         response, stats = client.complete(
-            [{"role": "user", "content": "Test"}],
-            tools=tools
+            [{"role": "user", "content": "Test"}], tools=tools
         )
-        
+
         # Verify tools were passed to API
         # The third positional argument should be the params dict
         call_args = mock_execute.call_args[0]
@@ -232,22 +242,21 @@ class TestLLMClientComplete:
         """Test that response content is stripped of whitespace."""
         mock_config.openrouter_key = "test_key"
         mock_config.openai_key = "test_key"
-        
+
         mock_response = Mock()
         mock_response.choices = [Mock()]
         mock_response.choices[0].message = Mock(content="  Response with spaces  \n")
         mock_response.choices[0].finish_reason = "stop"
         mock_response.choices[0].error = None
         mock_response.usage = Mock(
-            total_tokens=50,
-            _asdict=lambda: {"total_tokens": 50}
+            total_tokens=50, _asdict=lambda: {"total_tokens": 50}
         )
-        
+
         mock_execute.return_value = mock_response
-        
+
         client = LLMClient(model="gpt-4")
         response, stats = client.complete([{"role": "user", "content": "Test"}])
-        
+
         # The content should NOT be stripped in the actual implementation
         # based on line 814: content = response.choices[0].message.content or ""
         assert response == "  Response with spaces  \n"
@@ -258,22 +267,21 @@ class TestLLMClientComplete:
         """Test handling of empty response content."""
         mock_config.openrouter_key = "test_key"
         mock_config.openai_key = "test_key"
-        
+
         mock_response = Mock()
         mock_response.choices = [Mock()]
         mock_response.choices[0].message = Mock(content="")
         mock_response.choices[0].finish_reason = "stop"
         mock_response.choices[0].error = None
         mock_response.usage = Mock(
-            total_tokens=50,
-            _asdict=lambda: {"total_tokens": 50}
+            total_tokens=50, _asdict=lambda: {"total_tokens": 50}
         )
-        
+
         mock_execute.return_value = mock_response
-        
+
         client = LLMClient(model="gpt-4")
         response, stats = client.complete([{"role": "user", "content": "Test"}])
-        
+
         assert response == ""
         assert stats["total_tokens"] == 50
 
@@ -283,28 +291,27 @@ class TestLLMClientComplete:
         """Test that model-specific parameters are passed correctly."""
         mock_config.openrouter_key = "test_key"
         mock_config.openai_key = "test_key"
-        
+
         mock_response = Mock()
         mock_response.choices = [Mock()]
         mock_response.choices[0].message = Mock(content="Response")
         mock_response.choices[0].finish_reason = "stop"
         mock_response.choices[0].error = None
         mock_response.usage = Mock(
-            total_tokens=50,
-            _asdict=lambda: {"total_tokens": 50}
+            total_tokens=50, _asdict=lambda: {"total_tokens": 50}
         )
-        
+
         mock_execute.return_value = mock_response
-        
+
         # Test with o3-pro model that has specific parameter requirements
         client = LLMClient(
             model="openai/o3-pro",
             temperature=0.7,  # Should be ignored
-            reasoning_effort="high"
+            reasoning_effort="high",
         )
-        
+
         response, stats = client.complete([{"role": "user", "content": "Test"}])
-        
+
         # Verify correct parameters were passed
         _, _, call_params = mock_execute.call_args[0]
         assert "temperature" not in call_params  # Should be filtered out
@@ -316,32 +323,31 @@ class TestLLMClientComplete:
         """Test that heartbeat and timed decorators are applied."""
         mock_config.openrouter_key = "test_key"
         mock_config.openai_key = "test_key"
-        
+
         mock_response = Mock()
         mock_response.choices = [Mock()]
         mock_response.choices[0].message = Mock(content="Response")
         mock_response.choices[0].finish_reason = "stop"
         mock_response.choices[0].error = None
         mock_response.usage = Mock(
-            total_tokens=50,
-            _asdict=lambda: {"total_tokens": 50}
+            total_tokens=50, _asdict=lambda: {"total_tokens": 50}
         )
-        
+
         mock_execute.return_value = mock_response
-        
+
         # Patch the decorators
         with patch("litassist.llm.heartbeat") as mock_heartbeat:
             with patch("litassist.llm.timed") as mock_timed:
                 # Make decorators passthrough
                 mock_heartbeat.side_effect = lambda f: f
                 mock_timed.side_effect = lambda f: f
-                
+
                 # Import after patching to get decorated version
                 from litassist.llm import LLMClient as DecoratedClient
-                
+
                 client = DecoratedClient(model="gpt-4")
                 response, stats = client.complete([{"role": "user", "content": "Test"}])
-                
+
                 # The complete method should have decorators applied
                 # Note: This is more of an integration test
                 assert response == "Response"
