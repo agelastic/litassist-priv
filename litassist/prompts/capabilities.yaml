@@ -1,4 +1,5 @@
 capabilities:
+  # USED BY: litassist/commands/caseplan.py:200 - Injected into system prompt for caseplan command
   litassist_capabilities: |
     # LitAssist Command Reference
 

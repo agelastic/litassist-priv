@@ -3,6 +3,7 @@
 
 documents:
   # Statement of Claim template
+  # USED BY: litassist/commands/strategy.py:839 - Used in doc_formats for draft generation
   statement_of_claim: |
     IN THE {court_name}
     FILE NO: {file_number}
@@ -40,6 +41,7 @@ documents:
     [Signature block]
   
   # Originating Application template
+  # USED BY: litassist/commands/strategy.py:840 - Used in doc_formats for draft generation
   originating_application: |
     IN THE {court_name}
     FILE NO: {file_number}
@@ -85,6 +87,7 @@ documents:
     [Signature block]
   
   # Affidavit template
+  # USED BY: litassist/commands/strategy.py:841 - Used in doc_formats for draft generation
   affidavit: |
     IN THE {court_name}
     FILE NO: {file_number}
@@ -126,6 +129,7 @@ documents:
     Name and qualification of witness
   
   # Witness Statement template
+  # NOT USED: No direct usage found in codebase
   witness_statement: |
     IN THE {court_name}
     {jurisdiction}
@@ -182,138 +186,3 @@ documents:
     [Name of authorised witness]
     [Qualification]
     [Address]
-  
-  # Notice of Motion template
-  # notice_of_motion: |
-  #   IN THE {court_name}
-  #   FILE NO: {file_number}
-  #   
-  #   BETWEEN:
-  #   
-  #   {moving_party}
-  #                                               {moving_party_role}
-  #   
-  #   AND:
-  #   
-  #   {responding_party}
-  #                                               {responding_party_role}
-  #   
-  #   NOTICE OF MOTION
-  #   
-  #   TAKE NOTICE that the {moving_party_role} will move this Honourable Court at {time} on {date} at {court_address} for the following orders:
-  #   
-  #   1. [First order sought]
-  #   
-  #   2. [Second order sought]
-  #   
-  #   3. [Additional orders as needed]
-  #   
-  #   4. Such further or other orders as the Court deems fit
-  #   
-  #   5. Costs
-  #   
-  #   This motion will be made on the grounds set out in the supporting affidavit of {deponent} filed herewith.
-  #   
-  #   DATED: [Date]
-  #   
-  #   [Signature block]
-  
-  # Outline of Submissions template
-  # outline_submissions: |
-  #   IN THE {court_name}
-  #   FILE NO: {file_number}
-  #   
-  #   BETWEEN:
-  #   
-  #   {party_1}
-  #                                               {party_1_role}
-  #   
-  #   AND:
-  #   
-  #   {party_2}
-  #                                               {party_2_role}
-  #   
-  #   {PARTY_ROLE}'S OUTLINE OF SUBMISSIONS
-  #   
-  #   I. INTRODUCTION
-  #   
-  #   1. [Brief overview of the matter and issues]
-  #   
-  #   II. STATEMENT OF FACTS
-  #   
-  #   2. [Relevant factual background]
-  #   
-  #   III. ISSUES
-  #   
-  #   3. The issues for determination are:
-  #      (a) [First issue]
-  #      (b) [Second issue]
-  #      (c) [Additional issues]
-  #   
-  #   IV. ARGUMENT
-  #   
-  #   A. [First Issue Heading]
-  #   
-  #   4. [Legal submissions on first issue]
-  #   
-  #   B. [Second Issue Heading]
-  #   
-  #   5. [Legal submissions on second issue]
-  #   
-  #   V. CONCLUSION
-  #   
-  #   6. For the reasons set out above, the {Party} respectfully submits that [orders sought].
-  #   
-  #   DATED: [Date]
-  #   
-  #   [Counsel's name]
-  #   Counsel for the {Party}
-  
-  # Interlocutory Application template
-  # interlocutory_application: |
-  #   IN THE {court_name}
-  #   FILE NO: {file_number}
-  #   
-  #   BETWEEN:
-  #   
-  #   {applicant}
-  #                                               Applicant
-  #   
-  #   AND:
-  #   
-  #   {respondent}
-  #                                               Respondent
-  #   
-  #   INTERLOCUTORY APPLICATION
-  #   
-  #   The Applicant applies for:
-  #   
-  #   1. [Urgent/interim relief sought]
-  #   
-  #   2. [Additional orders]
-  #   
-  #   3. That the costs of this application be [costs order sought]
-  #   
-  #   GROUNDS:
-  #   
-  #   This application is made on the following grounds:
-  #   
-  #   1. [Urgency/special circumstances]
-  #   
-  #   2. [Legal basis for relief]
-  #   
-  #   3. [Balance of convenience/irreparable harm]
-  #   
-  #   EVIDENCE:
-  #   
-  #   This application is supported by:
-  #   - Affidavit of [name] sworn/affirmed [date]
-  #   - [Other evidence]
-  #   
-  #   SERVICE:
-  #   
-  #   This application has been/will be served on [parties] by [method] on [date].
-  #   
-  #   DATED: [Date]
-  #   
-  #   [Signature block]
