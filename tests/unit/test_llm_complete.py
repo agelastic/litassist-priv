@@ -131,8 +131,8 @@ class TestLLMClientComplete:
         called_messages = mock_execute.call_args[0][1]
         assert len(called_messages) == 2
         assert called_messages[0]["role"] == "system"
-        assert "Australian law only" in called_messages[0]["content"]
-        assert "You are helpful" in called_messages[0]["content"]
+        expected_system_content = f"{PROMPTS.get('base.australian_law')}\n\nYou are helpful"
+        assert called_messages[0]["content"] == expected_system_content
         assert called_messages[1]["role"] == "user"
         assert called_messages[1]["content"] == "Hello"
 
