@@ -294,7 +294,7 @@ class LLMClientFactory:
         },
         # Brainstorm - varied temperatures for different approaches
         "brainstorm-orthodox": {
-            "model": "anthropic/claude-opus-4",
+            "model": "anthropic/claude-opus-4.1",
             "temperature": 0.3,
             "top_p": 0.7,
             "force_verify": True,  # Conservative analysis requires verification
@@ -324,7 +324,7 @@ class LLMClientFactory:
             "top_p": 0,
         },
         "digest-issues": {
-            "model": "anthropic/claude-opus-4",
+            "model": "anthropic/claude-opus-4.1",
             "temperature": 0.2,
             "top_p": 0.5,
         },
@@ -1092,7 +1092,7 @@ class LLMClient:
         ]
         # Use Claude 4 Opus for all verification, regardless of generation model
         verification_client = LLMClient(
-            "anthropic/claude-opus-4", **self.default_params
+            "anthropic/claude-opus-4.1", **self.default_params
         )
         params = {"temperature": 0, "top_p": 0.2}
         if CONFIG.use_token_limits:
@@ -1100,7 +1100,7 @@ class LLMClient:
         verification_result, usage = verification_client.complete(
             critique_prompt, skip_citation_verification=True, **params
         )
-        return verification_result
+        return verification_result, verification_client.model
 
     def validate_and_verify_citations(
         self, content: str, strict_mode: bool = True
@@ -1373,7 +1373,7 @@ class LLMClient:
 
         # Use Claude 4 Opus for all verification, regardless of generation model
         verification_client = LLMClient(
-            "anthropic/claude-opus-4", **self.default_params
+            "anthropic/claude-opus-4.1", **self.default_params
         )
         params = {"temperature": 0, "top_p": 0.2}
         if CONFIG.use_token_limits:
@@ -1381,4 +1381,4 @@ class LLMClient:
         verification_result, usage = verification_client.complete(
             critique_prompt, skip_citation_verification=True, **params
         )
-        return verification_result
+        return verification_result, verification_client.model
