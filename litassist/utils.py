@@ -1160,6 +1160,10 @@ def verify_content_if_needed(
                 correction = client.verify_with_level(content, "heavy")
             else:
                 correction = client.verify(content)
+            
+            # Handle tuple return from new verify methods
+            if isinstance(correction, tuple):
+                correction = correction[0]
 
             if correction.strip() and not correction.lower().startswith(
                 "no corrections needed"

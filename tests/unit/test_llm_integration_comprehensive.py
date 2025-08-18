@@ -252,6 +252,8 @@ class TestLLMClient:
 
         content = "Legal document content to verify"
         correction = client.verify_with_level(content, "medium")
+        if isinstance(correction, tuple):
+            correction = correction[0]
 
         assert correction == "No corrections needed."
 

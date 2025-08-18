@@ -89,7 +89,7 @@ class TestVerifyCommand:
                 [("Smith v Jones [2025] NSWSC 999", "Future citation")],
             )
             mock_client = Mock()
-            mock_client.verify.return_value = "No legal issues found."
+            mock_client.verify.return_value = ("No legal issues found.", "anthropic/claude-opus-4.1")
             mock_client.complete.return_value = ("Analysis with reasoning trace", {})
             mock_llm_factory.for_command.return_value = mock_client
 
@@ -101,7 +101,7 @@ class TestVerifyCommand:
             assert "Legal soundness check complete" in result.output
             assert "0 issues identified" in result.output
             assert "Reasoning trace generated" in result.output
-            assert "2 reports generated" in result.output  # Citations + Soundness (with embedded reasoning)
+            assert "3 reports generated" in result.output  # Citations + Reasoning + Soundness (now separate)
 
     def test_verify_citations_only(self, runner, temp_file, sample_legal_text):
         """Test citation verification only."""
@@ -141,10 +141,10 @@ class TestVerifyCommand:
         ) as _mock_save_log:
 
             mock_client = Mock()
-            mock_client.verify.return_value = """
+            mock_client.verify.return_value = ("""
 ## Issues Found
 1. The document contains an error in citation format.
-"""
+""", "anthropic/claude-opus-4.1")
             mock_llm_factory.for_command.return_value = mock_client
 
             result = runner.invoke(verify, [temp_file, "--soundness"])
@@ -170,7 +170,7 @@ class TestVerifyCommand:
             assert "IRAC structure complete" in result.output
             assert "Confidence: 85%" in result.output
             assert "Details: " in result.output  # File is now saved
-            assert "verify_test_document_reasoning.txt" in result.output
+            assert "verify_test_document_reasoning_" in result.output
 
     def test_verify_reasoning_generate_new(self, runner, temp_file, sample_legal_text):
         """Test generation of new reasoning trace."""
@@ -204,7 +204,7 @@ class TestVerifyCommand:
             assert "IRAC structure complete" in result.output
             assert "Confidence: 90%" in result.output
             assert "Details: " in result.output  # File is now saved
-            assert "verify_test_document_reasoning.txt" in result.output
+            assert "verify_test_document_reasoning_" in result.output
 
     def test_verify_empty_file(self, runner, temp_file):
         """Test handling of empty file."""
@@ -310,11 +310,11 @@ class TestVerifyCommand:
 
             mock_citations.return_value = (["Case1"], [])
             mock_client = Mock()
-            mock_client.verify.return_value = "No issues"
+            mock_client.verify.return_value = ("No issues", "anthropic/claude-opus-4.1")
             mock_client.complete.return_value = ("Analysis", {})
             mock_llm_factory.for_command.return_value = mock_client
             result = runner.invoke(verify, [temp_file])
             assert result.exit_code == 0
-            assert "_citations.txt" in result.output
-            assert "_soundness.txt" in result.output
+            assert "_citations_" in result.output
+            assert "_soundness_" in result.output
             # Reasoning trace is now embedded, not saved separately

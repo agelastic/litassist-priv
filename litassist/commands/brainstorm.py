@@ -659,6 +659,8 @@ Please provide output in EXACTLY this format:
     try:
         # Use medium verification for creative brainstorming
         correction = analysis_client.verify(combined_content)
+        if isinstance(correction, tuple):
+            correction = correction[0]
 
         # The verification model returns the full, corrected text.
         # We should replace the content, not append to it.

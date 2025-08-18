@@ -165,6 +165,8 @@ def extractfacts(file, verify):
     click.echo(verifying_message("Verifying extracted facts..."))
     try:
         correction = client.verify(combined)
+        if isinstance(correction, tuple):
+            correction = correction[0]
         if correction.strip() and not correction.lower().startswith(
             "no corrections needed"
         ):
