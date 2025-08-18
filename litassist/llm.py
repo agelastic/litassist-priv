@@ -734,9 +734,20 @@ class LLMClient:
             messages = modified_messages
         else:
             # Regular models - handle system messages normally
-            # Note: Commands already include base.australian_law in their system prompts,
-            # so we don't need to append it here. This prevents prompt corruption.
-            pass
+            # Prepend base.australian_law to all system messages
+            australian_law_prompt = PROMPTS.get("base.australian_law")
+            if australian_law_prompt:
+                modified_messages = []
+                for msg in messages:
+                    if msg.get("role") == "system":
+                        content = msg.get("content", "")
+                        # Only prepend if not already present
+                        if australian_law_prompt not in content:
+                            content = f"{australian_law_prompt}\n\n{content}"
+                        modified_messages.append({"role": "system", "content": content})
+                    else:
+                        modified_messages.append(msg)
+                messages = modified_messages
 
         # Merge default and override parameters
         params = {**self.default_params, **overrides}

@@ -7,7 +7,7 @@ lookup:
   # LOCATION: lookup.py:304-305 (to be extracted)
   # research_assistant:
   #   system_prompt: |
-  #     Australian law only. Cite sources. Provide well-structured, concise responses focused on Victorian or federal law.
+  #     Cite sources. Provide well-structured, concise responses focused on Victorian or federal law.
   
   # Extraction mode system prompt
   # USED BY: lookup.py lookup() - system prompt when --extract is used

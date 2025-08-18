@@ -2,7 +2,8 @@
 # Creates comprehensive briefs for Australian litigation
 
 barbrief:
-  # System prompt for barrister's brief generation
+  # USED BY: litassist/commands/barbrief.py barbrief() as system prompt
+  # LOCATION: litassist/commands/barbrief.py:276
   system: |
     You are a senior solicitor preparing a comprehensive barrister's brief for Australian litigation. 
     Create a professional, well-structured brief that complies with Australian court rules and legal conventions.
@@ -34,7 +35,8 @@ barbrief:
     
     The brief must be practical, actionable, and suitable for immediate use in proceedings.
 
-  # Main prompt template for brief generation
+  # USED BY: litassist/commands/barbrief.py barbrief() as user prompt
+  # LOCATION: litassist/commands/barbrief.py:267
   main: |
     Generate a comprehensive barrister's brief for a {hearing_type} hearing using the following materials:
 

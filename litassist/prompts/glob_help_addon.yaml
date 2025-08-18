@@ -1,9 +1,9 @@
 # TEMPORARY: Remove after glob unification complete
 # Reference: claude_glob_unification_plan.md
 
+# USED BY: litassist/commands/caseplan.py:218, litassist/prompts.py:189 - Appended to user prompt for glob pattern help
 glob_help_section: |
 
-  --- GLOB PATTERNS (TEMPORARY - UNIFIED GLOBBING PLANNED) ---
   [SUPPORTED] Built-in glob support:
   • brainstorm --facts 'outputs/extract_*.txt' --research 'outputs/lookup_*.txt'
   • barbrief case_facts.txt --strategies 'outputs/brainstorm_*.txt' --documents '*.pdf'

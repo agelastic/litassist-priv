@@ -1,5 +1,10 @@
+# Caseplan command specific prompt templates
+# Used for generating comprehensive litigation workflow plans
+
 commands:
   caseplan:
+    # USED BY: litassist/commands/caseplan.py - system prompt for workflow generation
+    # LOCATION: litassist/commands/caseplan.py:199
     system: |
       CRITICAL: Generate commands using ONLY the exact syntax and options listed in litassist_capabilities. Never use options not explicitly listed. If uncertain, use the simplest form.
 
@@ -17,6 +22,8 @@ commands:
       - Emphasize synthesis through multiple counselnotes phases
       - Focus on deliverables that enable informed decision-making
 
+    # USED BY: litassist/commands/caseplan.py - when budget == "comprehensive"
+    # LOCATION: litassist/commands/caseplan.py:213
     analysis_instructions_comprehensive: |
       Analyze the case and output a complete markdown plan with:
 
@@ -505,6 +512,8 @@ commands:
          - barbrief: Comprehensive 10-section barrister's briefs
          - verify: Post-hoc quality control and citation verification
 
+    # USED BY: litassist/commands/caseplan.py - when budget == "minimal"
+    # LOCATION: litassist/commands/caseplan.py:213
     analysis_instructions_minimal: |
       Analyze the case and output a streamlined markdown plan for minimal budget cases:
 
@@ -569,6 +578,8 @@ commands:
          - Focus on highest-impact activities only
          - Accept "good enough" rather than perfect
 
+    # USED BY: litassist/commands/caseplan.py - when budget == "standard"
+    # LOCATION: litassist/commands/caseplan.py:213
     analysis_instructions_standard: |
       Analyze the case and output a balanced markdown plan for standard budget cases:
 
@@ -639,6 +650,8 @@ commands:
          - Dual brainstorm for perspective
          - Two final deliverables for decision-making
 
+    # USED BY: litassist/commands/caseplan.py - budget assessment system prompt
+    # LOCATION: litassist/commands/caseplan.py:144
     budget_assessment_system: |
       You are an experienced litigation strategist conducting a sophisticated case assessment.
       Your task is to evaluate case complexity across multiple dimensions and recommend an appropriate budget level.
@@ -647,6 +660,8 @@ commands:
       better synthesis, and clearer strategic thinking than the opponent. Budget recommendations should reflect
       the information intensity required for success.
 
+    # USED BY: litassist/commands/caseplan.py - budget assessment instructions
+    # LOCATION: litassist/commands/caseplan.py:148
     budget_assessment_instructions: |
       Based on the case facts below, provide a structured assessment:
       
