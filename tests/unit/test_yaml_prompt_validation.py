@@ -131,6 +131,7 @@ class TestYAMLPromptValidation:
             'strategies.brainstorm.unorthodox_base',
             'strategies.brainstorm.analysis_base',
             'reasoning.instruction',
+            'analysis.base_case_facts_prompt',
             'analysis.case_facts_prompt',
             'verification.citation_retry_instructions'
         ]

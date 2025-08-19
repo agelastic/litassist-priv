@@ -2,9 +2,15 @@
 # Used for case facts analysis, chunk processing, and data extraction
 
 analysis:
-  # Case facts prompt template
+  # Base case facts prompt - just the case facts section
+  # USED BY: caseplan.py - lines 146-148 (budget assessment mode)
+  # LOCATION: Provides only the case facts without outcome/issues sections
+  base_case_facts_prompt: |
+    CASE FACTS:
+    {facts_content}
+  
+  # Case facts prompt template with outcome and issues
   # USED BY: strategy.py - lines 255-263 (building base user prompt)
-  # USED BY: caseplan.py - lines 146-152 (budget assessment mode)
   # LOCATION: Formats case facts, outcome, and legal issues into structured prompt
   case_facts_prompt: |
     CASE FACTS:
