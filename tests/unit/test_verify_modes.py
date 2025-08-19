@@ -4,8 +4,7 @@ Tests for verify_with_level modes in LLMClient.
 Tests different verification modes: light (spelling only) vs heavy (full verification).
 """
 
-from unittest.mock import Mock, patch, call
-import pytest
+from unittest.mock import Mock, patch
 
 from litassist.llm import LLMClient
 

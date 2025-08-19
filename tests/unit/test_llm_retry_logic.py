@@ -5,11 +5,11 @@ Tests retry behavior for rate limits, 413 errors, and other edge cases.
 """
 
 import os
-from unittest.mock import Mock, patch, MagicMock
+from unittest.mock import Mock, patch
 import pytest
 import openai.error
 
-from litassist.llm import LLMClient, NonRetryableAPIError, RetryableAPIError, StreamingAPIError
+from litassist.llm import LLMClient, NonRetryableAPIError
 
 
 class TestLLMRetryLogic:

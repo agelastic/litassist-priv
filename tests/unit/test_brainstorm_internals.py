@@ -4,10 +4,8 @@ Tests for brainstorm command internals.
 Tests the end-to-end flow of the brainstorm command with mocked LLM responses.
 """
 
-from unittest.mock import Mock, patch, mock_open
+from unittest.mock import Mock, patch
 from click.testing import CliRunner
-import pytest
-import os
 
 from litassist.cli import cli
 from litassist.commands import register_commands

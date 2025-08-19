@@ -8,7 +8,7 @@ commands fail appropriately when centralized prompts are unavailable.
 import pytest
 import tempfile
 from pathlib import Path
-from unittest.mock import patch, Mock
+from unittest.mock import patch
 
 from litassist.prompts import PromptManager, PROMPTS
 

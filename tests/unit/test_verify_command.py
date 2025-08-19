@@ -6,7 +6,6 @@ Tests citation verification, legal soundness checking, and reasoning trace
 generation/verification functionality.
 """
 
-import os
 import sys
 from unittest.mock import Mock, patch
 import pytest
@@ -305,7 +304,6 @@ class TestVerifyCommand:
         """Test that output files are created with correct names."""
         with open(temp_file, "w") as f:
             f.write(sample_legal_text)
-        base_name = os.path.splitext(temp_file)[0]
         with patch(
             "litassist.commands.verify.verify_all_citations"
         ) as mock_citations, patch(

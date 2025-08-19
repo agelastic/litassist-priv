@@ -7,10 +7,8 @@ Tests the full litassist workflow with all external services mocked.
 import os
 import tempfile
 import shutil
-from unittest.mock import Mock, patch, MagicMock
-import pytest
+from unittest.mock import Mock, patch
 from click.testing import CliRunner
-import json
 
 from litassist.cli import cli
 from litassist.commands import register_commands
@@ -378,7 +376,7 @@ Worst: Pay $100k progress payment plus costs
         with patch("openai.ChatCompletion.create") as mock_openai, \
              patch("requests.get") as mock_requests_get, \
              patch("requests.post") as mock_requests_post, \
-             patch("aiohttp.ClientSession") as mock_aiohttp, \
+             patch("aiohttp.ClientSession"), \
              patch("litassist.helpers.pinecone_config.get_pinecone_client") as mock_get_pinecone_client, \
              patch.object(CONFIG, 'max_chars', 10000), \
              patch.object(CONFIG, 'use_token_limits', True), \
@@ -538,7 +536,7 @@ Worst: Pay $100k progress payment plus costs
             
             # Create a config instance that should pick up env vars
             with patch.object(Config, '_load_config', return_value={}):
-                config = Config()
+                Config()
                 
                 # The get_required_key method should return env values when available
                 # Testing model overrides

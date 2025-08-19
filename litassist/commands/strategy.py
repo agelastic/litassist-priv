@@ -873,13 +873,6 @@ Focus on:
         llm_client, strategy_content, "strategy", verify_flag=True
     )
 
-    # Create consolidated reasoning trace from all options
-    consolidated_reasoning = None
-    if option_reasoning_traces:
-        consolidated_reasoning = create_consolidated_reasoning_trace(
-            option_reasoning_traces, outcome
-        )
-
     # Save components as separate files
     metadata = {"Desired Outcome": outcome, "Case Facts File": case_facts.name}
     if strategies:
