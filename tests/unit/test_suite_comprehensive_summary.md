@@ -29,7 +29,7 @@ Successfully added 50+ comprehensive pytest tests to the LitAssist codebase, imp
   - `@heartbeat` decorator for long operations
   - Performance measurement accuracy
 
-- **Legal Reasoning Traces** (8 tests)
+- **Reasoning Traces** (8 tests)
   - Reasoning prompt creation and enhancement
   - Trace extraction from LLM output using regex
   - Structured legal analysis validation

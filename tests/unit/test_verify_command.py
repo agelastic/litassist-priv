@@ -53,7 +53,7 @@ class TestVerifyCommand:
         return """
         Legal analysis of contract breach...
 
-        === REASONING ===
+        ## Reasoning Trace
         Issue: Whether the defendant breached the service contract by failing to deliver on time
         Applicable Law: Contract law principles regarding breach and remedies under Australian Consumer Law
         Application to Facts: The defendant agreed to deliver goods by March 1 but delivered on March 15
@@ -89,7 +89,10 @@ class TestVerifyCommand:
                 [("Smith v Jones [2025] NSWSC 999", "Future citation")],
             )
             mock_client = Mock()
-            mock_client.verify.return_value = ("No legal issues found.", "anthropic/claude-opus-4.1")
+            mock_client.verify.return_value = (
+                "No legal issues found.",
+                "anthropic/claude-opus-4.1",
+            )
             mock_client.complete.return_value = ("Analysis with reasoning trace", {})
             mock_llm_factory.for_command.return_value = mock_client
 
@@ -101,7 +104,9 @@ class TestVerifyCommand:
             assert "Legal soundness check complete" in result.output
             assert "0 issues identified" in result.output
             assert "Reasoning trace generated" in result.output
-            assert "3 reports generated" in result.output  # Citations + Reasoning + Soundness (now separate)
+            assert (
+                "3 reports generated" in result.output
+            )  # Citations + Reasoning + Soundness (now separate)
 
     def test_verify_citations_only(self, runner, temp_file, sample_legal_text):
         """Test citation verification only."""
@@ -141,10 +146,13 @@ class TestVerifyCommand:
         ) as _mock_save_log:
 
             mock_client = Mock()
-            mock_client.verify.return_value = ("""
+            mock_client.verify.return_value = (
+                """
 ## Issues Found
 1. The document contains an error in citation format.
-""", "anthropic/claude-opus-4.1")
+""",
+                "anthropic/claude-opus-4.1",
+            )
             mock_llm_factory.for_command.return_value = mock_client
 
             result = runner.invoke(verify, [temp_file, "--soundness"])
@@ -161,9 +169,7 @@ class TestVerifyCommand:
         with open(temp_file, "w") as f:
             f.write(sample_text_with_reasoning)
 
-        with patch(
-            "litassist.commands.verify.save_log"
-        ) as _mock_save_log:
+        with patch("litassist.commands.verify.save_log") as _mock_save_log:
             result = runner.invoke(verify, [temp_file, "--reasoning"])
             assert result.exit_code == 0
             assert "Reasoning trace verified" in result.output
@@ -187,7 +193,7 @@ class TestVerifyCommand:
             mock_client.complete.return_value = (
                 """Analysis of the legal text...
                 
-                === REASONING ===
+                ## Reasoning Trace
                 Issue: Analysis of native title and negligence principles
                 Applicable Law: Mabo v Queensland, Donoghue v Stevenson
                 Application to Facts: The text discusses landmark cases

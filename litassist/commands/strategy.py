@@ -925,12 +925,6 @@ Focus on:
     click.echo(saved_message(f'  Strategic options: "{strategy_file}"'))
     click.echo(saved_message(f'  Next steps: "{steps_file}"'))
     click.echo(saved_message(f'  Draft document: "{draft_file}"'))
-    if consolidated_reasoning:
-        click.echo(
-            info_message(
-                f"  Reasoning traces: open \"{strategy_file.replace('.txt', '_reasoning.txt')}\""
-            )
-        )
 
     # Show what was generated
     msg = stats_message(

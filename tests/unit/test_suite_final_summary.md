@@ -12,7 +12,7 @@ Added **101 comprehensive pytest tests** covering the most critical functionalit
 - **File Operations (8 tests):** File size validation, command output saving, content handling
 - **Logging (3 tests):** Log saving, metadata handling, error handling
 - **Timing (3 tests):** Decorator functionality, heartbeat monitoring, performance measurement
-- **Reasoning Prompts (4 tests):** Legal reasoning trace creation and extraction
+- **Reasoning Prompts (4 tests):** Reasoning trace creation and extraction
 - **Strategy File Parsing (5 tests):** Parsing structured/unstructured strategy content
 - **Content Verification (3 tests):** LLM-based content verification workflows
 - **Error Handling (6 tests):** File system errors, disk full scenarios, concurrency
