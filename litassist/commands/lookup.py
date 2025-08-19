@@ -126,10 +126,16 @@ def lookup(question, mode, extract, comprehensive, context):
     for link in links:
         click.echo(f"- {link}")
 
-    # Prepare prompt
-    prompt = f"Question: {question}\nLinks:\n" + "\n".join(links)
+    # Prepare prompt using centralized template
+    prompt = PROMPTS.get("analysis.lookup.question_prompt").format(
+        question=question,
+        links="\n".join(links)
+    )
     if context:
-        prompt = f"Context: {context}\n\n{prompt}"
+        prompt = PROMPTS.get("analysis.lookup.context_prompt").format(
+            context=context,
+            prompt=prompt
+        )
 
     # Add extraction-specific instructions
     if extract:

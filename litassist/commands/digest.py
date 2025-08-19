@@ -178,7 +178,10 @@ def digest(file, mode, context):
                     "processing.digest.summary_mode",
                     context_instruction=context_instruction,
                 )
-                prompt = f"{digest_prompt}\n\n{chunk}"
+                prompt = PROMPTS.get("analysis.chunk_processing.digest_prompt").format(
+                    digest_prompt=digest_prompt,
+                    chunk=chunk
+                )
             else:  # issues mode
                 if context:
                     context_instruction = PROMPTS.get(
@@ -193,7 +196,10 @@ def digest(file, mode, context):
                     "processing.digest.issues_mode",
                     context_instruction=context_instruction,
                 )
-                prompt = f"{digest_prompt}\n\n{chunk}"
+                prompt = PROMPTS.get("analysis.chunk_processing.digest_prompt").format(
+                    digest_prompt=digest_prompt,
+                    chunk=chunk
+                )
 
             # Call the LLM
             try:

@@ -861,26 +861,9 @@ def create_reasoning_prompt(base_prompt: str, command: str) -> str:
     Returns:
         Enhanced prompt that will generate reasoning traces
     """
-    reasoning_instruction = f"""
-
-IMPORTANT: After your main analysis, provide a clear reasoning trace using this exact format (DO NOT repeat any sections):
-
-## Reasoning Trace
-
-Issue: [State the primary legal question or issue being analyzed - write this only once]
-
-Applicable Law: [Identify the relevant legal principles, statutes, cases, or rules - write this only once]
-
-Application to Facts: [Explain how the law applies to the specific facts presented - write this only once]
-
-Conclusion: [State your legal conclusion clearly - write this only once]
-
-Confidence: [Your confidence level as a percentage, 0-100%]
-
-Sources: [List key legal authorities cited, separated by semicolons]
-
-Each section should appear exactly once. Do not repeat sections or content. This reasoning trace helps ensure transparency and accountability in legal analysis for the {command} command."""
-
+    from litassist.prompts import PROMPTS
+    
+    reasoning_instruction = PROMPTS.get("reasoning.instruction").format(command=command)
     return base_prompt + reasoning_instruction
 
 

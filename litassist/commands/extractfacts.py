@@ -82,7 +82,10 @@ def extractfacts(file, verify):
         # Single chunk - unified extraction approach
         # Use centralized format template
         format_instructions = PROMPTS.get_format_template("case_facts_10_heading")
-        base_prompt = f"Extract under these headings (include all relevant details):\n{format_instructions}\n\n{chunks[0]}"
+        base_prompt = PROMPTS.get("analysis.extraction.base_prompt").format(
+            format_instructions=format_instructions,
+            content=chunks[0]
+        )
 
         # Add reasoning trace to prompt
         prompt = create_reasoning_prompt(base_prompt, "extractfacts")
@@ -112,7 +115,10 @@ def extractfacts(file, verify):
         with click.progressbar(chunks, label="Extracting facts from sections") as bar:
             for idx, chunk in enumerate(bar, 1):
                 chunk_template = PROMPTS.get("processing.extraction.chunk_facts_prompt")
-                prompt = f"{chunk_template.format(chunk_num=idx, total_chunks=len(chunks))}\n\n{chunk}"
+                prompt = PROMPTS.get("analysis.extraction.chunk_prompt").format(
+                    chunk_template=chunk_template.format(chunk_num=idx, total_chunks=len(chunks)),
+                    chunk=chunk
+                )
 
                 try:
                     content, usage = client.complete(
