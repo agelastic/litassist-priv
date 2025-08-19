@@ -859,28 +859,18 @@ Focus on:
     except Exception as e:
         raise click.ClickException(f"LLM document generation error: {e}")
 
-    # Combine all outputs
-    output = (
-        strategy_content
-        + "\n\n"
-        + next_steps_content
-        + "\n\n"
-        + "--- DRAFT DOCUMENT ---\n\n"
-        + document_content
-    )
-
-    # CRITICAL: Validate citations immediately to prevent cascade errors
-    citation_issues = llm_client.validate_citations(output)
+    # Validate and verify strategy content (most important)
+    citation_issues = llm_client.validate_citations(strategy_content)
     if citation_issues:
-        # Prepend warnings prominently
+        # Prepend warnings to strategy content
         citation_warning = "--- CITATION VALIDATION WARNINGS ---\n"
         citation_warning += "\n".join(citation_issues)
         citation_warning += "\n" + "-" * 40 + "\n\n"
-        output = citation_warning + output
+        strategy_content = citation_warning + strategy_content
 
-    # Apply verification (always required for strategy)
-    output, _ = verify_content_if_needed(
-        llm_client, output, "strategy", verify_flag=True
+    # Apply verification to strategy content (always required for strategy)
+    strategy_content, _ = verify_content_if_needed(
+        llm_client, strategy_content, "strategy", verify_flag=True
     )
 
     # Create consolidated reasoning trace from all options
@@ -890,12 +880,21 @@ Focus on:
             option_reasoning_traces, outcome
         )
 
-    # Save output using utility
+    # Save components as separate files
     metadata = {"Desired Outcome": outcome, "Case Facts File": case_facts.name}
     if strategies:
         metadata["Strategies File"] = strategies.name
 
-    output_file = save_command_output("strategy", output, outcome, metadata=metadata)
+    # 1. Save main strategic options (for backward compatibility)
+    strategy_file = save_command_output("strategy", strategy_content, outcome, metadata=metadata)
+    
+    # 2. Save next steps separately
+    steps_metadata = {"Desired Outcome": outcome, "Type": "Recommended Next Steps"}
+    steps_file = save_command_output("strategy_nextsteps", next_steps_content, outcome, metadata=steps_metadata)
+    
+    # 3. Save draft document separately
+    draft_metadata = {"Desired Outcome": outcome, "Document Type": doc_type.title()}
+    draft_file = save_command_output("strategy_draft", document_content, outcome, metadata=draft_metadata)
 
     # Reasoning trace is embedded in the main output, not saved separately
 
@@ -911,18 +910,25 @@ Focus on:
                 "verification": "auto-enabled (heavy)",
             },
             "usage": usage,
-            "response": output,
-            "output_file": output_file,
+            "response": strategy_content,
+            "output_files": {
+                "strategy": strategy_file,
+                "next_steps": steps_file,
+                "draft": draft_file
+            },
         },
     )
 
-    # Show summary instead of full output
+    # Show summary with all generated files
     click.echo(f"\n{success_message('Strategy generation complete!')}")
-    click.echo(saved_message(f'Output saved to: "{output_file}"'))
+    click.echo(f"\n{info_message('Files generated:')}")
+    click.echo(saved_message(f'  Strategic options: "{strategy_file}"'))
+    click.echo(saved_message(f'  Next steps: "{steps_file}"'))
+    click.echo(saved_message(f'  Draft document: "{draft_file}"'))
     if consolidated_reasoning:
         click.echo(
             info_message(
-                f"Reasoning traces: open \"{output_file.replace('.txt', '_reasoning.txt')}\""
+                f"  Reasoning traces: open \"{strategy_file.replace('.txt', '_reasoning.txt')}\""
             )
         )
 
@@ -940,5 +946,5 @@ Focus on:
         if title_match:
             click.echo(f"   {i}. {title_match.group(1)}")
 
-    msg = tip_message(f'View full strategy: open "{output_file}"')
+    msg = tip_message(f'View strategic options: open "{strategy_file}"')
     click.echo(f"\n{msg}")
