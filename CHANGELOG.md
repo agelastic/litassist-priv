@@ -9,7 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 - Comprehensive citation verification system with real-time Jade.io validation
-- Legal reasoning trace capture across all commands for accountability
+- Reasoning trace capture across all commands for accountability
 - Heartbeat progress indicators for long-running operations
 - Advanced reasoning models support (o3-pro) for strategic analysis
 - Barrister's brief generation command (barbrief)

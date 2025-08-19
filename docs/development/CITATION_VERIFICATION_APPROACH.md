@@ -388,7 +388,7 @@ These commands maintain **"Transparent with Warnings"** approach:
 - **[RETRY] INDIVIDUAL GENERATION**: Each strategic option generated and validated separately
 - **[FAIL] IMMEDIATE DISCARD**: Options with citation issues discarded immediately
 - **[DONE] CLEAN OUTPUT**: Only presents options with verified citations
-- **[LIST] SEPARATE REASONING**: Legal reasoning traces saved to separate `*_reasoning.txt` files
+- **[LIST] SEPARATE REASONING**: Reasoning traces saved to separate `*_reasoning.txt` files
 
 #### Intelligent Strategy Prioritization Process
 

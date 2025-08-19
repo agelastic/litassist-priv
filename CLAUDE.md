@@ -454,7 +454,7 @@ When saving Claude-generated files to the project:
 - **Coverage**: Australian case law focus with international citation detection
 - **Quality Control**: Immediate validation prevents citation hallucinations
 
-### Legal Reasoning Traces
+### Reasoning Traces
 - Structured capture across all commands
 - Multiple trace files for different sections
 - Accountability and transparency

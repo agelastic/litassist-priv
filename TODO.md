@@ -42,7 +42,7 @@
 - [ ] Integrate o3-pro coding standards
 - [ ] Adopt Jules framework for test instrumentation
 - [ ] **Refactor verify_with_level (Option B)**: Replace with boolean parameter `verify(content, comprehensive=False)` where comprehensive=True uses heavy verification prompt and comprehensive=False uses standard verification. This simplifies the API and removes the unused "light" level and redundant "medium" wrapper. See plan details from 2025-07-07. [DEBT]
-- [ ] **Add optional reasoning trace file output**: Implement `--save-reasoning` flag for commands (strategy, draft, verify, etc.) to optionally save legal reasoning traces as separate files for auditing purposes. Currently reasoning traces are embedded in main output only. Implementation removed 2025-07-08 but may be useful for professional liability requirements.
+- [ ] **Add optional reasoning trace file output**: Implement `--save-reasoning` flag for commands (strategy, draft, verify, etc.) to optionally save reasoning traces as separate files for auditing purposes. Currently reasoning traces are embedded in main output only. Implementation removed 2025-07-08 but may be useful for professional liability requirements.
 - [ ] **Implement circuit breaker for API retries**: Add safety_cutoff parameter to disable retries after N failures/hour (see AG-124)
 - [ ] **Document July 2025 upgrades in all user/dev/system docs**: Large document chunking, tiktoken integration, verification model switch to Claude 4 Opus, prompt/policy refinements, zero-emoji policy, expanded test coverage, and file size warnings.
 
