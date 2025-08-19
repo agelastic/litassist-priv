@@ -115,10 +115,7 @@ def regenerate_bad_strategies(
         Clean content with verified strategies only
     """
     click.echo(
-        PROMPTS.get(
-            "system_feedback.status.progress.analyzing_strategies",
-            strategy_type=strategy_type,
-        )
+        info_message(f"Analyzing {strategy_type} strategies for citation issues...")
     )
 
     # Split content into individual strategies using a robust regex
@@ -143,19 +140,14 @@ def regenerate_bad_strategies(
         citation_issues = client.validate_citations(strategy)
         if citation_issues:
             click.echo(
-                PROMPTS.get(
-                    "system_feedback.status.completion.strategy_issues_found",
-                    strategy_num=i,
-                    issue_count=len(citation_issues) - 1,
+                warning_message(
+                    f"Strategy {i}: Found {len(citation_issues) - 1} citation issues"
                 )
             )
             strategies_to_regenerate.append((i, strategy))
         else:
             click.echo(
-                PROMPTS.get(
-                    "system_feedback.status.completion.strategy_verified",
-                    strategy_num=i,
-                )
+                success_message(f"Strategy {i}: Citations verified")
             )
             strategy_results[i] = strategy
 
@@ -175,13 +167,12 @@ def regenerate_bad_strategies(
         for strategy_num, bad_strategy in strategies_to_regenerate:
             # Create focused regeneration prompt
             # Use centralized regeneration prompt template
-            regen_template = PROMPTS.get("strategies.brainstorm.regeneration_prompt")
-            citation_instructions = PROMPTS.get(
-                "verification.citation_retry_instructions"
+            # Build regeneration prompt from template
+            regen_content = PROMPTS.get("strategies.brainstorm.regeneration_template").format(
+                base_prompt=base_prompt
             )
-            regen_prompt = f"""{base_prompt}
-
-{regen_template.format(feedback=f"Strategy #{strategy_num} contained unverifiable citations", citation_instructions=citation_instructions)}
+            
+            regen_prompt = f"""{regen_content}
 
 Generate ONLY strategy #{strategy_num} in the exact format:
 
@@ -453,12 +444,15 @@ def brainstorm(facts, side, area, research):
     orthodox_template = PROMPTS.get(
         "strategies.brainstorm.orthodox_prompt", research_context=research_context
     )
-    orthodox_base_prompt = f"""Facts:
-{facts}
-
-I am representing the {side} in this {area} law matter.
-
-{orthodox_template}
+    # Build orthodox base prompt from template
+    orthodox_base_content = PROMPTS.get("strategies.brainstorm.orthodox_base").format(
+        facts=facts,
+        side=side,
+        area=area,
+        research=orthodox_template
+    )
+    
+    orthodox_base_prompt = f"""{orthodox_base_content}
 
 Please provide output in EXACTLY this format:
 
@@ -491,11 +485,7 @@ Please provide output in EXACTLY this format:
         orthodox_content, orthodox_usage = orthodox_client.complete(orthodox_messages)
     except Exception as e:
         raise click.ClickException(
-            PROMPTS.get(
-                "system_feedback.errors.llm.generation_failed",
-                operation="orthodox strategies",
-                error=str(e),
-            )
+            f"Error generating orthodox strategies: {str(e)}"
         )
 
     # Selectively regenerate orthodox strategies with citation issues
@@ -520,12 +510,15 @@ Please provide output in EXACTLY this format:
 
     # Use centralized unorthodox prompt template
     unorthodox_template = PROMPTS.get("strategies.brainstorm.unorthodox_prompt")
-    unorthodox_base_prompt = f"""Facts:
-{facts}
-
-I am representing the {side} in this {area} law matter.
-
-{unorthodox_template}
+    # Build unorthodox base prompt from template
+    unorthodox_base_content = PROMPTS.get("strategies.brainstorm.unorthodox_base").format(
+        facts=facts,
+        side=side,
+        area=area,
+        research=unorthodox_template
+    )
+    
+    unorthodox_base_prompt = f"""{unorthodox_base_content}
 
 Please provide output in EXACTLY this format:
 
@@ -558,11 +551,7 @@ Please provide output in EXACTLY this format:
         unorthodox_content, unorthodox_usage = unorthodox_client.complete(unorthodox_messages)
     except Exception as e:
         raise click.ClickException(
-            PROMPTS.get(
-                "system_feedback.errors.llm.generation_failed",
-                operation="unorthodox strategies",
-                error=str(e),
-            )
+            f"Error generating unorthodox strategies: {str(e)}"
         )
 
     # Selectively regenerate unorthodox strategies with citation issues
@@ -585,16 +574,16 @@ Please provide output in EXACTLY this format:
 
     # Use centralized analysis prompt template
     analysis_template = PROMPTS.get("strategies.brainstorm.analysis_prompt")
-    analysis_base_prompt = f"""Facts:
-{facts}
-
-I am representing the {side} in this {area} law matter.
-
-ORTHODOX STRATEGIES GENERATED:
-{orthodox_content}
-
-UNORTHODOX STRATEGIES GENERATED:
-{unorthodox_content}
+    # Build analysis base prompt from template
+    analysis_base_content = PROMPTS.get("strategies.brainstorm.analysis_base").format(
+        facts=facts,
+        side=side,
+        area=area,
+        orthodox_strategies=orthodox_content,
+        unorthodox_strategies=unorthodox_content
+    )
+    
+    analysis_base_prompt = f"""{analysis_base_content}
 
 {analysis_template}
 
@@ -659,6 +648,8 @@ Please provide output in EXACTLY this format:
     try:
         # Use medium verification for creative brainstorming
         correction = analysis_client.verify(combined_content)
+        if isinstance(correction, tuple):
+            correction = correction[0]
 
         # The verification model returns the full, corrected text.
         # We should replace the content, not append to it.

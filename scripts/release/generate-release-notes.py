@@ -10,8 +10,6 @@ import argparse
 import re
 import sys
 from pathlib import Path
-from datetime import datetime
-from typing import Optional, Dict, List
 
 
 class ReleaseNotesGenerator:

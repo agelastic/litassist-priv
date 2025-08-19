@@ -2,7 +2,7 @@
 Utility functions for LitAssist.
 
 This module provides helper functions and decorators used throughout the LitAssist application,
-including timing, logging, document processing, embedding generation, and legal reasoning traces.
+including timing, logging, document processing, embedding generation, and reasoning traces.
 """
 
 import os
@@ -550,10 +550,11 @@ def count_tokens_and_words(text: str) -> tuple[int, int]:
     # Try to import tiktoken if available
     try:
         import tiktoken
+
         TIKTOKEN_AVAILABLE = True
     except ImportError:
         TIKTOKEN_AVAILABLE = False
-        
+
     if TIKTOKEN_AVAILABLE:
         try:
             # Use cl100k_base encoding (used by GPT-4, Claude, most modern models)
@@ -561,7 +562,9 @@ def count_tokens_and_words(text: str) -> tuple[int, int]:
             token_count = len(encoding.encode(text))
         except Exception as e:
             # Log warning and fall back to estimation
-            logging.warning(f"tiktoken token counting failed: {e}. Falling back to word count estimation.")
+            logging.warning(
+                f"tiktoken token counting failed: {e}. Falling back to word count estimation."
+            )
             # Fallback: rough estimation (1 token ≈ 0.75 words)
             token_count = int(len(text.split()) * 1.33)
     else:
@@ -753,12 +756,12 @@ def heartbeat(interval: int = 30):
     return decorator
 
 
-# ── Legal Reasoning Traces ─────────────────────────────────────
+# ── Reasoning Traces ─────────────────────────────────────
 
 
 class LegalReasoningTrace:
     """
-    Structured legal reasoning trace for analytical commands.
+    Structured reasoning trace for analytical commands.
 
     Provides transparency in legal analysis by capturing the reasoning process
     behind conclusions in a standardized format.
@@ -775,7 +778,7 @@ class LegalReasoningTrace:
         command: str = None,
     ):
         """
-        Initialize a legal reasoning trace.
+        Initialize a reasoning trace.
 
         Args:
             issue: The legal question or issue being analyzed
@@ -816,7 +819,7 @@ class LegalReasoningTrace:
                 f"- {source}" for source in self.sources
             )
 
-        return f"""## Legal Reasoning Trace
+        return f"""## Reasoning Trace
 
 **Issue:** {self.issue}
 
@@ -837,7 +840,7 @@ class LegalReasoningTrace:
         if self.sources:
             sources_text = f"\nSources: {'; '.join(self.sources)}"
 
-        return f"""=== REASONING ===
+        return f"""## Reasoning Trace
 Issue: {self.issue}
 Applicable Law: {self.applicable_law}
 Application to Facts: {self.application}
@@ -849,7 +852,7 @@ Generated: {self.timestamp} ({self.command or 'LitAssist'})
 
 def create_reasoning_prompt(base_prompt: str, command: str) -> str:
     """
-    Enhance a base prompt to include legal reasoning trace generation.
+    Enhance a base prompt to include reasoning trace generation.
 
     Args:
         base_prompt: The original prompt for the command
@@ -858,26 +861,9 @@ def create_reasoning_prompt(base_prompt: str, command: str) -> str:
     Returns:
         Enhanced prompt that will generate reasoning traces
     """
-    reasoning_instruction = f"""
-
-IMPORTANT: After your main analysis, provide a clear legal reasoning trace using this exact format (DO NOT repeat any sections):
-
-=== REASONING ===
-
-Issue: [State the primary legal question or issue being analyzed - write this only once]
-
-Applicable Law: [Identify the relevant legal principles, statutes, cases, or rules - write this only once]
-
-Application to Facts: [Explain how the law applies to the specific facts presented - write this only once]
-
-Conclusion: [State your legal conclusion clearly - write this only once]
-
-Confidence: [Your confidence level as a percentage, 0-100%]
-
-Sources: [List key legal authorities cited, separated by semicolons]
-
-Each section should appear exactly once. Do not repeat sections or content. This reasoning trace helps ensure transparency and accountability in legal analysis for the {command} command."""
-
+    from litassist.prompts import PROMPTS
+    
+    reasoning_instruction = PROMPTS.get("reasoning.instruction").format(command=command)
     return base_prompt + reasoning_instruction
 
 
@@ -885,7 +871,7 @@ def extract_reasoning_trace(
     content: str, command: str = None
 ) -> Optional[LegalReasoningTrace]:
     """
-    Extract a legal reasoning trace from LLM output.
+    Extract a reasoning trace from LLM output.
 
     Args:
         content: The LLM response content
@@ -896,7 +882,9 @@ def extract_reasoning_trace(
     """
     # The pattern now looks for the start of the trace and captures everything
     # until the end of the content or another major header. It is non-greedy.
-    trace_pattern = r"=== REASONING ===\s*\n(.*?)(?=\n===|$)"
+    trace_pattern = (
+        r"(?:=== REASONING ===|## Reasoning Trace)\s*\n(.*?)(?=\n(?:===|##)|$)"
+    )
     match = re.search(trace_pattern, content, re.DOTALL | re.IGNORECASE)
 
     if not match:
@@ -1160,6 +1148,10 @@ def verify_content_if_needed(
                 correction = client.verify_with_level(content, "heavy")
             else:
                 correction = client.verify(content)
+
+            # Handle tuple return from new verify methods
+            if isinstance(correction, tuple):
+                correction = correction[0]
 
             if correction.strip() and not correction.lower().startswith(
                 "no corrections needed"

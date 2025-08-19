@@ -11,7 +11,7 @@ This audit identifies hardcoded prompts in Python files that violate the central
 
 ### 1. Critical Extractions Needed
 
-#### utils.py - Legal Reasoning Trace Prompt
+#### utils.py - Reasoning Trace Prompt
 - **Location:** `create_reasoning_prompt()` function, lines ~861-879
 - **Type:** Multi-line f-string with legal reasoning instructions
 - **Content:** Full IRAC-format reasoning trace template

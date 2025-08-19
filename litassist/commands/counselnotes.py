@@ -21,6 +21,7 @@ from litassist.utils import (
     save_command_output,
     show_command_completion,
     process_extraction_response,
+    info_message,
 )
 from litassist.llm import LLMClientFactory
 

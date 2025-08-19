@@ -1300,7 +1300,7 @@ The `strategy` command analyzes case facts to generate strategic legal options, 
 
 **Output**: All analysis saved to timestamped files: 
 - `strategy_[outcome_slug]_YYYYMMDD_HHMMSS.txt` - Main strategic options and recommendations
-- `strategy_[outcome_slug]_YYYYMMDD_HHMMSS_reasoning.txt` - Detailed legal reasoning traces for each option
+- `strategy_[outcome_slug]_YYYYMMDD_HHMMSS_reasoning.txt` - Detailed reasoning traces for each option
 
 ### Command
 
@@ -2480,7 +2480,7 @@ VERIFICATION NOTES on Strategy #3:
 **Citation Quality Control:** Strategy includes mandatory:
 - Individual generation and validation of each strategic option
 - Immediate discard of options with citation issues
-- Detailed legal reasoning traces saved to separate `*_reasoning.txt` file
+- Detailed reasoning traces saved to separate `*_reasoning.txt` file
 - Zero tolerance for unverified citations in strategic recommendations
 
 **How to use results:**

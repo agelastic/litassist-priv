@@ -83,6 +83,64 @@ strategies:
       Please regenerate the strategic analysis, incorporating this feedback while maintaining the same analytical rigor and Australian legal focus.
       
       {citation_instructions}
+    
+    # Base prompts for brainstorm generation
+    # USED BY: brainstorm.py - lines 460-465 (building orthodox base prompt)
+    # LOCATION: Formats facts, side, area, and research into orthodox strategy prompt
+    orthodox_base: |
+      Facts:
+      {facts}
+      
+      Side: {side}
+      Area: {area}
+      
+      {research}
+      
+      Generate EXACTLY 10 ORTHODOX legal strategies for the {side} in this {area} matter.
+    
+    # USED BY: brainstorm.py - lines 530-535 (building unorthodox base prompt)
+    # LOCATION: Formats facts, side, area, and research into unorthodox strategy prompt
+    unorthodox_base: |
+      Facts:
+      {facts}
+      
+      Side: {side}
+      Area: {area}
+      
+      {research}
+      
+      Generate EXACTLY 10 UNORTHODOX legal strategies for the {side} in this {area} matter.
+    
+    # USED BY: brainstorm.py - lines 598-604 (building analysis base prompt)
+    # LOCATION: Formats all data for identifying most promising strategies
+    analysis_base: |
+      Facts:
+      {facts}
+      
+      Side: {side}
+      Area: {area}
+      
+      Orthodox Strategies:
+      {orthodox_strategies}
+      
+      Unorthodox Strategies:
+      {unorthodox_strategies}
+      
+      Using Australian {area} law, identify the 5 MOST PROMISING strategies from the above lists for the {side}.
+    
+    # Regeneration prompt template
+    # USED BY: brainstorm.py - lines 183-185 (regenerating strategies with citation issues)
+    # LOCATION: Wraps base prompt with citation verification requirements
+    regeneration_template: |
+      {base_prompt}
+      
+      This is a regeneration following citation verification. The previous attempt had unverifiable citations.
+      
+      CITATION REQUIREMENTS:
+      - ONLY use cases that can be verified on AustLII or Jade.io
+      - Provide accurate case names, years, and medium neutral citations
+      - If uncertain about a citation, do not include it
+      - Better to have fewer, accurate citations than many unverifiable ones
   
   # Strategy command prompts  
   strategy:
@@ -154,7 +212,52 @@ strategies:
       - Reference supporting evidence where applicable
     
     # Unique title requirement instruction
-    # USED BY: strategy.py strategy() - for ensuring unique strategy titles
-    # LOCATION: strategy.py:643,658 (to be extracted)
+    # USED BY: strategy.py - lines 666, 682 (individual option generation)
+    # LOCATION: Ensures each strategic option has a unique distinguishing title
     unique_title_requirement: |
       CRITICAL: Use a UNIQUE TITLE that clearly distinguishes this strategic approach. Do not reuse titles from other options.
+    
+    # Individual strategy option prompts
+    # USED BY: strategy.py - lines 654-701 (generating individual strategic options)
+    individual_option:
+      # When building on a brainstormed strategy
+      # USED BY: strategy.py - lines 656-666 (transforming brainstormed strategy)
+      # LOCATION: Transforms a brainstormed strategy into detailed strategic option
+      brainstormed_base: |
+        
+        SPECIFIC INSTRUCTION: Transform the following brainstormed strategy into a detailed strategic option for the specific outcome "{outcome}":
+        
+        BRAINSTORMED STRATEGY TO DEVELOP:
+        {strategy_content}
+        
+        Generate ONE strategic option based on this brainstormed strategy (this will be option #{option_number}). Use the exact format specified for a single OPTION, but develop this specific brainstormed strategy into concrete strategic steps for achieving "{outcome}".
+        
+        Focus on:
+        - How this brainstormed strategy applies specifically to achieving "{outcome}"
+        - Concrete legal steps to implement this strategy
+        - Specific hurdles and missing facts for this approach
+        - Probability assessment based on this strategy's legal foundation
+        - Ensure the OPTION title clearly distinguishes this approach from other strategies
+      
+      # When generating a fresh strategic option
+      # USED BY: strategy.py - lines 677-680 (generating fresh option)
+      # LOCATION: Generates a new strategic option without brainstormed foundation
+      fresh_base: |
+        
+        Generate ONE strategic option (this will be option #{option_number}) to achieve the desired outcome. Use the exact format specified for a single OPTION.
+      
+      # Additional guidance when building on existing strategies
+      # USED BY: strategy.py - lines 684-686 (when parsed strategies exist)
+      # LOCATION: Guides generation to complement already generated options
+      complement_existing: |
+        
+        Consider the brainstormed strategies provided but develop a new approach that complements the {existing_count} options already generated.
+      
+      # Duplication avoidance instructions  
+      # USED BY: strategy.py - lines 695-699 (when valid options already exist)
+      # LOCATION: Prevents duplicate strategy titles and approaches
+      avoid_duplication: |
+        
+        EXISTING OPTION TITLES TO AVOID: {existing_titles}
+        
+        Previously generated {existing_count} options. Generate a DIFFERENT strategic approach with a UNIQUE TITLE that has not been covered yet.

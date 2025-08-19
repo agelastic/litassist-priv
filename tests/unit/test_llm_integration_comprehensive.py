@@ -252,6 +252,8 @@ class TestLLMClient:
 
         content = "Legal document content to verify"
         correction = client.verify_with_level(content, "medium")
+        if isinstance(correction, tuple):
+            correction = correction[0]
 
         assert correction == "No corrections needed."
 
@@ -306,14 +308,14 @@ class TestCitationValidation:
 
 
 class TestReasoningTraceExtraction:
-    """Test legal reasoning trace extraction."""
+    """Test reasoning trace extraction."""
 
     def test_extract_reasoning_trace_complete(self):
         """Test extraction of complete reasoning trace."""
         content = """
         Analysis of the legal issue...
         
-        === REASONING ===
+        ## Reasoning Trace
         Issue: Contract breach claim
         Applicable Law: Contract law principles from Australian Contract Law
         Application to Facts: The defendant's failure to deliver goods constitutes breach
@@ -343,7 +345,7 @@ class TestReasoningTraceExtraction:
     def test_extract_reasoning_trace_partial(self):
         """Test extraction of partial reasoning trace."""
         content = """
-        === REASONING ===
+        ## Reasoning Trace
         Issue: Negligence claim
         Applicable Law: Tort law
         Application to Facts: Duty of care was breached
@@ -409,7 +411,7 @@ class TestReasoningTraceExtraction:
 
         markdown = trace.to_markdown()
 
-        assert "## Legal Reasoning Trace" in markdown
+        assert "## Reasoning Trace" in markdown
         assert "**Issue:** Contract interpretation" in markdown
         assert "**Confidence:** 80%" in markdown
         assert "**Sources:**" in markdown
@@ -520,7 +522,7 @@ class TestPromptIntegration:
         base_prompt = "Analyze this legal issue"
         enhanced_prompt = create_reasoning_prompt(base_prompt, "strategy")
 
-        assert "REASONING" in enhanced_prompt
+        assert "Reasoning Trace" in enhanced_prompt
         assert "Issue:" in enhanced_prompt
         assert "Applicable Law:" in enhanced_prompt
         assert "Application to Facts:" in enhanced_prompt

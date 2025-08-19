@@ -142,11 +142,12 @@ def caseplan(case_facts, context, budget):
         llm_client = LLMClientFactory.for_command("caseplan", "assessment")
 
         system_prompt = PROMPTS.get("commands.caseplan.budget_assessment_system")
-        user_prompt = f"""CASE FACTS:
-{facts_content}
-
-{PROMPTS.get("commands.caseplan.budget_assessment_instructions")}
-"""
+        # Use base case facts template for budget assessment
+        user_prompt = PROMPTS.get("analysis.base_case_facts_prompt").format(
+            facts_content=facts_content
+        )
+        
+        user_prompt += f"\n\n{PROMPTS.get('commands.caseplan.budget_assessment_instructions')}"
 
         @timed
         def assess_budget():

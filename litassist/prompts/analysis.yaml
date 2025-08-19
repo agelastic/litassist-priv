@@ -1,0 +1,97 @@
+# Analysis and extraction prompt templates
+# Used for case facts analysis, chunk processing, and data extraction
+
+analysis:
+  # Base case facts prompt - just the case facts section
+  # USED BY: caseplan.py - lines 146-148 (budget assessment mode)
+  # LOCATION: Provides only the case facts without outcome/issues sections
+  base_case_facts_prompt: |
+    CASE FACTS:
+    {facts_content}
+  
+  # Case facts prompt template with outcome and issues
+  # USED BY: strategy.py - lines 255-263 (building base user prompt)
+  # LOCATION: Formats case facts, outcome, and legal issues into structured prompt
+  case_facts_prompt: |
+    CASE FACTS:
+    {facts_content}
+    
+    DESIRED OUTCOME:
+    {outcome}
+    
+    IDENTIFIED LEGAL ISSUES:
+    {legal_issues}
+
+  # Strategy ranking prompt for case facts
+  # USED BY: strategy.py - lines 538-562 (ranking all strategies)
+  # LOCATION: Ranks strategies by likelihood of success for specific outcome
+  strategy_ranking_prompt: |
+    CASE FACTS:
+    {facts_content}
+    
+    DESIRED OUTCOME:
+    {outcome}
+    
+    AVAILABLE STRATEGIES:
+    {strategies_list}
+    
+    Analyze all {strategy_count} strategies above and rank them by likelihood of success for achieving the specific outcome "{outcome}" given these case facts.
+    
+    Use the SAME criteria as brainstorm command's "most likely to succeed" analysis:
+    - Legal merit and strength of legal foundation
+    - Factual support from the case materials provided
+    - Precedential strength and established legal principles
+    - Likelihood of judicial acceptance in Australian courts
+    
+    Additional focus for this specific outcome:
+    - Direct relevance to achieving "{outcome}"
+    - Procedural feasibility for this specific result
+    - Practical implementation steps available
+    
+    Output format:
+    RANKING: [comma-separated list of strategy numbers in order of likelihood, e.g., "3,1,7,2"]
+    REASONING: [brief explanation focusing on legal merit, factual support, precedential strength, and judicial likelihood for the top strategies]
+
+  # Remaining strategies ranking prompt
+  # USED BY: strategy.py - lines 443-457 (ranking strategies after most likely selected)
+  # LOCATION: Ranks remaining strategies after priority strategies are identified
+  remaining_strategies_prompt: |
+    CASE FACTS:
+    {facts_content}
+    
+    DESIRED OUTCOME:
+    {outcome}
+    
+    We have already selected {selected_count} 'most likely to succeed' strategies. Now rank these remaining strategies by likelihood of success for achieving "{outcome}":
+    
+    {remaining_strategies_list}
+    
+    Rank them using the same criteria: legal merit, factual support, precedential strength, and judicial likelihood for this specific outcome.
+    
+    Output format:
+    RANKING: [comma-separated list of strategy numbers in order of likelihood, e.g., "2,1,4"]
+    REASONING: [brief explanation for top selections]
+
+  # Extraction base prompt
+  # USED BY: extractfacts.py - lines 85-88 (single chunk extraction)
+  # LOCATION: Base prompt for extracting facts under structured headings
+  extraction:
+    base_prompt: "Extract under these headings (include all relevant details):\n{format_instructions}\n\n{content}"
+    # USED BY: extractfacts.py - lines 118-121 (multi-chunk extraction)
+    # LOCATION: Formats chunk-specific extraction prompt
+    chunk_prompt: "{chunk_template}\n\n{chunk}"
+    
+  # Chunk processing templates
+  # USED BY: digest.py - lines 181, 196 (processing document chunks)
+  # LOCATION: Formats digest prompts with chunk content
+  chunk_processing:
+    digest_prompt: "{digest_prompt}\n\n{chunk}"
+    
+  # Question and links formatting
+  # USED BY: lookup.py - lines 130-133 (preparing search prompt)
+  # LOCATION: Formats question with search result links
+  lookup:
+    question_prompt: "Question: {question}\nLinks:\n{links}"
+    # USED BY: lookup.py - lines 135-138 (adding context to prompt)
+    # LOCATION: Prepends context information to search prompt
+    context_prompt: "Context: {context}\n\n{prompt}"

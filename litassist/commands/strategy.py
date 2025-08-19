@@ -114,29 +114,36 @@ def extract_legal_issues(case_text: str) -> List[str]:
 @timed
 def create_consolidated_reasoning_trace(option_traces, outcome):
     """Create a consolidated reasoning trace from multiple strategy options."""
-
-    consolidated_content = "# CONSOLIDATED REASONING\n"
-    consolidated_content += f"# Strategic Options for: {outcome}\n"
-    consolidated_content += f"# Generated: {time.strftime('%Y-%m-%d %H:%M:%S')}\n\n"
+    
+    # Use centralized consolidated reasoning template
+    header = PROMPTS.get("reasoning.consolidated.header").format(
+        outcome=outcome,
+        timestamp=time.strftime('%Y-%m-%d %H:%M:%S')
+    )
+    
+    consolidated_content = header + "\n\n"
 
     for trace_data in option_traces:
         option_num = trace_data["option_number"]
         trace = trace_data["trace"]
 
-        consolidated_content += (
-            f"## STRATEGIC OPTION {option_num} - REASONING\n\n"
+        option_header = PROMPTS.get("reasoning.consolidated.option_header").format(
+            option_num=option_num
         )
+        consolidated_content += option_header + "\n\n"
 
         if trace:
-            consolidated_content += f"**Issue:** {trace.issue}\n\n"
-            consolidated_content += f"**Applicable Law:** {trace.applicable_law}\n\n"
-            consolidated_content += f"**Application to Facts:** {trace.application}\n\n"
-            consolidated_content += f"**Conclusion:** {trace.conclusion}\n\n"
-            consolidated_content += f"**Confidence:** {trace.confidence}%\n\n"
-            if trace.sources:
-                consolidated_content += f"**Sources:** {', '.join(trace.sources)}\n\n"
+            option_trace = PROMPTS.get("reasoning.consolidated.option_trace").format(
+                issue=trace.issue,
+                applicable_law=trace.applicable_law,
+                application=trace.application,
+                conclusion=trace.conclusion,
+                confidence=trace.confidence,
+                sources=', '.join(trace.sources) if trace.sources else 'None'
+            )
+            consolidated_content += option_trace + "\n\n"
         else:
-            consolidated_content += "No reasoning trace available for this option.\n\n"
+            consolidated_content += PROMPTS.get("reasoning.consolidated.no_trace") + "\n\n"
 
         consolidated_content += "-" * 80 + "\n\n"
 
@@ -252,15 +259,12 @@ def strategy(case_facts, outcome, strategies, verify):
     )
     system_prompt += f"\n\n{strategic_instructions}"
 
-    base_user_prompt = f"""CASE FACTS:
-{facts_content}
-
-DESIRED OUTCOME:
-{outcome}
-
-IDENTIFIED LEGAL ISSUES:
-{', '.join(legal_issues)}
-"""
+    # Use centralized case facts prompt template
+    base_user_prompt = PROMPTS.get("analysis.case_facts_prompt").format(
+        facts_content=facts_content,
+        outcome=outcome,
+        legal_issues=', '.join(legal_issues)
+    )
 
     # Add strategies content if provided
     if parsed_strategies:
@@ -440,21 +444,13 @@ IDENTIFIED LEGAL ISSUES:
                         for i, strategy in enumerate(other_strategies, 1):
                             remaining_strategies_list += f"\n{i}. {strategy['title']} (from {strategy['source']} strategies)\n{strategy['content'][:200]}...\n"
 
-                        remaining_ranking_prompt = f"""CASE FACTS:
-{facts_content}
-
-DESIRED OUTCOME:
-{outcome}
-
-We have already selected {len(priority_strategies)} 'most likely to succeed' strategies. Now rank these remaining strategies by likelihood of success for achieving "{outcome}":
-
-{remaining_strategies_list}
-
-Rank them using the same criteria: legal merit, factual support, precedential strength, and judicial likelihood for this specific outcome.
-
-Output format:
-RANKING: [comma-separated list of strategy numbers in order of likelihood, e.g., "2,1,4"]
-REASONING: [brief explanation for top selections]"""
+                        # Use centralized remaining strategies ranking prompt
+                        remaining_ranking_prompt = PROMPTS.get("analysis.remaining_strategies_prompt").format(
+                            facts_content=facts_content,
+                            outcome=outcome,
+                            selected_count=len(priority_strategies),
+                            remaining_strategies_list=remaining_strategies_list
+                        )
 
                         try:
                             analysis_client = LLMClientFactory.for_command(
@@ -535,31 +531,13 @@ REASONING: [brief explanation for top selections]"""
                 for i, strategy in enumerate(all_strategies, 1):
                     strategies_list += f"\n{i}. {strategy['title']} (from {strategy['source']} strategies)\n{strategy['content'][:200]}...\n"
 
-                ranking_prompt = f"""CASE FACTS:
-{facts_content}
-
-DESIRED OUTCOME:
-{outcome}
-
-AVAILABLE STRATEGIES:
-{strategies_list}
-
-Analyze all {len(all_strategies)} strategies above and rank them by likelihood of success for achieving the specific outcome "{outcome}" given these case facts.
-
-Use the SAME criteria as brainstorm command's "most likely to succeed" analysis:
-- Legal merit and strength of legal foundation
-- Factual support from the case materials provided
-- Precedential strength and established legal principles
-- Likelihood of judicial acceptance in Australian courts
-
-Additional focus for this specific outcome:
-- Direct relevance to achieving "{outcome}"
-- Procedural feasibility for this specific result
-- Practical implementation steps available
-
-Output format:
-RANKING: [comma-separated list of strategy numbers in order of likelihood, e.g., "3,1,7,2"]
-REASONING: [brief explanation focusing on legal merit, factual support, precedential strength, and judicial likelihood for the top strategies]"""
+                # Use centralized strategy ranking prompt
+                ranking_prompt = PROMPTS.get("analysis.strategy_ranking_prompt").format(
+                    facts_content=facts_content,
+                    outcome=outcome,
+                    strategies_list=strategies_list,
+                    strategy_count=len(all_strategies)
+                )
 
                 try:
                     # Use dedicated analysis model for consistency with brainstorm command
@@ -674,37 +652,27 @@ REASONING: [brief explanation focusing on legal merit, factual support, preceden
 
         # Individual option prompt
         if use_brainstormed and specific_strategy:
-            individual_prompt = (
-                user_prompt
-                + f"""
-
-SPECIFIC INSTRUCTION: Transform the following brainstormed strategy into a detailed strategic option for the specific outcome "{outcome}":
-
-BRAINSTORMED STRATEGY TO DEVELOP:
-{specific_strategy['content']}
-
-Generate ONE strategic option based on this brainstormed strategy (this will be option #{len(valid_options) + 1}). Use the exact format specified for a single OPTION, but develop this specific brainstormed strategy into concrete strategic steps for achieving "{outcome}".
-
-{PROMPTS.get('strategies.strategy.unique_title_requirement')}
-
-Focus on:
-- How this brainstormed strategy applies specifically to achieving "{outcome}"
-- Concrete legal steps to implement this strategy
-- Specific hurdles and missing facts for this approach
-- Probability assessment based on this strategy's legal foundation
-- Ensure the OPTION title clearly distinguishes this approach from other strategies"""
+            # Use centralized brainstormed base template
+            individual_prompt = user_prompt + PROMPTS.get(
+                "strategies.strategy.individual_option.brainstormed_base"
+            ).format(
+                outcome=outcome,
+                strategy_content=specific_strategy['content'],
+                option_number=len(valid_options) + 1
             )
+            individual_prompt += "\n\n" + PROMPTS.get('strategies.strategy.unique_title_requirement')
         else:
             # Generate fresh strategic option if no brainstormed strategies or we've used them all
-            individual_prompt = (
-                user_prompt
-                + f"\n\nGenerate ONE strategic option (this will be option #{len(valid_options) + 1}) to achieve the desired outcome. Use the exact format specified for a single OPTION."
-            )
-            individual_prompt += (
-                f"\n\n{PROMPTS.get('strategies.strategy.unique_title_requirement')}"
-            )
+            individual_prompt = user_prompt + PROMPTS.get(
+                "strategies.strategy.individual_option.fresh_base"
+            ).format(option_number=len(valid_options) + 1)
+            
+            individual_prompt += "\n\n" + PROMPTS.get('strategies.strategy.unique_title_requirement')
+            
             if parsed_strategies:
-                individual_prompt += f"\n\nConsider the brainstormed strategies provided but develop a new approach that complements the {len(valid_options)} options already generated."
+                individual_prompt += PROMPTS.get(
+                    "strategies.strategy.individual_option.complement_existing"
+                ).format(existing_count=len(valid_options))
 
         # If we already have options, tell the LLM to avoid duplication
         if valid_options:
@@ -715,10 +683,12 @@ Focus on:
                     existing_titles.append(title_match.group(1).strip())
 
             if existing_titles:
-                individual_prompt += (
-                    f"\n\nEXISTING OPTION TITLES TO AVOID: {', '.join(existing_titles)}"
+                individual_prompt += PROMPTS.get(
+                    "strategies.strategy.individual_option.avoid_duplication"
+                ).format(
+                    existing_titles=', '.join(existing_titles),
+                    existing_count=len(valid_options)
                 )
-            individual_prompt += f"\n\nPreviously generated {len(valid_options)} options. Generate a DIFFERENT strategic approach with a UNIQUE TITLE that has not been covered yet."
 
         try:
             option_content, option_usage = call_with_hb(
@@ -859,43 +829,35 @@ Focus on:
     except Exception as e:
         raise click.ClickException(f"LLM document generation error: {e}")
 
-    # Combine all outputs
-    output = (
-        strategy_content
-        + "\n\n"
-        + next_steps_content
-        + "\n\n"
-        + "--- DRAFT DOCUMENT ---\n\n"
-        + document_content
-    )
-
-    # CRITICAL: Validate citations immediately to prevent cascade errors
-    citation_issues = llm_client.validate_citations(output)
+    # Validate and verify strategy content (most important)
+    citation_issues = llm_client.validate_citations(strategy_content)
     if citation_issues:
-        # Prepend warnings prominently
+        # Prepend warnings to strategy content
         citation_warning = "--- CITATION VALIDATION WARNINGS ---\n"
         citation_warning += "\n".join(citation_issues)
         citation_warning += "\n" + "-" * 40 + "\n\n"
-        output = citation_warning + output
+        strategy_content = citation_warning + strategy_content
 
-    # Apply verification (always required for strategy)
-    output, _ = verify_content_if_needed(
-        llm_client, output, "strategy", verify_flag=True
+    # Apply verification to strategy content (always required for strategy)
+    strategy_content, _ = verify_content_if_needed(
+        llm_client, strategy_content, "strategy", verify_flag=True
     )
 
-    # Create consolidated reasoning trace from all options
-    consolidated_reasoning = None
-    if option_reasoning_traces:
-        consolidated_reasoning = create_consolidated_reasoning_trace(
-            option_reasoning_traces, outcome
-        )
-
-    # Save output using utility
+    # Save components as separate files
     metadata = {"Desired Outcome": outcome, "Case Facts File": case_facts.name}
     if strategies:
         metadata["Strategies File"] = strategies.name
 
-    output_file = save_command_output("strategy", output, outcome, metadata=metadata)
+    # 1. Save main strategic options (for backward compatibility)
+    strategy_file = save_command_output("strategy", strategy_content, outcome, metadata=metadata)
+    
+    # 2. Save next steps separately
+    steps_metadata = {"Desired Outcome": outcome, "Type": "Recommended Next Steps"}
+    steps_file = save_command_output("strategy_nextsteps", next_steps_content, outcome, metadata=steps_metadata)
+    
+    # 3. Save draft document separately
+    draft_metadata = {"Desired Outcome": outcome, "Document Type": doc_type.title()}
+    draft_file = save_command_output("strategy_draft", document_content, outcome, metadata=draft_metadata)
 
     # Reasoning trace is embedded in the main output, not saved separately
 
@@ -911,20 +873,21 @@ Focus on:
                 "verification": "auto-enabled (heavy)",
             },
             "usage": usage,
-            "response": output,
-            "output_file": output_file,
+            "response": strategy_content,
+            "output_files": {
+                "strategy": strategy_file,
+                "next_steps": steps_file,
+                "draft": draft_file
+            },
         },
     )
 
-    # Show summary instead of full output
+    # Show summary with all generated files
     click.echo(f"\n{success_message('Strategy generation complete!')}")
-    click.echo(saved_message(f'Output saved to: "{output_file}"'))
-    if consolidated_reasoning:
-        click.echo(
-            info_message(
-                f"Reasoning traces: open \"{output_file.replace('.txt', '_reasoning.txt')}\""
-            )
-        )
+    click.echo(f"\n{info_message('Files generated:')}")
+    click.echo(saved_message(f'  Strategic options: "{strategy_file}"'))
+    click.echo(saved_message(f'  Next steps: "{steps_file}"'))
+    click.echo(saved_message(f'  Draft document: "{draft_file}"'))
 
     # Show what was generated
     msg = stats_message(
@@ -940,5 +903,5 @@ Focus on:
         if title_match:
             click.echo(f"   {i}. {title_match.group(1)}")
 
-    msg = tip_message(f'View full strategy: open "{output_file}"')
+    msg = tip_message(f'View strategic options: open "{strategy_file}"')
     click.echo(f"\n{msg}")

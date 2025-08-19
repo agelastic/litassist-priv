@@ -4,8 +4,7 @@ Tests for verify_with_level modes in LLMClient.
 Tests different verification modes: light (spelling only) vs heavy (full verification).
 """
 
-from unittest.mock import Mock, patch, call
-import pytest
+from unittest.mock import Mock, patch
 
 from litassist.llm import LLMClient
 
@@ -35,6 +34,8 @@ class TestVerifyModes:
         
         # Call verify_with_level in light mode
         result = self.client.verify_with_level("This is a test text with judgement.", level="light")
+        if isinstance(result, tuple):
+            result = result[0]
         
         # Check the result
         assert result == "Spelling check complete. All correct."
@@ -42,7 +43,7 @@ class TestVerifyModes:
         # Verify LLMClient was instantiated with correct model
         mock_llm_client.assert_called_once()
         args, kwargs = mock_llm_client.call_args
-        assert args[0] == "anthropic/claude-opus-4"
+        assert args[0] == "anthropic/claude-opus-4.1"
         
         # Verify complete was called once
         assert mock_instance.complete.call_count == 1
@@ -82,6 +83,8 @@ class TestVerifyModes:
         
         # Call verify_with_level in heavy mode
         result = self.client.verify_with_level("Legal text with [2024] HCA 1 citation.", level="heavy")
+        if isinstance(result, tuple):
+            result = result[0]
         
         # Check the result
         assert result == "Comprehensive legal review complete. Found issues with citations."
@@ -89,7 +92,7 @@ class TestVerifyModes:
         # Verify LLMClient was instantiated with correct model
         mock_llm_client.assert_called_once()
         args, kwargs = mock_llm_client.call_args
-        assert args[0] == "anthropic/claude-opus-4"
+        assert args[0] == "anthropic/claude-opus-4.1"
         
         # Verify complete was called once
         assert mock_instance.complete.call_count == 1
@@ -149,6 +152,8 @@ class TestVerifyModes:
             
             # Call light verification
             result = self.client.verify_with_level("colour vs color", level="light")
+            if isinstance(result, tuple):
+                result = result[0]
             
             # Should still work with fallback prompt
             assert result == "Verified"

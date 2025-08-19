@@ -31,10 +31,10 @@ This audit identified **extensive LLM response parsing** throughout the litassis
 
 ## 1. Regular Expression Parsing of LLM Outputs
 
-### 1.1 Legal Reasoning Trace Extraction
+### 1.1 Reasoning Trace Extraction
 **File**: `litassist/utils.py:778-838`  
 **Impact**: HIGH - Core functionality across all commands  
-**Description**: Complex regex parsing to extract IRAC-based legal reasoning traces  
+**Description**: Complex regex parsing to extract IRAC-based reasoning traces  
 **Current Approach**: Multiple regex patterns to extract Issue, Applicable Law, Application, Conclusion, Confidence, and Sources  
 **Structured Output**: `LegalReasoningTrace` objects  
 
@@ -459,7 +459,7 @@ pattern3 = r"\[(\d{4})\]\s+([A-Z]+[A-Za-z]*)\s+(?:Civ|Crim|Admin|Fam|QB|Ch|Pat|C
 ## Refactoring Priority Matrix
 
 ### Priority 1: High-Impact Core Functionality
-1. **Legal Reasoning Trace Extraction** (`utils.py:778-838`)
+1. **Reasoning Trace Extraction** (`utils.py:778-838`)
    - **Impact**: Affects all commands
    - **Effort**: High - requires prompt template updates across multiple commands
    - **Approach**: JSON structured reasoning trace format
@@ -506,7 +506,7 @@ pattern3 = r"\[(\d{4})\]\s+([A-Z]+[A-Za-z]*)\s+(?:Civ|Crim|Admin|Fam|QB|Ch|Pat|C
    - Add structured format examples
    - Include self-validation instructions
 
-2. **Refactor Legal Reasoning Trace**
+2. **Refactor Reasoning Trace**
    - Update `utils.py` to expect JSON reasoning traces
    - Remove regex parsing logic
    - Update all command files to use new format
@@ -564,4 +564,4 @@ This comprehensive audit reveals that the litassist codebase contains extensive 
 
 The key insight is that **LLMs will always return properly formatted output when correctly prompted**, eliminating the need for complex parsing, error handling, and fallback logic. This refactoring should be approached systematically, starting with the highest-impact parsing patterns and working toward complete elimination of local LLM response processing.
 
-**Next Steps**: Begin Phase 1 implementation with Legal Reasoning Trace refactoring, as this affects all commands and provides the foundation for subsequent improvements.
+**Next Steps**: Begin Phase 1 implementation with Reasoning Trace refactoring, as this affects all commands and provides the foundation for subsequent improvements.

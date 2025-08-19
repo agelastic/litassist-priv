@@ -69,6 +69,8 @@ class TestLLMClientVerification:
         mock_create.return_value = mock_response
 
         result = self.client.verify_with_level("test content", "light")
+        if isinstance(result, tuple):
+            result = result[0]
 
         assert result == "Corrected text"
         # Should use light verification prompts
@@ -95,6 +97,8 @@ class TestLLMClientVerification:
         mock_create.return_value = mock_response
 
         result = self.client.verify_with_level("test content", "heavy")
+        if isinstance(result, tuple):
+            result = result[0]
 
         assert result == "Thoroughly reviewed content"
         # Should use heavy verification prompts
