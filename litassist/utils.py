@@ -973,11 +973,18 @@ def save_command_output(
     """
     timestamp = time.strftime("%Y%m%d_%H%M%S")
 
-    # Create filename slug
-    slug = re.sub(r"[^\w\s-]", "", query_or_slug.lower())
-    slug = re.sub(r"[-\s]+", "_", slug)[:40].strip("_") or command_name
-
-    output_file = os.path.join(OUTPUT_DIR, f"{command_name}_{slug}_{timestamp}.txt")
+    # Create filename based on whether a slug is provided
+    if query_or_slug:  # Non-empty slug means normal usage
+        slug = re.sub(r"[^\w\s-]", "", query_or_slug.lower())
+        slug = re.sub(r"[-\s]+", "_", slug)[:40].strip("_")
+        # If slug becomes empty after processing, use original pattern
+        if slug:
+            output_file = os.path.join(OUTPUT_DIR, f"{command_name}_{slug}_{timestamp}.txt")
+        else:
+            output_file = os.path.join(OUTPUT_DIR, f"{command_name}_{timestamp}.txt")
+    else:
+        # Empty query_or_slug means custom output name was provided
+        output_file = os.path.join(OUTPUT_DIR, f"{command_name}_{timestamp}.txt")
 
     with open(output_file, "w", encoding="utf-8") as f:
         # Standard header
