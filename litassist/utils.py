@@ -1204,6 +1204,21 @@ def validate_file_size(
     return content
 
 
+def is_text_file(file_path: str) -> bool:
+    """
+    Check if a file should be treated as a plain text file.
+    
+    Treats .txt and .md files identically as text files.
+    
+    Args:
+        file_path: Path to the file
+        
+    Returns:
+        True if file is .txt or .md, False otherwise
+    """
+    return file_path.lower().endswith(('.txt', '.md'))
+
+
 def parse_strategies_file(strategies_text: str) -> dict:
     """
     Parse the strategies.txt file to extract basic counts and metadata.

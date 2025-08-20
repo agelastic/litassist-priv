@@ -24,6 +24,7 @@ from litassist.utils import (
     show_command_completion,
     verify_content_if_needed,
     detect_factual_hallucinations,
+    is_text_file,
 )
 from litassist.llm import LLMClientFactory
 from litassist.helpers.retriever import Retriever, get_pinecone_client
@@ -82,7 +83,7 @@ def draft(ctx, documents, query, verify, diversity):
         text = read_document(doc_path)
 
         # Categorize documents by type - separate file type check from size check
-        if doc_path.lower().endswith(".txt"):
+        if is_text_file(doc_path):
             # For text files, categorize by content and handle large files appropriately
             if "case_facts" in doc_path.lower():
                 if len(text) < 400000:
