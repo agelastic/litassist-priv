@@ -48,6 +48,10 @@ litassist caseplan test_facts.txt --budget minimal --output my_plan 2>/dev/null 
 echo "9. Testing counselnotes --output"
 litassist counselnotes test_document.txt --output my_notes 2>/dev/null | grep -q "my_notes" && echo "✓ counselnotes works" || echo "✗ counselnotes failed"
 
+# Test verify (multi-output)
+echo "10. Testing verify --output (multi-output)"
+litassist verify test_document.txt --output my_verify 2>/dev/null | grep -q "my_verify" && echo "✓ verify works" || echo "✗ verify failed"
+
 echo ""
 echo "Testing complete! Check outputs/ directory for generated files."
 

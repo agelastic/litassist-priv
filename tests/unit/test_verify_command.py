@@ -175,7 +175,7 @@ class TestVerifyCommand:
             assert "IRAC structure complete" in result.output
             assert "Confidence: 85%" in result.output
             assert "Details: " in result.output  # File is now saved
-            assert "verify_test_document_reasoning_" in result.output
+            assert "verify_reasoning_test_document_" in result.output
 
     def test_verify_reasoning_generate_new(self, runner, temp_file, sample_legal_text):
         """Test generation of new reasoning trace."""
@@ -209,7 +209,7 @@ class TestVerifyCommand:
             assert "IRAC structure complete" in result.output
             assert "Confidence: 90%" in result.output
             assert "Details: " in result.output  # File is now saved
-            assert "verify_test_document_reasoning_" in result.output
+            assert "verify_reasoning_test_document_" in result.output
 
     def test_verify_empty_file(self, runner, temp_file):
         """Test handling of empty file."""
