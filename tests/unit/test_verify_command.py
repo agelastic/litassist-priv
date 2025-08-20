@@ -229,7 +229,8 @@ class TestVerifyCommand:
         verified = ["Case1 [2020] HCA 1", "Case2 [2021] FCA 2"]
         unverified = [("Case3 [2025] VSC 999", "Future date")]
         report = _format_citation_report(verified, unverified, total_found=3)
-        assert "# Citation Verification Report" in report
+        # No longer has the header since save_command_output handles it
+        assert "# Citation Verification Report" not in report
         assert "**Total citations found**: 3" in report
         assert "**Verified citations**: 2" in report
         assert "**Unverified citations**: 1" in report
