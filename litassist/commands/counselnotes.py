@@ -399,7 +399,7 @@ def counselnotes(files, extract, verify, output):
     output_file = save_command_output(
         output_prefix,
         final_content,
-        files_summary,
+        "" if output else files_summary,  # Use empty string when custom output provided
         metadata={
             "Mode": mode_description,
             "Documents": len(files),

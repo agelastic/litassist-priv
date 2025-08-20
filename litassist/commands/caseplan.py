@@ -115,8 +115,9 @@ def extract_cli_commands(plan_content):
     default=None,
     help="Budget constraint level (if not specified, LLM will recommend)",
 )
+@click.option("--output", type=str, help="Custom output filename prefix")
 @timed
-def caseplan(case_facts, context, budget):
+def caseplan(case_facts, context, budget, output):
     """
     Generate customized litigation workflow plan based on case facts.
 
@@ -164,7 +165,7 @@ def caseplan(case_facts, context, budget):
             raise click.ClickException(f"Budget assessment error: {e}")
 
         output_file = save_command_output(
-            "caseplan-assessment",
+            f"{output}_assessment" if output else "caseplan-assessment",
             assessment,
             case_facts.name,
             metadata={"Type": "Budget Assessment"},
@@ -241,13 +242,16 @@ def caseplan(case_facts, context, budget):
             metadata["Context"] = context
 
         output_file = save_command_output(
-            "caseplan", plan_content, case_facts.name, metadata=metadata
+            f"{output}_plan" if output else "caseplan", 
+            plan_content, 
+            "" if output else case_facts.name, 
+            metadata=metadata
         )
 
         # Extract and save CLI commands
         extracted_commands = extract_cli_commands(plan_content)
         commands_file = save_command_output(
-            f"caseplan_commands_{budget}", 
+            f"{output}_commands" if output else f"caseplan_commands_{budget}", 
             extracted_commands, 
             case_facts.name, 
             metadata={"Type": "Executable Commands", "Budget": budget}

@@ -161,8 +161,9 @@ def create_consolidated_reasoning_trace(option_traces, outcome):
 @click.option(
     "--verify", is_flag=True, help="Enable self-critique pass (default: auto-enabled)"
 )
+@click.option("--output", type=str, help="Custom output filename prefix")
 @timed
-def strategy(case_facts, outcome, strategies, verify):
+def strategy(case_facts, outcome, strategies, verify, output):
     """
     Generate legal strategy options and draft documents for Australian civil matters.
 
@@ -849,15 +850,30 @@ def strategy(case_facts, outcome, strategies, verify):
         metadata["Strategies File"] = strategies.name
 
     # 1. Save main strategic options (for backward compatibility)
-    strategy_file = save_command_output("strategy", strategy_content, outcome, metadata=metadata)
+    strategy_file = save_command_output(
+        f"{output}_options" if output else "strategy", 
+        strategy_content, 
+        "" if output else outcome, 
+        metadata=metadata
+    )
     
     # 2. Save next steps separately
     steps_metadata = {"Desired Outcome": outcome, "Type": "Recommended Next Steps"}
-    steps_file = save_command_output("strategy_nextsteps", next_steps_content, outcome, metadata=steps_metadata)
+    steps_file = save_command_output(
+        f"{output}_nextsteps" if output else "strategy_nextsteps", 
+        next_steps_content, 
+        "" if output else outcome, 
+        metadata=steps_metadata
+    )
     
     # 3. Save draft document separately
     draft_metadata = {"Desired Outcome": outcome, "Document Type": doc_type.title()}
-    draft_file = save_command_output("strategy_draft", document_content, outcome, metadata=draft_metadata)
+    draft_file = save_command_output(
+        f"{output}_draft" if output else "strategy_draft", 
+        document_content, 
+        "" if output else outcome, 
+        metadata=draft_metadata
+    )
 
     # Reasoning trace is embedded in the main output, not saved separately
 

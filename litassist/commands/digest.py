@@ -35,8 +35,9 @@ from litassist.llm import LLMClientFactory, NonRetryableAPIError
     default=None,
     help="Additional context to guide the analysis.",
 )
+@click.option("--output", type=str, help="Custom output filename prefix")
 @timed
-def digest(file, mode, context):
+def digest(file, mode, context, output):
     """
     Mass-document digestion via Claude.
 
@@ -423,9 +424,9 @@ def digest(file, mode, context):
     
     # Save output using utility
     output_file = save_command_output(
-        f"digest_{mode}",
+        output if output else f"digest_{mode}",
         content,
-        f"{len(source_files)} files",
+        "" if output else f"{len(source_files)} files",
         metadata={
             "Mode": mode.title(), 
             "Source Files": source_files,

@@ -67,8 +67,9 @@ def _perform_cse_search(service, query, cse_id, limit, primary=False):
     type=str,
     help="Contextual information to guide the lookup analysis",
 )
+@click.option("--output", type=str, help="Custom output filename prefix")
 @timed
-def lookup(question, mode, extract, comprehensive, context):
+def lookup(question, mode, extract, comprehensive, context, output):
     """
     Rapid case-law lookup via Jade CSE + Gemini.
 
@@ -236,7 +237,7 @@ def lookup(question, mode, extract, comprehensive, context):
         )
         
         # Save the formatted text output
-        command_name = f"lookup_{extract}"
+        command_name = f"{output}_{extract}" if output else f"lookup_{extract}"
         metadata = {"Mode": mode, "Extract": extract}
         if context:
             metadata["Context"] = context
@@ -245,12 +246,12 @@ def lookup(question, mode, extract, comprehensive, context):
         metadata["JSON File"] = json_file
         
         output_file = save_command_output(
-            command_name, formatted_content, question, metadata=metadata
+            command_name, formatted_content, "" if output else question, metadata=metadata
         )
     else:
         # Non-extraction mode - save content as-is
         formatted_content = content
-        command_name = "lookup"
+        command_name = output if output else "lookup"
         metadata = {"Mode": mode}
         if context:
             metadata["Context"] = context
@@ -258,7 +259,7 @@ def lookup(question, mode, extract, comprehensive, context):
             metadata["Comprehensive"] = "True"
         
         output_file = save_command_output(
-            command_name, formatted_content, question, metadata=metadata
+            command_name, formatted_content, "" if output else question, metadata=metadata
         )
 
     # Save audit log

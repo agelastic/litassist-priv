@@ -31,8 +31,9 @@ from litassist.llm import LLMClientFactory
 @click.option(
     "--verify", is_flag=True, help="Enable self-critique pass (default: auto-enabled)"
 )
+@click.option("--output", type=str, help="Custom output filename prefix")
 @timed
-def extractfacts(file, verify):
+def extractfacts(file, verify, output):
     """
     Auto-generate case_facts.txt under ten structured headings.
 
@@ -186,9 +187,9 @@ def extractfacts(file, verify):
     if len(source_files) > 3:
         slug += f"_and_{len(source_files)-3}_more"
     output_file = save_command_output(
-        "extractfacts",
+        output if output else "extractfacts",
         combined,
-        slug,
+        "" if output else slug,
         metadata={"Source Files": ", ".join(source_files)},
     )
 
