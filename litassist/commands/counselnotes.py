@@ -377,19 +377,11 @@ def counselnotes(files, extract, verify, output):
     # Prepare final output
     final_content = "\n\n".join(all_output)
 
-    # Add document summary header
+    # Prepare metadata for save_command_output
     files_summary = ", ".join([info["name"] for info in file_info])
     mode_description = f"extraction ({extract})" if extract else "strategic analysis"
-
-    header = f"# Counsel's Notes - {mode_description.title()}\n\n"
-    header += f"**Documents Analyzed:** {files_summary}\n"
-    header += f"**Analysis Date:** {datetime.now().strftime('%d/%m/%Y %H:%M:%S')}\n"
-    header += f"**Processing Mode:** {processing_mode}\n"
-    if verify:
-        header += "**Citation Verification:** Enabled\n"
-    header += "\n---\n\n"
-
-    final_content = header + final_content
+    
+    # Note: Header is now handled by save_command_output, not added to content
 
     # Save output using utility
     output_prefix = output if output else "counselnotes"
@@ -399,12 +391,13 @@ def counselnotes(files, extract, verify, output):
     output_file = save_command_output(
         output_prefix,
         final_content,
-        files_summary,
+        "" if output else files_summary,  # Use empty string when custom output provided
         metadata={
-            "Mode": mode_description,
-            "Documents": len(files),
+            "Mode": mode_description.title(),
+            "Documents Analyzed": files_summary,
+            "Processing Mode": processing_mode,
             "Extraction Type": extract or "None",
-            "Citation Verification": verify,
+            "Citation Verification": "Enabled" if verify else "Disabled",
         },
     )
 

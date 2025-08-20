@@ -122,9 +122,10 @@ class TestCommandParameterPropagation:
         mock_factory.assert_called_once_with("digest", "issues")
         assert self.mock_client.complete.called
 
+    @patch("litassist.commands.lookup.time.sleep")
     @patch("litassist.llm.LLMClientFactory.for_command")
     @patch("litassist.commands.lookup.CONFIG")
-    def test_lookup_command_parameters(self, mock_config, mock_factory):
+    def test_lookup_command_parameters(self, mock_config, mock_factory, mock_sleep):
         """Test lookup command uses correct model (gemini-2.5-pro)."""
         mock_factory.return_value = self.mock_client
         mock_config.g_key = "test_google_key"

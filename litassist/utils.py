@@ -973,11 +973,17 @@ def save_command_output(
     """
     timestamp = time.strftime("%Y%m%d_%H%M%S")
 
-    # Create filename slug
-    slug = re.sub(r"[^\w\s-]", "", query_or_slug.lower())
-    slug = re.sub(r"[-\s]+", "_", slug)[:40].strip("_") or command_name
-
-    output_file = os.path.join(OUTPUT_DIR, f"{command_name}_{slug}_{timestamp}.txt")
+    # Create filename based on whether a slug is provided
+    slug = ""
+    if query_or_slug:  # Non-empty slug means normal usage
+        sanitized_slug = re.sub(r"[^\w\s-]", "", query_or_slug.lower())
+        slug = re.sub(r"[-\s]+", "_", sanitized_slug)[:40].strip("_")
+    
+    if slug:
+        output_file = os.path.join(OUTPUT_DIR, f"{command_name}_{slug}_{timestamp}.txt")
+    else:
+        # This handles both cases: empty query_or_slug, or a slug that becomes empty after sanitization.
+        output_file = os.path.join(OUTPUT_DIR, f"{command_name}_{timestamp}.txt")
 
     with open(output_file, "w", encoding="utf-8") as f:
         # Standard header
@@ -1202,6 +1208,21 @@ def validate_file_size(
         )
 
     return content
+
+
+def is_text_file(file_path: str) -> bool:
+    """
+    Check if a file should be treated as a plain text file.
+    
+    Treats .txt and .md files identically as text files.
+    
+    Args:
+        file_path: Path to the file
+        
+    Returns:
+        True if file is .txt or .md, False otherwise
+    """
+    return file_path.lower().endswith(('.txt', '.md'))
 
 
 def parse_strategies_file(strategies_text: str) -> dict:

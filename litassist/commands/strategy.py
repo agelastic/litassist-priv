@@ -161,8 +161,9 @@ def create_consolidated_reasoning_trace(option_traces, outcome):
 @click.option(
     "--verify", is_flag=True, help="Enable self-critique pass (default: auto-enabled)"
 )
+@click.option("--output", type=str, help="Custom output filename prefix")
 @timed
-def strategy(case_facts, outcome, strategies, verify):
+def strategy(case_facts, outcome, strategies, verify, output):
     """
     Generate legal strategy options and draft documents for Australian civil matters.
 
@@ -736,15 +737,15 @@ def strategy(case_facts, outcome, strategies, verify):
 
     # Combine valid options into final strategy content
     if valid_options:
-        strategy_header = f"# STRATEGIC OPTIONS FOR: {outcome.upper()}\n\n"
-
+        # Note: Header is now handled by save_command_output, not added to content
+        
         # Renumber options sequentially
         numbered_options = []
         for i, option in enumerate(valid_options, 1):
             # Clean up the option content and add proper numbering
             clean_option = option.strip()
 
-            # Remove duplicate strategy header if present
+            # Remove duplicate strategy header if present (from earlier processing)
             header_pattern = r"^#\s*STRATEGIC OPTIONS FOR:.*?\n\n"
             clean_option = re.sub(header_pattern, "", clean_option, flags=re.IGNORECASE)
             clean_option = clean_option.strip()
@@ -758,7 +759,7 @@ def strategy(case_facts, outcome, strategies, verify):
                 )
             numbered_options.append(clean_option)
 
-        strategy_content = strategy_header + "\n\n".join(numbered_options)
+        strategy_content = "\n\n".join(numbered_options)
         usage = total_usage
 
         click.echo(
@@ -768,7 +769,7 @@ def strategy(case_facts, outcome, strategies, verify):
         )
     else:
         # No valid options could be generated
-        strategy_content = f"# STRATEGIC OPTIONS FOR: {outcome.upper()}\n\n## NO VALID OPTIONS GENERATED\n\nUnable to generate strategic options with verified citations after {max_attempts} attempts. Please refine the case facts or desired outcome and try again."
+        strategy_content = f"## NO VALID OPTIONS GENERATED\n\nUnable to generate strategic options with verified citations after {max_attempts} attempts. Please refine the case facts or desired outcome and try again."
         usage = total_usage
         click.echo(
             warning_message(
@@ -849,15 +850,30 @@ def strategy(case_facts, outcome, strategies, verify):
         metadata["Strategies File"] = strategies.name
 
     # 1. Save main strategic options (for backward compatibility)
-    strategy_file = save_command_output("strategy", strategy_content, outcome, metadata=metadata)
+    strategy_file = save_command_output(
+        f"{output}_options" if output else "strategy", 
+        strategy_content, 
+        "" if output else outcome, 
+        metadata=metadata
+    )
     
     # 2. Save next steps separately
     steps_metadata = {"Desired Outcome": outcome, "Type": "Recommended Next Steps"}
-    steps_file = save_command_output("strategy_nextsteps", next_steps_content, outcome, metadata=steps_metadata)
+    steps_file = save_command_output(
+        f"{output}_nextsteps" if output else "strategy_nextsteps", 
+        next_steps_content, 
+        "" if output else outcome, 
+        metadata=steps_metadata
+    )
     
     # 3. Save draft document separately
     draft_metadata = {"Desired Outcome": outcome, "Document Type": doc_type.title()}
-    draft_file = save_command_output("strategy_draft", document_content, outcome, metadata=draft_metadata)
+    draft_file = save_command_output(
+        f"{output}_draft" if output else "strategy_draft", 
+        document_content, 
+        "" if output else outcome, 
+        metadata=draft_metadata
+    )
 
     # Reasoning trace is embedded in the main output, not saved separately
 

@@ -164,6 +164,7 @@ def expand_glob_patterns(ctx, param, value):
     is_flag=True,
     help="Enable citation verification",
 )
+@click.option("--output", type=str, help="Custom output filename prefix")
 @click.pass_context
 @timed
 def barbrief(
@@ -175,6 +176,7 @@ def barbrief(
     context,
     hearing_type,
     verify,
+    output,
 ):
     """
     Generate comprehensive barrister's brief for Australian litigation.
@@ -330,7 +332,11 @@ def barbrief(
             click.echo(f"Verification report saved: {verify_file}")
     
     # Save the brief
-    output_file = save_command_output("barbrief", content, hearing_type)
+    output_file = save_command_output(
+        output if output else "barbrief", 
+        content, 
+        "" if output else hearing_type
+    )
     
     # Show completion message
     show_command_completion(

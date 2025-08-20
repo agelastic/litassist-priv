@@ -12,9 +12,10 @@ class TestLookupCommand:
     """Test the lookup command functionality."""
 
 
+    @patch("litassist.commands.lookup.time.sleep")
     @patch("googleapiclient.discovery.build")
     @patch("litassist.llm.LLMClientFactory.for_command")
-    def test_lookup_command_standard_mode(self, mock_factory, mock_build):
+    def test_lookup_command_standard_mode(self, mock_factory, mock_build, mock_sleep):
         """Test lookup command in standard mode."""
         # Mock the CSE service
         mock_cse_service = Mock()
@@ -51,9 +52,10 @@ class TestLookupCommand:
             assert "[SUCCESS] Lookup complete!" in result.output
             assert "Standard search: 2 sources analyzed" in result.output
 
+    @patch("litassist.commands.lookup.time.sleep")
     @patch("googleapiclient.discovery.build")
     @patch("litassist.llm.LLMClientFactory.for_command")
-    def test_lookup_command_comprehensive_mode(self, mock_factory, mock_build):
+    def test_lookup_command_comprehensive_mode(self, mock_factory, mock_build, mock_sleep):
         """Test lookup command in comprehensive mode."""
         # Mock the CSE service to return multiple results for different queries
         mock_cse_service = Mock()
@@ -89,9 +91,10 @@ class TestLookupCommand:
             assert result.exit_code == 0
             assert "Exhaustive search:" in result.output
 
+    @patch("litassist.commands.lookup.time.sleep")
     @patch("googleapiclient.discovery.build")
     @patch("litassist.llm.LLMClientFactory.for_command")
-    def test_lookup_command_with_extraction(self, mock_factory, mock_build):
+    def test_lookup_command_with_extraction(self, mock_factory, mock_build, mock_sleep):
         """Test lookup command with extract option."""
         # Mock the CSE service
         mock_cse_service = Mock()
@@ -136,7 +139,8 @@ class TestLookupCommand:
             assert call_args[1] == "citations"  # extract_type
             assert call_args[3] == "lookup"  # command
 
-    def test_lookup_command_irac_vs_broad_mode(self):
+    @patch("litassist.commands.lookup.time.sleep")
+    def test_lookup_command_irac_vs_broad_mode(self, mock_sleep):
         """Test that IRAC and broad modes use different LLM parameters."""
         with patch("googleapiclient.discovery.build") as mock_build, patch(
             "litassist.llm.LLMClientFactory.for_command"
@@ -186,7 +190,8 @@ class TestLookupCommand:
 class TestLookupCommandIntegration:
     """Integration tests for lookup command."""
 
-    def test_comprehensive_mode_parameters(self):
+    @patch("litassist.commands.lookup.time.sleep")
+    def test_comprehensive_mode_parameters(self, mock_sleep):
         """Test that comprehensive mode uses correct parameters."""
         with patch("googleapiclient.discovery.build") as mock_build, patch(
             "litassist.llm.LLMClientFactory.for_command"

@@ -175,7 +175,7 @@ class TestVerifyCommand:
             assert "IRAC structure complete" in result.output
             assert "Confidence: 85%" in result.output
             assert "Details: " in result.output  # File is now saved
-            assert "verify_test_document_reasoning_" in result.output
+            assert "verify_reasoning_test_document_" in result.output
 
     def test_verify_reasoning_generate_new(self, runner, temp_file, sample_legal_text):
         """Test generation of new reasoning trace."""
@@ -209,7 +209,7 @@ class TestVerifyCommand:
             assert "IRAC structure complete" in result.output
             assert "Confidence: 90%" in result.output
             assert "Details: " in result.output  # File is now saved
-            assert "verify_test_document_reasoning_" in result.output
+            assert "verify_reasoning_test_document_" in result.output
 
     def test_verify_empty_file(self, runner, temp_file):
         """Test handling of empty file."""
@@ -229,7 +229,8 @@ class TestVerifyCommand:
         verified = ["Case1 [2020] HCA 1", "Case2 [2021] FCA 2"]
         unverified = [("Case3 [2025] VSC 999", "Future date")]
         report = _format_citation_report(verified, unverified, total_found=3)
-        assert "# Citation Verification Report" in report
+        # No longer has the header since save_command_output handles it
+        assert "# Citation Verification Report" not in report
         assert "**Total citations found**: 3" in report
         assert "**Verified citations**: 2" in report
         assert "**Unverified citations**: 1" in report

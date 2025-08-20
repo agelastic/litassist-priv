@@ -332,8 +332,9 @@ def expand_glob_patterns(ctx, param, value):
     "Use multiple times: --research file1.txt --research 'outputs/lookup_*.txt'. "
     "Large research files (>128k tokens) may impact verification performance.",
 )
+@click.option("--output", type=str, help="Custom output filename prefix")
 @timed
-def brainstorm(facts, side, area, research):
+def brainstorm(facts, side, area, research, output):
     """
     Generate comprehensive legal strategies via Grok.
 
@@ -673,9 +674,9 @@ Please provide output in EXACTLY this format:
 
     # Save to timestamped file only (reasoning traces remain inline in the content)
     output_file = save_command_output(
-        f"brainstorm_{area}_{side}",
+        output if output else f"brainstorm_{area}_{side}",
         combined_content,
-        f"{side} in {area} law",
+        "" if output else f"{side} in {area} law",
         metadata={
             "Side": side.capitalize(),
             "Area": area.capitalize(),

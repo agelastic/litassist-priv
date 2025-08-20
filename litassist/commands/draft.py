@@ -24,6 +24,7 @@ from litassist.utils import (
     show_command_completion,
     verify_content_if_needed,
     detect_factual_hallucinations,
+    is_text_file,
 )
 from litassist.llm import LLMClientFactory
 from litassist.helpers.retriever import Retriever, get_pinecone_client
@@ -39,9 +40,10 @@ from litassist.helpers.retriever import Retriever, get_pinecone_client
     help="Control diversity of search results (0.0-1.0)",
     default=None,
 )
+@click.option("--output", type=str, help="Custom output filename prefix")
 @click.pass_context
 @timed
-def draft(ctx, documents, query, verify, diversity):
+def draft(ctx, documents, query, verify, diversity, output):
     """
     Citation-rich drafting via RAG & GPT-4o.
 
@@ -82,7 +84,7 @@ def draft(ctx, documents, query, verify, diversity):
         text = read_document(doc_path)
 
         # Categorize documents by type - separate file type check from size check
-        if doc_path.lower().endswith(".txt"):
+        if is_text_file(doc_path):
             # For text files, categorize by content and handle large files appropriately
             if "case_facts" in doc_path.lower():
                 if len(text) < 400000:
@@ -255,9 +257,9 @@ def draft(ctx, documents, query, verify, diversity):
 
     # Save output using utility
     output_file = save_command_output(
-        "draft",
+        output if output else "draft",
         content,
-        query,
+        "" if output else query,
         metadata={"Query": query, "Documents": ", ".join(documents)},
     )
 
