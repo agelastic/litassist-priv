@@ -737,15 +737,15 @@ def strategy(case_facts, outcome, strategies, verify, output):
 
     # Combine valid options into final strategy content
     if valid_options:
-        strategy_header = f"# STRATEGIC OPTIONS FOR: {outcome.upper()}\n\n"
-
+        # Note: Header is now handled by save_command_output, not added to content
+        
         # Renumber options sequentially
         numbered_options = []
         for i, option in enumerate(valid_options, 1):
             # Clean up the option content and add proper numbering
             clean_option = option.strip()
 
-            # Remove duplicate strategy header if present
+            # Remove duplicate strategy header if present (from earlier processing)
             header_pattern = r"^#\s*STRATEGIC OPTIONS FOR:.*?\n\n"
             clean_option = re.sub(header_pattern, "", clean_option, flags=re.IGNORECASE)
             clean_option = clean_option.strip()
@@ -759,7 +759,7 @@ def strategy(case_facts, outcome, strategies, verify, output):
                 )
             numbered_options.append(clean_option)
 
-        strategy_content = strategy_header + "\n\n".join(numbered_options)
+        strategy_content = "\n\n".join(numbered_options)
         usage = total_usage
 
         click.echo(
@@ -769,7 +769,7 @@ def strategy(case_facts, outcome, strategies, verify, output):
         )
     else:
         # No valid options could be generated
-        strategy_content = f"# STRATEGIC OPTIONS FOR: {outcome.upper()}\n\n## NO VALID OPTIONS GENERATED\n\nUnable to generate strategic options with verified citations after {max_attempts} attempts. Please refine the case facts or desired outcome and try again."
+        strategy_content = f"## NO VALID OPTIONS GENERATED\n\nUnable to generate strategic options with verified citations after {max_attempts} attempts. Please refine the case facts or desired outcome and try again."
         usage = total_usage
         click.echo(
             warning_message(
