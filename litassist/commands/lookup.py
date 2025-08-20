@@ -110,10 +110,23 @@ def lookup(question, mode, extract, comprehensive, context):
     links.extend(_perform_cse_search(
         service, question, CONFIG.cse_id, jade_limit, primary=True
     ))
+    
+    # Rate limit delay between CSE calls
+    cse_delay = float(os.environ.get('CSE_RATE_LIMIT_DELAY', '1.5'))
+    if cse_delay > 0 and (getattr(CONFIG, "cse_id_austlii", None) or comprehensive):
+        click.echo(f"Rate limiting: waiting {cse_delay}s...")
+        time.sleep(cse_delay)
+    
     # AustLII CSE search (optional)
     links.extend(_perform_cse_search(
         service, question, getattr(CONFIG, "cse_id_austlii", None), austlii_limit
     ))
+    
+    # Rate limit delay before comprehensive search
+    if cse_delay > 0 and comprehensive:
+        click.echo(f"Rate limiting: waiting {cse_delay}s...")
+        time.sleep(cse_delay)
+    
     # Comprehensive CSE search (optional)
     if comprehensive:
         links.extend(_perform_cse_search(
