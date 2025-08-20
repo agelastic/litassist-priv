@@ -167,7 +167,7 @@ def caseplan(case_facts, context, budget, output):
         output_file = save_command_output(
             f"{output}_assessment" if output else "caseplan-assessment",
             assessment,
-            case_facts.name,
+            "" if output else case_facts.name,
             metadata={"Type": "Budget Assessment"},
         )
 
@@ -253,7 +253,7 @@ def caseplan(case_facts, context, budget, output):
         commands_file = save_command_output(
             f"{output}_commands" if output else f"caseplan_commands_{budget}", 
             extracted_commands, 
-            case_facts.name, 
+            "" if output else case_facts.name, 
             metadata={"Type": "Executable Commands", "Budget": budget}
         )
 

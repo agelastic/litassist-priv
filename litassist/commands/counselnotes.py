@@ -395,7 +395,6 @@ def counselnotes(files, extract, verify, output):
         metadata={
             "Mode": mode_description.title(),
             "Documents Analyzed": files_summary,
-            "Analysis Date": datetime.now().strftime('%d/%m/%Y %H:%M:%S'),
             "Processing Mode": processing_mode,
             "Extraction Type": extract or "None",
             "Citation Verification": "Enabled" if verify else "Disabled",
