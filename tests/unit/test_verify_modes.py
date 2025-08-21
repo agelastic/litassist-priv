@@ -123,13 +123,13 @@ class TestVerifyModes:
     def test_default_verification_mode(self, mock_verify):
         """Test that unrecognized level defaults to standard verification."""
         # Mock the verify method
-        mock_verify.return_value = "Standard verification complete."
+        mock_verify.return_value = ("Standard verification complete.", "anthropic/claude-opus-4.1")
         
         # Call verify_with_level with invalid level
         result = self.client.verify_with_level("Test text", level="medium")
         
         # Check the result
-        assert result == "Standard verification complete."
+        assert result == ("Standard verification complete.", "anthropic/claude-opus-4.1")
         
         # Verify that the standard verify method was called
         mock_verify.assert_called_once_with("Test text")
@@ -189,7 +189,7 @@ class TestVerifyModes:
     @patch("litassist.llm.LLMClient.verify")
     def test_unknown_level_calls_standard_verify(self, mock_verify):
         """Test that unknown levels call the standard verify method."""
-        mock_verify.return_value = "Standard verification"
+        mock_verify.return_value = ("Standard verification", "anthropic/claude-opus-4.1")
         
         # Test various unknown levels
         for level in ["unknown", "standard", None, "", "xyz"]:
@@ -197,5 +197,5 @@ class TestVerifyModes:
             
             result = self.client.verify_with_level("Test", level=level)
             
-            assert result == "Standard verification"
+            assert result == ("Standard verification", "anthropic/claude-opus-4.1")
             mock_verify.assert_called_once_with("Test")

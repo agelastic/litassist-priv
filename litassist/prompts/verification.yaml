@@ -65,6 +65,10 @@ verification:
     - "(unchanged during verification)"
     
     The document MUST start with its actual content, not with any meta-instructions.
+    
+    If previous verification results are provided (Citations or Reasoning Analysis sections),
+    consider them as independent assessments to inform your analysis, but perform your own
+    thorough verification.
 
   # Enhanced citation instructions for retry attempts
   # USED BY: llm.py LLMClient.complete() method - when citation verification fails and retry is needed
@@ -90,3 +94,72 @@ verification:
   # LOCATION: llm.py:757-762
   system_prompt: |
     You are a senior solicitor with excellent knowledge of case and statute law. Thoroughly verify legal accuracy, citations, precedents, and reasoning.
+
+  # Context-aware soundness verification with both citation and reasoning context
+  # USED BY: llm.py LLMClient.verify() method - when both contexts are provided
+  soundness_with_context: |
+    You are conducting legal soundness verification with the benefit of prior verification results.
+    
+    When reviewing the "Previous Verification: Citations" section:
+    - Pay special attention to any UNVERIFIED citations - arguments relying on these are potentially flawed
+    - Note which legal authorities have been confirmed vs. those that could not be verified
+    - Consider whether the document's arguments would survive if unverified citations were removed
+    
+    When reviewing the "Previous Verification: Reasoning Analysis" section:
+    - Note the confidence levels - low confidence may indicate logical or legal weaknesses
+    - Check if the IRAC structure reveals gaps in legal reasoning
+    - Consider whether issues identified in reasoning align with citation problems
+    
+    Perform your comprehensive soundness check with these insights in mind:
+    1. Flag any arguments that depend on unverified citations
+    2. Identify logical gaps highlighted by the reasoning analysis
+    3. Assess whether citation issues undermine key legal positions
+    4. Verify that confidence levels align with the strength of legal arguments
+    
+    DO NOT simply repeat findings from previous verifications. Instead:
+    - Synthesize insights across all verification layers
+    - Identify compound issues (e.g., weak reasoning + unverified citations)
+    - Provide actionable recommendations for strengthening the document
+    
+    Output exactly in this order:
+    
+    ## Issues Found during Verification
+    1. Describe each issue, including those revealed by citation/reasoning context.
+       If there are no issues, write "No issues found."
+    
+    ---
+    ## Verified and Corrected Document
+    Return the COMPLETE full text with corrections made inline. All unchanged lines MUST be
+    reproduced verbatim exactly as they appear. Never use placeholders.
+
+  # Reasoning verification with citation context
+  # USED BY: reasoning generation when citation context is available
+  reasoning_with_citations: |
+    Generate a reasoning trace for this document, taking into account the citation verification results.
+    
+    From the "Citation Verification Results" section, note:
+    - Which citations were verified vs. unverified
+    - The reliability of the legal authorities cited
+    
+    In your reasoning trace:
+    - Adjust confidence levels based on citation reliability
+    - Flag any reasoning that depends on unverified authorities
+    - Note where stronger citations would strengthen arguments
+    
+    Use this exact format (DO NOT repeat any sections):
+    
+    ## Reasoning Trace
+    
+    Issue: [State the primary legal question or issue being analyzed - write this only once]
+    
+    Applicable Law: [Identify the relevant legal principles, statutes, cases, or rules - write this only once]
+    
+    Application to Facts: [Explain how the law applies to the specific facts presented - write this only once]
+    
+    Conclusion: [State your legal conclusion clearly - write this only once]
+    
+    Confidence: [Your confidence level as a percentage, 0-100% - adjust based on citation reliability]
+    
+    Sources: [List key legal authorities cited, separated by semicolons - note any that are unverified]
+    
+    Each section should appear exactly once. Do not repeat sections or content.

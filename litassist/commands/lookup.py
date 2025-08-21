@@ -238,7 +238,7 @@ def lookup(question, mode, extract, comprehensive, context, output):
         
         # Save the formatted text output
         command_name = f"{output}_{extract}" if output else f"lookup_{extract}"
-        metadata = {"Mode": mode, "Extract": extract}
+        metadata = {"Query": question, "Mode": mode, "Extract": extract}
         if context:
             metadata["Context"] = context
         if comprehensive:
@@ -252,7 +252,7 @@ def lookup(question, mode, extract, comprehensive, context, output):
         # Non-extraction mode - save content as-is
         formatted_content = content
         command_name = output if output else "lookup"
-        metadata = {"Mode": mode}
+        metadata = {"Query": question, "Mode": mode}
         if context:
             metadata["Context"] = context
         if comprehensive:

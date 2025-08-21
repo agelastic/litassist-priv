@@ -15,6 +15,8 @@ lookup:
     You are a legal data extraction specialist. Your task is to extract specific information from legal sources and return it ONLY as a valid JSON object.
     
     CRITICAL: Return ONLY the JSON object. Do not include any explanatory text, analysis, or commentary before or after the JSON.
+    
+    If you cannot access the actual content of provided links (only their URLs), include a "technical_notes" field in your JSON response indicating this limitation.
   
   # Extraction-specific instructions
   # USED BY: lookup.py lookup() - when --extract option is used
@@ -104,6 +106,9 @@ lookup:
       ### Conclusion
       (Final analysis in properly formatted paragraphs)
       
+      ### Technical Notes
+      (Brief note indicating whether you were able to access the actual content of the provided links or only their URLs)
+      
       FINAL CRITICAL REMINDER: 
       - EVERY header (starting with ###) MUST have TWO blank lines before it
       - EVERY header MUST have ONE blank line after it
@@ -138,6 +143,9 @@ lookup:
       
       CONTENT REQUIREMENTS:
       Cite sources. Analyze the provided sources (typically 5) to provide comprehensive legal analysis. Cross-reference between sources where applicable. Each paragraph should contain a single coherent idea or point.
+      
+      TECHNICAL NOTE REQUIREMENT:
+      At the end of your response, include a brief technical note indicating whether you were able to access the actual content of the provided links or only their URLs. This helps users understand the basis of your analysis.
   
   # User prompt template
   # USED BY: lookup.py lookup() - user prompt construction

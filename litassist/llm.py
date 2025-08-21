@@ -1056,7 +1056,7 @@ class LLMClient:
 
     @heartbeat()
     @timed
-    def verify(self, primary_text: str) -> str:
+    def verify(self, primary_text: str, citation_context: str = None, reasoning_context: str = None) -> Tuple[str, str]:
         """
         Run a self-critique pass to identify and correct legal inaccuracies in text.
 
@@ -1065,20 +1065,35 @@ class LLMClient:
 
         Args:
             primary_text: The text content to verify for legal accuracy.
+            citation_context: Optional citation verification report to inform analysis.
+            reasoning_context: Optional reasoning trace analysis to inform verification.
 
         Returns:
-            A string containing corrections to any legal inaccuracies found.
+            Tuple of (corrections to any legal inaccuracies found, model name used for verification).
 
         Raises:
             Exception: If the verification API call fails.
         """
         try:
             base_prompt = PROMPTS.get("base.australian_law")
-            self_critique = PROMPTS.get("verification.self_critique")
+            # Select appropriate critique prompt based on available context
+            if citation_context and reasoning_context:
+                # Both contexts available - use comprehensive soundness check
+                self_critique = PROMPTS.get("verification.soundness_with_context")
+            else:
+                # Standard verification
+                self_critique = PROMPTS.get("verification.self_critique")
         except KeyError:
             # Fallback to hardcoded if prompts not available
             base_prompt = "Australian law only. Use Australian English spellings and terminology (e.g., 'judgement' not 'judgment', 'defence' not 'defense')."
             self_critique = "Identify and correct any legal inaccuracies above, and provide the corrected text only. Ensure all spellings follow Australian English conventions."
+
+        # Build the full text with optional verification contexts
+        full_text = primary_text
+        if citation_context:
+            full_text += "\n\n## Previous Verification: Citations\n" + citation_context
+        if reasoning_context:
+            full_text += "\n\n## Previous Verification: Reasoning Analysis\n" + reasoning_context
 
         critique_prompt = [
             {
@@ -1087,7 +1102,7 @@ class LLMClient:
             },
             {
                 "role": "user",
-                "content": primary_text + "\n\n" + self_critique,
+                "content": full_text + "\n\n" + self_critique,
             },
         ]
         # Use Claude 4 Opus for all verification, regardless of generation model
@@ -1316,7 +1331,7 @@ class LLMClient:
         return validate_citation_patterns(content, enable_online)
 
     # Heartbeat now handled in `complete`; remove to prevent duplicate messages.
-    def verify_with_level(self, primary_text: str, level: str = "medium") -> str:
+    def verify_with_level(self, primary_text: str, level: str = "medium") -> Tuple[str, str]:
         """
         Run verification with different depth levels.
 
@@ -1326,7 +1341,7 @@ class LLMClient:
                   Any other value defaults to standard verification
 
         Returns:
-            Verification feedback
+            Tuple of (verification feedback, model name used for verification)
         """
         if level == "light":
             # Just check Australian English compliance
