@@ -67,7 +67,7 @@ def _fetch_url_content(url: str, timeout: int = 5) -> str:
             html = re.sub(r'<style.*?</style>', '', html, flags=re.DOTALL)
             # Truncate if massive (most legal docs are <100KB)
             return html[:50000]  # ~10,000 words with HTML
-    except:
+    except Exception:
         pass
     return ""
 
@@ -176,7 +176,7 @@ def lookup(question, mode, extract, comprehensive, context, output):
             time.sleep(0.5)  # Be polite between fetches
         content = _fetch_url_content(link)
         if content:
-            contents.append(f"=== SOURCE: {link} ===\n{content}\n")
+            contents.append(f"=== ACTUAL CONTENT FROM: {link} ===\n{content}\n=== END OF CONTENT FROM: {link} ===\n")
             click.echo(f"  [Fetched {len(content)} chars]")
 
     # Prepare prompt using centralized template
@@ -187,13 +187,14 @@ def lookup(question, mode, extract, comprehensive, context, output):
         # Create a rich prompt with actual content
         prompt = f"""Question: {question}
 
-Found these sources:
+Successfully fetched and providing ACTUAL CONTENT from these legal sources:
 {chr(10).join(links)}
 
-Actual content from legal sources:
+Below is the REAL HTML/TEXT content fetched directly from these URLs:
 {content_text}
 
-Based on the actual legal content provided above, please provide comprehensive legal analysis."""
+IMPORTANT: You are reading the ACTUAL CONTENT from these web pages, not just their URLs. 
+Analyze this real content to provide comprehensive legal analysis with specific quotes and references."""
     else:
         # Fallback to URL-only prompt (existing behavior)
         prompt = PROMPTS.get("analysis.lookup.question_prompt").format(
