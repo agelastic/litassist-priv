@@ -65,6 +65,10 @@ verification:
     - "(unchanged during verification)"
     
     The document MUST start with its actual content, not with any meta-instructions.
+    
+    If previous verification results are provided (Citations or Reasoning Analysis sections),
+    consider them as independent assessments to inform your analysis, but perform your own
+    thorough verification.
 
   # Enhanced citation instructions for retry attempts
   # USED BY: llm.py LLMClient.complete() method - when citation verification fails and retry is needed

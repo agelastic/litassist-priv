@@ -1056,7 +1056,7 @@ class LLMClient:
 
     @heartbeat()
     @timed
-    def verify(self, primary_text: str) -> str:
+    def verify(self, primary_text: str, citation_context: str = None, reasoning_context: str = None) -> str:
         """
         Run a self-critique pass to identify and correct legal inaccuracies in text.
 
@@ -1065,6 +1065,8 @@ class LLMClient:
 
         Args:
             primary_text: The text content to verify for legal accuracy.
+            citation_context: Optional citation verification report to inform analysis.
+            reasoning_context: Optional reasoning trace analysis to inform verification.
 
         Returns:
             A string containing corrections to any legal inaccuracies found.
@@ -1080,6 +1082,13 @@ class LLMClient:
             base_prompt = "Australian law only. Use Australian English spellings and terminology (e.g., 'judgement' not 'judgment', 'defence' not 'defense')."
             self_critique = "Identify and correct any legal inaccuracies above, and provide the corrected text only. Ensure all spellings follow Australian English conventions."
 
+        # Build the full text with optional verification contexts
+        full_text = primary_text
+        if citation_context:
+            full_text += "\n\n## Previous Verification: Citations\n" + citation_context
+        if reasoning_context:
+            full_text += "\n\n## Previous Verification: Reasoning Analysis\n" + reasoning_context
+
         critique_prompt = [
             {
                 "role": "system",
@@ -1087,7 +1096,7 @@ class LLMClient:
             },
             {
                 "role": "user",
-                "content": primary_text + "\n\n" + self_critique,
+                "content": full_text + "\n\n" + self_critique,
             },
         ]
         # Use Claude 4 Opus for all verification, regardless of generation model

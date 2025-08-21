@@ -71,6 +71,7 @@ def verify(file, citations, soundness, reasoning, output):
     base_name = os.path.splitext(file)[0]
     reports_generated = 0
     extra_files = {}
+    citation_report = None  # Track citation report for passing to other steps
     reasoning_response = None  # Track reasoning response for potential combination
 
     # 1. Citation Verification
@@ -136,6 +137,9 @@ def verify(file, citations, soundness, reasoning, output):
             else:
                 client = LLMClientFactory.for_command("verify")
                 enhanced_prompt = create_reasoning_prompt(content, "verify")
+                # Append citation report if available
+                if citation_report:
+                    enhanced_prompt += "\n\n## Citation Verification Results\n" + citation_report
                 messages = [
                     {
                         "role": "system",
@@ -189,7 +193,12 @@ def verify(file, citations, soundness, reasoning, output):
     if soundness:
         try:
             client = LLMClientFactory.for_command("verify")
-            soundness_result, soundness_model = client.verify(content)
+            # Pass both citation and reasoning contexts if available
+            soundness_result, soundness_model = client.verify(
+                content,
+                citation_context=citation_report,
+                reasoning_context=reasoning_response
+            )
             issues = _parse_soundness_issues(soundness_result)
             soundness_report = _format_soundness_report(issues, soundness_result, soundness_model)
             soundness_file = save_command_output(
