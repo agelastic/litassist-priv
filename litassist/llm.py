@@ -1056,7 +1056,7 @@ class LLMClient:
 
     @heartbeat()
     @timed
-    def verify(self, primary_text: str, citation_context: str = None, reasoning_context: str = None) -> str:
+    def verify(self, primary_text: str, citation_context: str = None, reasoning_context: str = None) -> Tuple[str, str]:
         """
         Run a self-critique pass to identify and correct legal inaccuracies in text.
 
@@ -1069,7 +1069,7 @@ class LLMClient:
             reasoning_context: Optional reasoning trace analysis to inform verification.
 
         Returns:
-            A string containing corrections to any legal inaccuracies found.
+            Tuple of (corrections to any legal inaccuracies found, model name used for verification).
 
         Raises:
             Exception: If the verification API call fails.
@@ -1331,7 +1331,7 @@ class LLMClient:
         return validate_citation_patterns(content, enable_online)
 
     # Heartbeat now handled in `complete`; remove to prevent duplicate messages.
-    def verify_with_level(self, primary_text: str, level: str = "medium") -> str:
+    def verify_with_level(self, primary_text: str, level: str = "medium") -> Tuple[str, str]:
         """
         Run verification with different depth levels.
 
@@ -1341,7 +1341,7 @@ class LLMClient:
                   Any other value defaults to standard verification
 
         Returns:
-            Verification feedback
+            Tuple of (verification feedback, model name used for verification)
         """
         if level == "light":
             # Just check Australian English compliance
