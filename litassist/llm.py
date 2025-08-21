@@ -1076,7 +1076,13 @@ class LLMClient:
         """
         try:
             base_prompt = PROMPTS.get("base.australian_law")
-            self_critique = PROMPTS.get("verification.self_critique")
+            # Select appropriate critique prompt based on available context
+            if citation_context and reasoning_context:
+                # Both contexts available - use comprehensive soundness check
+                self_critique = PROMPTS.get("verification.soundness_with_context")
+            else:
+                # Standard verification
+                self_critique = PROMPTS.get("verification.self_critique")
         except KeyError:
             # Fallback to hardcoded if prompts not available
             base_prompt = "Australian law only. Use Australian English spellings and terminology (e.g., 'judgement' not 'judgment', 'defence' not 'defense')."
