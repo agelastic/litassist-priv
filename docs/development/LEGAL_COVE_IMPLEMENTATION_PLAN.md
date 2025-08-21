@@ -109,9 +109,6 @@ def run_verification_chain(
             citation_context=citation_report if citation_report else None
         )
         
-        if isinstance(corrected_content, tuple):
-            corrected_content = corrected_content[0]
-            
         results['llm'] = {
             'corrections_made': corrected_content != content,
             'passed': True
@@ -125,9 +122,6 @@ def run_verification_chain(
 
 def _format_simple_report(database_results: Dict) -> Optional[str]:
     """Format database results for context - no parsing, just text."""
-    if not database_results:
-        return None
-        
     verified = database_results.get('verified', [])
     unverified = database_results.get('unverified', [])
     
