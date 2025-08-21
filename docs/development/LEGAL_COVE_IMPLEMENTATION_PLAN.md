@@ -1,8 +1,14 @@
 # Legal Chain of Verification (CoVe) Implementation Plan
 
+**UPDATED: 2025-08-21 - Revised to follow CLAUDE.md principles and actual codebase reality**
+
 ## Executive Summary
 
-Implementing Chain of Verification (CoVe) for legal documents to address the critical hallucination problem in legal AI, where research shows 69-88% hallucination rates in legal queries. This plan combines Meta AI's CoVe methodology with LitAssist's existing verification infrastructure to create a legally defensible verification system.
+Implementing Chain of Verification (CoVe) for legal documents to address the critical hallucination problem in legal AI, where research shows 69-88% hallucination rates in legal queries. This plan has been completely revised to:
+1. Follow CLAUDE.md minimal changes principle
+2. Build on actual codebase (not planned architectures that don't exist)
+3. Create minimal chain first (130 lines total)
+4. Avoid overengineering and unnecessary abstractions
 
 ## Background: The Legal Hallucination Crisis
 
@@ -23,161 +29,209 @@ Based on Meta AI research (arXiv:2309.11495), CoVe is a four-step self-verificat
 
 The "factored" approach (preventing the model from attending to prior answers) reduces repeated hallucinations.
 
-## Our Enhanced Legal CoVe Architecture
+## Current Codebase Reality (Verified)
 
-### Core Innovation: Hybrid Verification
+After examining the actual code (not documentation), here's what exists:
 
-Unlike standard CoVe which relies solely on LLM self-verification, our approach combines:
-- **External validation** via legal databases (Jade.io)
-- **Pattern matching** for citation formats
-- **LLM verification** for legal principles
-- **Cross-reference checking** for factual consistency
+### What EXISTS:
+- `citation_patterns.py`: `validate_citation_patterns()` → List[str] of issues
+- `citation_verify.py`: `verify_all_citations()` → (verified, unverified) tuples
+- `llm.py`: `client.verify()` with context passing (our recent work)
+- `utils.py`: `verify_content_if_needed()` for command-level verification
+- Automatic citation verification in `LLMClient.complete()`
 
-### System Architecture
+### What DOESN'T EXIST:
+- ❌ No `litassist/verification/` directory
+- ❌ No VerificationChain class
+- ❌ No stages.py or config with stages
+- ❌ No pipeline infrastructure
 
-```mermaid
-graph TD
-    A[Initial Legal Document] --> B[CoVe Question Generation]
-    B --> C{Question Classification}
-    C -->|Citation Questions| D[Database Verification<br/>citation_verify.py]
-    C -->|Format Questions| E[Pattern Validation<br/>citation_patterns.py]
-    C -->|Legal Principles| F[LLM + RAG<br/>Factored Approach]
-    C -->|Factual Consistency| G[Cross-Reference Check]
-    D --> H[Answer Aggregation]
-    E --> H
-    F --> H
-    G --> H
-    H --> I[Inconsistency Detection]
-    I --> J{Issues Found?}
-    J -->|Yes| K[Regenerate with<br/>Verified Facts]
-    J -->|No| L[Return Verified<br/>Document]
-    K --> M[Audit Log]
-    L --> M
-```
+**Critical Finding**: The Chain of Verification Architecture document describes a system that was never built.
 
-## Implementation Details
+## Revised Implementation (Following CLAUDE.md Principles)
 
-### 1. Question Generation Module
+### PHASE 1: Minimal Chain First (80 lines)
+
+**Single file: `litassist/verification_chain.py`**
 
 ```python
-# litassist/verification/cove.py
+"""Minimal verification chain orchestrator - no overengineering."""
 
-class LegalCoVe:
-    """Chain of Verification for legal documents with external validation"""
+from typing import Dict, Optional, Tuple
+from litassist.citation_patterns import validate_citation_patterns
+from litassist.citation_verify import verify_all_citations
+from litassist.llm import LLMClientFactory
+
+
+def run_verification_chain(
+    content: str, 
+    command: str,
+    skip_stages: Optional[set] = None
+) -> Tuple[str, Dict]:
+    """
+    Minimal chain that orchestrates existing verification functions.
+    Returns (content, verification_results).
+    """
+    skip_stages = skip_stages or set()
+    results = {}
     
-    def generate_verification_questions(self, content, doc_type):
-        """Generate domain-specific verification questions"""
-        
-        questions = {
-            'citations': [],      # Real case verification
-            'statutes': [],       # Current law verification
-            'principles': [],     # Legal doctrine verification
-            'consistency': [],    # Internal consistency
-            'dates': [],         # Temporal verification
-            'parties': []        # Party name consistency
+    # Stage 1: Pattern validation (offline, fast)
+    if 'patterns' not in skip_stages:
+        pattern_issues = validate_citation_patterns(content, enable_online=False)
+        results['patterns'] = {
+            'issues': pattern_issues,
+            'passed': len(pattern_issues) == 0
         }
         
-        # Use LLM to generate targeted questions
-        prompt = PROMPTS.get('cove.question_generation').format(
-            content=content,
-            doc_type=doc_type
+        # Early exit for high-risk commands
+        if pattern_issues and command in ['extractfacts', 'strategy', 'draft']:
+            return content, results
+    
+    # Stage 2: Database verification (online, authoritative)
+    if 'database' not in skip_stages and results.get('patterns', {}).get('passed', True):
+        verified, unverified = verify_all_citations(content)
+        results['database'] = {
+            'verified': verified,
+            'unverified': unverified,
+            'passed': len(unverified) == 0
+        }
+        
+        # Early exit for strict commands
+        if unverified and command in ['extractfacts', 'strategy']:
+            return content, results
+    
+    # Stage 3: LLM verification (expensive, comprehensive)
+    if 'llm' not in skip_stages and command in ['extractfacts', 'strategy', 'draft']:
+        client = LLMClientFactory.for_command('verify')
+        citation_report = _format_simple_report(results.get('database', {}))
+        corrected_content, _ = client.verify(
+            content,
+            citation_context=citation_report if citation_report else None
         )
         
-        return self.parse_questions(llm_response)
+        if isinstance(corrected_content, tuple):
+            corrected_content = corrected_content[0]
+            
+        results['llm'] = {
+            'corrections_made': corrected_content != content,
+            'passed': True
+        }
+        
+        if corrected_content != content:
+            content = corrected_content
+    
+    return content, results
+
+
+def _format_simple_report(database_results: Dict) -> Optional[str]:
+    """Format database results for context - no parsing, just text."""
+    if not database_results:
+        return None
+        
+    verified = database_results.get('verified', [])
+    unverified = database_results.get('unverified', [])
+    
+    if not verified and not unverified:
+        return None
+        
+    report = f"Verified: {len(verified)}\n"
+    if unverified:
+        report += f"Unverified: {', '.join([u[0] for u in unverified])}"
+    
+    return report
 ```
 
-### 2. Hybrid Verification Executor
+### Integration with Existing Code (10 lines)
+
+In `litassist/utils.py`, modify `verify_content_if_needed()` at line ~1150:
 
 ```python
-def execute_hybrid_verification(self, questions):
-    """Route questions to appropriate validators"""
-    
-    answers = {}
-    for category, question_list in questions.items():
-        for question in question_list:
-            if category == 'citations':
-                # Use existing citation_verify.py
-                answers[question] = self.verify_citation_database(question)
-            elif category == 'statutes':
-                # Check current legislation
-                answers[question] = self.verify_statute_current(question)
-            elif category == 'principles':
-                # Factored LLM verification
-                answers[question] = self.verify_principle_factored(question)
-            elif category == 'consistency':
-                # Cross-reference checking
-                answers[question] = self.check_internal_consistency(question)
-                
-    return answers
+# Add before: if needs_verification:
+if command_name in ['extractfacts', 'strategy', 'draft']:
+    from litassist.verification_chain import run_verification_chain
+    verified_content, results = run_verification_chain(content, command_name)
+    if results.get('llm', {}).get('corrections_made'):
+        return verified_content, True
+    # Fall through to existing verification if chain didn't handle it
 ```
 
-### 3. Question Templates
+### PHASE 2: CoVe Implementation (50 additional lines)
 
-```yaml
-# litassist/prompts/cove.yaml
+Add to the same `litassist/verification_chain.py` file:
 
-cove:
-  question_generation: |
-    Analyze this legal document and generate verification questions.
-    
-    For each citation, ask:
-    - Is [case name] correctly cited with year and court?
-    - Does [case] actually establish [principle claimed]?
-    
-    For each statute, ask:
-    - Is [section X] of [Act] currently in force?
-    - Does [section] actually state [claimed provision]?
-    
-    For legal principles, ask:
-    - Is [principle] correctly attributed to [source]?
-    - Does [doctrine] apply to [these facts]?
-    
-    For consistency, ask:
-    - Are all dates consistent throughout?
-    - Are party names spelled consistently?
-    - Do facts align across all sections?
-
-  factored_verification: |
-    Answer this question based ONLY on your legal knowledge.
-    Do NOT consider any prior responses.
-    Question: {question}
-    Provide a brief, factual answer with source if known.
-```
-
-### 4. Integration Points
-
-#### Option A: Add as New Verification Stage
 ```python
-# litassist/verification/config.py
-COMMAND_CONFIGS = {
-    'extractfacts': {
-        'stages': ['pattern', 'database', 'cove', 'llm'],
-        'cove_config': {
-            'question_types': ['citations', 'statutes', 'consistency'],
-            'max_questions': 20,
-            'factored': True
+def run_cove_verification(content: str, command: str) -> Tuple[str, Dict]:
+    """
+    Chain of Verification - asks LLM to generate and answer questions.
+    No local parsing - trust the LLM.
+    """
+    client = LLMClientFactory.for_command('verify')
+    
+    # Step 1: Generate questions (let LLM do the work)
+    questions_prompt = f"""
+    Generate 5-10 verification questions for this legal document.
+    Focus on citations, dates, party names, and legal principles.
+    
+    Document:
+    {content[:3000]}  # Limit for question generation
+    
+    Output numbered questions only.
+    """
+    
+    questions, _ = client.complete([{"role": "user", "content": questions_prompt}])
+    
+    # Step 2: Answer questions independently (factored approach)
+    answers_prompt = f"""
+    Answer these questions based ONLY on legal knowledge, NOT the document:
+    
+    {questions}
+    
+    For each question, answer: Yes/No/Uncertain with brief explanation.
+    """
+    
+    answers, _ = client.complete([{"role": "user", "content": answers_prompt}])
+    
+    # Step 3: Detect inconsistencies (let LLM compare)
+    verify_prompt = f"""
+    Compare these Q&A pairs against the original document.
+    Identify any inconsistencies or errors.
+    
+    Questions and Answers:
+    {answers}
+    
+    Original Document:
+    {content}
+    
+    Output: List issues found, or "No issues found"
+    """
+    
+    issues, _ = client.complete([{"role": "user", "content": verify_prompt}])
+    
+    return content, {
+        'cove': {
+            'questions': questions,
+            'answers': answers,
+            'issues': issues,
+            'passed': 'No issues found' in issues
         }
     }
-}
 ```
 
-#### Option B: Replace LLM Critique with CoVe
+### Integration of CoVe with Chain
+
+Modify `run_verification_chain()` to add CoVe as Stage 4:
+
 ```python
-COMMAND_CONFIGS = {
-    'strategy': {
-        'stages': ['pattern', 'database', 'cove'],  # CoVe replaces generic LLM
-        'cove_config': {
-            'comprehensive': True,
-            'external_validation': True
-        }
-    }
-}
+# Add after Stage 3 (LLM verification), before final return
+if 'cove' not in skip_stages and command in ['extractfacts', 'strategy']:
+    content, cove_results = run_cove_verification(content, command)
+    results.update(cove_results)
 ```
 
 ## Example Verification Questions
 
 ### Citation Verification
-- "Is 'Donoghue v Stevenson [1932] AC 562' a real House of Lords case?"
+- "Is 'Donoghue v Stevenson [1932] AC 562' correctly cited?"
 - "Was Mabo v Queensland (No 2) decided in 1992 by the High Court?"
 - "Does Carlill v Carbolic Smoke Ball Company establish unilateral contracts?"
 
@@ -196,475 +250,66 @@ COMMAND_CONFIGS = {
 - "Is the plaintiff's name spelled 'Smith' throughout?"
 - "Do the claimed damages align with the injury description?"
 
-## Implementation Phases
+## Revised Implementation Timeline
 
-### Phase 1: Basic CoVe (Week 1)
-- [ ] Create `litassist/verification/cove.py` with question generation
-- [ ] Add simple question templates for citations
-- [ ] Integrate with existing verification chain
+### Phase 1: Minimal Chain (2 hours)
+- [ ] Create `litassist/verification_chain.py` (80 lines)
+- [ ] Add integration to `utils.py` (10 lines)
 - [ ] Test with extractfacts command
+- [ ] No classes, no abstractions, just functions
 
-### Phase 2: Hybrid Verification (Week 2)
-- [ ] Implement question routing to external validators
-- [ ] Connect to citation_verify.py for database checks
-- [ ] Add factored LLM verification
-- [ ] Create audit logging for questions/answers
+### Phase 2: CoVe Addition (1 hour)
+- [ ] Add `run_cove_verification()` to same file (50 lines)
+- [ ] Integrate as Stage 4 in chain
+- [ ] Test factored approach
+- [ ] Let LLM do all parsing - no regex
 
-### Phase 3: Advanced Features (Week 3)
-- [ ] Add document-type-specific question templates
-- [ ] Implement confidence scoring for answers
-- [ ] Create inconsistency detection algorithms
-- [ ] Add regeneration with verified facts
+## Why This Approach Is Better
 
-### Phase 4: Production Hardening (Week 4)
-- [ ] Performance optimization for question batching
-- [ ] Comprehensive test suite
-- [ ] Documentation and examples
-- [ ] Integration with all commands
+1. **Follows CLAUDE.md Principles**:
+   - Minimal changes (130 lines total)
+   - No classes when functions work
+   - No local parsing - trust the LLM
+   - No premature abstractions
 
-## Detailed Implementation Steps
+2. **Based on Actual Code**:
+   - Uses existing `validate_citation_patterns()`
+   - Uses existing `verify_all_citations()`
+   - Uses existing `client.verify()` with context
+   - Doesn't assume non-existent infrastructure
 
-### IMMEDIATE: Basic CoVe Question Generation (2-3 hours)
+3. **Safe and Incremental**:
+   - Chain works without CoVe
+   - CoVe builds on chain
+   - Each phase is independently useful
+   - No breaking changes
 
-#### Implementation
-```python
-# litassist/verification/cove.py (NEW - ~50 lines)
+## What Was Removed from Original Plan
 
-class BasicCoVe:
-    def generate_questions(self, content: str) -> List[str]:
-        """Generate basic verification questions from content"""
-        
-        # Extract citations using existing citation_patterns.py
-        citations = extract_citations(content)
-        
-        questions = []
-        for citation in citations:
-            # Simple template-based questions
-            questions.append(f"Is {citation} a real case?")
-            questions.append(f"Is the year in {citation} correct?")
-        
-        # Extract claimed principles (basic regex)
-        principles = re.findall(r"establishes? that (.+?)(?:\.|,)", content)
-        for principle in principles:
-            questions.append(f"Is this legal principle correct: {principle}?")
-        
-        return questions
-```
+The following were removed as violations of CLAUDE.md principles:
 
-#### Integration
-```python
-# In litassist/verification/stages.py (ADD ~20 lines)
+1. **Class hierarchies** (850 lines across 7 files):
+   - `LegalCoVe`, `QuestionRouter`, `FactoredCoVe`, `LegalQuestionTemplates` classes
+   - Replaced with: 2 simple functions (130 lines total)
 
-class CoVeStage:
-    def process(self, content, context):
-        cove = BasicCoVe()
-        questions = cove.generate_questions(content)
-        
-        # For now, just log questions (no execution yet)
-        logger.info(f"Generated {len(questions)} verification questions")
-        
-        # Pass questions to context for next stage
-        context['cove_questions'] = questions
-        return StageResult(success=True)
-```
+2. **Local parsing and regex** - Let LLM extract questions instead
 
-#### Files to Modify
-- Create: `litassist/verification/cove.py` (50 lines)
-- Modify: `litassist/verification/stages.py` (+20 lines)
-- Modify: `litassist/verification/config.py` (+1 line per command)
+3. **Question routing/classification** - Trust LLM to answer appropriately
 
----
+4. **Configuration files with stages** - Infrastructure that doesn't exist
 
-### STEP 2: Enhanced Question Routing (4-5 hours)
+5. **Template abstractions** - Premature optimization
 
-#### Implementation
-```python
-# litassist/verification/question_router.py (NEW - ~100 lines)
+All 850+ lines of overengineered code have been replaced with 130 lines of simple functions.
 
-class QuestionRouter:
-    """Routes verification questions to appropriate validators"""
-    
-    def classify_question(self, question: str) -> str:
-        """Classify question type for routing"""
-        
-        if re.search(r'\[\d{4}\]|HCA|FCA|VSC|NSWCA', question):
-            return 'citation'
-        elif re.search(r'section \d+|Act \d{4}', question):
-            return 'statute'
-        elif 'principle' in question or 'doctrine' in question:
-            return 'principle'
-        elif 'date' in question or 'when' in question:
-            return 'temporal'
-        else:
-            return 'general'
-    
-    def route_and_answer(self, question: str) -> dict:
-        """Route to appropriate validator and get answer"""
-        
-        q_type = self.classify_question(question)
-        
-        if q_type == 'citation':
-            # Use existing citation_verify.py
-            citation = self.extract_citation(question)
-            verified, _ = verify_all_citations(citation)
-            return {
-                'question': question,
-                'answer': 'Yes' if verified else 'No',
-                'source': 'jade_database',
-                'confidence': 0.95 if verified else 0.1
-            }
-        
-        elif q_type == 'statute':
-            # Check statute validity (new functionality)
-            return self.verify_statute(question)
-        
-        elif q_type == 'principle':
-            # Use LLM with factored approach
-            return self.verify_principle_factored(question)
-        
-        return {'question': question, 'answer': 'Unable to verify', 'confidence': 0.0}
-```
+## Final Implementation Summary
 
-#### Enhanced CoVe Stage
-```python
-# Modify litassist/verification/stages.py
-
-class EnhancedCoVeStage:
-    def process(self, content, context):
-        cove = BasicCoVe()
-        router = QuestionRouter()
-        
-        questions = cove.generate_questions(content)
-        answers = []
-        
-        for question in questions:
-            answer = router.route_and_answer(question)
-            answers.append(answer)
-            
-            if answer['confidence'] < 0.5:
-                logger.warning(f"Low confidence answer: {answer}")
-        
-        # Detect issues
-        issues = [a for a in answers if a['confidence'] < 0.5]
-        
-        if issues and context.get('strict_mode'):
-            return StageResult(
-                success=False,
-                issues=issues,
-                should_stop=True
-            )
-        
-        return StageResult(success=True, data={'answers': answers})
-```
-
----
-
-### STEP 3: Advanced Factored Verification (6-8 hours)
-
-#### Implementation
-```python
-# litassist/verification/factored_cove.py (NEW - ~150 lines)
-
-class FactoredCoVe:
-    """Implements Meta's factored approach to prevent bias"""
-    
-    def verify_principle_factored(self, question: str) -> dict:
-        """Answer question independently without original context"""
-        
-        # Create isolated LLM client
-        client = LLMClientFactory.for_command('verify')
-        
-        # Factored prompt - NO original document context
-        prompt = """
-        Answer this legal question based ONLY on established law.
-        Do NOT consider any document or prior context.
-        Provide sources if known.
-        
-        Question: {question}
-        
-        Answer format:
-        - Answer: [Yes/No/Partially correct]
-        - Legal basis: [Case or statute]
-        - Confidence: [0-100]%
-        """.format(question=question)
-        
-        response, _ = client.complete([
-            {"role": "system", "content": "You are a legal expert. Answer based only on established law."},
-            {"role": "user", "content": prompt}
-        ])
-        
-        return self.parse_factored_response(response)
-    
-    def detect_inconsistencies(self, content: str, answers: List[dict]) -> List[str]:
-        """Compare factored answers against original content"""
-        
-        inconsistencies = []
-        
-        for answer in answers:
-            if answer['confidence'] > 0.8:
-                # High confidence answer conflicts with content
-                if self.conflicts_with_content(content, answer):
-                    inconsistencies.append({
-                        'type': 'factual_error',
-                        'claim': answer['question'],
-                        'truth': answer['answer'],
-                        'severity': 'high'
-                    })
-        
-        return inconsistencies
-    
-    def regenerate_with_facts(self, content: str, verified_facts: dict) -> str:
-        """Regenerate content with verified facts"""
-        
-        prompt = """
-        Revise this legal document using ONLY verified facts.
-        
-        Original document:
-        {content}
-        
-        Verified facts:
-        {facts}
-        
-        Inconsistencies found:
-        {issues}
-        
-        Generate corrected version maintaining structure but fixing errors.
-        """
-        
-        # Use LLM to regenerate with constraints
-        return self.constrained_regeneration(prompt)
-```
-
-#### Integration with Verification Chain
-```python
-# Modify litassist/verification/config.py
-
-COMMAND_CONFIGS = {
-    'extractfacts': {
-        'stages': ['pattern', 'database', 'factored_cove', 'final_review'],
-        'cove_config': {
-            'factored': True,
-            'max_questions': 20,
-            'regenerate_on_error': True,
-            'confidence_threshold': 0.7
-        }
-    }
-}
-```
-
----
-
-### STEP 4: Ultimate Legal-Specific Templates (8-10 hours)
-
-#### Implementation
-```python
-# litassist/verification/legal_templates.py (NEW - ~200 lines)
-
-class LegalQuestionTemplates:
-    """Domain-specific question generation for legal documents"""
-    
-    AFFIDAVIT_QUESTIONS = [
-        "Is the deponent's name consistent throughout?",
-        "Are all exhibits properly referenced?",
-        "Is the jurat properly formatted?",
-        "Are dates in chronological order?",
-        "Do paragraph numbers follow sequentially?"
-    ]
-    
-    PLEADING_QUESTIONS = [
-        "Is the cause of action clearly stated?",
-        "Are all necessary parties included?",
-        "Is the relief sought specific and quantifiable?",
-        "Are material facts distinguished from evidence?",
-        "Is the jurisdiction properly pleaded?"
-    ]
-    
-    CONTRACT_QUESTIONS = [
-        "Are all defined terms used consistently?",
-        "Are consideration clauses valid?",
-        "Are termination conditions clearly specified?",
-        "Do warranty limitations comply with ACL?",
-        "Are dispute resolution clauses enforceable?"
-    ]
-    
-    def generate_document_specific_questions(self, content: str, doc_type: str) -> List[str]:
-        """Generate questions based on document type"""
-        
-        # Detect document type if not specified
-        if not doc_type:
-            doc_type = self.detect_document_type(content)
-        
-        base_questions = self.get_template_questions(doc_type)
-        
-        # Add dynamic questions based on content analysis
-        dynamic_questions = self.generate_dynamic_questions(content, doc_type)
-        
-        # Add citation-specific questions
-        citation_questions = self.generate_citation_questions(content)
-        
-        # Add cross-reference questions
-        xref_questions = self.generate_consistency_questions(content)
-        
-        return base_questions + dynamic_questions + citation_questions + xref_questions
-```
-
-#### Advanced Question Generation
-```python
-# litassist/prompts/cove_legal.yaml (NEW)
-
-cove_legal:
-  affidavit_analysis: |
-    Analyze this affidavit and generate verification questions for:
-    
-    1. Formal requirements:
-       - Is sworn/affirmed statement present?
-       - Is witness qualification stated?
-       - Are annexures properly marked?
-    
-    2. Content verification:
-       - Are facts within deponent's knowledge?
-       - Are opinions properly qualified?
-       - Is hearsay properly identified?
-    
-    3. Consistency checks:
-       - Do dates align with external documents?
-       - Are monetary amounts consistent?
-       - Do names match throughout?
-  
-  strategic_advice_analysis: |
-    For strategic legal advice, verify:
-    
-    1. Legal basis:
-       - Is each strategy grounded in valid law?
-       - Are success probabilities realistic?
-       - Are risks properly identified?
-    
-    2. Precedent accuracy:
-       - Does each cited case support the proposition?
-       - Are distinguishing factors acknowledged?
-       - Is the ratio decidendi correctly stated?
-    
-    3. Practical considerations:
-       - Are costs estimates reasonable?
-       - Are timeframes realistic?
-       - Are procedural requirements met?
-```
-
-#### Complete Integration
-```python
-# litassist/verification/legal_cove.py (FINAL - ~300 lines)
-
-class LegalCoVe:
-    """Complete Legal Chain of Verification implementation"""
-    
-    def __init__(self, config: dict):
-        self.router = QuestionRouter()
-        self.templates = LegalQuestionTemplates()
-        self.factored = FactoredCoVe()
-        self.config = config
-    
-    def full_verification_pipeline(self, content: str, doc_type: str = None) -> dict:
-        """Complete CoVe pipeline for legal documents"""
-        
-        # Step 1: Generate comprehensive questions
-        questions = self.templates.generate_document_specific_questions(
-            content, doc_type
-        )
-        
-        # Step 2: Execute hybrid verification
-        answers = []
-        for question in questions:
-            if self.config.get('factored'):
-                answer = self.factored.verify_principle_factored(question)
-            else:
-                answer = self.router.route_and_answer(question)
-            answers.append(answer)
-        
-        # Step 3: Detect inconsistencies
-        issues = self.factored.detect_inconsistencies(content, answers)
-        
-        # Step 4: Regenerate if needed
-        if issues and self.config.get('regenerate_on_error'):
-            verified_content = self.factored.regenerate_with_facts(
-                content, 
-                verified_facts={a['question']: a['answer'] for a in answers}
-            )
-        else:
-            verified_content = content
-        
-        # Step 5: Create audit trail
-        audit = {
-            'timestamp': datetime.now().isoformat(),
-            'document_type': doc_type,
-            'questions_asked': len(questions),
-            'issues_found': len(issues),
-            'confidence_scores': [a['confidence'] for a in answers],
-            'average_confidence': sum(a['confidence'] for a in answers) / len(answers),
-            'regenerated': verified_content != content,
-            'verification_sources': set(a.get('source', 'llm') for a in answers)
-        }
-        
-        return {
-            'content': verified_content,
-            'audit': audit,
-            'issues': issues,
-            'qa_pairs': list(zip(questions, answers))
-        }
-```
-
-## Implementation Timeline Summary
-
-| Step | Description | New Files | Lines | Time | Impact |
-|------|------------|-----------|-------|------|--------|
-| **Immediate** | Basic question generation | 1 file | 50 | 2-3 hrs | Questions logged |
-| **Step 2** | Question routing to validators | 2 files | 150 | 4-5 hrs | External validation |
-| **Step 3** | Factored verification | 1 file | 150 | 6-8 hrs | Bias prevention |
-| **Step 4** | Legal templates & full integration | 3 files | 500 | 8-10 hrs | Production ready |
-
-**Total: ~850 lines of new code across 7 files**
-
-Each step builds on the previous, creating a progressively more sophisticated system that ultimately provides legally defensible verification with full audit trails.
-
-## Expected Outcomes
-
-### Metrics
-- **Baseline**: 69-88% hallucination rate (research data)
-- **Standard CoVe**: ~30-40% reduction (Meta's results)
-- **Legal CoVe Target**: <10% hallucination rate through external validation
-
-### Quality Improvements
-1. **Every citation verified** against legal databases
-2. **Every statute checked** for current validity
-3. **Every principle validated** through factored verification
-4. **Every fact cross-referenced** for consistency
-5. **Full audit trail** for professional liability
-
-## Files to Create
-
-```
-litassist/verification/
-├── cove.py                    # Core CoVe implementation (~200 lines)
-├── questions.py               # Question generation logic (~100 lines)
-├── validators.py              # Question-specific validators (~150 lines)
-└── templates/
-    ├── citation_questions.yaml
-    ├── statute_questions.yaml
-    └── principle_questions.yaml
-```
-
-## Integration with Current Work
-
-This builds on the context-passing enhancement just implemented:
-1. Citation report from Stage 1 → Informs CoVe questions
-2. CoVe verification results → Passed to final verification
-3. All contexts flow through the pipeline
-
-## Risk Mitigation
-
-1. **Performance**: Cache question/answer pairs for common queries
-2. **Cost**: Limit questions based on document length and command
-3. **Accuracy**: Use factored approach to prevent bias propagation
-4. **Reliability**: Fallback to standard verification if CoVe fails
+| Component | Lines | Files | Time |
+|-----------|-------|-------|------|
+| Minimal Chain | 80 | 1 new | 2 hrs |
+| CoVe Addition | 50 | 0 new | 1 hr |
+| Integration | 10 | 1 mod | 10 min |
+| **Total** | **140** | **1 new file** | **3 hrs** |
 
 ## Success Criteria
 
@@ -673,6 +318,27 @@ This builds on the context-passing enhancement just implemented:
 - [ ] Statutory references validated against current law
 - [ ] Legal principles accurately attributed
 - [ ] Full audit trail for every verification
+
+## Expected Outcomes
+
+### Metrics
+- **Baseline**: 69-88% hallucination rate (research data)
+- **Standard CoVe**: ~30-40% reduction (Meta's results)
+- **Legal CoVe Target**: <10% hallucination rate through minimal implementation
+
+### Quality Improvements
+1. **Every citation verified** against legal databases
+2. **Every statute checked** for current validity
+3. **Every principle validated** through factored verification
+4. **Every fact cross-referenced** for consistency
+5. **Full audit trail** for professional liability
+
+## Risk Mitigation
+
+1. **Performance**: Limit CoVe questions to 5-10 per document
+2. **Cost**: Only run CoVe for high-risk commands
+3. **Accuracy**: Use factored approach to prevent bias
+4. **Reliability**: Chain continues even if one stage fails
 
 ## References
 
