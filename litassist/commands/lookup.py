@@ -195,13 +195,14 @@ def lookup(question, mode, extract, comprehensive, context, output):
     for link in links:
         click.echo(f"- {link}")
     
-    # NEW: Fetch content from first 5-10 links (skip Jade.io, focus on AustLII)
+    # Fetch ALL working content (skip only Jade.io JavaScript pages)
     contents = []
     fetched_count = 0
     skipped_count = 0
-    max_fetches = 5  # Limit successful fetches
+    max_time = 30  # Safety limit: 30 seconds max for all fetches
+    start_time = time.time()
     
-    # Prioritize AustLII and legislation.gov.au URLs
+    # Prioritize AustLII and legislation.gov.au URLs (they work best)
     prioritized_links = []
     other_links = []
     for link in links:
@@ -213,8 +214,12 @@ def lookup(question, mode, extract, comprehensive, context, output):
     # Try prioritized links first, then others
     ordered_links = prioritized_links + other_links
     
+    click.echo(f"  Attempting to fetch content from {len(ordered_links)} sources...")
+    
     for i, link in enumerate(ordered_links):
-        if fetched_count >= max_fetches:
+        # Safety check: don't run forever
+        if time.time() - start_time > max_time:
+            click.echo(f"  [⚠ Time limit reached, stopping after {fetched_count} successful fetches]")
             break
             
         if i > 0 and fetched_count > 0:
@@ -241,13 +246,33 @@ def lookup(question, mode, extract, comprehensive, context, output):
 
     # Prepare prompt using centralized template
     if contents:
-        # We have actual content - include it
-        content_text = "\n".join(contents[:3])  # Limit to prevent token explosion
+        # Calculate token estimate and use ALL content intelligently
+        total_chars = sum(len(c) for c in contents)
+        estimated_tokens = total_chars / 4  # Rough estimate: 4 chars per token
+        
+        # Gemini 2.5 Pro has 2M token context, but let's be reasonable
+        # Reserve space for response and system prompts
+        max_content_tokens = 500000  # Still only 25% of Gemini's limit!
+        
+        if estimated_tokens > max_content_tokens:
+            # Smart truncation: keep as much as possible
+            click.echo(f"  [Note: Content exceeds token limit ({int(estimated_tokens):,} tokens), intelligently truncating]")
+            
+            # Calculate how many documents we can include
+            chars_per_doc = total_chars / len(contents)
+            docs_to_include = int(max_content_tokens * 4 / chars_per_doc)
+            content_text = "\n".join(contents[:docs_to_include])
+            
+            click.echo(f"  [Including {docs_to_include} of {len(contents)} fetched documents]")
+        else:
+            # Use ALL fetched content - no artificial limits!
+            content_text = "\n".join(contents)
+            click.echo(f"  [Using all {len(contents)} fetched documents (~{int(estimated_tokens):,} tokens)]")
         
         # Create a rich prompt with actual content
         prompt = f"""Question: {question}
 
-Successfully fetched and providing ACTUAL CONTENT from these legal sources:
+Successfully fetched and providing ACTUAL CONTENT from {len(contents)} legal sources:
 {chr(10).join(links)}
 
 Below is the REAL HTML/TEXT content fetched directly from these URLs:
