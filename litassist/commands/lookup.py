@@ -56,19 +56,46 @@ def _fetch_url_content(url: str, timeout: int = 5) -> str:
     just once, with beauty and courage." Here, the dragon of messy HTML
     transforms into the princess of pure legal knowledge when we approach it
     with simple faith rather than complex fear.
+    
+    Note: Jade.io uses JavaScript rendering, so we skip it or try print versions.
+    AustLII and legislation.gov.au use static HTML and work well.
     """
+    # Smart URL detection - handle different sites appropriately
+    if 'jade.io' in url.lower():
+        # Jade.io uses heavy JavaScript - content isn't in initial HTML
+        # Try to convert to print version which might be static
+        if '/print' not in url and '/download' not in url:
+            # Skip Jade.io for now - it needs Selenium/Playwright
+            logging.info(f"Skipping Jade.io URL (JavaScript-rendered): {url}")
+            return ""
+        # If already a print/download URL, try it
+        
     try:
         response = requests.get(url, timeout=timeout, 
                               headers={'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'})
         if response.status_code == 200:
             html = response.text
+            
+            # Quick check for actual content vs empty template
+            # If it's just boilerplate HTML with no real content, skip it
+            if len(html) < 1000 or 'window.location' in html[:500]:
+                logging.info(f"Skipping URL (appears to be JS redirect or empty): {url}")
+                return ""
+            
             # Remove only the toxic waste
             html = re.sub(r'<script.*?</script>', '', html, flags=re.DOTALL)
             html = re.sub(r'<style.*?</style>', '', html, flags=re.DOTALL)
+            
+            # Check if we got actual legal content (not just navigation)
+            text_only = re.sub(r'<[^>]+>', '', html)  # Strip all HTML tags
+            if len(text_only.strip()) < 500:
+                logging.info(f"Skipping URL (no substantial text content): {url}")
+                return ""
+            
             # Truncate if massive (most legal docs are <100KB)
             return html[:50000]  # ~10,000 words with HTML
-    except Exception:
-        pass
+    except Exception as e:
+        logging.warning(f"Failed to fetch {url}: {e}")
     return ""
 
 
@@ -168,16 +195,49 @@ def lookup(question, mode, extract, comprehensive, context, output):
     for link in links:
         click.echo(f"- {link}")
     
-    # NEW: Fetch content from first 5 links
+    # NEW: Fetch content from first 5-10 links (skip Jade.io, focus on AustLII)
     contents = []
-    fetch_limit = min(5, len(links))  # Van Gogh painted essentials, not everything
-    for i, link in enumerate(links[:fetch_limit]):
-        if i > 0:
+    fetched_count = 0
+    skipped_count = 0
+    max_fetches = 5  # Limit successful fetches
+    
+    # Prioritize AustLII and legislation.gov.au URLs
+    prioritized_links = []
+    other_links = []
+    for link in links:
+        if 'austlii.edu.au' in link.lower() or 'legislation.gov.au' in link.lower():
+            prioritized_links.append(link)
+        else:
+            other_links.append(link)
+    
+    # Try prioritized links first, then others
+    ordered_links = prioritized_links + other_links
+    
+    for i, link in enumerate(ordered_links):
+        if fetched_count >= max_fetches:
+            break
+            
+        if i > 0 and fetched_count > 0:
             time.sleep(0.5)  # Be polite between fetches
+            
         content = _fetch_url_content(link)
         if content:
             contents.append(f"=== ACTUAL CONTENT FROM: {link} ===\n{content}\n=== END OF CONTENT FROM: {link} ===\n")
-            click.echo(f"  [Fetched {len(content)} chars]")
+            click.echo(f"  [✓ Fetched {len(content)} chars from {link.split('/')[2]}]")
+            fetched_count += 1
+        else:
+            # Show why it was skipped
+            if 'jade.io' in link.lower():
+                click.echo(f"  [✗ Skipped {link.split('/')[2]} - JavaScript rendering required]")
+            else:
+                click.echo(f"  [✗ Failed to fetch from {link.split('/')[2]}]")
+            skipped_count += 1
+    
+    # Summary of fetch results
+    if fetched_count > 0:
+        click.echo(f"\n  Successfully fetched content from {fetched_count} source(s)")
+    if skipped_count > 0:
+        click.echo(f"  Skipped {skipped_count} source(s) (JavaScript or empty content)")
 
     # Prepare prompt using centralized template
     if contents:
