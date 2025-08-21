@@ -11,6 +11,8 @@ import warnings
 import os
 import logging
 import time
+import re
+import requests
 
 from litassist.config import CONFIG
 from litassist.utils import (
@@ -42,6 +44,32 @@ def _perform_cse_search(service, query, cse_id, limit, primary=False):
         click.echo(f"Warning: {msg}")
         logging.exception(msg)
         return []
+
+
+def _fetch_url_content(url: str, timeout: int = 5) -> str:
+    """
+    Fetch raw HTML with minimal cleanup. LLM handles the rest.
+    
+    Like Van Gogh painting the night sky - we capture not every star,
+    but the swirling essence. As Rilke would say: "Perhaps all the dragons
+    in our lives are princesses who are only waiting to see us act,
+    just once, with beauty and courage." Here, the dragon of messy HTML
+    transforms into the princess of pure legal knowledge when we approach it
+    with simple faith rather than complex fear.
+    """
+    try:
+        response = requests.get(url, timeout=timeout, 
+                              headers={'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'})
+        if response.status_code == 200:
+            html = response.text
+            # Remove only the toxic waste
+            html = re.sub(r'<script.*?</script>', '', html, flags=re.DOTALL)
+            html = re.sub(r'<style.*?</style>', '', html, flags=re.DOTALL)
+            # Truncate if massive (most legal docs are <100KB)
+            return html[:50000]  # ~10,000 words with HTML
+    except:
+        pass
+    return ""
 
 
 
@@ -139,12 +167,39 @@ def lookup(question, mode, extract, comprehensive, context, output):
     click.echo("Found links:")
     for link in links:
         click.echo(f"- {link}")
+    
+    # NEW: Fetch content from first 5 links
+    contents = []
+    fetch_limit = min(5, len(links))  # Van Gogh painted essentials, not everything
+    for i, link in enumerate(links[:fetch_limit]):
+        if i > 0:
+            time.sleep(0.5)  # Be polite between fetches
+        content = _fetch_url_content(link)
+        if content:
+            contents.append(f"=== SOURCE: {link} ===\n{content}\n")
+            click.echo(f"  [Fetched {len(content)} chars]")
 
     # Prepare prompt using centralized template
-    prompt = PROMPTS.get("analysis.lookup.question_prompt").format(
-        question=question,
-        links="\n".join(links)
-    )
+    if contents:
+        # We have actual content - include it
+        content_text = "\n".join(contents[:3])  # Limit to prevent token explosion
+        
+        # Create a rich prompt with actual content
+        prompt = f"""Question: {question}
+
+Found these sources:
+{chr(10).join(links)}
+
+Actual content from legal sources:
+{content_text}
+
+Based on the actual legal content provided above, please provide comprehensive legal analysis."""
+    else:
+        # Fallback to URL-only prompt (existing behavior)
+        prompt = PROMPTS.get("analysis.lookup.question_prompt").format(
+            question=question,
+            links="\n".join(links)
+        )
     if context:
         prompt = PROMPTS.get("analysis.lookup.context_prompt").format(
             context=context,
