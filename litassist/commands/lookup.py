@@ -167,7 +167,6 @@ def _fetch_url_content_selenium(url: str, timeout: int = 10) -> str:
             # Check if we got real content
             text_only = re.sub(r"<[^>]+>", "", page_source)
             if len(text_only.strip()) > 500:
-                logging.info(f"Selenium successfully fetched {url}")
                 return page_source[:200000]
 
         finally:
@@ -194,7 +193,7 @@ def _fetch_url_content(url: str, timeout: int = 5) -> str:
     AustLII and legislation.gov.au use static HTML and work well.
     """
     # Smart URL detection - handle different sites appropriately
-    if "jade.io" in url.lower():
+    if "://jade.io/" in url.lower():
         # Jade.io uses heavy JavaScript - content isn't in initial HTML
         # But /print and /download versions might be static!
 
@@ -270,9 +269,7 @@ def _fetch_url_content(url: str, timeout: int = 5) -> str:
 
             # Check if we got actual legal content (not just navigation)
             text_only = re.sub(r"<[^>]+>", "", html)  # Strip all HTML tags
-            if (
-                len(text_only.strip()) < 1000
-            ):  # Increasing threshold - might be too lax at 500
+            if len(text_only.strip()) < 500:
                 logging.info(f"Skipping URL (no substantial text content): {url}")
                 return ""
 
@@ -431,6 +428,9 @@ def lookup(question, mode, extract, comprehensive, context, output, no_fetch):
 
     # Try prioritized links first, then others
     ordered_links = prioritized_links + other_links
+    
+    # Track last fetch time per domain for rate limiting
+    domain_last_fetch = {}
 
     if not no_fetch:
         click.echo(
@@ -445,22 +445,27 @@ def lookup(question, mode, extract, comprehensive, context, output, no_fetch):
                 )
                 break
 
-            # Skip Jade.io URLs completely - use snippets instead
-            if "jade.io" in link.lower():
+            # Skip jade.io main domain URLs - use snippets instead
+            if "://jade.io/" in link.lower():
                 click.echo(
                     "  [→ Jade.io: Using search snippet only (site restrictions)]"
                 )
                 skipped_count += 1
                 continue  # Skip to next URL
 
-            if i > 0 and fetched_count > 0:
-                time.sleep(0.5)  # Be polite between fetches
+            # Domain-based rate limiting (0.3s between requests to same domain)
+            domain = link.split('/')[2]
+            if domain in domain_last_fetch:
+                elapsed = time.time() - domain_last_fetch[domain]
+                if elapsed < 0.3:
+                    time.sleep(0.3 - elapsed)
+            domain_last_fetch[domain] = time.time()
 
             content = _fetch_url_content(link, timeout=CONFIG.fetch_timeout)
 
             # If HTTP fetch got minimal/no content, try Selenium for non-Jade sites
             if (not content or len(content) < 1000) and selenium_enabled:
-                if "jade.io" not in link.lower():  # Never use Selenium for Jade.io
+                if "://jade.io/" not in link.lower():  # Never use Selenium for jade.io main domain
                     click.echo(f"  [↻ Trying Selenium for {link.split('/')[2]}...]")
                     selenium_content = _fetch_url_content_selenium_with_timeout(
                         link,
@@ -515,20 +520,26 @@ def lookup(question, mode, extract, comprehensive, context, output, no_fetch):
         snippet_text += "\n=== END OF JADE.IO SNIPPETS ===\n"
         contents.insert(0, snippet_text)
 
+    # Initialize variables for content and token tracking
+    content_text = ""
+    estimated_tokens = 0
+    
     # Prepare prompt using centralized template
     if contents:
         # Calculate token estimate and use ALL content intelligently
         total_chars = sum(len(c) for c in contents)
         estimated_tokens = total_chars / 4  # Rough estimate: 4 chars per token
 
-        # Gemini 2.5 Pro has 2M token context, but let's be reasonable
-        # Reserve space for response and system prompts
-        max_content_tokens = 500000  # Still only 25% of Gemini's limit!
+        # Model-specific token limits (adjust when changing models)
+        # Gemini 2.5 Pro: 2M context window - using 75% (1.5M) for content
+        # Reserve 500k for response generation, prompts, and safety margin
+        # WARNING: Other models have smaller limits - see warning below
+        max_content_tokens = 1500000  # 75% of Gemini 2.5 Pro's 2M limit
 
         if estimated_tokens > max_content_tokens:
             # Smart truncation: keep as much as possible
             click.echo(
-                f"  [Note: Content exceeds token limit ({int(estimated_tokens):,} tokens), intelligently truncating]"
+                f"  [Note: Content exceeds {max_content_tokens:,} token limit ({int(estimated_tokens):,} tokens estimated), intelligently truncating]"
             )
 
             # Calculate how many documents we can include
@@ -599,6 +610,17 @@ Analyze this real content to provide comprehensive legal analysis with specific 
     # Use LLMClientFactory to create the client
     client = LLMClientFactory.for_command("lookup", **overrides)
     call_with_hb = heartbeat(CONFIG.heartbeat_interval)(client.complete)
+    
+    # Warn if using large content with non-Gemini models
+    if content_text and estimated_tokens > 200000:
+        # Check if we're not using Gemini (the model attribute should be available on client)
+        if not hasattr(client, 'model') or 'gemini' not in client.model.lower():
+            click.echo(
+                warning_message(
+                    f"Large content ({int(estimated_tokens):,} tokens) with non-Gemini model. "
+                    "Consider using Gemini 2.5 Pro for better handling of large contexts."
+                )
+            )
 
     # Set system prompt based on mode
     base_system = PROMPTS.get("base.australian_law")
