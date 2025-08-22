@@ -181,16 +181,74 @@ def validate_credentials(show_progress=True):
         print("All API connections verified.\n")
 
 
+def test_scraping_capabilities():
+    """Test web scraping functionality for both plain HTTP and Selenium."""
+    print("Verifying web scraping capabilities...")
+    
+    # Import utilities for colored output
+    from litassist.utils import success_message, warning_message, error_message
+    
+    # Test plain HTTP scraping
+    print("  - Testing plain HTTP scraping... ", end="", flush=True)
+    try:
+        from litassist.commands.lookup import _fetch_url_content
+        
+        # Test with a reliable static HTML page
+        test_url = "https://httpbin.org/html"
+        content = _fetch_url_content(test_url, timeout=5)
+        
+        if content and len(content) > 1000:
+            print(f"OK (fetched {len(content)} chars)")
+        else:
+            print("FAILED")
+            print(f"    {error_message('Could not fetch sufficient content')}")
+    except Exception as e:
+        print("FAILED")
+        print(f"    {error_message(f'HTTP scraping error: {e}')}")
+    
+    # Test Selenium scraping
+    print("  - Testing Selenium scraping... ", end="", flush=True)
+    try:
+        from litassist.commands.lookup import SELENIUM_AVAILABLE, _fetch_url_content_selenium
+        
+        if not SELENIUM_AVAILABLE:
+            print("")  # New line
+            print(f"    {warning_message('Selenium not installed - install with: pip install selenium')}")
+        else:
+            # Test with a page that has substantial content
+            test_url = "https://www.python.org"  # Python.org has plenty of content
+            content = _fetch_url_content_selenium(test_url, timeout=10)
+            
+            if content and len(content) > 500:
+                print(f"OK (fetched {len(content)} chars)")
+            else:
+                print("FAILED")
+                print(f"    {error_message('Selenium could not fetch content')}")
+    except Exception as e:
+        print("FAILED")
+        error_str = str(e)
+        # Check for common issues
+        if "chromedriver" in error_str.lower() or "chrome version" in error_str.lower():
+            print(f"    {warning_message('ChromeDriver version mismatch - update with: brew upgrade chromedriver')}")
+        elif "session not created" in error_str.lower():
+            print(f"    {warning_message('ChromeDriver/Chrome compatibility issue - check versions')}")
+        else:
+            print(f"    {error_message(f'Selenium error: {str(e)[:100]}')}")
+    
+    print("\nAll scraping tests completed.")
+
+
 @cli.command()
 def test():
     """
-    Test API connectivity.
+    Test API connectivity and web scraping capabilities.
 
     This command validates credentials for OpenAI, OpenRouter, Pinecone, and Google CSE
-    by making test API calls and reports success or failure. For OpenRouter, it also
-    verifies that at least one of the required models is available.
+    by making test API calls and reports success or failure. It also tests web scraping
+    functionality for both plain HTTP and Selenium-based JavaScript rendering.
     """
     validate_credentials(show_progress=True)
+    test_scraping_capabilities()
 
 
 def main():

@@ -101,7 +101,7 @@ def _fetch_url_content_selenium(url: str, timeout: int = 10) -> str:
             
             if not content_loaded:
                 # Fall back to waiting for body to have substantial text
-                wait.until(lambda d: len(d.find_element(By.TAG_NAME, "body").text) > 1000)
+                wait.until(lambda d: len(d.find_element(By.TAG_NAME, "body").text) > 500)
             
             # Get the page source after JavaScript has rendered
             page_source = driver.page_source
@@ -114,7 +114,7 @@ def _fetch_url_content_selenium(url: str, timeout: int = 10) -> str:
             text_only = re.sub(r'<[^>]+>', '', page_source)
             if len(text_only.strip()) > 500:
                 logging.info(f"Selenium successfully fetched {url}")
-                return page_source[:50000]
+                return page_source[:200000]
             
         finally:
             driver.quit()
@@ -164,7 +164,7 @@ def _fetch_url_content(url: str, timeout: int = 5) -> str:
                         text_only = re.sub(r'<[^>]+>', '', html)
                         if len(text_only.strip()) > 500:
                             logging.info("Success: Got content from Jade.io /print URL")
-                            return html[:50000]
+                            return html[:200000]
                 except Exception as e:
                     logging.debug(f"Jade.io /print attempt failed: {e}")
             
@@ -195,8 +195,8 @@ def _fetch_url_content(url: str, timeout: int = 5) -> str:
                 logging.info(f"Skipping URL (no substantial text content): {url}")
                 return ""
             
-            # Truncate if massive (most legal docs are <100KB)
-            return html[:50000]  # ~10,000 words with HTML
+            # Truncate if massive (some judgments can be quite long)
+            return html[:200000]  # ~40,000 words with HTML, handles most full judgments
     except Exception as e:
         logging.warning(f"Failed to fetch {url}: {e}")
     return ""
