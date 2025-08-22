@@ -465,7 +465,7 @@ def lookup(question, mode, extract, comprehensive, context, output, no_fetch):
 
             # If HTTP fetch got minimal/no content, try Selenium for non-Jade sites
             if (not content or len(content) < 1000) and selenium_enabled:
-                if "://jade.io/" not in link.lower():  # Never use Selenium for jade.io main domain
+                if "jade.io" not in link.lower():  # Never use Selenium for any jade.io domain
                     click.echo(f"  [↻ Trying Selenium for {link.split('/')[2]}...]")
                     selenium_content = _fetch_url_content_selenium_with_timeout(
                         link,
