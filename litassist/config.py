@@ -171,7 +171,7 @@ class Config:
             # Web scraping settings with good defaults
             web_scraping_config = self.cfg.get("web_scraping", {})
             self.fetch_timeout = web_scraping_config.get("fetch_timeout", 10)
-            self.max_fetch_time = web_scraping_config.get("max_fetch_time", 120)
+            self.max_fetch_time = web_scraping_config.get("max_fetch_time", 300)
             self.selenium_enabled = web_scraping_config.get("selenium_enabled", True)
             self.selenium_timeout_multiplier = web_scraping_config.get("selenium_timeout_multiplier", 2)
 

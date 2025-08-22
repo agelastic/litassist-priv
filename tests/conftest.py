@@ -23,7 +23,7 @@ mock_config.pinecone_index = "test-index"
 mock_config.log_format = "json"
 mock_config.heartbeat_interval = 10
 mock_config.fetch_timeout = 10
-mock_config.max_fetch_time = 120
+mock_config.max_fetch_time = 300
 mock_config.selenium_enabled = True
 mock_config.selenium_timeout_multiplier = 2
 

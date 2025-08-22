@@ -30,7 +30,7 @@ from litassist.config import CONFIG
 from litassist.utils import (
     save_log, heartbeat, timed, save_command_output, process_extraction_response,
     warning_message, success_message, saved_message, stats_message,
-    info_message, verifying_message, tip_message
+    info_message, verifying_message, tip_message, LOG_DIR
 )
 from litassist.llm import LLMClientFactory
 from litassist.prompts import PROMPTS
@@ -353,6 +353,15 @@ def lookup(question, mode, extract, comprehensive, context, output, no_fetch):
                 content = _fetch_url_content_selenium(link, timeout=CONFIG.fetch_timeout * CONFIG.selenium_timeout_multiplier)
             
             if content:
+                # Save fetched page to logs
+                timestamp = time.strftime("%Y%m%d-%H%M%S")
+                domain = link.split('/')[2].replace('.', '_')
+                log_file = os.path.join(LOG_DIR, f"fetched_{domain}_{timestamp}.html")
+                with open(log_file, 'w', encoding='utf-8') as f:
+                    f.write(f"<!-- URL: {link} -->\n")
+                    f.write(f"<!-- Fetched: {time.strftime('%Y-%m-%d %H:%M:%S')} -->\n")
+                    f.write(content)
+                
                 contents.append(f"=== ACTUAL CONTENT FROM: {link} ===\n{content}\n=== END OF CONTENT FROM: {link} ===\n")
                 method = "Selenium" if ('jade.io' in link.lower() and SELENIUM_AVAILABLE and content) else "HTTP"
                 click.echo(f"  [✓ Fetched {len(content)} chars from {link.split('/')[2]} via {method}]")

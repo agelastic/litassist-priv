@@ -186,7 +186,7 @@ def test_scraping_capabilities():
     print("Verifying web scraping capabilities...")
     
     # Import utilities for colored output
-    from litassist.utils import success_message, warning_message, error_message
+    from litassist.utils import warning_message, error_message
     
     # Test plain HTTP scraping
     print("  - Testing plain HTTP scraping... ", end="", flush=True)
