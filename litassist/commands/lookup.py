@@ -13,6 +13,7 @@ import logging
 import time
 import re
 import requests
+import concurrent.futures
 
 # Optional Selenium support for JavaScript-rendered content
 try:
@@ -21,16 +22,29 @@ try:
     from selenium.webdriver.support.ui import WebDriverWait
     from selenium.webdriver.support import expected_conditions as EC
     from selenium.webdriver.chrome.options import Options
+
     SELENIUM_AVAILABLE = True
 except ImportError:
     SELENIUM_AVAILABLE = False
-    logging.info("Selenium not installed - Jade.io content may be limited. Install with: pip install selenium")
+    logging.info(
+        "Selenium not installed - Jade.io content may be limited. Install with: pip install selenium"
+    )
 
 from litassist.config import CONFIG
 from litassist.utils import (
-    save_log, heartbeat, timed, save_command_output, process_extraction_response,
-    warning_message, success_message, saved_message, stats_message,
-    info_message, verifying_message, tip_message, LOG_DIR
+    save_log,
+    heartbeat,
+    timed,
+    save_command_output,
+    process_extraction_response,
+    warning_message,
+    success_message,
+    saved_message,
+    stats_message,
+    info_message,
+    verifying_message,
+    tip_message,
+    LOG_DIR,
 )
 from litassist.llm import LLMClientFactory
 from litassist.prompts import PROMPTS
@@ -39,23 +53,49 @@ from litassist.prompts import PROMPTS
 os.environ["GOOGLE_API_USE_CLIENT_CERTIFICATE"] = "false"
 warnings.filterwarnings("ignore", message=".*file_cache.*")
 
+
 def _perform_cse_search(service, query, cse_id, limit, primary=False):
-    """Perform a Google Custom Search Engine lookup and return a list of links."""
+    """Perform a Google Custom Search Engine lookup and return links with snippets."""
     from googleapiclient.errors import Error as GoogleApiError
 
     if not cse_id:
-        return []
+        return [], []
     try:
         res = service.cse().list(q=query, cx=cse_id, num=limit).execute()
         items = res.get("items", [])
-        return [item.get("link") for item in items]
+        links = [item.get("link") for item in items]
+        snippets = []
+        for item in items:
+            title = item.get("title", "")
+            snippet = item.get("snippet", "").replace("\n", " ")
+            link = item.get("link", "")
+            if "jade.io" in link.lower():  # Only collect Jade.io snippets
+                snippets.append(f"[{title}]\n{link}\n{snippet}")
+        return links, snippets
     except GoogleApiError as e:
         msg = f"CSE search failed for '{cse_id}': {e}"
         if primary:
             raise click.ClickException(msg)
         click.echo(f"Warning: {msg}")
         logging.exception(msg)
-        return []
+        return [], []
+
+
+def _fetch_url_content_selenium_with_timeout(url: str, timeout: int = 10) -> str:
+    """
+    Wrapper that adds hard timeout protection for Selenium fetches.
+    Prevents indefinite hanging by enforcing a 30-second maximum.
+    """
+    with concurrent.futures.ThreadPoolExecutor() as executor:
+        future = executor.submit(_fetch_url_content_selenium, url, timeout)
+        try:
+            return future.result(timeout=30)  # Hard 30-second limit
+        except concurrent.futures.TimeoutError:
+            logging.warning(f"Selenium timed out after 30s for {url}")
+            return ""
+        except Exception as e:
+            logging.warning(f"Selenium wrapper error for {url}: {e}")
+            return ""
 
 
 def _fetch_url_content_selenium(url: str, timeout: int = 10) -> str:
@@ -65,143 +105,182 @@ def _fetch_url_content_selenium(url: str, timeout: int = 10) -> str:
     """
     if not SELENIUM_AVAILABLE:
         return ""
-    
+
     try:
         # Configure Chrome options for headless operation
         chrome_options = Options()
-        chrome_options.add_argument('--headless')
-        chrome_options.add_argument('--no-sandbox')
-        chrome_options.add_argument('--disable-dev-shm-usage')
-        chrome_options.add_argument('--disable-gpu')
-        chrome_options.add_argument('--window-size=1920,1080')
-        chrome_options.add_argument('user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36')
-        
+        chrome_options.add_argument("--headless")
+        chrome_options.add_argument("--no-sandbox")
+        chrome_options.add_argument("--disable-dev-shm-usage")
+        chrome_options.add_argument("--disable-gpu")
+        chrome_options.add_argument("--window-size=1920,1080")
+        chrome_options.add_argument(
+            "user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
+        )
+
         # Suppress logs
-        chrome_options.add_experimental_option('excludeSwitches', ['enable-logging'])
-        chrome_options.add_argument('--log-level=3')
-        
+        chrome_options.add_experimental_option("excludeSwitches", ["enable-logging"])
+        chrome_options.add_argument("--log-level=3")
+
         driver = webdriver.Chrome(options=chrome_options)
         driver.set_page_load_timeout(timeout)
-        
+
         try:
             driver.get(url)
-            
+
             # Wait for content to load - Jade.io specific
             wait = WebDriverWait(driver, timeout)
-            
+
             # Try different selectors for Jade.io content
             content_loaded = False
-            for selector in ['.documenttext', '.document-content', '.case-content', 'article', '.content']:
+            for selector in [
+                ".documenttext",
+                ".document-content",
+                ".case-content",
+                "article",
+                ".content",
+            ]:
                 try:
-                    wait.until(EC.presence_of_element_located((By.CSS_SELECTOR, selector)))
+                    wait.until(
+                        EC.presence_of_element_located((By.CSS_SELECTOR, selector))
+                    )
                     content_loaded = True
                     break
                 except Exception:
                     continue
-            
+
             if not content_loaded:
                 # Fall back to waiting for body to have substantial text
-                wait.until(lambda d: len(d.find_element(By.TAG_NAME, "body").text) > 500)
-            
+                wait.until(
+                    lambda d: len(d.find_element(By.TAG_NAME, "body").text) > 500
+                )
+
             # Get the page source after JavaScript has rendered
             page_source = driver.page_source
-            
+
             # Clean up the HTML
-            page_source = re.sub(r'<script.*?</script>', '', page_source, flags=re.DOTALL)
-            page_source = re.sub(r'<style.*?</style>', '', page_source, flags=re.DOTALL)
-            
+            page_source = re.sub(
+                r"<script.*?</script>", "", page_source, flags=re.DOTALL
+            )
+            page_source = re.sub(r"<style.*?</style>", "", page_source, flags=re.DOTALL)
+
             # Check if we got real content
-            text_only = re.sub(r'<[^>]+>', '', page_source)
+            text_only = re.sub(r"<[^>]+>", "", page_source)
             if len(text_only.strip()) > 500:
                 logging.info(f"Selenium successfully fetched {url}")
                 return page_source[:200000]
-            
+
         finally:
             driver.quit()
-            
+
     except Exception as e:
         logging.warning(f"Selenium fetch failed for {url}: {e}")
-    
+
     return ""
 
 
 def _fetch_url_content(url: str, timeout: int = 5) -> str:
     """
     Fetch raw HTML with minimal cleanup. LLM handles the rest.
-    
+
     Like Van Gogh painting the night sky - we capture not every star,
     but the swirling essence. As Rilke would say: "Perhaps all the dragons
     in our lives are princesses who are only waiting to see us act,
     just once, with beauty and courage." Here, the dragon of messy HTML
     transforms into the princess of pure legal knowledge when we approach it
     with simple faith rather than complex fear.
-    
+
     Note: Jade.io uses JavaScript rendering, so we skip it or try print versions.
     AustLII and legislation.gov.au use static HTML and work well.
     """
     # Smart URL detection - handle different sites appropriately
-    if 'jade.io' in url.lower():
+    if "jade.io" in url.lower():
         # Jade.io uses heavy JavaScript - content isn't in initial HTML
         # But /print and /download versions might be static!
-        
+
         # If not already a print/download URL, try those versions first
-        if '/print' not in url and '/download' not in url:
+        if "/print" not in url and "/download" not in url:
             # Try print version first (often static HTML)
-            if '/article/' in url or '/summary/' in url:
-                print_url = url.rstrip('/') + '/print'
+            if "/article/" in url or "/summary/" in url:
+                print_url = url.rstrip("/") + "/print"
                 logging.info(f"Trying Jade.io print version: {print_url}")
-                
+
                 try:
-                    response = requests.get(print_url, timeout=timeout,
-                                          headers={'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'})
+                    response = requests.get(
+                        print_url,
+                        timeout=timeout,
+                        headers={
+                            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
+                        },
+                    )
                     if response.status_code == 200 and len(response.text) > 2000:
                         # Got substantial content from print version!
                         html = response.text
-                        html = re.sub(r'<script.*?</script>', '', html, flags=re.DOTALL)
-                        html = re.sub(r'<style.*?</style>', '', html, flags=re.DOTALL)
-                        
+                        html = re.sub(r"<script.*?</script>", "", html, flags=re.DOTALL)
+                        html = re.sub(r"<style.*?</style>", "", html, flags=re.DOTALL)
+
                         # Check for actual legal content
-                        text_only = re.sub(r'<[^>]+>', '', html)
+                        text_only = re.sub(r"<[^>]+>", "", html)
                         if len(text_only.strip()) > 500:
                             logging.info("Success: Got content from Jade.io /print URL")
                             return html[:200000]
                 except Exception as e:
                     logging.debug(f"Jade.io /print attempt failed: {e}")
-            
+
             # If print didn't work, skip for now (would need Selenium)
             logging.info(f"Skipping Jade.io URL (needs JavaScript): {url}")
             return ""
         # If already a print/download URL, proceed to fetch normally
-        
+
     try:
-        response = requests.get(url, timeout=timeout, 
-                              headers={'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'})
+        response = requests.get(
+            url,
+            timeout=timeout,
+            headers={
+                "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
+            },
+        )
         if response.status_code == 200:
             html = response.text
-            
+
             # Quick check for actual content vs empty template
             # If it's just boilerplate HTML with no real content, skip it
-            if len(html) < 1000 or 'window.location' in html[:500]:
-                logging.info(f"Skipping URL (appears to be JS redirect or empty): {url}")
+            if len(html) < 1000 or "window.location" in html[:500]:
+                logging.info(
+                    f"Skipping URL (appears to be JS redirect or empty): {url}"
+                )
                 return ""
-            
+
+            # Check for common signs of JavaScript-rendered content
+            js_indicators = [
+                '<div id="root">',
+                '<div id="app">',
+                "ng-app",
+                "React",
+                "Angular",
+                "Vue.js",
+            ]
+            if any(indicator in html[:2000] for indicator in js_indicators):
+                logging.info(f"Detected JavaScript framework at {url}, needs Selenium")
+                return ""  # Will trigger Selenium fallback
+
             # Remove only the toxic waste
-            html = re.sub(r'<script.*?</script>', '', html, flags=re.DOTALL)
-            html = re.sub(r'<style.*?</style>', '', html, flags=re.DOTALL)
-            
+            html = re.sub(r"<script.*?</script>", "", html, flags=re.DOTALL)
+            html = re.sub(r"<style.*?</style>", "", html, flags=re.DOTALL)
+
             # Check if we got actual legal content (not just navigation)
-            text_only = re.sub(r'<[^>]+>', '', html)  # Strip all HTML tags
-            if len(text_only.strip()) < 500:
+            text_only = re.sub(r"<[^>]+>", "", html)  # Strip all HTML tags
+            if (
+                len(text_only.strip()) < 1000
+            ):  # Increasing threshold - might be too lax at 500
                 logging.info(f"Skipping URL (no substantial text content): {url}")
                 return ""
-            
+
             # Truncate if massive (some judgments can be quite long)
             return html[:200000]  # ~40,000 words with HTML, handles most full judgments
     except Exception as e:
         logging.warning(f"Failed to fetch {url}: {e}")
     return ""
-
-
 
 
 @click.command()
@@ -259,155 +338,214 @@ def lookup(question, mode, extract, comprehensive, context, output, no_fetch):
     except Exception as e:
         raise click.ClickException(f"Search initialization error: {e}")
 
-    # Collect links from configured Custom Search Engines
+    # Collect links and snippets from configured Custom Search Engines
     links = []
+    all_jade_snippets = []  # Collect all Jade.io snippets
     # Determine per-source limits
     if comprehensive:
         jade_limit = austlii_limit = comp_limit = 10
     else:
         jade_limit = austlii_limit = 5
     # Primary Jade CSE search
-    links.extend(_perform_cse_search(
+    jade_links, jade_snippets = _perform_cse_search(
         service, question, CONFIG.cse_id, jade_limit, primary=True
-    ))
-    
+    )
+    links.extend(jade_links)
+    all_jade_snippets.extend(jade_snippets)
+
     # Rate limit delay between CSE calls
-    cse_delay = float(os.environ.get('CSE_RATE_LIMIT_DELAY', '1.5'))
+    cse_delay = float(os.environ.get("CSE_RATE_LIMIT_DELAY", "1.5"))
     if cse_delay > 0 and (getattr(CONFIG, "cse_id_austlii", None) or comprehensive):
         click.echo(f"Rate limiting: waiting {cse_delay}s...")
         time.sleep(cse_delay)
-    
+
     # AustLII CSE search (optional)
-    links.extend(_perform_cse_search(
+    austlii_links, austlii_snippets = _perform_cse_search(
         service, question, getattr(CONFIG, "cse_id_austlii", None), austlii_limit
-    ))
-    
+    )
+    links.extend(austlii_links)
+    all_jade_snippets.extend(austlii_snippets)  # May contain Jade.io results
+
     # Rate limit delay before comprehensive search
     if cse_delay > 0 and comprehensive:
         click.echo(f"Rate limiting: waiting {cse_delay}s...")
         time.sleep(cse_delay)
-    
+
     # Comprehensive CSE search (optional)
     if comprehensive:
-        links.extend(_perform_cse_search(
+        comp_links, comp_snippets = _perform_cse_search(
             service, question, getattr(CONFIG, "cse_id_comprehensive", None), comp_limit
-        ))
+        )
+        links.extend(comp_links)
+        all_jade_snippets.extend(comp_snippets)  # May contain Jade.io results
     # Remove duplicate and empty links while preserving order
     links = list(dict.fromkeys(filter(None, links)))
     # Display found links
     click.echo("Found links:")
     for link in links:
         click.echo(f"- {link}")
-    
-    # Check Selenium availability and show warning if not installed
-    if not SELENIUM_AVAILABLE:
-        warning = warning_message("Selenium not installed - Jade.io content will be limited. Install with: pip install selenium")
-        click.echo(f"\n{warning}")
-    
+
+    # Save Jade.io snippets to log file if any were collected
+    if all_jade_snippets:
+        timestamp = time.strftime("%Y%m%d-%H%M%S")
+        snippet_file = os.path.join(LOG_DIR, f"cse_snippets_{timestamp}.txt")
+        with open(snippet_file, "w", encoding="utf-8") as f:
+            f.write(f"Query: {question}\n")
+            if context:
+                f.write(f"Context: {context}\n")
+            f.write(f"Timestamp: {time.strftime('%Y-%m-%d %H:%M:%S')}\n")
+            f.write("=" * 80 + "\n\n")
+            f.write("JADE.IO SEARCH SNIPPETS (from Google CSE)\n")
+            f.write("-" * 40 + "\n\n")
+            for snippet in all_jade_snippets:
+                f.write(snippet + "\n\n" + "-" * 40 + "\n\n")
+        click.echo(
+            info_message(f"Saved {len(all_jade_snippets)} Jade.io snippet(s) to logs")
+        )
+
     # Fetch ALL working content (skip only Jade.io JavaScript pages)
     contents = []
     fetched_count = 0
     skipped_count = 0
-    
+
     # Check if Selenium should be disabled
     selenium_enabled = SELENIUM_AVAILABLE and CONFIG.selenium_enabled
     if SELENIUM_AVAILABLE and not CONFIG.selenium_enabled:
         click.echo("  [Info: Selenium disabled in config]")
-    
+
     # Skip fetching if --no-fetch flag is set
     if no_fetch:
         click.echo("  [Info: Content fetching disabled by --no-fetch flag]")
     else:
         max_time = CONFIG.max_fetch_time  # Use config value
         start_time = time.time()
-    
+
     # Prioritize AustLII and legislation.gov.au URLs (they work best)
     prioritized_links = []
     other_links = []
     for link in links:
-        if 'austlii.edu.au' in link.lower() or 'legislation.gov.au' in link.lower():
+        if "austlii.edu.au" in link.lower() or "legislation.gov.au" in link.lower():
             prioritized_links.append(link)
         else:
             other_links.append(link)
-    
+
     # Try prioritized links first, then others
     ordered_links = prioritized_links + other_links
-    
+
     if not no_fetch:
-        click.echo(f"  Attempting to fetch content from {len(ordered_links)} sources...")
-        
+        click.echo(
+            f"  Attempting to fetch content from {len(ordered_links)} sources..."
+        )
+
         for i, link in enumerate(ordered_links):
             # Safety check: don't run forever
             if time.time() - start_time > max_time:
-                click.echo(f"  [⚠ Time limit reached, stopping after {fetched_count} successful fetches]")
+                click.echo(
+                    f"  [⚠ Time limit reached, stopping after {fetched_count} successful fetches]"
+                )
                 break
-                
+
+            # Skip Jade.io URLs completely - use snippets instead
+            if "jade.io" in link.lower():
+                click.echo(
+                    "  [→ Jade.io: Using search snippet only (site restrictions)]"
+                )
+                skipped_count += 1
+                continue  # Skip to next URL
+
             if i > 0 and fetched_count > 0:
                 time.sleep(0.5)  # Be polite between fetches
-                
+
             content = _fetch_url_content(link, timeout=CONFIG.fetch_timeout)
-            
-            # If regular fetch failed for Jade.io and Selenium is enabled, try that
-            if not content and 'jade.io' in link.lower() and selenium_enabled:
-                click.echo(f"  [↻ Trying Selenium for {link.split('/')[2]}...]")
-                content = _fetch_url_content_selenium(link, timeout=CONFIG.fetch_timeout * CONFIG.selenium_timeout_multiplier)
-            
+
+            # If HTTP fetch got minimal/no content, try Selenium for non-Jade sites
+            if (not content or len(content) < 1000) and selenium_enabled:
+                if "jade.io" not in link.lower():  # Never use Selenium for Jade.io
+                    click.echo(f"  [↻ Trying Selenium for {link.split('/')[2]}...]")
+                    selenium_content = _fetch_url_content_selenium_with_timeout(
+                        link,
+                        timeout=CONFIG.fetch_timeout
+                        * CONFIG.selenium_timeout_multiplier,
+                    )
+                    if selenium_content and len(selenium_content) > len(content or ""):
+                        content = selenium_content
+                        method = "Selenium"
+                    else:
+                        method = "HTTP"
+                else:
+                    method = "HTTP"
+            else:
+                method = "HTTP"
+
             if content:
                 # Save fetched page to logs
                 timestamp = time.strftime("%Y%m%d-%H%M%S")
-                domain = link.split('/')[2].replace('.', '_')
+                domain = link.split("/")[2].replace(".", "_")
                 log_file = os.path.join(LOG_DIR, f"fetched_{domain}_{timestamp}.html")
-                with open(log_file, 'w', encoding='utf-8') as f:
+                with open(log_file, "w", encoding="utf-8") as f:
                     f.write(f"<!-- URL: {link} -->\n")
                     f.write(f"<!-- Fetched: {time.strftime('%Y-%m-%d %H:%M:%S')} -->\n")
                     f.write(content)
-                
-                contents.append(f"=== ACTUAL CONTENT FROM: {link} ===\n{content}\n=== END OF CONTENT FROM: {link} ===\n")
-                method = "Selenium" if ('jade.io' in link.lower() and SELENIUM_AVAILABLE and content) else "HTTP"
-                click.echo(f"  [✓ Fetched {len(content)} chars from {link.split('/')[2]} via {method}]")
+
+                contents.append(
+                    f"=== ACTUAL CONTENT FROM: {link} ===\n{content}\n=== END OF CONTENT FROM: {link} ===\n"
+                )
+                click.echo(
+                    f"  [✓ Fetched {len(content)} chars from {link.split('/')[2]} via {method}]"
+                )
                 fetched_count += 1
             else:
-                # Show why it was skipped
-                if 'jade.io' in link.lower():
-                    if SELENIUM_AVAILABLE:
-                        click.echo(f"  [✗ Failed to fetch {link.split('/')[2]} even with Selenium]")
-                    else:
-                        click.echo(f"  [✗ Skipped {link.split('/')[2]} - Install Selenium for JavaScript content]")
-                else:
-                    click.echo(f"  [✗ Failed to fetch from {link.split('/')[2]}]")
+                # Show why it was skipped (non-Jade URLs)
+                click.echo(f"  [✗ Failed to fetch from {link.split('/')[2]}]")
                 skipped_count += 1
-    
+
     # Summary of fetch results
     if fetched_count > 0:
         click.echo(f"\n  Successfully fetched content from {fetched_count} source(s)")
     if skipped_count > 0:
         click.echo(f"  Skipped {skipped_count} source(s) (JavaScript or empty content)")
 
+    # Add Jade.io snippets to the beginning of content if available
+    if all_jade_snippets:
+        snippet_text = "=== JADE.IO SEARCH SNIPPETS (from Google CSE) ===\n"
+        snippet_text += (
+            "Note: These are brief search result excerpts, not full content.\n\n"
+        )
+        snippet_text += "\n\n".join(all_jade_snippets)
+        snippet_text += "\n=== END OF JADE.IO SNIPPETS ===\n"
+        contents.insert(0, snippet_text)
+
     # Prepare prompt using centralized template
     if contents:
         # Calculate token estimate and use ALL content intelligently
         total_chars = sum(len(c) for c in contents)
         estimated_tokens = total_chars / 4  # Rough estimate: 4 chars per token
-        
+
         # Gemini 2.5 Pro has 2M token context, but let's be reasonable
         # Reserve space for response and system prompts
         max_content_tokens = 500000  # Still only 25% of Gemini's limit!
-        
+
         if estimated_tokens > max_content_tokens:
             # Smart truncation: keep as much as possible
-            click.echo(f"  [Note: Content exceeds token limit ({int(estimated_tokens):,} tokens), intelligently truncating]")
-            
+            click.echo(
+                f"  [Note: Content exceeds token limit ({int(estimated_tokens):,} tokens), intelligently truncating]"
+            )
+
             # Calculate how many documents we can include
             chars_per_doc = total_chars / len(contents)
             docs_to_include = int(max_content_tokens * 4 / chars_per_doc)
             content_text = "\n".join(contents[:docs_to_include])
-            
-            click.echo(f"  [Including {docs_to_include} of {len(contents)} fetched documents]")
+
+            click.echo(
+                f"  [Including {docs_to_include} of {len(contents)} fetched documents]"
+            )
         else:
             # Use ALL fetched content - no artificial limits!
             content_text = "\n".join(contents)
-            click.echo(f"  [Using all {len(contents)} fetched documents (~{int(estimated_tokens):,} tokens)]")
-        
+            click.echo(
+                f"  [Using all {len(contents)} fetched documents (~{int(estimated_tokens):,} tokens)]"
+            )
+
         # Create a rich prompt with actual content
         prompt = f"""Question: {question}
 
@@ -422,13 +560,11 @@ Analyze this real content to provide comprehensive legal analysis with specific 
     else:
         # Fallback to URL-only prompt (existing behavior)
         prompt = PROMPTS.get("analysis.lookup.question_prompt").format(
-            question=question,
-            links="\n".join(links)
+            question=question, links="\n".join(links)
         )
     if context:
         prompt = PROMPTS.get("analysis.lookup.context_prompt").format(
-            context=context,
-            prompt=prompt
+            context=context, prompt=prompt
         )
 
     # Add extraction-specific instructions
@@ -466,7 +602,7 @@ Analyze this real content to provide comprehensive legal analysis with specific 
 
     # Set system prompt based on mode
     base_system = PROMPTS.get("base.australian_law")
-    
+
     # Special system prompt for extraction mode
     if extract:
         extraction_system = PROMPTS.get("lookup.extraction_system")
@@ -510,12 +646,12 @@ Analyze this real content to provide comprehensive legal analysis with specific 
         # Generate output prefix for files
         timestamp = time.strftime("%Y%m%d_%H%M%S")
         output_prefix = f"lookup_{extract}_{timestamp}"
-        
+
         # Use shared extraction utility
         formatted_content, json_data, json_file = process_extraction_response(
             content, extract, output_prefix, "lookup"
         )
-        
+
         # Save the formatted text output
         command_name = f"{output}_{extract}" if output else f"lookup_{extract}"
         metadata = {"Query": question, "Mode": mode, "Extract": extract}
@@ -524,9 +660,12 @@ Analyze this real content to provide comprehensive legal analysis with specific 
         if comprehensive:
             metadata["Comprehensive"] = "True"
         metadata["JSON File"] = json_file
-        
+
         output_file = save_command_output(
-            command_name, formatted_content, "" if output else question, metadata=metadata
+            command_name,
+            formatted_content,
+            "" if output else question,
+            metadata=metadata,
         )
     else:
         # Non-extraction mode - save content as-is
@@ -537,9 +676,12 @@ Analyze this real content to provide comprehensive legal analysis with specific 
             metadata["Context"] = context
         if comprehensive:
             metadata["Comprehensive"] = "True"
-        
+
         output_file = save_command_output(
-            command_name, formatted_content, "" if output else question, metadata=metadata
+            command_name,
+            formatted_content,
+            "" if output else question,
+            metadata=metadata,
         )
 
     # Save audit log
@@ -573,11 +715,11 @@ Analyze this real content to provide comprehensive legal analysis with specific 
     # Show what was found
     if extract:
         extract_type = extract.capitalize()
-        msg = stats_message(f'{extract_type} extracted from search results')
+        msg = stats_message(f"{extract_type} extracted from search results")
         click.echo(f"\n{msg}")
     else:
         analysis_type = "Exhaustive" if comprehensive else "Standard"
-        msg = stats_message(f'{analysis_type} legal analysis for: {question}')
+        msg = stats_message(f"{analysis_type} legal analysis for: {question}")
         click.echo(f"\n{msg}")
 
     # Show context if provided
@@ -586,10 +728,10 @@ Analyze this real content to provide comprehensive legal analysis with specific 
 
     # Show links that were searched
     if comprehensive:
-        msg = verifying_message(f'Exhaustive search: {len(links)} sources analyzed')
+        msg = verifying_message(f"Exhaustive search: {len(links)} sources analyzed")
         click.echo(f"\n{msg}")
     else:
-        msg = verifying_message(f'Standard search: {len(links)} sources analyzed')
+        msg = verifying_message(f"Standard search: {len(links)} sources analyzed")
         click.echo(f"\n{msg}")
 
     for i, link in enumerate(links, 1):

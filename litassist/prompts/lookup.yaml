@@ -113,7 +113,7 @@ lookup:
       (Final analysis in properly formatted paragraphs)
       
       ### Technical Notes
-      (Acknowledge whether you analyzed actual fetched content from the URLs or only the URLs themselves)
+      (Acknowledge sources: Jade.io results show search snippets only due to site restrictions. Full content from AustLII and legislation.gov.au)
       
       FINAL CRITICAL REMINDER: 
       - EVERY header (starting with ###) MUST have TWO blank lines before it
@@ -154,7 +154,7 @@ lookup:
       Use BOTH the provided sources AND your own legal knowledge. The provided sources take PRIORITY and should be cited directly. Your own knowledge should supplement and contextualize the provided materials, filling gaps and providing broader legal context where the sources don't fully address the question.
       
       TECHNICAL NOTE REQUIREMENT:
-      When actual content is provided (marked with === ACTUAL CONTENT FROM: [url] ===), you are reading the REAL content from those pages. When only URLs are listed without content, acknowledge you only have the URLs. Always clarify what you're analyzing.
+      When Jade.io snippets are provided (marked as === JADE.IO SEARCH SNIPPETS ===), these are brief excerpts from Google search, not full content. Full content comes from === ACTUAL CONTENT FROM: [url] === sections (AustLII and legislation.gov.au). Always clarify your sources.
   
   # User prompt template
   # USED BY: lookup.py lookup() - user prompt construction
