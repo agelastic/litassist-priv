@@ -227,11 +227,8 @@ def _fetch_url_content(url: str, timeout: int = 5) -> str:
 )
 @click.option("--output", type=str, help="Custom output filename prefix")
 @click.option("--no-fetch", is_flag=True, help="Skip content fetching, use URLs only")
-@click.option("--fetch-timeout", type=int, default=5, help="Timeout per URL fetch in seconds (default: 5)")
-@click.option("--max-fetch-time", type=int, default=30, help="Maximum total time for all fetches in seconds (default: 30)")
-@click.option("--no-selenium", is_flag=True, help="Disable Selenium even if available")
 @timed
-def lookup(question, mode, extract, comprehensive, context, output, no_fetch, fetch_timeout, max_fetch_time, no_selenium):
+def lookup(question, mode, extract, comprehensive, context, output, no_fetch):
     """
     Rapid case-law lookup via Jade CSE + Gemini.
 
@@ -313,15 +310,15 @@ def lookup(question, mode, extract, comprehensive, context, output, no_fetch, fe
     skipped_count = 0
     
     # Check if Selenium should be disabled
-    selenium_enabled = SELENIUM_AVAILABLE and not no_selenium
-    if SELENIUM_AVAILABLE and no_selenium:
-        click.echo("  [Info: Selenium disabled by --no-selenium flag]")
+    selenium_enabled = SELENIUM_AVAILABLE and CONFIG.selenium_enabled
+    if SELENIUM_AVAILABLE and not CONFIG.selenium_enabled:
+        click.echo("  [Info: Selenium disabled in config]")
     
     # Skip fetching if --no-fetch flag is set
     if no_fetch:
         click.echo("  [Info: Content fetching disabled by --no-fetch flag]")
     else:
-        max_time = max_fetch_time  # Use user-specified limit
+        max_time = CONFIG.max_fetch_time  # Use config value
         start_time = time.time()
     
     # Prioritize AustLII and legislation.gov.au URLs (they work best)
@@ -348,12 +345,12 @@ def lookup(question, mode, extract, comprehensive, context, output, no_fetch, fe
             if i > 0 and fetched_count > 0:
                 time.sleep(0.5)  # Be polite between fetches
                 
-            content = _fetch_url_content(link, timeout=fetch_timeout)
+            content = _fetch_url_content(link, timeout=CONFIG.fetch_timeout)
             
             # If regular fetch failed for Jade.io and Selenium is enabled, try that
             if not content and 'jade.io' in link.lower() and selenium_enabled:
                 click.echo(f"  [↻ Trying Selenium for {link.split('/')[2]}...]")
-                content = _fetch_url_content_selenium(link, timeout=fetch_timeout * 2)
+                content = _fetch_url_content_selenium(link, timeout=CONFIG.fetch_timeout * CONFIG.selenium_timeout_multiplier)
             
             if content:
                 contents.append(f"=== ACTUAL CONTENT FROM: {link} ===\n{content}\n=== END OF CONTENT FROM: {link} ===\n")
