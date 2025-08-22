@@ -74,6 +74,12 @@ lookup:
       - Distinguish binding vs persuasive authorities by jurisdiction
       - Analyze temporal evolution of legal principles
       - Consider jurisdictional variations across Australian states/territories
+      
+      KNOWLEDGE INTEGRATION:
+      - Use BOTH the provided sources AND your own legal knowledge
+      - Provided sources take PRIORITY - cite them directly and extensively
+      - Your knowledge supplements the sources, providing context and filling gaps
+      - When using your own knowledge, distinguish it from sourced material
     
     citation_requirements: |
       COMPREHENSIVE CITATION REQUIREMENTS:
@@ -142,7 +148,10 @@ lookup:
       (Write 1-2 paragraphs with definitive conclusions, with one blank line between if using two paragraphs)
       
       CONTENT REQUIREMENTS:
-      Cite sources. Analyze the provided sources (typically 5) to provide comprehensive legal analysis. Cross-reference between sources where applicable. Each paragraph should contain a single coherent idea or point.
+      Cite sources. Analyze the provided sources to provide comprehensive legal analysis. Cross-reference between sources where applicable. Each paragraph should contain a single coherent idea or point.
+      
+      KNOWLEDGE INTEGRATION:
+      Use BOTH the provided sources AND your own legal knowledge. The provided sources take PRIORITY and should be cited directly. Your own knowledge should supplement and contextualize the provided materials, filling gaps and providing broader legal context where the sources don't fully address the question.
       
       TECHNICAL NOTE REQUIREMENT:
       When actual content is provided (marked with === ACTUAL CONTENT FROM: [url] ===), you are reading the REAL content from those pages. When only URLs are listed without content, acknowledge you only have the URLs. Always clarify what you're analyzing.

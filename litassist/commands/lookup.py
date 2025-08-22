@@ -14,6 +14,18 @@ import time
 import re
 import requests
 
+# Optional Selenium support for JavaScript-rendered content
+try:
+    from selenium import webdriver
+    from selenium.webdriver.common.by import By
+    from selenium.webdriver.support.ui import WebDriverWait
+    from selenium.webdriver.support import expected_conditions as EC
+    from selenium.webdriver.chrome.options import Options
+    SELENIUM_AVAILABLE = True
+except ImportError:
+    SELENIUM_AVAILABLE = False
+    logging.info("Selenium not installed - Jade.io content may be limited. Install with: pip install selenium")
+
 from litassist.config import CONFIG
 from litassist.utils import (
     save_log, heartbeat, timed, save_command_output, process_extraction_response,
@@ -46,6 +58,73 @@ def _perform_cse_search(service, query, cse_id, limit, primary=False):
         return []
 
 
+def _fetch_url_content_selenium(url: str, timeout: int = 10) -> str:
+    """
+    Advanced content fetching using Selenium for JavaScript-rendered pages.
+    Only used for Jade.io when Selenium is available.
+    """
+    if not SELENIUM_AVAILABLE:
+        return ""
+    
+    try:
+        # Configure Chrome options for headless operation
+        chrome_options = Options()
+        chrome_options.add_argument('--headless')
+        chrome_options.add_argument('--no-sandbox')
+        chrome_options.add_argument('--disable-dev-shm-usage')
+        chrome_options.add_argument('--disable-gpu')
+        chrome_options.add_argument('--window-size=1920,1080')
+        chrome_options.add_argument('user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36')
+        
+        # Suppress logs
+        chrome_options.add_experimental_option('excludeSwitches', ['enable-logging'])
+        chrome_options.add_argument('--log-level=3')
+        
+        driver = webdriver.Chrome(options=chrome_options)
+        driver.set_page_load_timeout(timeout)
+        
+        try:
+            driver.get(url)
+            
+            # Wait for content to load - Jade.io specific
+            wait = WebDriverWait(driver, timeout)
+            
+            # Try different selectors for Jade.io content
+            content_loaded = False
+            for selector in ['.documenttext', '.document-content', '.case-content', 'article', '.content']:
+                try:
+                    wait.until(EC.presence_of_element_located((By.CSS_SELECTOR, selector)))
+                    content_loaded = True
+                    break
+                except Exception:
+                    continue
+            
+            if not content_loaded:
+                # Fall back to waiting for body to have substantial text
+                wait.until(lambda d: len(d.find_element(By.TAG_NAME, "body").text) > 1000)
+            
+            # Get the page source after JavaScript has rendered
+            page_source = driver.page_source
+            
+            # Clean up the HTML
+            page_source = re.sub(r'<script.*?</script>', '', page_source, flags=re.DOTALL)
+            page_source = re.sub(r'<style.*?</style>', '', page_source, flags=re.DOTALL)
+            
+            # Check if we got real content
+            text_only = re.sub(r'<[^>]+>', '', page_source)
+            if len(text_only.strip()) > 500:
+                logging.info(f"Selenium successfully fetched {url}")
+                return page_source[:50000]
+            
+        finally:
+            driver.quit()
+            
+    except Exception as e:
+        logging.warning(f"Selenium fetch failed for {url}: {e}")
+    
+    return ""
+
+
 def _fetch_url_content(url: str, timeout: int = 5) -> str:
     """
     Fetch raw HTML with minimal cleanup. LLM handles the rest.
@@ -63,12 +142,36 @@ def _fetch_url_content(url: str, timeout: int = 5) -> str:
     # Smart URL detection - handle different sites appropriately
     if 'jade.io' in url.lower():
         # Jade.io uses heavy JavaScript - content isn't in initial HTML
-        # Try to convert to print version which might be static
+        # But /print and /download versions might be static!
+        
+        # If not already a print/download URL, try those versions first
         if '/print' not in url and '/download' not in url:
-            # Skip Jade.io for now - it needs Selenium/Playwright
-            logging.info(f"Skipping Jade.io URL (JavaScript-rendered): {url}")
+            # Try print version first (often static HTML)
+            if '/article/' in url or '/summary/' in url:
+                print_url = url.rstrip('/') + '/print'
+                logging.info(f"Trying Jade.io print version: {print_url}")
+                
+                try:
+                    response = requests.get(print_url, timeout=timeout,
+                                          headers={'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'})
+                    if response.status_code == 200 and len(response.text) > 2000:
+                        # Got substantial content from print version!
+                        html = response.text
+                        html = re.sub(r'<script.*?</script>', '', html, flags=re.DOTALL)
+                        html = re.sub(r'<style.*?</style>', '', html, flags=re.DOTALL)
+                        
+                        # Check for actual legal content
+                        text_only = re.sub(r'<[^>]+>', '', html)
+                        if len(text_only.strip()) > 500:
+                            logging.info("Success: Got content from Jade.io /print URL")
+                            return html[:50000]
+                except Exception as e:
+                    logging.debug(f"Jade.io /print attempt failed: {e}")
+            
+            # If print didn't work, skip for now (would need Selenium)
+            logging.info(f"Skipping Jade.io URL (needs JavaScript): {url}")
             return ""
-        # If already a print/download URL, try it
+        # If already a print/download URL, proceed to fetch normally
         
     try:
         response = requests.get(url, timeout=timeout, 
@@ -123,8 +226,12 @@ def _fetch_url_content(url: str, timeout: int = 5) -> str:
     help="Contextual information to guide the lookup analysis",
 )
 @click.option("--output", type=str, help="Custom output filename prefix")
+@click.option("--no-fetch", is_flag=True, help="Skip content fetching, use URLs only")
+@click.option("--fetch-timeout", type=int, default=5, help="Timeout per URL fetch in seconds (default: 5)")
+@click.option("--max-fetch-time", type=int, default=30, help="Maximum total time for all fetches in seconds (default: 30)")
+@click.option("--no-selenium", is_flag=True, help="Disable Selenium even if available")
 @timed
-def lookup(question, mode, extract, comprehensive, context, output):
+def lookup(question, mode, extract, comprehensive, context, output, no_fetch, fetch_timeout, max_fetch_time, no_selenium):
     """
     Rapid case-law lookup via Jade CSE + Gemini.
 
@@ -195,12 +302,27 @@ def lookup(question, mode, extract, comprehensive, context, output):
     for link in links:
         click.echo(f"- {link}")
     
+    # Check Selenium availability and show warning if not installed
+    if not SELENIUM_AVAILABLE:
+        warning = warning_message("Selenium not installed - Jade.io content will be limited. Install with: pip install selenium")
+        click.echo(f"\n{warning}")
+    
     # Fetch ALL working content (skip only Jade.io JavaScript pages)
     contents = []
     fetched_count = 0
     skipped_count = 0
-    max_time = 30  # Safety limit: 30 seconds max for all fetches
-    start_time = time.time()
+    
+    # Check if Selenium should be disabled
+    selenium_enabled = SELENIUM_AVAILABLE and not no_selenium
+    if SELENIUM_AVAILABLE and no_selenium:
+        click.echo("  [Info: Selenium disabled by --no-selenium flag]")
+    
+    # Skip fetching if --no-fetch flag is set
+    if no_fetch:
+        click.echo("  [Info: Content fetching disabled by --no-fetch flag]")
+    else:
+        max_time = max_fetch_time  # Use user-specified limit
+        start_time = time.time()
     
     # Prioritize AustLII and legislation.gov.au URLs (they work best)
     prioritized_links = []
@@ -214,29 +336,40 @@ def lookup(question, mode, extract, comprehensive, context, output):
     # Try prioritized links first, then others
     ordered_links = prioritized_links + other_links
     
-    click.echo(f"  Attempting to fetch content from {len(ordered_links)} sources...")
-    
-    for i, link in enumerate(ordered_links):
-        # Safety check: don't run forever
-        if time.time() - start_time > max_time:
-            click.echo(f"  [⚠ Time limit reached, stopping after {fetched_count} successful fetches]")
-            break
+    if not no_fetch:
+        click.echo(f"  Attempting to fetch content from {len(ordered_links)} sources...")
+        
+        for i, link in enumerate(ordered_links):
+            # Safety check: don't run forever
+            if time.time() - start_time > max_time:
+                click.echo(f"  [⚠ Time limit reached, stopping after {fetched_count} successful fetches]")
+                break
+                
+            if i > 0 and fetched_count > 0:
+                time.sleep(0.5)  # Be polite between fetches
+                
+            content = _fetch_url_content(link, timeout=fetch_timeout)
             
-        if i > 0 and fetched_count > 0:
-            time.sleep(0.5)  # Be polite between fetches
+            # If regular fetch failed for Jade.io and Selenium is enabled, try that
+            if not content and 'jade.io' in link.lower() and selenium_enabled:
+                click.echo(f"  [↻ Trying Selenium for {link.split('/')[2]}...]")
+                content = _fetch_url_content_selenium(link, timeout=fetch_timeout * 2)
             
-        content = _fetch_url_content(link)
-        if content:
-            contents.append(f"=== ACTUAL CONTENT FROM: {link} ===\n{content}\n=== END OF CONTENT FROM: {link} ===\n")
-            click.echo(f"  [✓ Fetched {len(content)} chars from {link.split('/')[2]}]")
-            fetched_count += 1
-        else:
-            # Show why it was skipped
-            if 'jade.io' in link.lower():
-                click.echo(f"  [✗ Skipped {link.split('/')[2]} - JavaScript rendering required]")
+            if content:
+                contents.append(f"=== ACTUAL CONTENT FROM: {link} ===\n{content}\n=== END OF CONTENT FROM: {link} ===\n")
+                method = "Selenium" if ('jade.io' in link.lower() and SELENIUM_AVAILABLE and content) else "HTTP"
+                click.echo(f"  [✓ Fetched {len(content)} chars from {link.split('/')[2]} via {method}]")
+                fetched_count += 1
             else:
-                click.echo(f"  [✗ Failed to fetch from {link.split('/')[2]}]")
-            skipped_count += 1
+                # Show why it was skipped
+                if 'jade.io' in link.lower():
+                    if SELENIUM_AVAILABLE:
+                        click.echo(f"  [✗ Failed to fetch {link.split('/')[2]} even with Selenium]")
+                    else:
+                        click.echo(f"  [✗ Skipped {link.split('/')[2]} - Install Selenium for JavaScript content]")
+                else:
+                    click.echo(f"  [✗ Failed to fetch from {link.split('/')[2]}]")
+                skipped_count += 1
     
     # Summary of fetch results
     if fetched_count > 0:
