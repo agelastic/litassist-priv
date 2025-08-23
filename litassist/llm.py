@@ -52,10 +52,7 @@ class NonRetryableAPIError(Exception):
     pass
 
 
-try:
-    import aiohttp
-except ImportError:
-    aiohttp = None
+import aiohttp
 
 logger = logging.getLogger(__name__)
 
@@ -669,11 +666,10 @@ class LLMClient:
             requests.exceptions.ConnectionError,
             RetryableAPIError,
         )
-        if aiohttp:
-            retry_errors = retry_errors + (
-                aiohttp.ClientConnectionError,
-                aiohttp.ClientPayloadError,
-            )
+        retry_errors = retry_errors + (
+            aiohttp.ClientConnectionError,
+            aiohttp.ClientPayloadError,
+        )
 
         # Use no wait time during tests to speed up retry tests
         wait_config = (

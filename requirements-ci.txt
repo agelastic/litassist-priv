@@ -5,6 +5,7 @@ black
 click
 openai>=1.0.0
 tenacity>=8.2.3
+aiohttp>=3.8.0
 pinecone-client==2.2.4
 requests>=2.32.0
 PyYAML
