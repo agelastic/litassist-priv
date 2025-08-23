@@ -723,10 +723,10 @@ def lookup(question, mode, extract, comprehensive, context, output, no_fetch):
         estimated_tokens = total_chars / 4  # Rough estimate: 4 chars per token
 
         # Model-specific token limits (adjust when changing models)
-        # Gemini 2.5 Pro: 2M context window - using 75% (1.5M) for content
-        # Reserve 500k for response generation, prompts, and safety margin
+        # Gemini 2.5 Pro: 1M context window - using 90% (900k) for content
+        # Reserve 100k for response generation, prompts, and safety margin
         # WARNING: Other models have smaller limits - see warning below
-        max_content_tokens = 1500000  # 75% of Gemini 2.5 Pro's 2M limit
+        max_content_tokens = 900000  # 90% of Gemini 2.5 Pro's 1M limit
 
         if estimated_tokens > max_content_tokens:
             # Smart truncation: keep as much as possible
@@ -844,7 +844,7 @@ Analyze this real content to provide comprehensive legal analysis with specific 
 
     # Check against known model limits
     model_limits = {
-        "gemini": 2000000,  # 2M tokens
+        "gemini": 1000000,  # 1M tokens
         "claude": 200000,  # 200k tokens
         "gpt-4": 128000,  # 128k tokens
     }

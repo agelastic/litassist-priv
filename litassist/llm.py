@@ -326,7 +326,7 @@ class LLMClientFactory:
         },
         # Lookup - uses Gemini for rapid processing with verification
         # IMPORTANT: When changing models, adjust max_content_tokens in lookup.py
-        # Current: Gemini 2.5 Pro with 2M context window (using 1.5M for content)
+        # Current: Gemini 2.5 Pro with 1M context window (using 900k for content)
         # Other models have smaller limits - see lookup.py line 528
         "lookup": {
             "model": "google/gemini-2.5-pro",
