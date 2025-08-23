@@ -433,8 +433,12 @@ Traditional approach.
 class TestContentVerification:
     """Test content verification functionality."""
 
-    def test_verify_content_if_needed_enabled(self):
+    @patch('litassist.verification_chain.run_verification_chain')
+    def test_verify_content_if_needed_enabled(self, mock_run_verification_chain):
         """Test content verification when enabled."""
+        # Mock the verification chain for strategy command
+        mock_run_verification_chain.return_value = ("Legal analysis content", {"llm": {"corrections_made": False}})
+        
         mock_client = MagicMock()
         mock_client.should_auto_verify.return_value = False
         mock_client.verify_with_level.return_value = "Minor corrections needed"
@@ -445,13 +449,17 @@ class TestContentVerification:
             mock_client, content, "strategy", verify_flag=True
         )
 
-        # Should perform verification
-        assert verified is True
-        assert "Minor corrections needed" in result_content
-        mock_client.verify_with_level.assert_called_once_with(content, "heavy")
+        # Strategy command uses verification chain, returns False when no corrections
+        assert verified is False
+        assert result_content == content
+        mock_run_verification_chain.assert_called_once_with(content, "strategy")
 
-    def test_verify_content_if_needed_disabled(self):
+    @patch('litassist.verification_chain.run_verification_chain')
+    def test_verify_content_if_needed_disabled(self, mock_run_verification_chain):
         """Test content verification when disabled."""
+        # Mock the verification chain for strategy command
+        mock_run_verification_chain.return_value = ("Legal analysis content", {"llm": {"corrections_made": False}})
+        
         mock_client = MagicMock()
         mock_client.should_auto_verify.return_value = False
 
@@ -460,10 +468,10 @@ class TestContentVerification:
             mock_client, content, "strategy", verify_flag=False
         )
 
-        # Should not perform verification
+        # Strategy command always uses verification chain regardless of flag
         assert verified is False
         assert result_content == content
-        mock_client.verify_with_level.assert_not_called()
+        mock_run_verification_chain.assert_called_once_with(content, "strategy")
 
     def test_verify_content_if_needed_llm_failure(self):
         """Test content verification with LLM failure."""
@@ -476,8 +484,33 @@ class TestContentVerification:
         with pytest.raises(Exception):
             verify_content_if_needed(mock_client, content, "strategy", verify_flag=True)
 
-    def test_verify_content_if_needed_citation_already_verified(self):
+    @patch('litassist.verification_chain.run_verification_chain')
+    def test_verify_content_if_needed_with_corrections(self, mock_run_verification_chain):
+        """Test verification chain when corrections are made."""
+        # Mock the verification chain to return corrections
+        mock_run_verification_chain.return_value = (
+            "Corrected legal analysis content", 
+            {"llm": {"corrections_made": True}}
+        )
+        
+        mock_client = MagicMock()
+        content = "Legal analysis content"
+        
+        result_content, verified = verify_content_if_needed(
+            mock_client, content, "strategy", verify_flag=True
+        )
+        
+        # Should return corrected content and True when corrections made
+        assert verified is True
+        assert result_content == "Corrected legal analysis content"
+        mock_run_verification_chain.assert_called_once_with(content, "strategy")
+    
+    @patch('litassist.verification_chain.run_verification_chain')
+    def test_verify_content_if_needed_citation_already_verified(self, mock_run_verification_chain):
         """Test that citation validation is skipped when already verified."""
+        # Mock the verification chain for strategy command
+        mock_run_verification_chain.return_value = ("Legal analysis content", {"llm": {"corrections_made": False}})
+        
         mock_client = MagicMock()
         mock_client.should_auto_verify.return_value = False
         mock_client.verify_with_level.return_value = "Minor corrections needed"
@@ -494,11 +527,12 @@ class TestContentVerification:
             citation_already_verified=True,
         )
 
-        # Should perform verification but skip citation validation
-        assert verified is True
-        assert "Minor corrections needed" in result_content
-        assert "Citation issue" not in result_content
-        mock_client.verify_with_level.assert_called_once()
+        # Strategy command uses verification chain, returns False when no corrections
+        assert verified is False
+        assert result_content == content
+        mock_run_verification_chain.assert_called_once_with(content, "strategy")
+        # These shouldn't be called since verification chain handles it
+        mock_client.verify_with_level.assert_not_called()
         mock_client.validate_citations.assert_not_called()
 
 

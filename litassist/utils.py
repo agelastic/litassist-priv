@@ -1125,6 +1125,15 @@ def verify_content_if_needed(
     Returns:
         Tuple of (possibly modified content, whether verification was performed)
     """
+    # Mandatory verification chain for high-risk commands
+    if command_name in ['extractfacts', 'strategy']:
+        from litassist.verification_chain import run_verification_chain
+        verified_content, results = run_verification_chain(content, command_name)
+        if results.get('llm', {}).get('corrections_made'):
+            return verified_content, True
+        # If no corrections were made, return original content
+        return content, False
+    
     # Check if auto-verification is needed
     auto_verify = client.should_auto_verify(content, command_name)
     needs_verification = verify_flag or auto_verify

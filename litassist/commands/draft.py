@@ -33,6 +33,7 @@ from litassist.helpers.retriever import Retriever, get_pinecone_client
 @click.argument("documents", nargs=-1, required=True, type=click.Path(exists=True))
 @click.argument("query")
 @click.option("--verify", is_flag=True, help="Enable self-critique pass")
+@click.option("--cove", is_flag=True, help="Use Chain of Verification (experimental)")
 @click.option(
     "--diversity",
     type=float,
@@ -42,7 +43,7 @@ from litassist.helpers.retriever import Retriever, get_pinecone_client
 @click.option("--output", type=str, help="Custom output filename prefix")
 @click.pass_context
 @timed
-def draft(ctx, documents, query, verify, diversity, output):
+def draft(ctx, documents, query, verify, cove, diversity, output):
     """
     Citation-rich drafting via RAG & GPT-4o.
 
@@ -240,6 +241,27 @@ def draft(ctx, documents, query, verify, diversity, output):
     content, needs_verification = verify_content_if_needed(
         client, content, "draft", verify
     )
+    
+    # Optional CoVe verification (in addition to standard verification)
+    if cove:
+        try:
+            from litassist.verification_chain import run_cove_verification
+            from litassist.utils import warning_message
+            
+            click.echo(info_message("Running Chain of Verification..."))
+            content, cove_results = run_cove_verification(content, 'draft')
+            
+            if not cove_results['cove']['passed']:
+                click.echo(warning_message("CoVe detected potential issues - review carefully"))
+                # Prepend CoVe warning to content
+                cove_warning = "=== CHAIN OF VERIFICATION WARNING ===\n"
+                cove_warning += "CoVe analysis detected the following issues:\n"
+                cove_warning += cove_results['cove']['issues'] + "\n"
+                cove_warning += "=" * 37 + "\n\n"
+                content = cove_warning + content
+        except Exception as e:
+            click.echo(warning_message(f"CoVe verification failed: {e}"))
+            # Continue without CoVe if it fails
     
     # Check for potential hallucinations
     hallucination_warnings = detect_factual_hallucinations(content, context)
