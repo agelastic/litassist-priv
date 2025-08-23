@@ -802,6 +802,9 @@ Analyze this real content to provide comprehensive legal analysis with specific 
             
         except Exception as e:
             error_str = str(e)
+            # Debug logging for BYOK issues
+            import logging
+            logging.error(f"Lookup error details: {error_str}")
             
             # Check if this is a retryable error
             if attempt < max_retries and any(x in error_str.lower() for x in ["choices", "timeout", "rate"]):
