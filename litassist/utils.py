@@ -15,7 +15,7 @@ import re
 from typing import List, Any, Callable, Dict, Optional
 
 import click
-import openai
+# OpenAI import moved to function level for v1.x compatibility
 from pypdf import PdfReader
 
 from litassist.prompts import PROMPTS
@@ -534,7 +534,10 @@ def create_embeddings(texts: List[str]) -> List[Any]:
             )
 
     # Use the model without custom dimensions since our index is 1536-dimensional
-    return openai.Embedding.create(input=texts, model=CONFIG.emb_model).data
+    from openai import OpenAI
+    client = OpenAI(api_key=CONFIG.openai_api_key)
+    response = client.embeddings.create(input=texts, model=CONFIG.emb_model)
+    return response.data
 
 
 def count_tokens_and_words(text: str) -> tuple[int, int]:

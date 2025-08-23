@@ -7,7 +7,7 @@ Tests the full litassist workflow with all external services mocked.
 import os
 import tempfile
 import shutil
-from unittest.mock import Mock, patch
+from unittest.mock import Mock, patch, MagicMock
 from click.testing import CliRunner
 
 from litassist.cli import cli
@@ -373,7 +373,7 @@ Worst: Pay $100k progress payment plus costs
     def test_full_pipeline(self):
         """Test complete litassist pipeline with all external calls mocked."""
         # Use context managers to patch everything
-        with patch("openai.ChatCompletion.create") as mock_openai, \
+        with patch("litassist.llm.LLMClient._get_openai_client") as mock_get_client, \
              patch("requests.get") as mock_requests_get, \
              patch("requests.post") as mock_requests_post, \
              patch("aiohttp.ClientSession"), \
@@ -382,10 +382,15 @@ Worst: Pay $100k progress payment plus costs
              patch.object(CONFIG, 'use_token_limits', True), \
              patch.object(CONFIG, 'openrouter_key', 'test_key'), \
              patch.object(CONFIG, 'openai_key', 'test_key'), \
+             patch.object(CONFIG, 'or_base', 'https://openrouter.ai/api/v1'), \
+             patch.object(CONFIG, 'or_key', 'test_key'), \
              patch.object(CONFIG, 'google_cse_key', 'test_key'), \
              patch.object(CONFIG, 'google_cse_id', 'test_id'):
             
-            # Configure OpenAI mock
+            # Configure OpenAI v1.x mock client
+            mock_client = MagicMock()
+            mock_get_client.return_value = mock_client
+            
             def openai_side_effect(*args, **kwargs):
                 messages = kwargs.get("messages", [])
                 if not messages:
@@ -401,7 +406,12 @@ Worst: Pay $100k progress payment plus costs
                 # Create mock response
                 mock_response = Mock()
                 mock_response.choices = [Mock()]
-                mock_response.usage = {"total_tokens": 100, "prompt_tokens": 50, "completion_tokens": 50}
+                mock_response.usage = Mock(
+                    total_tokens=100,
+                    prompt_tokens=50,
+                    completion_tokens=50,
+                    model_dump=lambda: {"total_tokens": 100, "prompt_tokens": 50, "completion_tokens": 50}
+                )
                 
                 # Route to appropriate mock response
                 if "case plan" in user_content:
@@ -429,10 +439,11 @@ Worst: Pay $100k progress payment plus costs
                 
                 mock_response.choices[0].message = Mock(content=content)
                 mock_response.choices[0].error = None
+                mock_response.choices[0].finish_reason = "stop"
                 
                 return mock_response
             
-            mock_openai.side_effect = openai_side_effect
+            mock_client.chat.completions.create.side_effect = openai_side_effect
             
             # Configure Google CSE mock (for citation verification)
             def requests_get_side_effect(url, **kwargs):
@@ -455,11 +466,11 @@ Worst: Pay $100k progress payment plus costs
             external_calls = []
             
             # Patch all external call points to track them
-            original_openai = mock_openai.side_effect
+            original_openai = mock_client.chat.completions.create.side_effect
             def track_openai(*args, **kwargs):
                 external_calls.append(("openai", args, kwargs))
                 return original_openai(*args, **kwargs)
-            mock_openai.side_effect = track_openai
+            mock_client.chat.completions.create.side_effect = track_openai
             
             original_requests_get = mock_requests_get.side_effect
             def track_requests_get(*args, **kwargs):

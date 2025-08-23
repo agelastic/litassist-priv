@@ -167,6 +167,13 @@ class Config:
             if citation_config is None:
                 citation_config = {}
             self.offline_validation = citation_config.get("offline_validation", False)
+            
+            # Web scraping settings with good defaults
+            web_scraping_config = self.cfg.get("web_scraping", {})
+            self.fetch_timeout = web_scraping_config.get("fetch_timeout", 10)
+            self.max_fetch_time = web_scraping_config.get("max_fetch_time", 300)
+            self.selenium_enabled = web_scraping_config.get("selenium_enabled", True)
+            self.selenium_timeout_multiplier = web_scraping_config.get("selenium_timeout_multiplier", 2)
 
         # Jade API key is no longer used - functionality now uses public endpoint
 

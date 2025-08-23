@@ -12,10 +12,12 @@ class TestLookupCommand:
     """Test the lookup command functionality."""
 
 
+    @patch("litassist.commands.lookup._fetch_url_content", return_value="")
+    @patch("litassist.commands.lookup._fetch_url_content_selenium", return_value="")
     @patch("litassist.commands.lookup.time.sleep")
     @patch("googleapiclient.discovery.build")
     @patch("litassist.llm.LLMClientFactory.for_command")
-    def test_lookup_command_standard_mode(self, mock_factory, mock_build, mock_sleep):
+    def test_lookup_command_standard_mode(self, mock_factory, mock_build, mock_sleep, mock_fetch_selenium, mock_fetch):
         """Test lookup command in standard mode."""
         # Mock the CSE service
         mock_cse_service = Mock()
@@ -29,6 +31,7 @@ class TestLookupCommand:
 
         # Mock the LLM client
         mock_client = Mock()
+        mock_client.model = "test-model"  # Add model attribute for token limit checks
         mock_client.complete.return_value = (
             "Legal analysis content",
             {"total_tokens": 100},
@@ -52,10 +55,12 @@ class TestLookupCommand:
             assert "[SUCCESS] Lookup complete!" in result.output
             assert "Standard search: 2 sources analyzed" in result.output
 
+    @patch("litassist.commands.lookup._fetch_url_content", return_value="")
+    @patch("litassist.commands.lookup._fetch_url_content_selenium", return_value="")
     @patch("litassist.commands.lookup.time.sleep")
     @patch("googleapiclient.discovery.build")
     @patch("litassist.llm.LLMClientFactory.for_command")
-    def test_lookup_command_comprehensive_mode(self, mock_factory, mock_build, mock_sleep):
+    def test_lookup_command_comprehensive_mode(self, mock_factory, mock_build, mock_sleep, mock_fetch_selenium, mock_fetch):
         """Test lookup command in comprehensive mode."""
         # Mock the CSE service to return multiple results for different queries
         mock_cse_service = Mock()
@@ -70,6 +75,7 @@ class TestLookupCommand:
 
         # Mock the LLM client
         mock_client = Mock()
+        mock_client.model = "test-model"  # Add model attribute for token limit checks
         mock_client.complete.return_value = (
             "Comprehensive analysis",
             {"total_tokens": 500},
@@ -91,10 +97,12 @@ class TestLookupCommand:
             assert result.exit_code == 0
             assert "Exhaustive search:" in result.output
 
+    @patch("litassist.commands.lookup._fetch_url_content", return_value="")
+    @patch("litassist.commands.lookup._fetch_url_content_selenium", return_value="")
     @patch("litassist.commands.lookup.time.sleep")
     @patch("googleapiclient.discovery.build")
     @patch("litassist.llm.LLMClientFactory.for_command")
-    def test_lookup_command_with_extraction(self, mock_factory, mock_build, mock_sleep):
+    def test_lookup_command_with_extraction(self, mock_factory, mock_build, mock_sleep, mock_fetch_selenium, mock_fetch):
         """Test lookup command with extract option."""
         # Mock the CSE service
         mock_cse_service = Mock()
@@ -105,6 +113,7 @@ class TestLookupCommand:
 
         # Mock the LLM client
         mock_client = Mock()
+        mock_client.model = "test-model"  # Add model attribute for token limit checks
         mock_client.complete.return_value = (
             "Content with [2021] FCA 123",
             {"total_tokens": 100},
@@ -139,8 +148,10 @@ class TestLookupCommand:
             assert call_args[1] == "citations"  # extract_type
             assert call_args[3] == "lookup"  # command
 
+    @patch("litassist.commands.lookup._fetch_url_content", return_value="")
+    @patch("litassist.commands.lookup._fetch_url_content_selenium", return_value="")
     @patch("litassist.commands.lookup.time.sleep")
-    def test_lookup_command_irac_vs_broad_mode(self, mock_sleep):
+    def test_lookup_command_irac_vs_broad_mode(self, mock_sleep, mock_fetch_selenium, mock_fetch):
         """Test that IRAC and broad modes use different LLM parameters."""
         with patch("googleapiclient.discovery.build") as mock_build, patch(
             "litassist.llm.LLMClientFactory.for_command"
@@ -159,6 +170,7 @@ class TestLookupCommand:
 
             # Mock LLM client
             mock_client = Mock()
+            mock_client.model = "test-model"  # Add model attribute for token limit checks
             mock_client.complete.return_value = ("Analysis", {"total_tokens": 100})
             mock_factory.return_value = mock_client
 
@@ -190,8 +202,10 @@ class TestLookupCommand:
 class TestLookupCommandIntegration:
     """Integration tests for lookup command."""
 
+    @patch("litassist.commands.lookup._fetch_url_content", return_value="")
+    @patch("litassist.commands.lookup._fetch_url_content_selenium", return_value="")
     @patch("litassist.commands.lookup.time.sleep")
-    def test_comprehensive_mode_parameters(self, mock_sleep):
+    def test_comprehensive_mode_parameters(self, mock_sleep, mock_fetch_selenium, mock_fetch):
         """Test that comprehensive mode uses correct parameters."""
         with patch("googleapiclient.discovery.build") as mock_build, patch(
             "litassist.llm.LLMClientFactory.for_command"
@@ -210,6 +224,7 @@ class TestLookupCommandIntegration:
 
             # Mock LLM client
             mock_client = Mock()
+            mock_client.model = "test-model"  # Add model attribute for token limit checks
             mock_client.complete.return_value = ("Analysis", {"total_tokens": 100})
             mock_factory.return_value = mock_client
 

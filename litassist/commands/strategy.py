@@ -11,10 +11,8 @@ from typing import List
 import re
 import time
 
-from litassist.config import CONFIG
 from litassist.utils import (
     save_log,
-    heartbeat,
     timed,
     create_reasoning_prompt,
     extract_reasoning_trace,
@@ -288,7 +286,6 @@ def strategy(case_facts, outcome, strategies, verify, output):
     valid_options = []
     option_reasoning_traces = []  # Store reasoning traces for each option
     total_usage = {"prompt_tokens": 0, "completion_tokens": 0, "total_tokens": 0}
-    call_with_hb = heartbeat(CONFIG.heartbeat_interval)(llm_client.complete)
 
     # Extract and rank strategies using LLM analysis
     priority_strategies = []
@@ -692,7 +689,7 @@ def strategy(case_facts, outcome, strategies, verify, output):
                 )
 
         try:
-            option_content, option_usage = call_with_hb(
+            option_content, option_usage = llm_client.complete(
                 [
                     {"role": "system", "content": system_prompt},
                     {"role": "user", "content": individual_prompt},

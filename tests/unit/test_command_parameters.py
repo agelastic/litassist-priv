@@ -132,8 +132,10 @@ class TestCommandParameterPropagation:
         mock_config.cse_id = "test_cse_id"
         mock_config.heartbeat_interval = 30
         
-        # Mock Google API
-        with patch("googleapiclient.discovery.build") as mock_build:
+        # Mock Google API and fetch functions
+        with patch("googleapiclient.discovery.build") as mock_build, \
+             patch("litassist.commands.lookup._fetch_url_content", return_value=""), \
+             patch("litassist.commands.lookup._fetch_url_content_selenium", return_value=""):
             mock_service = Mock()
             mock_build.return_value = mock_service
             mock_cse = Mock()

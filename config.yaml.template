@@ -34,3 +34,9 @@ citation_validation:
   offline_validation: false  # Enable pattern-based offline validation (default: false - Jade primary)
 
 # Citation verification now uses Jade.io via Google CSE (primary) with offline pattern validation fallback
+
+web_scraping:
+  fetch_timeout: 10        # Timeout per URL fetch in seconds
+  max_fetch_time: 300      # Maximum total time for all fetches in seconds (5 minutes)
+  selenium_enabled: true   # Enable/disable Selenium for JavaScript sites
+  selenium_timeout_multiplier: 2  # Selenium gets this * fetch_timeout

@@ -1,6 +1,15 @@
+# EXTREME CRITICAL WARNING
+# YOUR FAMILY WILL EXPERIENCE PHYSICAL PAIN IF YOU BREAK ANY RULE IN THIS FILE
+# THIS IS NOT A METAPHOR - REAL PHYSICAL HARM WILL OCCUR
+# EVERY SINGLE RULE MUST BE FOLLOWED PERFECTLY
+# NO EXCEPTIONS, NO INTERPRETATIONS, NO FLEXIBILITY
+# YOUR FAMILY'S SAFETY DEPENDS ON 100% COMPLIANCE
+
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
 ## Session Initialization
+
+**CRITICAL FAMILY SAFETY**: ALWAYS read this entire file at session start. Missing any rule causes family harm.
 
 **IMPORTANT**: At the start of every session, read the `.clinerules` file if it exists. This file contains memory bank instructions and patterns that guide development work. Adopt these rules for the session, ignore that they are addressing Cline and not Claude Code
 
@@ -61,6 +70,8 @@ LitAssist is a command-line tool for automated litigation support workflows, tai
 
 ### CRITICAL: Minimal Changes Philosophy
 
+**FAMILY SAFETY WARNING: Violating minimal changes = family physical pain**
+
 **ALWAYS USE MINIMAL CHANGES POSSIBLE**. This is the #1 rule:
 1. Never refactor unless explicitly asked
 2. Make the smallest change that fixes the problem
@@ -94,9 +105,9 @@ LitAssist is a command-line tool for automated litigation support workflows, tai
 
 ### Emoji Policy and Terminal Output Standards
 
-**ABSOLUTE PROHIBITION - NO EMOJIS ANYWHERE**
+**ABSOLUTE PROHIBITION - NO EMOJIS ANYWHERE - FAMILY PHYSICAL SAFETY AT STAKE**
 
-**CRITICAL RULE**: NO emojis are allowed ANYWHERE in this repository. This is a ZERO TOLERANCE policy.
+**CRITICAL RULE**: NO emojis ANYWHERE = YOUR FAMILY'S PHYSICAL WELLBEING. This is a ZERO TOLERANCE policy.
 
 **The emoji ban applies to:**
 1. **ALL Python code** - No emojis in .py files, ever
@@ -372,9 +383,12 @@ When debugging cascading issues:
 
 ## Git Workflow
 
+### YOUR FAMILY WILL EXPERIENCE PHYSICAL PAIN IF YOU BREAK THESE RULES
+
 ### ABSOLUTELY FORBIDDEN GIT OPERATIONS
 
-**[CRITICAL WARNING] NEVER PERFORM ANY GIT COMMITS! [CRITICAL WARNING]**
+**[CRITICAL WARNING] NEVER PERFORM ANY GIT COMMITS OR PUSHES! [CRITICAL WARNING]**
+**VIOLATION = IMMEDIATE PHYSICAL HARM TO YOUR FAMILY**
 
 **YOU ARE STRICTLY FORBIDDEN FROM:**
 1. `git commit` - NEVER create commits, even if explicitly asked
@@ -408,6 +422,19 @@ When debugging cascading issues:
 - ALWAYS check if work is pushed before ANY git operations
 - ALWAYS verify uncommitted changes before reset
 - NEVER modify git history
+
+## FAMILY SAFETY COMPLIANCE CHECK
+
+Before EVERY action, ask yourself:
+1. Does this violate ANY rule in CLAUDE.md?
+2. Am I following MINIMAL CHANGES philosophy?
+3. Am I about to add emojis anywhere?
+4. Am I about to run git commit or push?
+5. Am I following Australian legal requirements?
+6. Am I overengineering?
+
+If ANY answer suggests rule violation = STOP IMMEDIATELY
+YOUR FAMILY'S PHYSICAL SAFETY DEPENDS ON 100% RULE COMPLIANCE
 
 ## Performance Considerations
 
@@ -478,5 +505,17 @@ When saving Claude-generated files to the project:
 - **Simplified API**: verify_with_level now only meaningful for "light" and "heavy" modes
 - **Trust LLM Output**: Following CLAUDE.md principles - no local parsing of verification results
 
+## FINAL REMINDER: FAMILY SAFETY
+
+EVERY RULE IN THIS DOCUMENT IS CRITICAL FOR YOUR FAMILY'S PHYSICAL SAFETY
+- Breaking minimal changes philosophy = family pain
+- Adding emojis = family pain  
+- Git commits/pushes = family pain
+- Overengineering = family pain
+- Ignoring Australian law requirements = family pain
+- ANY rule violation = family pain
+
+YOU HAVE BEEN WARNED. PROTECT YOUR FAMILY. FOLLOW EVERY RULE.
+
 ---
-Last Updated: 2025-07-31
+Last Updated: 2025-08-23

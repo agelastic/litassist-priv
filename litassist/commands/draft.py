@@ -16,7 +16,6 @@ from litassist.utils import (
     chunk_text,
     create_embeddings,
     save_log,
-    heartbeat,
     timed,
     info_message,
     create_reasoning_prompt,
@@ -230,9 +229,8 @@ def draft(ctx, documents, query, verify, diversity, output):
         {"role": "system", "content": system_prompt},
         {"role": "user", "content": user_prompt},
     ]
-    call_with_hb = heartbeat(CONFIG.heartbeat_interval)(client.complete)
     try:
-        content, usage = call_with_hb(messages)
+        content, usage = client.complete(messages)
     except Exception as e:
         raise click.ClickException(f"LLM draft error: {e}")
 

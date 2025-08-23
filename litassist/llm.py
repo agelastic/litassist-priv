@@ -5,10 +5,10 @@ This module provides a unified interface for chat completions across different L
 handling parameter management and response processing.
 """
 
-import openai
+from openai import OpenAI
 import re
 import os
-from typing import List, Dict, Any, Tuple
+from typing import List, Dict, Any, Tuple, Optional
 
 from litassist.utils import (
     timed,
@@ -52,10 +52,7 @@ class NonRetryableAPIError(Exception):
     pass
 
 
-try:
-    import aiohttp
-except ImportError:
-    aiohttp = None
+import aiohttp
 
 logger = logging.getLogger(__name__)
 
@@ -99,12 +96,11 @@ PARAMETER_PROFILES = {
             "max_tokens",
             "stop",
             "candidate_count",
-            "max_output_tokens",
             "top_k",
             "safety_settings",
             "stop_sequences",
         ],
-        "transforms": {"max_tokens": "max_output_tokens"},
+        "transforms": {},  # No longer needed with v1.x - OpenRouter handles this
     },
     "openai_standard": {
         "allowed": [
@@ -329,6 +325,9 @@ class LLMClientFactory:
             "top_p": 0.5,
         },
         # Lookup - uses Gemini for rapid processing with verification
+        # IMPORTANT: When changing models, adjust max_content_tokens in lookup.py
+        # Current: Gemini 2.5 Pro with 1M context window (using 900k for content)
+        # Other models have smaller limits - see lookup.py line 528
         "lookup": {
             "model": "google/gemini-2.5-pro",
             "temperature": 0.1,
@@ -566,21 +565,111 @@ class LLMClient:
                     default_params[token_param] = 32768  # Default increased limit
 
         self.default_params = default_params
+        self._client = None  # Will be created when needed
+
+    def _get_openai_client(self, model_name: str) -> OpenAI:
+        """Get or create OpenAI client with appropriate configuration."""
+        # Determine if we need OpenRouter or direct OpenAI
+        model_family = get_model_family(self.model)
+        use_openrouter = (
+            "/" in self.model and not self.model.startswith("openai/")
+        ) or model_family == "openai_reasoning"
+        
+        # Configure client parameters
+        if use_openrouter:
+            base_url = CONFIG.or_base
+            api_key = CONFIG.or_key
+            
+            return OpenAI(
+                api_key=api_key,
+                base_url=base_url
+            )
+        else:
+            # Direct OpenAI API
+            return OpenAI(api_key=CONFIG.openai_api_key)
+
+    def parse_openrouter_error(self, error_info):
+        """
+        Parse Google API errors from OpenRouter response.
+        
+        Returns:
+            tuple: (error_type, error_message) where error_type is one of:
+                   'auth', 'quota', 'rate_limit', 'billing', 'disabled', 
+                   'permission', 'context_length', 'other'
+        """
+        import json
+        
+        # Default to generic message
+        error_msg = error_info.get("message", "Unknown API error")
+        
+        # Check OpenRouter-level errors first
+        if "maximum context length" in error_msg:
+            return "context_length", error_msg
+        
+        # Try to parse the raw Google error
+        if "metadata" in error_info and "raw" in error_info["metadata"]:
+            raw_error = error_info["metadata"]["raw"]
+            
+            try:
+                raw_obj = json.loads(raw_error)
+                if "error" in raw_obj:
+                    google_error = raw_obj["error"]
+                    status = google_error.get("status", "")
+                    code = google_error.get("code", 0)
+                    message = google_error.get("message", "")
+                    
+                    # Check for API key issues regardless of status code
+                    if "API key" in message or "api key" in message.lower():
+                        if "expired" in message.lower() or "invalid" in message.lower() or "not valid" in message.lower():
+                            return "auth", f"Google API authentication failed: {message}"
+                    
+                    # Also check INVALID_ARGUMENT status specifically
+                    if status == "INVALID_ARGUMENT" and ("key" in message.lower() or "token" in message.lower()):
+                        return "auth", f"Google API authentication failed: {message}"
+                    
+                    # Determine error type by status code and status field
+                    if status == "UNAUTHENTICATED" or code == 401:
+                        return "auth", f"Google API authentication failed: {message}"
+                    
+                    elif status == "RESOURCE_EXHAUSTED" or code == 429:
+                        if "quota" in message.lower():
+                            return "quota", f"Google API quota exceeded: {message}"
+                        else:
+                            return "rate_limit", f"Google API rate limit hit: {message}"
+                    
+                    elif status == "PERMISSION_DENIED" or code == 403:
+                        if "billing" in message.lower():
+                            return "billing", f"Google API billing not enabled: {message}"
+                        elif "disabled" in message.lower() or "not been used" in message.lower():
+                            return "disabled", f"Google API not enabled in project: {message}"
+                        else:
+                            return "permission", f"Google API permission denied: {message}"
+                    
+                    else:
+                        return "other", f"Google API error ({status}): {message}"
+                        
+            except (json.JSONDecodeError, TypeError):
+                # Can't parse, check for auth issue using more specific patterns
+                if "UNAUTHENTICATED" in raw_error:
+                    return "auth", "Google API authentication failed"
+        
+        return "unknown", error_msg
 
     def _execute_api_call_with_retry(self, model_name, messages, filtered_params):
         # --- Begin: Add custom retryable API error for overloaded/rate limit ---
+        # Note: OpenAI v1.x uses different error classes
+        from openai import APIConnectionError, RateLimitError, APIError
         retry_errors = (
-            openai.error.APIConnectionError,
-            openai.error.RateLimitError,
-            openai.error.APIError,
+            APIConnectionError,
+            RateLimitError,
+            APIError,
             requests.exceptions.ConnectionError,
             RetryableAPIError,
         )
-        if aiohttp:
-            retry_errors = retry_errors + (
-                aiohttp.ClientConnectionError,
-                aiohttp.ClientPayloadError,
-            )
+        retry_errors = retry_errors + (
+            aiohttp.ClientConnectionError,
+            aiohttp.ClientPayloadError,
+        )
 
         # Use no wait time during tests to speed up retry tests
         wait_config = (
@@ -591,9 +680,37 @@ class LLMClient:
 
         def _call_with_streaming_wrap():
             try:
-                resp = openai.ChatCompletion.create(
+                # Get the appropriate client
+                client = self._get_openai_client(model_name)
+                
+                # Create the request
+                resp = client.chat.completions.create(
                     model=model_name, messages=messages, **filtered_params
                 )
+                
+                # Check for error in the response object (OpenRouter v1.x pattern)
+                if hasattr(resp, 'error') and resp.error:
+                    error_info = resp.error
+                    if isinstance(error_info, dict):
+                        # Parse the error properly
+                        error_type, error_msg = self.parse_openrouter_error(error_info)
+                        
+                        # Provide specific guidance based on error type
+                        if error_type == "auth":
+                            raise Exception(f"{error_msg}. Please configure your Google API key at https://openrouter.ai/settings/keys")
+                        elif error_type == "quota":
+                            raise Exception(f"{error_msg}. Consider waiting or upgrading your Google API quota")
+                        elif error_type == "rate_limit":
+                            raise RetryableAPIError(f"{error_msg}. Will retry after delay")
+                        elif error_type == "billing":
+                            raise Exception(f"{error_msg}. Enable billing at https://console.cloud.google.com/billing")
+                        elif error_type == "disabled":
+                            raise Exception(f"{error_msg}. Enable the API in your Google Cloud project")
+                        elif error_type == "context_length":
+                            raise NonRetryableAPIError(f"{error_msg}. Reduce document size or use selective mode")
+                        else:
+                            raise Exception(f"API Error: {error_msg}")
+                
                 # Check for API-level errors in response (overloaded, rate limit, etc.)
                 if (
                     hasattr(resp, "choices")
@@ -752,26 +869,12 @@ class LLMClient:
         # Merge default and override parameters
         params = {**self.default_params, **overrides}
 
-        # Set API base based on model type
-        original_api_base = openai.api_base
-        original_api_key = openai.api_key
-
         # Determine the correct model name
         model_name = self.model
-
-        # Use OpenRouter for non-OpenAI models AND for reasoning models (only available via OpenRouter)
-        model_family = get_model_family(self.model)
-        if (
-            "/" in self.model and not self.model.startswith("openai/")
-        ) or model_family == "openai_reasoning":
-            openai.api_base = CONFIG.or_base
-            openai.api_key = CONFIG.or_key
-            # Keep full model name for OpenRouter
-            model_name = self.model
-        else:
-            # Extract just the model name for direct OpenAI models
-            if self.model.startswith("openai/"):
-                model_name = self.model.replace("openai/", "")
+        
+        # Extract just the model name for direct OpenAI models
+        if self.model.startswith("openai/") and "/" in self.model and not get_model_family(self.model) == "openai_reasoning":
+            model_name = self.model.replace("openai/", "")
 
         try:
             # Filter parameters based on model capabilities
@@ -821,13 +924,41 @@ class LLMClient:
                         "API request failed with error finish_reason but no error details"
                     )
 
+            # Validate response structure before accessing
+            if not response:
+                raise Exception("Empty response from API")
+                
+            if not hasattr(response, 'choices') or not response.choices:
+                # Log the actual response for debugging
+                logging.error(f"Invalid API response structure: {response}")
+                error_msg = "API response missing 'choices' field"
+                if hasattr(response, 'error') and response.error:
+                    if hasattr(response.error, 'get'):
+                        error_msg = f"API error: {response.error.get('message', 'Unknown error')}"
+                    else:
+                        error_msg = f"API error: {response.error}"
+                raise Exception(error_msg)
+            
+            if not hasattr(response.choices[0], 'message'):
+                raise Exception(f"Invalid choice structure: {response.choices[0]}")
+            
             # Extract content and usage from chat response
             content = response.choices[0].message.content or ""
+            # In v1.x, usage is an object with attributes
             usage = getattr(response, "usage", {})
+            if hasattr(usage, "model_dump"):
+                usage = usage.model_dump()
+            elif hasattr(usage, "dict"):
+                usage = usage.dict()
+            elif not isinstance(usage, dict):
+                usage = {
+                    "prompt_tokens": getattr(usage, "prompt_tokens", 0),
+                    "completion_tokens": getattr(usage, "completion_tokens", 0),
+                    "total_tokens": getattr(usage, "total_tokens", 0)
+                }
         finally:
-            # Restore original settings
-            openai.api_base = original_api_base
-            openai.api_key = original_api_key
+            # No cleanup needed with client instances
+            pass
 
         if not skip_citation_verification:
             # Citation verification - respect force_verify setting
@@ -898,16 +1029,8 @@ class LLMClient:
                             "content"
                         ] += f"\n\n{citation_instructions}"
 
-                # Retry with enhanced prompt - need to set API base again
-                original_api_base_retry = openai.api_base
-                original_api_key_retry = openai.api_key
-
-                # Use OpenRouter for non-OpenAI models AND for o1-pro/o3-pro models (only available via OpenRouter)
-                if (
-                    "/" in self.model and not self.model.startswith("openai/")
-                ) or self.model in ["openai/o1-pro", "openai/o3-pro"]:
-                    openai.api_base = CONFIG.or_base
-                    openai.api_key = CONFIG.or_key
+                # Retry with enhanced prompt - get appropriate client
+                retry_client = self._get_openai_client(model_name)
 
                 try:
                     if self.model in ["openai/o1-pro", "openai/o3-pro"]:
@@ -926,8 +1049,8 @@ class LLMClient:
                                 "reasoning_effort"
                             ]
 
-                        # Use ChatCompletion API through OpenRouter
-                        retry_response = openai.ChatCompletion.create(
+                        # Use chat completions API through OpenRouter
+                        retry_response = retry_client.chat.completions.create(
                             model=model_name,
                             messages=enhanced_messages,
                             **retry_filtered_params,
@@ -966,7 +1089,7 @@ class LLMClient:
                         retry_content = retry_response.choices[0].message.content or ""
                         retry_usage = getattr(retry_response, "usage", {})
                     else:
-                        retry_response = openai.ChatCompletion.create(
+                        retry_response = retry_client.chat.completions.create(
                             model=model_name, messages=enhanced_messages, **params
                         )
                         retry_content = retry_response.choices[0].message.content
@@ -1026,9 +1149,8 @@ class LLMClient:
                     print(retry_failed_msg)
                     raise CitationVerificationError(multiple_attempts_msg)
                 finally:
-                    # Restore original settings after retry
-                    openai.api_base = original_api_base_retry
-                    openai.api_key = original_api_key_retry
+                    # No cleanup needed with client instances
+                    pass
 
         # Normalize usage data so it can be safely serialized
         if hasattr(usage, "_asdict"):
