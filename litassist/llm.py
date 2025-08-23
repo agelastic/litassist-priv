@@ -591,6 +591,73 @@ class LLMClient:
             # Direct OpenAI API
             return OpenAI(api_key=CONFIG.openai_api_key)
 
+    def parse_openrouter_error(self, error_info):
+        """
+        Parse Google API errors from OpenRouter response.
+        
+        Returns:
+            tuple: (error_type, error_message) where error_type is one of:
+                   'auth', 'quota', 'rate_limit', 'billing', 'disabled', 
+                   'permission', 'context_length', 'other'
+        """
+        import json
+        
+        # Default to generic message
+        error_msg = error_info.get("message", "Unknown API error")
+        
+        # Check OpenRouter-level errors first
+        if "maximum context length" in error_msg:
+            return "context_length", error_msg
+        
+        # Try to parse the raw Google error
+        if "metadata" in error_info and "raw" in error_info["metadata"]:
+            raw_error = error_info["metadata"]["raw"]
+            
+            try:
+                raw_obj = json.loads(raw_error)
+                if "error" in raw_obj:
+                    google_error = raw_obj["error"]
+                    status = google_error.get("status", "")
+                    code = google_error.get("code", 0)
+                    message = google_error.get("message", "")
+                    
+                    # Check for API key issues regardless of status code
+                    if "API key" in message or "api key" in message.lower():
+                        if "expired" in message.lower() or "invalid" in message.lower() or "not valid" in message.lower():
+                            return "auth", f"Google API authentication failed: {message}"
+                    
+                    # Also check INVALID_ARGUMENT status specifically
+                    if status == "INVALID_ARGUMENT" and ("key" in message.lower() or "token" in message.lower()):
+                        return "auth", f"Google API authentication failed: {message}"
+                    
+                    # Determine error type by status code and status field
+                    if status == "UNAUTHENTICATED" or code == 401:
+                        return "auth", f"Google API authentication failed: {message}"
+                    
+                    elif status == "RESOURCE_EXHAUSTED" or code == 429:
+                        if "quota" in message.lower():
+                            return "quota", f"Google API quota exceeded: {message}"
+                        else:
+                            return "rate_limit", f"Google API rate limit hit: {message}"
+                    
+                    elif status == "PERMISSION_DENIED" or code == 403:
+                        if "billing" in message.lower():
+                            return "billing", f"Google API billing not enabled: {message}"
+                        elif "disabled" in message.lower() or "not been used" in message.lower():
+                            return "disabled", f"Google API not enabled in project: {message}"
+                        else:
+                            return "permission", f"Google API permission denied: {message}"
+                    
+                    else:
+                        return "other", f"Google API error ({status}): {message}"
+                        
+            except (json.JSONDecodeError, TypeError):
+                # Can't parse, check for auth issue using more specific patterns
+                if "UNAUTHENTICATED" in raw_error:
+                    return "auth", "Google API authentication failed"
+        
+        return "unknown", error_msg
+
     def _execute_api_call_with_retry(self, model_name, messages, filtered_params):
         # --- Begin: Add custom retryable API error for overloaded/rate limit ---
         # Note: OpenAI v1.x uses different error classes
@@ -629,14 +696,24 @@ class LLMClient:
                 if hasattr(resp, 'error') and resp.error:
                     error_info = resp.error
                     if isinstance(error_info, dict):
-                        error_msg = error_info.get("message", "Unknown API error")
-                        # Check if it's a BYOK issue
-                        if "metadata" in error_info and "raw" in error_info["metadata"]:
-                            raw_error = error_info["metadata"]["raw"]
-                            if "API_KEY_INVALID" in raw_error or "API key expired" in raw_error:
-                                # BYOK not configured on OpenRouter
-                                raise Exception(f"Google API authentication failed. Please configure your Google API key at https://openrouter.ai/settings/keys")
-                        raise Exception(f"API Error: {error_msg}")
+                        # Parse the error properly
+                        error_type, error_msg = self.parse_openrouter_error(error_info)
+                        
+                        # Provide specific guidance based on error type
+                        if error_type == "auth":
+                            raise Exception(f"{error_msg}. Please configure your Google API key at https://openrouter.ai/settings/keys")
+                        elif error_type == "quota":
+                            raise Exception(f"{error_msg}. Consider waiting or upgrading your Google API quota")
+                        elif error_type == "rate_limit":
+                            raise RetryableAPIError(f"{error_msg}. Will retry after delay")
+                        elif error_type == "billing":
+                            raise Exception(f"{error_msg}. Enable billing at https://console.cloud.google.com/billing")
+                        elif error_type == "disabled":
+                            raise Exception(f"{error_msg}. Enable the API in your Google Cloud project")
+                        elif error_type == "context_length":
+                            raise NonRetryableAPIError(f"{error_msg}. Reduce document size or use selective mode")
+                        else:
+                            raise Exception(f"API Error: {error_msg}")
                 
                 # Check for API-level errors in response (overloaded, rate limit, etc.)
                 if (

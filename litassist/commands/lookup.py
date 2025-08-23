@@ -816,14 +816,14 @@ Analyze this real content to provide comprehensive legal analysis with specific 
 
         except Exception as e:
             error_str = str(e)
-            # Debug logging for BYOK issues
+            # Debug logging
             import logging
 
             logging.error(f"Lookup error details: {error_str}")
 
             # Check if this is a retryable error
             if attempt < max_retries and any(
-                x in error_str.lower() for x in ["choices", "timeout", "rate"]
+                x in error_str.lower() for x in ["choices", "timeout", "rate", "retry"]
             ):
                 click.echo(
                     warning_message(
@@ -835,8 +835,54 @@ Analyze this real content to provide comprehensive legal analysis with specific 
                 continue
 
             # Final attempt failed or non-retryable error
-            # Provide specific error handling
-            if "choices" in error_str.lower():
+            # Provide specific error handling based on error type
+            if "quota exceeded" in error_str.lower():
+                click.echo(
+                    error_message(
+                        "Google API quota exceeded. Options:\n"
+                        "  - Wait until quota resets (usually daily)\n"
+                        "  - Upgrade your Google API quota limits\n"
+                        "  - Use --no-fetch to skip content fetching\n"
+                        "  - Try again later with smaller document sets"
+                    )
+                )
+            elif "billing not enabled" in error_str.lower():
+                click.echo(
+                    error_message(
+                        "Google API billing not enabled. To fix:\n"
+                        "  1. Go to https://console.cloud.google.com/billing\n"
+                        "  2. Enable billing for your project\n"
+                        "  3. Ensure the Generative Language API is enabled"
+                    )
+                )
+            elif "api not enabled" in error_str.lower() or "disabled" in error_str.lower():
+                click.echo(
+                    error_message(
+                        "Google Generative Language API not enabled. To fix:\n"
+                        "  1. Go to Google Cloud Console\n"
+                        "  2. Enable 'Generative Language API'\n"
+                        "  3. Verify your API key has access"
+                    )
+                )
+            elif "authentication failed" in error_str.lower():
+                click.echo(
+                    error_message(
+                        "Google API authentication failed. To fix:\n"
+                        "  1. Go to https://openrouter.ai/settings/keys\n"
+                        "  2. Add your Google API key (BYOK)\n"
+                        "  3. Enable 'Always use this key' for google/gemini models"
+                    )
+                )
+            elif "maximum context length" in error_str.lower():
+                click.echo(
+                    error_message(
+                        "Context length exceeded (>1M tokens). Try:\n"
+                        "  - Using standard mode instead of --comprehensive\n"
+                        "  - Using --no-fetch to analyze only search results\n"
+                        "  - Reducing the number of documents fetched"
+                    )
+                )
+            elif "choices" in error_str.lower():
                 click.echo(
                     error_message(
                         "API response format error. This usually means:\n"
