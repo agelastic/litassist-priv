@@ -9,11 +9,11 @@ class TestSeleniumRequired:
     def test_selenium_import(self):
         """Test that Selenium can be imported."""
         try:
-            from selenium import webdriver
-            from selenium.webdriver.common.by import By
-            from selenium.webdriver.support.ui import WebDriverWait
-            from selenium.webdriver.support import expected_conditions as EC
-            from selenium.webdriver.chrome.options import Options
+            from selenium import webdriver  # noqa: F401
+            from selenium.webdriver.common.by import By  # noqa: F401
+            from selenium.webdriver.support.ui import WebDriverWait  # noqa: F401
+            from selenium.webdriver.support import expected_conditions as EC  # noqa: F401
+            from selenium.webdriver.chrome.options import Options  # noqa: F401
         except ImportError as e:
             pytest.fail(
                 f"Selenium is required but not installed. Install with: pip install selenium\n"

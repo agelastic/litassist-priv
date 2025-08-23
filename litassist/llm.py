@@ -8,7 +8,7 @@ handling parameter management and response processing.
 from openai import OpenAI
 import re
 import os
-from typing import List, Dict, Any, Tuple, Optional
+from typing import List, Dict, Any, Tuple
 
 from litassist.utils import (
     timed,
@@ -31,6 +31,7 @@ from litassist.citation_verify import (
 import tenacity
 import logging
 import requests
+import aiohttp
 
 
 # --- Add missing custom exception classes for retry logic ---
@@ -50,9 +51,6 @@ class NonRetryableAPIError(Exception):
     """Errors that should not be retried (413, 400 with specific messages)."""
 
     pass
-
-
-import aiohttp
 
 logger = logging.getLogger(__name__)
 

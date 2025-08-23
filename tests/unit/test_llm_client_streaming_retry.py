@@ -1,7 +1,7 @@
 """Unit tests for LLMClient streaming error retry logic."""
 
 import pytest
-from unittest.mock import patch, MagicMock, Mock
+from unittest.mock import patch, MagicMock
 from litassist.llm import LLMClient
 
 
