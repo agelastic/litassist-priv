@@ -69,8 +69,8 @@ def _perform_cse_search(service, query, cse_id, limit, primary=False):
             title = item.get("title", "")
             snippet = item.get("snippet", "").replace("\n", " ")
             link = item.get("link", "")
-            if "jade.io" in link.lower():  # Only collect Jade.io snippets
-                snippets.append(f"[{title}]\n{link}\n{snippet}")
+            # Collect ALL snippets from search results
+            snippets.append(f"[{title}]\n{link}\n{snippet}")
         return links, snippets
     except GoogleApiError as e:
         msg = f"CSE search failed for '{cse_id}': {e}"
@@ -337,7 +337,7 @@ def lookup(question, mode, extract, comprehensive, context, output, no_fetch):
 
     # Collect links and snippets from configured Custom Search Engines
     links = []
-    all_jade_snippets = []  # Collect all Jade.io snippets
+    all_snippets = []  # Collect all search snippets from Google CSE
     # Determine per-source limits
     if comprehensive:
         jade_limit = austlii_limit = comp_limit = 10
@@ -348,7 +348,7 @@ def lookup(question, mode, extract, comprehensive, context, output, no_fetch):
         service, question, CONFIG.cse_id, jade_limit, primary=True
     )
     links.extend(jade_links)
-    all_jade_snippets.extend(jade_snippets)
+    all_snippets.extend(jade_snippets)
 
     # Rate limit delay between CSE calls
     cse_delay = float(os.environ.get("CSE_RATE_LIMIT_DELAY", "1.5"))
@@ -361,7 +361,7 @@ def lookup(question, mode, extract, comprehensive, context, output, no_fetch):
         service, question, getattr(CONFIG, "cse_id_austlii", None), austlii_limit
     )
     links.extend(austlii_links)
-    all_jade_snippets.extend(austlii_snippets)  # May contain Jade.io results
+    all_snippets.extend(austlii_snippets)
 
     # Rate limit delay before comprehensive search
     if cse_delay > 0 and comprehensive:
@@ -374,7 +374,7 @@ def lookup(question, mode, extract, comprehensive, context, output, no_fetch):
             service, question, getattr(CONFIG, "cse_id_comprehensive", None), comp_limit
         )
         links.extend(comp_links)
-        all_jade_snippets.extend(comp_snippets)  # May contain Jade.io results
+        all_snippets.extend(comp_snippets)
     # Remove duplicate and empty links while preserving order
     links = list(dict.fromkeys(filter(None, links)))
     # Display found links
@@ -382,8 +382,8 @@ def lookup(question, mode, extract, comprehensive, context, output, no_fetch):
     for link in links:
         click.echo(f"- {link}")
 
-    # Save Jade.io snippets to log file if any were collected
-    if all_jade_snippets:
+    # Save all search snippets to log file if any were collected
+    if all_snippets:
         timestamp = time.strftime("%Y%m%d-%H%M%S")
         snippet_file = os.path.join(LOG_DIR, f"cse_snippets_{timestamp}.txt")
         with open(snippet_file, "w", encoding="utf-8") as f:
@@ -392,12 +392,29 @@ def lookup(question, mode, extract, comprehensive, context, output, no_fetch):
                 f.write(f"Context: {context}\n")
             f.write(f"Timestamp: {time.strftime('%Y-%m-%d %H:%M:%S')}\n")
             f.write("=" * 80 + "\n\n")
-            f.write("JADE.IO SEARCH SNIPPETS (from Google CSE)\n")
+            f.write("GOOGLE CSE SEARCH SNIPPETS\n")
             f.write("-" * 40 + "\n\n")
-            for snippet in all_jade_snippets:
-                f.write(snippet + "\n\n" + "-" * 40 + "\n\n")
+            
+            # Group snippets by domain for better organization
+            snippet_by_domain = {}
+            for snippet in all_snippets:
+                # Extract domain from the link line in the snippet
+                lines = snippet.split('\n')
+                link_line = next((line for line in lines if line.startswith('http')), '')
+                domain = link_line.split('/')[2] if link_line and '/' in link_line else 'unknown'
+                
+                if domain not in snippet_by_domain:
+                    snippet_by_domain[domain] = []
+                snippet_by_domain[domain].append(snippet)
+            
+            # Write snippets grouped by domain
+            for domain in sorted(snippet_by_domain.keys()):
+                f.write(f"=== {domain.upper()} ===\n\n")
+                for snippet in snippet_by_domain[domain]:
+                    f.write(snippet + "\n\n" + "-" * 40 + "\n\n")
+                
         click.echo(
-            info_message(f"Saved {len(all_jade_snippets)} Jade.io snippet(s) to logs")
+            info_message(f"Saved {len(all_snippets)} search snippet(s) to logs")
         )
 
     # Fetch ALL working content (skip only Jade.io JavaScript pages)
@@ -510,14 +527,32 @@ def lookup(question, mode, extract, comprehensive, context, output, no_fetch):
     if skipped_count > 0:
         click.echo(f"  Skipped {skipped_count} source(s) (JavaScript or empty content)")
 
-    # Add Jade.io snippets to the beginning of content if available
-    if all_jade_snippets:
-        snippet_text = "=== JADE.IO SEARCH SNIPPETS (from Google CSE) ===\n"
+    # Add all search snippets to the beginning of content if available
+    if all_snippets:
+        snippet_text = "=== GOOGLE CSE SEARCH SNIPPETS ===\n"
         snippet_text += (
-            "Note: These are brief search result excerpts, not full content.\n\n"
+            "Note: These are brief search result excerpts from Google, not full content.\n"
         )
-        snippet_text += "\n\n".join(all_jade_snippets)
-        snippet_text += "\n=== END OF JADE.IO SNIPPETS ===\n"
+        snippet_text += "Sources include: jade.io, austlii.edu.au, legislation.gov.au, and other legal sites.\n\n"
+        
+        # Group snippets by domain for better organization
+        snippet_by_domain = {}
+        for snippet in all_snippets:
+            lines = snippet.split('\n')
+            link_line = next((line for line in lines if line.startswith('http')), '')
+            domain = link_line.split('/')[2] if link_line and '/' in link_line else 'unknown'
+            
+            if domain not in snippet_by_domain:
+                snippet_by_domain[domain] = []
+            snippet_by_domain[domain].append(snippet)
+        
+        # Add snippets grouped by domain
+        for domain in sorted(snippet_by_domain.keys()):
+            snippet_text += f"\n--- {domain} ---\n"
+            snippet_text += "\n\n".join(snippet_by_domain[domain])
+            snippet_text += "\n"
+        
+        snippet_text += "\n=== END OF SEARCH SNIPPETS ===\n"
         contents.insert(0, snippet_text)
 
     # Initialize variables for content and token tracking
