@@ -61,6 +61,14 @@ def run_verification_chain(
         if corrected_content != content:
             content = corrected_content
 
+    # Stage 4: CoVe verification for high-risk commands
+    if 'cove' not in skip_stages and command in ['extractfacts', 'strategy']:
+        cove_content, cove_results = run_cove_verification(content, command, prior_contexts=results)
+        results.update(cove_results)
+        if not cove_results['cove']['passed']:
+            # Keep original content but mark issues found
+            results['cove_issues_found'] = True
+
     return content, results
 
 

@@ -24,6 +24,7 @@ from litassist.utils import (
 )
 from litassist.llm import LLMClientFactory
 from litassist.citation_verify import verify_all_citations
+from litassist.verification_chain import run_cove_verification
 
 
 @timed
@@ -162,6 +163,7 @@ def expand_glob_patterns(ctx, param, value):
     is_flag=True,
     help="Enable citation verification",
 )
+@click.option("--cove", is_flag=True, help="Apply Chain of Verification")
 @click.option("--output", type=str, help="Custom output filename prefix")
 @click.pass_context
 @timed
@@ -174,6 +176,7 @@ def barbrief(
     context,
     hearing_type,
     verify,
+    cove,
     output,
 ):
     """
@@ -327,6 +330,12 @@ def barbrief(
                 "barbrief", verification_content, "citation_verification"
             )
             click.echo(f"Verification report saved: {verify_file}")
+    
+    # Apply Chain of Verification if requested
+    if cove:
+        content, cove_results = run_cove_verification(content, 'barbrief')
+        if not cove_results['cove']['passed']:
+            click.echo(warning_message("CoVe found issues - review output carefully"))
     
     # Save the brief
     output_file = save_command_output(

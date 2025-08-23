@@ -24,6 +24,7 @@ from litassist.utils import (
     info_message,
 )
 from litassist.llm import LLMClientFactory
+from litassist.verification_chain import run_cove_verification
 
 
 @click.command()
@@ -36,9 +37,10 @@ from litassist.llm import LLMClientFactory
 @click.option(
     "--verify", is_flag=True, help="Enable citation verification for extracted content"
 )
+@click.option("--cove", is_flag=True, help="Apply Chain of Verification")
 @click.option("--output", type=str, help="Custom output filename prefix")
 @timed
-def counselnotes(files, extract, verify, output):
+def counselnotes(files, extract, verify, cove, output):
     """
     Strategic analysis and counsel's notes for legal documents.
 
@@ -376,6 +378,13 @@ def counselnotes(files, extract, verify, output):
 
     # Prepare final output
     final_content = "\n\n".join(all_output)
+
+    # Apply Chain of Verification if requested
+    if cove:
+        from litassist.utils import warning_message
+        final_content, cove_results = run_cove_verification(final_content, 'counselnotes')
+        if not cove_results['cove']['passed']:
+            click.echo(warning_message("CoVe found issues - review output carefully"))
 
     # Prepare metadata for save_command_output
     files_summary = ", ".join([info["name"] for info in file_info])
