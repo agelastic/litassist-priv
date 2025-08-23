@@ -1,9 +1,11 @@
 """Minimal verification chain orchestrator - no overengineering."""
 
+import time
 from typing import Dict, Optional, Tuple
 from litassist.citation_patterns import validate_citation_patterns
 from litassist.citation_verify import verify_all_citations
 from litassist.llm import LLMClientFactory
+from litassist.utils import save_log
 
 
 def run_verification_chain(
@@ -94,6 +96,9 @@ def run_cove_verification(
     """
     client = LLMClientFactory.for_command("verify")
     prior_contexts = prior_contexts or {}
+    
+    # Track all stages for summary logging
+    cove_stages = {}
 
     # Build context summary for question generation
     context_summary = ""
@@ -120,7 +125,12 @@ Document:
 
 Output numbered questions only (1. Question one, 2. Question two, etc.)."""
 
-    questions, _ = client.complete([{"role": "user", "content": questions_prompt}])
+    questions, usage1 = client.complete([{"role": "user", "content": questions_prompt}])
+    cove_stages['questions'] = {
+        'prompt': questions_prompt[:500],  # First 500 chars for summary
+        'response': questions,
+        'usage': usage1
+    }
 
     # Step 2: Answer questions independently (factored approach)
     answers_prompt = f"""Answer these questions based ONLY on legal knowledge, NOT the document:
@@ -130,7 +140,12 @@ Output numbered questions only (1. Question one, 2. Question two, etc.)."""
 For each question, answer: Yes/No/Uncertain with brief explanation.
 Format: 1. Yes - [explanation], 2. No - [explanation], etc."""
 
-    answers, _ = client.complete([{"role": "user", "content": answers_prompt}])
+    answers, usage2 = client.complete([{"role": "user", "content": answers_prompt}])
+    cove_stages['answers'] = {
+        'prompt': answers_prompt[:500],
+        'response': answers,
+        'usage': usage2
+    }
 
     # Step 3: Detect inconsistencies (let LLM compare)
     verify_prompt = f"""Compare these Q&A pairs against the original document.
@@ -144,14 +159,43 @@ Original Document:
 
 Output: List specific issues found, or "No issues found" if document is consistent."""
 
-    issues, _ = client.complete([{"role": "user", "content": verify_prompt}])
+    issues, usage3 = client.complete([{"role": "user", "content": verify_prompt}])
+    cove_stages['verification'] = {
+        'prompt': verify_prompt[:500],
+        'response': issues,
+        'usage': usage3
+    }
+    
+    # Determine if verification passed
+    passed = "no issues found" in issues.lower()
+    
+    # Save aggregated CoVe summary log
+    save_log(f"cove_{command}_summary", {
+        "command": command,
+        "stages": cove_stages,
+        "prior_contexts": {
+            "had_citations": bool(prior_contexts.get('citations')),
+            "had_reasoning": bool(prior_contexts.get('reasoning')),
+            "had_soundness": bool(prior_contexts.get('soundness'))
+        },
+        "result": {
+            "passed": passed,
+            "issues_found": issues if not passed else "None"
+        },
+        "timestamp": time.strftime("%Y-%m-%d %H:%M:%S"),
+        "total_tokens": (
+            usage1.get('total_tokens', 0) + 
+            usage2.get('total_tokens', 0) + 
+            usage3.get('total_tokens', 0)
+        )
+    })
 
     return content, {
         "cove": {
             "questions": questions,
             "answers": answers,
             "issues": issues,
-            "passed": "no issues found" in issues.lower(),
+            "passed": passed,
         }
     }
 
