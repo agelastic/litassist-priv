@@ -939,9 +939,6 @@ class LLMClient:
                         error_msg = f"API error: {response.error}"
                 raise Exception(error_msg)
             
-            if len(response.choices) == 0:
-                raise Exception("API returned empty choices array")
-                
             if not hasattr(response.choices[0], 'message'):
                 raise Exception(f"Invalid choice structure: {response.choices[0]}")
             
