@@ -34,7 +34,7 @@ class TestLLMClientComplete:
             total_tokens=100,
             prompt_tokens=50,
             completion_tokens=50,
-            _asdict=lambda: {
+            model_dump=lambda: {
                 "total_tokens": 100,
                 "prompt_tokens": 50,
                 "completion_tokens": 50,
@@ -72,7 +72,14 @@ class TestLLMClientComplete:
         mock_response.choices[0].finish_reason = "stop"
         mock_response.choices[0].error = None
         mock_response.usage = Mock(
-            total_tokens=50, _asdict=lambda: {"total_tokens": 50}
+            total_tokens=50,
+            prompt_tokens=25,
+            completion_tokens=25,
+            model_dump=lambda: {
+                "total_tokens": 50,
+                "prompt_tokens": 25,
+                "completion_tokens": 25
+            }
         )
 
         mock_execute.return_value = mock_response
@@ -111,7 +118,14 @@ class TestLLMClientComplete:
         mock_response.choices[0].finish_reason = "stop"
         mock_response.choices[0].error = None
         mock_response.usage = Mock(
-            total_tokens=50, _asdict=lambda: {"total_tokens": 50}
+            total_tokens=50,
+            prompt_tokens=25,
+            completion_tokens=25,
+            model_dump=lambda: {
+                "total_tokens": 50,
+                "prompt_tokens": 25,
+                "completion_tokens": 25
+            }
         )
 
         mock_execute.return_value = mock_response
@@ -152,7 +166,14 @@ class TestLLMClientComplete:
         mock_response.choices[0].finish_reason = "stop"
         mock_response.choices[0].error = None
         mock_response.usage = Mock(
-            total_tokens=50, _asdict=lambda: {"total_tokens": 50}
+            total_tokens=50,
+            prompt_tokens=25,
+            completion_tokens=25,
+            model_dump=lambda: {
+                "total_tokens": 50,
+                "prompt_tokens": 25,
+                "completion_tokens": 25
+            }
         )
 
         mock_execute.return_value = mock_response
@@ -186,7 +207,7 @@ class TestLLMClientComplete:
             total_tokens=150,
             prompt_tokens=50,
             completion_tokens=100,
-            _asdict=lambda: {
+            model_dump=lambda: {
                 "total_tokens": 150,
                 "prompt_tokens": 50,
                 "completion_tokens": 100,
@@ -215,7 +236,14 @@ class TestLLMClientComplete:
         mock_response.choices[0].finish_reason = "stop"
         mock_response.choices[0].error = None
         mock_response.usage = Mock(
-            total_tokens=50, _asdict=lambda: {"total_tokens": 50}
+            total_tokens=50,
+            prompt_tokens=25,
+            completion_tokens=25,
+            model_dump=lambda: {
+                "total_tokens": 50,
+                "prompt_tokens": 25,
+                "completion_tokens": 25
+            }
         )
 
         mock_execute.return_value = mock_response
@@ -249,7 +277,14 @@ class TestLLMClientComplete:
         mock_response.choices[0].finish_reason = "stop"
         mock_response.choices[0].error = None
         mock_response.usage = Mock(
-            total_tokens=50, _asdict=lambda: {"total_tokens": 50}
+            total_tokens=50,
+            prompt_tokens=25,
+            completion_tokens=25,
+            model_dump=lambda: {
+                "total_tokens": 50,
+                "prompt_tokens": 25,
+                "completion_tokens": 25
+            }
         )
 
         mock_execute.return_value = mock_response
@@ -274,7 +309,14 @@ class TestLLMClientComplete:
         mock_response.choices[0].finish_reason = "stop"
         mock_response.choices[0].error = None
         mock_response.usage = Mock(
-            total_tokens=50, _asdict=lambda: {"total_tokens": 50}
+            total_tokens=50,
+            prompt_tokens=25,
+            completion_tokens=25,
+            model_dump=lambda: {
+                "total_tokens": 50,
+                "prompt_tokens": 25,
+                "completion_tokens": 25
+            }
         )
 
         mock_execute.return_value = mock_response
@@ -298,7 +340,14 @@ class TestLLMClientComplete:
         mock_response.choices[0].finish_reason = "stop"
         mock_response.choices[0].error = None
         mock_response.usage = Mock(
-            total_tokens=50, _asdict=lambda: {"total_tokens": 50}
+            total_tokens=50,
+            prompt_tokens=25,
+            completion_tokens=25,
+            model_dump=lambda: {
+                "total_tokens": 50,
+                "prompt_tokens": 25,
+                "completion_tokens": 25
+            }
         )
 
         mock_execute.return_value = mock_response
@@ -330,7 +379,14 @@ class TestLLMClientComplete:
         mock_response.choices[0].finish_reason = "stop"
         mock_response.choices[0].error = None
         mock_response.usage = Mock(
-            total_tokens=50, _asdict=lambda: {"total_tokens": 50}
+            total_tokens=50,
+            prompt_tokens=25,
+            completion_tokens=25,
+            model_dump=lambda: {
+                "total_tokens": 50,
+                "prompt_tokens": 25,
+                "completion_tokens": 25
+            }
         )
 
         mock_execute.return_value = mock_response

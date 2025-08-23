@@ -187,35 +187,35 @@ def _extract_pdf_text(url: str, pdf_bytes: bytes) -> str:
     try:
         import pdfplumber
         import io
-        
+
         with pdfplumber.open(io.BytesIO(pdf_bytes)) as pdf:
             num_pages = len(pdf.pages)
             text_parts = []
-            
+
             # Extract text from up to 50 pages
             pages_to_extract = min(num_pages, 50)
             for i, page in enumerate(pdf.pages[:pages_to_extract], 1):
                 page_text = page.extract_text()
                 if page_text:
                     text_parts.append(page_text)
-            
+
             if text_parts:
                 extracted_text = "\n".join(text_parts)
                 # Add clear markers for LLM
                 header = f"[PDF DOCUMENT EXTRACTED - {num_pages} pages total, {pages_to_extract} pages processed]\n"
                 header += f"[Source: {url}]\n"
                 header += "=" * 80 + "\n"
-                
+
                 if len(extracted_text) > 1000000:
                     extracted_text = extracted_text[:1000000]
                     header += "[Note: Text truncated to 1M chars]\n"
-                
+
                 logging.info(f"Successfully extracted text from PDF: {url}")
                 return header + extracted_text + "\n" + "=" * 80 + "\n[END OF PDF]"
             else:
                 logging.info(f"PDF has no extractable text (may be scanned): {url}")
                 return ""
-                
+
     except ImportError:
         logging.warning("pdfplumber not installed - cannot extract PDF text")
         return ""
@@ -287,12 +287,12 @@ def _fetch_url_content(url: str, timeout: int = 5) -> str:
         )
         if response.status_code == 200:
             # Check Content-Type for PDF
-            content_type = response.headers.get('content-type', '').lower()
-            
+            content_type = response.headers.get("content-type", "").lower()
+
             # Handle PDF documents
-            if 'application/pdf' in content_type or url.lower().endswith('.pdf'):
+            if "application/pdf" in content_type or url.lower().endswith(".pdf"):
                 return _extract_pdf_text(url, response.content)
-            
+
             # Continue with HTML handling
             html = response.text
 
@@ -328,7 +328,9 @@ def _fetch_url_content(url: str, timeout: int = 5) -> str:
                 return ""
 
             # Truncate if massive (some judgments can be quite long)
-            return html[:1000000]  # ~200,000 words with HTML, handles very long documents
+            return html[
+                :1000000
+            ]  # ~200,000 words with HTML, handles very long documents
     except Exception as e:
         logging.warning(f"Failed to fetch {url}: {e}")
     return ""
@@ -448,28 +450,32 @@ def lookup(question, mode, extract, comprehensive, context, output, no_fetch):
             f.write("=" * 80 + "\n\n")
             f.write("GOOGLE CSE SEARCH SNIPPETS\n")
             f.write("-" * 40 + "\n\n")
-            
+
             # Group snippets by domain for better organization
             snippet_by_domain = {}
             for snippet in all_snippets:
                 # Extract domain from the link line in the snippet
-                lines = snippet.split('\n')
-                link_line = next((line for line in lines if line.startswith('http')), '')
-                domain = link_line.split('/')[2] if link_line and '/' in link_line else 'unknown'
-                
+                lines = snippet.split("\n")
+                link_line = next(
+                    (line for line in lines if line.startswith("http")), ""
+                )
+                domain = (
+                    link_line.split("/")[2]
+                    if link_line and "/" in link_line
+                    else "unknown"
+                )
+
                 if domain not in snippet_by_domain:
                     snippet_by_domain[domain] = []
                 snippet_by_domain[domain].append(snippet)
-            
+
             # Write snippets grouped by domain
             for domain in sorted(snippet_by_domain.keys()):
                 f.write(f"=== {domain.upper()} ===\n\n")
                 for snippet in snippet_by_domain[domain]:
                     f.write(snippet + "\n\n" + "-" * 40 + "\n\n")
-                
-        click.echo(
-            info_message(f"Saved {len(all_snippets)} search snippet(s) to logs")
-        )
+
+        click.echo(info_message(f"Saved {len(all_snippets)} search snippet(s) to logs"))
 
     # Fetch ALL working content (skip only Jade.io JavaScript pages)
     contents = []
@@ -500,7 +506,7 @@ def lookup(question, mode, extract, comprehensive, context, output, no_fetch):
 
     # Try prioritized links first, then others
     ordered_links = prioritized_links + other_links
-    
+
     # Track last fetch time per domain for rate limiting
     domain_last_fetch = {}
 
@@ -525,19 +531,21 @@ def lookup(question, mode, extract, comprehensive, context, output, no_fetch):
                 skipped_count += 1
                 continue  # Skip to next URL
 
-            # Domain-based rate limiting (0.3s between requests to same domain)
-            domain = link.split('/')[2]
+            # Domain-based rate limiting (0.5s between requests to same domain)
+            domain = link.split("/")[2]
             if domain in domain_last_fetch:
                 elapsed = time.time() - domain_last_fetch[domain]
-                if elapsed < 0.3:
-                    time.sleep(0.3 - elapsed)
+                if elapsed < 0.5:
+                    time.sleep(0.5 - elapsed)
             domain_last_fetch[domain] = time.time()
 
             content = _fetch_url_content(link, timeout=CONFIG.fetch_timeout)
 
             # If HTTP fetch got minimal/no content, try Selenium for non-Jade sites
             if (not content or len(content) < 1000) and selenium_enabled:
-                if "jade.io" not in link.lower():  # Never use Selenium for any jade.io domain
+                if (
+                    "jade.io" not in link.lower()
+                ):  # Never use Selenium for any jade.io domain
                     click.echo(f"  [↻ Trying Selenium for {link.split('/')[2]}...]")
                     selenium_content = _fetch_url_content_selenium_with_timeout(
                         link,
@@ -558,12 +566,16 @@ def lookup(question, mode, extract, comprehensive, context, output, no_fetch):
                 # Save fetched page to logs
                 timestamp = time.strftime("%Y%m%d-%H%M%S")
                 domain = link.split("/")[2].replace(".", "_")
-                
+
                 # Check if it's PDF content for appropriate file naming
                 if content.startswith("[PDF DOCUMENT EXTRACTED"):
-                    log_file = os.path.join(LOG_DIR, f"pdf_extracted_{domain}_{timestamp}.txt")
+                    log_file = os.path.join(
+                        LOG_DIR, f"pdf_extracted_{domain}_{timestamp}.txt"
+                    )
                 else:
-                    log_file = os.path.join(LOG_DIR, f"fetched_{domain}_{timestamp}.html")
+                    log_file = os.path.join(
+                        LOG_DIR, f"fetched_{domain}_{timestamp}.html"
+                    )
                 with open(log_file, "w", encoding="utf-8") as f:
                     f.write(f"<!-- URL: {link} -->\n")
                     f.write(f"<!-- Fetched: {time.strftime('%Y-%m-%d %H:%M:%S')} -->\n")
@@ -572,12 +584,10 @@ def lookup(question, mode, extract, comprehensive, context, output, no_fetch):
                 contents.append(
                     f"=== ACTUAL CONTENT FROM: {link} ===\n{content}\n=== END OF CONTENT FROM: {link} ===\n"
                 )
-                
+
                 # Check if it's PDF content for appropriate user message
                 if content.startswith("[PDF DOCUMENT EXTRACTED"):
-                    click.echo(
-                        f"  [✓ Extracted text from PDF at {link.split('/')[2]}]"
-                    )
+                    click.echo(f"  [✓ Extracted text from PDF at {link.split('/')[2]}]")
                     pdf_count += 1
                 else:
                     click.echo(
@@ -595,40 +605,42 @@ def lookup(question, mode, extract, comprehensive, context, output, no_fetch):
     if pdf_count > 0:
         click.echo(f"  Extracted text from {pdf_count} PDF document(s)")
     if skipped_count > 0:
-        click.echo(f"  Skipped {skipped_count} source(s) (JavaScript, empty content, or non-extractable PDFs)")
+        click.echo(
+            f"  Skipped {skipped_count} source(s) (JavaScript, empty content, or non-extractable PDFs)"
+        )
 
     # Add all search snippets to the beginning of content if available
     if all_snippets:
         snippet_text = "=== GOOGLE CSE SEARCH SNIPPETS ===\n"
-        snippet_text += (
-            "Note: These are brief search result excerpts from Google, not full content.\n"
-        )
+        snippet_text += "Note: These are brief search result excerpts from Google, not full content.\n"
         snippet_text += "Sources include: jade.io, austlii.edu.au, legislation.gov.au, and other legal sites.\n\n"
-        
+
         # Group snippets by domain for better organization
         snippet_by_domain = {}
         for snippet in all_snippets:
-            lines = snippet.split('\n')
-            link_line = next((line for line in lines if line.startswith('http')), '')
-            domain = link_line.split('/')[2] if link_line and '/' in link_line else 'unknown'
-            
+            lines = snippet.split("\n")
+            link_line = next((line for line in lines if line.startswith("http")), "")
+            domain = (
+                link_line.split("/")[2] if link_line and "/" in link_line else "unknown"
+            )
+
             if domain not in snippet_by_domain:
                 snippet_by_domain[domain] = []
             snippet_by_domain[domain].append(snippet)
-        
+
         # Add snippets grouped by domain
         for domain in sorted(snippet_by_domain.keys()):
             snippet_text += f"\n--- {domain} ---\n"
             snippet_text += "\n\n".join(snippet_by_domain[domain])
             snippet_text += "\n"
-        
+
         snippet_text += "\n=== END OF SEARCH SNIPPETS ===\n"
         contents.insert(0, snippet_text)
 
     # Initialize variables for content and token tracking
     content_text = ""
     estimated_tokens = 0
-    
+
     # Prepare prompt using centralized template
     if contents:
         # Calculate token estimate and use ALL content intelligently
@@ -715,11 +727,11 @@ Analyze this real content to provide comprehensive legal analysis with specific 
     # Use LLMClientFactory to create the client
     client = LLMClientFactory.for_command("lookup", **overrides)
     call_with_hb = heartbeat(CONFIG.heartbeat_interval)(client.complete)
-    
+
     # Warn if using large content with non-Gemini models
     if content_text and estimated_tokens > 200000:
         # Check if we're not using Gemini (the model attribute should be available on client)
-        if not hasattr(client, 'model') or 'gemini' not in client.model.lower():
+        if not hasattr(client, "model") or "gemini" not in client.model.lower():
             click.echo(
                 warning_message(
                     f"Large content ({int(estimated_tokens):,} tokens) with non-Gemini model. "
@@ -755,17 +767,17 @@ Analyze this real content to provide comprehensive legal analysis with specific 
     system_tokens = len(system_content) / 4  # Rough estimate
     user_tokens = len(prompt) / 4
     total_request_tokens = system_tokens + user_tokens
-    
+
     # Check against known model limits
     model_limits = {
         "gemini": 2000000,  # 2M tokens
-        "claude": 200000,   # 200k tokens  
-        "gpt-4": 128000,    # 128k tokens
+        "claude": 200000,  # 200k tokens
+        "gpt-4": 128000,  # 128k tokens
     }
-    
+
     # Get model type from client
     model_type = "unknown"
-    if hasattr(client, 'model') and hasattr(client.model, 'lower'):
+    if hasattr(client, "model") and hasattr(client.model, "lower"):
         model_str = client.model.lower()
         if "gemini" in model_str:
             model_type = "gemini"
@@ -774,22 +786,24 @@ Analyze this real content to provide comprehensive legal analysis with specific 
         elif "gpt" in model_str:
             model_type = "gpt-4"
     max_tokens = model_limits.get(model_type, 100000)  # Conservative default
-    
+
     if total_request_tokens > max_tokens * 0.9:  # 90% safety margin
-        click.echo(warning_message(
-            f"Request size ({int(total_request_tokens):,} tokens) exceeds safe limit for {model_type}. "
-            f"Truncating content..."
-        ))
+        click.echo(
+            warning_message(
+                f"Request size ({int(total_request_tokens):,} tokens) exceeds safe limit for {model_type}. "
+                f"Truncating content..."
+            )
+        )
         # Truncate the prompt to fit
         max_prompt_chars = int(max_tokens * 0.8 * 4)  # 80% for prompt, convert to chars
         prompt = prompt[:max_prompt_chars] + "\n[Content truncated due to token limits]"
-    
+
     # Retry logic for transient errors
     max_retries = 2
     retry_delay = 5
     content = None
     usage = None
-    
+
     for attempt in range(max_retries + 1):
         try:
             content, usage = call_with_hb(
@@ -799,36 +813,45 @@ Analyze this real content to provide comprehensive legal analysis with specific 
                 ]
             )
             break  # Success, exit retry loop
-            
+
         except Exception as e:
             error_str = str(e)
             # Debug logging for BYOK issues
             import logging
+
             logging.error(f"Lookup error details: {error_str}")
-            
+
             # Check if this is a retryable error
-            if attempt < max_retries and any(x in error_str.lower() for x in ["choices", "timeout", "rate"]):
-                click.echo(warning_message(
-                    f"API error on attempt {attempt + 1}/{max_retries + 1}, retrying in {retry_delay}s..."
-                ))
+            if attempt < max_retries and any(
+                x in error_str.lower() for x in ["choices", "timeout", "rate"]
+            ):
+                click.echo(
+                    warning_message(
+                        f"API error on attempt {attempt + 1}/{max_retries + 1}, retrying in {retry_delay}s..."
+                    )
+                )
                 time.sleep(retry_delay)
                 retry_delay *= 2  # Exponential backoff
                 continue
-            
+
             # Final attempt failed or non-retryable error
             # Provide specific error handling
             if "choices" in error_str.lower():
-                click.echo(error_message(
-                    "API response format error. This usually means:\n"
-                    "  - Request was too large (token limit exceeded)\n"
-                    "  - API timeout or rate limit\n"
-                    "  - Service temporarily unavailable"
-                ))
-                
+                click.echo(
+                    error_message(
+                        "API response format error. This usually means:\n"
+                        "  - Request was too large (token limit exceeded)\n"
+                        "  - API timeout or rate limit\n"
+                        "  - Service temporarily unavailable"
+                    )
+                )
+
                 # Save fetched content so user doesn't lose it
                 if contents:
                     timestamp = time.strftime("%Y%m%d_%H%M%S")
-                    error_file = os.path.join(LOG_DIR, f"lookup_error_content_{timestamp}.txt")
+                    error_file = os.path.join(
+                        LOG_DIR, f"lookup_error_content_{timestamp}.txt"
+                    )
                     with open(error_file, "w", encoding="utf-8") as f:
                         f.write(f"Error: {error_str}\n\n")
                         f.write(f"Query: {question}\n")
@@ -836,38 +859,44 @@ Analyze this real content to provide comprehensive legal analysis with specific 
                             f.write(f"Context: {context}\n")
                         f.write("\n=== FETCHED CONTENT (saved for retry) ===\n\n")
                         f.write("\n".join(contents))
-                    click.echo(info_message(
-                        "Fetched content saved to logs for manual review"
-                    ))
-                    
+                    click.echo(
+                        info_message("Fetched content saved to logs for manual review")
+                    )
+
             elif "token" in error_str.lower() or "limit" in error_str.lower():
-                click.echo(error_message(
-                    "Token limit exceeded. Try:\n"
-                    "  - Using --no-fetch to skip content fetching\n"
-                    "  - Reducing search scope\n"
-                    "  - Using standard mode instead of --comprehensive"
-                ))
-                
+                click.echo(
+                    error_message(
+                        "Token limit exceeded. Try:\n"
+                        "  - Using --no-fetch to skip content fetching\n"
+                        "  - Reducing search scope\n"
+                        "  - Using standard mode instead of --comprehensive"
+                    )
+                )
+
             elif "timeout" in error_str.lower():
-                click.echo(error_message(
-                    "Request timed out. The content was likely too large. "
-                    "Try again with fewer sources."
-                ))
-                
+                click.echo(
+                    error_message(
+                        "Request timed out. The content was likely too large. "
+                        "Try again with fewer sources."
+                    )
+                )
+
             elif "Citation verification failed" in error_str:
                 click.echo(warning_message("Citation verification issues detected"))
-                
+
             else:
                 # Generic error
                 click.echo(error_message(f"LLM API error: {error_str}"))
-            
+
             # Don't lose all the work - offer recovery options
             if contents:
-                click.echo(tip_message(
-                    "Tip: Use 'litassist lookup --no-fetch' with the same query to analyze "
-                    "just the search results without fetching content"
-                ))
-            
+                click.echo(
+                    tip_message(
+                        "Tip: Use 'litassist lookup --no-fetch' with the same query to analyze "
+                        "just the search results without fetching content"
+                    )
+                )
+
             raise click.ClickException("Lookup failed - see error details above")
 
     # Process extraction if requested

@@ -159,8 +159,7 @@ class TestGetModelParameters:
         # Test with Gemini (google profile)
         filtered = get_model_parameters("google/gemini-pro", requested)
         assert "temperature" in filtered
-        assert "max_output_tokens" in filtered  # Transformed from max_tokens
-        assert "max_tokens" not in filtered
+        assert "max_tokens" in filtered  # No transformation needed with v1.x - OpenRouter handles this
         assert "seed" not in filtered  # Not in google allowed list
 
     def test_reasoning_effort_validation(self):

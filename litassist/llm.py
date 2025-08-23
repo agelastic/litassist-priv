@@ -583,22 +583,9 @@ class LLMClient:
             base_url = CONFIG.or_base
             api_key = CONFIG.or_key
             
-            # Add BYOK headers for Gemini models
-            headers = {}
-            if "gemini" in model_name.lower():
-                google_api_key = os.environ.get("GOOGLE_GEMINI_API_KEY", "AIzaSyC6oKGHh3MpEWrjvlc0aQI9Qpyrvt4RgSE")
-                if google_api_key:
-                    headers = {
-                        "X-Google-Api-Key": google_api_key,
-                        "HTTP-Referer": "https://litassist.local",
-                        "X-Title": "LitAssist"
-                    }
-                    logging.info("Using Google BYOK for Gemini model")
-            
             return OpenAI(
                 api_key=api_key,
-                base_url=base_url,
-                default_headers=headers if headers else None
+                base_url=base_url
             )
         else:
             # Direct OpenAI API
@@ -647,8 +634,8 @@ class LLMClient:
                         if "metadata" in error_info and "raw" in error_info["metadata"]:
                             raw_error = error_info["metadata"]["raw"]
                             if "API_KEY_INVALID" in raw_error or "API key expired" in raw_error:
-                                # This is the BYOK not working properly
-                                raise Exception(f"Google BYOK authentication failed. The API key may need to be configured in OpenRouter settings.")
+                                # BYOK not configured on OpenRouter
+                                raise Exception(f"Google API authentication failed. Please configure your Google API key at https://openrouter.ai/settings/keys")
                         raise Exception(f"API Error: {error_msg}")
                 
                 # Check for API-level errors in response (overloaded, rate limit, etc.)
