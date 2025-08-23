@@ -317,7 +317,8 @@ def _fetch_url_content(url: str, timeout: int = 5) -> str:
                                 logging.info("Success: Got content from Jade.io /print URL")
                                 text_with_source = f"[Source: {print_url}]\n\n{extracted_text}"
                                 return text_with_source[:250000]
-                        except:
+                        except Exception as e:
+                            logging.warning(f"HTML parsing with TextExtractor failed for {print_url}, falling back to regex: {e}")
                             # Fallback to regex method
                             html = re.sub(r"<script.*?</script>", "", html, flags=re.DOTALL)
                             html = re.sub(r"<style.*?</style>", "", html, flags=re.DOTALL)
