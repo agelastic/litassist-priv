@@ -594,9 +594,24 @@ class LLMClient:
 
         def _call_with_streaming_wrap():
             try:
-                resp = openai.ChatCompletion.create(
-                    model=model_name, messages=messages, **filtered_params
-                )
+                # Add BYOK header for Gemini models when using OpenRouter
+                extra_headers = {}
+                if "gemini" in model_name.lower() and openai.api_base == CONFIG.or_base:
+                    # Use Google API key for BYOK
+                    google_api_key = os.environ.get("GOOGLE_GEMINI_API_KEY", "AIzaSyC6oKGHh3MpEWrjvlc0aQI9Qpyrvt4RgSE")
+                    if google_api_key:
+                        extra_headers = {"X-Google-Api-Key": google_api_key}
+                        logging.info(f"Using Google BYOK for Gemini model")
+                
+                # Create the request with optional headers
+                if extra_headers:
+                    resp = openai.ChatCompletion.create(
+                        model=model_name, messages=messages, headers=extra_headers, **filtered_params
+                    )
+                else:
+                    resp = openai.ChatCompletion.create(
+                        model=model_name, messages=messages, **filtered_params
+                    )
                 # Check for API-level errors in response (overloaded, rate limit, etc.)
                 if (
                     hasattr(resp, "choices")
@@ -824,6 +839,27 @@ class LLMClient:
                         "API request failed with error finish_reason but no error details"
                     )
 
+            # Validate response structure before accessing
+            if not response:
+                raise Exception("Empty response from API")
+                
+            if not hasattr(response, 'choices') or not response.choices:
+                # Log the actual response for debugging
+                logging.error(f"Invalid API response structure: {response}")
+                error_msg = "API response missing 'choices' field"
+                if hasattr(response, 'error') and response.error:
+                    if hasattr(response.error, 'get'):
+                        error_msg = f"API error: {response.error.get('message', 'Unknown error')}"
+                    else:
+                        error_msg = f"API error: {response.error}"
+                raise Exception(error_msg)
+            
+            if len(response.choices) == 0:
+                raise Exception("API returned empty choices array")
+                
+            if not hasattr(response.choices[0], 'message'):
+                raise Exception(f"Invalid choice structure: {response.choices[0]}")
+            
             # Extract content and usage from chat response
             content = response.choices[0].message.content or ""
             usage = getattr(response, "usage", {})

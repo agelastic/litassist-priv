@@ -31,6 +31,7 @@ class TestLookupCommand:
 
         # Mock the LLM client
         mock_client = Mock()
+        mock_client.model = "test-model"  # Add model attribute for token limit checks
         mock_client.complete.return_value = (
             "Legal analysis content",
             {"total_tokens": 100},
@@ -74,6 +75,7 @@ class TestLookupCommand:
 
         # Mock the LLM client
         mock_client = Mock()
+        mock_client.model = "test-model"  # Add model attribute for token limit checks
         mock_client.complete.return_value = (
             "Comprehensive analysis",
             {"total_tokens": 500},
@@ -111,6 +113,7 @@ class TestLookupCommand:
 
         # Mock the LLM client
         mock_client = Mock()
+        mock_client.model = "test-model"  # Add model attribute for token limit checks
         mock_client.complete.return_value = (
             "Content with [2021] FCA 123",
             {"total_tokens": 100},
@@ -167,6 +170,7 @@ class TestLookupCommand:
 
             # Mock LLM client
             mock_client = Mock()
+            mock_client.model = "test-model"  # Add model attribute for token limit checks
             mock_client.complete.return_value = ("Analysis", {"total_tokens": 100})
             mock_factory.return_value = mock_client
 
@@ -220,6 +224,7 @@ class TestLookupCommandIntegration:
 
             # Mock LLM client
             mock_client = Mock()
+            mock_client.model = "test-model"  # Add model attribute for token limit checks
             mock_client.complete.return_value = ("Analysis", {"total_tokens": 100})
             mock_factory.return_value = mock_client
 
