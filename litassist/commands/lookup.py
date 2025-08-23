@@ -167,7 +167,7 @@ def _fetch_url_content_selenium(url: str, timeout: int = 10) -> str:
             # Check if we got real content
             text_only = re.sub(r"<[^>]+>", "", page_source)
             if len(text_only.strip()) > 500:
-                return page_source[:200000]
+                return page_source[:1000000]
 
         finally:
             driver.quit()
@@ -176,6 +176,51 @@ def _fetch_url_content_selenium(url: str, timeout: int = 10) -> str:
         logging.warning(f"Selenium fetch failed for {url}: {e}")
 
     return ""
+
+
+def _extract_pdf_text(url: str, pdf_bytes: bytes) -> str:
+    """
+    Extract text from PDF without OCR.
+    Returns marked-up text or empty string if extraction fails.
+    """
+    try:
+        import pdfplumber
+        import io
+        
+        with pdfplumber.open(io.BytesIO(pdf_bytes)) as pdf:
+            num_pages = len(pdf.pages)
+            text_parts = []
+            
+            # Extract text from up to 50 pages
+            pages_to_extract = min(num_pages, 50)
+            for i, page in enumerate(pdf.pages[:pages_to_extract], 1):
+                page_text = page.extract_text()
+                if page_text:
+                    text_parts.append(page_text)
+            
+            if text_parts:
+                extracted_text = "\n".join(text_parts)
+                # Add clear markers for LLM
+                header = f"[PDF DOCUMENT EXTRACTED - {num_pages} pages total, {pages_to_extract} pages processed]\n"
+                header += f"[Source: {url}]\n"
+                header += "=" * 80 + "\n"
+                
+                if len(extracted_text) > 1000000:
+                    extracted_text = extracted_text[:1000000]
+                    header += "[Note: Text truncated to 1M chars]\n"
+                
+                logging.info(f"Successfully extracted text from PDF: {url}")
+                return header + extracted_text + "\n" + "=" * 80 + "\n[END OF PDF]"
+            else:
+                logging.info(f"PDF has no extractable text (may be scanned): {url}")
+                return ""
+                
+    except ImportError:
+        logging.warning("pdfplumber not installed - cannot extract PDF text")
+        return ""
+    except Exception as e:
+        logging.warning(f"Failed to extract text from PDF {url}: {e}")
+        return ""
 
 
 def _fetch_url_content(url: str, timeout: int = 5) -> str:
@@ -222,7 +267,7 @@ def _fetch_url_content(url: str, timeout: int = 5) -> str:
                         text_only = re.sub(r"<[^>]+>", "", html)
                         if len(text_only.strip()) > 500:
                             logging.info("Success: Got content from Jade.io /print URL")
-                            return html[:200000]
+                            return html[:1000000]
                 except Exception as e:
                     logging.debug(f"Jade.io /print attempt failed: {e}")
 
@@ -240,6 +285,14 @@ def _fetch_url_content(url: str, timeout: int = 5) -> str:
             },
         )
         if response.status_code == 200:
+            # Check Content-Type for PDF
+            content_type = response.headers.get('content-type', '').lower()
+            
+            # Handle PDF documents
+            if 'application/pdf' in content_type or url.lower().endswith('.pdf'):
+                return _extract_pdf_text(url, response.content)
+            
+            # Continue with HTML handling
             html = response.text
 
             # Quick check for actual content vs empty template
@@ -274,7 +327,7 @@ def _fetch_url_content(url: str, timeout: int = 5) -> str:
                 return ""
 
             # Truncate if massive (some judgments can be quite long)
-            return html[:200000]  # ~40,000 words with HTML, handles most full judgments
+            return html[:1000000]  # ~200,000 words with HTML, handles very long documents
     except Exception as e:
         logging.warning(f"Failed to fetch {url}: {e}")
     return ""
@@ -421,6 +474,7 @@ def lookup(question, mode, extract, comprehensive, context, output, no_fetch):
     contents = []
     fetched_count = 0
     skipped_count = 0
+    pdf_count = 0  # Track PDFs separately
 
     # Check if Selenium should be disabled
     selenium_enabled = SELENIUM_AVAILABLE and CONFIG.selenium_enabled
@@ -503,7 +557,12 @@ def lookup(question, mode, extract, comprehensive, context, output, no_fetch):
                 # Save fetched page to logs
                 timestamp = time.strftime("%Y%m%d-%H%M%S")
                 domain = link.split("/")[2].replace(".", "_")
-                log_file = os.path.join(LOG_DIR, f"fetched_{domain}_{timestamp}.html")
+                
+                # Check if it's PDF content for appropriate file naming
+                if content.startswith("[PDF DOCUMENT EXTRACTED"):
+                    log_file = os.path.join(LOG_DIR, f"pdf_extracted_{domain}_{timestamp}.txt")
+                else:
+                    log_file = os.path.join(LOG_DIR, f"fetched_{domain}_{timestamp}.html")
                 with open(log_file, "w", encoding="utf-8") as f:
                     f.write(f"<!-- URL: {link} -->\n")
                     f.write(f"<!-- Fetched: {time.strftime('%Y-%m-%d %H:%M:%S')} -->\n")
@@ -512,9 +571,17 @@ def lookup(question, mode, extract, comprehensive, context, output, no_fetch):
                 contents.append(
                     f"=== ACTUAL CONTENT FROM: {link} ===\n{content}\n=== END OF CONTENT FROM: {link} ===\n"
                 )
-                click.echo(
-                    f"  [✓ Fetched {len(content)} chars from {link.split('/')[2]} via {method}]"
-                )
+                
+                # Check if it's PDF content for appropriate user message
+                if content.startswith("[PDF DOCUMENT EXTRACTED"):
+                    click.echo(
+                        f"  [✓ Extracted text from PDF at {link.split('/')[2]}]"
+                    )
+                    pdf_count += 1
+                else:
+                    click.echo(
+                        f"  [✓ Fetched {len(content)} chars from {link.split('/')[2]} via {method}]"
+                    )
                 fetched_count += 1
             else:
                 # Show why it was skipped (non-Jade URLs)
@@ -524,8 +591,10 @@ def lookup(question, mode, extract, comprehensive, context, output, no_fetch):
     # Summary of fetch results
     if fetched_count > 0:
         click.echo(f"\n  Successfully fetched content from {fetched_count} source(s)")
+    if pdf_count > 0:
+        click.echo(f"  Extracted text from {pdf_count} PDF document(s)")
     if skipped_count > 0:
-        click.echo(f"  Skipped {skipped_count} source(s) (JavaScript or empty content)")
+        click.echo(f"  Skipped {skipped_count} source(s) (JavaScript, empty content, or non-extractable PDFs)")
 
     # Add all search snippets to the beginning of content if available
     if all_snippets:

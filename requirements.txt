@@ -9,3 +9,4 @@ pyyaml
 requests>=2.32.0
 reportlab>=4.1.0  # For PDF generation
 selenium>=4.0.0  # For JavaScript-rendered content (Jade.io)
+pdfplumber>=0.9.0  # For PDF text extraction (no OCR)
