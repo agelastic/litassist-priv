@@ -34,7 +34,6 @@ except ImportError:
 from litassist.config import CONFIG
 from litassist.utils import (
     save_log,
-    heartbeat,
     timed,
     save_command_output,
     process_extraction_response,
@@ -802,7 +801,6 @@ Analyze this real content to provide comprehensive legal analysis with specific 
 
     # Use LLMClientFactory to create the client
     client = LLMClientFactory.for_command("lookup", **overrides)
-    call_with_hb = heartbeat(CONFIG.heartbeat_interval)(client.complete)
 
     # Warn if using large content with non-Gemini models
     if content_text and estimated_tokens > 200000:
@@ -882,7 +880,7 @@ Analyze this real content to provide comprehensive legal analysis with specific 
 
     for attempt in range(max_retries + 1):
         try:
-            content, usage = call_with_hb(
+            content, usage = client.complete(
                 [
                     {"role": "system", "content": system_content},
                     {"role": "user", "content": prompt},

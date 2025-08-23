@@ -13,10 +13,8 @@ import os
 from typing import List, Optional, Dict, Any
 
 from litassist.prompts import PROMPTS
-from litassist.config import CONFIG
 from litassist.utils import (
     read_document,
-    heartbeat,
     timed,
     create_reasoning_prompt,
     save_command_output,
@@ -280,8 +278,7 @@ def barbrief(
     ]
     
     try:
-        call_with_hb = heartbeat(CONFIG.heartbeat_interval)(client.complete)
-        content, usage = call_with_hb(messages, skip_citation_verification=True)
+        content, usage = client.complete(messages, skip_citation_verification=True)
     except Exception as e:
         # Provide helpful error message for common issues
         if "timeout" in str(e).lower():

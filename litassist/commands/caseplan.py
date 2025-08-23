@@ -6,10 +6,8 @@ and generates a customized, efficient litigation workflow plan.
 """
 
 import click
-from litassist.config import CONFIG
 from litassist.utils import (
     save_log,
-    heartbeat,
     timed,
     validate_file_size_limit,
     save_command_output,
@@ -224,8 +222,7 @@ def caseplan(case_facts, context, budget, output):
 
         @timed
         def generate_plan():
-            call_with_hb = heartbeat(CONFIG.heartbeat_interval)(llm_client.complete)
-            return call_with_hb(
+            return llm_client.complete(
                 [
                     {"role": "system", "content": system_prompt},
                     {"role": "user", "content": user_prompt},
