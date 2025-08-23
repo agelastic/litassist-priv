@@ -370,6 +370,13 @@ class LLMClientFactory:
             "top_p": 0.7,
             "force_verify": False,
         },
+        # Chain of Verification - fast, efficient question generation
+        "cove": {
+            "model": "anthropic/claude-sonnet-4",
+            "temperature": 0.2,
+            "top_p": 0.8,
+            "force_verify": False,  # Avoid recursive verification
+        },
     }
 
     @classmethod

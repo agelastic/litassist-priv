@@ -102,7 +102,7 @@ def run_cove_verification(
     Returns:
         Tuple of (content, cove_results dict)
     """
-    client = LLMClientFactory.for_command("verify")
+    client = LLMClientFactory.for_command("cove")
     prior_contexts = prior_contexts or {}
     
     # Track all stages for summary logging

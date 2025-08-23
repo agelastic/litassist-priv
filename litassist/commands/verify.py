@@ -19,7 +19,7 @@ from litassist.citation_verify import verify_all_citations
 from litassist.citation_patterns import extract_citations
 from litassist.llm import LLMClientFactory
 from litassist.utils import (
-    verifying_message, success_message, error_message,
+    verifying_message, success_message, error_message, warning_message,
     save_command_output
 )
 from litassist.utils import (
@@ -226,51 +226,57 @@ def verify(file, citations, soundness, reasoning, cove, output):
 
     # 4. Chain of Verification (Final Stage - uses all prior results)
     if cove:
-        try:
-            from litassist.verification_chain import run_cove_verification, format_cove_report
+        # Skip CoVe if only citations are being verified
+        if citations and not soundness and not reasoning:
+            click.echo(warning_message(
+                "CoVe skipped: --cove flag is ignored when only verifying citations"
+            ))
+        else:
+            try:
+                from litassist.verification_chain import run_cove_verification, format_cove_report
             
-            # Use the most refined version of content available
-            final_content = content
-            if soundness and 'soundness_result' in locals():
-                # Extract corrected document from soundness result if available
-                match = re.search(
-                    r"## Verified and Corrected Document\s*\n(.*)",
-                    soundness_result,
-                    re.DOTALL
+                # Use the most refined version of content available
+                final_content = content
+                if soundness and 'soundness_result' in locals():
+                    # Extract corrected document from soundness result if available
+                    match = re.search(
+                        r"## Verified and Corrected Document\s*\n(.*)",
+                        soundness_result,
+                        re.DOTALL
+                    )
+                    if match:
+                        final_content = match.group(1).strip()
+                
+                cove_content, cove_results = run_cove_verification(
+                    final_content,
+                    'verify',
+                    prior_contexts={
+                        'citations': citation_report,
+                        'reasoning': reasoning_response,
+                        'soundness': issues if soundness and 'issues' in locals() else None
+                    }
                 )
-                if match:
-                    final_content = match.group(1).strip()
-            
-            cove_content, cove_results = run_cove_verification(
-                final_content,
-                'verify',
-                prior_contexts={
-                    'citations': citation_report,
-                    'reasoning': reasoning_response,
-                    'soundness': issues if soundness and 'issues' in locals() else None
-                }
-            )
-            
-            # Save CoVe report
-            cove_report = format_cove_report(cove_results)
-            cove_file = save_command_output(
-                f"{output}_cove" if output else "verify_cove",
-                cove_report,
-                "" if output else os.path.basename(base_name),
-                metadata={
-                    "Type": "Chain of Verification",
-                    "File": file,
-                    "Status": "[VERIFIED]" if cove_results['cove']['passed'] else "[WARNING]",
-                    "Issues": "None" if cove_results['cove']['passed'] else "Found"
-                }
-            )
-            status = "[VERIFIED]" if cove_results['cove']['passed'] else "[WARNING]"
-            click.echo(f"\n{status} Chain of Verification complete")
-            click.echo(f"   - Analysis: {cove_file}")
-            extra_files["CoVe report"] = cove_file
-            reports_generated += 1
-        except Exception as e:
-            _handle_verification_error("Chain of Verification", e)
+                
+                # Save CoVe report
+                cove_report = format_cove_report(cove_results)
+                cove_file = save_command_output(
+                    f"{output}_cove" if output else "verify_cove",
+                    cove_report,
+                    "" if output else os.path.basename(base_name),
+                    metadata={
+                        "Type": "Chain of Verification",
+                        "File": file,
+                        "Status": "[VERIFIED]" if cove_results['cove']['passed'] else "[WARNING]",
+                        "Issues": "None" if cove_results['cove']['passed'] else "Found"
+                    }
+                )
+                status = "[VERIFIED]" if cove_results['cove']['passed'] else "[WARNING]"
+                click.echo(f"\n{status} Chain of Verification complete")
+                click.echo(f"   - Analysis: {cove_file}")
+                extra_files["CoVe report"] = cove_file
+                reports_generated += 1
+            except Exception as e:
+                _handle_verification_error("Chain of Verification", e)
 
     click.echo(f"\nVerification complete. {reports_generated} reports generated.")
     save_log(
