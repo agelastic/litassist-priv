@@ -21,12 +21,10 @@ class TestDraftCommand:
     @patch("litassist.commands.draft.LLMClientFactory.for_command")
     @patch("litassist.commands.draft.save_command_output")
     @patch("litassist.commands.draft.save_log")
-    @patch("litassist.commands.draft.verify_content_if_needed")
     @patch("litassist.commands.draft.PROMPTS")
     def test_draft_statement_of_claim_success(
         self,
         mock_prompts,
-        mock_verify,
         mock_save_log,
         mock_save_output,
         mock_llm_factory,
@@ -34,9 +32,6 @@ class TestDraftCommand:
         """Test successful statement of claim generation."""
         # Mock prompts
         mock_prompts.get.return_value = "Test template"
-
-        # Mock verification
-        mock_verify.return_value = ("Verified content", {})
 
         # Mock LLM client
         mock_client = MagicMock()
@@ -105,12 +100,10 @@ class TestDraftCommand:
     @patch("litassist.commands.draft.LLMClientFactory.for_command")
     @patch("litassist.commands.draft.save_command_output")
     @patch("litassist.commands.draft.save_log")
-    @patch("litassist.commands.draft.verify_content_if_needed")
     @patch("litassist.commands.draft.PROMPTS")
     def test_draft_affidavit_success(
         self,
         mock_prompts,
-        mock_verify,
         mock_save_log,
         mock_save_output,
         mock_llm_factory,
@@ -118,9 +111,6 @@ class TestDraftCommand:
         """Test successful affidavit generation."""
         # Mock prompts
         mock_prompts.get.return_value = "Affidavit template"
-
-        # Mock verification
-        mock_verify.return_value = ("Verified affidavit", {})
 
         # Mock LLM client
         mock_client = MagicMock()
@@ -421,12 +411,10 @@ class TestDraftIntegration:
     @patch("litassist.commands.draft.LLMClientFactory.for_command")
     @patch("litassist.commands.draft.save_command_output")
     @patch("litassist.commands.draft.save_log")
-    @patch("litassist.commands.draft.verify_content_if_needed")
     @patch("litassist.commands.draft.PROMPTS")
     def test_draft_with_verification_warnings(
         self,
         mock_prompts,
-        mock_verify,
         mock_save_log,
         mock_save_output,
         mock_llm_factory,
@@ -434,9 +422,6 @@ class TestDraftIntegration:
         """Test draft command with citation validation warnings."""
         # Mock prompts
         mock_prompts.get.return_value = "Test template"
-
-        # Mock verification
-        mock_verify.return_value = ("Verified content with warnings", {})
 
         # Mock LLM client with citation issues
         mock_client = MagicMock()
@@ -472,7 +457,7 @@ class TestDraftIntegration:
             runner = CliRunner()
             result = runner.invoke(
                 draft,
-                [facts_file, "statement_of_claim", "--verify"],
+                [facts_file, "statement_of_claim"],
                 obj={"premium": False},
             )
 
@@ -485,12 +470,10 @@ class TestDraftIntegration:
     @patch("litassist.commands.draft.LLMClientFactory.for_command")
     @patch("litassist.commands.draft.save_command_output")
     @patch("litassist.commands.draft.save_log")
-    @patch("litassist.commands.draft.verify_content_if_needed")
     @patch("litassist.commands.draft.PROMPTS")
     def test_draft_premium_mode(
         self,
         mock_prompts,
-        mock_verify,
         mock_save_log,
         mock_save_output,
         mock_llm_factory,
@@ -498,9 +481,6 @@ class TestDraftIntegration:
         """Test draft command in premium mode."""
         # Mock prompts
         mock_prompts.get.return_value = "Premium template"
-
-        # Mock verification
-        mock_verify.return_value = ("Premium verified content", {})
 
         # Mock premium LLM client
         mock_client = MagicMock()

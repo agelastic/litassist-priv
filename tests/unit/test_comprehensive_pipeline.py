@@ -233,6 +233,17 @@ Key Cases:
    Courts strictly construe payment triggers in building contracts. Strong documentary evidence supports incomplete foundations.
 """,
             
+            "verification": """## VERIFIED UNORTHODOX STRATEGIES
+
+1. Quantum Meruit Counterclaim
+   File a counterclaim for quantum meruit for any project management or preliminary work performed by plaintiff before defendant commenced. This creates settlement pressure.
+   Key principles: Restitutionary remedies available where contract frustrated
+
+2. Corporate Regulator Complaint
+   Lodge complaint with Victorian Building Authority regarding abandoned site and safety issues. Regulatory pressure may encourage commercial resolution.
+   Key principles: Leverage regulatory compliance obligations
+""",
+            
             "strategy": """## RECOMMENDED LITIGATION STRATEGY
 
 ### PRIMARY APPROACH
@@ -424,6 +435,9 @@ Worst: Pay $100k progress payment plus costs
                     content = self.mock_responses["brainstorm_orthodox"]
                 elif "unorthodox" in user_content:
                     content = self.mock_responses["brainstorm_unorthodox"]
+                elif "verif" in user_content and "unorthodox" in str(messages):
+                    # Return the verified unorthodox strategies
+                    content = self.mock_responses["verification"]
                 elif "most likely" in user_content:
                     content = self.mock_responses["brainstorm_analysis"]
                 elif "strategy" in user_content or "litigation" in user_content:

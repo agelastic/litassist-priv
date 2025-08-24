@@ -289,11 +289,7 @@ def draft(ctx, documents, query, cove, diversity, output):
             },
             "response": content,
             "usage": usage,
-            "verification": (
-                f"enabled={needs_verification}, level=heavy"
-                if needs_verification
-                else "disabled"
-            ),
+            "verification": "cove_applied" if cove else "disabled",
             "output_file": output_file,
         },
     )
@@ -302,7 +298,7 @@ def draft(ctx, documents, query, cove, diversity, output):
     stats = {
         "Query": query,
         "Documents": len(documents),
-        "Verification": "Applied" if needs_verification else "Not needed",
+        "Verification": "CoVe Applied" if cove else "Not Applied",
     }
 
     show_command_completion("draft", output_file, extra_files, stats)

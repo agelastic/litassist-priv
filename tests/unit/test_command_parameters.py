@@ -23,6 +23,7 @@ class TestCommandParameterPropagation:
         self.mock_client = Mock()
         self.mock_client.complete.return_value = ("Test response", {"total_tokens": 100})
         self.mock_client.model = "anthropic/claude-sonnet-4"  # Add model attribute
+        self.mock_client.verify.return_value = ""  # Add verify method
         
     @patch("litassist.llm.LLMClientFactory.for_command")
     @patch("litassist.utils.read_document")
@@ -44,7 +45,9 @@ class TestCommandParameterPropagation:
                 # Mock save functions to avoid file operations
                 with patch("litassist.commands.extractfacts.save_command_output"):
                     with patch("litassist.commands.extractfacts.save_log"):
-                        result = self.runner.invoke(cli, ["extractfacts", "test.pdf"])
+                        with patch("litassist.commands.extractfacts.verify_content_if_needed") as mock_verify:
+                            mock_verify.return_value = ("Test response", {})
+                            result = self.runner.invoke(cli, ["extractfacts", "test.pdf"])
             
         # Check if command ran successfully
         if result.exit_code != 0:
@@ -190,7 +193,19 @@ class TestCommandParameterPropagation:
     @patch("litassist.utils.read_document")
     def test_brainstorm_command_parameters(self, mock_read, mock_factory):
         """Test brainstorm command uses correct parameters."""
-        mock_factory.return_value = self.mock_client
+        # Create a verification client for unorthodox verification
+        mock_verification_client = Mock()
+        mock_verification_client.verify.return_value = ("Verified unorthodox strategies", {})
+        mock_verification_client.model = "anthropic/claude-opus-4.1"
+        
+        # Set up factory to return different clients for different calls
+        mock_factory.side_effect = [
+            self.mock_client,  # For orthodox
+            self.mock_client,  # For unorthodox
+            mock_verification_client,  # For verification
+            self.mock_client   # For analysis
+        ]
+        
         mock_read.return_value = "Case facts"
         
         # Mock citation validation to return empty list (no issues)
@@ -220,12 +235,15 @@ class TestCommandParameterPropagation:
                 import traceback
                 traceback.print_tb(result.exc_info[2])
                 
-        # Should be called 3 times (orthodox, unorthodox, analysis)
-        assert mock_factory.call_count == 3
+        # Should be called 4 times (orthodox, unorthodox, verification, analysis)
+        assert mock_factory.call_count == 4
         
-        # All calls should be for brainstorm command
-        for call in mock_factory.call_args_list:
-            assert call[0][0] == "brainstorm"
+        # Check the calls were made in the correct order
+        calls = mock_factory.call_args_list
+        assert calls[0][0][0] == "brainstorm"  # orthodox
+        assert calls[1][0][0] == "brainstorm"  # unorthodox
+        assert calls[2][0][0] == "verification"  # verification of unorthodox
+        assert calls[3][0][0] == "brainstorm"  # analysis
 
     @patch("litassist.llm.LLMClientFactory.for_command")
     @patch("litassist.utils.read_document")

@@ -110,6 +110,11 @@ Pursue misleading conduct claim while simultaneously filing ombudsman complaint.
         
         # Mock verify method for the analysis client (used for brainstorm verification)
         self.mock_analysis_client.verify.return_value = "No corrections needed"
+        
+        # Create mock verification client for unorthodox verification
+        self.mock_verification_client = Mock()
+        self.mock_verification_client.model = "anthropic/claude-opus-4.1"
+        self.mock_verification_client.verify.return_value = (self.unorthodox_response, {})
     
     @patch("litassist.commands.brainstorm.LLMClientFactory")
     @patch("litassist.commands.brainstorm.save_command_output")
@@ -120,7 +125,8 @@ Pursue misleading conduct claim while simultaneously filing ombudsman complaint.
         mock_factory.for_command.side_effect = [
             self.mock_orthodox_client,    # First call for orthodox
             self.mock_unorthodox_client,   # Second call for unorthodox
-            self.mock_analysis_client      # Third call for analysis
+            self.mock_verification_client, # Third call for verification of unorthodox
+            self.mock_analysis_client      # Fourth call for analysis
         ]
         
         # Mock save functions to capture output
@@ -147,16 +153,18 @@ Pursue misleading conduct claim while simultaneously filing ombudsman complaint.
             # Check command succeeded
             assert result.exit_code == 0
             
-            # Verify all three clients were created
-            assert mock_factory.for_command.call_count == 3
+            # Verify all four clients were created (including verification)
+            assert mock_factory.for_command.call_count == 4
             mock_factory.for_command.assert_any_call("brainstorm", "orthodox")
-            mock_factory.for_command.assert_any_call("brainstorm", "unorthodox") 
+            mock_factory.for_command.assert_any_call("brainstorm", "unorthodox")
+            mock_factory.for_command.assert_any_call("verification")  # For unorthodox verification
             mock_factory.for_command.assert_any_call("brainstorm", "analysis")
             
             # Verify output contains all sections
             output = result.output
             assert "Generating orthodox strategies..." in output
             assert "Generating unorthodox strategies..." in output
+            assert "Verifying unorthodox strategies..." in output
             assert "Analyzing most promising strategies..." in output
             
             # Check saved content structure
@@ -186,6 +194,7 @@ Pursue misleading conduct claim while simultaneously filing ombudsman complaint.
         mock_factory.for_command.side_effect = [
             self.mock_orthodox_client,
             self.mock_unorthodox_client,
+            self.mock_verification_client,  # For unorthodox verification
             self.mock_analysis_client
         ]
         
@@ -217,6 +226,7 @@ Pursue misleading conduct claim while simultaneously filing ombudsman complaint.
         mock_factory.for_command.side_effect = [
             self.mock_orthodox_client,
             self.mock_unorthodox_client,
+            self.mock_verification_client,  # For unorthodox verification
             self.mock_analysis_client
         ]
         
@@ -253,6 +263,7 @@ Pursue misleading conduct claim while simultaneously filing ombudsman complaint.
         mock_factory.for_command.side_effect = [
             self.mock_orthodox_client,
             self.mock_unorthodox_client,
+            self.mock_verification_client,  # For unorthodox verification
             self.mock_analysis_client
         ]
         
@@ -338,6 +349,7 @@ Pursue misleading conduct claim while simultaneously filing ombudsman complaint.
         mock_factory.for_command.side_effect = [
             self.mock_orthodox_client,
             self.mock_unorthodox_client,
+            self.mock_verification_client,  # For unorthodox verification
             self.mock_analysis_client
         ]
         
