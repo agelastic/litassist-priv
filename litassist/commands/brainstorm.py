@@ -172,16 +172,10 @@ def regenerate_bad_strategies(
                 base_prompt=base_prompt
             )
             
-            regen_prompt = f"""{regen_content}
-
-Generate ONLY strategy #{strategy_num} in the exact format:
-
-{strategy_num}. [Strategy Title]
-
-[Detailed explanation including implementation approach, anticipated challenges, and supporting precedents - aim for 3-5 paragraphs that thoroughly explore the strategy]
-
-Key principles: [Comprehensive legal principles or precedents with full case citations and pinpoint references]
-"""
+            regen_prompt = PROMPTS.get("strategies.brainstorm.regeneration_format").format(
+                content=regen_content,
+                strategy_num=strategy_num
+            )
 
             try:
                 # Generate single replacement strategy
@@ -454,21 +448,9 @@ def brainstorm(facts, side, area, research, verify, output):
         research=orthodox_template
     )
     
-    orthodox_base_prompt = f"""{orthodox_base_content}
-
-Please provide output in EXACTLY this format:
-
-## ORTHODOX STRATEGIES
-
-1. [Strategy Title]
-   [Detailed explanation including implementation approach, anticipated challenges, and supporting precedents - aim for 3-5 paragraphs that thoroughly explore the strategy]
-   Key principles: [Comprehensive legal principles or precedents with full case citations and pinpoint references]
-
-2. [Strategy Title]
-   [Detailed explanation with same depth as above]
-   Key principles: [Comprehensive legal principles with full citations]
-
-[Continue for 10 orthodox strategies with similar detail]"""
+    orthodox_base_prompt = PROMPTS.get("strategies.brainstorm.orthodox_output_format").format(
+        content=orthodox_base_content
+    )
 
     # Add reasoning trace to orthodox prompt
     orthodox_prompt = create_reasoning_prompt(
@@ -520,21 +502,9 @@ Please provide output in EXACTLY this format:
         research=unorthodox_template
     )
     
-    unorthodox_base_prompt = f"""{unorthodox_base_content}
-
-Please provide output in EXACTLY this format:
-
-## UNORTHODOX STRATEGIES
-
-1. [Strategy Title]
-   [Detailed explanation exploring the creative approach, implementation pathway, potential obstacles, and transformative impact - aim for 3-5 paragraphs that fully develop the innovative strategy]
-   Key principles: [Comprehensive legal principles or novel arguments with supporting authorities and creative interpretations]
-
-2. [Strategy Title]
-   [Detailed explanation with same depth as above]
-   Key principles: [Comprehensive legal principles or innovative theories with full analysis]
-
-[Continue for 10 unorthodox strategies with similar detail]"""
+    unorthodox_base_prompt = PROMPTS.get("strategies.brainstorm.unorthodox_output_format").format(
+        content=unorthodox_base_content
+    )
 
     # Add reasoning trace to unorthodox prompt
     unorthodox_prompt = create_reasoning_prompt(

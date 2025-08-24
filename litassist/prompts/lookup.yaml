@@ -156,6 +156,20 @@ lookup:
       TECHNICAL NOTE REQUIREMENT:
       When search snippets are provided (marked as === GOOGLE CSE SEARCH SNIPPETS ===), these are brief excerpts from Google search, not full content. Full content comes from === ACTUAL CONTENT FROM: [url] === sections (accessible sites). Always clarify your sources.
   
+  # Content Q&A prompt template
+  # USED BY: lookup.py _process_comprehensive_search() - when actual content is fetched
+  # LOCATION: lookup.py:753-758
+  content_qa: |
+    Question: {question}
+    
+    Successfully fetched and providing ACTUAL CONTENT from {count} legal sources:
+    {links}
+    
+    Below is the REAL HTML/TEXT content fetched directly from these URLs:
+    {content}
+    
+    Based on the content above, answer the user's question comprehensively.
+
   # User prompt template
   # USED BY: lookup.py lookup() - user prompt construction
   # LOCATION: lookup.py:348-356 (to be extracted)

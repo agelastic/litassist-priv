@@ -5,6 +5,7 @@ from typing import Dict, Optional, Tuple
 from litassist.citation_patterns import validate_citation_patterns
 from litassist.citation_verify import verify_all_citations
 from litassist.llm import LLMClientFactory
+from litassist.prompts import PROMPTS
 from litassist.utils import save_log
 
 
@@ -127,14 +128,10 @@ def run_cove_verification(
             context_summary += f"\nNote: Soundness check found {num_issues} issues.\n"
 
     # Step 1: Generate questions (let LLM do the work)
-    questions_prompt = f"""Generate 10 verification questions for this legal document.
-Focus on citations, dates, party names, legal principles, and any potential inconsistencies.
-{context_summary}
-
-Document:
-{content}
-
-Output numbered questions only (1. Question one, 2. Question two, etc.)."""
+    questions_prompt = PROMPTS.get("verification.cove.questions_generation").format(
+        context=context_summary,
+        content=content
+    )
 
     # Set stage context for logging
     client_questions.command_context = f"cove_stage1_questions_{command}"
@@ -152,12 +149,9 @@ Output numbered questions only (1. Question one, 2. Question two, etc.)."""
     }
 
     # Step 2: Answer questions independently (factored approach)
-    answers_prompt = f"""Answer these questions based ONLY on legal knowledge, NOT the document:
-
-{questions}
-
-For each question, answer: Yes/No/Uncertain with brief explanation.
-Format: 1. Yes - [explanation], 2. No - [explanation], etc."""
+    answers_prompt = PROMPTS.get("verification.cove.answers_verification").format(
+        content=questions
+    )
 
     # Set stage context for logging
     client_answers.command_context = f"cove_stage2_answers_{command}"
@@ -174,16 +168,10 @@ Format: 1. Yes - [explanation], 2. No - [explanation], etc."""
     }
 
     # Step 3: Detect inconsistencies (let LLM compare)
-    verify_prompt = f"""Compare these Q&A pairs against the original document.
-Identify any inconsistencies or errors.
-
-Questions and Answers:
-{answers}
-
-Original Document:
-{content}
-
-Output: List specific issues found, or "No issues found" if document is consistent."""
+    verify_prompt = PROMPTS.get("verification.cove.inconsistency_detection").format(
+        context=answers,
+        content=content
+    )
 
     # Set stage context for logging
     client_verify.command_context = f"cove_stage3_verify_{command}"
@@ -209,20 +197,11 @@ Output: List specific issues found, or "No issues found" if document is consiste
         client_final = LLMClientFactory.for_command("cove-final")
         
         # This is the missing step from the Meta paper - regenerate to fix issues
-        regenerate_prompt = f"""The following issues were found in this legal document:
-
-{issues}
-
-Using these verification results, regenerate a corrected version of the document that fixes all identified issues.
-Remove or correct any inaccurate information based on the verification.
-
-Verification Q&A for reference:
-{answers}
-
-Original document:
-{content}
-
-Generate the complete corrected document:"""
+        regenerate_prompt = PROMPTS.get("verification.cove.regeneration").format(
+            context=issues,
+            prompt=answers,
+            content=content
+        )
         
         # Set stage context for logging
         client_final.command_context = f"cove_stage4_regenerate_{command}"

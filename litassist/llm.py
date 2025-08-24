@@ -1288,19 +1288,15 @@ class LLMClient:
         Raises:
             Exception: If the verification API call fails.
         """
-        try:
-            base_prompt = PROMPTS.get("base.australian_law")
-            # Select appropriate critique prompt based on available context
-            if citation_context and reasoning_context:
-                # Both contexts available - use comprehensive soundness check
-                self_critique = PROMPTS.get("verification.soundness_with_context")
-            else:
-                # Standard verification
-                self_critique = PROMPTS.get("verification.self_critique")
-        except KeyError:
-            # Fallback to hardcoded if prompts not available
-            base_prompt = "Australian law only. Use Australian English spellings and terminology (e.g., 'judgement' not 'judgment', 'defence' not 'defense')."
-            self_critique = "Identify and correct any legal inaccuracies above, and provide the corrected text only. Ensure all spellings follow Australian English conventions."
+        # Use prompts from centralized system - no fallbacks allowed
+        base_prompt = PROMPTS.get("verification.base_prompt")
+        # Select appropriate critique prompt based on available context
+        if citation_context and reasoning_context:
+            # Both contexts available - use comprehensive soundness check
+            self_critique = PROMPTS.get("verification.soundness_with_context")
+        else:
+            # Standard verification
+            self_critique = PROMPTS.get("verification.self_critique")
 
         # Build the full text with optional verification contexts
         full_text = primary_text
@@ -1578,13 +1574,9 @@ class LLMClient:
                 },
             ]
         elif level == "heavy":
-            # Full legal accuracy and citation check
-            try:
-                system_prompt = PROMPTS.get("verification.system_prompt")
-                heavy_verification = PROMPTS.get("verification.heavy_verification")
-            except KeyError:
-                system_prompt = "Australian law expert. Thoroughly verify legal accuracy, citations, precedents, and reasoning."
-                heavy_verification = "Provide comprehensive legal accuracy review: verify all citations, check legal reasoning, identify any errors in law or procedure, and ensure Australian English compliance."
+            # Full legal accuracy and citation check - no fallbacks allowed
+            system_prompt = PROMPTS.get("verification.heavy_verification_system")
+            heavy_verification = PROMPTS.get("verification.heavy_verification")
 
             critique_prompt = [
                 {

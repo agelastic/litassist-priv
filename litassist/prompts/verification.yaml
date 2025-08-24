@@ -163,3 +163,70 @@ verification:
     Sources: [List key legal authorities cited, separated by semicolons - note any that are unverified]
     
     Each section should appear exactly once. Do not repeat sections or content.
+
+  # Chain of Verification (CoVe) prompts
+  # USED BY: verification_chain.py run_cove_verification() function
+  cove:
+    questions_generation: |
+      Generate 10 verification questions for this legal document.
+      Focus on citations, dates, party names, legal principles, and any potential inconsistencies.
+      {context}
+      
+      Document:
+      {content}
+      
+      Output numbered questions only (1. Question one, 2. Question two, etc.).
+    
+    answers_verification: |
+      Answer these questions based ONLY on legal knowledge, NOT the document:
+      
+      {content}
+      
+      For each question, answer: Yes/No/Uncertain with brief explanation.
+      Format: 1. Yes - [explanation], 2. No - [explanation], etc.
+    
+    inconsistency_detection: |
+      Compare these Q&A pairs against the original document.
+      Identify any inconsistencies or errors.
+      
+      Questions and Answers:
+      {context}
+      
+      Original Document:
+      {content}
+      
+      Output: List specific issues found, or "No issues found" if document is consistent.
+    
+    regeneration: |
+      The following issues were found in this legal document:
+      
+      {context}
+      
+      Using these verification results, regenerate a corrected version of the document that fixes all identified issues.
+      Remove or correct any inaccurate information based on the verification.
+      
+      Verification Q&A for reference:
+      {prompt}
+      
+      Original document:
+      {content}
+      
+      Generate the complete corrected document:
+
+  # Base Australian law prompt
+  # USED BY: llm.py LLMClient.verify() method - base prompt
+  # LOCATION: llm.py:1302 (previously fallback, now required)
+  base_prompt: |
+    Australian law only. Use Australian English spellings and terminology (e.g., 'judgement' not 'judgment', 'defence' not 'defense').
+
+  # Self-critique fallback prompt
+  # USED BY: llm.py LLMClient.verify() method - when self_critique is needed
+  # LOCATION: llm.py:1303 (previously fallback, now required)
+  self_critique_fallback: |
+    Identify and correct any legal inaccuracies above, and provide the corrected text only. Ensure all spellings follow Australian English conventions.
+
+  # Heavy verification system prompt
+  # USED BY: llm.py LLMClient.verify_with_level() method - system prompt for heavy verification
+  # LOCATION: llm.py:1586 (previously fallback, now required)
+  heavy_verification_system: |
+    Australian law expert. Thoroughly verify legal accuracy, citations, precedents, and reasoning.

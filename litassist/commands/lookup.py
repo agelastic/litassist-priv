@@ -750,16 +750,12 @@ def lookup(question, mode, extract, comprehensive, context, output, no_fetch):
             )
 
         # Create a rich prompt with actual content
-        prompt = f"""Question: {question}
-
-Successfully fetched and providing ACTUAL CONTENT from {len(contents)} legal sources:
-{chr(10).join(links)}
-
-Below is the REAL HTML/TEXT content fetched directly from these URLs:
-{content_text}
-
-IMPORTANT: You are reading the ACTUAL CONTENT from these web pages, not just their URLs. 
-Analyze this real content to provide comprehensive legal analysis with specific quotes and references."""
+        prompt = PROMPTS.get("lookup.content_qa").format(
+            question=question,
+            count=len(contents),
+            links=chr(10).join(links),
+            content=content_text
+        )
     else:
         # Fallback to URL-only prompt (existing behavior)
         prompt = PROMPTS.get("analysis.lookup.question_prompt").format(

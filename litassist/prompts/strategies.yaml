@@ -141,6 +141,39 @@ strategies:
       - Provide accurate case names, years, and medium neutral citations
       - If uncertain about a citation, do not include it
       - Better to have fewer, accurate citations than many unverifiable ones
+    
+    # Strategy regeneration format
+    # USED BY: brainstorm.py regenerate_bad_strategies() - lines 175-180
+    regeneration_format: |
+      {content}
+      
+      Generate ONLY strategy #{strategy_num} in the exact format:
+      
+      {strategy_num}. [Strategy Title]
+      
+      [Full strategy content with citation and explanation]
+    
+    # Orthodox output format
+    # USED BY: brainstorm.py - lines 457-462
+    orthodox_output_format: |
+      {content}
+      
+      Please provide output in EXACTLY this format:
+      
+      ## ORTHODOX STRATEGIES
+      
+      [Your strategies here]
+    
+    # Unorthodox output format  
+    # USED BY: brainstorm.py - lines 523-528
+    unorthodox_output_format: |
+      {content}
+      
+      Please provide output in EXACTLY this format:
+      
+      ## UNORTHODOX STRATEGIES
+      
+      [Your strategies here]
   
   # Strategy command prompts  
   strategy:
