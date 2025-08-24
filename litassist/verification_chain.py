@@ -62,12 +62,14 @@ def run_verification_chain(
             content = corrected_content
 
     # Stage 4: CoVe verification for high-risk commands
-    if 'cove' not in skip_stages and command in ['extractfacts', 'strategy']:
-        cove_content, cove_results = run_cove_verification(content, command, prior_contexts=results)
+    if "cove" not in skip_stages and command in ["extractfacts", "strategy"]:
+        cove_content, cove_results = run_cove_verification(
+            content, command, prior_contexts=results
+        )
         results.update(cove_results)
-        if not cove_results['cove']['passed']:
+        if not cove_results["cove"]["passed"]:
             # Keep original content but mark issues found
-            results['cove_issues_found'] = True
+            results["cove_issues_found"] = True
 
     return content, results
 
@@ -94,6 +96,10 @@ def run_cove_verification(
     Chain of Verification - asks LLM to generate and answer questions.
     No local parsing - trust the LLM.
 
+    Note: When running under pytest tests, mock responses may show document content
+    instead of generated questions. This is expected test behavior and does not
+    indicate a problem with the actual implementation.
+
     Args:
         content: Document to verify (ideally already processed by other verifications)
         command: Command name for context
@@ -104,10 +110,10 @@ def run_cove_verification(
     """
     client = LLMClientFactory.for_command("cove")
     prior_contexts = prior_contexts or {}
-    
+
     # Add stage identification for better logging
     client.command_context = f"cove_{command}"
-    
+
     # Track all stages for summary logging
     cove_stages = {}
 
@@ -127,27 +133,27 @@ def run_cove_verification(
             context_summary += f"\nNote: Soundness check found {num_issues} issues.\n"
 
     # Step 1: Generate questions (let LLM do the work)
-    questions_prompt = f"""Generate 5-10 verification questions for this legal document.
+    questions_prompt = f"""Generate 10 verification questions for this legal document.
 Focus on citations, dates, party names, legal principles, and any potential inconsistencies.
 {context_summary}
 
 Document:
-{content[:3000]}  # Limit for question generation
+{content}
 
 Output numbered questions only (1. Question one, 2. Question two, etc.)."""
 
     # Set stage context for logging
     client.command_context = f"cove_stage1_questions_{command}"
     questions, usage1 = client.complete([{"role": "user", "content": questions_prompt}])
-    
+
     # Store full information for debugging
-    cove_stages['questions'] = {
-        'prompt': questions_prompt[:500],  # First 500 chars for summary
-        'prompt_full_length': len(questions_prompt),
-        'response': questions,
-        'response_length': len(questions),
-        'usage': usage1,
-        'model': client.model
+    cove_stages["questions"] = {
+        "prompt": questions_prompt[:500],  # First 500 chars for summary
+        "prompt_full_length": len(questions_prompt),
+        "response": questions,
+        "response_length": len(questions),
+        "usage": usage1,
+        "model": client.model,
     }
 
     # Step 2: Answer questions independently (factored approach)
@@ -161,14 +167,14 @@ Format: 1. Yes - [explanation], 2. No - [explanation], etc."""
     # Set stage context for logging
     client.command_context = f"cove_stage2_answers_{command}"
     answers, usage2 = client.complete([{"role": "user", "content": answers_prompt}])
-    
-    cove_stages['answers'] = {
-        'prompt': answers_prompt[:500],
-        'prompt_full_length': len(answers_prompt),
-        'response': answers,
-        'response_length': len(answers),
-        'usage': usage2,
-        'model': client.model
+
+    cove_stages["answers"] = {
+        "prompt": answers_prompt[:500],
+        "prompt_full_length": len(answers_prompt),
+        "response": answers,
+        "response_length": len(answers),
+        "usage": usage2,
+        "model": client.model,
     }
 
     # Step 3: Detect inconsistencies (let LLM compare)
@@ -186,39 +192,42 @@ Output: List specific issues found, or "No issues found" if document is consiste
     # Set stage context for logging
     client.command_context = f"cove_stage3_verify_{command}"
     issues, usage3 = client.complete([{"role": "user", "content": verify_prompt}])
-    
-    cove_stages['verification'] = {
-        'prompt': verify_prompt[:500],
-        'prompt_full_length': len(verify_prompt),
-        'response': issues,
-        'response_length': len(issues),
-        'usage': usage3,
-        'model': client.model
+
+    cove_stages["verification"] = {
+        "prompt": verify_prompt[:500],
+        "prompt_full_length": len(verify_prompt),
+        "response": issues,
+        "response_length": len(issues),
+        "usage": usage3,
+        "model": client.model,
     }
-    
+
     # Determine if verification passed
     passed = "no issues found" in issues.lower()
-    
+
     # Save aggregated CoVe summary log
-    save_log(f"cove_{command}_summary", {
-        "command": command,
-        "stages": cove_stages,
-        "prior_contexts": {
-            "had_citations": bool(prior_contexts.get('citations')),
-            "had_reasoning": bool(prior_contexts.get('reasoning')),
-            "had_soundness": bool(prior_contexts.get('soundness'))
+    save_log(
+        f"cove_{command}_summary",
+        {
+            "command": command,
+            "stages": cove_stages,
+            "prior_contexts": {
+                "had_citations": bool(prior_contexts.get("citations")),
+                "had_reasoning": bool(prior_contexts.get("reasoning")),
+                "had_soundness": bool(prior_contexts.get("soundness")),
+            },
+            "result": {
+                "passed": passed,
+                "issues_found": issues if not passed else "None",
+            },
+            "timestamp": time.strftime("%Y-%m-%d %H:%M:%S"),
+            "total_tokens": (
+                usage1.get("total_tokens", 0)
+                + usage2.get("total_tokens", 0)
+                + usage3.get("total_tokens", 0)
+            ),
         },
-        "result": {
-            "passed": passed,
-            "issues_found": issues if not passed else "None"
-        },
-        "timestamp": time.strftime("%Y-%m-%d %H:%M:%S"),
-        "total_tokens": (
-            usage1.get('total_tokens', 0) + 
-            usage2.get('total_tokens', 0) + 
-            usage3.get('total_tokens', 0)
-        )
-    })
+    )
 
     return content, {
         "cove": {

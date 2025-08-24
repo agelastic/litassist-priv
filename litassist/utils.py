@@ -405,6 +405,8 @@ def _write_command_output_markdown(f, tag: str, ts: str, payload: dict):
     # Original format for command outputs
     f.write(f"# {tag} — {ts}\n\n")
     f.write(f"- **Command**: `{tag}`  \n")
+    if 'command_context' in payload:
+        f.write(f"- **Context**: `{payload.get('command_context')}`  \n")
     f.write(f"- **Parameters**: `{payload.get('params','')}`  \n\n")
 
     # Inputs
