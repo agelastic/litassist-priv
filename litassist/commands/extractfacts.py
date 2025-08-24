@@ -171,6 +171,7 @@ def extractfacts(file, verify, cove, output):
     # Note: Citation verification now handled automatically in LLMClient.complete()
 
     # Apply verification - either CoVe or standard
+    verification_metadata = {"Source Files": ", ".join(source_files)}
     if cove:
         # Use CoVe INSTEAD of standard verification
         from litassist.verification_chain import run_cove_verification
@@ -179,12 +180,16 @@ def extractfacts(file, verify, cove, output):
         original_content = combined
         combined, cove_results = run_cove_verification(combined, 'extractfacts')
         
+        verification_metadata["Verification"] = "Chain of Verification (CoVe)"
+        verification_metadata["CoVe Status"] = "REGENERATED" if not cove_results['cove']['passed'] else "PASSED"
+        
         if not cove_results['cove']['passed']:
             click.echo(success_message("CoVe corrected issues - facts regenerated"))
             save_log("extractfacts_cove_regeneration", {
                 "original_length": len(original_content),
                 "regenerated_length": len(combined),
-                "issues_fixed": cove_results['cove']['issues']
+                "issues_fixed": cove_results['cove']['issues'],
+                "model": "See cove_extractfacts_summary.json for model details"
             })
         else:
             click.echo(success_message("CoVe verification passed - no issues found"))
@@ -193,6 +198,8 @@ def extractfacts(file, verify, cove, output):
         combined, _ = verify_content_if_needed(
             client, combined, "extractfacts", verify_flag=True
         )
+        verification_metadata["Verification"] = "Standard verification"
+        verification_metadata["Model"] = client.model
 
     # Save output using utility (reasoning trace remains inline)
     slug = "_".join(source_files[:3])  # Use first 3 files for slug
@@ -202,7 +209,7 @@ def extractfacts(file, verify, cove, output):
         output if output else "extractfacts",
         combined,
         "" if output else slug,
-        metadata={"Source Files": ", ".join(source_files)},
+        metadata=verification_metadata,
     )
 
     # Audit log

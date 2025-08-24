@@ -851,7 +851,8 @@ def strategy(case_facts, outcome, strategies, verify, cove, output):
             save_log("strategy_cove_regeneration", {
                 "original_length": len(original_content),
                 "regenerated_length": len(strategy_content),
-                "issues_fixed": cove_results['cove']['issues']
+                "issues_fixed": cove_results['cove']['issues'],
+                "model": "See cove_strategy_summary.json for model details"
             })
         else:
             click.echo(success_message("CoVe verification passed - no issues found"))
@@ -865,6 +866,14 @@ def strategy(case_facts, outcome, strategies, verify, cove, output):
     metadata = {"Desired Outcome": outcome, "Case Facts File": case_facts.name}
     if strategies:
         metadata["Strategies File"] = strategies.name
+    
+    # Add verification metadata
+    if cove:
+        metadata["Verification"] = "Chain of Verification (CoVe)"
+        metadata["CoVe Status"] = "REGENERATED" if 'cove_results' in locals() and not cove_results['cove']['passed'] else "PASSED"
+    else:
+        metadata["Verification"] = "Standard verification"
+        metadata["Model"] = llm_client.model
 
     # 1. Save main strategic options (for backward compatibility)
     strategy_file = save_command_output(

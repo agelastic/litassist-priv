@@ -142,7 +142,8 @@ Output numbered questions only (1. Question one, 2. Question two, etc.)."""
 
     # Store full information for debugging
     cove_stages["questions"] = {
-        "prompt": questions_prompt[:500],  # First 500 chars for summary
+        "prompt": questions_prompt,  # Full prompt for legal accountability
+        "prompt_truncated": questions_prompt[:500],  # First 500 chars for quick review
         "prompt_full_length": len(questions_prompt),
         "response": questions,
         "response_length": len(questions),
@@ -163,7 +164,8 @@ Format: 1. Yes - [explanation], 2. No - [explanation], etc."""
     answers, usage2 = client_answers.complete([{"role": "user", "content": answers_prompt}])
 
     cove_stages["answers"] = {
-        "prompt": answers_prompt[:500],
+        "prompt": answers_prompt,  # Full prompt for legal accountability
+        "prompt_truncated": answers_prompt[:500],
         "prompt_full_length": len(answers_prompt),
         "response": answers,
         "response_length": len(answers),
@@ -188,7 +190,8 @@ Output: List specific issues found, or "No issues found" if document is consiste
     issues, usage3 = client_verify.complete([{"role": "user", "content": verify_prompt}])
 
     cove_stages["verification"] = {
-        "prompt": verify_prompt[:500],
+        "prompt": verify_prompt,  # Full prompt for legal accountability
+        "prompt_truncated": verify_prompt[:500],
         "prompt_full_length": len(verify_prompt),
         "response": issues,
         "response_length": len(issues),
@@ -226,8 +229,10 @@ Generate the complete corrected document:"""
         final_content, usage4 = client_final.complete([{"role": "user", "content": regenerate_prompt}])
         
         cove_stages["regeneration"] = {
-            "prompt": regenerate_prompt[:500],
+            "prompt": regenerate_prompt,  # Full prompt for legal accountability
+            "prompt_truncated": regenerate_prompt[:500],
             "prompt_full_length": len(regenerate_prompt),
+            "response": final_content,  # Full regenerated content for audit trail
             "response_length": len(final_content),
             "usage": usage4,
             "model": client_final.model,

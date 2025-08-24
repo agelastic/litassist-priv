@@ -252,7 +252,8 @@ def draft(ctx, documents, query, cove, diversity, output):
                 save_log("draft_cove_regeneration", {
                     "original_length": len(original_content),
                     "regenerated_length": len(content),
-                    "issues_fixed": cove_results['cove']['issues']
+                    "issues_fixed": cove_results['cove']['issues'],
+                    "model": "See cove_draft_summary.json for model details"
                 })
             else:
                 click.echo(success_message("CoVe verification passed - no issues found"))
