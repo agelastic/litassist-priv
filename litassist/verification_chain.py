@@ -105,6 +105,9 @@ def run_cove_verification(
     client = LLMClientFactory.for_command("cove")
     prior_contexts = prior_contexts or {}
     
+    # Add stage identification for better logging
+    client.command_context = f"cove_{command}"
+    
     # Track all stages for summary logging
     cove_stages = {}
 
@@ -133,11 +136,18 @@ Document:
 
 Output numbered questions only (1. Question one, 2. Question two, etc.)."""
 
+    # Set stage context for logging
+    client.command_context = f"cove_stage1_questions_{command}"
     questions, usage1 = client.complete([{"role": "user", "content": questions_prompt}])
+    
+    # Store full information for debugging
     cove_stages['questions'] = {
         'prompt': questions_prompt[:500],  # First 500 chars for summary
+        'prompt_full_length': len(questions_prompt),
         'response': questions,
-        'usage': usage1
+        'response_length': len(questions),
+        'usage': usage1,
+        'model': client.model
     }
 
     # Step 2: Answer questions independently (factored approach)
@@ -148,11 +158,17 @@ Output numbered questions only (1. Question one, 2. Question two, etc.)."""
 For each question, answer: Yes/No/Uncertain with brief explanation.
 Format: 1. Yes - [explanation], 2. No - [explanation], etc."""
 
+    # Set stage context for logging
+    client.command_context = f"cove_stage2_answers_{command}"
     answers, usage2 = client.complete([{"role": "user", "content": answers_prompt}])
+    
     cove_stages['answers'] = {
         'prompt': answers_prompt[:500],
+        'prompt_full_length': len(answers_prompt),
         'response': answers,
-        'usage': usage2
+        'response_length': len(answers),
+        'usage': usage2,
+        'model': client.model
     }
 
     # Step 3: Detect inconsistencies (let LLM compare)
@@ -167,11 +183,17 @@ Original Document:
 
 Output: List specific issues found, or "No issues found" if document is consistent."""
 
+    # Set stage context for logging
+    client.command_context = f"cove_stage3_verify_{command}"
     issues, usage3 = client.complete([{"role": "user", "content": verify_prompt}])
+    
     cove_stages['verification'] = {
         'prompt': verify_prompt[:500],
+        'prompt_full_length': len(verify_prompt),
         'response': issues,
-        'usage': usage3
+        'response_length': len(issues),
+        'usage': usage3,
+        'model': client.model
     }
     
     # Determine if verification passed

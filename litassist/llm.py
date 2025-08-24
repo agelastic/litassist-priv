@@ -1165,12 +1165,20 @@ class LLMClient:
         elif not isinstance(usage, dict):
             usage = {"raw": str(usage)}
 
-        # Log the LLM call
+        # Log the LLM call with optional CoVe stage identification
+        log_tag = f"llm_{self.model.replace('/', '_')}"
+        command_context = getattr(self, 'command_context', None)
+        
+        # Use specific log tag for CoVe stages
+        if command_context and 'cove' in command_context:
+            log_tag = f"{command_context}_{self.model.replace('/', '_')}"
+        
         save_log(
-            f"llm_{self.model.replace('/', '_')}",
+            log_tag,
             {
                 "method": "complete",
                 "model": self.model,
+                "command_context": command_context,
                 "messages": messages,
                 "params": {**self.default_params, **overrides},
                 "response": content,
