@@ -47,7 +47,7 @@ def run_verification_chain(
 
     # Stage 3: LLM verification (expensive, comprehensive)
     if "llm" not in skip_stages and command in ["extractfacts", "strategy", "draft"]:
-        client = LLMClientFactory.for_command("verify")
+        client = LLMClientFactory.for_command("verification")
         citation_report = _format_simple_report(results.get("database", {}))
         corrected_content, _ = client.verify(
             content, citation_context=citation_report if citation_report else None
@@ -108,11 +108,12 @@ def run_cove_verification(
     Returns:
         Tuple of (content, cove_results dict)
     """
-    client = LLMClientFactory.for_command("cove")
+    # Create separate clients for each stage
+    client_questions = LLMClientFactory.for_command("cove-questions")
+    client_answers = LLMClientFactory.for_command("cove-answers")
+    client_verify = LLMClientFactory.for_command("cove-verify")
+    
     prior_contexts = prior_contexts or {}
-
-    # Add stage identification for better logging
-    client.command_context = f"cove_{command}"
 
     # Track all stages for summary logging
     cove_stages = {}
@@ -143,8 +144,8 @@ Document:
 Output numbered questions only (1. Question one, 2. Question two, etc.)."""
 
     # Set stage context for logging
-    client.command_context = f"cove_stage1_questions_{command}"
-    questions, usage1 = client.complete([{"role": "user", "content": questions_prompt}])
+    client_questions.command_context = f"cove_stage1_questions_{command}"
+    questions, usage1 = client_questions.complete([{"role": "user", "content": questions_prompt}])
 
     # Store full information for debugging
     cove_stages["questions"] = {
@@ -153,7 +154,7 @@ Output numbered questions only (1. Question one, 2. Question two, etc.)."""
         "response": questions,
         "response_length": len(questions),
         "usage": usage1,
-        "model": client.model,
+        "model": client_questions.model,
     }
 
     # Step 2: Answer questions independently (factored approach)
@@ -165,8 +166,8 @@ For each question, answer: Yes/No/Uncertain with brief explanation.
 Format: 1. Yes - [explanation], 2. No - [explanation], etc."""
 
     # Set stage context for logging
-    client.command_context = f"cove_stage2_answers_{command}"
-    answers, usage2 = client.complete([{"role": "user", "content": answers_prompt}])
+    client_answers.command_context = f"cove_stage2_answers_{command}"
+    answers, usage2 = client_answers.complete([{"role": "user", "content": answers_prompt}])
 
     cove_stages["answers"] = {
         "prompt": answers_prompt[:500],
@@ -174,7 +175,7 @@ Format: 1. Yes - [explanation], 2. No - [explanation], etc."""
         "response": answers,
         "response_length": len(answers),
         "usage": usage2,
-        "model": client.model,
+        "model": client_answers.model,
     }
 
     # Step 3: Detect inconsistencies (let LLM compare)
@@ -190,8 +191,8 @@ Original Document:
 Output: List specific issues found, or "No issues found" if document is consistent."""
 
     # Set stage context for logging
-    client.command_context = f"cove_stage3_verify_{command}"
-    issues, usage3 = client.complete([{"role": "user", "content": verify_prompt}])
+    client_verify.command_context = f"cove_stage3_verify_{command}"
+    issues, usage3 = client_verify.complete([{"role": "user", "content": verify_prompt}])
 
     cove_stages["verification"] = {
         "prompt": verify_prompt[:500],
@@ -199,7 +200,7 @@ Output: List specific issues found, or "No issues found" if document is consiste
         "response": issues,
         "response_length": len(issues),
         "usage": usage3,
-        "model": client.model,
+        "model": client_verify.model,
     }
 
     # Determine if verification passed

@@ -136,7 +136,7 @@ def verify(file, citations, soundness, reasoning, cove, output):
                 reasoning_response = "".join(report_parts)
                 model_name = "N/A (existing trace verified)"
             else:
-                client = LLMClientFactory.for_command("verify")
+                client = LLMClientFactory.for_command("verify-reasoning")
                 enhanced_prompt = create_reasoning_prompt(content, "verify")
                 # Append citation report if available
                 if citation_report:
@@ -193,7 +193,7 @@ def verify(file, citations, soundness, reasoning, cove, output):
     # 3. Legal Soundness Verification
     if soundness:
         try:
-            client = LLMClientFactory.for_command("verify")
+            client = LLMClientFactory.for_command("verify-soundness")
             # Pass both citation and reasoning contexts if available
             soundness_result, soundness_model = client.verify(
                 content,

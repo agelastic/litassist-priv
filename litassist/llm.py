@@ -332,13 +332,26 @@ class LLMClientFactory:
             "top_p": 0.2,
             "force_verify": False,  # Don't force strict verification
         },
-        # Verify - post-hoc verification command
-        "verify": {
-            "model": "openai/o3-pro",
+        # Verification - automatic verification for high-risk commands
+        "verification": {
+            "model": "anthropic/claude-opus-4.1",
+            "temperature": 0,
+            "top_p": 0.2,
+            "force_verify": False,  # Don't double-verify since this IS verification
+        },
+        # Verify sub-commands with specific model assignments
+        "verify-reasoning": {
+            "model": "openai/o3-pro",  # o3-pro for complex reasoning trace extraction
             "temperature": 0,
             "top_p": 0.2,
             "reasoning_effort": "high",
-            "force_verify": False,  # Don't double-verify since this IS verification
+            "force_verify": False,
+        },
+        "verify-soundness": {
+            "model": "anthropic/claude-opus-4.1",  # Opus for soundness checking
+            "temperature": 0,
+            "top_p": 0.2,
+            "force_verify": False,
         },
         # Counsel's Notes - strategic analysis from advocate's perspective
         "counselnotes": {
@@ -376,6 +389,25 @@ class LLMClientFactory:
             "temperature": 0.2,
             "top_p": 0.8,
             "force_verify": False,  # Avoid recursive verification
+        },
+        # CoVe sub-stages with separate model control
+        "cove-questions": {
+            "model": "anthropic/claude-sonnet-4",  # Fast question generation
+            "temperature": 0.2,
+            "top_p": 0.8,
+            "force_verify": False,
+        },
+        "cove-answers": {
+            "model": "anthropic/claude-sonnet-4",  # Independent answering
+            "temperature": 0.2,
+            "top_p": 0.8,
+            "force_verify": False,
+        },
+        "cove-verify": {
+            "model": "anthropic/claude-sonnet-4",  # Inconsistency detection
+            "temperature": 0.2,
+            "top_p": 0.8,
+            "force_verify": False,
         },
     }
 
@@ -1240,17 +1272,14 @@ class LLMClient:
                 "content": full_text + "\n\n" + self_critique,
             },
         ]
-        # Use Claude 4 Opus for all verification, regardless of generation model
-        verification_client = LLMClient(
-            "anthropic/claude-opus-4.1", **self.default_params
-        )
+        # Use the configured model for verification (no overrides)
         params = {"temperature": 0, "top_p": 0.2}
         if CONFIG.use_token_limits:
             params["max_tokens"] = 65536  # Large limit for full document verification
-        verification_result, usage = verification_client.complete(
+        verification_result, usage = self.complete(
             critique_prompt, skip_citation_verification=True, **params
         )
-        return verification_result, verification_client.model
+        return verification_result, self.model
 
     def validate_and_verify_citations(
         self, content: str, strict_mode: bool = True

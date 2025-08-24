@@ -21,7 +21,6 @@ from litassist.utils import (
     create_reasoning_prompt,
     save_command_output,
     show_command_completion,
-    verify_content_if_needed,
     detect_factual_hallucinations,
     is_text_file,
 )
@@ -32,7 +31,6 @@ from litassist.helpers.retriever import Retriever, get_pinecone_client
 @click.command()
 @click.argument("documents", nargs=-1, required=True, type=click.Path(exists=True))
 @click.argument("query")
-@click.option("--verify", is_flag=True, help="Enable self-critique pass")
 @click.option("--cove", is_flag=True, help="Use Chain of Verification (experimental)")
 @click.option(
     "--diversity",
@@ -43,7 +41,7 @@ from litassist.helpers.retriever import Retriever, get_pinecone_client
 @click.option("--output", type=str, help="Custom output filename prefix")
 @click.pass_context
 @timed
-def draft(ctx, documents, query, verify, cove, diversity, output):
+def draft(ctx, documents, query, cove, diversity, output):
     """
     Citation-rich drafting via RAG & GPT-4o.
 
@@ -63,7 +61,6 @@ def draft(ctx, documents, query, verify, cove, diversity, output):
                   - litassist draft case_facts.txt strategies.txt "query"
                   - litassist draft bundle.pdf case_facts.txt "query"
         query: The specific legal topic or argument to draft.
-        verify: Whether to run a self-critique verification pass on the draft.
         diversity: Optional float (0.0-1.0) controlling the balance between
                   relevance and diversity in retrieved passages. Higher values
                   prioritize diversity over relevance. (Only used for PDFs/large files)
@@ -237,12 +234,7 @@ def draft(ctx, documents, query, verify, cove, diversity, output):
 
     # Note: Citation verification now handled automatically in LLMClient.complete()
 
-    # Apply verification if needed
-    content, needs_verification = verify_content_if_needed(
-        client, content, "draft", verify
-    )
-    
-    # Optional CoVe verification (in addition to standard verification)
+    # Optional CoVe verification
     if cove:
         try:
             from litassist.verification_chain import run_cove_verification

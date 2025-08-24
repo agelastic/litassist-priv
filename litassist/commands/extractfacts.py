@@ -22,6 +22,7 @@ from litassist.utils import (
     info_message,
     verifying_message,
     validate_file_size,
+    verify_content_if_needed,
 )
 from litassist.llm import LLMClientFactory
 
@@ -168,19 +169,10 @@ def extractfacts(file, verify, output):
 
     # Note: Citation verification now handled automatically in LLMClient.complete()
 
-    # Apply verification (always required for extractfacts)
-    click.echo(verifying_message("Verifying extracted facts..."))
-    try:
-        correction = client.verify(combined)
-        if isinstance(correction, tuple):
-            correction = correction[0]
-        if correction.strip() and not correction.lower().startswith(
-            "no corrections needed"
-        ):
-            # Replace content to preserve structure and reasoning trace
-            combined = correction
-    except Exception as e:
-        raise click.ClickException(f"Verification error during extractfacts: {e}")
+    # Apply verification using standardized approach (always required for extractfacts)
+    combined, _ = verify_content_if_needed(
+        client, combined, "extractfacts", verify_flag=True
+    )
 
     # Save output using utility (reasoning trace remains inline)
     slug = "_".join(source_files[:3])  # Use first 3 files for slug
