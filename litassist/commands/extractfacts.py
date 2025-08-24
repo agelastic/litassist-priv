@@ -20,7 +20,7 @@ from litassist.utils import (
     show_command_completion,
     warning_message,
     info_message,
-    verifying_message,
+    success_message,
     validate_file_size,
     verify_content_if_needed,
 )
@@ -32,9 +32,10 @@ from litassist.llm import LLMClientFactory
 @click.option(
     "--verify", is_flag=True, help="Enable self-critique pass (default: auto-enabled)"
 )
+@click.option("--cove", is_flag=True, help="Use Chain of Verification instead of standard verification")
 @click.option("--output", type=str, help="Custom output filename prefix")
 @timed
-def extractfacts(file, verify, output):
+def extractfacts(file, verify, cove, output):
     """
     Auto-generate case_facts.txt under ten structured headings.
 
@@ -169,10 +170,29 @@ def extractfacts(file, verify, output):
 
     # Note: Citation verification now handled automatically in LLMClient.complete()
 
-    # Apply verification using standardized approach (always required for extractfacts)
-    combined, _ = verify_content_if_needed(
-        client, combined, "extractfacts", verify_flag=True
-    )
+    # Apply verification - either CoVe or standard
+    if cove:
+        # Use CoVe INSTEAD of standard verification
+        from litassist.verification_chain import run_cove_verification
+        
+        click.echo(info_message("Running Chain of Verification..."))
+        original_content = combined
+        combined, cove_results = run_cove_verification(combined, 'extractfacts')
+        
+        if not cove_results['cove']['passed']:
+            click.echo(success_message("CoVe corrected issues - facts regenerated"))
+            save_log("extractfacts_cove_regeneration", {
+                "original_length": len(original_content),
+                "regenerated_length": len(combined),
+                "issues_fixed": cove_results['cove']['issues']
+            })
+        else:
+            click.echo(success_message("CoVe verification passed - no issues found"))
+    else:
+        # Use standard verification (current behavior)
+        combined, _ = verify_content_if_needed(
+            client, combined, "extractfacts", verify_flag=True
+        )
 
     # Save output using utility (reasoning trace remains inline)
     slug = "_".join(source_files[:3])  # Use first 3 files for slug

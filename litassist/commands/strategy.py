@@ -159,9 +159,10 @@ def create_consolidated_reasoning_trace(option_traces, outcome):
 @click.option(
     "--verify", is_flag=True, help="Enable self-critique pass (default: auto-enabled)"
 )
+@click.option("--cove", is_flag=True, help="Use Chain of Verification instead of standard verification")
 @click.option("--output", type=str, help="Custom output filename prefix")
 @timed
-def strategy(case_facts, outcome, strategies, verify, output):
+def strategy(case_facts, outcome, strategies, verify, cove, output):
     """
     Generate legal strategy options and draft documents for Australian civil matters.
 
@@ -836,10 +837,29 @@ def strategy(case_facts, outcome, strategies, verify, output):
         citation_warning += "\n" + "-" * 40 + "\n\n"
         strategy_content = citation_warning + strategy_content
 
-    # Apply verification to strategy content (always required for strategy)
-    strategy_content, _ = verify_content_if_needed(
-        llm_client, strategy_content, "strategy", verify_flag=True
-    )
+    # Apply verification - either CoVe or standard
+    if cove:
+        # Use CoVe INSTEAD of standard verification
+        from litassist.verification_chain import run_cove_verification
+        
+        click.echo(info_message("Running Chain of Verification..."))
+        original_content = strategy_content
+        strategy_content, cove_results = run_cove_verification(strategy_content, 'strategy')
+        
+        if not cove_results['cove']['passed']:
+            click.echo(success_message("CoVe corrected issues - strategies regenerated"))
+            save_log("strategy_cove_regeneration", {
+                "original_length": len(original_content),
+                "regenerated_length": len(strategy_content),
+                "issues_fixed": cove_results['cove']['issues']
+            })
+        else:
+            click.echo(success_message("CoVe verification passed - no issues found"))
+    else:
+        # Use standard verification (current behavior)
+        strategy_content, _ = verify_content_if_needed(
+            llm_client, strategy_content, "strategy", verify_flag=True
+        )
 
     # Save components as separate files
     metadata = {"Desired Outcome": outcome, "Case Facts File": case_facts.name}

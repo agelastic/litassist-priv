@@ -24,6 +24,7 @@ class TestCommandParameterPropagation:
         self.mock_client.complete.return_value = ("Test response", {"total_tokens": 100})
         self.mock_client.model = "anthropic/claude-sonnet-4"  # Add model attribute
         self.mock_client.verify.return_value = ""  # Add verify method
+        self.mock_client.validate_citations.return_value = []  # Add validate_citations method
         
     @patch("litassist.llm.LLMClientFactory.for_command")
     @patch("litassist.utils.read_document")
@@ -295,8 +296,12 @@ Federal Court
                 import traceback
                 traceback.print_tb(result.exc_info[2])
                 
-        # Verify factory was called
-        mock_factory.assert_called_with("strategy")
+        # Verify factory was called for both strategy and verification
+        # Strategy command automatically uses verification, so factory is called for both
+        assert mock_factory.call_count >= 1
+        # Check that strategy was called at some point
+        strategy_calls = [call for call in mock_factory.call_args_list if call[0][0] == "strategy"]
+        assert len(strategy_calls) > 0, "Factory should be called with 'strategy'"
         
         # Check configuration
         from litassist.llm import LLMClientFactory
