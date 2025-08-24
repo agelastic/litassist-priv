@@ -332,9 +332,10 @@ def expand_glob_patterns(ctx, param, value):
     "Use multiple times: --research file1.txt --research 'outputs/lookup_*.txt'. "
     "Large research files (>128k tokens) may impact verification performance.",
 )
+@click.option("--verify", is_flag=True, help="Verify complete output (default: verify unorthodox only)")
 @click.option("--output", type=str, help="Custom output filename prefix")
 @timed
-def brainstorm(facts, side, area, research, output):
+def brainstorm(facts, side, area, research, verify, output):
     """
     Generate comprehensive legal strategies via Grok.
 
@@ -550,6 +551,19 @@ Please provide output in EXACTLY this format:
     # Execute the query for unorthodox strategies
     try:
         unorthodox_content, unorthodox_usage = unorthodox_client.complete(unorthodox_messages)
+        
+        # ALWAYS verify unorthodox strategies regardless of model
+        click.echo(verifying_message("Verifying unorthodox strategies..."))
+        verify_client = LLMClientFactory.for_command("verification")
+        corrected_unorthodox, _ = verify_client.verify(unorthodox_content)
+        
+        # Replace with corrected content if changes were made
+        if corrected_unorthodox and not corrected_unorthodox.lower().startswith("no corrections"):
+            unorthodox_content = corrected_unorthodox
+            click.echo(success_message("Unorthodox strategies verified and corrected"))
+        else:
+            click.echo(success_message("Unorthodox strategies verified - no corrections needed"))
+                
     except Exception as e:
         raise click.ClickException(
             f"Error generating unorthodox strategies: {str(e)}"
@@ -642,35 +656,37 @@ Please provide output in EXACTLY this format:
     # Store content before verification
     usage = total_usage
 
-    # Run verification on all brainstorm outputs
-    click.echo(verifying_message("Verifying brainstorm strategies..."))
-
-    # Always verify brainstorm outputs
-    try:
-        # Use medium verification for creative brainstorming
-        correction = analysis_client.verify(combined_content)
-        if isinstance(correction, tuple):
-            correction = correction[0]
-
-        # The verification model returns the full, corrected text.
-        # We should replace the content, not append to it.
-        if correction.strip() and not correction.lower().startswith(
-            "no corrections needed"
-        ):
-            # Trust the well-prompted LLM to return the correct format
-            # Following CLAUDE.md: "minimize local parsing through better prompt engineering"
-            combined_content = correction
-
-        # Run citation validation on the potentially corrected content
-        citation_issues = analysis_client.validate_citations(combined_content)
-        if citation_issues:
-            # Citation warnings are shown in console but not saved separately
-            click.echo(
-                warning_message(f"{len(citation_issues)} citation warnings found")
-            )
-
-    except Exception as e:
-        raise click.ClickException(f"Verification error during brainstorming: {e}")
+    # Conditional full verification based on --verify flag
+    if verify:
+        click.echo(verifying_message("Verifying complete brainstorm output..."))
+        
+        try:
+            # Use verification config for full document
+            verify_client = LLMClientFactory.for_command("verification")
+            correction, _ = verify_client.verify(combined_content)
+            
+            # Replace content if corrections made
+            if correction.strip() and not correction.lower().startswith("no corrections needed"):
+                combined_content = correction
+                click.echo(success_message("Full output verified and corrected"))
+            
+            # Also run citation validation
+            citation_issues = verify_client.validate_citations(combined_content)
+            if citation_issues:
+                click.echo(warning_message(f"{len(citation_issues)} citation warnings found"))
+                
+        except Exception as e:
+            raise click.ClickException(f"Verification error during brainstorming: {e}")
+    else:
+        # Unorthodox already verified, just do citation check
+        click.echo(info_message("Skipping full verification (unorthodox already verified)"))
+        try:
+            # Quick citation check using the analysis client
+            citation_issues = analysis_client.validate_citations(combined_content)
+            if citation_issues:
+                click.echo(warning_message(f"{len(citation_issues)} citation warnings found"))
+        except Exception:
+            pass  # Non-critical if citation check fails
 
     # Save to timestamped file only (reasoning traces remain inline in the content)
     output_file = save_command_output(
@@ -699,7 +715,7 @@ Please provide output in EXACTLY this format:
                 "research_files": list(research) if research else [],
                 "research_analysis": research_analysis,
             },
-            "params": "verify=True (auto-enabled for Grok), orthodox_temp=0.3, unorthodox_temp=0.9, analysis_temp=0.4",
+            "params": f"verify={'full' if verify else 'unorthodox-only'}, orthodox_temp=0.3, unorthodox_temp=0.9, analysis_temp=0.4",
             "response": combined_content,  # Log the final, verified content
             "usage": usage,
             "output_file": output_file,
