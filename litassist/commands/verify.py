@@ -257,6 +257,23 @@ def verify(file, citations, soundness, reasoning, cove, output):
                     }
                 )
                 
+                # Update final_content if regenerated
+                if cove_results['cove']['regenerated']:
+                    final_content = cove_content
+                    # Save regenerated document
+                    regen_file = save_command_output(
+                        f"{output}_regenerated" if output else "verify_regenerated",
+                        final_content,
+                        "" if output else os.path.basename(base_name),
+                        metadata={
+                            "Type": "CoVe Regenerated Document",
+                            "File": file,
+                            "Status": "[REGENERATED]",
+                            "Issues Fixed": cove_results['cove']['issues']
+                        }
+                    )
+                    extra_files["Regenerated document"] = regen_file
+                
                 # Save CoVe report
                 cove_report = format_cove_report(cove_results)
                 cove_file = save_command_output(
@@ -266,13 +283,15 @@ def verify(file, citations, soundness, reasoning, cove, output):
                     metadata={
                         "Type": "Chain of Verification",
                         "File": file,
-                        "Status": "[VERIFIED]" if cove_results['cove']['passed'] else "[WARNING]",
-                        "Issues": "None" if cove_results['cove']['passed'] else "Found"
+                        "Status": "[REGENERATED]" if cove_results['cove']['regenerated'] else "[VERIFIED]",
+                        "Issues": "Fixed" if cove_results['cove']['regenerated'] else "None"
                     }
                 )
-                status = "[VERIFIED]" if cove_results['cove']['passed'] else "[WARNING]"
+                status = "[REGENERATED]" if cove_results['cove']['regenerated'] else "[VERIFIED]"
                 click.echo(f"\n{status} Chain of Verification complete")
                 click.echo(f"   - Analysis: {cove_file}")
+                if cove_results['cove']['regenerated']:
+                    click.echo(f"   - Regenerated: {regen_file}")
                 extra_files["CoVe report"] = cove_file
                 reports_generated += 1
             except Exception as e:

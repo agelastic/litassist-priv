@@ -68,8 +68,10 @@ def run_verification_chain(
         )
         results.update(cove_results)
         if not cove_results["cove"]["passed"]:
-            # Keep original content but mark issues found
+            # Use regenerated content from CoVe
+            content = cove_content
             results["cove_issues_found"] = True
+            results["cove_regenerated"] = True
 
     return content, results
 
@@ -205,6 +207,47 @@ Output: List specific issues found, or "No issues found" if document is consiste
 
     # Determine if verification passed
     passed = "no issues found" in issues.lower()
+    
+    # Step 4: Generate final verified response (Meta paper's critical step)
+    final_content = content
+    if not passed:
+        # Create final client only when needed
+        client_final = LLMClientFactory.for_command("cove-final")
+        
+        # This is the missing step from the Meta paper - regenerate to fix issues
+        regenerate_prompt = f"""The following issues were found in this legal document:
+
+{issues}
+
+Using these verification results, regenerate a corrected version of the document that fixes all identified issues.
+Remove or correct any inaccurate information based on the verification.
+
+Verification Q&A for reference:
+{answers}
+
+Original document:
+{content}
+
+Generate the complete corrected document:"""
+        
+        # Set stage context for logging
+        client_final.command_context = f"cove_stage4_regenerate_{command}"
+        final_content, usage4 = client_final.complete([{"role": "user", "content": regenerate_prompt}])
+        
+        cove_stages["regeneration"] = {
+            "prompt": regenerate_prompt[:500],
+            "prompt_full_length": len(regenerate_prompt),
+            "response_length": len(final_content),
+            "usage": usage4,
+            "model": client_final.model,
+            "content_changed": final_content != content,
+        }
+    else:
+        # No regeneration needed
+        cove_stages["regeneration"] = {
+            "skipped": True,
+            "reason": "No issues found - regeneration not needed"
+        }
 
     # Save aggregated CoVe summary log
     save_log(
@@ -226,16 +269,20 @@ Output: List specific issues found, or "No issues found" if document is consiste
                 usage1.get("total_tokens", 0)
                 + usage2.get("total_tokens", 0)
                 + usage3.get("total_tokens", 0)
+                + (usage4.get("total_tokens", 0) if not passed and 'usage4' in locals() else 0)
             ),
         },
     )
 
-    return content, {
+    return final_content, {
         "cove": {
             "questions": questions,
             "answers": answers,
             "issues": issues,
             "passed": passed,
+            "regenerated": not passed,
+            "final_content_length": len(final_content),
+            "original_content_length": len(content),
         }
     }
 

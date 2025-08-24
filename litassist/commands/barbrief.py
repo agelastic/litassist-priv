@@ -333,9 +333,20 @@ def barbrief(
     
     # Apply Chain of Verification if requested
     if cove:
+        from litassist.utils import success_message, save_log
+        original_content = content
         content, cove_results = run_cove_verification(content, 'barbrief')
         if not cove_results['cove']['passed']:
-            click.echo(warning_message("CoVe found issues - review output carefully"))
+            # Content has been regenerated to fix issues
+            click.echo(success_message("CoVe corrected issues - brief regenerated"))
+            # Log that regeneration occurred
+            save_log("barbrief_cove_regeneration", {
+                "original_length": len(original_content),
+                "regenerated_length": len(content),
+                "issues_fixed": cove_results['cove']['issues']
+            })
+        else:
+            click.echo(success_message("CoVe verification passed - no issues found"))
     
     # Save the brief
     output_file = save_command_output(

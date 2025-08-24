@@ -409,6 +409,12 @@ class LLMClientFactory:
             "top_p": 0.8,
             "force_verify": False,
         },
+        "cove-final": {
+            "model": "anthropic/claude-opus-4.1",  # Final regeneration with highest quality
+            "temperature": 0.1,
+            "top_p": 0.8,
+            "force_verify": False,
+        },
     }
 
     @classmethod

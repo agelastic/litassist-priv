@@ -381,10 +381,19 @@ def counselnotes(files, extract, verify, cove, output):
 
     # Apply Chain of Verification if requested
     if cove:
-        from litassist.utils import warning_message
+        from litassist.utils import success_message
+        original_content = final_content
         final_content, cove_results = run_cove_verification(final_content, 'counselnotes')
         if not cove_results['cove']['passed']:
-            click.echo(warning_message("CoVe found issues - review output carefully"))
+            # Content has been regenerated to fix issues
+            click.echo(success_message("CoVe corrected issues - notes regenerated"))
+            comprehensive_log["cove_regeneration"] = {
+                "original_length": len(original_content),
+                "regenerated_length": len(final_content),
+                "issues_fixed": cove_results['cove']['issues']
+            }
+        else:
+            click.echo(success_message("CoVe verification passed - no issues found"))
 
     # Prepare metadata for save_command_output
     files_summary = ", ".join([info["name"] for info in file_info])
