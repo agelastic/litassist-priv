@@ -519,6 +519,7 @@ def brainstorm(facts, side, area, research, verify, output):
     ]
 
     # Execute the query for unorthodox strategies
+    corrected_unorthodox = None  # Initialize for critique capture
     try:
         unorthodox_content, unorthodox_usage = unorthodox_client.complete(unorthodox_messages)
         
@@ -625,8 +626,26 @@ Please provide output in EXACTLY this format:
 
     # Store content before verification
     usage = total_usage
+    
+    # Collect all critiques for appending to output
+    critiques = []
+
+    # Add orthodox citation issues if any
+    if orthodox_citation_issues:
+        critiques.append(("Orthodox Strategy Citation Issues", "\n".join(orthodox_citation_issues)))
+
+    # Add unorthodox verification
+    if corrected_unorthodox:
+        critiques.append(("Unorthodox Strategy Verification", corrected_unorthodox))
+    
+    # Add unorthodox citation issues if any
+    if unorthodox_citation_issues:
+        critiques.append(("Unorthodox Strategy Citation Issues", "\n".join(unorthodox_citation_issues)))
 
     # Conditional full verification based on --verify flag
+    full_verification_result = None
+    final_citation_issues = None
+    
     if verify:
         click.echo(verifying_message("Verifying complete brainstorm output..."))
         
@@ -634,6 +653,7 @@ Please provide output in EXACTLY this format:
             # Use verification config for full document
             verify_client = LLMClientFactory.for_command("verification")
             correction, _ = verify_client.verify(combined_content)
+            full_verification_result = correction  # Capture for critique section
             
             # Replace content if corrections made
             if correction.strip() and not correction.lower().startswith("no corrections needed"):
@@ -643,6 +663,7 @@ Please provide output in EXACTLY this format:
             # Also run citation validation
             citation_issues = verify_client.validate_citations(combined_content)
             if citation_issues:
+                final_citation_issues = citation_issues  # Capture for critique section
                 click.echo(warning_message(f"{len(citation_issues)} citation warnings found"))
                 
         except Exception as e:
@@ -654,11 +675,20 @@ Please provide output in EXACTLY this format:
             # Quick citation check using the analysis client
             citation_issues = analysis_client.validate_citations(combined_content)
             if citation_issues:
+                final_citation_issues = citation_issues  # Capture for critique section
                 click.echo(warning_message(f"{len(citation_issues)} citation warnings found"))
         except Exception:
             pass  # Non-critical if citation check fails
 
-    # Save to timestamped file only (reasoning traces remain inline in the content)
+    # Add full verification result if available
+    if full_verification_result:
+        critiques.append(("Full Document Verification", full_verification_result))
+    
+    # Add final citation issues if any
+    if final_citation_issues:
+        critiques.append(("Final Citation Validation", "\n".join(final_citation_issues)))
+
+    # Save to timestamped file with critiques appended
     output_file = save_command_output(
         output if output else f"brainstorm_{area}_{side}",
         combined_content,
@@ -670,6 +700,7 @@ Please provide output in EXACTLY this format:
                 ", ".join(facts_sources) if len(facts_sources) > 1 else facts_sources[0]
             ),
         },
+        critique_sections=critiques if critiques else None
     )
 
     click.echo(

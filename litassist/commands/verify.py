@@ -273,8 +273,16 @@ def verify(file, citations, soundness, reasoning, cove, output):
                     )
                     extra_files["Regenerated document"] = regen_file
                 
-                # Save CoVe report
+                # Save CoVe report with full dialogue
                 cove_report = format_cove_report(cove_results)
+                
+                # Prepare full CoVe dialogue for critique section
+                cove_critiques = [
+                    ("CoVe Stage 1: Questions Generated", cove_results['cove']['questions']),
+                    ("CoVe Stage 2: Independent Answers", cove_results['cove']['answers']),
+                    ("CoVe Stage 3: Verification Analysis", cove_results['cove']['issues'])
+                ]
+                
                 cove_file = save_command_output(
                     f"{output}_cove" if output else "verify_cove",
                     cove_report,
@@ -284,7 +292,8 @@ def verify(file, citations, soundness, reasoning, cove, output):
                         "File": file,
                         "Status": "[REGENERATED]" if cove_results['cove']['regenerated'] else "[VERIFIED]",
                         "Issues": "Fixed" if cove_results['cove']['regenerated'] else "None"
-                    }
+                    },
+                    critique_sections=cove_critiques
                 )
                 status = "[REGENERATED]" if cove_results['cove']['regenerated'] else "[VERIFIED]"
                 click.echo(f"\n{status} Chain of Verification complete")

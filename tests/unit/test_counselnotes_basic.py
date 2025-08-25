@@ -4,7 +4,6 @@ Basic tests for counselnotes command.
 Simplified test suite focusing on core functionality.
 """
 
-import json
 import tempfile
 import os
 from unittest.mock import Mock, patch

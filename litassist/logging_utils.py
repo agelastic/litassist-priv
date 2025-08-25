@@ -10,7 +10,7 @@ import time
 import json
 import logging
 import re
-from typing import Dict, Optional
+from typing import Dict, Optional, List, Tuple
 from unittest.mock import Mock
 
 import click
@@ -272,6 +272,7 @@ def save_command_output(
     content: str,
     query_or_slug: str,
     metadata: Optional[Dict[str, str]] = None,
+    critique_sections: Optional[List[Tuple[str, str]]] = None,
 ) -> str:
     """
     Save command output with standard format.
@@ -281,6 +282,7 @@ def save_command_output(
         content: The main content to save
         query_or_slug: Query string or slug for filename generation
         metadata: Optional dict of metadata to include in header
+        critique_sections: Optional list of (title, critique_content) tuples for AI critiques
 
     Returns:
         Path to the saved output file
@@ -311,5 +313,16 @@ def save_command_output(
         f.write(f"Timestamp: {time.strftime('%Y-%m-%d %H:%M:%S')}\n")
         f.write("-" * 80 + "\n\n")
         f.write(content)
+        
+        # Append critique sections if provided
+        if critique_sections:
+            f.write("\n\n" + "=" * 80 + "\n")
+            f.write("AI CRITIQUE & VERIFICATION\n")
+            f.write("=" * 80 + "\n\n")
+            
+            for title, critique_content in critique_sections:
+                f.write(f"## {title}\n\n")
+                f.write(critique_content)
+                f.write("\n\n")
 
     return output_file

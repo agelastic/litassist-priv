@@ -237,12 +237,22 @@ def draft(ctx, documents, query, cove, diversity, output):
 
     # Note: Citation verification now handled automatically in LLMClient.complete()
 
+    # Track critiques for appending to output
+    critiques = []
+    
     # Optional CoVe verification
     if cove:
         try:
             click.echo(info_message("Running Chain of Verification..."))
             original_content = content  # Capture original BEFORE regeneration
             content, cove_results = run_cove_verification(content, 'draft')
+            
+            # Capture CoVe dialogue for critique section
+            if 'cove' in cove_results:
+                critiques.append(("CoVe Stage 1: Questions Generated", cove_results['cove']['questions']))
+                critiques.append(("CoVe Stage 2: Independent Answers", cove_results['cove']['answers']))
+                if cove_results['cove']['issues']:
+                    critiques.append(("CoVe Stage 3: Issues Identified", cove_results['cove']['issues']))
             
             if not cove_results['cove']['passed']:
                 # Content has been regenerated to fix issues
@@ -263,6 +273,15 @@ def draft(ctx, documents, query, cove, diversity, output):
     # Check for potential hallucinations
     hallucination_warnings = detect_factual_hallucinations(content, context)
     if hallucination_warnings:
+        # Capture hallucination warnings for critique section
+        warning_text = "The following potentially hallucinated facts were detected:\n"
+        for warning in hallucination_warnings:
+            warning_text += f"- {warning}\n"
+        warning_text += "\nPlease verify all facts against source documents before use.\n"
+        warning_text += "Replace any invented details with placeholders like [TO BE PROVIDED]."
+        critiques.append(("Factual Accuracy Warning", warning_text))
+        
+        # Also add to main content for visibility
         warning_header = "=== FACTUAL ACCURACY WARNING ===\n"
         warning_header += "The following potentially hallucinated facts were detected:\n"
         for warning in hallucination_warnings:
@@ -278,6 +297,7 @@ def draft(ctx, documents, query, cove, diversity, output):
         content,
         "" if output else query,
         metadata={"Query": query, "Documents": ", ".join(documents)},
+        critique_sections=critiques if critiques else None
     )
 
     # Reasoning trace is embedded in the main output, not saved separately

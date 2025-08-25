@@ -131,7 +131,7 @@ Pursue misleading conduct claim while simultaneously filing ombudsman complaint.
         
         # Mock save functions to capture output
         saved_content = {}
-        def capture_save(command_name, content, description=None, metadata=None):
+        def capture_save(command_name, content, description=None, metadata=None, critique_sections=None):
             filename = f"{command_name}_output.txt"
             saved_content[filename] = content
             return filename

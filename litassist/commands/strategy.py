@@ -861,6 +861,19 @@ def strategy(case_facts, outcome, strategies, verify, cove, output):
             llm_client, strategy_content, "strategy", verify_flag=True
         )
 
+    # Collect all critiques
+    critiques = []
+    
+    # Add citation issues if any
+    if citation_issues:
+        critiques.append(("Citation Validation Issues", "\n".join(citation_issues)))
+    
+    # Add CoVe dialogue if used
+    if cove and 'cove_results' in locals():
+        critiques.append(("CoVe Questions", cove_results['cove']['questions']))
+        critiques.append(("CoVe Answers", cove_results['cove']['answers']))
+        critiques.append(("CoVe Analysis", cove_results['cove']['issues']))
+    
     # Save components as separate files
     metadata = {"Desired Outcome": outcome, "Case Facts File": case_facts.name}
     if strategies:
@@ -874,12 +887,13 @@ def strategy(case_facts, outcome, strategies, verify, cove, output):
         metadata["Verification"] = "Standard verification"
         metadata["Model"] = llm_client.model
 
-    # 1. Save main strategic options (for backward compatibility)
+    # 1. Save main strategic options with critiques
     strategy_file = save_command_output(
         f"{output}_options" if output else "strategy", 
         strategy_content, 
         "" if output else outcome, 
-        metadata=metadata
+        metadata=metadata,
+        critique_sections=critiques if critiques else None
     )
     
     # 2. Save next steps separately
