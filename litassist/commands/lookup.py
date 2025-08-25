@@ -36,7 +36,6 @@ from litassist.utils import (
     save_log,
     timed,
     save_command_output,
-    process_extraction_response,
     warning_message,
     success_message,
     saved_message,
@@ -1015,35 +1014,24 @@ def lookup(question, mode, extract, comprehensive, context, output, no_fetch):
 
             raise click.ClickException("Lookup failed - see error details above")
 
-    # Process extraction if requested
+    # Save the output
     if extract:
-        # Generate output prefix for files
-        timestamp = time.strftime("%Y%m%d_%H%M%S")
-        output_prefix = f"lookup_{extract}_{timestamp}"
-
-        # Use shared extraction utility
-        formatted_content, json_data, json_file = process_extraction_response(
-            content, extract, output_prefix, "lookup"
-        )
-
-        # Save the formatted text output
+        # Extraction mode - content is already formatted by LLM
         command_name = f"{output}_{extract}" if output else f"lookup_{extract}"
         metadata = {"Query": question, "Mode": mode, "Extract": extract}
         if context:
             metadata["Context"] = context
         if comprehensive:
             metadata["Comprehensive"] = "True"
-        metadata["JSON File"] = json_file
 
         output_file = save_command_output(
             command_name,
-            formatted_content,
+            content,  # Content is already formatted by LLM
             "" if output else question,
             metadata=metadata,
         )
     else:
         # Non-extraction mode - save content as-is
-        formatted_content = content
         command_name = output if output else "lookup"
         metadata = {"Query": question, "Mode": mode}
         if context:
@@ -1053,7 +1041,7 @@ def lookup(question, mode, extract, comprehensive, context, output, no_fetch):
 
         output_file = save_command_output(
             command_name,
-            formatted_content,
+            content,
             "" if output else question,
             metadata=metadata,
         )
@@ -1076,7 +1064,6 @@ def lookup(question, mode, extract, comprehensive, context, output, no_fetch):
                 "prompt": prompt,
             },
             "response": content,
-            "formatted_output": formatted_content,
             "usage": usage,
             "output_file": output_file,
         },

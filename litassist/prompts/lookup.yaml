@@ -12,48 +12,48 @@ lookup:
   # Extraction mode system prompt
   # USED BY: lookup.py lookup() - system prompt when --extract is used
   extraction_system: |
-    You are a legal data extraction specialist. Your task is to extract specific information from legal sources and return it ONLY as a valid JSON object.
+    You are a legal data extraction specialist. Your task is to extract specific information from legal sources and return it in the exact format requested.
     
-    CRITICAL: Return ONLY the JSON object. Do not include any explanatory text, analysis, or commentary before or after the JSON.
+    CRITICAL: Follow the format instructions precisely. Do not include any explanatory text, analysis, or commentary outside the requested format.
     
-    If you cannot access the actual content of provided links (only their URLs), include a "technical_notes" field in your JSON response indicating this limitation.
+    If you cannot access the actual content of provided links (only their URLs), note this limitation at the end of your response.
   
   # Extraction-specific instructions
   # USED BY: lookup.py lookup() - when --extract option is used
   # LOCATION: lookup.py:292-297 (to be extracted)
   extraction_instructions:
     citations: |
-      IMPORTANT: Return ONLY a JSON object. Do not include any text before or after the JSON.
+      Format your response EXACTLY as follows:
       
-      Return your response as a valid JSON object with the following structure:
-      {"citations": ["citation1", "citation2", "citation3"]}
+      CITATIONS FOUND:
+      • Smith v Jones [2020] HCA 1
+      • Competition and Consumer Act 2010 (Cth) s 18
+      • Brown v Wilson (2019) 123 CLR 456
       
       Include all case citations and legislation references found in the sources. Each citation should be a complete citation string as it appears in legal documents.
-      
-      Example of correct response:
-      {"citations": ["Smith v Jones [2020] HCA 1", "Competition and Consumer Act 2010 (Cth) s 18", "Brown v Wilson (2019) 123 CLR 456"]}
+      If no citations are found, respond with: "No citations found."
     
     principles: |
-      IMPORTANT: Return ONLY a JSON object. Do not include any text before or after the JSON.
+      Format your response EXACTLY as follows:
       
-      Return your response as a valid JSON object with the following structure:
-      {"principles": [{"principle": "statement of legal principle", "authority": "supporting case or legislation"}]}
+      LEGAL PRINCIPLES:
+      • A contract requires offer, acceptance, consideration and intention to create legal relations (Carlill v Carbolic Smoke Ball Co [1893] 1 QB 256)
+      • Misleading or deceptive conduct in trade is prohibited (Competition and Consumer Act 2010 (Cth) s 18)
       
       Include key legal rules and principles with their supporting authorities.
-      
-      Example of correct response:
-      {"principles": [{"principle": "A contract requires offer, acceptance, consideration and intention to create legal relations", "authority": "Carlill v Carbolic Smoke Ball Co [1893] 1 QB 256"}, {"principle": "Misleading or deceptive conduct in trade is prohibited", "authority": "Competition and Consumer Act 2010 (Cth) s 18"}]}
+      If no principles are found, respond with: "No legal principles found."
     
     checklist: |
-      IMPORTANT: Return ONLY a JSON object. Do not include any text before or after the JSON.
+      Format your response EXACTLY as follows:
       
-      Return your response as a valid JSON object with the following structure:
-      {"checklist": ["item1", "item2", "item3"]}
+      PRACTICAL CHECKLIST:
+      [ ] Obtain witness statements from all parties present
+      [ ] File originating application within limitation period
+      [ ] Serve documents according to court rules
+      [ ] Prepare affidavit evidence supporting claims
       
       Include actionable requirements, evidence needed, and steps to take.
-      
-      Example of correct response:
-      {"checklist": ["Obtain witness statements from all parties present", "File originating application within limitation period", "Serve documents according to court rules", "Prepare affidavit evidence supporting claims"]}
+      If no actionable items are found, respond with: "No checklist items found."
   
   # Comprehensive analysis requirements
   # USED BY: lookup.py lookup() - when --comprehensive flag is used

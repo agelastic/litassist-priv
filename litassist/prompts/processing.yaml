@@ -293,86 +293,83 @@ processing:
 
     extraction:
       all: |
-        Extract comprehensive counsel's notes in structured JSON format from the following documents.
+        Extract comprehensive counsel's notes from the following documents.
         
-        Return ONLY a valid JSON object with this exact structure:
-        {{
-          "strategic_summary": "Brief overview of overall case position and key strategic considerations",
-          "key_citations": ["Case citation 1", "Case citation 2", "Legislative reference 1"],
-          "legal_principles": [
-            {{"principle": "Legal principle description", "authority": "Supporting case/legislation"}},
-            {{"principle": "Another principle", "authority": "Supporting authority"}}
-          ],
-          "tactical_checklist": [
-            "Immediate action item 1",
-            "Strategic consideration 2", 
-            "Procedural requirement 3"
-          ],
-          "risk_assessment": "Assessment of litigation risks, exposure, and mitigation strategies",
-          "recommendations": [
-            "Strategic recommendation 1",
-            "Tactical approach 2",
-            "Resource allocation 3"
-          ]
-        }}
+        Format your response EXACTLY as follows:
+        
+        STRATEGIC SUMMARY:
+        [Brief overview of overall case position and key strategic considerations]
+        
+        KEY CITATIONS:
+        • [Case citation 1]
+        • [Case citation 2]
+        • [Legislative reference 1]
+        
+        LEGAL PRINCIPLES:
+        • [Legal principle description] (Supporting case/legislation)
+        • [Another principle] (Supporting authority)
+        
+        TACTICAL CHECKLIST:
+        [ ] [Immediate action item 1]
+        [ ] [Strategic consideration 2]
+        [ ] [Procedural requirement 3]
+        
+        RISK ASSESSMENT:
+        [Assessment of litigation risks, exposure, and mitigation strategies]
+        
+        RECOMMENDATIONS:
+        • [Strategic recommendation 1]
+        • [Tactical approach 2]
+        • [Resource allocation 3]
         
         Documents to analyze:
         {documents}
 
       citations: |
-        Extract only case citations and legislative references in structured JSON format.
+        Extract only case citations and legislative references from the documents.
         
-        Return ONLY a valid JSON object with this exact structure:
-        {{
-          "citations": [
-            "Case Name v Other Name [Year] Court Reference",
-            "Another Case (Year) Volume Law Report Page", 
-            "Legislation Name (Jurisdiction) section reference"
-          ]
-        }}
+        Format your response EXACTLY as follows:
+        
+        CITATIONS FOUND:
+        • Case Name v Other Name [Year] Court Reference
+        • Another Case (Year) Volume Law Report Page
+        • Legislation Name (Jurisdiction) section reference
         
         Include all legal authorities mentioned in the documents, using proper Australian citation format.
+        If no citations are found, respond with: "No citations found."
         
         Documents to analyze:
         {documents}
 
       principles: |
-        Extract legal principles with their supporting authorities in structured JSON format.
+        Extract legal principles with their supporting authorities from the documents.
         
-        Return ONLY a valid JSON object with this exact structure:
-        {{
-          "principles": [
-            {{
-              "principle": "Clear statement of the legal principle or rule",
-              "authority": "Supporting case citation or legislation"
-            }},
-            {{
-              "principle": "Another legal principle",
-              "authority": "Supporting authority"
-            }}
-          ]
-        }}
+        Format your response EXACTLY as follows:
+        
+        LEGAL PRINCIPLES:
+        • Clear statement of the legal principle or rule (Supporting case citation or legislation)
+        • Another legal principle (Supporting authority)
         
         Focus on substantive legal principles that could impact litigation strategy.
+        If no principles are found, respond with: "No legal principles found."
         
         Documents to analyze:
         {documents}
 
       checklist: |
-        Create a practical tactical checklist in structured JSON format.
+        Create a practical tactical checklist from the documents.
         
-        Return ONLY a valid JSON object with this exact structure:
-        {{
-          "checklist": [
-            "Review and verify all witness statements for consistency",
-            "Prepare comprehensive discovery plan within 14 days",
-            "Assess prospects for summary judgment application",
-            "Consider mediation timing and strategy",
-            "Evaluate expert evidence requirements"
-          ]
-        }}
+        Format your response EXACTLY as follows:
+        
+        PRACTICAL CHECKLIST:
+        [ ] Review and verify all witness statements for consistency
+        [ ] Prepare comprehensive discovery plan within 14 days
+        [ ] Assess prospects for summary judgment application
+        [ ] Consider mediation timing and strategy
+        [ ] Evaluate expert evidence requirements
         
         Include specific, actionable items for case management and strategic implementation.
+        If no actionable items are found, respond with: "No checklist items found."
         
         Documents to analyze:
         {documents}

@@ -8,8 +8,6 @@ perspective, complementing the neutral analysis provided by the digest command.
 
 import click
 import os
-import json
-from datetime import datetime
 
 from litassist.config import CONFIG
 from litassist.prompts import PROMPTS
@@ -20,7 +18,6 @@ from litassist.utils import (
     timed,
     save_command_output,
     show_command_completion,
-    process_extraction_response,
     info_message,
     success_message,
 )
@@ -168,69 +165,15 @@ def counselnotes(files, extract, verify, cove, output):
 
         # Process extraction results
         if len(extraction_results) > 1:
-            # Multiple chunks - need to consolidate
-            # For counselnotes, we'll concatenate all JSON results into a single structure
-            if extract == "all":
-                # Merge all comprehensive extractions
-                combined_data = {
-                    "strategic_summary": "",
-                    "key_citations": [],
-                    "legal_principles": [],
-                    "tactical_checklist": [],
-                    "risk_assessment": "",
-                    "recommendations": [],
-                }
-                
-                for chunk_content in extraction_results:
-                    try:
-                        # Parse each chunk's JSON
-                        chunk_data = json.loads(chunk_content.strip())
-                        
-                        # Merge data
-                        for key in combined_data.keys():
-                            if key in chunk_data:
-                                if isinstance(combined_data[key], list):
-                                    if isinstance(chunk_data[key], list):
-                                        combined_data[key].extend(chunk_data[key])
-                                else:
-                                    # String fields - concatenate with newline
-                                    if chunk_data[key]:
-                                        if combined_data[key]:
-                                            combined_data[key] += f"\n\n{chunk_data[key]}"
-                                        else:
-                                            combined_data[key] = chunk_data[key]
-                    except json.JSONDecodeError:
-                        # Skip chunks that didn't parse
-                        continue
-                
-                # Convert merged data back to JSON string
-                final_json_content = json.dumps(combined_data, indent=2)
-            else:
-                # For single-type extractions, merge arrays
-                combined_list = []
-                for chunk_content in extraction_results:
-                    try:
-                        chunk_data = json.loads(chunk_content.strip())
-                        if extract in chunk_data and isinstance(chunk_data[extract], list):
-                            combined_list.extend(chunk_data[extract])
-                    except json.JSONDecodeError:
-                        continue
-                
-                final_json_content = json.dumps({extract: combined_list}, indent=2)
+            # Multiple chunks - consolidate text directly
+            consolidated_text = "\n\n---\n\n".join(extraction_results)
+            # Add header to indicate consolidation
+            final_content = f"[Consolidated from {len(extraction_results)} document chunks]\n\n{consolidated_text}"
         else:
             # Single chunk - use as is
-            final_json_content = extraction_results[0] if extraction_results else "{}"
+            final_content = extraction_results[0] if extraction_results else "No extraction results."
         
-        # Generate output prefix
-        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-        output_prefix = f"counselnotes_{extract}_{timestamp}"
-        
-        # Use shared extraction utility to process and save
-        formatted_text, json_data, json_file = process_extraction_response(
-            final_json_content, extract, output_prefix, "counselnotes"
-        )
-        
-        all_output.append(formatted_text)
+        all_output.append(final_content)
 
     else:
         # Strategic analysis mode (non-extraction)

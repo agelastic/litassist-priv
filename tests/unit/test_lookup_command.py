@@ -120,20 +120,19 @@ class TestLookupCommand:
         )
         mock_factory.return_value = mock_client
 
-        # Mock save functions and process_extraction_response
+        # Mock save functions
         with patch(
             "litassist.commands.lookup.save_command_output"
         ) as mock_save_output, patch(
             "litassist.commands.lookup.save_log"
-        ) as _mock_save_log, patch(
-            "litassist.commands.lookup.process_extraction_response"
-        ) as mock_process:
+        ) as _mock_save_log:
 
             mock_save_output.return_value = "output_file.txt"
-            mock_process.return_value = (
-                "CITATIONS FOUND:\n[2021] FCA 123",
-                {"citations": ["[2021] FCA 123"]},
-                "test.json"
+            
+            # Mock the LLM to return formatted text directly
+            mock_client.complete.return_value = (
+                "CITATIONS FOUND:\n• [2021] FCA 123",
+                {"total_tokens": 100}
             )
 
             runner = CliRunner()
@@ -142,11 +141,8 @@ class TestLookupCommand:
             assert result.exit_code == 0
             assert "Citations extracted" in result.output
             
-            # Verify process_extraction_response was called
-            mock_process.assert_called_once()
-            call_args = mock_process.call_args[0]
-            assert call_args[1] == "citations"  # extract_type
-            assert call_args[3] == "lookup"  # command
+            # Verify save_command_output was called with formatted text
+            mock_save_output.assert_called_once()
 
     @patch("litassist.commands.lookup._fetch_url_content", return_value="")
     @patch("litassist.commands.lookup._fetch_url_content_selenium", return_value="")
