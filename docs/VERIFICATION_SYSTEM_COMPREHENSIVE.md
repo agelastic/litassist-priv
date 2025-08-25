@@ -10,6 +10,7 @@
 7. [Model Configuration and Parameters](#model-configuration-and-parameters)
 8. [Verification Flow Diagrams](#verification-flow-diagrams)
 9. [Logging and Accountability](#logging-and-accountability)
+10. [AI Critique Capture System](#ai-critique-capture-system-added-2025-01-25)
 
 ## Executive Summary
 
@@ -508,15 +509,135 @@ metadata = {
 - OpenRouter: Based on account limits
 - Rate limiting: Automatic exponential backoff
 
+## AI Critique Capture System (Added 2025-01-25)
+
+### Overview
+The critique capture system ensures complete transparency by appending all AI verification feedback, critiques, and Chain of Verification dialogues directly to output files. This addresses the critical need for legal accountability by preserving the full AI reasoning trail.
+
+### Implementation
+
+#### Core Mechanism
+The `save_command_output()` function in `logging_utils.py` now accepts an optional `critique_sections` parameter:
+
+```python
+def save_command_output(
+    command_name: str,
+    content: str,
+    query_or_slug: str,
+    metadata: Optional[Dict[str, str]] = None,
+    critique_sections: Optional[List[Tuple[str, str]]] = None  # NEW
+) -> str:
+```
+
+When critique sections are provided, they are appended to the output file:
+
+```
+================================================================================
+AI CRITIQUE & VERIFICATION
+================================================================================
+
+## Citation Validation Issues
+[Raw critique content from LLM]
+
+## CoVe Stage 1: Questions Generated
+[Questions generated for verification]
+
+## CoVe Stage 2: Independent Answers
+[Answers to verification questions]
+
+## CoVe Stage 3: Verification Analysis
+[Analysis of inconsistencies found]
+```
+
+### Command-Specific Critique Capture
+
+| Command | Captured Critiques |
+|---------|-------------------|
+| **brainstorm** | Citation issues, verification feedback, regeneration reasons, legal soundness |
+| **strategy** | Citation validation, full CoVe dialogue (questions, answers, analysis) |
+| **draft** | CoVe stages, factual accuracy warnings (hallucination detection) |
+| **verify** | Complete CoVe dialogue for all three stages |
+| **digest** | Citation validation issues from all processed chunks |
+| **extractfacts** | Verification integrated into main output (no separate critique) |
+
+### Benefits for Legal Practice
+
+1. **Professional Liability Protection**: Complete record of AI reasoning for accountability
+2. **Client Transparency**: Clients can see verification process and confidence levels
+3. **Quality Assurance**: Lawyers can review AI critiques before filing documents
+4. **Training Tool**: Junior lawyers can learn from AI's verification reasoning
+5. **Audit Trail**: Full documentation for professional indemnity insurance
+
+### Example Output with Critiques
+
+```text
+Legal Strategy Analysis
+Generated: 2025-01-25
+----------------------------------------
+
+[Main strategy content here...]
+
+================================================================================
+AI CRITIQUE & VERIFICATION
+================================================================================
+
+## Citation Validation Issues
+
+- Warning: Citation "Smith v Jones [2019]" could not be verified on Jade.io
+- Warning: Case year [1897] appears outdated, please verify currency
+- Info: Successfully verified 18 of 20 citations
+
+## CoVe Stage 1: Questions Generated
+
+1. Are all case citations correctly formatted according to Australian standards?
+2. Do the cited cases actually support the legal propositions stated?
+3. Are there any contradictions between different strategic approaches?
+4. Is the reasoning consistent with current Australian law?
+5. Are all statutory references to current versions of legislation?
+
+## CoVe Stage 2: Independent Answers
+
+1. Two citations appear to use incorrect formatting: missing court identifiers
+2. The proposition regarding estoppel is well-supported by High Court authority
+3. No contradictions found between orthodox and unorthodox strategies
+4. Reasoning aligns with recent Federal Court decisions on contract interpretation
+5. References to Corporations Act 2001 are current as of 2025
+
+## CoVe Stage 3: Verification Analysis
+
+Issues requiring attention:
+- Update citation format for consistency
+- Verify currency of older case law references
+- Consider adding more recent authorities to strengthen arguments
+
+Overall assessment: Document is legally sound with minor citation formatting issues.
+```
+
+### Design Principles
+
+1. **No Parsing**: Raw LLM outputs are preserved without processing
+2. **Optional Parameter**: Backward compatible - no breaking changes
+3. **Centralized**: Single modification point in `logging_utils.py`
+4. **Transparent**: All reasoning visible, nothing hidden
+
+### Usage Guidelines
+
+- Critiques are automatically captured when verification runs
+- The `--cove` flag triggers comprehensive critique capture
+- Citation validation critiques are always captured when detected
+- Order of critique sections reflects verification pipeline order
+- Raw LLM responses are trusted without local parsing
+
 ## Conclusion
 
 The LitAssist verification system provides comprehensive, multi-layered validation for Australian legal documents. The dual-pathway approach (Standard vs CoVe) offers flexibility between speed and thoroughness, while maintaining strict legal accuracy standards throughout.
 
 Key strengths:
-- **Legal Accountability**: Full audit trail for all verifications
+- **Legal Accountability**: Full audit trail for all verifications with critique capture
 - **Citation Accuracy**: Real-time Jade.io verification
+- **Transparency**: Complete AI reasoning trail preserved in output files
 - **Flexibility**: Choose verification depth based on needs
 - **Australian Focus**: Tailored for Australian legal practice
 - **Hallucination Prevention**: Multiple independent checks
 
-The system ensures that all generated legal content meets professional standards while providing transparent, auditable verification processes suitable for legal practice requirements.
+The system ensures that all generated legal content meets professional standards while providing transparent, auditable verification processes suitable for legal practice requirements. The new critique capture system (2025) further enhances accountability by making all AI reasoning visible directly in output files.

@@ -1,4 +1,5 @@
 # LitAssist Verification System - Executive Summary
+*Last Updated: 2025-01-25 - Added Critique Capture System*
 
 ## Quick Reference
 
@@ -109,6 +110,25 @@ Model: [model used]
 Issues Fixed: [if regenerated]
 ```
 
+**NEW (2025)**: All AI critiques and verification feedback are now appended to output files:
+```
+================================================================================
+AI CRITIQUE & VERIFICATION
+================================================================================
+
+## Citation Validation Issues
+[Raw LLM feedback on citations]
+
+## CoVe Stage 1: Questions Generated
+[Verification questions]
+
+## CoVe Stage 2: Independent Answers
+[Answers to questions]
+
+## CoVe Stage 3: Verification Analysis
+[Analysis of inconsistencies]
+```
+
 ### Key Files
 
 - `verification_chain.py` - Orchestrates both verification types
@@ -130,6 +150,7 @@ Issues Fixed: [if regenerated]
 4. **Each CoVe stage is independent** - different models, no shared context
 5. **Regeneration is complete** - not patching, full document rewrite
 6. **Australian law focused** - Jade.io primary, AustLII fallback
+7. **All critiques now visible** - AI reasoning appended to output files (2025)
 
 ## Quick Decision Tree
 
