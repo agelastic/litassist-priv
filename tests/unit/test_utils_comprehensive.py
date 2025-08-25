@@ -11,17 +11,16 @@ import time
 from unittest.mock import patch, MagicMock, mock_open
 
 from litassist.utils import (
-    save_log,
     heartbeat,
     timed,
     create_reasoning_prompt,
     extract_reasoning_trace,
     parse_strategies_file,
     validate_file_size_limit,
-    save_command_output,
     verify_content_if_needed,
     process_extraction_response,
 )
+from litassist.logging_utils import save_log, save_command_output
 
 
 class TestFileOperations:
@@ -55,7 +54,7 @@ class TestFileOperations:
         except Exception:
             pytest.fail("validate_file_size_limit raised exception at exact limit")
 
-    @patch("litassist.utils.open", new_callable=mock_open)
+    @patch("litassist.logging_utils.open", new_callable=mock_open)
     def test_save_command_output_success(self, mock_file):
         """Test successful command output saving."""
         content = "Test command output content"
@@ -63,7 +62,7 @@ class TestFileOperations:
         outcome = "test_outcome"
         metadata = {"key": "value"}
 
-        with patch("litassist.utils.time.strftime", return_value="20240101_120000"):
+        with patch("litassist.logging_utils.time.strftime", return_value="20240101_120000"):
             result = save_command_output(command, content, outcome, metadata)
 
         # Check that result contains expected components (path may be absolute)
@@ -75,14 +74,14 @@ class TestFileOperations:
         # Verify file written
         mock_file.assert_called_once()
 
-    @patch("litassist.utils.open", new_callable=mock_open)
+    @patch("litassist.logging_utils.open", new_callable=mock_open)
     def test_save_command_output_sanitized_outcome(self, mock_file):
         """Test command output saving with sanitized outcome in filename."""
         content = "Test content"
         command = "test_command"
         outcome = "Test/Invalid\\Filename:Characters"
 
-        with patch("litassist.utils.time.strftime", return_value="20240101_120000"):
+        with patch("litassist.logging_utils.time.strftime", return_value="20240101_120000"):
             result = save_command_output(command, content, outcome)
 
         # Extract just the filename from the full path
@@ -96,10 +95,10 @@ class TestFileOperations:
 
     def test_save_command_output_empty_content(self):
         """Test command output saving with empty content."""
-        with patch("litassist.utils.open", new_callable=mock_open) as mock_file:
-            with patch("litassist.utils.os.makedirs"):
+        with patch("litassist.logging_utils.open", new_callable=mock_open) as mock_file:
+            with patch("litassist.logging_utils.os.makedirs"):
                 with patch(
-                    "litassist.utils.time.strftime", return_value="20240101_120000"
+                    "litassist.logging_utils.time.strftime", return_value="20240101_120000"
                 ):
                     result = save_command_output("test", "", "empty")
 
@@ -110,8 +109,8 @@ class TestFileOperations:
 class TestLogging:
     """Test logging functionality."""
 
-    @patch("litassist.utils.open", new_callable=mock_open)
-    @patch("litassist.utils.json.dump")
+    @patch("litassist.logging_utils.open", new_callable=mock_open)
+    @patch("litassist.logging_utils.json.dump")
     def test_save_log_success(self, mock_json_dump, mock_file):
         """Test successful log saving."""
         command = "test_command"
@@ -122,7 +121,7 @@ class TestLogging:
             "response": "test response",
         }
 
-        with patch("litassist.utils.time.strftime", return_value="20240101_120000"):
+        with patch("litassist.logging_utils.time.strftime", return_value="20240101_120000"):
             save_log(command, log_data)
 
         # Verify file opened for writing
@@ -131,9 +130,9 @@ class TestLogging:
         # Verify JSON dumped
         mock_json_dump.assert_called_once()
 
-    @patch("litassist.utils.open", new_callable=mock_open)
-    @patch("litassist.utils.os.makedirs")
-    @patch("litassist.utils.json.dump")
+    @patch("litassist.logging_utils.open", new_callable=mock_open)
+    @patch("litassist.logging_utils.os.makedirs")
+    @patch("litassist.logging_utils.json.dump")
     def test_save_log_with_metadata(self, mock_json_dump, mock_makedirs, mock_file):
         """Test log saving with additional metadata."""
         command = "strategy"
@@ -156,8 +155,8 @@ class TestLogging:
         assert "metadata" in saved_data
         assert saved_data["metadata"]["outcome"] == "test outcome"
 
-    @patch("litassist.utils.open", side_effect=PermissionError("Permission denied"))
-    @patch("litassist.utils.os.makedirs")
+    @patch("litassist.logging_utils.open", side_effect=PermissionError("Permission denied"))
+    @patch("litassist.logging_utils.os.makedirs")
     def test_save_log_permission_error(self, mock_makedirs, mock_file):
         """Test log saving handles permission errors gracefully."""
         command = "test_command"
@@ -554,7 +553,7 @@ class TestExtractionProcessing:
         )
 
         with tempfile.TemporaryDirectory() as tmpdir:
-            with patch("litassist.utils.OUTPUT_DIR", tmpdir):
+            with patch("litassist.logging_utils.OUTPUT_DIR", tmpdir):
                 formatted, data, json_file = process_extraction_response(
                     content, "citations", "test_cit", "test"
                 )
@@ -585,7 +584,7 @@ class TestExtractionProcessing:
         )
 
         with tempfile.TemporaryDirectory() as tmpdir:
-            with patch("litassist.utils.OUTPUT_DIR", tmpdir):
+            with patch("litassist.logging_utils.OUTPUT_DIR", tmpdir):
                 formatted, data, json_file = process_extraction_response(
                     content, "principles", "test_prin", "test"
                 )
@@ -604,7 +603,7 @@ class TestExtractionProcessing:
         )
 
         with tempfile.TemporaryDirectory() as tmpdir:
-            with patch("litassist.utils.OUTPUT_DIR", tmpdir):
+            with patch("litassist.logging_utils.OUTPUT_DIR", tmpdir):
                 formatted, data, json_file = process_extraction_response(
                     content, "checklist", "test_check", "test"
                 )
@@ -632,7 +631,7 @@ class TestExtractionProcessing:
         )
 
         with tempfile.TemporaryDirectory() as tmpdir:
-            with patch("litassist.utils.OUTPUT_DIR", tmpdir):
+            with patch("litassist.logging_utils.OUTPUT_DIR", tmpdir):
                 formatted, data, json_file = process_extraction_response(
                     content, "all", "test_all", "test"
                 )
@@ -651,7 +650,7 @@ class TestExtractionProcessing:
         content = "This is not JSON"
 
         with tempfile.TemporaryDirectory() as tmpdir:
-            with patch("litassist.utils.OUTPUT_DIR", tmpdir):
+            with patch("litassist.logging_utils.OUTPUT_DIR", tmpdir):
                 with pytest.raises(Exception) as exc_info:
                     process_extraction_response(
                         content, "citations", "test_invalid", "test"
@@ -671,7 +670,7 @@ class TestExtractionProcessing:
 ```"""
 
         with tempfile.TemporaryDirectory() as tmpdir:
-            with patch("litassist.utils.OUTPUT_DIR", tmpdir):
+            with patch("litassist.logging_utils.OUTPUT_DIR", tmpdir):
                 formatted, data, json_file = process_extraction_response(
                     content, "citations", "test_markdown", "test"
                 )
@@ -687,7 +686,7 @@ class TestExtractionProcessing:
         # Test empty citations
         content = json.dumps({"citations": []})
         with tempfile.TemporaryDirectory() as tmpdir:
-            with patch("litassist.utils.OUTPUT_DIR", tmpdir):
+            with patch("litassist.logging_utils.OUTPUT_DIR", tmpdir):
                 formatted, data, json_file = process_extraction_response(
                     content, "citations", "test_empty", "test"
                 )
@@ -697,7 +696,7 @@ class TestExtractionProcessing:
         # Test empty checklist
         content = json.dumps({"checklist": []})
         with tempfile.TemporaryDirectory() as tmpdir:
-            with patch("litassist.utils.OUTPUT_DIR", tmpdir):
+            with patch("litassist.logging_utils.OUTPUT_DIR", tmpdir):
                 formatted, data, json_file = process_extraction_response(
                     content, "checklist", "test_empty_check", "test"
                 )
@@ -712,7 +711,7 @@ class TestExtractionProcessing:
         # Empty principles list
         content = json.dumps({"principles": []})
         with tempfile.TemporaryDirectory() as tmpdir:
-            with patch("litassist.utils.OUTPUT_DIR", tmpdir):
+            with patch("litassist.logging_utils.OUTPUT_DIR", tmpdir):
                 formatted, data, json_file = process_extraction_response(
                     content, "principles", "test_empty_prin", "test"
                 )
@@ -722,7 +721,7 @@ class TestExtractionProcessing:
         # Principles not a list (wrong type)
         content = json.dumps({"principles": "not a list"})
         with tempfile.TemporaryDirectory() as tmpdir:
-            with patch("litassist.utils.OUTPUT_DIR", tmpdir):
+            with patch("litassist.logging_utils.OUTPUT_DIR", tmpdir):
                 formatted, data, json_file = process_extraction_response(
                     content, "principles", "test_wrong_type", "test"
                 )
@@ -745,7 +744,7 @@ class TestExtractionProcessing:
         )
 
         with tempfile.TemporaryDirectory() as tmpdir:
-            with patch("litassist.utils.OUTPUT_DIR", tmpdir):
+            with patch("litassist.logging_utils.OUTPUT_DIR", tmpdir):
                 # This should handle mixed formats gracefully
                 formatted, data, json_file = process_extraction_response(
                     content, "principles", "test_mixed", "test"
@@ -765,7 +764,7 @@ class TestExtractionProcessing:
         )
 
         with tempfile.TemporaryDirectory() as tmpdir:
-            with patch("litassist.utils.OUTPUT_DIR", tmpdir):
+            with patch("litassist.logging_utils.OUTPUT_DIR", tmpdir):
                 formatted, data, json_file = process_extraction_response(
                     content, "principles", "test_missing_keys", "test"
                 )
@@ -788,7 +787,7 @@ class TestExtractionProcessing:
         )
 
         with tempfile.TemporaryDirectory() as tmpdir:
-            with patch("litassist.utils.OUTPUT_DIR", tmpdir):
+            with patch("litassist.logging_utils.OUTPUT_DIR", tmpdir):
                 formatted, data, json_file = process_extraction_response(
                     content, "all", "test_partial", "test"
                 )
@@ -817,7 +816,7 @@ class TestExtractionProcessing:
         )
 
         with tempfile.TemporaryDirectory() as tmpdir:
-            with patch("litassist.utils.OUTPUT_DIR", tmpdir):
+            with patch("litassist.logging_utils.OUTPUT_DIR", tmpdir):
                 formatted, data, json_file = process_extraction_response(
                     content, "citations", "test_unicode", "test"
                 )
@@ -843,7 +842,7 @@ class TestExtractionProcessing:
         content = json.dumps({"data": "some data"})
 
         with tempfile.TemporaryDirectory() as tmpdir:
-            with patch("litassist.utils.OUTPUT_DIR", tmpdir):
+            with patch("litassist.logging_utils.OUTPUT_DIR", tmpdir):
                 formatted, data, json_file = process_extraction_response(
                     content, "invalid_type", "test_invalid", "test"
                 )
@@ -891,8 +890,8 @@ class TestErrorHandling:
 
         log_data = {"invalid": NonSerializable()}
 
-        with patch("litassist.utils.open", new_callable=mock_open):
-            with patch("litassist.utils.os.makedirs"):
+        with patch("litassist.logging_utils.open", new_callable=mock_open):
+            with patch("litassist.logging_utils.os.makedirs"):
                 # Should handle serialization errors gracefully
                 try:
                     save_log("test", log_data)
@@ -903,7 +902,7 @@ class TestErrorHandling:
     def test_file_operations_disk_full(self):
         """Test file operations when disk is full."""
         with patch(
-            "litassist.utils.open", side_effect=OSError("No space left on device")
+            "litassist.logging_utils.open", side_effect=OSError("No space left on device")
         ):
             with pytest.raises(OSError):
                 save_command_output("test", "content", "outcome")
@@ -923,8 +922,8 @@ class TestPerformanceEdgeCases:
         large_content = "x" * 100000  # 100KB content
 
         # Should handle large content without memory issues
-        with patch("litassist.utils.open", new_callable=mock_open):
-            with patch("litassist.utils.os.makedirs"):
+        with patch("litassist.logging_utils.open", new_callable=mock_open):
+            with patch("litassist.logging_utils.os.makedirs"):
                 try:
                     save_command_output("test", large_content, "large_test")
                 except MemoryError:
@@ -933,8 +932,8 @@ class TestPerformanceEdgeCases:
     def test_many_small_operations(self):
         """Test performance with many small operations."""
         # Test multiple small file operations
-        with patch("litassist.utils.open", new_callable=mock_open):
-            with patch("litassist.utils.os.makedirs"):
+        with patch("litassist.logging_utils.open", new_callable=mock_open):
+            with patch("litassist.logging_utils.os.makedirs"):
                 for i in range(100):
                     save_command_output(f"test_{i}", f"content_{i}", f"outcome_{i}")
 

@@ -22,6 +22,7 @@ from litassist.utils import (
     show_command_completion,
     process_extraction_response,
     info_message,
+    success_message,
 )
 from litassist.llm import LLMClientFactory
 from litassist.verification_chain import run_cove_verification
@@ -381,7 +382,6 @@ def counselnotes(files, extract, verify, cove, output):
 
     # Apply Chain of Verification if requested
     if cove:
-        from litassist.utils import success_message
         original_content = final_content
         final_content, cove_results = run_cove_verification(final_content, 'counselnotes')
         if not cove_results['cove']['passed']:

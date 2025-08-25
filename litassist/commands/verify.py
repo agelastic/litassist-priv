@@ -22,6 +22,7 @@ from litassist.utils import (
     verifying_message, success_message, error_message, warning_message,
     save_command_output
 )
+from litassist.verification_chain import run_cove_verification, format_cove_report
 from litassist.utils import (
     timed,
     save_log,
@@ -233,8 +234,6 @@ def verify(file, citations, soundness, reasoning, cove, output):
             ))
         else:
             try:
-                from litassist.verification_chain import run_cove_verification, format_cove_report
-            
                 # Use the most refined version of content available
                 final_content = content
                 if soundness and 'soundness_result' in locals():

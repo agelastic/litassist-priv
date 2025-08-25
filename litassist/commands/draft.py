@@ -28,6 +28,7 @@ from litassist.utils import (
 )
 from litassist.llm import LLMClientFactory
 from litassist.helpers.retriever import Retriever, get_pinecone_client
+from litassist.verification_chain import run_cove_verification
 
 
 @click.command()
@@ -239,8 +240,6 @@ def draft(ctx, documents, query, cove, diversity, output):
     # Optional CoVe verification
     if cove:
         try:
-            from litassist.verification_chain import run_cove_verification
-            
             click.echo(info_message("Running Chain of Verification..."))
             original_content = content  # Capture original BEFORE regeneration
             content, cove_results = run_cove_verification(content, 'draft')

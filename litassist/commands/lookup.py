@@ -45,8 +45,8 @@ from litassist.utils import (
     verifying_message,
     tip_message,
     error_message,
-    LOG_DIR,
 )
+from litassist.logging_utils import LOG_DIR
 from litassist.llm import LLMClientFactory
 from litassist.prompts import PROMPTS
 

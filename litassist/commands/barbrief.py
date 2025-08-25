@@ -20,6 +20,8 @@ from litassist.utils import (
     save_command_output,
     show_command_completion,
     warning_message,
+    success_message,
+    save_log,
     count_tokens_and_words,
 )
 from litassist.llm import LLMClientFactory
@@ -333,7 +335,6 @@ def barbrief(
     
     # Apply Chain of Verification if requested
     if cove:
-        from litassist.utils import success_message, save_log
         original_content = content
         content, cove_results = run_cove_verification(content, 'barbrief')
         if not cove_results['cove']['passed']:

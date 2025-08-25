@@ -209,28 +209,12 @@ class TestCoVeRegeneration:
 class TestCommandCoVeIntegration:
     """Test that commands properly handle regenerated content from CoVe."""
     
-    @patch('litassist.verification_chain.run_cove_verification')
-    @patch('litassist.commands.draft.LLMClientFactory')
-    @patch('litassist.commands.draft.click')
-    def test_draft_command_handles_regeneration(self, mock_click, mock_factory, mock_cove):
+    def test_draft_command_handles_regeneration(self):
         """Test draft command properly handles CoVe regeneration."""
         
         from litassist.commands.draft import draft
         from click.testing import CliRunner
-        
-        # Mock LLM client
-        mock_client = Mock()
-        mock_client.complete.return_value = ("Original draft content", {"total_tokens": 100})
-        mock_factory.for_command.return_value = mock_client
-        
-        # Mock CoVe regeneration
-        mock_cove.return_value = ("Regenerated draft content", {
-            'cove': {
-                'passed': False,
-                'regenerated': True,
-                'issues': 'Fixed citation issues'
-            }
-        })
+        from unittest.mock import patch, Mock, MagicMock
         
         runner = CliRunner()
         with runner.isolated_filesystem():
@@ -238,14 +222,61 @@ class TestCommandCoVeIntegration:
             with open('test.txt', 'w') as f:
                 f.write("Test input")
             
-            # Run draft with --cove flag
-            result = runner.invoke(draft, ['test.txt', 'Draft a memo', '--cove'])
-            
-            # Check command succeeded
-            assert result.exit_code == 0
-            
-            # Verify CoVe was called
-            mock_cove.assert_called_once()
+            with patch('litassist.commands.draft.read_document') as mock_read, \
+                 patch('litassist.commands.draft.is_text_file') as mock_is_text, \
+                 patch('litassist.commands.draft.chunk_text') as mock_chunk, \
+                 patch('litassist.commands.draft.create_embeddings') as mock_embed, \
+                 patch('litassist.commands.draft.get_pinecone_client') as mock_pinecone, \
+                 patch('litassist.commands.draft.Retriever') as mock_retriever_class, \
+                 patch('litassist.commands.draft.LLMClientFactory') as mock_factory, \
+                 patch('litassist.commands.draft.run_cove_verification') as mock_cove, \
+                 patch('litassist.commands.draft.save_command_output') as mock_save, \
+                 patch('litassist.commands.draft.save_log'), \
+                 patch('litassist.commands.draft.show_command_completion'), \
+                 patch('litassist.commands.draft.PROMPTS') as mock_prompts:
+                
+                # Setup mocks
+                mock_read.return_value = "Test content"
+                mock_is_text.return_value = True
+                mock_chunk.return_value = ["chunk1", "chunk2"]
+                mock_embed.return_value = [[0.1, 0.2], [0.3, 0.4]]
+                
+                # Mock Pinecone
+                mock_pc = MagicMock()
+                mock_pinecone.return_value = mock_pc
+                
+                # Mock Retriever
+                mock_retriever = MagicMock()
+                mock_retriever.retrieve.return_value = ["relevant chunk"]
+                mock_retriever_class.return_value = mock_retriever
+                
+                # Mock prompts
+                mock_prompts.get.return_value = "Test prompt"
+                
+                # Mock LLM client
+                mock_client = Mock()
+                mock_client.complete.return_value = ("Original draft content", {"total_tokens": 100})
+                mock_factory.for_command.return_value = mock_client
+                
+                # Mock CoVe regeneration
+                mock_cove.return_value = ("Regenerated draft content", {
+                    'cove': {
+                        'passed': False,
+                        'regenerated': True,
+                        'issues': 'Fixed citation issues'
+                    }
+                })
+                
+                mock_save.return_value = "output.txt"
+                
+                # Run draft with --cove flag
+                result = runner.invoke(draft, ['test.txt', 'Draft a memo', '--cove'])
+                
+                # Check command succeeded
+                assert result.exit_code == 0
+                
+                # Verify CoVe was called
+                mock_cove.assert_called_once()
             
             # Check that success message was shown (not warning)
             # This would be in the click.echo calls but mocked
@@ -263,10 +294,11 @@ class TestCommandCoVeIntegration:
             with open('test.pdf', 'w') as f:
                 f.write('Test content')
             
-            with patch('litassist.commands.extractfacts.validate_file_size') as mock_validate, \
+            with patch('litassist.commands.extractfacts.CONFIG') as mock_config, \
+                 patch('litassist.commands.extractfacts.validate_file_size') as mock_validate, \
                  patch('litassist.commands.extractfacts.chunk_text') as mock_chunk, \
                  patch('litassist.commands.extractfacts.LLMClientFactory') as mock_factory, \
-                 patch('litassist.verification_chain.run_cove_verification') as mock_cove, \
+                 patch('litassist.commands.extractfacts.run_cove_verification') as mock_cove, \
                  patch('litassist.commands.extractfacts.verify_content_if_needed') as mock_verify, \
                  patch('litassist.commands.extractfacts.PROMPTS') as mock_prompts, \
                  patch('litassist.commands.extractfacts.save_command_output') as mock_save, \
@@ -274,6 +306,7 @@ class TestCommandCoVeIntegration:
                  patch('litassist.commands.extractfacts.show_command_completion'):
                 
                 # Setup mocks
+                mock_config.max_chars = 100000
                 mock_validate.return_value = "Test content"
                 mock_chunk.return_value = ["Test chunk"]
                 mock_prompts.get_format_template.return_value = "Format"
@@ -386,7 +419,8 @@ It also references Brown v Green (2019) 265 CLR 456 regarding
 the principles of statutory interpretation.
 """)
             
-            with patch('litassist.verification_chain.run_cove_verification') as mock_cove, \
+            with patch('litassist.config.CONFIG') as mock_config, \
+                 patch('litassist.commands.verify.run_cove_verification') as mock_cove, \
                  patch('litassist.commands.verify.verify_all_citations') as mock_verify_citations, \
                  patch('litassist.commands.verify.save_command_output') as mock_save, \
                  patch('litassist.commands.verify.save_log'), \
@@ -396,6 +430,7 @@ the principles of statutory interpretation.
                  patch('litassist.commands.verify.extract_reasoning_trace') as mock_extract_trace:
                 
                 # Setup base mocks
+                mock_config.or_base = "https://openrouter.ai/api/v1"
                 mock_extract.return_value = ["Smith v Jones [2020] FCA 123"]
                 mock_verify_citations.return_value = (
                     ["Smith v Jones [2020] FCA 123"],  # verified

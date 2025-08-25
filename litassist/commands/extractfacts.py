@@ -25,6 +25,7 @@ from litassist.utils import (
     verify_content_if_needed,
 )
 from litassist.llm import LLMClientFactory
+from litassist.verification_chain import run_cove_verification
 
 
 @click.command()
@@ -174,8 +175,6 @@ def extractfacts(file, verify, cove, output):
     verification_metadata = {"Source Files": ", ".join(source_files)}
     if cove:
         # Use CoVe INSTEAD of standard verification
-        from litassist.verification_chain import run_cove_verification
-        
         click.echo(info_message("Running Chain of Verification..."))
         original_content = combined
         combined, cove_results = run_cove_verification(combined, 'extractfacts')

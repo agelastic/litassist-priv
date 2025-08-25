@@ -30,6 +30,7 @@ from litassist.utils import (
 )
 from litassist.llm import LLMClientFactory
 from litassist.prompts import PROMPTS
+from litassist.verification_chain import run_cove_verification
 
 
 def validate_case_facts_format(text: str) -> bool:
@@ -840,8 +841,6 @@ def strategy(case_facts, outcome, strategies, verify, cove, output):
     # Apply verification - either CoVe or standard
     if cove:
         # Use CoVe INSTEAD of standard verification
-        from litassist.verification_chain import run_cove_verification
-        
         click.echo(info_message("Running Chain of Verification..."))
         original_content = strategy_content
         strategy_content, cove_results = run_cove_verification(strategy_content, 'strategy')

@@ -6,7 +6,7 @@ from litassist.citation_patterns import validate_citation_patterns
 from litassist.citation_verify import verify_all_citations
 from litassist.llm import LLMClientFactory
 from litassist.prompts import PROMPTS
-from litassist.utils import save_log
+from litassist.logging_utils import save_log
 
 
 def run_verification_chain(
