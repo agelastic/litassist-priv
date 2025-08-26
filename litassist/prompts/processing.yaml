@@ -192,8 +192,9 @@ processing:
       
       {format_instructions}
       
-      Raw facts to organize:
+      === RAW FACTS TO ORGANIZE ===
       {all_facts}
+      === END RAW FACTS TO ORGANIZE ===
       
       Important: 
       - Only include information that was actually in the document

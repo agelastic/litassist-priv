@@ -76,16 +76,16 @@ analysis:
   # USED BY: extractfacts.py - lines 85-88 (single chunk extraction)
   # LOCATION: Base prompt for extracting facts under structured headings
   extraction:
-    base_prompt: "Extract under these headings (include all relevant details):\n{format_instructions}\n\n{content}"
+    base_prompt: "Extract under these headings (include all relevant details):\n{format_instructions}\n\n=== CONTENT TO EXTRACT ===\n{content}\n=== END CONTENT TO EXTRACT ==="
     # USED BY: extractfacts.py - lines 118-121 (multi-chunk extraction)
     # LOCATION: Formats chunk-specific extraction prompt
-    chunk_prompt: "{chunk_template}\n\n{chunk}"
+    chunk_prompt: "{chunk_template}\n\n=== CHUNK CONTENT ===\n{chunk}\n=== END CHUNK CONTENT ==="
     
   # Chunk processing templates
   # USED BY: digest.py - lines 181, 196 (processing document chunks)
   # LOCATION: Formats digest prompts with chunk content
   chunk_processing:
-    digest_prompt: "{digest_prompt}\n\n{chunk}"
+    digest_prompt: "{digest_prompt}\n\n=== DOCUMENT CHUNK ===\n{chunk}\n=== END DOCUMENT CHUNK ==="
     
   # Question and links formatting
   # USED BY: lookup.py - lines 130-133 (preparing search prompt)

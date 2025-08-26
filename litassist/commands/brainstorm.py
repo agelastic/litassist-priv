@@ -603,11 +603,14 @@ Please provide output in EXACTLY this format:
         raise click.ClickException(f"Error analyzing strategies: {e}")
 
     # Note: Citation issues now handled automatically in LLMClient.complete()
-    combined_content = ""
+    # Combine all sections with clear === separators
+    combined_content = f"""=== ORTHODOX STRATEGIES ===
+{orthodox_content}
+=== END OF ORTHODOX STRATEGIES ===
 
-    combined_content += f"""{orthodox_content}
-
+=== UNORTHODOX STRATEGIES ===
 {unorthodox_content}
+=== END OF UNORTHODOX STRATEGIES ===
 
 {analysis_content}"""
 

@@ -220,7 +220,7 @@ def barbrief(
             strategy_parts = []
             for strategy_file in strategies:
                 content = read_document(strategy_file)
-                strategy_parts.append(f"=== SOURCE: {strategy_file} ===\n{content}")
+                strategy_parts.append(f"=== SOURCE: {strategy_file} ===\n{content}\n=== END SOURCE: {strategy_file} ===")
             strategies_content = "\n\n".join(strategy_parts)
     
     research_docs = []

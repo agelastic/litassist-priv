@@ -125,16 +125,17 @@ def draft(ctx, documents, query, cove, diversity, output):
     context_parts = []
 
     if structured_content["case_facts"]:
-        context_parts.append("=== CASE FACTS ===\n" + structured_content["case_facts"])
+        context_parts.append("=== CASE FACTS ===\n" + structured_content["case_facts"] + "\n=== END CASE FACTS ===")
 
     if structured_content["strategies"]:
         context_parts.append(
             "=== LEGAL STRATEGIES FROM BRAINSTORMING ===\n"
             + structured_content["strategies"]
+            + "\n=== END LEGAL STRATEGIES FROM BRAINSTORMING ==="
         )
 
     for doc_path, text in structured_content["other_text"]:
-        context_parts.append(f"=== SUPPORTING DOCUMENT: {doc_path} ===\n{text}")
+        context_parts.append(f"=== SUPPORTING DOCUMENT: {doc_path} ===\n{text}\n=== END SUPPORTING DOCUMENT: {doc_path} ===")
 
     combined_text_context = "\n\n".join(context_parts) if context_parts else ""
 
@@ -190,16 +191,18 @@ def draft(ctx, documents, query, cove, diversity, output):
         except Exception as e:
             raise click.ClickException(f"Pinecone retrieval error: {e}")
 
-        retrieved_context = "\n\n=== Retrieved Context ===\n" + "\n\n".join(
+        retrieved_context = "\n\n=== RETRIEVED CONTEXT ===\n" + "\n\n".join(
             context_list
-        )
+        ) + "\n=== END RETRIEVED CONTEXT ==="
 
-    # Combine all context
+    # Combine all context with proper === separation
     context = combined_text_context
     if retrieved_context:
-        context = (
-            (context + "\n\n" + retrieved_context) if context else retrieved_context
-        )
+        if context:
+            # Retrieved context already has its own END marker from above
+            context = context + "\n\n" + retrieved_context
+        else:
+            context = retrieved_context
 
     # Generate draft with GPT-4o
     client = LLMClientFactory.for_command("draft")

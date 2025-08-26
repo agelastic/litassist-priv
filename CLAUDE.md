@@ -11,18 +11,16 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 **CRITICAL FAMILY SAFETY**: ALWAYS read this entire file at session start. Missing any rule causes family harm.
 
-**IMPORTANT**: At the start of every session, read the `.clinerules` file if it exists. This file contains memory bank instructions and patterns that guide development work. Adopt these rules for the session, ignore that they are addressing Cline and not Claude Code
-
 ## Project Overview
 
 LitAssist is a command-line tool for automated litigation support workflows, tailored to Australian law. It leverages large language models (LLMs) and managed vector stores to provide:
 
-- **Rapid case-law lookup** (Jade.io database via Google Custom Search + Google Gemini)
-- **Mass-document digestion** (Chronological summaries or issue-spotting via Claude 4 Sonnet)
-- **Novel strategy ideation** (Creative legal arguments via Grok)
-- **Enhanced strategic reasoning** (Multi-step analysis via OpenAI o3-pro)
-- **Automatic extraction of case facts** into a structured file
-- **Superior technical drafting** (Advanced legal writing via OpenAI o3-pro)
+- **Rapid case-law lookup** (legal databases via Google Custom Search + LLM)
+- **Mass-document digestion** (Chronological summaries or issue-spotting via an LLM)
+- **Novel strategy ideation** (Creative legal arguments via an LLM)
+- **Enhanced strategic reasoning** (Multi-step analysis via LLMs)
+- **Automatic extraction of case facts** into a structured file by an LLM
+- **Superior technical drafting** (Advanced legal writing via an LLM)
 
 ## Key Technical Components
 
@@ -60,7 +58,7 @@ LitAssist is a command-line tool for automated litigation support workflows, tai
    - Clear error messages with setup instructions
    - Validates all required keys
 
-3. **LegalReasoningTrace**: Domain-specific structure for legal analysis (implemented in utils.py)
+3. **Reasoning and thinking traces from LLM**: Domain-specific requirement for legal analysis
    - Required for accountability in legal documents
    - Multiple output formats for different consumers
    - Structured extraction and storage with IRAC-based reasoning structure
@@ -274,6 +272,32 @@ The litassist codebase currently contains extensive local parsing of LLM respons
 - LLM self-assessment and correction within the same call
 
 **Reference**: A comprehensive audit of current parsing patterns exists and should be used as a roadmap for systematic elimination of all local LLM response processing logic.
+
+### Document Separation Markers
+
+**CRITICAL**: Maintain absolute consistency in document separation markers across all prompts and LLM interactions.
+
+**Standard Format:**
+- **ONLY use `=== NAME ===` format** for document separation in LLM prompts
+- Name should be uppercase with spaces allowed (e.g., `=== DOCUMENT 1 ===`, `=== CASE LAW ===`)
+- Three equals signs on each side, single space between equals and name
+- This is the established pattern throughout the codebase
+
+**Forbidden Patterns:**
+- Do NOT use dashes: `--- NAME ---`
+- Do NOT use underscores: `___ NAME ___`
+- Do NOT use asterisks: `*** NAME ***`
+- Do NOT use mixed separators or any other format
+- Do NOT vary the number of separator characters
+
+**Consistency Requirements:**
+1. All prompt templates must use `=== NAME ===` format
+2. All LLM response parsing expects this format
+3. All document concatenation uses this format
+4. Never introduce alternative separation patterns
+5. When modifying prompts, preserve existing `=== NAME ===` markers
+
+**Rationale**: Consistent markers ensure reliable parsing, prevent regex complications, and maintain clean document boundaries in multi-document processing workflows.
 
 ### Anti-Hallucination Guidelines for Legal Drafts
 

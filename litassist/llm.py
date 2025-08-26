@@ -1298,14 +1298,12 @@ class LLMClient:
             # Standard verification
             self_critique = PROMPTS.get("verification.self_critique")
 
-        # Build the full text with optional verification contexts
+        # Build the full text with optional verification contexts using === separators
         full_text = primary_text
         if citation_context:
-            full_text += "\n\n## Previous Verification: Citations\n" + citation_context
+            full_text += "\n\n=== PREVIOUS VERIFICATION: CITATIONS ===\n" + citation_context + "\n=== END PREVIOUS VERIFICATION: CITATIONS ==="
         if reasoning_context:
-            full_text += (
-                "\n\n## Previous Verification: Reasoning Analysis\n" + reasoning_context
-            )
+            full_text += "\n\n=== PREVIOUS VERIFICATION: REASONING ANALYSIS ===\n" + reasoning_context + "\n=== END PREVIOUS VERIFICATION: REASONING ANALYSIS ==="
 
         critique_prompt = [
             {

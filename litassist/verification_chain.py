@@ -112,12 +112,16 @@ def run_cove_verification(
     # Track all stages for summary logging
     cove_stages = {}
 
-    # Build context summary for question generation
+    # Build context summary for question generation with proper === separation
     context_summary = ""
     if prior_contexts.get("citations"):
-        context_summary += "\nNote: Citation verification found some issues.\n"
+        context_summary += "\n\n=== PRIOR VERIFICATION: CITATIONS ===\n"
+        context_summary += "Citation verification found issues that should be addressed.\n"
+        context_summary += "=== END PRIOR VERIFICATION: CITATIONS ===\n"
     if prior_contexts.get("reasoning"):
-        context_summary += "\nNote: Reasoning trace has been verified.\n"
+        context_summary += "\n\n=== PRIOR VERIFICATION: REASONING ===\n"
+        context_summary += "Reasoning trace has been verified and validated.\n"
+        context_summary += "=== END PRIOR VERIFICATION: REASONING ===\n"
     if prior_contexts.get("soundness"):
         num_issues = (
             len(prior_contexts["soundness"])
@@ -125,7 +129,9 @@ def run_cove_verification(
             else 0
         )
         if num_issues > 0:
-            context_summary += f"\nNote: Soundness check found {num_issues} issues.\n"
+            context_summary += "\n\n=== PRIOR VERIFICATION: SOUNDNESS ===\n"
+            context_summary += f"Legal soundness check identified {num_issues} issues requiring attention.\n"
+            context_summary += "=== END PRIOR VERIFICATION: SOUNDNESS ===\n"
 
     # Step 1: Generate questions (let LLM do the work)
     questions_prompt = PROMPTS.get("verification.cove.questions_generation").format(

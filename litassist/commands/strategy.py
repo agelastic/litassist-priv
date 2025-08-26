@@ -126,6 +126,9 @@ def create_consolidated_reasoning_trace(option_traces, outcome):
         option_num = trace_data["option_number"]
         trace = trace_data["trace"]
 
+        # Add START marker for the option
+        consolidated_content += f"=== OPTION {option_num} ===\n"
+        
         option_header = PROMPTS.get("reasoning.consolidated.option_header").format(
             option_num=option_num
         )
@@ -144,7 +147,7 @@ def create_consolidated_reasoning_trace(option_traces, outcome):
         else:
             consolidated_content += PROMPTS.get("reasoning.consolidated.no_trace") + "\n\n"
 
-        consolidated_content += "-" * 80 + "\n\n"
+        consolidated_content += f"=== END OPTION {option_num} ===\n\n"
 
     return consolidated_content
 
@@ -660,19 +663,19 @@ def strategy(case_facts, outcome, strategies, verify, cove, output):
                 strategy_content=specific_strategy['content'],
                 option_number=len(valid_options) + 1
             )
-            individual_prompt += "\n\n" + PROMPTS.get('strategies.strategy.unique_title_requirement')
+            individual_prompt += "\n\n=== ADDITIONAL REQUIREMENT ===\n" + PROMPTS.get('strategies.strategy.unique_title_requirement') + "\n=== END ADDITIONAL REQUIREMENT ==="
         else:
             # Generate fresh strategic option if no brainstormed strategies or we've used them all
             individual_prompt = user_prompt + PROMPTS.get(
                 "strategies.strategy.individual_option.fresh_base"
             ).format(option_number=len(valid_options) + 1)
             
-            individual_prompt += "\n\n" + PROMPTS.get('strategies.strategy.unique_title_requirement')
+            individual_prompt += "\n\n=== ADDITIONAL REQUIREMENT ===\n" + PROMPTS.get('strategies.strategy.unique_title_requirement') + "\n=== END ADDITIONAL REQUIREMENT ==="
             
             if parsed_strategies:
-                individual_prompt += PROMPTS.get(
+                individual_prompt += "\n\n=== EXISTING CONTEXT ===\n" + PROMPTS.get(
                     "strategies.strategy.individual_option.complement_existing"
-                ).format(existing_count=len(valid_options))
+                ).format(existing_count=len(valid_options)) + "\n=== END EXISTING CONTEXT ==="
 
         # If we already have options, tell the LLM to avoid duplication
         if valid_options:
@@ -683,12 +686,12 @@ def strategy(case_facts, outcome, strategies, verify, cove, output):
                     existing_titles.append(title_match.group(1).strip())
 
             if existing_titles:
-                individual_prompt += PROMPTS.get(
+                individual_prompt += "\n\n=== AVOID DUPLICATION ===\n" + PROMPTS.get(
                     "strategies.strategy.individual_option.avoid_duplication"
                 ).format(
                     existing_titles=', '.join(existing_titles),
                     existing_count=len(valid_options)
-                )
+                ) + "\n=== END AVOID DUPLICATION ==="
 
         try:
             option_content, option_usage = llm_client.complete(
@@ -758,7 +761,11 @@ def strategy(case_facts, outcome, strategies, verify, cove, output):
                 )
             numbered_options.append(clean_option)
 
-        strategy_content = "\n\n".join(numbered_options)
+        # Join options with proper START and END markers
+        options_with_markers = []
+        for idx, option in enumerate(numbered_options, 1):
+            options_with_markers.append(f"=== STRATEGIC OPTION {idx} ===\n{option}\n=== END STRATEGIC OPTION {idx} ===")
+        strategy_content = "\n\n".join(options_with_markers)
         usage = total_usage
 
         click.echo(

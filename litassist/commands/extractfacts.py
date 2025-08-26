@@ -144,7 +144,12 @@ def extractfacts(file, verify, cove, output):
         click.echo(
             info_message("Organizing and synthesizing facts into structured format...")
         )
-        all_facts = "\n\n".join(accumulated_facts)
+        # Join accumulated facts with clear === separators for each chunk
+        # Add END marker after each chunk's facts
+        facts_with_markers = []
+        for idx, facts in enumerate(accumulated_facts, 1):
+            facts_with_markers.append(f"=== CHUNK {idx} FACTS ===\n{facts}\n=== END CHUNK {idx} FACTS ===")
+        all_facts = "\n\n".join(facts_with_markers)
 
         # Use centralized format template for organizing
         format_instructions = PROMPTS.get_format_template("case_facts_10_heading")

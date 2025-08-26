@@ -170,17 +170,23 @@ verification:
     questions_generation: |
       Generate 10 verification questions for this legal document.
       Focus on citations, dates, party names, legal principles, and any potential inconsistencies.
-      {context}
       
-      Document:
+      === CONTEXT ===
+      {context}
+      === END CONTEXT ===
+      
+      === DOCUMENT ===
       {content}
+      === END DOCUMENT ===
       
       Output numbered questions only (1. Question one, 2. Question two, etc.).
     
     answers_verification: |
       Answer these questions based ONLY on legal knowledge, NOT the document:
       
+      === QUESTIONS ===
       {content}
+      === END QUESTIONS ===
       
       For each question, answer: Yes/No/Uncertain with brief explanation.
       Format: 1. Yes - [explanation], 2. No - [explanation], etc.
@@ -189,27 +195,33 @@ verification:
       Compare these Q&A pairs against the original document.
       Identify any inconsistencies or errors.
       
-      Questions and Answers:
+      === QUESTIONS AND ANSWERS ===
       {context}
+      === END QUESTIONS AND ANSWERS ===
       
-      Original Document:
+      === ORIGINAL DOCUMENT ===
       {content}
+      === END ORIGINAL DOCUMENT ===
       
       Output: List specific issues found, or "No issues found" if document is consistent.
     
     regeneration: |
       The following issues were found in this legal document:
       
+      === ISSUES IDENTIFIED ===
       {context}
+      === END ISSUES IDENTIFIED ===
       
       Using these verification results, regenerate a corrected version of the document that fixes all identified issues.
       Remove or correct any inaccurate information based on the verification.
       
-      Verification Q&A for reference:
+      === VERIFICATION Q&A FOR REFERENCE ===
       {prompt}
+      === END VERIFICATION Q&A FOR REFERENCE ===
       
-      Original document:
+      === ORIGINAL DOCUMENT ===
       {content}
+      === END ORIGINAL DOCUMENT ===
       
       Generate the complete corrected document:
 

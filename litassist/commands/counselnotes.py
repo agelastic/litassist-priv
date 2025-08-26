@@ -68,7 +68,7 @@ def counselnotes(files, extract, verify, cove, output):
         try:
             content = read_document(file_path)
             all_content.append(
-                f"=== Document: {os.path.basename(file_path)} ===\n{content}"
+                f"=== DOCUMENT: {os.path.basename(file_path)} ===\n{content}\n=== END DOCUMENT: {os.path.basename(file_path)} ==="
             )
             file_info.append(
                 {
@@ -270,7 +270,7 @@ def counselnotes(files, extract, verify, cove, output):
 
             consolidated_content = "\n\n".join(
                 [
-                    f"=== Analysis from Document Section {i+1} ===\n{analysis}"
+                    f"=== ANALYSIS FROM DOCUMENT SECTION {i+1} ===\n{analysis}\n=== END ANALYSIS FROM DOCUMENT SECTION {i+1} ==="
                     for i, analysis in enumerate(chunk_analyses)
                 ]
             )
