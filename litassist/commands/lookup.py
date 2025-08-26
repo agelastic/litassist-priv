@@ -500,8 +500,15 @@ def lookup(question, mode, extract, comprehensive, context, output, no_fetch):
 
     # Comprehensive CSE search (optional)
     if comprehensive:
+        # Combine question with context for comprehensive CSE if context provided
+        if context:
+            click.echo(f"Comprehensive search will include context: '{context}'")
+            comp_query = f"{question} {context}"
+        else:
+            comp_query = question
+        
         comp_links, comp_snippets = _perform_cse_search(
-            service, question, getattr(CONFIG, "cse_id_comprehensive", None), comp_limit
+            service, comp_query, getattr(CONFIG, "cse_id_comprehensive", None), comp_limit
         )
         links.extend(comp_links)
         all_snippets.extend(comp_snippets)
@@ -520,6 +527,8 @@ def lookup(question, mode, extract, comprehensive, context, output, no_fetch):
             f.write(f"Query: {question}\n")
             if context:
                 f.write(f"Context: {context}\n")
+            if comprehensive and context:
+                f.write(f"Comprehensive CSE searched with combined: {question} {context}\n")
             f.write(f"Timestamp: {time.strftime('%Y-%m-%d %H:%M:%S')}\n")
             f.write("=" * 80 + "\n\n")
             f.write("GOOGLE CSE SEARCH SNIPPETS\n")

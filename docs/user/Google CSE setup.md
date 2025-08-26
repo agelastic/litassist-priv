@@ -114,10 +114,14 @@ litassist lookup "contract formation elements" --comprehensive
 ```
 
 Performs these searches:
-1. **Jade.io CSE**: 10 results
-2. **AustLII CSE**: 10 results (if configured)
+1. **Jade.io CSE**: 10 results (searches question only)
+2. **AustLII CSE**: 10 results (searches question only, if configured)
 3. **Comprehensive CSE**: 10 results (if configured)
+   - Without `--context`: searches question only
+   - With `--context`: searches combined "question context" string
 4. 1.5 second delays between API calls
+
+**Note**: When both `--comprehensive` and `--context` are used, the comprehensive CSE search combines them to find more contextually relevant results from broader sources.
 
 ### Citation Verification
 
@@ -133,10 +137,14 @@ Automatically triggered when any command generates content with citations:
 The lookup command supports a `--context` option to provide additional guidance:
 
 ```bash
+# Context guides LLM analysis for all searches
 litassist lookup "negligence principles" --context "Focus on medical malpractice cases involving surgical errors"
+
+# With --comprehensive, context is also included in comprehensive CSE search query
+litassist lookup "negligence principles" --context "medical malpractice surgical errors" --comprehensive
 ```
 
-This helps narrow the analysis to specific aspects of your legal question.
+In standard mode, context only guides the LLM's analysis of results. In comprehensive mode, context is also combined with the question for the comprehensive CSE search, helping find more relevant results from broader sources.
 
 ## Example
 
