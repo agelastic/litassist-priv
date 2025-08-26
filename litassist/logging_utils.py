@@ -113,6 +113,11 @@ def save_log(tag: str, payload: dict):
                 _write_http_validation_markdown(f, tag, ts, payload)
             elif tag == "austlii_search_validation":
                 _write_search_validation_markdown(f, tag, ts, payload)
+            elif (tag.startswith("llm_") or tag.startswith("cove_") or 
+                  "messages_sent" in payload or 
+                  (isinstance(payload.get("messages"), list) and payload.get("model"))):
+                # LLM message logs (includes both sent messages and responses)
+                _write_llm_messages_markdown(f, tag, ts, payload)
             elif "response" in payload or "inputs" in payload:
                 # Standard command output format
                 _write_command_output_markdown(f, tag, ts, payload)
@@ -257,13 +262,104 @@ def _write_command_output_markdown(f, tag: str, ts: str, payload: dict):
         f.write("\n")
 
 
+def _write_llm_messages_markdown(f, tag: str, ts: str, payload: dict):
+    """Write markdown for LLM message logs."""
+    f.write(f"# {tag} — {ts}\n\n")
+    
+    # Model information
+    f.write("## Model Information\n\n")
+    f.write(f"- **Model**: {payload.get('model', 'N/A')}\n")
+    f.write(f"- **Timestamp**: {payload.get('timestamp', ts)}\n")
+    if 'command_context' in payload:
+        f.write(f"- **Context**: {payload['command_context']}\n")
+    f.write("\n")
+    
+    # Messages - check both 'messages' and 'messages_sent' for compatibility
+    messages = payload.get('messages', payload.get('messages_sent', []))
+    if messages:
+        f.write("## Messages Sent\n\n")
+        for msg in messages:
+            role = msg.get('role', 'unknown')
+            content = msg.get('content', '')
+            
+            if role == 'system':
+                f.write("### System Message\n\n")
+            elif role == 'user':
+                f.write("### User Message\n\n")
+            elif role == 'assistant':
+                f.write("### Assistant Message\n\n")
+            else:
+                f.write(f"### {role.title()} Message\n\n")
+            
+            # Handle long content
+            if len(content) > 50000:
+                f.write(f"{content[:50000]}\n\n[... truncated, {len(content)} total characters ...]\n\n")
+            else:
+                f.write(f"{content}\n\n")
+    
+    # LLM Response - the actual output from the model
+    response = payload.get('response')
+    if response:
+        f.write("## LLM Response\n\n")
+        # Handle very long responses (some can be 50K+ chars)
+        if len(response) > 100000:
+            f.write(f"{response[:100000]}\n\n[... truncated, {len(response)} total characters ...]\n\n")
+        else:
+            f.write(f"{response}\n\n")
+    
+    # Parameters
+    params = payload.get('params', {})
+    if params:
+        f.write("## Parameters\n\n")
+        f.write("| Parameter | Value |\n")
+        f.write("|-----------|-------|\n")
+        for key, value in params.items():
+            f.write(f"| {key} | {value} |\n")
+        f.write("\n")
+    
+    # Usage stats if present
+    usage = payload.get('usage', {})
+    if usage:
+        f.write("## Token Usage\n\n")
+        for key, value in usage.items():
+            f.write(f"- **{key}**: {value}\n")
+        f.write("\n")
+
+
+def _format_dict_as_markdown(d: dict, indent: int = 0) -> str:
+    """Recursively format a dictionary as markdown lists."""
+    lines = []
+    prefix = "  " * indent + "- "
+    
+    for key, value in d.items():
+        if isinstance(value, dict):
+            lines.append(f"{prefix}**{key}**:")
+            lines.append(_format_dict_as_markdown(value, indent + 1))
+        elif isinstance(value, list):
+            lines.append(f"{prefix}**{key}**:")
+            for item in value:
+                if isinstance(item, dict):
+                    lines.append(_format_dict_as_markdown(item, indent + 1))
+                else:
+                    lines.append(f"  {'  ' * indent}- {item}")
+        else:
+            lines.append(f"{prefix}**{key}**: {value}")
+    
+    return "\n".join(lines)
+
+
 def _write_generic_markdown(f, tag: str, ts: str, payload: dict):
-    """Write generic markdown for unknown log types."""
+    """Write pure markdown for unknown log types - no JSON."""
     f.write(f"# {tag} — {ts}\n\n")
     f.write("## Log Data\n\n")
-    f.write("```json\n")
-    f.write(json.dumps(payload, indent=2, ensure_ascii=False, default=str))
-    f.write("\n```\n")
+    
+    # Convert the payload to pure markdown format
+    if payload:
+        markdown_content = _format_dict_as_markdown(payload)
+        f.write(markdown_content)
+        f.write("\n")
+    else:
+        f.write("No data available.\n")
 
 
 # ── Command Output Function ─────────────────────────────────
