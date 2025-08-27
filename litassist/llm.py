@@ -73,7 +73,10 @@ MODEL_PATTERNS = {
 PARAMETER_PROFILES = {
     "openai_reasoning": {
         "allowed": ["max_completion_tokens", "reasoning_effort"],
-        "transforms": {"max_tokens": "max_completion_tokens"},
+        "transforms": {
+            "max_tokens": "max_completion_tokens",
+            "thinking_effort": "reasoning_effort",  # Map universal to OpenAI
+        },
         "system_message_support": False,  # o1/o3 models don't support system messages
     },
     "anthropic": {
@@ -86,7 +89,11 @@ PARAMETER_PROFILES = {
             "stream",
             "metadata",
             "stop_sequences",
+            "thinking",  # Anthropic thinking object
         ],
+        "transforms": {
+            "thinking_effort": "thinking",  # Will be processed specially
+        },
     },
     "google": {
         "allowed": [
@@ -98,8 +105,11 @@ PARAMETER_PROFILES = {
             "top_k",
             "safety_settings",
             "stop_sequences",
+            "thinking_config",  # Google thinking config
         ],
-        "transforms": {},  # No longer needed with v1.x - OpenRouter handles this
+        "transforms": {
+            "thinking_effort": "thinking_config",  # Will be processed specially
+        },
     },
     "openai_standard": {
         "allowed": [
@@ -187,6 +197,67 @@ PARAMETER_PROFILES = {
 }
 
 
+def convert_thinking_effort(effort: str, model_family: str) -> dict:
+    """
+    Convert universal thinking_effort to model-specific parameters.
+    
+    Args:
+        effort: Universal effort level (none, low, medium, high, max)
+        model_family: The model family (anthropic, google, openai_reasoning)
+    
+    Returns:
+        Dict with model-specific thinking parameters
+    """
+    # Token budget mapping
+    token_budgets = {
+        "none": 0,
+        "low": 1024,
+        "medium": 8192,
+        "high": 16384,
+        "max": 32768,
+    }
+    
+    if model_family == "openai_reasoning":
+        # OpenAI uses low/medium/high directly
+        if effort in ["none"]:
+            return {}  # No reasoning effort
+        elif effort in ["low", "medium", "high"]:
+            return {"reasoning_effort": effort}
+        elif effort == "max":
+            return {"reasoning_effort": "high"}  # Map max to high
+        else:
+            return {"reasoning_effort": "medium"}  # Default
+            
+    elif model_family == "anthropic":
+        # Anthropic uses thinking object with budget_tokens
+        if effort == "none":
+            return {}  # No thinking
+        else:
+            budget = token_budgets.get(effort, 8192)
+            return {
+                "thinking": {
+                    "thinking": "enabled",
+                    "budget_tokens": budget
+                }
+            }
+            
+    elif model_family == "google":
+        # Google uses thinking_config with thinking_budget
+        if effort == "none":
+            return {"thinking_config": {"thinking_budget": 0}}
+        else:
+            # For Google, we let the model control the budget by using -1
+            # This provides more flexibility and better results
+            return {
+                "thinking_config": {
+                    "include_thoughts": True,
+                    "thinking_budget": -1  # -1 lets model control budget
+                }
+            }
+    
+    return {}
+
+
 def get_model_family(model_name: str) -> str:
     """
     Identify the model family based on pattern matching.
@@ -223,15 +294,34 @@ def get_model_parameters(model_name: str, requested_params: dict) -> dict:
     filtered = {}
     transforms = profile.get("transforms", {})
     allowed = profile.get("allowed", [])
+    
+    # First check if thinking_effort is present - it takes precedence
+    has_thinking_effort = "thinking_effort" in requested_params and requested_params["thinking_effort"] is not None
+    
+    if has_thinking_effort:
+        # Process thinking_effort first and get the converted parameters
+        thinking_params = convert_thinking_effort(requested_params["thinking_effort"], model_family)
+        filtered.update(thinking_params)
 
     for param, value in requested_params.items():
         # Skip None values
         if value is None:
             continue
-
+            
+        # Skip thinking_effort as we already processed it
+        if param == "thinking_effort":
+            continue
+            
+        # Skip direct reasoning parameters if thinking_effort was present
+        if has_thinking_effort and param in ["reasoning_effort", "thinking", "thinking_config"]:
+            continue  # Skip to avoid conflicts with thinking_effort conversion
+            
         # Check if parameter needs transformation
         if param in transforms:
             new_param = transforms[param]
+            # Special case: skip thinking_effort transform as it's handled above
+            if new_param in ["thinking", "thinking_config", "reasoning_effort"] and param == "thinking_effort":
+                continue  # Already handled
             filtered[new_param] = value
         elif param in allowed:
             filtered[param] = value
@@ -277,7 +367,7 @@ class LLMClientFactory:
             "model": "openai/o3-pro",
             # o3-pro has fixed parameters: temperature=1, top_p=1, presence_penalty=0, frequency_penalty=0
             # Only max_completion_tokens and reasoning_effort can be controlled
-            "reasoning_effort": "high",
+            "thinking_effort": "high",  # Universal parameter, translates to reasoning_effort
             "force_verify": True,  # Always verify for strategic guidance
         },
         # Strategy sub-type for analysis
@@ -285,13 +375,14 @@ class LLMClientFactory:
             "model": "openai/o3-pro",
             "temperature": 0.2,
             "top_p": 0.8,
-            "reasoning_effort": "high",
+            "thinking_effort": "high",  # Universal parameter, translates to reasoning_effort
         },
         # Brainstorm - varied temperatures for different approaches
         "brainstorm-orthodox": {
             "model": "anthropic/claude-opus-4.1",
             "temperature": 0.3,
             "top_p": 0.7,
+            "thinking_effort": "medium",  # Moderate thinking for balanced analysis
             "force_verify": True,  # Conservative analysis requires verification
         },
         "brainstorm-unorthodox": {
@@ -308,10 +399,10 @@ class LLMClientFactory:
             "model": "openai/o3-pro",
             "temperature": 0.2,
             "top_p": 0.8,
-            "reasoning_effort": "high",
+            "thinking_effort": "high",  # Universal parameter, translates to reasoning_effort
         },
         # Draft - superior technical writing (o3 model with very limited parameter support)
-        "draft": {"model": "openai/o3-pro", "reasoning_effort": "high"},
+        "draft": {"model": "openai/o3-pro", "thinking_effort": "high"},  # Universal parameter
         # Digest - mode-dependent settings
         "digest-summary": {
             "model": "anthropic/claude-sonnet-4",
@@ -331,6 +422,7 @@ class LLMClientFactory:
             "model": "google/gemini-2.5-pro",
             "temperature": 0.1,
             "top_p": 0.2,
+            "thinking_effort": "low",  # Fast thinking for rapid search results
             "force_verify": False,  # Don't force strict verification
         },
         # Verification - automatic verification for high-risk commands
@@ -345,7 +437,7 @@ class LLMClientFactory:
             "model": "openai/o3-pro",  # o3-pro for complex reasoning trace extraction
             "temperature": 0,
             "top_p": 0.2,
-            "reasoning_effort": "high",
+            "thinking_effort": "high",  # Universal parameter, translates to reasoning_effort
             "force_verify": False,
         },
         "verify-soundness": {
@@ -359,7 +451,7 @@ class LLMClientFactory:
             "model": "openai/o3-pro",
             "temperature": 0.3,
             "top_p": 0.7,
-            "reasoning_effort": "high",
+            "thinking_effort": "high",  # Universal parameter, translates to reasoning_effort
             "force_verify": True,  # Strategic counsel's notes require verification
         },
         # Barrister's brief - comprehensive document generation
@@ -367,7 +459,7 @@ class LLMClientFactory:
             "model": "openai/o3-pro",
             # o3-pro for comprehensive analysis and superior drafting
             # Extended token limit for detailed briefs
-            "reasoning_effort": "high",
+            "thinking_effort": "high",  # Universal parameter, translates to reasoning_effort
             "max_completion_tokens": 32768,  # 32K tokens for comprehensive output
         },
         # Caseplan - LLM-driven workflow planning
@@ -1114,19 +1206,8 @@ class LLMClient:
                 try:
                     if self.model in ["openai/o1-pro", "openai/o3-pro"]:
                         # o1-pro and o3-pro use special handling via OpenRouter
-                        # Filter parameters - these models only support max_completion_tokens and reasoning_effort
-                        retry_filtered_params = {}
-                        if "max_completion_tokens" in params:
-                            retry_filtered_params["max_completion_tokens"] = params[
-                                "max_completion_tokens"
-                            ]
-                        if (
-                            "reasoning_effort" in params
-                            and self.model == "openai/o3-pro"
-                        ):
-                            retry_filtered_params["reasoning_effort"] = params[
-                                "reasoning_effort"
-                            ]
+                        # Use the same parameter filtering logic for consistency
+                        retry_filtered_params = get_model_parameters(self.model, params)
 
                         # Use chat completions API through OpenRouter
                         retry_response = retry_client.chat.completions.create(

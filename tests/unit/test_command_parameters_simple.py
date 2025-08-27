@@ -50,13 +50,13 @@ class TestCommandParameterConfiguration:
         assert "strategy" in LLMClientFactory.COMMAND_CONFIGS
         config = LLMClientFactory.COMMAND_CONFIGS["strategy"]
         assert config["model"] == "openai/o3-pro"
-        assert config["reasoning_effort"] == "high"
+        assert config["thinking_effort"] == "high"
         assert config["force_verify"] is True
         
         client = LLMClientFactory.for_command("strategy")
         assert client.model == "openai/o3-pro"
         assert client._force_verify is True
-        assert client.default_params.get("reasoning_effort") == "high"
+        assert client.default_params.get("thinking_effort") == "high"
 
     @patch("litassist.llm.CONFIG")
     def test_draft_configuration(self, mock_config):
@@ -67,7 +67,7 @@ class TestCommandParameterConfiguration:
         assert "draft" in LLMClientFactory.COMMAND_CONFIGS
         config = LLMClientFactory.COMMAND_CONFIGS["draft"]
         assert config["model"] == "openai/o3-pro"
-        assert config["reasoning_effort"] == "high"
+        assert config["thinking_effort"] == "high"
         
         client = LLMClientFactory.for_command("draft")
         assert client.model == "openai/o3-pro"
@@ -87,7 +87,7 @@ class TestCommandParameterConfiguration:
         # This is the actual behavior - filtering happens at API call time, not init time
         assert client.default_params.get("temperature") == 0.9  # Stored but will be filtered
         assert client.default_params.get("top_p") == 0.95  # Stored but will be filtered
-        assert client.default_params.get("reasoning_effort") == "high"
+        assert client.default_params.get("thinking_effort") == "high"
         
         # Verify the model is correct
         assert client.model == "openai/o3-pro"
@@ -97,7 +97,7 @@ class TestCommandParameterConfiguration:
         filtered = get_model_parameters("openai/o3-pro", client.default_params)
         assert "temperature" not in filtered
         assert "top_p" not in filtered
-        assert filtered.get("reasoning_effort") == "high"
+        assert filtered.get("reasoning_effort") == "high"  # Converted from thinking_effort
 
     @patch("litassist.llm.CONFIG")
     def test_default_command_configuration(self, mock_config):
