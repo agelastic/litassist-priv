@@ -3,9 +3,10 @@
 
 processing:
   # Digest command prompts
-  # USED BY: digest.py digest() - summary and issues modes
-  # LOCATION: digest.py:68-80 (to be extracted)
+  # USED BY: digest.py - summary and issues modes
   digest:
+    # USED BY: digest.py - summary mode prompt construction
+    # LOCATION: digest.py:178
     summary_mode: |
       Create a chronological summary of the document focusing on key events, dates, and parties. Structure as:
       
@@ -18,11 +19,17 @@ processing:
       {context_instruction}
       Include all significant developments, procedural steps, and factual events in chronological order.
 
+    # USED BY: digest.py - context instruction with context
+    # LOCATION: digest.py:170
     summary_mode_context_instruction_with_context: |
       Focus your summary only on aspects related to: {context}
+    # USED BY: digest.py - context instruction without context
+    # LOCATION: digest.py:175
     summary_mode_context_instruction_no_context: |
       Cover all relevant topics in the document.
 
+    # USED BY: digest.py - issues mode prompt construction
+    # LOCATION: digest.py:196
     issues_mode: |
       Identify and analyze legal issues present in the document. Structure as:
       
@@ -40,14 +47,22 @@ processing:
       {context_instruction}
       Focus on substantive legal questions, procedural issues, and areas requiring legal analysis.
 
+    # USED BY: digest.py - context instruction with context for issues
+    # LOCATION: digest.py:188
     issues_mode_context_instruction_with_context: |
       Focus your analysis only on issues related to: {context}
+    # USED BY: digest.py - context instruction without context for issues
+    # LOCATION: digest.py:193
     issues_mode_context_instruction_no_context: |
       Cover all legal issues present in the document.
     
+    # USED BY: digest.py - system prompt for chunk processing
+    # LOCATION: digest.py:211, 264, 309
     system_prompt: |
       Extract and organize information from this document. Focus on being comprehensive, accurate, and well-organized. Use clear paragraph structure and bullet points where appropriate. Maintain a neutral, analytical tone throughout.
 
+    # USED BY: digest.py - chunk analysis for summary mode
+    # LOCATION: digest.py:250
     chunk_analysis_summary: |
       Analyze this document section (part {chunk_num} of {total_chunks}) for chronological summary.
       
@@ -61,6 +76,8 @@ processing:
       Document section to analyze:
       {documents}
 
+    # USED BY: digest.py - chunk analysis for issues mode
+    # LOCATION: digest.py:298 (for sub-chunks)
     chunk_analysis_issues: |
       Analyze this document section (part {chunk_num} of {total_chunks}) for legal issues identification.
       
@@ -74,6 +91,8 @@ processing:
       Document section to analyze:
       {documents}
 
+    # USED BY: digest.py - consolidating summary chunks
+    # LOCATION: digest.py:373
     consolidation_summary: |
       Consolidate the following partial chronological analyses into a unified chronological summary.
       
@@ -120,20 +139,29 @@ processing:
       Provide consolidated legal issues analysis that integrates all identified problems and concerns.
   
   # Draft command prompts
-  # USED BY: draft.py draft() - system and user prompts
-  # LOCATION: draft.py:203-215 (to be extracted)
+  # USED BY: draft.py - legal document generation
   draft:
+    # USED BY: draft.py - base system prompt
+    # LOCATION: draft.py:210
     system_prompt_base: |
       You are a senior Australian barrister with expertise in drafting high-quality legal documents. Create professional, well-structured documents that comply with Australian court rules and legal conventions.
       
       FUNDAMENTAL RULE: You must NEVER invent, create, or assume any factual information not explicitly provided in the source documents. Use placeholders like [TO BE PROVIDED] for any missing information. This is critical for legal accuracy and professional liability.
     
+    # USED BY: draft.py - context with both facts and strategies
+    # LOCATION: draft.py:213
     context_case_facts_and_strategies: " You have been provided with structured case facts and legal strategies from brainstorming. Use the case facts as the factual foundation and consider the strategies when developing your arguments, particularly any marked as 'most likely to succeed'."
     
+    # USED BY: draft.py - context with case facts only
+    # LOCATION: draft.py:217
     context_case_facts_only: " You have been provided with structured case facts. Use these as the factual foundation for your draft."
     
+    # USED BY: draft.py - context with strategies only
+    # LOCATION: draft.py:219
     context_strategies_only: " You have been provided with legal strategies from brainstorming. Consider these strategies, particularly any marked as 'most likely to succeed'."
     
+    # USED BY: draft.py - general drafting instructions
+    # LOCATION: draft.py:221
     general_instructions: |
       Be thorough but concise. Focus on legal accuracy, relevant precedents, and clear organization. Use section headings, numbered paragraphs, and proper legal citation format. Maintain internal consistency throughout and ensure all claims are supported by the provided context.
       
@@ -162,6 +190,8 @@ processing:
       - Court-rule compliant
       - Evidence-based where applicable
     
+    # USED BY: draft.py - user prompt template
+    # LOCATION: draft.py:224
     user_prompt_template: |
       Draft a {document_type}: {user_request}
   
@@ -169,6 +199,8 @@ processing:
   # USED BY: extractfacts.py extractfacts() - chunk processing
   # LOCATION: extractfacts.py:99-113 (to be extracted)
   extraction:
+    # USED BY: extractfacts.py - chunk-based extraction
+    # LOCATION: extractfacts.py:121
     chunk_facts_prompt: |
       From this excerpt (part {chunk_num} of {total_chunks}), extract any facts relevant to:
       - Parties involved
@@ -184,16 +216,20 @@ processing:
       
       Just extract the raw facts found in this excerpt:
     
+    # NOT USED - Template not referenced in codebase
     chunk_system_prompt: |
       Extract facts from this document excerpt. Be comprehensive but only include information actually present in this excerpt.
     
+    # USED BY: extractfacts.py - organizing extracted facts
+    # LOCATION: extractfacts.py:156
     organize_facts_prompt: |
       Organize the following extracted facts into these 10 headings:
       
       {format_instructions}
       
-      Raw facts to organize:
+      === RAW FACTS TO ORGANIZE ===
       {all_facts}
+      === END RAW FACTS TO ORGANIZE ===
       
       Important: 
       - Only include information that was actually in the document
@@ -205,9 +241,10 @@ processing:
       Organize the extracted facts precisely under the requested headings. Ensure consistency and avoid duplication.
   
   # Counsel's Notes command prompts
-  # USED BY: counselnotes.py counselnotes() - strategic analysis and extraction modes
-  # LOCATION: counselnotes.py:119-127, 215-223
+  # USED BY: counselnotes.py - strategic analysis and extraction modes
   counselnotes:
+    # USED BY: counselnotes.py - system prompt for all operations
+    # LOCATION: counselnotes.py:130, 192, 243, 289
     system_prompt: |
       You are an experienced Australian barrister preparing strategic counsel's notes for litigation.
       Your analysis should be from an advocate's perspective, focusing on tactical opportunities,
@@ -216,6 +253,8 @@ processing:
       Maintain professional objectivity while identifying strengths and weaknesses that could
       impact case strategy. Focus on practical considerations for litigation management.
 
+    # USED BY: counselnotes.py - strategic document analysis
+    # LOCATION: counselnotes.py:183
     strategic_analysis: |
       Analyze the following legal documents from a strategic advocate perspective.
       
@@ -255,6 +294,8 @@ processing:
       
       Provide comprehensive strategic counsel's notes addressing each framework element.
 
+    # USED BY: counselnotes.py - analyzing document chunks
+    # LOCATION: counselnotes.py:231
     chunk_analysis: |
       Analyze this document section (part {chunk_num} of {total_chunks}) from a strategic advocate perspective.
       
@@ -272,6 +313,8 @@ processing:
       Document section to analyze:
       {documents}
 
+    # USED BY: counselnotes.py - consolidating chunk results
+    # LOCATION: counselnotes.py:278
     consolidation: |
       Consolidate the following partial strategic analyses into comprehensive counsel's notes.
       
@@ -292,87 +335,92 @@ processing:
       Provide consolidated strategic counsel's notes that integrate all insights into a cohesive analysis.
 
     extraction:
+      # USED BY: counselnotes.py - extracting all information
+      # LOCATION: counselnotes.py:121-122 (dynamic template)
       all: |
-        Extract comprehensive counsel's notes in structured JSON format from the following documents.
+        Extract comprehensive counsel's notes from the following documents.
         
-        Return ONLY a valid JSON object with this exact structure:
-        {{
-          "strategic_summary": "Brief overview of overall case position and key strategic considerations",
-          "key_citations": ["Case citation 1", "Case citation 2", "Legislative reference 1"],
-          "legal_principles": [
-            {{"principle": "Legal principle description", "authority": "Supporting case/legislation"}},
-            {{"principle": "Another principle", "authority": "Supporting authority"}}
-          ],
-          "tactical_checklist": [
-            "Immediate action item 1",
-            "Strategic consideration 2", 
-            "Procedural requirement 3"
-          ],
-          "risk_assessment": "Assessment of litigation risks, exposure, and mitigation strategies",
-          "recommendations": [
-            "Strategic recommendation 1",
-            "Tactical approach 2",
-            "Resource allocation 3"
-          ]
-        }}
+        Format your response EXACTLY as follows:
+        
+        STRATEGIC SUMMARY:
+        [Brief overview of overall case position and key strategic considerations]
+        
+        KEY CITATIONS:
+        • [Case citation 1]
+        • [Case citation 2]
+        • [Legislative reference 1]
+        
+        LEGAL PRINCIPLES:
+        • [Legal principle description] (Supporting case/legislation)
+        • [Another principle] (Supporting authority)
+        
+        TACTICAL CHECKLIST:
+        [ ] [Immediate action item 1]
+        [ ] [Strategic consideration 2]
+        [ ] [Procedural requirement 3]
+        
+        RISK ASSESSMENT:
+        [Assessment of litigation risks, exposure, and mitigation strategies]
+        
+        RECOMMENDATIONS:
+        • [Strategic recommendation 1]
+        • [Tactical approach 2]
+        • [Resource allocation 3]
         
         Documents to analyze:
         {documents}
 
+      # USED BY: counselnotes.py - extracting citations only
+      # LOCATION: counselnotes.py:121-122 (dynamic template)
       citations: |
-        Extract only case citations and legislative references in structured JSON format.
+        Extract only case citations and legislative references from the documents.
         
-        Return ONLY a valid JSON object with this exact structure:
-        {{
-          "citations": [
-            "Case Name v Other Name [Year] Court Reference",
-            "Another Case (Year) Volume Law Report Page", 
-            "Legislation Name (Jurisdiction) section reference"
-          ]
-        }}
+        Format your response EXACTLY as follows:
+        
+        CITATIONS FOUND:
+        • Case Name v Other Name [Year] Court Reference
+        • Another Case (Year) Volume Law Report Page
+        • Legislation Name (Jurisdiction) section reference
         
         Include all legal authorities mentioned in the documents, using proper Australian citation format.
+        If no citations are found, respond with: "No citations found."
         
         Documents to analyze:
         {documents}
 
+      # USED BY: counselnotes.py - extracting principles only
+      # LOCATION: counselnotes.py:121-122 (dynamic template)
       principles: |
-        Extract legal principles with their supporting authorities in structured JSON format.
+        Extract legal principles with their supporting authorities from the documents.
         
-        Return ONLY a valid JSON object with this exact structure:
-        {{
-          "principles": [
-            {{
-              "principle": "Clear statement of the legal principle or rule",
-              "authority": "Supporting case citation or legislation"
-            }},
-            {{
-              "principle": "Another legal principle",
-              "authority": "Supporting authority"
-            }}
-          ]
-        }}
+        Format your response EXACTLY as follows:
+        
+        LEGAL PRINCIPLES:
+        • Clear statement of the legal principle or rule (Supporting case citation or legislation)
+        • Another legal principle (Supporting authority)
         
         Focus on substantive legal principles that could impact litigation strategy.
+        If no principles are found, respond with: "No legal principles found."
         
         Documents to analyze:
         {documents}
 
+      # USED BY: counselnotes.py - extracting checklist items
+      # LOCATION: counselnotes.py:121-122 (dynamic template)
       checklist: |
-        Create a practical tactical checklist in structured JSON format.
+        Create a practical tactical checklist from the documents.
         
-        Return ONLY a valid JSON object with this exact structure:
-        {{
-          "checklist": [
-            "Review and verify all witness statements for consistency",
-            "Prepare comprehensive discovery plan within 14 days",
-            "Assess prospects for summary judgment application",
-            "Consider mediation timing and strategy",
-            "Evaluate expert evidence requirements"
-          ]
-        }}
+        Format your response EXACTLY as follows:
+        
+        PRACTICAL CHECKLIST:
+        [ ] Review and verify all witness statements for consistency
+        [ ] Prepare comprehensive discovery plan within 14 days
+        [ ] Assess prospects for summary judgment application
+        [ ] Consider mediation timing and strategy
+        [ ] Evaluate expert evidence requirements
         
         Include specific, actionable items for case management and strategic implementation.
+        If no actionable items are found, respond with: "No checklist items found."
         
         Documents to analyze:
         {documents}

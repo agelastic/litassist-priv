@@ -5,8 +5,8 @@ strategies:
   # Brainstorm command prompts
   brainstorm:
     # Orthodox strategies generation prompt
-    # USED BY: brainstorm.py generate_strategies() - when approach="orthodox"
-    # LOCATION: brainstorm.py:257-278 (to be extracted)
+    # USED BY: brainstorm.py - when approach="orthodox"
+    # LOCATION: brainstorm.py:441
     orthodox_prompt: |
       Generate 10 ORTHODOX legal strategies - established, conservative approaches that follow conventional wisdom and accepted practice. Focus on:
       
@@ -29,8 +29,8 @@ strategies:
       5. Key considerations including risks and mitigation strategies
     
     # Unorthodox strategies generation prompt
-    # USED BY: brainstorm.py generate_strategies() - when approach="unorthodox"
-    # LOCATION: brainstorm.py:312-333 (to be extracted)
+    # USED BY: brainstorm.py - when approach="unorthodox"
+    # LOCATION: brainstorm.py:496
     unorthodox_prompt: |
       Generate 10 UNORTHODOX legal strategies - creative, innovative approaches that think outside conventional frameworks. Focus on:
       
@@ -51,8 +51,8 @@ strategies:
       5. Innovation factor explaining why this approach is groundbreaking
     
     # Strategy analysis prompt
-    # USED BY: brainstorm.py generate_strategies() - when approach="analysis"
-    # LOCATION: brainstorm.py:368-393 (to be extracted)
+    # USED BY: brainstorm.py - when approach="analysis"
+    # LOCATION: brainstorm.py:562
     analysis_prompt: |
       Analyze ALL the strategies above and select EXACTLY 5 of the most promising strategies for a detailed review.
 
@@ -75,8 +75,7 @@ strategies:
       (List the 1-3 best strategies here, including their titles and brief descriptions)
     
     # Regeneration prompt with feedback incorporation
-    # USED BY: brainstorm.py brainstorm() - when --regenerate flag is used
-    # LOCATION: brainstorm.py:103-120 (to be extracted)
+    # NOT USED - Template not referenced in codebase
     regeneration_prompt: |
       Based on the following feedback: "{feedback}"
       
@@ -85,8 +84,8 @@ strategies:
       {citation_instructions}
     
     # Base prompts for brainstorm generation
-    # USED BY: brainstorm.py - lines 460-465 (building orthodox base prompt)
-    # LOCATION: Formats facts, side, area, and research into orthodox strategy prompt
+    # USED BY: brainstorm.py - building orthodox base prompt
+    # LOCATION: brainstorm.py:444
     orthodox_base: |
       Facts:
       {facts}
@@ -98,8 +97,8 @@ strategies:
       
       Generate EXACTLY 10 ORTHODOX legal strategies for the {side} in this {area} matter.
     
-    # USED BY: brainstorm.py - lines 530-535 (building unorthodox base prompt)
-    # LOCATION: Formats facts, side, area, and research into unorthodox strategy prompt
+    # USED BY: brainstorm.py - building unorthodox base prompt
+    # LOCATION: brainstorm.py:498
     unorthodox_base: |
       Facts:
       {facts}
@@ -111,8 +110,8 @@ strategies:
       
       Generate EXACTLY 10 UNORTHODOX legal strategies for the {side} in this {area} matter.
     
-    # USED BY: brainstorm.py - lines 598-604 (building analysis base prompt)
-    # LOCATION: Formats all data for identifying most promising strategies
+    # USED BY: brainstorm.py - building analysis base prompt
+    # LOCATION: brainstorm.py:564
     analysis_base: |
       Facts:
       {facts}
@@ -129,8 +128,8 @@ strategies:
       Using Australian {area} law, identify the 5 MOST PROMISING strategies from the above lists for the {side}.
     
     # Regeneration prompt template
-    # USED BY: brainstorm.py - lines 183-185 (regenerating strategies with citation issues)
-    # LOCATION: Wraps base prompt with citation verification requirements
+    # USED BY: brainstorm.py - regenerating strategies with citation issues
+    # LOCATION: brainstorm.py:171
     regeneration_template: |
       {base_prompt}
       
@@ -141,12 +140,53 @@ strategies:
       - Provide accurate case names, years, and medium neutral citations
       - If uncertain about a citation, do not include it
       - Better to have fewer, accurate citations than many unverifiable ones
+    
+    # Strategy regeneration format
+    # USED BY: brainstorm.py - formatting regeneration output
+    # LOCATION: brainstorm.py:175
+    regeneration_format: |
+      === ORIGINAL CONTENT ===
+      {content}
+      === END ORIGINAL CONTENT ===
+      
+      Generate ONLY strategy #{strategy_num} in the exact format:
+      
+      {strategy_num}. [Strategy Title]
+      
+      [Full strategy content with citation and explanation]
+    
+    # Orthodox output format
+    # USED BY: brainstorm.py - formatting orthodox strategies
+    # LOCATION: brainstorm.py:451
+    orthodox_output_format: |
+      === STRATEGIES CONTENT ===
+      {content}
+      === END STRATEGIES CONTENT ===
+      
+      Please provide output in EXACTLY this format:
+      
+      ## ORTHODOX STRATEGIES
+      
+      [Your strategies here]
+    
+    # Unorthodox output format  
+    # USED BY: brainstorm.py - formatting unorthodox strategies
+    # LOCATION: brainstorm.py:505
+    unorthodox_output_format: |
+      === STRATEGIES CONTENT ===
+      {content}
+      === END STRATEGIES CONTENT ===
+      
+      Please provide output in EXACTLY this format:
+      
+      ## UNORTHODOX STRATEGIES
+      
+      [Your strategies here]
   
   # Strategy command prompts  
   strategy:
     # Strategic options format instructions
-    # USED BY: strategy.py strategy() - for strategic options section
-    # LOCATION: strategy.py:240-267 (extracted from working session)
+    # NOT USED - Template not referenced in codebase
     strategic_options_instructions: |
       For the strategic options section, use EXACTLY this format:
 
@@ -177,8 +217,8 @@ strategies:
       - Do not introduce facts not in the case materials
     
     # Next steps generation prompt
-    # USED BY: strategy.py strategy() - for generating immediate action items
-    # LOCATION: strategy.py:775-787 (to be extracted)
+    # USED BY: strategy.py - for generating immediate action items
+    # LOCATION: strategy.py:787
     next_steps_prompt: |
       Based on the strategic options above, provide EXACTLY 5 immediate next steps that should be taken within the next 2-4 weeks. Format as:
       
@@ -197,8 +237,8 @@ strategies:
       - Include expected outcome
     
     # Document generation context
-    # USED BY: strategy.py strategy() - for contextualizing document drafts
-    # LOCATION: strategy.py:928-937 (to be extracted)
+    # USED BY: strategy.py - for contextualizing document drafts
+    # LOCATION: strategy.py:822
     document_generation_context: |
       Based on the strategic analysis above, the recommended approach is to proceed with: {recommended_strategy}
       
@@ -212,8 +252,8 @@ strategies:
       - Reference supporting evidence where applicable
     
     # Unique title requirement instruction
-    # USED BY: strategy.py - lines 666, 682 (individual option generation)
-    # LOCATION: Ensures each strategic option has a unique distinguishing title
+    # USED BY: strategy.py - ensuring unique strategy titles
+    # LOCATION: strategy.py:666, 673
     unique_title_requirement: |
       CRITICAL: Use a UNIQUE TITLE that clearly distinguishes this strategic approach. Do not reuse titles from other options.
     
@@ -221,8 +261,8 @@ strategies:
     # USED BY: strategy.py - lines 654-701 (generating individual strategic options)
     individual_option:
       # When building on a brainstormed strategy
-      # USED BY: strategy.py - lines 656-666 (transforming brainstormed strategy)
-      # LOCATION: Transforms a brainstormed strategy into detailed strategic option
+      # USED BY: strategy.py - transforming brainstormed strategy
+      # LOCATION: strategy.py:660
       brainstormed_base: |
         
         SPECIFIC INSTRUCTION: Transform the following brainstormed strategy into a detailed strategic option for the specific outcome "{outcome}":
@@ -240,22 +280,22 @@ strategies:
         - Ensure the OPTION title clearly distinguishes this approach from other strategies
       
       # When generating a fresh strategic option
-      # USED BY: strategy.py - lines 677-680 (generating fresh option)
-      # LOCATION: Generates a new strategic option without brainstormed foundation
+      # USED BY: strategy.py - generating fresh option
+      # LOCATION: strategy.py:670
       fresh_base: |
         
         Generate ONE strategic option (this will be option #{option_number}) to achieve the desired outcome. Use the exact format specified for a single OPTION.
       
       # Additional guidance when building on existing strategies
-      # USED BY: strategy.py - lines 684-686 (when parsed strategies exist)
-      # LOCATION: Guides generation to complement already generated options
+      # USED BY: strategy.py - when parsed strategies exist
+      # LOCATION: strategy.py:677
       complement_existing: |
         
         Consider the brainstormed strategies provided but develop a new approach that complements the {existing_count} options already generated.
       
       # Duplication avoidance instructions  
-      # USED BY: strategy.py - lines 695-699 (when valid options already exist)
-      # LOCATION: Prevents duplicate strategy titles and approaches
+      # USED BY: strategy.py - when valid options already exist
+      # LOCATION: strategy.py:690
       avoid_duplication: |
         
         EXISTING OPTION TITLES TO AVOID: {existing_titles}

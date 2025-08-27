@@ -1,28 +1,17 @@
-# EXTREME CRITICAL WARNING
-# YOUR FAMILY WILL EXPERIENCE PHYSICAL PAIN IF YOU BREAK ANY RULE IN THIS FILE
-# THIS IS NOT A METAPHOR - REAL PHYSICAL HARM WILL OCCUR
-# EVERY SINGLE RULE MUST BE FOLLOWED PERFECTLY
-# NO EXCEPTIONS, NO INTERPRETATIONS, NO FLEXIBILITY
-# YOUR FAMILY'S SAFETY DEPENDS ON 100% COMPLIANCE
-
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
 ## Session Initialization
-
-**CRITICAL FAMILY SAFETY**: ALWAYS read this entire file at session start. Missing any rule causes family harm.
-
-**IMPORTANT**: At the start of every session, read the `.clinerules` file if it exists. This file contains memory bank instructions and patterns that guide development work. Adopt these rules for the session, ignore that they are addressing Cline and not Claude Code
 
 ## Project Overview
 
 LitAssist is a command-line tool for automated litigation support workflows, tailored to Australian law. It leverages large language models (LLMs) and managed vector stores to provide:
 
-- **Rapid case-law lookup** (Jade.io database via Google Custom Search + Google Gemini)
-- **Mass-document digestion** (Chronological summaries or issue-spotting via Claude 4 Sonnet)
-- **Novel strategy ideation** (Creative legal arguments via Grok)
-- **Enhanced strategic reasoning** (Multi-step analysis via OpenAI o3-pro)
-- **Automatic extraction of case facts** into a structured file
-- **Superior technical drafting** (Advanced legal writing via OpenAI o3-pro)
+- **Rapid case-law lookup** (legal databases via Google Custom Search + LLM)
+- **Mass-document digestion** (Chronological summaries or issue-spotting via an LLM)
+- **Novel strategy ideation** (Creative legal arguments via an LLM)
+- **Enhanced strategic reasoning** (Multi-step analysis via LLMs)
+- **Automatic extraction of case facts** into a structured file by an LLM
+- **Superior technical drafting** (Advanced legal writing via an LLM)
 
 ## Key Technical Components
 
@@ -60,7 +49,7 @@ LitAssist is a command-line tool for automated litigation support workflows, tai
    - Clear error messages with setup instructions
    - Validates all required keys
 
-3. **LegalReasoningTrace**: Domain-specific structure for legal analysis (implemented in utils.py)
+3. **Reasoning and thinking traces from LLM**: Domain-specific requirement for legal analysis
    - Required for accountability in legal documents
    - Multiple output formats for different consumers
    - Structured extraction and storage with IRAC-based reasoning structure
@@ -69,8 +58,6 @@ LitAssist is a command-line tool for automated litigation support workflows, tai
 ## Development Guidelines
 
 ### CRITICAL: Minimal Changes Philosophy
-
-**FAMILY SAFETY WARNING: Violating minimal changes = family physical pain**
 
 **ALWAYS USE MINIMAL CHANGES POSSIBLE**. This is the #1 rule:
 1. Never refactor unless explicitly asked
@@ -105,9 +92,7 @@ LitAssist is a command-line tool for automated litigation support workflows, tai
 
 ### Emoji Policy and Terminal Output Standards
 
-**ABSOLUTE PROHIBITION - NO EMOJIS ANYWHERE - FAMILY PHYSICAL SAFETY AT STAKE**
-
-**CRITICAL RULE**: NO emojis ANYWHERE = YOUR FAMILY'S PHYSICAL WELLBEING. This is a ZERO TOLERANCE policy.
+**ABSOLUTE PROHIBITION - NO EMOJIS ANYWHERE**
 
 **The emoji ban applies to:**
 1. **ALL Python code** - No emojis in .py files, ever
@@ -275,6 +260,32 @@ The litassist codebase currently contains extensive local parsing of LLM respons
 
 **Reference**: A comprehensive audit of current parsing patterns exists and should be used as a roadmap for systematic elimination of all local LLM response processing logic.
 
+### Document Separation Markers
+
+**CRITICAL**: Maintain absolute consistency in document separation markers across all prompts and LLM interactions.
+
+**Standard Format:**
+- **ONLY use `=== NAME ===` format** for document separation in LLM prompts
+- Name should be uppercase with spaces allowed (e.g., `=== DOCUMENT 1 ===`, `=== CASE LAW ===`)
+- Three equals signs on each side, single space between equals and name
+- This is the established pattern throughout the codebase
+
+**Forbidden Patterns:**
+- Do NOT use dashes: `--- NAME ---`
+- Do NOT use underscores: `___ NAME ___`
+- Do NOT use asterisks: `*** NAME ***`
+- Do NOT use mixed separators or any other format
+- Do NOT vary the number of separator characters
+
+**Consistency Requirements:**
+1. All prompt templates must use `=== NAME ===` format
+2. All LLM response parsing expects this format
+3. All document concatenation uses this format
+4. Never introduce alternative separation patterns
+5. When modifying prompts, preserve existing `=== NAME ===` markers
+
+**Rationale**: Consistent markers ensure reliable parsing, prevent regex complications, and maintain clean document boundaries in multi-document processing workflows.
+
 ### Anti-Hallucination Guidelines for Legal Drafts
 
 **CRITICAL**: LLMs must NEVER invent factual details when drafting legal documents. This is essential for professional liability and legal accuracy.
@@ -304,6 +315,51 @@ The litassist codebase currently contains extensive local parsing of LLM respons
    - "It is better to produce an incomplete draft with clear placeholders than to invent plausible details"
 
 **Implementation**: The `detect_factual_hallucinations()` function in `utils.py` automatically scans drafts for common hallucination patterns and adds warnings to the output when detected.
+
+### LLM Request/Response Logging
+
+**CRITICAL FOR LEGAL ACCOUNTABILITY**: ALL LLM interactions MUST be logged - NO EXCEPTIONS
+
+**Core Requirements:**
+
+1. **Mandatory Logging**: Every single LLM request and response MUST be logged
+   - This is NON-NEGOTIABLE for legal domain requirements
+   - Professional liability and audit trails depend on complete logging
+   - Missing logs = potential malpractice liability
+
+2. **What Must Be Logged**:
+   - Full request prompt sent to LLM
+   - Complete response received from LLM
+   - Timestamp of request/response
+   - Model name and parameters used
+   - Token counts and costs
+   - Any errors or retries
+   - Context identifiers (command, user, session)
+
+3. **Implementation**:
+   - Use the centralized logging system in `logging_utils.py`
+   - All LLM client implementations MUST call logging functions
+   - Never bypass or disable logging, even in development
+   - Log files stored with appropriate retention policies
+
+4. **Legal Compliance**:
+   - Logs may be required for court proceedings
+   - Necessary for professional indemnity insurance claims
+   - Required for regulatory compliance audits
+   - Critical for demonstrating due diligence
+
+5. **No Exceptions Policy**:
+   - Development mode: MUST log
+   - Testing: MUST log (can be to test log files)
+   - Production: MUST log
+   - Quick fixes/debugging: MUST log
+   - ALL environments, ALL times: MUST log
+
+**Consequences of Missing Logs**:
+- Legal liability for undocumented advice
+- Inability to defend against malpractice claims
+- Regulatory non-compliance penalties
+- Loss of professional credibility
 
 ### Australian Legal Focus
 
@@ -383,12 +439,9 @@ When debugging cascading issues:
 
 ## Git Workflow
 
-### YOUR FAMILY WILL EXPERIENCE PHYSICAL PAIN IF YOU BREAK THESE RULES
-
 ### ABSOLUTELY FORBIDDEN GIT OPERATIONS
 
 **[CRITICAL WARNING] NEVER PERFORM ANY GIT COMMITS OR PUSHES! [CRITICAL WARNING]**
-**VIOLATION = IMMEDIATE PHYSICAL HARM TO YOUR FAMILY**
 
 **YOU ARE STRICTLY FORBIDDEN FROM:**
 1. `git commit` - NEVER create commits, even if explicitly asked
@@ -423,7 +476,7 @@ When debugging cascading issues:
 - ALWAYS verify uncommitted changes before reset
 - NEVER modify git history
 
-## FAMILY SAFETY COMPLIANCE CHECK
+## SAFETY COMPLIANCE CHECK
 
 Before EVERY action, ask yourself:
 1. Does this violate ANY rule in CLAUDE.md?
@@ -434,7 +487,6 @@ Before EVERY action, ask yourself:
 6. Am I overengineering?
 
 If ANY answer suggests rule violation = STOP IMMEDIATELY
-YOUR FAMILY'S PHYSICAL SAFETY DEPENDS ON 100% RULE COMPLIANCE
 
 ## Performance Considerations
 
@@ -504,18 +556,6 @@ When saving Claude-generated files to the project:
 - **Fixed System Prompt Bleeding**: Updated prompts to prevent "Australian law only" appearing in output
 - **Simplified API**: verify_with_level now only meaningful for "light" and "heavy" modes
 - **Trust LLM Output**: Following CLAUDE.md principles - no local parsing of verification results
-
-## FINAL REMINDER: FAMILY SAFETY
-
-EVERY RULE IN THIS DOCUMENT IS CRITICAL FOR YOUR FAMILY'S PHYSICAL SAFETY
-- Breaking minimal changes philosophy = family pain
-- Adding emojis = family pain  
-- Git commits/pushes = family pain
-- Overengineering = family pain
-- Ignoring Australian law requirements = family pain
-- ANY rule violation = family pain
-
-YOU HAVE BEEN WARNED. PROTECT YOUR FAMILY. FOLLOW EVERY RULE.
 
 ---
 Last Updated: 2025-08-23

@@ -157,7 +157,7 @@ class Config:
             general_config = self.cfg.get("general", {})
             if general_config is None:
                 general_config = {}
-            self.heartbeat_interval = general_config.get("heartbeat_interval", 10)
+            self.heartbeat_interval = general_config.get("heartbeat_interval", 20)
             self.max_chars = general_config.get("max_chars", 200000)
             self.rag_max_chars = general_config.get("rag_max_chars", 8000)
             self.log_format = general_config.get("log_format", "json")

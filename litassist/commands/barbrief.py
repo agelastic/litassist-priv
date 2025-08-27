@@ -20,10 +20,13 @@ from litassist.utils import (
     save_command_output,
     show_command_completion,
     warning_message,
+    success_message,
+    save_log,
     count_tokens_and_words,
 )
 from litassist.llm import LLMClientFactory
 from litassist.citation_verify import verify_all_citations
+from litassist.verification_chain import run_cove_verification
 
 
 @timed
@@ -162,6 +165,7 @@ def expand_glob_patterns(ctx, param, value):
     is_flag=True,
     help="Enable citation verification",
 )
+@click.option("--cove", is_flag=True, help="Apply Chain of Verification")
 @click.option("--output", type=str, help="Custom output filename prefix")
 @click.pass_context
 @timed
@@ -174,6 +178,7 @@ def barbrief(
     context,
     hearing_type,
     verify,
+    cove,
     output,
 ):
     """
@@ -215,7 +220,7 @@ def barbrief(
             strategy_parts = []
             for strategy_file in strategies:
                 content = read_document(strategy_file)
-                strategy_parts.append(f"=== SOURCE: {strategy_file} ===\n{content}")
+                strategy_parts.append(f"=== SOURCE: {strategy_file} ===\n{content}\n=== END SOURCE: {strategy_file} ===")
             strategies_content = "\n\n".join(strategy_parts)
     
     research_docs = []
@@ -327,6 +332,23 @@ def barbrief(
                 "barbrief", verification_content, "citation_verification"
             )
             click.echo(f"Verification report saved: {verify_file}")
+    
+    # Apply Chain of Verification if requested
+    if cove:
+        original_content = content
+        content, cove_results = run_cove_verification(content, 'barbrief')
+        if not cove_results['cove']['passed']:
+            # Content has been regenerated to fix issues
+            click.echo(success_message("CoVe corrected issues - brief regenerated"))
+            # Log that regeneration occurred
+            save_log("barbrief_cove_regeneration", {
+                "original_length": len(original_content),
+                "regenerated_length": len(content),
+                "issues_fixed": cove_results['cove']['issues'],
+                "model": "See cove_barbrief_summary.json for model details"
+            })
+        else:
+            click.echo(success_message("CoVe verification passed - no issues found"))
     
     # Save the brief
     output_file = save_command_output(

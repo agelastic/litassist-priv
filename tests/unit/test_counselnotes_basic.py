@@ -4,7 +4,6 @@ Basic tests for counselnotes command.
 Simplified test suite focusing on core functionality.
 """
 
-import json
 import tempfile
 import os
 from unittest.mock import Mock, patch
@@ -81,12 +80,10 @@ class TestCounselNotesBasic:
     @patch("litassist.commands.counselnotes.show_command_completion")
     @patch("litassist.commands.counselnotes.PROMPTS")
     @patch("litassist.commands.counselnotes.CONFIG")
-    @patch("litassist.commands.counselnotes.process_extraction_response")
     @patch("click.DateTime.convert")
     def test_extraction_mode(
         self,
         mock_datetime,
-        mock_process_extraction,
         mock_config,
         mock_prompts,
         mock_completion,
@@ -102,19 +99,12 @@ class TestCounselNotesBasic:
         mock_read.return_value = "Sample legal document content"
         mock_client = Mock()
 
-        # Return valid JSON
-        json_response = json.dumps({"citations": ["Test v Case [2023] HCA 1"]})
-        mock_client.complete.return_value = (json_response, self.mock_usage)
+        # Return formatted text directly (not JSON anymore)
+        formatted_response = "CITATIONS FOUND:\n• Test v Case [2023] HCA 1"
+        mock_client.complete.return_value = (formatted_response, self.mock_usage)
         mock_factory.for_command.return_value = mock_client
         mock_prompts.get.return_value = "Extraction prompt"
         mock_output.return_value = "output_file.txt"
-        
-        # Mock process_extraction_response
-        mock_process_extraction.return_value = (
-            "CITATIONS FOUND:\nTest v Case [2023] HCA 1",
-            {"citations": ["Test v Case [2023] HCA 1"]},
-            "test_citations.json"
-        )
 
         # Create temporary file
         with tempfile.NamedTemporaryFile(mode="w", delete=False, suffix=".txt") as f:
@@ -130,12 +120,9 @@ class TestCounselNotesBasic:
             # Basic assertions
             assert result.exit_code == 0
             mock_client.complete.assert_called_once()
-            mock_process_extraction.assert_called_once()
             
-            # Verify process_extraction_response was called correctly
-            call_args = mock_process_extraction.call_args[0]
-            assert call_args[1] == "citations"  # extract_type
-            assert call_args[3] == "counselnotes"  # command
+            # Verify output was saved with formatted text
+            mock_output.assert_called_once()
         finally:
             os.unlink(temp_file)
 

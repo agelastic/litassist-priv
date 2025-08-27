@@ -11,54 +11,66 @@ lookup:
   
   # Extraction mode system prompt
   # USED BY: lookup.py lookup() - system prompt when --extract is used
+  # LOCATION: lookup.py:825
   extraction_system: |
-    You are a legal data extraction specialist. Your task is to extract specific information from legal sources and return it ONLY as a valid JSON object.
+    You are a legal data extraction specialist. Your task is to extract specific information from legal sources and return it in the exact format requested.
     
-    CRITICAL: Return ONLY the JSON object. Do not include any explanatory text, analysis, or commentary before or after the JSON.
+    CRITICAL: Follow the format instructions precisely. Do not include any explanatory text, analysis, or commentary outside the requested format.
     
-    If you cannot access the actual content of provided links (only their URLs), include a "technical_notes" field in your JSON response indicating this limitation.
+    If you cannot access the actual content of provided links (only their URLs), note this limitation at the end of your response.
   
   # Extraction-specific instructions
   # USED BY: lookup.py lookup() - when --extract option is used
-  # LOCATION: lookup.py:292-297 (to be extracted)
+  # LOCATION: lookup.py:780-784
   extraction_instructions:
+    # USED BY: lookup.py lookup() - extraction mode for citations
+    # LOCATION: lookup.py:780
     citations: |
-      IMPORTANT: Return ONLY a JSON object. Do not include any text before or after the JSON.
+      Format your response EXACTLY as follows:
       
-      Return your response as a valid JSON object with the following structure:
-      {"citations": ["citation1", "citation2", "citation3"]}
+      CITATIONS FOUND:
+      • Case Name [Year] COURT_ID Number
+      • Competition and Consumer Act 2010 (Cth) s 18
+      
+      Use medium neutral citation format for all cases.
+      Example: Smith v Jones [2020] HCA 1
+      • Brown v Wilson (2019) 123 CLR 456
       
       Include all case citations and legislation references found in the sources. Each citation should be a complete citation string as it appears in legal documents.
-      
-      Example of correct response:
-      {"citations": ["Smith v Jones [2020] HCA 1", "Competition and Consumer Act 2010 (Cth) s 18", "Brown v Wilson (2019) 123 CLR 456"]}
+      If no citations are found, respond with: "No citations found."
     
+    # USED BY: lookup.py lookup() - extraction mode for principles
+    # LOCATION: lookup.py:782
     principles: |
-      IMPORTANT: Return ONLY a JSON object. Do not include any text before or after the JSON.
+      Format your response EXACTLY as follows:
       
-      Return your response as a valid JSON object with the following structure:
-      {"principles": [{"principle": "statement of legal principle", "authority": "supporting case or legislation"}]}
+      LEGAL PRINCIPLES:
+      • A contract requires offer, acceptance, consideration and intention to create legal relations (Carlill v Carbolic Smoke Ball Co [1893] 1 QB 256)
+      • Misleading or deceptive conduct in trade is prohibited (Competition and Consumer Act 2010 (Cth) s 18)
       
       Include key legal rules and principles with their supporting authorities.
-      
-      Example of correct response:
-      {"principles": [{"principle": "A contract requires offer, acceptance, consideration and intention to create legal relations", "authority": "Carlill v Carbolic Smoke Ball Co [1893] 1 QB 256"}, {"principle": "Misleading or deceptive conduct in trade is prohibited", "authority": "Competition and Consumer Act 2010 (Cth) s 18"}]}
+      If no principles are found, respond with: "No legal principles found."
     
+    # USED BY: lookup.py lookup() - extraction mode for checklist
+    # LOCATION: lookup.py:784
     checklist: |
-      IMPORTANT: Return ONLY a JSON object. Do not include any text before or after the JSON.
+      Format your response EXACTLY as follows:
       
-      Return your response as a valid JSON object with the following structure:
-      {"checklist": ["item1", "item2", "item3"]}
+      PRACTICAL CHECKLIST:
+      [ ] Obtain witness statements from all parties present
+      [ ] File originating application within limitation period
+      [ ] Serve documents according to court rules
+      [ ] Prepare affidavit evidence supporting claims
       
       Include actionable requirements, evidence needed, and steps to take.
-      
-      Example of correct response:
-      {"checklist": ["Obtain witness statements from all parties present", "File originating application within limitation period", "Serve documents according to court rules", "Prepare affidavit evidence supporting claims"]}
+      If no actionable items are found, respond with: "No checklist items found."
   
   # Comprehensive analysis requirements
   # USED BY: lookup.py lookup() - when --comprehensive flag is used
-  # LOCATION: lookup.py:316-346 (to be extracted)
+  # LOCATION: lookup.py:828-832
   comprehensive_analysis:
+    # USED BY: lookup.py lookup() - comprehensive mode requirements
+    # LOCATION: lookup.py:828
     requirements: |
       CRITICAL FORMATTING REQUIREMENTS (MUST FOLLOW):
       - Put TWO blank lines (press Enter twice) before EVERY header
@@ -81,13 +93,24 @@ lookup:
       - Your knowledge supplements the sources, providing context and filling gaps
       - When using your own knowledge, distinguish it from sourced material
     
+    # USED BY: lookup.py lookup() - comprehensive mode citation requirements
+    # LOCATION: lookup.py:829-830
     citation_requirements: |
       COMPREHENSIVE CITATION REQUIREMENTS:
-      - Cite ALL relevant cases from the sources with parallel citations
-      - Reference specific paragraphs/sections when applicable
+      - Use MEDIUM NEUTRAL CITATION format for all cases
+      - Format: Case Name [Year] COURT_ID Number, [paragraph]
+      - Examples: 
+        - R v De Gruchy [2006] VSCA 10, [4]-[5]
+        - Nichia Corporation v Arrow Electronics Australia Pty Ltd [2019] FCAFC 2, [11]
+      - Include pinpoint references using paragraph numbers [#] not page numbers
+      - Cite ALL relevant cases from the sources
       - Distinguish between ratio decidendi and obiter dicta
       - Group citations by authority level (High Court -> Federal -> State)
+      - EVERY case mentioned MUST have its medium neutral citation
+      - For legislation: Act Name Year (Jurisdiction) s Number
     
+    # USED BY: lookup.py lookup() - comprehensive mode output structure
+    # LOCATION: lookup.py:832
     output_structure: |
       EXHAUSTIVE OUTPUT STRUCTURE:
       
@@ -122,8 +145,10 @@ lookup:
   
   # Standard analysis instructions
   # USED BY: lookup.py lookup() - standard mode
-  # LOCATION: lookup.py:344-345 (to be extracted)
+  # LOCATION: lookup.py:841
   standard_analysis:
+    # USED BY: lookup.py lookup() - standard mode instructions
+    # LOCATION: lookup.py:841
     instructions: |
       CRITICAL FORMATTING REQUIREMENTS (MUST FOLLOW):
       - Put TWO blank lines (press Enter twice) before EVERY header
@@ -148,7 +173,7 @@ lookup:
       (Write 1-2 paragraphs with definitive conclusions, with one blank line between if using two paragraphs)
       
       CONTENT REQUIREMENTS:
-      Cite sources. Analyze the provided sources to provide comprehensive legal analysis. Cross-reference between sources where applicable. Each paragraph should contain a single coherent idea or point.
+      Use medium neutral citations for all cases. Format: Case Name [Year] COURT_ID Number, [paragraph]. Example: Smith v Jones [2020] HCA 15, [42]. Cite ALL sources used in your analysis. Every legal principle, case reference, or statutory provision mentioned must include a proper citation. Analyze the provided sources to provide comprehensive legal analysis. Cross-reference between sources where applicable. Each paragraph should contain a single coherent idea or point.
       
       KNOWLEDGE INTEGRATION:
       Use BOTH the provided sources AND your own legal knowledge. The provided sources take PRIORITY and should be cited directly. Your own knowledge should supplement and contextualize the provided materials, filling gaps and providing broader legal context where the sources don't fully address the question.
@@ -156,6 +181,43 @@ lookup:
       TECHNICAL NOTE REQUIREMENT:
       When search snippets are provided (marked as === GOOGLE CSE SEARCH SNIPPETS ===), these are brief excerpts from Google search, not full content. Full content comes from === ACTUAL CONTENT FROM: [url] === sections (accessible sites). Always clarify your sources.
   
+  # Content Q&A prompt template
+  # USED BY: lookup.py _process_comprehensive_search() - when actual content is fetched
+  # LOCATION: lookup.py:753-758
+  content_qa: |
+    Question: {question}
+    
+    Successfully fetched and providing ACTUAL CONTENT from {count} legal sources:
+    {links}
+    
+    Below is the REAL HTML/TEXT content fetched directly from these URLs:
+    {content}
+    
+    Based on the content above, answer the user's question comprehensively.
+    
+    CITATION REQUIREMENTS:
+    - Use medium neutral citation format for all case references
+    - Format: Case Name [Year] COURT_ID Number, [paragraph]
+    - Example: Baker v The Queen [2010] VSCA 226, [13]
+    - Include pinpoint references using paragraph numbers where relevant
+    - EVERY legal document you reference MUST be properly cited
+    - When quoting from fetched content, cite the specific case and paragraph
+
+  # NOT USED - Template not referenced in codebase
+  # # Medium neutral citation instructions
+  # # Used across all lookup modes for consistent citation formatting
+  # medium_neutral_citation: |
+  #   MEDIUM NEUTRAL CITATION FORMAT (REQUIRED):
+  #   - Case citations: Case Name [Year] COURT_ID Number, [paragraph]
+  #   - Court identifiers: HCA, FCA, FCAFC, VSCA, VSC, NSWCA, NSWSC, QCA, QSC, WASCA, WASC, TASSC, NTSC, ACTSC
+  #   - Pinpoint references: Use paragraph numbers in square brackets [13] or [13]-[15]
+  #   - Examples:
+  #     - Baker v The Queen [2010] VSCA 226, [13]
+  #     - R v Tang [2008] HCA 39, [28], [31]-[33]
+  #     - Mabo v Queensland (No 2) [1992] HCA 23, [104]
+  #   - Legislation: Act Name Year (Jurisdiction) s Number
+  #   - Example: Corporations Act 2001 (Cth) s 180
+
   # User prompt template
   # USED BY: lookup.py lookup() - user prompt construction
   # LOCATION: lookup.py:348-356 (to be extracted)

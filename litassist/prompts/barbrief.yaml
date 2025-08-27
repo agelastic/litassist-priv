@@ -52,8 +52,9 @@ barbrief:
     ## SUPPORTING DOCUMENTS ({supporting_count} documents)
     {supporting_content}
 
-    ## ADDITIONAL CONTEXT
+    === ADDITIONAL CONTEXT ===
     {context}
+    === END ADDITIONAL CONTEXT ===
 
     ---
 

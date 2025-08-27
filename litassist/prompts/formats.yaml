@@ -3,7 +3,7 @@
 
 formats:
   # 10-heading case facts structure used by extractfacts and strategy commands
-  # NOT USED: No direct usage found in codebase
+  # NOT USED - Template not referenced in codebase
   case_facts_10_heading: |
     1. **Parties**: Identify all parties involved in the matter, including their roles and relevant characteristics
     2. **Background**: Provide context about the relationship between parties and circumstances leading to the dispute
@@ -17,7 +17,7 @@ formats:
     10. **Client Objectives**: State what the client hopes to achieve
   
   # Strategic options format used by brainstorm and strategy commands
-  # NOT USED: No direct usage found in codebase
+  # NOT USED - Template not referenced in codebase
   strategic_options: |
     **[Strategy Title]**
     - **Approach:** [Brief description]
@@ -28,7 +28,7 @@ formats:
     - **Risks:** [Key risks and mitigation]
   
   # IRAC structure for legal analysis (lookup command)
-  # DEPRECATED: Format template not directly referenced
+  # DEPRECATED - Legacy template, not in use
   irac_structure: |
     **Issue**: [Legal question to be resolved]
     **Rule**: [Applicable law, statute, or precedent]
@@ -36,7 +36,7 @@ formats:
     **Conclusion**: [The likely legal outcome]
   
   # Chronological summary format (digest command)
-  # DEPRECATED: Format template not directly referenced
+  # DEPRECATED - Legacy template, not in use
   chronological_summary: |
     **CHRONOLOGICAL SUMMARY**
     
@@ -45,7 +45,7 @@ formats:
     - **[Date]**: [Event description]
   
   # Citation extraction format (lookup --extract citations)
-  # DEPRECATED: Format template not directly referenced
+  # DEPRECATED - Legacy template, not in use
   citation_extraction: |
     **CITATIONS**
     
@@ -58,7 +58,7 @@ formats:
     - [Act Name] [Year] [Jurisdiction] s [Section]
   
   # Legal principles extraction (lookup --extract principles)
-  # DEPRECATED: Format template not directly referenced
+  # DEPRECATED - Legacy template, not in use
   principles_extraction: |
     **LEGAL PRINCIPLES**
     
@@ -67,7 +67,7 @@ formats:
     3. [Principle statement] - [Supporting case/statute]
   
   # Practical checklist format (lookup --extract checklist)
-  # DEPRECATED: Format template not directly referenced
+  # DEPRECATED - Legacy template, not in use
   checklist_extraction: |
     **PRACTICAL CHECKLIST**
     

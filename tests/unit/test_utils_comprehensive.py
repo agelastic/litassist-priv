@@ -11,17 +11,15 @@ import time
 from unittest.mock import patch, MagicMock, mock_open
 
 from litassist.utils import (
-    save_log,
     heartbeat,
     timed,
     create_reasoning_prompt,
     extract_reasoning_trace,
     parse_strategies_file,
     validate_file_size_limit,
-    save_command_output,
     verify_content_if_needed,
-    process_extraction_response,
 )
+from litassist.logging_utils import save_log, save_command_output
 
 
 class TestFileOperations:
@@ -55,7 +53,7 @@ class TestFileOperations:
         except Exception:
             pytest.fail("validate_file_size_limit raised exception at exact limit")
 
-    @patch("litassist.utils.open", new_callable=mock_open)
+    @patch("litassist.logging_utils.open", new_callable=mock_open)
     def test_save_command_output_success(self, mock_file):
         """Test successful command output saving."""
         content = "Test command output content"
@@ -63,7 +61,7 @@ class TestFileOperations:
         outcome = "test_outcome"
         metadata = {"key": "value"}
 
-        with patch("litassist.utils.time.strftime", return_value="20240101_120000"):
+        with patch("litassist.logging_utils.time.strftime", return_value="20240101_120000"):
             result = save_command_output(command, content, outcome, metadata)
 
         # Check that result contains expected components (path may be absolute)
@@ -75,14 +73,14 @@ class TestFileOperations:
         # Verify file written
         mock_file.assert_called_once()
 
-    @patch("litassist.utils.open", new_callable=mock_open)
+    @patch("litassist.logging_utils.open", new_callable=mock_open)
     def test_save_command_output_sanitized_outcome(self, mock_file):
         """Test command output saving with sanitized outcome in filename."""
         content = "Test content"
         command = "test_command"
         outcome = "Test/Invalid\\Filename:Characters"
 
-        with patch("litassist.utils.time.strftime", return_value="20240101_120000"):
+        with patch("litassist.logging_utils.time.strftime", return_value="20240101_120000"):
             result = save_command_output(command, content, outcome)
 
         # Extract just the filename from the full path
@@ -96,10 +94,10 @@ class TestFileOperations:
 
     def test_save_command_output_empty_content(self):
         """Test command output saving with empty content."""
-        with patch("litassist.utils.open", new_callable=mock_open) as mock_file:
-            with patch("litassist.utils.os.makedirs"):
+        with patch("litassist.logging_utils.open", new_callable=mock_open) as mock_file:
+            with patch("litassist.logging_utils.os.makedirs"):
                 with patch(
-                    "litassist.utils.time.strftime", return_value="20240101_120000"
+                    "litassist.logging_utils.time.strftime", return_value="20240101_120000"
                 ):
                     result = save_command_output("test", "", "empty")
 
@@ -110,8 +108,8 @@ class TestFileOperations:
 class TestLogging:
     """Test logging functionality."""
 
-    @patch("litassist.utils.open", new_callable=mock_open)
-    @patch("litassist.utils.json.dump")
+    @patch("litassist.logging_utils.open", new_callable=mock_open)
+    @patch("litassist.logging_utils.json.dump")
     def test_save_log_success(self, mock_json_dump, mock_file):
         """Test successful log saving."""
         command = "test_command"
@@ -122,7 +120,7 @@ class TestLogging:
             "response": "test response",
         }
 
-        with patch("litassist.utils.time.strftime", return_value="20240101_120000"):
+        with patch("litassist.logging_utils.time.strftime", return_value="20240101_120000"):
             save_log(command, log_data)
 
         # Verify file opened for writing
@@ -131,9 +129,9 @@ class TestLogging:
         # Verify JSON dumped
         mock_json_dump.assert_called_once()
 
-    @patch("litassist.utils.open", new_callable=mock_open)
-    @patch("litassist.utils.os.makedirs")
-    @patch("litassist.utils.json.dump")
+    @patch("litassist.logging_utils.open", new_callable=mock_open)
+    @patch("litassist.logging_utils.os.makedirs")
+    @patch("litassist.logging_utils.json.dump")
     def test_save_log_with_metadata(self, mock_json_dump, mock_makedirs, mock_file):
         """Test log saving with additional metadata."""
         command = "strategy"
@@ -156,8 +154,8 @@ class TestLogging:
         assert "metadata" in saved_data
         assert saved_data["metadata"]["outcome"] == "test outcome"
 
-    @patch("litassist.utils.open", side_effect=PermissionError("Permission denied"))
-    @patch("litassist.utils.os.makedirs")
+    @patch("litassist.logging_utils.open", side_effect=PermissionError("Permission denied"))
+    @patch("litassist.logging_utils.os.makedirs")
     def test_save_log_permission_error(self, mock_makedirs, mock_file):
         """Test log saving handles permission errors gracefully."""
         command = "test_command"
@@ -433,8 +431,12 @@ Traditional approach.
 class TestContentVerification:
     """Test content verification functionality."""
 
-    def test_verify_content_if_needed_enabled(self):
+    @patch('litassist.verification_chain.run_verification_chain')
+    def test_verify_content_if_needed_enabled(self, mock_run_verification_chain):
         """Test content verification when enabled."""
+        # Mock the verification chain for strategy command
+        mock_run_verification_chain.return_value = ("Legal analysis content", {"llm": {"corrections_made": False}})
+        
         mock_client = MagicMock()
         mock_client.should_auto_verify.return_value = False
         mock_client.verify_with_level.return_value = "Minor corrections needed"
@@ -445,13 +447,17 @@ class TestContentVerification:
             mock_client, content, "strategy", verify_flag=True
         )
 
-        # Should perform verification
-        assert verified is True
-        assert "Minor corrections needed" in result_content
-        mock_client.verify_with_level.assert_called_once_with(content, "heavy")
+        # Strategy command uses verification chain, returns False when no corrections
+        assert verified is False
+        assert result_content == content
+        mock_run_verification_chain.assert_called_once_with(content, "strategy")
 
-    def test_verify_content_if_needed_disabled(self):
+    @patch('litassist.verification_chain.run_verification_chain')
+    def test_verify_content_if_needed_disabled(self, mock_run_verification_chain):
         """Test content verification when disabled."""
+        # Mock the verification chain for strategy command
+        mock_run_verification_chain.return_value = ("Legal analysis content", {"llm": {"corrections_made": False}})
+        
         mock_client = MagicMock()
         mock_client.should_auto_verify.return_value = False
 
@@ -460,10 +466,10 @@ class TestContentVerification:
             mock_client, content, "strategy", verify_flag=False
         )
 
-        # Should not perform verification
+        # Strategy command always uses verification chain regardless of flag
         assert verified is False
         assert result_content == content
-        mock_client.verify_with_level.assert_not_called()
+        mock_run_verification_chain.assert_called_once_with(content, "strategy")
 
     def test_verify_content_if_needed_llm_failure(self):
         """Test content verification with LLM failure."""
@@ -476,8 +482,33 @@ class TestContentVerification:
         with pytest.raises(Exception):
             verify_content_if_needed(mock_client, content, "strategy", verify_flag=True)
 
-    def test_verify_content_if_needed_citation_already_verified(self):
+    @patch('litassist.verification_chain.run_verification_chain')
+    def test_verify_content_if_needed_with_corrections(self, mock_run_verification_chain):
+        """Test verification chain when corrections are made."""
+        # Mock the verification chain to return corrections
+        mock_run_verification_chain.return_value = (
+            "Corrected legal analysis content", 
+            {"llm": {"corrections_made": True}}
+        )
+        
+        mock_client = MagicMock()
+        content = "Legal analysis content"
+        
+        result_content, verified = verify_content_if_needed(
+            mock_client, content, "strategy", verify_flag=True
+        )
+        
+        # Should return corrected content and True when corrections made
+        assert verified is True
+        assert result_content == "Corrected legal analysis content"
+        mock_run_verification_chain.assert_called_once_with(content, "strategy")
+    
+    @patch('litassist.verification_chain.run_verification_chain')
+    def test_verify_content_if_needed_citation_already_verified(self, mock_run_verification_chain):
         """Test that citation validation is skipped when already verified."""
+        # Mock the verification chain for strategy command
+        mock_run_verification_chain.return_value = ("Legal analysis content", {"llm": {"corrections_made": False}})
+        
         mock_client = MagicMock()
         mock_client.should_auto_verify.return_value = False
         mock_client.verify_with_level.return_value = "Minor corrections needed"
@@ -494,327 +525,13 @@ class TestContentVerification:
             citation_already_verified=True,
         )
 
-        # Should perform verification but skip citation validation
-        assert verified is True
-        assert "Minor corrections needed" in result_content
-        assert "Citation issue" not in result_content
-        mock_client.verify_with_level.assert_called_once()
+        # Strategy command uses verification chain, returns False when no corrections
+        assert verified is False
+        assert result_content == content
+        mock_run_verification_chain.assert_called_once_with(content, "strategy")
+        # These shouldn't be called since verification chain handles it
+        mock_client.verify_with_level.assert_not_called()
         mock_client.validate_citations.assert_not_called()
-
-
-class TestExtractionProcessing:
-    """Test the process_extraction_response function."""
-
-    def test_process_extraction_citations(self):
-        """Test processing citations extraction."""
-        import json
-        import tempfile
-
-        content = json.dumps(
-            {
-                "citations": [
-                    "Smith v Jones [2023] HCA 15",
-                    "Evidence Act 1995 (Cth) s 79",
-                ]
-            }
-        )
-
-        with tempfile.TemporaryDirectory() as tmpdir:
-            with patch("litassist.utils.OUTPUT_DIR", tmpdir):
-                formatted, data, json_file = process_extraction_response(
-                    content, "citations", "test_cit", "test"
-                )
-
-                assert "CITATIONS FOUND:" in formatted
-                assert "Smith v Jones [2023] HCA 15" in formatted
-                assert data["citations"] == [
-                    "Smith v Jones [2023] HCA 15",
-                    "Evidence Act 1995 (Cth) s 79",
-                ]
-                assert os.path.exists(json_file)
-
-    def test_process_extraction_principles_dict_format(self):
-        """Test processing principles with dict format."""
-        import json
-        import tempfile
-
-        content = json.dumps(
-            {
-                "principles": [
-                    {
-                        "principle": "Duty of care exists",
-                        "authority": "Donoghue v Stevenson",
-                    },
-                    {"principle": "Standard of care", "authority": "Wyong v Shirt"},
-                ]
-            }
-        )
-
-        with tempfile.TemporaryDirectory() as tmpdir:
-            with patch("litassist.utils.OUTPUT_DIR", tmpdir):
-                formatted, data, json_file = process_extraction_response(
-                    content, "principles", "test_prin", "test"
-                )
-
-                assert "LEGAL PRINCIPLES:" in formatted
-                assert "Duty of care exists (Donoghue v Stevenson)" in formatted
-                assert len(data["principles"]) == 2
-
-    def test_process_extraction_checklist(self):
-        """Test processing checklist extraction."""
-        import json
-        import tempfile
-
-        content = json.dumps(
-            {"checklist": ["File defence", "Gather evidence", "Interview witnesses"]}
-        )
-
-        with tempfile.TemporaryDirectory() as tmpdir:
-            with patch("litassist.utils.OUTPUT_DIR", tmpdir):
-                formatted, data, json_file = process_extraction_response(
-                    content, "checklist", "test_check", "test"
-                )
-
-                assert "PRACTICAL CHECKLIST:" in formatted
-                assert "[ ] File defence" in formatted
-                assert len(data["checklist"]) == 3
-
-    def test_process_extraction_comprehensive(self):
-        """Test processing comprehensive 'all' extraction."""
-        import json
-        import tempfile
-
-        content = json.dumps(
-            {
-                "strategic_summary": "Strong position",
-                "key_citations": ["Case1 v Case2"],
-                "legal_principles": [
-                    {"principle": "Test principle", "authority": "Test case"}
-                ],
-                "tactical_checklist": ["Action 1"],
-                "risk_assessment": "Low risk",
-                "recommendations": ["Proceed with claim"],
-            }
-        )
-
-        with tempfile.TemporaryDirectory() as tmpdir:
-            with patch("litassist.utils.OUTPUT_DIR", tmpdir):
-                formatted, data, json_file = process_extraction_response(
-                    content, "all", "test_all", "test"
-                )
-
-                assert "STRATEGIC SUMMARY:" in formatted
-                assert "KEY CITATIONS:" in formatted
-                assert "LEGAL PRINCIPLES:" in formatted
-                assert "TACTICAL CHECKLIST:" in formatted
-                assert "RISK ASSESSMENT:" in formatted
-                assert "RECOMMENDATIONS:" in formatted
-
-    def test_process_extraction_invalid_json(self):
-        """Test error handling for invalid JSON."""
-        import tempfile
-
-        content = "This is not JSON"
-
-        with tempfile.TemporaryDirectory() as tmpdir:
-            with patch("litassist.utils.OUTPUT_DIR", tmpdir):
-                with pytest.raises(Exception) as exc_info:
-                    process_extraction_response(
-                        content, "citations", "test_invalid", "test"
-                    )
-
-                assert "LLM did not return valid JSON" in str(exc_info.value)
-                assert "prompt needs improvement" in str(exc_info.value)
-
-    def test_process_extraction_markdown_cleanup(self):
-        """Test that markdown code blocks are cleaned."""
-        import json
-        import tempfile
-
-        # Content wrapped in markdown code block
-        content = f"""```json
-{json.dumps({"citations": ["Test v Case"]})}
-```"""
-
-        with tempfile.TemporaryDirectory() as tmpdir:
-            with patch("litassist.utils.OUTPUT_DIR", tmpdir):
-                formatted, data, json_file = process_extraction_response(
-                    content, "citations", "test_markdown", "test"
-                )
-
-                assert data["citations"] == ["Test v Case"]
-                assert "CITATIONS FOUND:" in formatted
-
-    def test_process_extraction_empty_lists(self):
-        """Test handling of empty lists in JSON responses."""
-        import json
-        import tempfile
-
-        # Test empty citations
-        content = json.dumps({"citations": []})
-        with tempfile.TemporaryDirectory() as tmpdir:
-            with patch("litassist.utils.OUTPUT_DIR", tmpdir):
-                formatted, data, json_file = process_extraction_response(
-                    content, "citations", "test_empty", "test"
-                )
-                assert data["citations"] == []
-                assert "No citations found." in formatted
-
-        # Test empty checklist
-        content = json.dumps({"checklist": []})
-        with tempfile.TemporaryDirectory() as tmpdir:
-            with patch("litassist.utils.OUTPUT_DIR", tmpdir):
-                formatted, data, json_file = process_extraction_response(
-                    content, "checklist", "test_empty_check", "test"
-                )
-                assert data["checklist"] == []
-                assert "No checklist items found." in formatted
-
-    def test_process_extraction_empty_principles_formats(self):
-        """Test empty principles in both dict and list formats."""
-        import json
-        import tempfile
-
-        # Empty principles list
-        content = json.dumps({"principles": []})
-        with tempfile.TemporaryDirectory() as tmpdir:
-            with patch("litassist.utils.OUTPUT_DIR", tmpdir):
-                formatted, data, json_file = process_extraction_response(
-                    content, "principles", "test_empty_prin", "test"
-                )
-                assert data["principles"] == []
-                assert "LEGAL PRINCIPLES:" in formatted  # Should still have header
-
-        # Principles not a list (wrong type)
-        content = json.dumps({"principles": "not a list"})
-        with tempfile.TemporaryDirectory() as tmpdir:
-            with patch("litassist.utils.OUTPUT_DIR", tmpdir):
-                formatted, data, json_file = process_extraction_response(
-                    content, "principles", "test_wrong_type", "test"
-                )
-                assert "No legal principles found." in formatted
-
-    def test_process_extraction_malformed_principles(self):
-        """Test malformed principles data that could cause bugs."""
-        import json
-        import tempfile
-
-        # Mixed format (dict and string in same list) - potential IndexError
-        content = json.dumps(
-            {
-                "principles": [
-                    {"principle": "First principle", "authority": "Case 1"},
-                    "String principle",  # This could break the logic
-                    {"principle": "Third principle", "authority": "Case 3"},
-                ]
-            }
-        )
-
-        with tempfile.TemporaryDirectory() as tmpdir:
-            with patch("litassist.utils.OUTPUT_DIR", tmpdir):
-                # This should handle mixed formats gracefully
-                formatted, data, json_file = process_extraction_response(
-                    content, "principles", "test_mixed", "test"
-                )
-                assert len(data["principles"]) == 3
-                assert "First principle (Case 1)" in formatted
-
-        # Missing required keys in dict
-        content = json.dumps(
-            {
-                "principles": [
-                    {"authority": "Case only"},  # Missing 'principle' key
-                    {"principle": "Principle only"},  # Missing 'authority' key
-                    {},  # Empty dict
-                ]
-            }
-        )
-
-        with tempfile.TemporaryDirectory() as tmpdir:
-            with patch("litassist.utils.OUTPUT_DIR", tmpdir):
-                formatted, data, json_file = process_extraction_response(
-                    content, "principles", "test_missing_keys", "test"
-                )
-                # Should handle missing keys gracefully
-                assert "• " in formatted  # Empty principle should still format
-                assert "• Principle only" in formatted
-
-    def test_process_extraction_partial_all_data(self):
-        """Test 'all' extraction with missing or partial fields."""
-        import json
-        import tempfile
-
-        # Partial data - some fields missing
-        content = json.dumps(
-            {
-                "strategic_summary": "Summary here",
-                "key_citations": ["Case 1"],
-                # Missing: legal_principles, tactical_checklist, risk_assessment, recommendations
-            }
-        )
-
-        with tempfile.TemporaryDirectory() as tmpdir:
-            with patch("litassist.utils.OUTPUT_DIR", tmpdir):
-                formatted, data, json_file = process_extraction_response(
-                    content, "all", "test_partial", "test"
-                )
-
-                # Should only include sections that exist
-                assert "STRATEGIC SUMMARY:" in formatted
-                assert "KEY CITATIONS:" in formatted
-                assert "TACTICAL CHECKLIST:" not in formatted
-                assert "RISK ASSESSMENT:" not in formatted
-
-    def test_process_extraction_unicode_special_chars(self):
-        """Test handling of unicode and special legal characters."""
-        import json
-        import tempfile
-
-        # Unicode and special characters common in legal text
-        content = json.dumps(
-            {
-                "citations": [
-                    "Smith v Jones—Special Case [2023] HCA 15",
-                    "R v Déjà Vu (2023) 95 ALJR 123",
-                    "Evidence Act 1995 (Cth) § 79",
-                    "Café Society Pty Ltd v L'Hôtel [2023] VSC 100",
-                ]
-            }
-        )
-
-        with tempfile.TemporaryDirectory() as tmpdir:
-            with patch("litassist.utils.OUTPUT_DIR", tmpdir):
-                formatted, data, json_file = process_extraction_response(
-                    content, "citations", "test_unicode", "test"
-                )
-
-                # Check unicode preserved
-                assert "Déjà Vu" in formatted
-                assert "Café Society" in formatted
-                assert "L'Hôtel" in formatted
-                assert "§" in formatted
-
-                # Verify JSON file written correctly
-                with open(json_file, "r", encoding="utf-8") as f:
-                    saved_data = json.load(f)
-                    assert (
-                        saved_data["citations"][1] == "R v Déjà Vu (2023) 95 ALJR 123"
-                    )
-
-    def test_process_extraction_invalid_extract_type(self):
-        """Test error handling for invalid extract type."""
-        import json
-        import tempfile
-
-        content = json.dumps({"data": "some data"})
-
-        with tempfile.TemporaryDirectory() as tmpdir:
-            with patch("litassist.utils.OUTPUT_DIR", tmpdir):
-                formatted, data, json_file = process_extraction_response(
-                    content, "invalid_type", "test_invalid", "test"
-                )
-
-                assert "Unknown extraction type: invalid_type" in formatted
 
 
 class TestUtilityHelpers:
@@ -857,8 +574,8 @@ class TestErrorHandling:
 
         log_data = {"invalid": NonSerializable()}
 
-        with patch("litassist.utils.open", new_callable=mock_open):
-            with patch("litassist.utils.os.makedirs"):
+        with patch("litassist.logging_utils.open", new_callable=mock_open):
+            with patch("litassist.logging_utils.os.makedirs"):
                 # Should handle serialization errors gracefully
                 try:
                     save_log("test", log_data)
@@ -869,7 +586,7 @@ class TestErrorHandling:
     def test_file_operations_disk_full(self):
         """Test file operations when disk is full."""
         with patch(
-            "litassist.utils.open", side_effect=OSError("No space left on device")
+            "litassist.logging_utils.open", side_effect=OSError("No space left on device")
         ):
             with pytest.raises(OSError):
                 save_command_output("test", "content", "outcome")
@@ -889,8 +606,8 @@ class TestPerformanceEdgeCases:
         large_content = "x" * 100000  # 100KB content
 
         # Should handle large content without memory issues
-        with patch("litassist.utils.open", new_callable=mock_open):
-            with patch("litassist.utils.os.makedirs"):
+        with patch("litassist.logging_utils.open", new_callable=mock_open):
+            with patch("litassist.logging_utils.os.makedirs"):
                 try:
                     save_command_output("test", large_content, "large_test")
                 except MemoryError:
@@ -899,8 +616,8 @@ class TestPerformanceEdgeCases:
     def test_many_small_operations(self):
         """Test performance with many small operations."""
         # Test multiple small file operations
-        with patch("litassist.utils.open", new_callable=mock_open):
-            with patch("litassist.utils.os.makedirs"):
+        with patch("litassist.logging_utils.open", new_callable=mock_open):
+            with patch("litassist.logging_utils.os.makedirs"):
                 for i in range(100):
                     save_command_output(f"test_{i}", f"content_{i}", f"outcome_{i}")
 

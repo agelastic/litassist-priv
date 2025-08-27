@@ -7,7 +7,6 @@ including timing, logging, document processing, embedding generation, and reason
 
 import os
 import time
-import json
 import logging
 import threading
 import functools
@@ -19,6 +18,7 @@ import click
 from pypdf import PdfReader
 
 from litassist.prompts import PROMPTS
+from litassist.logging_utils import OUTPUT_DIR, save_log, save_command_output  # noqa: F401
 
 
 # ── Terminal Colors ─────────────────────────────────────────
@@ -82,13 +82,7 @@ def verifying_message(message: str) -> str:
     return colored_message("[VERIFYING]", message, Colors.BLUE)
 
 
-# ── Directory Setup ─────────────────────────────────────────
-# Use current working directory for logs and outputs when running as global command
-WORKING_DIR = os.getcwd()
-LOG_DIR = os.path.join(WORKING_DIR, "logs")
-OUTPUT_DIR = os.path.join(WORKING_DIR, "outputs")
-os.makedirs(LOG_DIR, exist_ok=True)
-os.makedirs(OUTPUT_DIR, exist_ok=True)
+# ── Logging Setup ───────────────────────────────────────────
 logging.basicConfig(level=logging.INFO, format="%(message)s")
 
 
@@ -157,315 +151,6 @@ def timed(func: Callable) -> Callable:
 
     return wrapper
 
-
-def _sanitize_for_json(obj):
-    """
-    Recursively sanitize objects for JSON serialization.
-
-    Converts Mock objects and other non-serializable objects to strings.
-
-    Args:
-        obj: The object to sanitize
-
-    Returns:
-        A JSON-serializable version of the object
-    """
-    import unittest.mock
-
-    if isinstance(obj, unittest.mock.Mock):
-        return f"<Mock: {obj._mock_name or 'unnamed'}>"
-    elif isinstance(obj, dict):
-        return {key: _sanitize_for_json(value) for key, value in obj.items()}
-    elif isinstance(obj, list):
-        return [_sanitize_for_json(item) for item in obj]
-    elif isinstance(obj, tuple):
-        return tuple(_sanitize_for_json(item) for item in obj)
-    elif hasattr(obj, "__dict__") and not isinstance(
-        obj, (str, int, float, bool, type(None))
-    ):
-        # Handle custom objects by converting to string
-        return str(obj)
-    else:
-        # Return as-is for basic JSON-serializable types
-        return obj
-
-
-@timed
-def save_log(tag: str, payload: dict):
-    """
-    Save an audit log under logs/ in either JSON or Markdown format.
-
-    Intelligently detects log type and formats markdown appropriately for:
-    - Citation verification/validation logs
-    - HTTP validation logs
-    - Command output logs
-    - Generic/unknown log types
-
-    Args:
-        tag: A string identifier for the log (e.g., command name).
-        payload: Dictionary containing log data including inputs, response, and usage statistics.
-
-    Raises:
-        click.ClickException: If there's an error writing the log file.
-    """
-    from click import get_current_context
-    from litassist.config import CONFIG
-
-    ts = time.strftime("%Y%m%d-%H%M%S")
-    ctx = get_current_context(silent=True)
-
-    # Try to get log format from click context first, then CONFIG, then default to json
-    if ctx and ctx.obj and "log_format" in ctx.obj:
-        log_format = ctx.obj["log_format"]
-    else:
-        # Fall back to CONFIG setting when not in a click context (e.g., during tests)
-        log_format = getattr(CONFIG, "log_format", "json")
-
-    # JSON logging
-    if log_format == "json":
-        path = os.path.join(LOG_DIR, f"{tag}_{ts}.json")
-        try:
-            # Sanitize payload for JSON serialization (handle Mock objects)
-            sanitized_payload = _sanitize_for_json(payload)
-            with open(path, "w", encoding="utf-8") as f:
-                json.dump(sanitized_payload, f, ensure_ascii=False, indent=2)
-            logging.debug(f"JSON log saved: {path}")
-        except IOError as e:
-            raise click.ClickException(
-                PROMPTS.get(
-                    "system_feedback.errors.file.save_json_failed",
-                    path=path,
-                    error=str(e),
-                )
-            )
-        return
-
-    # Markdown logging with intelligent template selection
-    md_path = os.path.join(LOG_DIR, f"{tag}_{ts}.md")
-    try:
-        with open(md_path, "w", encoding="utf-8") as f:
-            # Detect log type and use appropriate formatter
-            if tag == "citation_verification_session" or "citations_found" in payload:
-                _write_citation_verification_markdown(f, tag, ts, payload)
-            elif tag == "citation_validation" or "validate_citation_patterns" in str(
-                payload.get("method", "")
-            ):
-                _write_citation_validation_markdown(f, tag, ts, payload)
-            elif tag == "austlii_http_validation" or "check_url_exists" in str(
-                payload.get("method", "")
-            ):
-                _write_http_validation_markdown(f, tag, ts, payload)
-            elif tag == "austlii_search_validation":
-                _write_search_validation_markdown(f, tag, ts, payload)
-            elif "response" in payload or "inputs" in payload:
-                # Standard command output format
-                _write_command_output_markdown(f, tag, ts, payload)
-            else:
-                # Generic format for unknown log types
-                _write_generic_markdown(f, tag, ts, payload)
-
-            logging.debug(f"Markdown log saved: {md_path}")
-    except IOError as e:
-        raise click.ClickException(f"Failed to save Markdown log {md_path}: {e}")
-
-
-def _write_citation_verification_markdown(f, tag: str, ts: str, payload: dict):
-    """Write markdown for citation verification logs."""
-    f.write(f"# {tag} — {ts}\n\n")
-
-    # Summary section
-    f.write("## Summary\n\n")
-    f.write(f"- **Method**: `{payload.get('method', 'N/A')}`  \n")
-    f.write(
-        f"- **Input Text Length**: {payload.get('input_text_length', 0)} characters  \n"
-    )
-    f.write(f"- **Citations Found**: {payload.get('citations_found', 0)}  \n")
-    f.write(f"- **Verified**: {payload.get('citations_verified', 0)}  \n")
-    f.write(f"- **Unverified**: {payload.get('citations_unverified', 0)}  \n")
-    f.write(f"- **Processing Time**: {payload.get('processing_time_ms', 'N/A')} ms  \n")
-    f.write(f"- **Timestamp**: {payload.get('timestamp', ts)}  \n\n")
-
-    # Verified citations
-    verified = payload.get("verified_citations", [])
-    if verified:
-        f.write("## Verified Citations\n\n")
-        for citation in verified:
-            f.write(f"- `{citation}`  \n")
-        f.write("\n")
-
-    # Unverified citations
-    unverified = payload.get("unverified_citations", [])
-    if unverified:
-        f.write("## Unverified Citations\n\n")
-        for item in unverified:
-            if isinstance(item, dict):
-                f.write(
-                    f"- `{item.get('citation', 'N/A')}`: {item.get('reason', 'N/A')}  \n"
-                )
-            else:
-                f.write(f"- {item}  \n")
-        f.write("\n")
-
-    # International citations
-    intl_citations = payload.get("international_citations", [])
-    if intl_citations:
-        f.write("## International Citations\n\n")
-        for citation in intl_citations:
-            f.write(f"- **{citation.get('citation', 'N/A')}**  \n")
-            f.write(f"  - Verified: {citation.get('verified', 'N/A')}  \n")
-            f.write(f"  - Reason: {citation.get('reason', 'N/A')}  \n")
-        f.write("\n")
-
-    # Traditional citations
-    trad_citations = payload.get("traditional_citations", [])
-    if trad_citations:
-        f.write("## Traditional Citations\n\n")
-        for citation in trad_citations:
-            f.write(f"- **{citation.get('citation', 'N/A')}**  \n")
-            f.write(f"  - Verified: {citation.get('verified', 'N/A')}  \n")
-            f.write(f"  - Reason: {citation.get('reason', 'N/A')}  \n")
-        f.write("\n")
-
-    # Detailed results
-    detailed = payload.get("detailed_results", [])
-    if detailed:
-        f.write("## Detailed Results\n\n")
-        for result in detailed:
-            f.write(f"### {result.get('citation', 'N/A')}\n\n")
-            f.write(f"- **Verified**: {result.get('verified', 'N/A')}  \n")
-            f.write(
-                f"- **Traditional Format**: {result.get('is_traditional', 'N/A')}  \n"
-            )
-            f.write(f"- **International**: {result.get('is_international', 'N/A')}  \n")
-            if result.get("reason"):
-                f.write(f"- **Reason**: {result.get('reason')}  \n")
-            if result.get("url"):
-                f.write(f"- **URL**: {result.get('url')}  \n")
-            f.write("\n")
-
-
-def _write_citation_validation_markdown(f, tag: str, ts: str, payload: dict):
-    """Write markdown for citation validation logs."""
-    f.write(f"# {tag} — {ts}\n\n")
-
-    # Method and parameters
-    f.write("## Details\n\n")
-    f.write(f"- **Method**: `{payload.get('method', 'N/A')}`  \n")
-    f.write(
-        f"- **Input Text Length**: {payload.get('input_text_length', 0)} characters  \n"
-    )
-    f.write(f"- **Online Verification**: {payload.get('enable_online', False)}  \n")
-    f.write(f"- **Issues Found**: {payload.get('issues_found', 0)}  \n")
-    f.write(f"- **Timestamp**: {payload.get('timestamp', ts)}  \n\n")
-
-    # Issues
-    issues = payload.get("issues", [])
-    if issues:
-        f.write("## Issues Found\n\n")
-        for issue in issues:
-            f.write(f"- {issue}  \n")
-        f.write("\n")
-
-
-def _write_http_validation_markdown(f, tag: str, ts: str, payload: dict):
-    """Write markdown for HTTP validation logs."""
-    f.write(f"# {tag} — {ts}\n\n")
-
-    # Request details
-    f.write("## Request Details\n\n")
-    f.write(f"- **Method**: `{payload.get('method', 'N/A')}`  \n")
-    f.write(f"- **URL**: `{payload.get('url', 'N/A')}`  \n")
-    f.write(f"- **Timeout**: {payload.get('timeout', 'N/A')} seconds  \n\n")
-
-    # Response details
-    f.write("## Response\n\n")
-    f.write(f"- **Status Code**: {payload.get('status_code', 'N/A')}  \n")
-    f.write(f"- **Success**: {payload.get('success', 'N/A')}  \n")
-    f.write(f"- **Response Time**: {payload.get('response_time_ms', 'N/A')} ms  \n")
-    if payload.get("error"):
-        f.write(f"- **Error**: {payload.get('error')}  \n")
-    f.write(f"- **Timestamp**: {payload.get('timestamp', ts)}  \n")
-
-
-def _write_search_validation_markdown(f, tag: str, ts: str, payload: dict):
-    """Write markdown for AustLII search validation logs."""
-    f.write(f"# {tag} — {ts}\n\n")
-
-    f.write("## Search Details\n\n")
-    f.write(f"- **Method**: `{payload.get('method', 'N/A')}`  \n")
-    f.write(f"- **Citation**: `{payload.get('citation', 'N/A')}`  \n")
-    f.write(f"- **Success**: {payload.get('success', 'N/A')}  \n")
-    f.write(f"- **Response Time**: {payload.get('response_time_ms', 'N/A')} ms  \n")
-    f.write(f"- **Timeout**: {payload.get('timeout', 'N/A')} seconds  \n")
-    f.write(f"- **Timestamp**: {payload.get('timestamp', ts)}  \n")
-
-
-def _write_command_output_markdown(f, tag: str, ts: str, payload: dict):
-    """Write markdown for standard command output logs."""
-    # Original format for command outputs
-    f.write(f"# {tag} — {ts}\n\n")
-    f.write(f"- **Command**: `{tag}`  \n")
-    f.write(f"- **Parameters**: `{payload.get('params','')}`  \n\n")
-
-    # Inputs
-    f.write("## Inputs\n\n")
-    for k, v in payload.get("inputs", {}).items():
-        f.write(f"**{k}**:  \n```\n{v}\n```\n\n")
-
-    # Output
-    f.write("## Output\n\n```\n")
-    f.write(payload.get("response", "").strip())
-    f.write("\n```\n\n")
-
-    # Usage
-    f.write("## Usage\n\n")
-    usage = payload.get("usage", {})
-    for field in ("prompt_tokens", "completion_tokens", "total_tokens"):
-        if field in usage:
-            f.write(f"- **{field}**: {usage[field]}  \n")
-
-    # Timing information
-    timing = usage.get("timing", {})
-    if timing:
-        f.write("\n## Timing\n\n")
-        f.write(f"- **Start Time**: {timing.get('start_time', 'N/A')}  \n")
-        f.write(f"- **End Time**: {timing.get('end_time', 'N/A')}  \n")
-        f.write(f"- **Duration**: {timing.get('duration_seconds', 'N/A')} seconds  \n")
-
-
-def _write_generic_markdown(f, tag: str, ts: str, payload: dict):
-    """Write markdown for unknown/generic log types."""
-    f.write(f"# {tag} — {ts}\n\n")
-
-    def write_value(key: str, value: Any, level: int = 0):
-        """Recursively write values with proper formatting."""
-        indent = "  " * level
-
-        if isinstance(value, dict):
-            f.write(f"{indent}**{key}**:\n")
-            for k, v in value.items():
-                write_value(k, v, level + 1)
-        elif isinstance(value, list):
-            f.write(f"{indent}**{key}**:\n")
-            for i, item in enumerate(value):
-                if isinstance(item, dict):
-                    f.write(f"{indent}  - Item {i + 1}:\n")
-                    for k, v in item.items():
-                        write_value(k, v, level + 2)
-                else:
-                    f.write(f"{indent}  - {item}\n")
-        else:
-            # Handle different value types
-            if isinstance(value, str) and len(value) > 100:
-                # Long strings in code blocks
-                f.write(f"{indent}**{key}**:\n{indent}```\n{value}\n{indent}```\n")
-            else:
-                f.write(f"{indent}**{key}**: {value}  \n")
-
-    # Write all payload data
-    for key, value in payload.items():
-        write_value(key, value)
-        f.write("\n")
 
 
 @timed
@@ -864,7 +549,6 @@ def create_reasoning_prompt(base_prompt: str, command: str) -> str:
     Returns:
         Enhanced prompt that will generate reasoning traces
     """
-    from litassist.prompts import PROMPTS
     
     reasoning_instruction = PROMPTS.get("reasoning.instruction").format(command=command)
     return base_prompt + reasoning_instruction
@@ -955,53 +639,6 @@ def save_reasoning_trace(trace: LegalReasoningTrace, output_file: str) -> str:
 
     return trace_file
 
-
-def save_command_output(
-    command_name: str,
-    content: str,
-    query_or_slug: str,
-    metadata: Optional[Dict[str, str]] = None,
-) -> str:
-    """
-    Save command output with standard format.
-
-    Args:
-        command_name: Name of the command (e.g., 'strategy', 'draft')
-        content: The main content to save
-        query_or_slug: Query string or slug for filename generation
-        metadata: Optional dict of metadata to include in header
-
-    Returns:
-        Path to the saved output file
-    """
-    timestamp = time.strftime("%Y%m%d_%H%M%S")
-
-    # Create filename based on whether a slug is provided
-    slug = ""
-    if query_or_slug:  # Non-empty slug means normal usage
-        sanitized_slug = re.sub(r"[^\w\s-]", "", query_or_slug.lower())
-        slug = re.sub(r"[-\s]+", "_", sanitized_slug)[:40].strip("_")
-    
-    if slug:
-        output_file = os.path.join(OUTPUT_DIR, f"{command_name}_{slug}_{timestamp}.txt")
-    else:
-        # This handles both cases: empty query_or_slug, or a slug that becomes empty after sanitization.
-        output_file = os.path.join(OUTPUT_DIR, f"{command_name}_{timestamp}.txt")
-
-    with open(output_file, "w", encoding="utf-8") as f:
-        # Standard header
-        f.write(f"{command_name.replace('_', ' ').title()}\n")
-
-        # Add metadata if provided
-        if metadata:
-            for key, value in metadata.items():
-                f.write(f"{key}: {value}\n")
-
-        f.write(f"Timestamp: {time.strftime('%Y-%m-%d %H:%M:%S')}\n")
-        f.write("-" * 80 + "\n\n")
-        f.write(content)
-
-    return output_file
 
 
 def show_command_completion(
@@ -1125,6 +762,15 @@ def verify_content_if_needed(
     Returns:
         Tuple of (possibly modified content, whether verification was performed)
     """
+    # Mandatory verification chain for high-risk commands
+    if command_name in ['extractfacts', 'strategy', 'draft']:
+        from litassist.verification_chain import run_verification_chain
+        verified_content, results = run_verification_chain(content, command_name)
+        if results.get('llm', {}).get('corrections_made'):
+            return verified_content, True
+        # If no corrections were made, return original content
+        return content, False
+    
     # Check if auto-verification is needed
     auto_verify = client.should_auto_verify(content, command_name)
     needs_verification = verify_flag or auto_verify
@@ -1152,11 +798,8 @@ def verify_content_if_needed(
 
     if needs_verification:
         try:
-            # Use appropriate verification level based on command
-            if command_name in ["strategy", "draft"]:
-                correction = client.verify_with_level(content, "heavy")
-            else:
-                correction = client.verify(content)
+            # Standard verification for remaining commands
+            correction = client.verify(content)
 
             # Handle tuple return from new verify methods
             if isinstance(correction, tuple):
@@ -1360,163 +1003,3 @@ def validate_file_size_limit(content: str, max_size: int, context: str):
         )
 
 
-def process_extraction_response(
-    content: str, extract_type: str, output_prefix: str, command: str
-) -> tuple[str, dict, str]:
-    """
-    Process extraction response from LLM with JSON-first approach.
-
-    Follows CLAUDE.md guidance: LLMs return properly formatted output when prompted correctly.
-    No fallback parsing needed - trust the LLM to follow format instructions.
-
-    Args:
-        content: Raw LLM response expected to be valid JSON
-        extract_type: Type of extraction (citations/principles/checklist/all)
-        output_prefix: Prefix for output files (e.g., "lookup_citations_20240615_120000")
-        command: Command name for context (lookup/counselnotes)
-
-    Returns:
-        Tuple of (formatted_text, json_data, json_file_path)
-
-    Raises:
-        click.ClickException: If JSON parsing fails (indicates prompt needs improvement)
-    """
-    import click
-
-    # Parse JSON response - no fallbacks per CLAUDE.md
-    try:
-        # Clean content if needed (remove any markdown code blocks)
-        clean_content = content.strip()
-        if clean_content.startswith("```json"):
-            clean_content = clean_content[7:]
-        if clean_content.startswith("```"):
-            clean_content = clean_content[3:]
-        if clean_content.endswith("```"):
-            clean_content = clean_content[:-3]
-        clean_content = clean_content.strip()
-
-        json_data = json.loads(clean_content)
-    except json.JSONDecodeError as e:
-        # Per CLAUDE.md: Fix prompts, not parsing
-        raise click.ClickException(
-            f"LLM did not return valid JSON for {extract_type} extraction. "
-            f"This indicates the prompt needs improvement. Error: {str(e)}"
-        )
-
-    # Save JSON file
-    json_file = os.path.join(OUTPUT_DIR, f"{output_prefix}.json")
-    with open(json_file, "w", encoding="utf-8") as f:
-        json.dump(json_data, f, indent=2, ensure_ascii=False)
-
-    # Generate formatted text based on extraction type
-    if extract_type == "citations":
-        if "citations" in json_data and isinstance(json_data["citations"], list):
-            items = json_data["citations"]
-            formatted_text = (
-                "CITATIONS FOUND:\n" + "\n".join(items)
-                if items
-                else "No citations found."
-            )
-        else:
-            formatted_text = "No citations found in response."
-
-    elif extract_type == "principles":
-        if "principles" in json_data:
-            principles = json_data["principles"]
-            if isinstance(principles, list):
-                formatted_lines = []
-                for p in principles:
-                    if isinstance(p, dict):
-                        # Dict format: {"principle": "...", "authority": "..."}
-                        principle = p.get("principle", "")
-                        authority = p.get("authority", "")
-                        if authority:
-                            formatted_lines.append(f"• {principle} ({authority})")
-                        else:
-                            formatted_lines.append(f"• {principle}")
-                    elif isinstance(p, str):
-                        # String format: "principle text"
-                        formatted_lines.append(f"• {p}")
-                    # Skip any other types silently
-
-                if formatted_lines:
-                    formatted_text = "LEGAL PRINCIPLES:\n" + "\n".join(formatted_lines)
-                else:
-                    formatted_text = "LEGAL PRINCIPLES:\n(No valid principles found)"
-            else:
-                formatted_text = "No legal principles found."
-        else:
-            formatted_text = "No legal principles found in response."
-
-    elif extract_type == "checklist":
-        if "checklist" in json_data and isinstance(json_data["checklist"], list):
-            items = json_data["checklist"]
-            formatted_text = (
-                "PRACTICAL CHECKLIST:\n" + "\n".join(f"[ ] {item}" for item in items)
-                if items
-                else "No checklist items found."
-            )
-        else:
-            formatted_text = "No checklist items found in response."
-
-    elif extract_type == "all":
-        # Comprehensive extraction with multiple sections
-        sections = []
-
-        # Strategic summary
-        if "strategic_summary" in json_data:
-            sections.append(f"STRATEGIC SUMMARY:\n{json_data['strategic_summary']}")
-
-        # Citations
-        if "key_citations" in json_data and json_data["key_citations"]:
-            sections.append(
-                "KEY CITATIONS:\n"
-                + "\n".join(f"• {c}" for c in json_data["key_citations"])
-            )
-
-        # Principles
-        if "legal_principles" in json_data and json_data["legal_principles"]:
-            principles_text = "LEGAL PRINCIPLES:\n"
-            for p in json_data["legal_principles"]:
-                if isinstance(p, dict):
-                    principle = p.get("principle", "")
-                    authority = p.get("authority", "")
-                    if authority:
-                        principles_text += f"• {principle} ({authority})\n"
-                    else:
-                        principles_text += f"• {principle}\n"
-                else:
-                    principles_text += f"• {p}\n"
-            sections.append(principles_text.rstrip())
-
-        # Checklist
-        if "tactical_checklist" in json_data and json_data["tactical_checklist"]:
-            sections.append(
-                "TACTICAL CHECKLIST:\n"
-                + "\n".join(f"[ ] {item}" for item in json_data["tactical_checklist"])
-            )
-
-        # Risk assessment
-        if "risk_assessment" in json_data:
-            sections.append(f"RISK ASSESSMENT:\n{json_data['risk_assessment']}")
-
-        # Recommendations
-        if "recommendations" in json_data and json_data["recommendations"]:
-            sections.append(
-                "RECOMMENDATIONS:\n"
-                + "\n".join(f"• {r}" for r in json_data["recommendations"])
-            )
-
-        formatted_text = (
-            "\n\n".join(sections) if sections else "No structured data extracted."
-        )
-
-    else:
-        formatted_text = f"Unknown extraction type: {extract_type}"
-
-    # Add metadata footer
-    formatted_text += (
-        f"\n\n---\nExtracted via {command} command\nJSON data saved to: {json_file}"
-    )
-
-    return formatted_text, json_data, json_file

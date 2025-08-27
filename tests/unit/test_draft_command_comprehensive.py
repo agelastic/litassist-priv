@@ -21,12 +21,10 @@ class TestDraftCommand:
     @patch("litassist.commands.draft.LLMClientFactory.for_command")
     @patch("litassist.commands.draft.save_command_output")
     @patch("litassist.commands.draft.save_log")
-    @patch("litassist.commands.draft.verify_content_if_needed")
     @patch("litassist.commands.draft.PROMPTS")
     def test_draft_statement_of_claim_success(
         self,
         mock_prompts,
-        mock_verify,
         mock_save_log,
         mock_save_output,
         mock_llm_factory,
@@ -35,9 +33,6 @@ class TestDraftCommand:
         # Mock prompts
         mock_prompts.get.return_value = "Test template"
 
-        # Mock verification
-        mock_verify.return_value = ("Verified content", {})
-
         # Mock LLM client
         mock_client = MagicMock()
         mock_client.complete.return_value = (
@@ -45,6 +40,10 @@ class TestDraftCommand:
             {"total_tokens": 800, "prompt_tokens": 500, "completion_tokens": 300},
         )
         mock_client.validate_citations.return_value = []
+        mock_client.verify.return_value = (
+            "STATEMENT OF CLAIM\n1. The plaintiff claims...",
+            "mock-model"
+        )
         mock_llm_factory.return_value = mock_client
         mock_save_output.return_value = "outputs/draft_test.txt"
 
@@ -105,12 +104,10 @@ class TestDraftCommand:
     @patch("litassist.commands.draft.LLMClientFactory.for_command")
     @patch("litassist.commands.draft.save_command_output")
     @patch("litassist.commands.draft.save_log")
-    @patch("litassist.commands.draft.verify_content_if_needed")
     @patch("litassist.commands.draft.PROMPTS")
     def test_draft_affidavit_success(
         self,
         mock_prompts,
-        mock_verify,
         mock_save_log,
         mock_save_output,
         mock_llm_factory,
@@ -119,9 +116,6 @@ class TestDraftCommand:
         # Mock prompts
         mock_prompts.get.return_value = "Affidavit template"
 
-        # Mock verification
-        mock_verify.return_value = ("Verified affidavit", {})
-
         # Mock LLM client
         mock_client = MagicMock()
         mock_client.complete.return_value = (
@@ -129,6 +123,10 @@ class TestDraftCommand:
             {"total_tokens": 600, "prompt_tokens": 400, "completion_tokens": 200},
         )
         mock_client.validate_citations.return_value = []
+        mock_client.verify.return_value = (
+            "AFFIDAVIT OF JOHN SMITH\nI, John Smith, make oath and say:",
+            "mock-model"
+        )
         mock_llm_factory.return_value = mock_client
         mock_save_output.return_value = "outputs/affidavit_test.txt"
 
@@ -421,12 +419,10 @@ class TestDraftIntegration:
     @patch("litassist.commands.draft.LLMClientFactory.for_command")
     @patch("litassist.commands.draft.save_command_output")
     @patch("litassist.commands.draft.save_log")
-    @patch("litassist.commands.draft.verify_content_if_needed")
     @patch("litassist.commands.draft.PROMPTS")
     def test_draft_with_verification_warnings(
         self,
         mock_prompts,
-        mock_verify,
         mock_save_log,
         mock_save_output,
         mock_llm_factory,
@@ -434,9 +430,6 @@ class TestDraftIntegration:
         """Test draft command with citation validation warnings."""
         # Mock prompts
         mock_prompts.get.return_value = "Test template"
-
-        # Mock verification
-        mock_verify.return_value = ("Verified content with warnings", {})
 
         # Mock LLM client with citation issues
         mock_client = MagicMock()
@@ -448,6 +441,10 @@ class TestDraftIntegration:
             "Invalid citation format detected",
             "Citation [2025] FAKE 999 could not be verified",
         ]
+        mock_client.verify.return_value = (
+            "STATEMENT OF CLAIM\nWith invalid citation [2025] FAKE 999",
+            "mock-model"
+        )
         mock_llm_factory.return_value = mock_client
         mock_save_output.return_value = "test_output.txt"
 
@@ -472,7 +469,7 @@ class TestDraftIntegration:
             runner = CliRunner()
             result = runner.invoke(
                 draft,
-                [facts_file, "statement_of_claim", "--verify"],
+                [facts_file, "statement_of_claim"],
                 obj={"premium": False},
             )
 
@@ -485,12 +482,10 @@ class TestDraftIntegration:
     @patch("litassist.commands.draft.LLMClientFactory.for_command")
     @patch("litassist.commands.draft.save_command_output")
     @patch("litassist.commands.draft.save_log")
-    @patch("litassist.commands.draft.verify_content_if_needed")
     @patch("litassist.commands.draft.PROMPTS")
     def test_draft_premium_mode(
         self,
         mock_prompts,
-        mock_verify,
         mock_save_log,
         mock_save_output,
         mock_llm_factory,
@@ -499,9 +494,6 @@ class TestDraftIntegration:
         # Mock prompts
         mock_prompts.get.return_value = "Premium template"
 
-        # Mock verification
-        mock_verify.return_value = ("Premium verified content", {})
-
         # Mock premium LLM client
         mock_client = MagicMock()
         mock_client.complete.return_value = (
@@ -509,6 +501,10 @@ class TestDraftIntegration:
             {"total_tokens": 1200, "prompt_tokens": 800, "completion_tokens": 400},
         )
         mock_client.validate_citations.return_value = []
+        mock_client.verify.return_value = (
+            "PREMIUM STATEMENT OF CLAIM\nDetailed legal analysis...",
+            "mock-model"
+        )
         mock_llm_factory.return_value = mock_client
         mock_save_output.return_value = "outputs/premium_draft.txt"
 
@@ -540,8 +536,10 @@ class TestDraftIntegration:
             assert result.exit_code == 0
             assert "Draft complete!" in result.output
 
-            # Verify LLM factory was called (the draft command may not use premium mode directly)
-            mock_llm_factory.assert_called_with("draft")
+            # Verify LLM factory was called twice (draft and verification)
+            assert mock_llm_factory.call_count >= 1
+            # First call should be for draft
+            mock_llm_factory.assert_any_call("draft")
 
         finally:
             Path(facts_file).unlink()

@@ -19,9 +19,10 @@ from litassist.citation_verify import verify_all_citations
 from litassist.citation_patterns import extract_citations
 from litassist.llm import LLMClientFactory
 from litassist.utils import (
-    verifying_message, success_message, error_message,
+    verifying_message, success_message, error_message, warning_message,
     save_command_output
 )
+from litassist.verification_chain import run_cove_verification, format_cove_report
 from litassist.utils import (
     timed,
     save_log,
@@ -44,9 +45,10 @@ def _handle_verification_error(step_name: str, exception: Exception) -> None:
 @click.option("--citations", is_flag=True, help="Verify citations only")
 @click.option("--soundness", is_flag=True, help="Verify legal soundness only")
 @click.option("--reasoning", is_flag=True, help="Verify/generate reasoning trace only")
+@click.option("--cove", is_flag=True, help="Add Chain of Verification as final check")
 @click.option("--output", type=str, help="Custom output filename prefix")
 @timed
-def verify(file, citations, soundness, reasoning, output):
+def verify(file, citations, soundness, reasoning, cove, output):
     """
     Verify legal text for citations, soundness, and reasoning.
 
@@ -135,7 +137,7 @@ def verify(file, citations, soundness, reasoning, output):
                 reasoning_response = "".join(report_parts)
                 model_name = "N/A (existing trace verified)"
             else:
-                client = LLMClientFactory.for_command("verify")
+                client = LLMClientFactory.for_command("verify-reasoning")
                 enhanced_prompt = create_reasoning_prompt(content, "verify")
                 # Append citation report if available
                 if citation_report:
@@ -192,7 +194,7 @@ def verify(file, citations, soundness, reasoning, output):
     # 3. Legal Soundness Verification
     if soundness:
         try:
-            client = LLMClientFactory.for_command("verify")
+            client = LLMClientFactory.for_command("verify-soundness")
             # Pass both citation and reasoning contexts if available
             soundness_result, soundness_model = client.verify(
                 content,
@@ -223,6 +225,86 @@ def verify(file, citations, soundness, reasoning, output):
         except Exception as e:
             _handle_verification_error("Legal soundness check", e)
 
+    # 4. Chain of Verification (Final Stage - uses all prior results)
+    if cove:
+        # Skip CoVe if only citations are being verified
+        if citations and not soundness and not reasoning:
+            click.echo(warning_message(
+                "CoVe skipped: --cove flag is ignored when only verifying citations"
+            ))
+        else:
+            try:
+                # Use the most refined version of content available
+                final_content = content
+                if soundness and 'soundness_result' in locals():
+                    # Extract corrected document from soundness result if available
+                    match = re.search(
+                        r"## Verified and Corrected Document\s*\n(.*)",
+                        soundness_result,
+                        re.DOTALL
+                    )
+                    if match:
+                        final_content = match.group(1).strip()
+                
+                cove_content, cove_results = run_cove_verification(
+                    final_content,
+                    'verify',
+                    prior_contexts={
+                        'citations': citation_report,
+                        'reasoning': reasoning_response,
+                        'soundness': issues if soundness and 'issues' in locals() else None
+                    }
+                )
+                
+                # Update final_content if regenerated
+                if cove_results['cove']['regenerated']:
+                    final_content = cove_content
+                    # Save regenerated document
+                    regen_file = save_command_output(
+                        f"{output}_regenerated" if output else "verify_regenerated",
+                        final_content,
+                        "" if output else os.path.basename(base_name),
+                        metadata={
+                            "Type": "CoVe Regenerated Document",
+                            "File": file,
+                            "Status": "[REGENERATED]",
+                            "Issues Fixed": cove_results['cove']['issues']
+                        }
+                    )
+                    extra_files["Regenerated document"] = regen_file
+                
+                # Save CoVe report with full dialogue
+                cove_report = format_cove_report(cove_results)
+                
+                # Prepare full CoVe dialogue for critique section
+                cove_critiques = [
+                    ("CoVe Stage 1: Questions Generated", cove_results['cove']['questions']),
+                    ("CoVe Stage 2: Independent Answers", cove_results['cove']['answers']),
+                    ("CoVe Stage 3: Verification Analysis", cove_results['cove']['issues'])
+                ]
+                
+                cove_file = save_command_output(
+                    f"{output}_cove" if output else "verify_cove",
+                    cove_report,
+                    "" if output else os.path.basename(base_name),
+                    metadata={
+                        "Type": "Chain of Verification",
+                        "File": file,
+                        "Status": "[REGENERATED]" if cove_results['cove']['regenerated'] else "[VERIFIED]",
+                        "Issues": "Fixed" if cove_results['cove']['regenerated'] else "None"
+                    },
+                    critique_sections=cove_critiques
+                )
+                status = "[REGENERATED]" if cove_results['cove']['regenerated'] else "[VERIFIED]"
+                click.echo(f"\n{status} Chain of Verification complete")
+                click.echo(f"   - Analysis: {cove_file}")
+                if cove_results['cove']['regenerated']:
+                    click.echo(f"   - Regenerated: {regen_file}")
+                extra_files["CoVe report"] = cove_file
+                reports_generated += 1
+            except Exception as e:
+                _handle_verification_error("Chain of Verification", e)
+
     click.echo(f"\nVerification complete. {reports_generated} reports generated.")
     save_log(
         "verify",
@@ -233,6 +315,7 @@ def verify(file, citations, soundness, reasoning, output):
                     "citations": citations,
                     "soundness": soundness,
                     "reasoning": reasoning,
+                    "cove": cove,
                 },
             },
             "outputs": extra_files,

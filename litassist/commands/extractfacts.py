@@ -18,12 +18,13 @@ from litassist.utils import (
     create_reasoning_prompt,
     save_command_output,
     show_command_completion,
-    warning_message,
     info_message,
-    verifying_message,
+    success_message,
     validate_file_size,
+    verify_content_if_needed,
 )
 from litassist.llm import LLMClientFactory
+from litassist.verification_chain import run_cove_verification
 
 
 @click.command()
@@ -31,9 +32,11 @@ from litassist.llm import LLMClientFactory
 @click.option(
     "--verify", is_flag=True, help="Enable self-critique pass (default: auto-enabled)"
 )
+@click.option("--noverify", is_flag=True, help="Skip standard verification (does not affect --cove)")
+@click.option("--cove", is_flag=True, help="Use Chain of Verification instead of standard verification")
 @click.option("--output", type=str, help="Custom output filename prefix")
 @timed
-def extractfacts(file, verify, output):
+def extractfacts(file, verify, noverify, cove, output):
     """
     Auto-generate case_facts.txt under ten structured headings.
 
@@ -62,21 +65,6 @@ def extractfacts(file, verify, output):
 
     # Initialize the LLM client using factory
     client = LLMClientFactory.for_command("extractfacts")
-
-    # extractfacts always needs verification as it creates foundational documents
-    if verify:
-        click.echo(
-            warning_message(
-                "Note: --verify flag ignored - extractfacts command always uses verification for accuracy"
-            )
-        )
-    elif not verify:
-        click.echo(
-            info_message(
-                "Note: Extractfacts command automatically uses verification for accuracy"
-            )
-        )
-    verify = True  # Force verification for critical accuracy
 
     # Process content based on chunking needs (now most documents will be single chunk)
     if len(chunks) == 1:
@@ -141,7 +129,12 @@ def extractfacts(file, verify, output):
         click.echo(
             info_message("Organizing and synthesizing facts into structured format...")
         )
-        all_facts = "\n\n".join(accumulated_facts)
+        # Join accumulated facts with clear === separators for each chunk
+        # Add END marker after each chunk's facts
+        facts_with_markers = []
+        for idx, facts in enumerate(accumulated_facts, 1):
+            facts_with_markers.append(f"=== CHUNK {idx} FACTS ===\n{facts}\n=== END CHUNK {idx} FACTS ===")
+        all_facts = "\n\n".join(facts_with_markers)
 
         # Use centralized format template for organizing
         format_instructions = PROMPTS.get_format_template("case_facts_10_heading")
@@ -168,19 +161,39 @@ def extractfacts(file, verify, output):
 
     # Note: Citation verification now handled automatically in LLMClient.complete()
 
-    # Apply verification (always required for extractfacts)
-    click.echo(verifying_message("Verifying extracted facts..."))
-    try:
-        correction = client.verify(combined)
-        if isinstance(correction, tuple):
-            correction = correction[0]
-        if correction.strip() and not correction.lower().startswith(
-            "no corrections needed"
-        ):
-            # Replace content to preserve structure and reasoning trace
-            combined = correction
-    except Exception as e:
-        raise click.ClickException(f"Verification error during extractfacts: {e}")
+    # Apply verification - either CoVe or standard
+    verification_metadata = {"Source Files": ", ".join(source_files)}
+    if cove:
+        # Use CoVe INSTEAD of standard verification
+        click.echo(info_message("Running Chain of Verification..."))
+        original_content = combined
+        combined, cove_results = run_cove_verification(combined, 'extractfacts')
+        
+        verification_metadata["Verification"] = "Chain of Verification (CoVe)"
+        verification_metadata["CoVe Status"] = "REGENERATED" if not cove_results['cove']['passed'] else "PASSED"
+        
+        if not cove_results['cove']['passed']:
+            click.echo(success_message("CoVe corrected issues - facts regenerated"))
+            save_log("extractfacts_cove_regeneration", {
+                "original_length": len(original_content),
+                "regenerated_length": len(combined),
+                "issues_fixed": cove_results['cove']['issues'],
+                "model": "See cove_extractfacts_summary.json for model details"
+            })
+        else:
+            click.echo(success_message("CoVe verification passed - no issues found"))
+    elif not noverify:
+        # Use standard verification (current behavior)
+        combined, _ = verify_content_if_needed(
+            client, combined, "extractfacts", verify_flag=True
+        )
+        verification_metadata["Verification"] = "Standard verification"
+        verification_metadata["Model"] = client.model
+        click.echo(info_message("Standard verification applied"))
+    else:
+        verification_metadata["Verification"] = "Disabled"
+        verification_metadata["Model"] = "N/A"
+        click.echo(info_message("Standard verification skipped by --noverify flag"))
 
     # Save output using utility (reasoning trace remains inline)
     slug = "_".join(source_files[:3])  # Use first 3 files for slug
@@ -190,7 +203,7 @@ def extractfacts(file, verify, output):
         output if output else "extractfacts",
         combined,
         "" if output else slug,
-        metadata={"Source Files": ", ".join(source_files)},
+        metadata=verification_metadata,
     )
 
     # Audit log

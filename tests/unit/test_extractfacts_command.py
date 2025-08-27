@@ -26,8 +26,10 @@ class TestExtractFactsBasic:
     @patch("litassist.commands.extractfacts.create_reasoning_prompt")
     @patch("litassist.commands.extractfacts.chunk_text")
     @patch("litassist.commands.extractfacts.validate_file_size")
+    @patch("litassist.commands.extractfacts.verify_content_if_needed")
     def test_basic_extractfacts(
         self,
+        mock_verify_content,
         mock_validate,
         mock_chunk,
         mock_create_prompt,
@@ -50,10 +52,10 @@ class TestExtractFactsBasic:
         # Patch LLM client
         mock_client = Mock()
         mock_client.complete.return_value = ("Extracted content", self.mock_usage)
-        # Simulate no corrections needed
-        mock_client.verify.return_value = ""
         mock_factory.for_command.return_value = mock_client
         mock_output.return_value = "output_file.txt"
+        # Mock verify_content_if_needed to return content unchanged
+        mock_verify_content.return_value = ("Extracted content", {})
 
         # Create a temporary input file using pytest's tmp_path fixture
         temp_file = tmp_path / "input.txt"
@@ -66,7 +68,8 @@ class TestExtractFactsBasic:
         assert result.exit_code == 0
         mock_factory.for_command.assert_called_once_with("extractfacts")
         mock_client.complete.assert_called_once()
-        mock_client.verify.assert_called_once_with("Extracted content")
+        # Verify that verify_content_if_needed was called instead of client.verify
+        mock_verify_content.assert_called_once()
         # Ensure output saving and completion display are invoked
         mock_output.assert_called_once()
         mock_log.assert_called_once()

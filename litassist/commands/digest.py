@@ -413,6 +413,22 @@ def digest(file, mode, context, output):
         # Add file header and content to overall output
         all_documents_output.append(f"=== SOURCE: {os.path.basename(file_path)} ===\n\n" + "\n".join(file_output))
 
+    # Track all citation issues for critique section
+    all_citation_issues = []
+    
+    # Collect citation issues from comprehensive log
+    for response_entry in comprehensive_log.get("responses", []):
+        response_content = response_entry.get("content", "")
+        if "--- CITATION WARNINGS ---" in response_content:
+            # Extract citation warnings from the content
+            start = response_content.find("--- CITATION WARNINGS ---")
+            end = response_content.find("\n" + "-" * 40, start)
+            if end > start:
+                warning_section = response_content[start:end].strip()
+                # Remove the header line and collect the issues
+                issues = warning_section.split("\n")[1:]
+                all_citation_issues.extend(issues)
+    
     # Combine all file outputs
     if len(file) > 1:
         # Multiple files - add consolidation header
@@ -421,6 +437,13 @@ def digest(file, mode, context, output):
     else:
         # Single file - use content directly
         content = "\n\n".join(all_documents_output)
+    
+    # Prepare critiques if any citation issues were found
+    critiques = []
+    if all_citation_issues:
+        citation_critique = "The following citation issues were identified during processing:\n\n"
+        citation_critique += "\n".join(all_citation_issues)
+        critiques.append(("Citation Validation Issues", citation_critique))
     
     # Save output using utility
     output_file = save_command_output(
@@ -432,6 +455,7 @@ def digest(file, mode, context, output):
             "Source Files": source_files,
             "Context": context or "None"
         },
+        critique_sections=critiques if critiques else None
     )
 
     # Save comprehensive audit log

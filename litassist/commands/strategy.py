@@ -30,6 +30,7 @@ from litassist.utils import (
 )
 from litassist.llm import LLMClientFactory
 from litassist.prompts import PROMPTS
+from litassist.verification_chain import run_cove_verification
 
 
 def validate_case_facts_format(text: str) -> bool:
@@ -125,6 +126,9 @@ def create_consolidated_reasoning_trace(option_traces, outcome):
         option_num = trace_data["option_number"]
         trace = trace_data["trace"]
 
+        # Add START marker for the option
+        consolidated_content += f"=== OPTION {option_num} ===\n"
+        
         option_header = PROMPTS.get("reasoning.consolidated.option_header").format(
             option_num=option_num
         )
@@ -143,7 +147,7 @@ def create_consolidated_reasoning_trace(option_traces, outcome):
         else:
             consolidated_content += PROMPTS.get("reasoning.consolidated.no_trace") + "\n\n"
 
-        consolidated_content += "-" * 80 + "\n\n"
+        consolidated_content += f"=== END OPTION {option_num} ===\n\n"
 
     return consolidated_content
 
@@ -159,9 +163,11 @@ def create_consolidated_reasoning_trace(option_traces, outcome):
 @click.option(
     "--verify", is_flag=True, help="Enable self-critique pass (default: auto-enabled)"
 )
+@click.option("--noverify", is_flag=True, help="Skip standard verification (does not affect --cove)")
+@click.option("--cove", is_flag=True, help="Use Chain of Verification instead of standard verification")
 @click.option("--output", type=str, help="Custom output filename prefix")
 @timed
-def strategy(case_facts, outcome, strategies, verify, output):
+def strategy(case_facts, outcome, strategies, verify, noverify, cove, output):
     """
     Generate legal strategy options and draft documents for Australian civil matters.
 
@@ -227,21 +233,6 @@ def strategy(case_facts, outcome, strategies, verify, output):
             click.echo(
                 "  - Warning: No strategies marked as 'most likely to succeed' found"
             )
-
-    # strategy always needs verification as it creates foundational strategic documents
-    if verify:
-        click.echo(
-            warning_message(
-                "Note: --verify flag ignored - strategy command always uses verification for accuracy"
-            )
-        )
-    elif not verify:
-        click.echo(
-            info_message(
-                "Note: Strategy command automatically uses verification for accuracy"
-            )
-        )
-    verify = True  # Force verification for critical accuracy
 
     # Generate strategic options
     system_prompt = PROMPTS.get("commands.strategy.system")
@@ -658,19 +649,19 @@ def strategy(case_facts, outcome, strategies, verify, output):
                 strategy_content=specific_strategy['content'],
                 option_number=len(valid_options) + 1
             )
-            individual_prompt += "\n\n" + PROMPTS.get('strategies.strategy.unique_title_requirement')
+            individual_prompt += "\n\n=== ADDITIONAL REQUIREMENT ===\n" + PROMPTS.get('strategies.strategy.unique_title_requirement') + "\n=== END ADDITIONAL REQUIREMENT ==="
         else:
             # Generate fresh strategic option if no brainstormed strategies or we've used them all
             individual_prompt = user_prompt + PROMPTS.get(
                 "strategies.strategy.individual_option.fresh_base"
             ).format(option_number=len(valid_options) + 1)
             
-            individual_prompt += "\n\n" + PROMPTS.get('strategies.strategy.unique_title_requirement')
+            individual_prompt += "\n\n=== ADDITIONAL REQUIREMENT ===\n" + PROMPTS.get('strategies.strategy.unique_title_requirement') + "\n=== END ADDITIONAL REQUIREMENT ==="
             
             if parsed_strategies:
-                individual_prompt += PROMPTS.get(
+                individual_prompt += "\n\n=== EXISTING CONTEXT ===\n" + PROMPTS.get(
                     "strategies.strategy.individual_option.complement_existing"
-                ).format(existing_count=len(valid_options))
+                ).format(existing_count=len(valid_options)) + "\n=== END EXISTING CONTEXT ==="
 
         # If we already have options, tell the LLM to avoid duplication
         if valid_options:
@@ -681,12 +672,12 @@ def strategy(case_facts, outcome, strategies, verify, output):
                     existing_titles.append(title_match.group(1).strip())
 
             if existing_titles:
-                individual_prompt += PROMPTS.get(
+                individual_prompt += "\n\n=== AVOID DUPLICATION ===\n" + PROMPTS.get(
                     "strategies.strategy.individual_option.avoid_duplication"
                 ).format(
                     existing_titles=', '.join(existing_titles),
                     existing_count=len(valid_options)
-                )
+                ) + "\n=== END AVOID DUPLICATION ==="
 
         try:
             option_content, option_usage = llm_client.complete(
@@ -756,7 +747,11 @@ def strategy(case_facts, outcome, strategies, verify, output):
                 )
             numbered_options.append(clean_option)
 
-        strategy_content = "\n\n".join(numbered_options)
+        # Join options with proper START and END markers
+        options_with_markers = []
+        for idx, option in enumerate(numbered_options, 1):
+            options_with_markers.append(f"=== STRATEGIC OPTION {idx} ===\n{option}\n=== END STRATEGIC OPTION {idx} ===")
+        strategy_content = "\n\n".join(options_with_markers)
         usage = total_usage
 
         click.echo(
@@ -836,22 +831,65 @@ def strategy(case_facts, outcome, strategies, verify, output):
         citation_warning += "\n" + "-" * 40 + "\n\n"
         strategy_content = citation_warning + strategy_content
 
-    # Apply verification to strategy content (always required for strategy)
-    strategy_content, _ = verify_content_if_needed(
-        llm_client, strategy_content, "strategy", verify_flag=True
-    )
+    # Apply verification - either CoVe or standard
+    if cove:
+        # Use CoVe INSTEAD of standard verification
+        click.echo(info_message("Running Chain of Verification..."))
+        original_content = strategy_content
+        strategy_content, cove_results = run_cove_verification(strategy_content, 'strategy')
+        
+        if not cove_results['cove']['passed']:
+            click.echo(success_message("CoVe corrected issues - strategies regenerated"))
+            save_log("strategy_cove_regeneration", {
+                "original_length": len(original_content),
+                "regenerated_length": len(strategy_content),
+                "issues_fixed": cove_results['cove']['issues'],
+                "model": "See cove_strategy_summary.json for model details"
+            })
+        else:
+            click.echo(success_message("CoVe verification passed - no issues found"))
+    elif not noverify:
+        # Use standard verification (current behavior)
+        strategy_content, _ = verify_content_if_needed(
+            llm_client, strategy_content, "strategy", verify_flag=True
+        )
+        click.echo(info_message("Standard verification applied"))
+    else:
+        click.echo(info_message("Standard verification skipped by --noverify flag"))
 
+    # Collect all critiques
+    critiques = []
+    
+    # Add citation issues if any
+    if citation_issues:
+        critiques.append(("Citation Validation Issues", "\n".join(citation_issues)))
+    
+    # Add CoVe dialogue if used
+    if cove and 'cove_results' in locals():
+        critiques.append(("CoVe Questions", cove_results['cove']['questions']))
+        critiques.append(("CoVe Answers", cove_results['cove']['answers']))
+        critiques.append(("CoVe Analysis", cove_results['cove']['issues']))
+    
     # Save components as separate files
     metadata = {"Desired Outcome": outcome, "Case Facts File": case_facts.name}
     if strategies:
         metadata["Strategies File"] = strategies.name
+    
+    # Add verification metadata
+    if cove:
+        metadata["Verification"] = "Chain of Verification (CoVe)"
+        metadata["CoVe Status"] = "REGENERATED" if 'cove_results' in locals() and not cove_results['cove']['passed'] else "PASSED"
+    else:
+        metadata["Verification"] = "Standard verification"
+        metadata["Model"] = llm_client.model
 
-    # 1. Save main strategic options (for backward compatibility)
+    # 1. Save main strategic options with critiques
     strategy_file = save_command_output(
         f"{output}_options" if output else "strategy", 
         strategy_content, 
         "" if output else outcome, 
-        metadata=metadata
+        metadata=metadata,
+        critique_sections=critiques if critiques else None
     )
     
     # 2. Save next steps separately

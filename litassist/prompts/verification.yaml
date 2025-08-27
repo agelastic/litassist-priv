@@ -19,9 +19,16 @@ verification:
     Example: If you see "## MOST LIKELY TO SUCCEED" followed by 5 paragraphs,
     you MUST include all 5 paragraphs in full, not a placeholder.
 
-    Review the document above. Your review must identify and correct issues in two areas:
+    Review the document above. Your review must identify and correct issues in three areas:
     1.  **Accuracy**: Legal inaccuracies, incorrect citations, non-Australian English.
-    2.  **Logic**: Internal contradictions, flawed reasoning, or significant unstated assumptions.
+    2.  **Jurisdiction**: Wrong state/federal law applied, incorrect court hierarchy, outdated law, wrong area of law.
+    3.  **Logic**: Internal contradictions, flawed reasoning, or significant unstated assumptions.
+    
+    JURISDICTION CHECKS (MANDATORY):
+    - Verify the correct state/territory law is applied (e.g., NSW law for NSW matters)
+    - Check federal vs state jurisdiction is appropriate
+    - Confirm cited cases are from the correct court hierarchy
+    - Ensure legislation is current and applicable to the jurisdiction
 
     Provide your review in two parts while PRESERVING ALL ORIGINAL CONTENT STRUCTURE including:
     - ALL markdown headings at any level (##, ###, etc.)
@@ -87,16 +94,17 @@ verification:
   # USED BY: llm.py LLMClient.verify_with_level() method - when level="heavy"
   # LOCATION: llm.py:758-767
   heavy_verification: |
-    Provide comprehensive legal accuracy review: verify all citations, check legal reasoning, identify any errors in law or procedure, and ensure Australian English compliance.
+    Provide comprehensive legal accuracy review: verify all citations, check legal reasoning, identify any errors in law or procedure, ensure Australian English compliance, and VERIFY JURISDICTION - confirm the correct state/federal law is applied, cases are from appropriate courts, and legislation is current for the relevant jurisdiction.
 
   # Standard verification system prompt
   # USED BY: llm.py LLMClient.verify_with_level() method - system prompt for heavy verification
   # LOCATION: llm.py:757-762
   system_prompt: |
-    You are a senior solicitor with excellent knowledge of case and statute law. Thoroughly verify legal accuracy, citations, precedents, and reasoning.
+    You are a senior solicitor with excellent knowledge of case and statute law across all Australian jurisdictions. Thoroughly verify legal accuracy, citations, precedents, reasoning, and JURISDICTION - ensure the correct state/federal law is applied for the matter's location and type.
 
   # Context-aware soundness verification with both citation and reasoning context
   # USED BY: llm.py LLMClient.verify() method - when both contexts are provided
+  # LOCATION: llm.py:1296
   soundness_with_context: |
     You are conducting legal soundness verification with the benefit of prior verification results.
     
@@ -112,9 +120,11 @@ verification:
     
     Perform your comprehensive soundness check with these insights in mind:
     1. Flag any arguments that depend on unverified citations
-    2. Identify logical gaps highlighted by the reasoning analysis
-    3. Assess whether citation issues undermine key legal positions
-    4. Verify that confidence levels align with the strength of legal arguments
+    2. Verify correct jurisdiction - check state vs federal law, court hierarchy, current legislation
+    3. Identify logical gaps highlighted by the reasoning analysis
+    4. Assess whether citation issues undermine key legal positions
+    5. Verify that confidence levels align with the strength of legal arguments
+    6. Confirm cases cited are from the appropriate jurisdiction for the matter
     
     DO NOT simply repeat findings from previous verifications. Instead:
     - Synthesize insights across all verification layers
@@ -133,7 +143,7 @@ verification:
     reproduced verbatim exactly as they appear. Never use placeholders.
 
   # Reasoning verification with citation context
-  # USED BY: reasoning generation when citation context is available
+  # NOT USED - Template not referenced in codebase
   reasoning_with_citations: |
     Generate a reasoning trace for this document, taking into account the citation verification results.
     
@@ -163,3 +173,105 @@ verification:
     Sources: [List key legal authorities cited, separated by semicolons - note any that are unverified]
     
     Each section should appear exactly once. Do not repeat sections or content.
+
+  # Chain of Verification (CoVe) prompts
+  # USED BY: verification_chain.py run_cove_verification() - 4-stage verification
+  cove:
+    # USED BY: verification_chain.py run_cove_verification() - Stage 1: Generate questions
+    # LOCATION: verification_chain.py:137
+    questions_generation: |
+      Generate 10 verification questions for this legal document.
+      Focus on citations, dates, party names, legal principles, jurisdiction (state/federal/court level), and any potential inconsistencies.
+      Include at least 2 questions about jurisdiction and applicable law.
+      
+      === CONTEXT ===
+      {context}
+      === END CONTEXT ===
+      
+      === DOCUMENT ===
+      {content}
+      === END DOCUMENT ===
+      
+      Output numbered questions only (1. Question one, 2. Question two, etc.).
+    
+    # USED BY: verification_chain.py run_cove_verification() - Stage 2: Answer questions
+    # LOCATION: verification_chain.py:158
+    answers_verification: |
+      Answer these questions based ONLY on legal knowledge, NOT the document:
+      
+      === QUESTIONS ===
+      {content}
+      === END QUESTIONS ===
+      
+      For each question, answer: Yes/No/Uncertain with brief explanation.
+      Format: 1. Yes - [explanation], 2. No - [explanation], etc.
+    
+    # USED BY: verification_chain.py run_cove_verification() - Stage 3: Detect inconsistencies
+    # LOCATION: verification_chain.py:177
+    inconsistency_detection: |
+      Compare these Q&A pairs against the original document.
+      Identify any inconsistencies or errors.
+      
+      === QUESTIONS AND ANSWERS ===
+      {context}
+      === END QUESTIONS AND ANSWERS ===
+      
+      === ORIGINAL DOCUMENT ===
+      {content}
+      === END ORIGINAL DOCUMENT ===
+      
+      Output: List specific issues found, or "No issues found" if document is consistent.
+    
+    # USED BY: verification_chain.py run_cove_verification() - Stage 4: Regenerate if issues found
+    # LOCATION: verification_chain.py:206
+    regeneration: |
+      The following issues were found in this legal document:
+      
+      === ISSUES IDENTIFIED ===
+      {context}
+      === END ISSUES IDENTIFIED ===
+      
+      Using these verification results, regenerate a corrected version of the document that fixes all identified issues.
+      Remove or correct any inaccurate information based on the verification.
+      
+      === VERIFICATION Q&A FOR REFERENCE ===
+      {prompt}
+      === END VERIFICATION Q&A FOR REFERENCE ===
+      
+      === ORIGINAL DOCUMENT ===
+      {content}
+      === END ORIGINAL DOCUMENT ===
+      
+      Generate the complete corrected document:
+
+  # Base Australian law prompt
+  # USED BY: llm.py LLMClient.verify() method - base prompt
+  # LOCATION: llm.py:1302 (previously fallback, now required)
+  base_prompt: |
+    Australian law only. Use Australian English spellings and terminology (e.g., 'judgement' not 'judgment', 'defence' not 'defense').
+
+  # NOT USED - Template not referenced in codebase
+  # # Jurisdiction verification checklist
+  # # Used to ensure correct application of state/federal law
+  # jurisdiction_check: |
+  #   JURISDICTION VERIFICATION CHECKLIST:
+  #   1. Is the correct state/territory law being applied for the matter's location?
+  #   2. Are federal laws being used appropriately (constitutional, corporations, etc.)?
+  #   3. Are cited cases from the correct court hierarchy (binding vs persuasive)?
+  #   4. Is legislation current and not superseded?
+  #   5. Are cases from the relevant area of law (not citing family law for commercial matters)?
+  #   6. For multi-jurisdictional matters, is conflict of laws addressed?
+    
+  #   Mark any jurisdiction errors for correction.
+
+  # Self-critique fallback prompt
+  # USED BY: llm.py LLMClient.verify() method - when self_critique is needed
+  # LOCATION: llm.py:1303 (previously fallback, now required)
+  self_critique_fallback: |
+    Identify and correct any legal inaccuracies above, and provide the corrected text only. Ensure all spellings follow Australian English conventions.
+
+  # Heavy verification system prompt
+  # USED BY: llm.py LLMClient.verify_with_level() method - system prompt for heavy verification
+  # LOCATION: llm.py:1586 (previously fallback, now required)
+  heavy_verification_system: |
+    Australian law expert. Thoroughly verify legal accuracy, citations, precedents, and reasoning.

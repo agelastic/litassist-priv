@@ -52,6 +52,7 @@ class NonRetryableAPIError(Exception):
 
     pass
 
+
 logger = logging.getLogger(__name__)
 
 
@@ -332,13 +333,26 @@ class LLMClientFactory:
             "top_p": 0.2,
             "force_verify": False,  # Don't force strict verification
         },
-        # Verify - post-hoc verification command
-        "verify": {
-            "model": "openai/o3-pro",
+        # Verification - automatic verification for high-risk commands
+        "verification": {
+            "model": "anthropic/claude-opus-4.1",
+            "temperature": 0,
+            "top_p": 0.2,
+            "force_verify": False,  # Don't double-verify since this IS verification
+        },
+        # Verify sub-commands with specific model assignments
+        "verify-reasoning": {
+            "model": "openai/o3-pro",  # o3-pro for complex reasoning trace extraction
             "temperature": 0,
             "top_p": 0.2,
             "reasoning_effort": "high",
-            "force_verify": False,  # Don't double-verify since this IS verification
+            "force_verify": False,
+        },
+        "verify-soundness": {
+            "model": "anthropic/claude-opus-4.1",  # Opus for soundness checking
+            "temperature": 0,
+            "top_p": 0.2,
+            "force_verify": False,
         },
         # Counsel's Notes - strategic analysis from advocate's perspective
         "counselnotes": {
@@ -368,6 +382,38 @@ class LLMClientFactory:
             "model": "openai/o4-mini-high",
             "temperature": 0.2,
             "top_p": 0.7,
+            "force_verify": False,
+        },
+        # Chain of Verification - fast, efficient question generation
+        "cove": {
+            "model": "anthropic/claude-sonnet-4",
+            "temperature": 0.2,
+            "top_p": 0.8,
+            "force_verify": False,  # Avoid recursive verification
+        },
+        # CoVe sub-stages with separate model control
+        "cove-questions": {
+            "model": "anthropic/claude-sonnet-4",  # Fast question generation
+            "temperature": 0.2,
+            "top_p": 0.8,
+            "force_verify": False,
+        },
+        "cove-answers": {
+            "model": "anthropic/claude-opus-4.1",  # Independent answering
+            "temperature": 0.1,
+            "top_p": 0.8,
+            "force_verify": False,
+        },
+        "cove-verify": {
+            "model": "anthropic/claude-sonnet-4",  # Inconsistency detection
+            "temperature": 0.2,
+            "top_p": 0.8,
+            "force_verify": False,
+        },
+        "cove-final": {
+            "model": "anthropic/claude-opus-4.1",  # Final regeneration with highest quality
+            "temperature": 0.1,
+            "top_p": 0.8,
             "force_verify": False,
         },
     }
@@ -572,16 +618,13 @@ class LLMClient:
         use_openrouter = (
             "/" in self.model and not self.model.startswith("openai/")
         ) or model_family == "openai_reasoning"
-        
+
         # Configure client parameters
         if use_openrouter:
             base_url = CONFIG.or_base
             api_key = CONFIG.or_key
-            
-            return OpenAI(
-                api_key=api_key,
-                base_url=base_url
-            )
+
+            return OpenAI(api_key=api_key, base_url=base_url)
         else:
             # Direct OpenAI API
             return OpenAI(api_key=CONFIG.openai_api_key)
@@ -589,25 +632,25 @@ class LLMClient:
     def parse_openrouter_error(self, error_info):
         """
         Parse Google API errors from OpenRouter response.
-        
+
         Returns:
             tuple: (error_type, error_message) where error_type is one of:
-                   'auth', 'quota', 'rate_limit', 'billing', 'disabled', 
+                   'auth', 'quota', 'rate_limit', 'billing', 'disabled',
                    'permission', 'context_length', 'other'
         """
         import json
-        
+
         # Default to generic message
         error_msg = error_info.get("message", "Unknown API error")
-        
+
         # Check OpenRouter-level errors first
         if "maximum context length" in error_msg:
             return "context_length", error_msg
-        
+
         # Try to parse the raw Google error
         if "metadata" in error_info and "raw" in error_info["metadata"]:
             raw_error = error_info["metadata"]["raw"]
-            
+
             try:
                 raw_obj = json.loads(raw_error)
                 if "error" in raw_obj:
@@ -615,48 +658,70 @@ class LLMClient:
                     status = google_error.get("status", "")
                     code = google_error.get("code", 0)
                     message = google_error.get("message", "")
-                    
+
                     # Check for API key issues regardless of status code
                     if "API key" in message or "api key" in message.lower():
-                        if "expired" in message.lower() or "invalid" in message.lower() or "not valid" in message.lower():
-                            return "auth", f"Google API authentication failed: {message}"
-                    
+                        if (
+                            "expired" in message.lower()
+                            or "invalid" in message.lower()
+                            or "not valid" in message.lower()
+                        ):
+                            return (
+                                "auth",
+                                f"Google API authentication failed: {message}",
+                            )
+
                     # Also check INVALID_ARGUMENT status specifically
-                    if status == "INVALID_ARGUMENT" and ("key" in message.lower() or "token" in message.lower()):
+                    if status == "INVALID_ARGUMENT" and (
+                        "key" in message.lower() or "token" in message.lower()
+                    ):
                         return "auth", f"Google API authentication failed: {message}"
-                    
+
                     # Determine error type by status code and status field
                     if status == "UNAUTHENTICATED" or code == 401:
                         return "auth", f"Google API authentication failed: {message}"
-                    
+
                     elif status == "RESOURCE_EXHAUSTED" or code == 429:
                         if "quota" in message.lower():
                             return "quota", f"Google API quota exceeded: {message}"
                         else:
                             return "rate_limit", f"Google API rate limit hit: {message}"
-                    
+
                     elif status == "PERMISSION_DENIED" or code == 403:
                         if "billing" in message.lower():
-                            return "billing", f"Google API billing not enabled: {message}"
-                        elif "disabled" in message.lower() or "not been used" in message.lower():
-                            return "disabled", f"Google API not enabled in project: {message}"
+                            return (
+                                "billing",
+                                f"Google API billing not enabled: {message}",
+                            )
+                        elif (
+                            "disabled" in message.lower()
+                            or "not been used" in message.lower()
+                        ):
+                            return (
+                                "disabled",
+                                f"Google API not enabled in project: {message}",
+                            )
                         else:
-                            return "permission", f"Google API permission denied: {message}"
-                    
+                            return (
+                                "permission",
+                                f"Google API permission denied: {message}",
+                            )
+
                     else:
                         return "other", f"Google API error ({status}): {message}"
-                        
+
             except (json.JSONDecodeError, TypeError):
                 # Can't parse, check for auth issue using more specific patterns
                 if "UNAUTHENTICATED" in raw_error:
                     return "auth", "Google API authentication failed"
-        
+
         return "unknown", error_msg
 
     def _execute_api_call_with_retry(self, model_name, messages, filtered_params):
         # --- Begin: Add custom retryable API error for overloaded/rate limit ---
         # Note: OpenAI v1.x uses different error classes
         from openai import APIConnectionError, RateLimitError, APIError
+
         retry_errors = (
             APIConnectionError,
             RateLimitError,
@@ -680,35 +745,47 @@ class LLMClient:
             try:
                 # Get the appropriate client
                 client = self._get_openai_client(model_name)
-                
+
                 # Create the request
                 resp = client.chat.completions.create(
                     model=model_name, messages=messages, **filtered_params
                 )
-                
+
                 # Check for error in the response object (OpenRouter v1.x pattern)
-                if hasattr(resp, 'error') and resp.error:
+                if hasattr(resp, "error") and resp.error:
                     error_info = resp.error
                     if isinstance(error_info, dict):
                         # Parse the error properly
                         error_type, error_msg = self.parse_openrouter_error(error_info)
-                        
+
                         # Provide specific guidance based on error type
                         if error_type == "auth":
-                            raise Exception(f"{error_msg}. Please configure your Google API key at https://openrouter.ai/settings/keys")
+                            raise Exception(
+                                f"{error_msg}. Please configure your Google API key at https://openrouter.ai/settings/keys"
+                            )
                         elif error_type == "quota":
-                            raise Exception(f"{error_msg}. Consider waiting or upgrading your Google API quota")
+                            raise Exception(
+                                f"{error_msg}. Consider waiting or upgrading your Google API quota"
+                            )
                         elif error_type == "rate_limit":
-                            raise RetryableAPIError(f"{error_msg}. Will retry after delay")
+                            raise RetryableAPIError(
+                                f"{error_msg}. Will retry after delay"
+                            )
                         elif error_type == "billing":
-                            raise Exception(f"{error_msg}. Enable billing at https://console.cloud.google.com/billing")
+                            raise Exception(
+                                f"{error_msg}. Enable billing at https://console.cloud.google.com/billing"
+                            )
                         elif error_type == "disabled":
-                            raise Exception(f"{error_msg}. Enable the API in your Google Cloud project")
+                            raise Exception(
+                                f"{error_msg}. Enable the API in your Google Cloud project"
+                            )
                         elif error_type == "context_length":
-                            raise NonRetryableAPIError(f"{error_msg}. Reduce document size or use selective mode")
+                            raise NonRetryableAPIError(
+                                f"{error_msg}. Reduce document size or use selective mode"
+                            )
                         else:
                             raise Exception(f"API Error: {error_msg}")
-                
+
                 # Check for API-level errors in response (overloaded, rate limit, etc.)
                 if (
                     hasattr(resp, "choices")
@@ -869,9 +946,13 @@ class LLMClient:
 
         # Determine the correct model name
         model_name = self.model
-        
+
         # Extract just the model name for direct OpenAI models
-        if self.model.startswith("openai/") and "/" in self.model and not get_model_family(self.model) == "openai_reasoning":
+        if (
+            self.model.startswith("openai/")
+            and "/" in self.model
+            and not get_model_family(self.model) == "openai_reasoning"
+        ):
             model_name = self.model.replace("openai/", "")
 
         try:
@@ -925,21 +1006,21 @@ class LLMClient:
             # Validate response structure before accessing
             if not response:
                 raise Exception("Empty response from API")
-                
-            if not hasattr(response, 'choices') or not response.choices:
+
+            if not hasattr(response, "choices") or not response.choices:
                 # Log the actual response for debugging
                 logging.error(f"Invalid API response structure: {response}")
                 error_msg = "API response missing 'choices' field"
-                if hasattr(response, 'error') and response.error:
-                    if hasattr(response.error, 'get'):
+                if hasattr(response, "error") and response.error:
+                    if hasattr(response.error, "get"):
                         error_msg = f"API error: {response.error.get('message', 'Unknown error')}"
                     else:
                         error_msg = f"API error: {response.error}"
                 raise Exception(error_msg)
-            
-            if not hasattr(response.choices[0], 'message'):
+
+            if not hasattr(response.choices[0], "message"):
                 raise Exception(f"Invalid choice structure: {response.choices[0]}")
-            
+
             # Extract content and usage from chat response
             content = response.choices[0].message.content or ""
             # In v1.x, usage is an object with attributes
@@ -952,7 +1033,7 @@ class LLMClient:
                 usage = {
                     "prompt_tokens": getattr(usage, "prompt_tokens", 0),
                     "completion_tokens": getattr(usage, "completion_tokens", 0),
-                    "total_tokens": getattr(usage, "total_tokens", 0)
+                    "total_tokens": getattr(usage, "total_tokens", 0),
                 }
         finally:
             # No cleanup needed with client instances
@@ -1158,12 +1239,20 @@ class LLMClient:
         elif not isinstance(usage, dict):
             usage = {"raw": str(usage)}
 
-        # Log the LLM call
+        # Log the LLM call with optional CoVe stage identification
+        log_tag = f"llm_{self.model.replace('/', '_')}"
+        command_context = getattr(self, "command_context", None)
+
+        # Use specific log tag for CoVe stages
+        if command_context and "cove" in command_context:
+            log_tag = f"{command_context}_{self.model.replace('/', '_')}"
+
         save_log(
-            f"llm_{self.model.replace('/', '_')}",
+            log_tag,
             {
                 "method": "complete",
                 "model": self.model,
+                "command_context": command_context,
                 "messages": messages,
                 "params": {**self.default_params, **overrides},
                 "response": content,
@@ -1176,7 +1265,12 @@ class LLMClient:
 
     @heartbeat()
     @timed
-    def verify(self, primary_text: str, citation_context: str = None, reasoning_context: str = None) -> Tuple[str, str]:
+    def verify(
+        self,
+        primary_text: str,
+        citation_context: str = None,
+        reasoning_context: str = None,
+    ) -> Tuple[str, str]:
         """
         Run a self-critique pass to identify and correct legal inaccuracies in text.
 
@@ -1194,26 +1288,22 @@ class LLMClient:
         Raises:
             Exception: If the verification API call fails.
         """
-        try:
-            base_prompt = PROMPTS.get("base.australian_law")
-            # Select appropriate critique prompt based on available context
-            if citation_context and reasoning_context:
-                # Both contexts available - use comprehensive soundness check
-                self_critique = PROMPTS.get("verification.soundness_with_context")
-            else:
-                # Standard verification
-                self_critique = PROMPTS.get("verification.self_critique")
-        except KeyError:
-            # Fallback to hardcoded if prompts not available
-            base_prompt = "Australian law only. Use Australian English spellings and terminology (e.g., 'judgement' not 'judgment', 'defence' not 'defense')."
-            self_critique = "Identify and correct any legal inaccuracies above, and provide the corrected text only. Ensure all spellings follow Australian English conventions."
+        # Use prompts from centralized system - no fallbacks allowed
+        base_prompt = PROMPTS.get("verification.base_prompt")
+        # Select appropriate critique prompt based on available context
+        if citation_context and reasoning_context:
+            # Both contexts available - use comprehensive soundness check
+            self_critique = PROMPTS.get("verification.soundness_with_context")
+        else:
+            # Standard verification
+            self_critique = PROMPTS.get("verification.self_critique")
 
-        # Build the full text with optional verification contexts
+        # Build the full text with optional verification contexts using === separators
         full_text = primary_text
         if citation_context:
-            full_text += "\n\n## Previous Verification: Citations\n" + citation_context
+            full_text += "\n\n=== PREVIOUS VERIFICATION: CITATIONS ===\n" + citation_context + "\n=== END PREVIOUS VERIFICATION: CITATIONS ==="
         if reasoning_context:
-            full_text += "\n\n## Previous Verification: Reasoning Analysis\n" + reasoning_context
+            full_text += "\n\n=== PREVIOUS VERIFICATION: REASONING ANALYSIS ===\n" + reasoning_context + "\n=== END PREVIOUS VERIFICATION: REASONING ANALYSIS ==="
 
         critique_prompt = [
             {
@@ -1225,17 +1315,14 @@ class LLMClient:
                 "content": full_text + "\n\n" + self_critique,
             },
         ]
-        # Use Claude 4 Opus for all verification, regardless of generation model
-        verification_client = LLMClient(
-            "anthropic/claude-opus-4.1", **self.default_params
-        )
+        # Use the configured model for verification (no overrides)
         params = {"temperature": 0, "top_p": 0.2}
         if CONFIG.use_token_limits:
             params["max_tokens"] = 65536  # Large limit for full document verification
-        verification_result, usage = verification_client.complete(
+        verification_result, usage = self.complete(
             critique_prompt, skip_citation_verification=True, **params
         )
-        return verification_result, verification_client.model
+        return verification_result, self.model
 
     def validate_and_verify_citations(
         self, content: str, strict_mode: bool = True
@@ -1451,7 +1538,9 @@ class LLMClient:
         return validate_citation_patterns(content, enable_online)
 
     # Heartbeat now handled in `complete`; remove to prevent duplicate messages.
-    def verify_with_level(self, primary_text: str, level: str = "medium") -> Tuple[str, str]:
+    def verify_with_level(
+        self, primary_text: str, level: str = "medium"
+    ) -> Tuple[str, str]:
         """
         Run verification with different depth levels.
 
@@ -1483,13 +1572,9 @@ class LLMClient:
                 },
             ]
         elif level == "heavy":
-            # Full legal accuracy and citation check
-            try:
-                system_prompt = PROMPTS.get("verification.system_prompt")
-                heavy_verification = PROMPTS.get("verification.heavy_verification")
-            except KeyError:
-                system_prompt = "Australian law expert. Thoroughly verify legal accuracy, citations, precedents, and reasoning."
-                heavy_verification = "Provide comprehensive legal accuracy review: verify all citations, check legal reasoning, identify any errors in law or procedure, and ensure Australian English compliance."
+            # Full legal accuracy and citation check - no fallbacks allowed
+            system_prompt = PROMPTS.get("verification.heavy_verification_system")
+            heavy_verification = PROMPTS.get("verification.heavy_verification")
 
             critique_prompt = [
                 {
@@ -1506,10 +1591,9 @@ class LLMClient:
             # This maintains backward compatibility
             return self.verify(primary_text)
 
-        # Use Claude 4 Opus for all verification, regardless of generation model
-        verification_client = LLMClient(
-            "anthropic/claude-opus-4.1", **self.default_params
-        )
+        # Use the configured verification model
+        from litassist.llm import LLMClientFactory
+        verification_client = LLMClientFactory.for_command("verification")
         params = {"temperature": 0, "top_p": 0.2}
         if CONFIG.use_token_limits:
             params["max_tokens"] = 32768 if level == "light" else 65536

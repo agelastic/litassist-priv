@@ -36,7 +36,6 @@ from litassist.utils import (
     save_log,
     timed,
     save_command_output,
-    process_extraction_response,
     warning_message,
     success_message,
     saved_message,
@@ -45,8 +44,8 @@ from litassist.utils import (
     verifying_message,
     tip_message,
     error_message,
-    LOG_DIR,
 )
+from litassist.logging_utils import LOG_DIR
 from litassist.llm import LLMClientFactory
 from litassist.prompts import PROMPTS
 
@@ -501,8 +500,15 @@ def lookup(question, mode, extract, comprehensive, context, output, no_fetch):
 
     # Comprehensive CSE search (optional)
     if comprehensive:
+        # Combine question with context for comprehensive CSE if context provided
+        if context:
+            click.echo(f"Comprehensive search will include context: '{context}'")
+            comp_query = f"{question} {context}"
+        else:
+            comp_query = question
+        
         comp_links, comp_snippets = _perform_cse_search(
-            service, question, getattr(CONFIG, "cse_id_comprehensive", None), comp_limit
+            service, comp_query, getattr(CONFIG, "cse_id_comprehensive", None), comp_limit
         )
         links.extend(comp_links)
         all_snippets.extend(comp_snippets)
@@ -521,6 +527,8 @@ def lookup(question, mode, extract, comprehensive, context, output, no_fetch):
             f.write(f"Query: {question}\n")
             if context:
                 f.write(f"Context: {context}\n")
+            if comprehensive and context:
+                f.write(f"Comprehensive CSE searched with combined: {question} {context}\n")
             f.write(f"Timestamp: {time.strftime('%Y-%m-%d %H:%M:%S')}\n")
             f.write("=" * 80 + "\n\n")
             f.write("GOOGLE CSE SEARCH SNIPPETS\n")
@@ -750,16 +758,12 @@ def lookup(question, mode, extract, comprehensive, context, output, no_fetch):
             )
 
         # Create a rich prompt with actual content
-        prompt = f"""Question: {question}
-
-Successfully fetched and providing ACTUAL CONTENT from {len(contents)} legal sources:
-{chr(10).join(links)}
-
-Below is the REAL HTML/TEXT content fetched directly from these URLs:
-{content_text}
-
-IMPORTANT: You are reading the ACTUAL CONTENT from these web pages, not just their URLs. 
-Analyze this real content to provide comprehensive legal analysis with specific quotes and references."""
+        prompt = PROMPTS.get("lookup.content_qa").format(
+            question=question,
+            count=len(contents),
+            links=chr(10).join(links),
+            content=content_text
+        )
     else:
         # Fallback to URL-only prompt (existing behavior)
         prompt = PROMPTS.get("analysis.lookup.question_prompt").format(
@@ -1019,35 +1023,24 @@ Analyze this real content to provide comprehensive legal analysis with specific 
 
             raise click.ClickException("Lookup failed - see error details above")
 
-    # Process extraction if requested
+    # Save the output
     if extract:
-        # Generate output prefix for files
-        timestamp = time.strftime("%Y%m%d_%H%M%S")
-        output_prefix = f"lookup_{extract}_{timestamp}"
-
-        # Use shared extraction utility
-        formatted_content, json_data, json_file = process_extraction_response(
-            content, extract, output_prefix, "lookup"
-        )
-
-        # Save the formatted text output
+        # Extraction mode - content is already formatted by LLM
         command_name = f"{output}_{extract}" if output else f"lookup_{extract}"
         metadata = {"Query": question, "Mode": mode, "Extract": extract}
         if context:
             metadata["Context"] = context
         if comprehensive:
             metadata["Comprehensive"] = "True"
-        metadata["JSON File"] = json_file
 
         output_file = save_command_output(
             command_name,
-            formatted_content,
+            content,  # Content is already formatted by LLM
             "" if output else question,
             metadata=metadata,
         )
     else:
         # Non-extraction mode - save content as-is
-        formatted_content = content
         command_name = output if output else "lookup"
         metadata = {"Query": question, "Mode": mode}
         if context:
@@ -1057,7 +1050,7 @@ Analyze this real content to provide comprehensive legal analysis with specific 
 
         output_file = save_command_output(
             command_name,
-            formatted_content,
+            content,
             "" if output else question,
             metadata=metadata,
         )
@@ -1080,7 +1073,6 @@ Analyze this real content to provide comprehensive legal analysis with specific 
                 "prompt": prompt,
             },
             "response": content,
-            "formatted_output": formatted_content,
             "usage": usage,
             "output_file": output_file,
         },
