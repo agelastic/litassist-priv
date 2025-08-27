@@ -11,6 +11,7 @@ lookup:
   
   # Extraction mode system prompt
   # USED BY: lookup.py lookup() - system prompt when --extract is used
+  # LOCATION: lookup.py:825
   extraction_system: |
     You are a legal data extraction specialist. Your task is to extract specific information from legal sources and return it in the exact format requested.
     
@@ -20,8 +21,10 @@ lookup:
   
   # Extraction-specific instructions
   # USED BY: lookup.py lookup() - when --extract option is used
-  # LOCATION: lookup.py:292-297 (to be extracted)
+  # LOCATION: lookup.py:780-784
   extraction_instructions:
+    # USED BY: lookup.py lookup() - extraction mode for citations
+    # LOCATION: lookup.py:780
     citations: |
       Format your response EXACTLY as follows:
       
@@ -36,6 +39,8 @@ lookup:
       Include all case citations and legislation references found in the sources. Each citation should be a complete citation string as it appears in legal documents.
       If no citations are found, respond with: "No citations found."
     
+    # USED BY: lookup.py lookup() - extraction mode for principles
+    # LOCATION: lookup.py:782
     principles: |
       Format your response EXACTLY as follows:
       
@@ -46,6 +51,8 @@ lookup:
       Include key legal rules and principles with their supporting authorities.
       If no principles are found, respond with: "No legal principles found."
     
+    # USED BY: lookup.py lookup() - extraction mode for checklist
+    # LOCATION: lookup.py:784
     checklist: |
       Format your response EXACTLY as follows:
       
@@ -60,8 +67,10 @@ lookup:
   
   # Comprehensive analysis requirements
   # USED BY: lookup.py lookup() - when --comprehensive flag is used
-  # LOCATION: lookup.py:316-346 (to be extracted)
+  # LOCATION: lookup.py:828-832
   comprehensive_analysis:
+    # USED BY: lookup.py lookup() - comprehensive mode requirements
+    # LOCATION: lookup.py:828
     requirements: |
       CRITICAL FORMATTING REQUIREMENTS (MUST FOLLOW):
       - Put TWO blank lines (press Enter twice) before EVERY header
@@ -84,6 +93,8 @@ lookup:
       - Your knowledge supplements the sources, providing context and filling gaps
       - When using your own knowledge, distinguish it from sourced material
     
+    # USED BY: lookup.py lookup() - comprehensive mode citation requirements
+    # LOCATION: lookup.py:829-830
     citation_requirements: |
       COMPREHENSIVE CITATION REQUIREMENTS:
       - Use MEDIUM NEUTRAL CITATION format for all cases
@@ -98,6 +109,8 @@ lookup:
       - EVERY case mentioned MUST have its medium neutral citation
       - For legislation: Act Name Year (Jurisdiction) s Number
     
+    # USED BY: lookup.py lookup() - comprehensive mode output structure
+    # LOCATION: lookup.py:832
     output_structure: |
       EXHAUSTIVE OUTPUT STRUCTURE:
       
@@ -132,8 +145,10 @@ lookup:
   
   # Standard analysis instructions
   # USED BY: lookup.py lookup() - standard mode
-  # LOCATION: lookup.py:344-345 (to be extracted)
+  # LOCATION: lookup.py:841
   standard_analysis:
+    # USED BY: lookup.py lookup() - standard mode instructions
+    # LOCATION: lookup.py:841
     instructions: |
       CRITICAL FORMATTING REQUIREMENTS (MUST FOLLOW):
       - Put TWO blank lines (press Enter twice) before EVERY header
@@ -188,6 +203,7 @@ lookup:
     - EVERY legal document you reference MUST be properly cited
     - When quoting from fetched content, cite the specific case and paragraph
 
+  # NOT USED - Template not referenced in codebase
   # # Medium neutral citation instructions
   # # Used across all lookup modes for consistent citation formatting
   # medium_neutral_citation: |

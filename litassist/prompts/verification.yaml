@@ -104,6 +104,7 @@ verification:
 
   # Context-aware soundness verification with both citation and reasoning context
   # USED BY: llm.py LLMClient.verify() method - when both contexts are provided
+  # LOCATION: llm.py:1296
   soundness_with_context: |
     You are conducting legal soundness verification with the benefit of prior verification results.
     
@@ -142,7 +143,7 @@ verification:
     reproduced verbatim exactly as they appear. Never use placeholders.
 
   # Reasoning verification with citation context
-  # USED BY: reasoning generation when citation context is available
+  # NOT USED - Template not referenced in codebase
   reasoning_with_citations: |
     Generate a reasoning trace for this document, taking into account the citation verification results.
     
@@ -174,8 +175,10 @@ verification:
     Each section should appear exactly once. Do not repeat sections or content.
 
   # Chain of Verification (CoVe) prompts
-  # USED BY: verification_chain.py run_cove_verification() function
+  # USED BY: verification_chain.py run_cove_verification() - 4-stage verification
   cove:
+    # USED BY: verification_chain.py run_cove_verification() - Stage 1: Generate questions
+    # LOCATION: verification_chain.py:137
     questions_generation: |
       Generate 10 verification questions for this legal document.
       Focus on citations, dates, party names, legal principles, jurisdiction (state/federal/court level), and any potential inconsistencies.
@@ -191,6 +194,8 @@ verification:
       
       Output numbered questions only (1. Question one, 2. Question two, etc.).
     
+    # USED BY: verification_chain.py run_cove_verification() - Stage 2: Answer questions
+    # LOCATION: verification_chain.py:158
     answers_verification: |
       Answer these questions based ONLY on legal knowledge, NOT the document:
       
@@ -201,6 +206,8 @@ verification:
       For each question, answer: Yes/No/Uncertain with brief explanation.
       Format: 1. Yes - [explanation], 2. No - [explanation], etc.
     
+    # USED BY: verification_chain.py run_cove_verification() - Stage 3: Detect inconsistencies
+    # LOCATION: verification_chain.py:177
     inconsistency_detection: |
       Compare these Q&A pairs against the original document.
       Identify any inconsistencies or errors.
@@ -215,6 +222,8 @@ verification:
       
       Output: List specific issues found, or "No issues found" if document is consistent.
     
+    # USED BY: verification_chain.py run_cove_verification() - Stage 4: Regenerate if issues found
+    # LOCATION: verification_chain.py:206
     regeneration: |
       The following issues were found in this legal document:
       
@@ -241,6 +250,7 @@ verification:
   base_prompt: |
     Australian law only. Use Australian English spellings and terminology (e.g., 'judgement' not 'judgment', 'defence' not 'defense').
 
+  # NOT USED - Template not referenced in codebase
   # # Jurisdiction verification checklist
   # # Used to ensure correct application of state/federal law
   # jurisdiction_check: |
