@@ -3,15 +3,15 @@
 
 analysis:
   # Base case facts prompt - just the case facts section
-  # USED BY: caseplan.py - lines 146-148 (budget assessment mode)
-  # LOCATION: Provides only the case facts without outcome/issues sections
+  # USED BY: caseplan.py - budget assessment mode
+  # LOCATION: caseplan.py:145
   base_case_facts_prompt: |
     CASE FACTS:
     {facts_content}
   
   # Case facts prompt template with outcome and issues
-  # USED BY: strategy.py - lines 255-263 (building base user prompt)
-  # LOCATION: Formats case facts, outcome, and legal issues into structured prompt
+  # USED BY: strategy.py - building base user prompt
+  # LOCATION: strategy.py:267
   case_facts_prompt: |
     CASE FACTS:
     {facts_content}
@@ -23,8 +23,8 @@ analysis:
     {legal_issues}
 
   # Strategy ranking prompt for case facts
-  # USED BY: strategy.py - lines 538-562 (ranking all strategies)
-  # LOCATION: Ranks strategies by likelihood of success for specific outcome
+  # USED BY: strategy.py - ranking all strategies
+  # LOCATION: strategy.py:538
   strategy_ranking_prompt: |
     CASE FACTS:
     {facts_content}
@@ -53,8 +53,8 @@ analysis:
     REASONING: [brief explanation focusing on legal merit, factual support, precedential strength, and judicial likelihood for the top strategies]
 
   # Remaining strategies ranking prompt
-  # USED BY: strategy.py - lines 443-457 (ranking strategies after most likely selected)
-  # LOCATION: Ranks remaining strategies after priority strategies are identified
+  # USED BY: strategy.py - ranking strategies after most likely selected
+  # LOCATION: strategy.py:451
   remaining_strategies_prompt: |
     CASE FACTS:
     {facts_content}
@@ -76,9 +76,11 @@ analysis:
   # USED BY: extractfacts.py - lines 85-88 (single chunk extraction)
   # LOCATION: Base prompt for extracting facts under structured headings
   extraction:
+    # USED BY: extractfacts.py - no documents provided
+    # LOCATION: extractfacts.py:89
     base_prompt: "Extract under these headings (include all relevant details):\n{format_instructions}\n\n=== CONTENT TO EXTRACT ===\n{content}\n=== END CONTENT TO EXTRACT ==="
-    # USED BY: extractfacts.py - lines 118-121 (multi-chunk extraction)
-    # LOCATION: Formats chunk-specific extraction prompt
+    # USED BY: extractfacts.py - processing document chunks
+    # LOCATION: extractfacts.py:122
     chunk_prompt: "{chunk_template}\n\n=== CHUNK CONTENT ===\n{chunk}\n=== END CHUNK CONTENT ==="
     
   # Chunk processing templates
