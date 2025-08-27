@@ -18,7 +18,6 @@ from litassist.utils import (
     create_reasoning_prompt,
     save_command_output,
     show_command_completion,
-    warning_message,
     info_message,
     success_message,
     validate_file_size,
@@ -66,20 +65,6 @@ def extractfacts(file, verify, noverify, cove, output):
 
     # Initialize the LLM client using factory
     client = LLMClientFactory.for_command("extractfacts")
-
-    # Handle verification flags
-    if noverify:
-        verify = False
-        click.echo(info_message("Standard verification disabled by --noverify flag"))
-    else:
-        # extractfacts defaults to verification enabled
-        if not verify:
-            click.echo(
-                info_message(
-                    "Note: Extractfacts command automatically uses verification for accuracy"
-                )
-            )
-        verify = True
 
     # Process content based on chunking needs (now most documents will be single chunk)
     if len(chunks) == 1:
@@ -197,13 +182,18 @@ def extractfacts(file, verify, noverify, cove, output):
             })
         else:
             click.echo(success_message("CoVe verification passed - no issues found"))
-    else:
+    elif not noverify:
         # Use standard verification (current behavior)
         combined, _ = verify_content_if_needed(
-            client, combined, "extractfacts", verify_flag=verify
+            client, combined, "extractfacts", verify_flag=True
         )
-        verification_metadata["Verification"] = "Standard verification" if verify else "Disabled"
-        verification_metadata["Model"] = client.model if verify else "N/A"
+        verification_metadata["Verification"] = "Standard verification"
+        verification_metadata["Model"] = client.model
+        click.echo(info_message("Standard verification applied"))
+    else:
+        verification_metadata["Verification"] = "Disabled"
+        verification_metadata["Model"] = "N/A"
+        click.echo(info_message("Standard verification skipped by --noverify flag"))
 
     # Save output using utility (reasoning trace remains inline)
     slug = "_".join(source_files[:3])  # Use first 3 files for slug

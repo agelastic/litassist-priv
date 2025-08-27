@@ -63,10 +63,8 @@ class TestNoVerifyFlag:
             # Verify command succeeded
             assert result.exit_code == 0
             
-            # Verify that verify_content_if_needed was called with verify_flag=False
-            mock_verify.assert_called_once()
-            # Check using keyword args or positional args
-            assert mock_verify.call_args.kwargs.get('verify_flag', mock_verify.call_args.args[3] if len(mock_verify.call_args.args) > 3 else None) == False
+            # Verify that verify_content_if_needed was NOT called when --noverify is set
+            mock_verify.assert_not_called()
             
         finally:
             Path(test_file).unlink()
@@ -174,10 +172,8 @@ Test objectives
             # Verify command succeeded
             assert result.exit_code == 0
             
-            # Verify that verify_content_if_needed was called with verify_flag=False
-            mock_verify.assert_called_once()
-            # Check using keyword args or positional args
-            assert mock_verify.call_args.kwargs.get('verify_flag', mock_verify.call_args.args[3] if len(mock_verify.call_args.args) > 3 else None) == False
+            # Verify that verify_content_if_needed was NOT called when --noverify is set
+            mock_verify.assert_not_called()
             
         finally:
             Path(facts_file).unlink()

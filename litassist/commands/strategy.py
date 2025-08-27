@@ -234,20 +234,6 @@ def strategy(case_facts, outcome, strategies, verify, noverify, cove, output):
                 "  - Warning: No strategies marked as 'most likely to succeed' found"
             )
 
-    # Handle verification flags
-    if noverify:
-        verify = False
-        click.echo(info_message("Standard verification disabled by --noverify flag"))
-    else:
-        # strategy defaults to verification enabled
-        if not verify:
-            click.echo(
-                info_message(
-                    "Note: Strategy command automatically uses verification for accuracy"
-                )
-            )
-        verify = True
-
     # Generate strategic options
     system_prompt = PROMPTS.get("commands.strategy.system")
 
@@ -862,11 +848,14 @@ def strategy(case_facts, outcome, strategies, verify, noverify, cove, output):
             })
         else:
             click.echo(success_message("CoVe verification passed - no issues found"))
-    else:
+    elif not noverify:
         # Use standard verification (current behavior)
         strategy_content, _ = verify_content_if_needed(
-            llm_client, strategy_content, "strategy", verify_flag=verify
+            llm_client, strategy_content, "strategy", verify_flag=True
         )
+        click.echo(info_message("Standard verification applied"))
+    else:
+        click.echo(info_message("Standard verification skipped by --noverify flag"))
 
     # Collect all critiques
     critiques = []
