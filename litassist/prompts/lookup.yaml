@@ -26,8 +26,11 @@ lookup:
       Format your response EXACTLY as follows:
       
       CITATIONS FOUND:
-      • Smith v Jones [2020] HCA 1
+      • Case Name [Year] COURT_ID Number
       • Competition and Consumer Act 2010 (Cth) s 18
+      
+      Use medium neutral citation format for all cases.
+      Example: Smith v Jones [2020] HCA 1
       • Brown v Wilson (2019) 123 CLR 456
       
       Include all case citations and legislation references found in the sources. Each citation should be a complete citation string as it appears in legal documents.
@@ -83,10 +86,17 @@ lookup:
     
     citation_requirements: |
       COMPREHENSIVE CITATION REQUIREMENTS:
-      - Cite ALL relevant cases from the sources with parallel citations
-      - Reference specific paragraphs/sections when applicable
+      - Use MEDIUM NEUTRAL CITATION format for all cases
+      - Format: Case Name [Year] COURT_ID Number, [paragraph]
+      - Examples: 
+        - R v De Gruchy [2006] VSCA 10, [4]-[5]
+        - Nichia Corporation v Arrow Electronics Australia Pty Ltd [2019] FCAFC 2, [11]
+      - Include pinpoint references using paragraph numbers [#] not page numbers
+      - Cite ALL relevant cases from the sources
       - Distinguish between ratio decidendi and obiter dicta
       - Group citations by authority level (High Court -> Federal -> State)
+      - EVERY case mentioned MUST have its medium neutral citation
+      - For legislation: Act Name Year (Jurisdiction) s Number
     
     output_structure: |
       EXHAUSTIVE OUTPUT STRUCTURE:
@@ -148,7 +158,7 @@ lookup:
       (Write 1-2 paragraphs with definitive conclusions, with one blank line between if using two paragraphs)
       
       CONTENT REQUIREMENTS:
-      Cite sources. Analyze the provided sources to provide comprehensive legal analysis. Cross-reference between sources where applicable. Each paragraph should contain a single coherent idea or point.
+      Use medium neutral citations for all cases. Format: Case Name [Year] COURT_ID Number, [paragraph]. Example: Smith v Jones [2020] HCA 15, [42]. Cite ALL sources used in your analysis. Every legal principle, case reference, or statutory provision mentioned must include a proper citation. Analyze the provided sources to provide comprehensive legal analysis. Cross-reference between sources where applicable. Each paragraph should contain a single coherent idea or point.
       
       KNOWLEDGE INTEGRATION:
       Use BOTH the provided sources AND your own legal knowledge. The provided sources take PRIORITY and should be cited directly. Your own knowledge should supplement and contextualize the provided materials, filling gaps and providing broader legal context where the sources don't fully address the question.
@@ -169,6 +179,28 @@ lookup:
     {content}
     
     Based on the content above, answer the user's question comprehensively.
+    
+    CITATION REQUIREMENTS:
+    - Use medium neutral citation format for all case references
+    - Format: Case Name [Year] COURT_ID Number, [paragraph]
+    - Example: Baker v The Queen [2010] VSCA 226, [13]
+    - Include pinpoint references using paragraph numbers where relevant
+    - EVERY legal document you reference MUST be properly cited
+    - When quoting from fetched content, cite the specific case and paragraph
+
+  # # Medium neutral citation instructions
+  # # Used across all lookup modes for consistent citation formatting
+  # medium_neutral_citation: |
+  #   MEDIUM NEUTRAL CITATION FORMAT (REQUIRED):
+  #   - Case citations: Case Name [Year] COURT_ID Number, [paragraph]
+  #   - Court identifiers: HCA, FCA, FCAFC, VSCA, VSC, NSWCA, NSWSC, QCA, QSC, WASCA, WASC, TASSC, NTSC, ACTSC
+  #   - Pinpoint references: Use paragraph numbers in square brackets [13] or [13]-[15]
+  #   - Examples:
+  #     - Baker v The Queen [2010] VSCA 226, [13]
+  #     - R v Tang [2008] HCA 39, [28], [31]-[33]
+  #     - Mabo v Queensland (No 2) [1992] HCA 23, [104]
+  #   - Legislation: Act Name Year (Jurisdiction) s Number
+  #   - Example: Corporations Act 2001 (Cth) s 180
 
   # User prompt template
   # USED BY: lookup.py lookup() - user prompt construction
