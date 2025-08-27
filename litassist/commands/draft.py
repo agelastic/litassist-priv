@@ -25,6 +25,7 @@ from litassist.utils import (
     show_command_completion,
     detect_factual_hallucinations,
     is_text_file,
+    verify_content_if_needed,
 )
 from litassist.llm import LLMClientFactory
 from litassist.helpers.retriever import Retriever, get_pinecone_client
@@ -34,6 +35,7 @@ from litassist.verification_chain import run_cove_verification
 @click.command()
 @click.argument("documents", nargs=-1, required=True, type=click.Path(exists=True))
 @click.argument("query")
+@click.option("--noverify", is_flag=True, help="Skip standard verification (does not affect --cove)")
 @click.option("--cove", is_flag=True, help="Use Chain of Verification (experimental)")
 @click.option(
     "--diversity",
@@ -44,7 +46,7 @@ from litassist.verification_chain import run_cove_verification
 @click.option("--output", type=str, help="Custom output filename prefix")
 @click.pass_context
 @timed
-def draft(ctx, documents, query, cove, diversity, output):
+def draft(ctx, documents, query, noverify, cove, diversity, output):
     """
     Citation-rich drafting via RAG & GPT-4o.
 
@@ -239,6 +241,15 @@ def draft(ctx, documents, query, cove, diversity, output):
         raise click.ClickException(f"LLM draft error: {e}")
 
     # Note: Citation verification now handled automatically in LLMClient.complete()
+    
+    # Apply standard verification (uses verification chain like extractfacts/strategy)
+    if not noverify:
+        content, _ = verify_content_if_needed(
+            client, content, "draft", verify_flag=True
+        )
+        click.echo(info_message("Standard verification applied"))
+    else:
+        click.echo(info_message("Standard verification skipped by --noverify flag"))
 
     # Track critiques for appending to output
     critiques = []

@@ -1591,10 +1591,9 @@ class LLMClient:
             # This maintains backward compatibility
             return self.verify(primary_text)
 
-        # Use Claude 4 Opus for all verification, regardless of generation model
-        verification_client = LLMClient(
-            "anthropic/claude-opus-4.1", **self.default_params
-        )
+        # Use the configured verification model
+        from litassist.llm import LLMClientFactory
+        verification_client = LLMClientFactory.for_command("verification")
         params = {"temperature": 0, "top_p": 0.2}
         if CONFIG.use_token_limits:
             params["max_tokens"] = 32768 if level == "light" else 65536

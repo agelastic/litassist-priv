@@ -763,7 +763,7 @@ def verify_content_if_needed(
         Tuple of (possibly modified content, whether verification was performed)
     """
     # Mandatory verification chain for high-risk commands
-    if command_name in ['extractfacts', 'strategy']:
+    if command_name in ['extractfacts', 'strategy', 'draft']:
         from litassist.verification_chain import run_verification_chain
         verified_content, results = run_verification_chain(content, command_name)
         if results.get('llm', {}).get('corrections_made'):
@@ -798,11 +798,8 @@ def verify_content_if_needed(
 
     if needs_verification:
         try:
-            # Use appropriate verification level based on command
-            if command_name in ["strategy", "draft"]:
-                correction = client.verify_with_level(content, "heavy")
-            else:
-                correction = client.verify(content)
+            # Standard verification for remaining commands
+            correction = client.verify(content)
 
             # Handle tuple return from new verify methods
             if isinstance(correction, tuple):

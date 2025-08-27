@@ -33,10 +33,11 @@ from litassist.verification_chain import run_cove_verification
 @click.option(
     "--verify", is_flag=True, help="Enable self-critique pass (default: auto-enabled)"
 )
+@click.option("--noverify", is_flag=True, help="Skip standard verification (does not affect --cove)")
 @click.option("--cove", is_flag=True, help="Use Chain of Verification instead of standard verification")
 @click.option("--output", type=str, help="Custom output filename prefix")
 @timed
-def extractfacts(file, verify, cove, output):
+def extractfacts(file, verify, noverify, cove, output):
     """
     Auto-generate case_facts.txt under ten structured headings.
 
@@ -66,20 +67,19 @@ def extractfacts(file, verify, cove, output):
     # Initialize the LLM client using factory
     client = LLMClientFactory.for_command("extractfacts")
 
-    # extractfacts always needs verification as it creates foundational documents
-    if verify:
-        click.echo(
-            warning_message(
-                "Note: --verify flag ignored - extractfacts command always uses verification for accuracy"
+    # Handle verification flags
+    if noverify:
+        verify = False
+        click.echo(info_message("Standard verification disabled by --noverify flag"))
+    else:
+        # extractfacts defaults to verification enabled
+        if not verify:
+            click.echo(
+                info_message(
+                    "Note: Extractfacts command automatically uses verification for accuracy"
+                )
             )
-        )
-    elif not verify:
-        click.echo(
-            info_message(
-                "Note: Extractfacts command automatically uses verification for accuracy"
-            )
-        )
-    verify = True  # Force verification for critical accuracy
+        verify = True
 
     # Process content based on chunking needs (now most documents will be single chunk)
     if len(chunks) == 1:
@@ -200,10 +200,10 @@ def extractfacts(file, verify, cove, output):
     else:
         # Use standard verification (current behavior)
         combined, _ = verify_content_if_needed(
-            client, combined, "extractfacts", verify_flag=True
+            client, combined, "extractfacts", verify_flag=verify
         )
-        verification_metadata["Verification"] = "Standard verification"
-        verification_metadata["Model"] = client.model
+        verification_metadata["Verification"] = "Standard verification" if verify else "Disabled"
+        verification_metadata["Model"] = client.model if verify else "N/A"
 
     # Save output using utility (reasoning trace remains inline)
     slug = "_".join(source_files[:3])  # Use first 3 files for slug

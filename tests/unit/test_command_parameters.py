@@ -315,7 +315,19 @@ Federal Court
     @patch("litassist.commands.draft.CONFIG")
     def test_draft_command_parameters(self, mock_config, mock_pinecone, mock_read, mock_factory):
         """Test draft command uses o3-pro model."""
-        mock_factory.return_value = self.mock_client
+        # Create verification client mock
+        mock_verification_client = Mock()
+        mock_verification_client.complete.return_value = ("Verified content", {"tokens": 100})
+        mock_verification_client.validate_citations.return_value = []
+        mock_verification_client.verify.return_value = ("Verified content", "mock-model")
+        mock_verification_client.model = "anthropic/claude-opus-4.1"
+        
+        # Set up factory to return different clients for different calls
+        mock_factory.side_effect = [
+            self.mock_client,  # For draft
+            mock_verification_client,  # For verification
+        ]
+        
         mock_read.return_value = "Instructions"
         mock_config.rag_max_chars = 8000
         
@@ -347,8 +359,11 @@ Federal Court
                 import traceback
                 traceback.print_tb(result.exc_info[2])
                 
-        # Verify factory was called
-        mock_factory.assert_called_with("draft")
+        # Verify factory was called twice (draft and verification)
+        assert mock_factory.call_count == 2
+        calls = mock_factory.call_args_list
+        assert calls[0][0][0] == "draft"
+        assert calls[1][0][0] == "verification"
         
         # Check configuration
         from litassist.llm import LLMClientFactory

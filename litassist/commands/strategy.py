@@ -163,10 +163,11 @@ def create_consolidated_reasoning_trace(option_traces, outcome):
 @click.option(
     "--verify", is_flag=True, help="Enable self-critique pass (default: auto-enabled)"
 )
+@click.option("--noverify", is_flag=True, help="Skip standard verification (does not affect --cove)")
 @click.option("--cove", is_flag=True, help="Use Chain of Verification instead of standard verification")
 @click.option("--output", type=str, help="Custom output filename prefix")
 @timed
-def strategy(case_facts, outcome, strategies, verify, cove, output):
+def strategy(case_facts, outcome, strategies, verify, noverify, cove, output):
     """
     Generate legal strategy options and draft documents for Australian civil matters.
 
@@ -233,20 +234,19 @@ def strategy(case_facts, outcome, strategies, verify, cove, output):
                 "  - Warning: No strategies marked as 'most likely to succeed' found"
             )
 
-    # strategy always needs verification as it creates foundational strategic documents
-    if verify:
-        click.echo(
-            warning_message(
-                "Note: --verify flag ignored - strategy command always uses verification for accuracy"
+    # Handle verification flags
+    if noverify:
+        verify = False
+        click.echo(info_message("Standard verification disabled by --noverify flag"))
+    else:
+        # strategy defaults to verification enabled
+        if not verify:
+            click.echo(
+                info_message(
+                    "Note: Strategy command automatically uses verification for accuracy"
+                )
             )
-        )
-    elif not verify:
-        click.echo(
-            info_message(
-                "Note: Strategy command automatically uses verification for accuracy"
-            )
-        )
-    verify = True  # Force verification for critical accuracy
+        verify = True
 
     # Generate strategic options
     system_prompt = PROMPTS.get("commands.strategy.system")
@@ -865,7 +865,7 @@ def strategy(case_facts, outcome, strategies, verify, cove, output):
     else:
         # Use standard verification (current behavior)
         strategy_content, _ = verify_content_if_needed(
-            llm_client, strategy_content, "strategy", verify_flag=True
+            llm_client, strategy_content, "strategy", verify_flag=verify
         )
 
     # Collect all critiques

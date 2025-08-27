@@ -233,7 +233,8 @@ class TestCommandCoVeIntegration:
                  patch('litassist.commands.draft.save_command_output') as mock_save, \
                  patch('litassist.commands.draft.save_log'), \
                  patch('litassist.commands.draft.show_command_completion'), \
-                 patch('litassist.commands.draft.PROMPTS') as mock_prompts:
+                 patch('litassist.commands.draft.PROMPTS') as mock_prompts, \
+                 patch('litassist.commands.draft.verify_content_if_needed') as mock_verify:
                 
                 # Setup mocks
                 mock_read.return_value = "Test content"
@@ -256,7 +257,11 @@ class TestCommandCoVeIntegration:
                 # Mock LLM client
                 mock_client = Mock()
                 mock_client.complete.return_value = ("Original draft content", {"total_tokens": 100})
+                mock_client.verify.return_value = ("Original draft content", "mock-model")
                 mock_factory.for_command.return_value = mock_client
+                
+                # Mock verify_content_if_needed to return unchanged content
+                mock_verify.return_value = ("Original draft content", None)
                 
                 # Mock CoVe regeneration
                 mock_cove.return_value = ("Regenerated draft content", {

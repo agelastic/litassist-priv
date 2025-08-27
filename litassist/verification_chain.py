@@ -50,7 +50,7 @@ def run_verification_chain(
     if "llm" not in skip_stages and command in ["extractfacts", "strategy", "draft"]:
         client = LLMClientFactory.for_command("verification")
         citation_report = _format_simple_report(results.get("database", {}))
-        corrected_content, _ = client.verify(
+        corrected_content, model_name = client.verify(
             content, citation_context=citation_report if citation_report else None
         )
 
