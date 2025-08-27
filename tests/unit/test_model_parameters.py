@@ -88,7 +88,7 @@ class TestGetModelParameters:
             "top_p": 0.95,
             "max_tokens": 4096,
             "max_completion_tokens": 8192,
-            "reasoning_effort": "high",
+            "thinking_effort": "high",  # Use thinking_effort instead
             "presence_penalty": 0.1,
             "frequency_penalty": 0.1
         }
@@ -104,7 +104,9 @@ class TestGetModelParameters:
         
         # Should keep these
         assert filtered["max_completion_tokens"] == 8192
-        assert filtered["reasoning_effort"] == "high"
+        # Should have reasoning object for OpenRouter
+        assert "reasoning" in filtered
+        assert filtered["reasoning"] == {"effort": "high"}
 
     def test_o1_preview_parameter_filtering(self):
         """Test that o1-preview only accepts specific parameters."""
@@ -163,18 +165,21 @@ class TestGetModelParameters:
         assert "seed" not in filtered  # Not in google allowed list
 
     def test_reasoning_effort_validation(self):
-        """Test reasoning_effort parameter validation."""
-        # Valid values - reasoning_effort is allowed for openai_reasoning family
+        """Test thinking_effort parameter conversion to reasoning object."""
+        # Valid values - thinking_effort converts to reasoning object
         for value in ["low", "medium", "high"]:
-            filtered = get_model_parameters("openai/o3-pro", {"reasoning_effort": value})
-            assert filtered["reasoning_effort"] == value
+            filtered = get_model_parameters("openai/o3-pro", {"thinking_effort": value})
+            assert "reasoning" in filtered
+            assert filtered["reasoning"] == {"effort": value}
         
-        # Invalid values are still passed through (validation happens elsewhere)
-        filtered = get_model_parameters("openai/o3-pro", {"reasoning_effort": "invalid"})
-        assert filtered["reasoning_effort"] == "invalid"
+        # Test direct reasoning object (when not using thinking_effort)
+        filtered = get_model_parameters("openai/o3-pro", {"reasoning": {"effort": "high"}})
+        assert "reasoning" in filtered
+        assert filtered["reasoning"] == {"effort": "high"}
         
         # Non-reasoning models should ignore this parameter
-        filtered = get_model_parameters("openai/gpt-4", {"reasoning_effort": "high"})
+        filtered = get_model_parameters("openai/gpt-4", {"thinking_effort": "high"})
+        assert "reasoning" not in filtered
         assert "reasoning_effort" not in filtered
 
     def test_max_tokens_vs_max_completion_tokens(self):
@@ -254,11 +259,13 @@ class TestGetModelParameters:
             "b": 2,
             "max_completion_tokens": 4096,
             "c": 3,
-            "reasoning_effort": "high",
+            "thinking_effort": "high",
             "d": 4
         }
         
         filtered = get_model_parameters("openai/o3-pro", requested)
         
-        # Should only have max_completion_tokens and reasoning_effort
-        assert list(filtered.keys()) == ["max_completion_tokens", "reasoning_effort"]
+        # Should have reasoning object and max_completion_tokens
+        assert "reasoning" in filtered
+        assert "max_completion_tokens" in filtered
+        assert filtered["reasoning"] == {"effort": "high"}

@@ -356,7 +356,7 @@ class TestLLMClientComplete:
         client = LLMClient(
             model="openai/o3-pro",
             temperature=0.7,  # Should be ignored
-            reasoning_effort="high",
+            thinking_effort="high",  # Will convert to reasoning object
         )
 
         response, stats = client.complete([{"role": "user", "content": "Test"}])
@@ -364,7 +364,8 @@ class TestLLMClientComplete:
         # Verify correct parameters were passed
         _, _, call_params = mock_execute.call_args[0]
         assert "temperature" not in call_params  # Should be filtered out
-        assert call_params.get("reasoning_effort") == "high"
+        assert "reasoning" in call_params
+        assert call_params["reasoning"] == {"effort": "high"}
 
     @patch("litassist.llm.CONFIG")
     @patch("litassist.llm.LLMClient._execute_api_call_with_retry")

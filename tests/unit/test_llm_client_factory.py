@@ -43,7 +43,7 @@ class TestLLMClientFactory:
             client = LLMClientFactory.for_command("strategy")
 
             assert isinstance(client, LLMClient)
-            assert client.model == "openai/o3-pro"
+            assert client.model == "anthropic/claude-opus-4.1"  # Updated model
             assert hasattr(client, "_force_verify")
             assert client._force_verify is True
 
@@ -223,7 +223,7 @@ class TestLLMClientFactoryIntegration:
 
             # Specific model assertions based on current configuration
             assert "gemini" in models["lookup"].lower()  # Uses Gemini for search
-            assert "o3-pro" in models["strategy"].lower()  # Uses o3-pro for strategy
+            assert "claude-opus" in models["strategy"].lower()  # Uses Claude Opus for strategy
             assert "o3-pro" in models["draft"].lower()  # Uses o3-pro for drafting
             assert (
                 "anthropic/claude-sonnet-4" in models["extractfacts"].lower()

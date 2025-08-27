@@ -15,78 +15,83 @@ from litassist.llm import (
 
 
 class TestThinkingEffortConversion:
-    """Test thinking effort parameter conversion for different model families."""
+    """Test thinking effort parameter conversion for OpenRouter reasoning object format."""
     
     def test_openai_reasoning_conversion(self):
-        """Test OpenAI o1/o3 model reasoning_effort conversion."""
-        # Test direct mapping for low/medium/high
-        assert convert_thinking_effort("low", "openai_reasoning") == {"reasoning_effort": "low"}
-        assert convert_thinking_effort("medium", "openai_reasoning") == {"reasoning_effort": "medium"}
-        assert convert_thinking_effort("high", "openai_reasoning") == {"reasoning_effort": "high"}
+        """Test OpenAI o1/o3 model reasoning object conversion for OpenRouter."""
+        # Test effort-based mapping for OpenRouter
+        assert convert_thinking_effort("low", "openai/o3-pro", True) == {
+            "reasoning": {"effort": "low"}
+        }
+        assert convert_thinking_effort("medium", "openai/o3-pro", True) == {
+            "reasoning": {"effort": "medium"}
+        }
+        assert convert_thinking_effort("high", "openai/o3-pro", True) == {
+            "reasoning": {"effort": "high"}
+        }
         
         # Test max maps to high
-        assert convert_thinking_effort("max", "openai_reasoning") == {"reasoning_effort": "high"}
+        assert convert_thinking_effort("max", "openai/o3-pro", True) == {
+            "reasoning": {"effort": "high"}
+        }
         
         # Test none returns empty
-        assert convert_thinking_effort("none", "openai_reasoning") == {}
+        assert convert_thinking_effort("none", "openai/o3-pro", True) == {}
         
-        # Test default fallback
-        assert convert_thinking_effort("invalid", "openai_reasoning") == {"reasoning_effort": "medium"}
+        # Test GPT-5 minimal support
+        assert convert_thinking_effort("minimal", "openai/gpt-5", True) == {
+            "reasoning": {"effort": "minimal"}
+        }
+        
+        # Test minimal fallback for non-GPT-5
+        assert convert_thinking_effort("minimal", "openai/o3-pro", True) == {
+            "reasoning": {"effort": "low"}
+        }
     
     def test_anthropic_thinking_conversion(self):
-        """Test Anthropic Claude thinking object conversion."""
+        """Test Anthropic Claude reasoning object conversion for OpenRouter."""
         # Test none returns empty
-        assert convert_thinking_effort("none", "anthropic") == {}
+        assert convert_thinking_effort("none", "anthropic/claude-4", True) == {}
         
-        # Test low budget
-        result = convert_thinking_effort("low", "anthropic")
-        assert result == {
-            "thinking": {
-                "thinking": "enabled",
-                "budget_tokens": 1024
-            }
+        # Test token-based allocation for OpenRouter
+        assert convert_thinking_effort("low", "anthropic/claude-4", True) == {
+            "reasoning": {"max_tokens": 1024}
         }
         
-        # Test medium budget
-        result = convert_thinking_effort("medium", "anthropic")
-        assert result["thinking"]["budget_tokens"] == 8192
+        assert convert_thinking_effort("medium", "anthropic/claude-4", True) == {
+            "reasoning": {"max_tokens": 8192}
+        }
         
-        # Test high budget
-        result = convert_thinking_effort("high", "anthropic")
-        assert result["thinking"]["budget_tokens"] == 16384
+        assert convert_thinking_effort("high", "anthropic/claude-4", True) == {
+            "reasoning": {"max_tokens": 16384}
+        }
         
-        # Test max budget
-        result = convert_thinking_effort("max", "anthropic")
-        assert result["thinking"]["budget_tokens"] == 32768
+        assert convert_thinking_effort("max", "anthropic/claude-4", True) == {
+            "reasoning": {"max_tokens": 32000}
+        }
     
     def test_google_thinking_config_conversion(self):
-        """Test Google Gemini thinking_config conversion."""
-        # Test none disables thinking
-        assert convert_thinking_effort("none", "google") == {
-            "thinking_config": {"thinking_budget": 0}
+        """Test Google Gemini reasoning object conversion for OpenRouter."""
+        # Test none returns empty
+        assert convert_thinking_effort("none", "google/gemini-2.5-pro", True) == {}
+        
+        # Test effort-based for OpenRouter
+        assert convert_thinking_effort("low", "google/gemini-2.5-pro", True) == {
+            "reasoning": {"effort": "low"}
         }
         
-        # Test low budget
-        result = convert_thinking_effort("low", "google")
-        assert result == {
-            "thinking_config": {
-                "include_thoughts": True,
-                "thinking_budget": -1  # Let model control for low budget
-            }
+        assert convert_thinking_effort("medium", "google/gemini-2.5-pro", True) == {
+            "reasoning": {"effort": "medium"}
         }
         
-        # Test medium budget
-        result = convert_thinking_effort("medium", "google")
-        assert result["thinking_config"]["thinking_budget"] == -1
-        assert result["thinking_config"]["include_thoughts"] is True
+        assert convert_thinking_effort("high", "google/gemini-2.5-pro", True) == {
+            "reasoning": {"effort": "high"}
+        }
         
-        # Test high budget
-        result = convert_thinking_effort("high", "google")
-        assert result["thinking_config"]["thinking_budget"] == -1
-        
-        # Test max budget
-        result = convert_thinking_effort("max", "google")
-        assert result["thinking_config"]["thinking_budget"] == -1
+        # Test max maps to high
+        assert convert_thinking_effort("max", "google/gemini-2.5-pro", True) == {
+            "reasoning": {"effort": "high"}
+        }
     
     def test_unknown_model_family(self):
         """Test that unknown model families return empty dict."""
@@ -98,7 +103,7 @@ class TestModelParameterFiltering:
     """Test that thinking_effort is properly filtered for different models."""
     
     def test_openai_o3_pro_thinking_effort(self):
-        """Test o3-pro properly transforms thinking_effort to reasoning_effort."""
+        """Test o3-pro properly transforms thinking_effort to reasoning object."""
         params = {
             "thinking_effort": "high",
             "temperature": 0.5,  # Should be filtered
@@ -107,20 +112,21 @@ class TestModelParameterFiltering:
         
         filtered = get_model_parameters("openai/o3-pro", params)
         
-        # Should have reasoning_effort, not thinking_effort
-        assert "reasoning_effort" in filtered
-        assert filtered["reasoning_effort"] == "high"
+        # Should have reasoning object for OpenRouter
+        assert "reasoning" in filtered
+        assert filtered["reasoning"] == {"effort": "high"}
         assert "thinking_effort" not in filtered
+        assert "reasoning_effort" not in filtered  # Should not have standalone parameter
         
         # Should transform max_tokens
         assert "max_completion_tokens" in filtered
         assert filtered["max_completion_tokens"] == 1000
         
-        # Should not have temperature
+        # Should not have temperature for o3-pro
         assert "temperature" not in filtered
     
     def test_anthropic_claude_thinking_effort(self):
-        """Test Claude properly transforms thinking_effort to thinking object."""
+        """Test Claude properly transforms thinking_effort to reasoning object."""
         params = {
             "thinking_effort": "medium",
             "temperature": 0.3,
@@ -129,18 +135,18 @@ class TestModelParameterFiltering:
         
         filtered = get_model_parameters("anthropic/claude-opus-4.1", params)
         
-        # Should have thinking object
-        assert "thinking" in filtered
-        assert filtered["thinking"]["thinking"] == "enabled"
-        assert filtered["thinking"]["budget_tokens"] == 8192
+        # Should have reasoning object for OpenRouter
+        assert "reasoning" in filtered
+        assert filtered["reasoning"] == {"max_tokens": 8192}
         assert "thinking_effort" not in filtered
+        assert "thinking" not in filtered  # Should not have vendor-specific format
         
         # Should keep other params
         assert filtered["temperature"] == 0.3
         assert filtered["max_tokens"] == 2000
     
     def test_google_gemini_thinking_effort(self):
-        """Test Gemini properly transforms thinking_effort to thinking_config."""
+        """Test Gemini properly transforms thinking_effort to reasoning object."""
         params = {
             "thinking_effort": "low",
             "temperature": 0.1,
@@ -149,11 +155,11 @@ class TestModelParameterFiltering:
         
         filtered = get_model_parameters("google/gemini-2.5-pro", params)
         
-        # Should have thinking_config
-        assert "thinking_config" in filtered
-        assert filtered["thinking_config"]["include_thoughts"] is True
-        assert filtered["thinking_config"]["thinking_budget"] == -1
+        # Should have reasoning object for OpenRouter
+        assert "reasoning" in filtered
+        assert filtered["reasoning"] == {"effort": "low"}
         assert "thinking_effort" not in filtered
+        assert "thinking_config" not in filtered  # Should not have vendor-specific format
         
         # Should keep other params
         assert filtered["temperature"] == 0.1
@@ -193,7 +199,7 @@ class TestLLMClientFactoryThinkingEffort:
         
         # Check that thinking_effort is in default params
         assert "thinking_effort" in client.default_params
-        assert client.default_params["thinking_effort"] == "high"
+        assert client.default_params["thinking_effort"] == "max"  # Updated to match config
     
     @patch("litassist.llm.CONFIG")
     def test_lookup_command_thinking_effort(self, mock_config):
@@ -229,34 +235,96 @@ class TestLLMClientFactoryThinkingEffort:
 
 
 class TestBackwardCompatibility:
-    """Test that existing reasoning_effort configs still work."""
+    """Test that parameter conflicts are properly handled."""
     
-    def test_reasoning_effort_still_works(self):
-        """Test that direct reasoning_effort parameter still works for o3-pro."""
+    def test_no_conflicting_parameters(self):
+        """Test that reasoning and reasoning_effort are never both present."""
         params = {
-            "reasoning_effort": "high",  # Using old parameter name directly
+            "thinking_effort": "high",
+            "reasoning_effort": "medium",  # Should be removed
+            "reasoning": {"effort": "low"},  # Should be removed
             "max_tokens": 1000,
         }
         
         filtered = get_model_parameters("openai/o3-pro", params)
         
-        # Should keep reasoning_effort as-is since it's in allowed list
-        assert "reasoning_effort" in filtered
-        assert filtered["reasoning_effort"] == "high"
+        # Should only have reasoning object from thinking_effort
+        assert "reasoning" in filtered
+        assert filtered["reasoning"] == {"effort": "high"}
+        # Should NOT have conflicting parameters
+        assert "reasoning_effort" not in filtered
+        assert "thinking_effort" not in filtered
     
-    def test_both_parameters_prefer_thinking_effort(self):
-        """Test that thinking_effort takes precedence if both are present."""
+    def test_direct_reasoning_object_preserved(self):
+        """Test that direct reasoning object is preserved if no thinking_effort."""
         params = {
-            "thinking_effort": "low",  # Universal parameter
-            "reasoning_effort": "high",  # Direct parameter
+            "reasoning": {"effort": "high"},  # Direct OpenRouter format
             "max_tokens": 1000,
         }
         
         filtered = get_model_parameters("openai/o3-pro", params)
         
-        # thinking_effort conversion should override direct parameter
-        assert "reasoning_effort" in filtered
-        assert filtered["reasoning_effort"] == "low"  # From thinking_effort, not direct
+        # Should keep direct reasoning object
+        assert "reasoning" in filtered
+        assert filtered["reasoning"] == {"effort": "high"}
+
+
+class TestVerbosityParameter:
+    """Test verbosity parameter support."""
+    
+    def test_verbosity_parameter(self):
+        """Test that verbosity parameter is properly handled."""
+        from litassist.llm import convert_verbosity
+        
+        # Valid levels
+        assert convert_verbosity("low") == {"verbosity": "low"}
+        assert convert_verbosity("medium") == {"verbosity": "medium"}
+        assert convert_verbosity("high") == {"verbosity": "high"}
+        
+        # Invalid levels
+        assert convert_verbosity("invalid") == {}
+        assert convert_verbosity("") == {}
+    
+    def test_verbosity_in_model_parameters(self):
+        """Test verbosity parameter filtering in get_model_parameters."""
+        params = {
+            "thinking_effort": "high",
+            "verbosity": "high",
+            "max_tokens": 1000,
+        }
+        
+        # For GPT-5 which supports verbosity
+        filtered = get_model_parameters("openai/gpt-5", params)
+        assert "verbosity" in filtered
+        assert filtered["verbosity"] == "high"
+        
+        # For o3-pro which also supports it
+        filtered = get_model_parameters("openai/o3-pro", params)
+        assert "verbosity" in filtered
+        assert filtered["verbosity"] == "high"
+
+
+class TestAdvancedParameters:
+    """Test advanced parameter support."""
+    
+    def test_advanced_sampling_parameters(self):
+        """Test min_p, top_a, repetition_penalty parameters."""
+        params = {
+            "temperature": 0.7,
+            "min_p": 0.05,
+            "top_a": 0.8,
+            "repetition_penalty": 1.2,
+            "max_tokens": 1000,
+        }
+        
+        # For models that support advanced parameters
+        filtered = get_model_parameters("x-ai/grok-4", params)
+        assert "min_p" in filtered
+        assert filtered["min_p"] == 0.05
+        assert "top_a" in filtered
+        assert filtered["top_a"] == 0.8
+        assert "repetition_penalty" in filtered
+        assert filtered["repetition_penalty"] == 1.2
 
 
 if __name__ == "__main__":
