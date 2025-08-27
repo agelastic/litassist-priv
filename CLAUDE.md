@@ -329,6 +329,51 @@ The litassist codebase currently contains extensive local parsing of LLM respons
 
 **Implementation**: The `detect_factual_hallucinations()` function in `utils.py` automatically scans drafts for common hallucination patterns and adds warnings to the output when detected.
 
+### LLM Request/Response Logging
+
+**CRITICAL FOR LEGAL ACCOUNTABILITY**: ALL LLM interactions MUST be logged - NO EXCEPTIONS
+
+**Core Requirements:**
+
+1. **Mandatory Logging**: Every single LLM request and response MUST be logged
+   - This is NON-NEGOTIABLE for legal domain requirements
+   - Professional liability and audit trails depend on complete logging
+   - Missing logs = potential malpractice liability
+
+2. **What Must Be Logged**:
+   - Full request prompt sent to LLM
+   - Complete response received from LLM
+   - Timestamp of request/response
+   - Model name and parameters used
+   - Token counts and costs
+   - Any errors or retries
+   - Context identifiers (command, user, session)
+
+3. **Implementation**:
+   - Use the centralized logging system in `logging_utils.py`
+   - All LLM client implementations MUST call logging functions
+   - Never bypass or disable logging, even in development
+   - Log files stored with appropriate retention policies
+
+4. **Legal Compliance**:
+   - Logs may be required for court proceedings
+   - Necessary for professional indemnity insurance claims
+   - Required for regulatory compliance audits
+   - Critical for demonstrating due diligence
+
+5. **No Exceptions Policy**:
+   - Development mode: MUST log
+   - Testing: MUST log (can be to test log files)
+   - Production: MUST log
+   - Quick fixes/debugging: MUST log
+   - ALL environments, ALL times: MUST log
+
+**Consequences of Missing Logs**:
+- Legal liability for undocumented advice
+- Inability to defend against malpractice claims
+- Regulatory non-compliance penalties
+- Loss of professional credibility
+
 ### Australian Legal Focus
 
 - Always use Australian English spelling (e.g., 'judgement' not 'judgment')
