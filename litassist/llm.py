@@ -58,10 +58,12 @@ logger = logging.getLogger(__name__)
 
 # Model family patterns for dynamic parameter handling
 MODEL_PATTERNS = {
-    "openai_reasoning": r"openai/o\d+",  # Matches o1, o3, o1-pro, o3-pro, etc.
-    "anthropic": r"anthropic/claude",
+    "openai_reasoning": r"openai/o\d+",  # Matches o1, o3, o1-pro, o3-pro, o4, etc.
+    "gpt5": r"openai/gpt-5",  # GPT-5 specific (August 2025)
+    "claude4": r"anthropic/claude-(opus-4|sonnet-4)",  # Claude 4 models
+    "anthropic": r"anthropic/claude",  # Other Claude models
     "google": r"google/(gemini|palm|bard)",
-    "openai_standard": r"openai/(gpt|chatgpt)",
+    "openai_standard": r"openai/(gpt|chatgpt)",  # GPT-4, ChatGPT, etc.
     "xai": r"x-ai/grok",
     "meta": r"meta/(llama|codellama)",
     "mistral": r"mistral/",
@@ -488,20 +490,20 @@ class LLMClientFactory:
             "top_p": 0.15,
             "force_verify": True,  # Always verify for foundational docs
         },
-        # Strategy - enhanced multi-step legal reasoning (o3-pro has limited parameters)
+        # Strategy - enhanced multi-step legal reasoning
         "strategy": {
-           "model": "anthropic/claude-opus-4.1",
-            # o3-pro has fixed parameters: temperature=1, top_p=1, presence_penalty=0, frequency_penalty=0
-            # Only max_completion_tokens and reasoning can be controlled
+            "model": "anthropic/claude-opus-4.1",
+            "temperature": 0.2,  # Controlled creativity for strategic thinking
+            "top_p": 0.8,  # Focused but not overly restrictive
             "thinking_effort": "max",  # Universal parameter, translates to reasoning object
             "verbosity": "medium",  # Balanced depth in strategic analysis
+            "max_completion_tokens": 16384,  # Extended output for comprehensive strategies
             "force_verify": True,  # Always verify for strategic guidance
         },
         # Strategy sub-type for analysis
         "strategy-analysis": {
             "model": "openai/o3-pro",
-            "temperature": 0.2,
-            "top_p": 0.8,
+            # Note: o3-pro ignores temperature and top_p parameters
             "thinking_effort": "max",  # Universal parameter, translates to reasoning_effort
         },
         # Brainstorm - varied temperatures for different approaches
@@ -535,17 +537,19 @@ class LLMClientFactory:
             "model": "openai/o3-pro", 
             "thinking_effort": "high",  # Universal parameter
             "verbosity": "high",  # Comprehensive legal drafting
+            "max_completion_tokens": 32768,  # Extended output for comprehensive drafts
         },
         # Digest - mode-dependent settings
         "digest-summary": {
             "model": "anthropic/claude-sonnet-4",
             "temperature": 0.1,
-            "top_p": 0,
+            "top_p": 0.1,  # Fixed: was 0, too restrictive
         },
         "digest-issues": {
             "model": "anthropic/claude-opus-4.1",
             "temperature": 0.2,
             "top_p": 0.5,
+            "thinking_effort": "high",  # Deep analysis for issue spotting
         },
         # Lookup - uses Gemini for rapid processing with verification
         # IMPORTANT: When changing models, adjust max_content_tokens in lookup.py

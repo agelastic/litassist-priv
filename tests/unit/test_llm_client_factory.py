@@ -128,14 +128,16 @@ class TestLLMClientFactory:
             mock_config.openrouter_key = "test_key"
             mock_config.openai_key = "test_openai_key"
 
-            # Test o3-pro model (strategy)
+            # Test claude-opus-4.1 model (strategy)
             strategy_client = LLMClientFactory.for_command("strategy")
             strategy_params = strategy_client.default_params
 
-            # o3-pro should have thinking_effort but not unsupported params
+            # claude-opus-4.1 should have thinking_effort and standard params
             assert "thinking_effort" in strategy_params
-            assert "temperature" not in strategy_params
-            assert "top_p" not in strategy_params
+            assert "temperature" in strategy_params  # Claude supports temperature
+            assert "top_p" in strategy_params  # Claude supports top_p
+            assert strategy_params["temperature"] == 0.2
+            assert strategy_params["top_p"] == 0.8
 
             # Test o3-pro model (draft)
             draft_client = LLMClientFactory.for_command("draft")
