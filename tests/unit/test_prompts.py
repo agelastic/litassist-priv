@@ -177,7 +177,7 @@ class TestIntegrationWithCommands:
     def test_lookup_command_requires_prompts(self):
         """Test that lookup command requires centralized prompts."""
         # Mock empty PROMPTS
-        with patch("litassist.commands.lookup.PROMPTS") as mock_prompts:
+        with patch("litassist.commands.lookup.processors.PROMPTS") as mock_prompts:
             mock_prompts.get_system_prompt.side_effect = KeyError("Template not found")
 
             # Import the command function

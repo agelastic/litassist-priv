@@ -27,7 +27,7 @@ class TestCommandParameterPropagation:
         self.mock_client.validate_citations.return_value = []  # Add validate_citations method
         
     @patch("litassist.llm.LLMClientFactory.for_command")
-    @patch("litassist.utils.read_document")
+    @patch("litassist.utils.file_ops.read_document")
     @patch("litassist.commands.extractfacts.CONFIG")
     def test_extractfacts_command_parameters(self, mock_config, mock_read, mock_factory):
         """Test extractfacts command uses correct model and parameters."""
@@ -126,9 +126,9 @@ class TestCommandParameterPropagation:
         mock_factory.assert_called_once_with("digest", "issues")
         assert self.mock_client.complete.called
 
-    @patch("litassist.commands.lookup.time.sleep")
+    @patch("litassist.commands.lookup.search.time.sleep")
     @patch("litassist.llm.LLMClientFactory.for_command")
-    @patch("litassist.commands.lookup.CONFIG")
+    @patch("litassist.commands.lookup.search.CONFIG")
     def test_lookup_command_parameters(self, mock_config, mock_factory, mock_sleep):
         """Test lookup command uses correct model (gemini-2.5-pro)."""
         mock_factory.return_value = self.mock_client
@@ -138,8 +138,8 @@ class TestCommandParameterPropagation:
         
         # Mock Google API and fetch functions
         with patch("googleapiclient.discovery.build") as mock_build, \
-             patch("litassist.commands.lookup._fetch_url_content", return_value=""), \
-             patch("litassist.commands.lookup._fetch_url_content_selenium", return_value=""):
+             patch("litassist.commands.lookup.fetchers._fetch_url_content", return_value=""), \
+             patch("litassist.commands.lookup.fetchers._fetch_url_content_selenium_with_timeout", return_value=""):
             mock_service = Mock()
             mock_build.return_value = mock_service
             mock_cse = Mock()
@@ -148,7 +148,7 @@ class TestCommandParameterPropagation:
             mock_cse.list.return_value = mock_list
             mock_list.execute.return_value = {"items": []}
             
-            with patch("litassist.commands.lookup.PROMPTS") as mock_prompts:
+            with patch("litassist.commands.lookup.processors.PROMPTS") as mock_prompts:
                 mock_prompts.get_prompt.return_value = "Test prompt"
                 
                 result = self.runner.invoke(cli, ["lookup", "test query"])

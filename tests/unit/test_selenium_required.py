@@ -22,7 +22,7 @@ class TestSeleniumRequired:
     
     def test_selenium_in_lookup(self):
         """Test that lookup.py has Selenium available."""
-        from litassist.commands.lookup import SELENIUM_AVAILABLE
+        from litassist.commands.lookup.fetchers import SELENIUM_AVAILABLE
         
         assert SELENIUM_AVAILABLE, (
             "Selenium is not available in lookup.py. "

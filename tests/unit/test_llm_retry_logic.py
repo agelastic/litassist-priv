@@ -9,7 +9,7 @@ from unittest.mock import Mock, patch, MagicMock
 import pytest
 from openai import RateLimitError, APIConnectionError, BadRequestError
 
-from litassist.llm import LLMClient, NonRetryableAPIError
+from litassist.llm import LLMClient, NonRetryableAPIError, execute_api_call_with_retry
 
 
 class TestLLMRetryLogic:
@@ -33,7 +33,7 @@ class TestLLMRetryLogic:
         # PYTEST_CURRENT_TEST is managed by pytest itself
         pass
     
-    @patch("litassist.llm.LLMClient._get_openai_client")
+    @patch("litassist.llm.api_handlers.get_openai_client")
     def test_retry_on_rate_limit_error(self, mock_get_client):
         """Test that RateLimitError triggers retries and eventually succeeds."""
         # Create a proper response object
@@ -54,10 +54,11 @@ class TestLLMRetryLogic:
         ]
         
         # Execute the call
-        result = self.client._execute_api_call_with_retry(
+        result = execute_api_call_with_retry(
             "openai/gpt-4", 
             [{"role": "user", "content": "test"}],
-            {}
+            {},
+            get_openai_client_func=mock_get_client
         )
         
         # Verify it succeeded after retries
@@ -65,7 +66,7 @@ class TestLLMRetryLogic:
         # Verify it was called 3 times
         assert mock_client.chat.completions.create.call_count == 3
     
-    @patch("litassist.llm.LLMClient._get_openai_client")
+    @patch("litassist.llm.api_handlers.get_openai_client")
     def test_retry_on_api_connection_error(self, mock_get_client):
         """Test that APIConnectionError triggers retries."""
         # Create a proper response object
@@ -84,16 +85,17 @@ class TestLLMRetryLogic:
             success_response,
         ]
         
-        result = self.client._execute_api_call_with_retry(
+        result = execute_api_call_with_retry(
             "openai/gpt-4",
             [{"role": "user", "content": "test"}],
-            {}
+            {},
+            get_openai_client_func=mock_get_client
         )
         
         assert result.choices[0].message.content == "Success"
         assert mock_client.chat.completions.create.call_count == 2
     
-    @patch("litassist.llm.LLMClient._get_openai_client")
+    @patch("litassist.llm.api_handlers.get_openai_client")
     def test_no_retry_on_413_error(self, mock_get_client):
         """Test that 413 errors raise NonRetryableAPIError immediately."""
         # Mock the client and its chat.completions.create method
@@ -106,17 +108,18 @@ class TestLLMRetryLogic:
         
         # Should raise NonRetryableAPIError without retrying
         with pytest.raises(NonRetryableAPIError) as exc_info:
-            self.client._execute_api_call_with_retry(
+            execute_api_call_with_retry(
                 "openai/gpt-4",
                 [{"role": "user", "content": "test"}],
-                {}
+                {},
+                get_openai_client_func=mock_get_client
             )
         
         assert "Request too large" in str(exc_info.value)
         # Should only be called once (no retries)
         assert mock_client.chat.completions.create.call_count == 1
     
-    @patch("litassist.llm.LLMClient._get_openai_client")
+    @patch("litassist.llm.api_handlers.get_openai_client")
     def test_no_retry_on_payload_too_large(self, mock_get_client):
         """Test that 'payload too large' errors raise NonRetryableAPIError."""
         # Mock the client and its chat.completions.create method
@@ -127,16 +130,17 @@ class TestLLMRetryLogic:
         mock_client.chat.completions.create.side_effect = error
         
         with pytest.raises(NonRetryableAPIError) as exc_info:
-            self.client._execute_api_call_with_retry(
+            execute_api_call_with_retry(
                 "openai/gpt-4",
                 [{"role": "user", "content": "test"}],
-                {}
+                {},
+                get_openai_client_func=mock_get_client
             )
         
         assert "Request too large" in str(exc_info.value)
         assert mock_client.chat.completions.create.call_count == 1
     
-    @patch("litassist.llm.LLMClient._get_openai_client")
+    @patch("litassist.llm.api_handlers.get_openai_client")
     def test_retry_on_streaming_error(self, mock_get_client):
         """Test that streaming errors trigger retries."""
         # Create a proper response object
@@ -155,16 +159,17 @@ class TestLLMRetryLogic:
             success_response,
         ]
         
-        result = self.client._execute_api_call_with_retry(
+        result = execute_api_call_with_retry(
             "openai/gpt-4",
             [{"role": "user", "content": "test"}],
-            {}
+            {},
+            get_openai_client_func=mock_get_client
         )
         
         assert result.choices[0].message.content == "Success"
         assert mock_client.chat.completions.create.call_count == 2
     
-    @patch("litassist.llm.LLMClient._get_openai_client")
+    @patch("litassist.llm.api_handlers.get_openai_client")
     def test_retry_on_overloaded_response(self, mock_get_client):
         """Test retry when API returns overloaded error in response."""
         # Create a response with error in choices
@@ -187,16 +192,17 @@ class TestLLMRetryLogic:
             success_response,
         ]
         
-        result = self.client._execute_api_call_with_retry(
+        result = execute_api_call_with_retry(
             "openai/gpt-4",
             [{"role": "user", "content": "test"}],
-            {}
+            {},
+            get_openai_client_func=mock_get_client
         )
         
         assert result.choices[0].message.content == "Success"
         assert mock_client.chat.completions.create.call_count == 2
     
-    @patch("litassist.llm.LLMClient._get_openai_client")
+    @patch("litassist.llm.api_handlers.get_openai_client")
     def test_max_retries_exceeded(self, mock_get_client):
         """Test that retries stop after max attempts (5)."""
         # Mock the client and its chat.completions.create method
@@ -212,16 +218,17 @@ class TestLLMRetryLogic:
         
         # Should raise the error after 5 attempts
         with pytest.raises(RateLimitError):
-            self.client._execute_api_call_with_retry(
+            execute_api_call_with_retry(
                 "openai/gpt-4",
                 [{"role": "user", "content": "test"}],
-                {}
+                {},
+                get_openai_client_func=mock_get_client
             )
         
         # Should be called exactly 5 times
         assert mock_client.chat.completions.create.call_count == 5
     
-    @patch("litassist.llm.LLMClient._get_openai_client")
+    @patch("litassist.llm.api_handlers.get_openai_client")
     def test_non_retryable_error_propagates(self, mock_get_client):
         """Test that non-retryable errors are raised immediately."""
         # Mock the client and its chat.completions.create method
@@ -233,16 +240,17 @@ class TestLLMRetryLogic:
         mock_client.chat.completions.create.side_effect = error
         
         with pytest.raises(ValueError) as exc_info:
-            self.client._execute_api_call_with_retry(
+            execute_api_call_with_retry(
                 "openai/gpt-4",
                 [{"role": "user", "content": "test"}],
-                {}
+                {},
+                get_openai_client_func=mock_get_client
             )
         
         assert "Invalid parameter" in str(exc_info.value)
         assert mock_client.chat.completions.create.call_count == 1
     
-    @patch("litassist.llm.LLMClient._get_openai_client")
+    @patch("litassist.llm.api_handlers.get_openai_client")
     def test_413_with_response_object(self, mock_get_client):
         """Test 413 detection when error has response.status_code."""
         # Mock the client and its chat.completions.create method
@@ -255,16 +263,17 @@ class TestLLMRetryLogic:
         mock_client.chat.completions.create.side_effect = error
         
         with pytest.raises(NonRetryableAPIError) as exc_info:
-            self.client._execute_api_call_with_retry(
+            execute_api_call_with_retry(
                 "openai/gpt-4",
                 [{"role": "user", "content": "test"}],
-                {}
+                {},
+                get_openai_client_func=mock_get_client
             )
         
         assert "413" in str(exc_info.value) or "Request too large" in str(exc_info.value)
         assert mock_client.chat.completions.create.call_count == 1
     
-    @patch("litassist.llm.LLMClient._get_openai_client")
+    @patch("litassist.llm.api_handlers.get_openai_client")
     def test_413_with_error_dict(self, mock_get_client):
         """Test 413 detection when error has error dict with code."""
         # Mock the client and its chat.completions.create method
@@ -277,10 +286,11 @@ class TestLLMRetryLogic:
         mock_client.chat.completions.create.side_effect = error
         
         with pytest.raises(NonRetryableAPIError) as exc_info:
-            self.client._execute_api_call_with_retry(
+            execute_api_call_with_retry(
                 "openai/gpt-4",
                 [{"role": "user", "content": "test"}],
-                {}
+                {},
+                get_openai_client_func=mock_get_client
             )
         
         assert "413" in str(exc_info.value) or "Request too large" in str(exc_info.value)

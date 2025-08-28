@@ -384,7 +384,7 @@ Worst: Pay $100k progress payment plus costs
     def test_full_pipeline(self):
         """Test complete litassist pipeline with all external calls mocked."""
         # Use context managers to patch everything
-        with patch("litassist.llm.LLMClient._get_openai_client") as mock_get_client, \
+        with patch("litassist.llm.api_handlers.get_openai_client") as mock_get_client, \
              patch("requests.get") as mock_requests_get, \
              patch("requests.post") as mock_requests_post, \
              patch("aiohttp.ClientSession"), \

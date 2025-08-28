@@ -15,12 +15,12 @@ from litassist.llm import LLMClient
 class TestLLMClientComplete:
     """Test the LLMClient.complete method with mocked API calls."""
 
-    @patch("litassist.llm.CONFIG")
-    @patch("litassist.llm.LLMClient._execute_api_call_with_retry")
+    @patch("litassist.config.CONFIG")
+    @patch("litassist.llm.client.execute_api_call_with_retry")
     def test_complete_basic_success(self, mock_execute, mock_config):
         """Test basic complete call with successful response."""
         # Setup config
-        mock_config.openrouter_key = "test_key"
+        mock_config.or_key = "test_key"
         mock_config.openai_key = "test_key"
 
         # Setup mock response - ensure no error attribute
@@ -57,13 +57,13 @@ class TestLLMClientComplete:
         # Verify API was called
         assert mock_execute.called
 
-    @patch("litassist.llm.CONFIG")
-    @patch("litassist.llm.LLMClient._execute_api_call_with_retry")
+    @patch("litassist.config.CONFIG")
+    @patch("litassist.llm.client.execute_api_call_with_retry")
     def test_complete_system_message_merging_no_system_support(
         self, mock_execute, mock_config
     ):
         """Test system message merging for models without system support."""
-        mock_config.openrouter_key = "test_key"
+        mock_config.or_key = "test_key"
         mock_config.openai_key = "test_key"
 
         mock_response = Mock()
@@ -103,13 +103,13 @@ class TestLLMClientComplete:
         assert "You are helpful" in called_messages[0]["content"]
         assert "Hello" in called_messages[0]["content"]
 
-    @patch("litassist.llm.CONFIG")
-    @patch("litassist.llm.LLMClient._execute_api_call_with_retry")
+    @patch("litassist.config.CONFIG")
+    @patch("litassist.llm.client.execute_api_call_with_retry")
     def test_complete_system_message_preserved_with_support(
         self, mock_execute, mock_config
     ):
         """Test system message preserved for models with system support."""
-        mock_config.openrouter_key = "test_key"
+        mock_config.or_key = "test_key"
         mock_config.openai_key = "test_key"
 
         mock_response = Mock()
@@ -150,14 +150,14 @@ class TestLLMClientComplete:
         assert called_messages[1]["role"] == "user"
         assert called_messages[1]["content"] == "Hello"
 
-    @patch("litassist.llm.CONFIG")
-    @patch("litassist.llm.save_log")
-    @patch("litassist.llm.LLMClient._execute_api_call_with_retry")
+    @patch("litassist.config.CONFIG")
+    @patch("litassist.utils.save_log")
+    @patch("litassist.llm.client.execute_api_call_with_retry")
     def test_complete_with_verification_enabled(
         self, mock_execute, mock_save_log, mock_config
     ):
         """Test complete with verification enabled."""
-        mock_config.openrouter_key = "test_key"
+        mock_config.or_key = "test_key"
         mock_config.openai_key = "test_key"
 
         mock_response = Mock()
@@ -191,11 +191,11 @@ class TestLLMClientComplete:
             assert response == "Verified response"
             assert mock_verify.called
 
-    @patch("litassist.llm.CONFIG")
-    @patch("litassist.llm.LLMClient._execute_api_call_with_retry")
+    @patch("litassist.config.CONFIG")
+    @patch("litassist.llm.client.execute_api_call_with_retry")
     def test_complete_token_counting(self, mock_execute, mock_config):
         """Test token counting in response stats."""
-        mock_config.openrouter_key = "test_key"
+        mock_config.or_key = "test_key"
         mock_config.openai_key = "test_key"
 
         mock_response = Mock()
@@ -223,11 +223,11 @@ class TestLLMClientComplete:
         assert stats["prompt_tokens"] == 50
         assert stats["completion_tokens"] == 100
 
-    @patch("litassist.llm.CONFIG")
-    @patch("litassist.llm.LLMClient._execute_api_call_with_retry")
+    @patch("litassist.config.CONFIG")
+    @patch("litassist.llm.client.execute_api_call_with_retry")
     def test_complete_with_tools(self, mock_execute, mock_config):
         """Test complete with tool definitions."""
-        mock_config.openrouter_key = "test_key"
+        mock_config.or_key = "test_key"
         mock_config.openai_key = "test_key"
 
         mock_response = Mock()
@@ -264,11 +264,11 @@ class TestLLMClientComplete:
         # Let's just check that the execute method was called with some params
         assert isinstance(params, dict)
 
-    @patch("litassist.llm.CONFIG")
-    @patch("litassist.llm.LLMClient._execute_api_call_with_retry")
+    @patch("litassist.config.CONFIG")
+    @patch("litassist.llm.client.execute_api_call_with_retry")
     def test_complete_strips_whitespace(self, mock_execute, mock_config):
         """Test that response content is stripped of whitespace."""
-        mock_config.openrouter_key = "test_key"
+        mock_config.or_key = "test_key"
         mock_config.openai_key = "test_key"
 
         mock_response = Mock()
@@ -296,11 +296,11 @@ class TestLLMClientComplete:
         # based on line 814: content = response.choices[0].message.content or ""
         assert response == "  Response with spaces  \n"
 
-    @patch("litassist.llm.CONFIG")
-    @patch("litassist.llm.LLMClient._execute_api_call_with_retry")
+    @patch("litassist.config.CONFIG")
+    @patch("litassist.llm.client.execute_api_call_with_retry")
     def test_complete_empty_response_handling(self, mock_execute, mock_config):
         """Test handling of empty response content."""
-        mock_config.openrouter_key = "test_key"
+        mock_config.or_key = "test_key"
         mock_config.openai_key = "test_key"
 
         mock_response = Mock()
@@ -327,11 +327,11 @@ class TestLLMClientComplete:
         assert response == ""
         assert stats["total_tokens"] == 50
 
-    @patch("litassist.llm.CONFIG")
-    @patch("litassist.llm.LLMClient._execute_api_call_with_retry")
+    @patch("litassist.config.CONFIG")
+    @patch("litassist.llm.client.execute_api_call_with_retry")
     def test_complete_with_model_specific_params(self, mock_execute, mock_config):
         """Test that model-specific parameters are passed correctly."""
-        mock_config.openrouter_key = "test_key"
+        mock_config.or_key = "test_key"
         mock_config.openai_key = "test_key"
 
         mock_response = Mock()
@@ -367,11 +367,11 @@ class TestLLMClientComplete:
         assert "reasoning" in call_params
         assert call_params["reasoning"] == {"effort": "high"}
 
-    @patch("litassist.llm.CONFIG")
-    @patch("litassist.llm.LLMClient._execute_api_call_with_retry")
+    @patch("litassist.config.CONFIG")
+    @patch("litassist.llm.client.execute_api_call_with_retry")
     def test_heartbeat_and_timed_decorators(self, mock_execute, mock_config):
         """Test that heartbeat and timed decorators are applied."""
-        mock_config.openrouter_key = "test_key"
+        mock_config.or_key = "test_key"
         mock_config.openai_key = "test_key"
 
         mock_response = Mock()
@@ -393,8 +393,8 @@ class TestLLMClientComplete:
         mock_execute.return_value = mock_response
 
         # Patch the decorators
-        with patch("litassist.llm.heartbeat") as mock_heartbeat:
-            with patch("litassist.llm.timed") as mock_timed:
+        with patch("litassist.utils.heartbeat") as mock_heartbeat:
+            with patch("litassist.utils.timed") as mock_timed:
                 # Make decorators passthrough
                 mock_heartbeat.side_effect = lambda f: f
                 mock_timed.side_effect = lambda f: f
