@@ -2,7 +2,7 @@
 Configuration management for LitAssist.
 
 This module handles loading, validation, and access to configuration values
-required for LitAssist's operation.
+required for LitAssist's operation. All LLM calls route through OpenRouter API.
 """
 
 import os

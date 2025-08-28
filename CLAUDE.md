@@ -201,6 +201,7 @@ When adding new models or providers:
 2. Only consider direct API access if OpenRouter doesn't support the model
 3. All current production models successfully route through OpenRouter, but this will change if the developer's BYOKs change
 4. This approach centralizes API management and leverages existing BYOK setups
+5. Model names with "/" (e.g., "anthropic/claude-sonnet-4") indicate OpenRouter routing
 
 ### Refactoring Philosophy
 

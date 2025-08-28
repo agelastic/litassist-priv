@@ -474,6 +474,8 @@ def supports_system_messages(model_name: str) -> bool:
 class LLMClientFactory:
     """
     Factory class for creating LLMClient instances with command-specific configurations.
+    
+    All models use "provider/model" format and route through OpenRouter.
 
     This centralizes all model and parameter configurations for each command,
     eliminating duplication and providing a single source of truth.

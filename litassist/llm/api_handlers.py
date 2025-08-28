@@ -51,6 +51,8 @@ def get_openai_client(model_name: str) -> OpenAI:
     """
     Get or create OpenAI client with appropriate configuration.
     
+    Routes through OpenRouter for all models (indicated by "/" in model name).
+    
     Determines whether to use OpenRouter or direct OpenAI API based on the model name
     and configures the client accordingly. This function handles the routing logic
     for different model providers through the unified OpenAI client interface.
@@ -246,10 +248,20 @@ def execute_api_call_with_retry(model_name: str, messages: list, filtered_params
             # Get the appropriate client
             client = get_openai_client_func(model_name)
 
-            # Create the request
-            resp = client.chat.completions.create(
-                model=model_name, messages=messages, **filtered_params
-            )
+            # Extract OpenRouter-specific parameters that need to go in extra_body
+            extra_body = {}
+            if "reasoning" in filtered_params:
+                extra_body["reasoning"] = filtered_params.pop("reasoning")
+            
+            # Create the request with extra_body for OpenRouter parameters
+            if extra_body:
+                resp = client.chat.completions.create(
+                    model=model_name, messages=messages, extra_body=extra_body, **filtered_params
+                )
+            else:
+                resp = client.chat.completions.create(
+                    model=model_name, messages=messages, **filtered_params
+                )
 
             # Check for error in the response object (OpenRouter v1.x pattern)
             if hasattr(resp, "error") and resp.error:
