@@ -89,20 +89,20 @@ client = LLMClientFactory.for_command("lookup", thinking_effort="high")
 # Direct usage
 from litassist.llm import get_model_parameters
 
-# For OpenAI o3-pro
+# For OpenAI o3-pro (via OpenRouter)
 params = {"thinking_effort": "high", "temperature": 0.5}
 filtered = get_model_parameters("openai/o3-pro", params)
-# Result: {"reasoning_effort": "high", "max_completion_tokens": ...}
+# Result: {"reasoning": {"effort": "high"}, "max_completion_tokens": ...}
 
 # For Claude (via OpenRouter - default path)
 params = {"thinking_effort": "medium", "temperature": 0.3}
 filtered = get_model_parameters("anthropic/claude-opus-4.1", params)
 # Result: {"reasoning": {"max_tokens": 8192}, "temperature": 0.3}
 
-# For Gemini
+# For Gemini (via OpenRouter)
 params = {"thinking_effort": "low", "temperature": 0.1}
 filtered = get_model_parameters("google/gemini-2.5-pro", params)
-# Result: {"thinking_config": {"include_thoughts": True, "thinking_budget": -1}, "temperature": 0.1}
+# Result: {"reasoning": {"effort": "low"}, "temperature": 0.1}
 ```
 
 ## Future Enhancements
