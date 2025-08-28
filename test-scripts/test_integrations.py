@@ -15,7 +15,6 @@ import sys
 import argparse
 import yaml
 import json
-import openai
 
 # Add the project root to the Python path
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
@@ -97,12 +96,13 @@ def test_openai_models():
 
     try:
         # Configure OpenAI with direct API (not through OpenRouter)
-        openai.api_key = OA_KEY
-        openai.api_base = "https://api.openai.com/v1"  # Ensure direct access
+        from openai import OpenAI
+        # Create OpenAI client with v1.0+ API
+        client = OpenAI(api_key=OA_KEY)
 
         # List available models
-        response = openai.Model.list()
-        model_count = len(response.data)
+        response = client.models.list()
+        model_count = len(list(response.data))
 
         # Check if we got a valid response with models
         if model_count > 0:
@@ -123,15 +123,15 @@ def test_openai_embedding():
     result = EnhancedTestResult("OpenAI", "Generate Embedding")
 
     try:
-        # Configure OpenAI with direct API
-        openai.api_key = OA_KEY
-        openai.api_base = "https://api.openai.com/v1"
+        # Configure OpenAI with v1.0+ API
+        from openai import OpenAI
+        client = OpenAI(api_key=OA_KEY)
 
         # Generate an embedding for a test sentence
         test_text = (
             "This is a test sentence for embedding generation in legal contexts."
         )
-        response = openai.Embedding.create(input=[test_text], model=EMB_MODEL)
+        response = client.embeddings.create(input=[test_text], model=EMB_MODEL)
 
         # Check embedding dimensions
         embedding = response.data[0].embedding
@@ -152,7 +152,7 @@ def test_openai_embedding():
             e,
             context={
                 "model": EMB_MODEL,
-                "api_base": openai.api_base,
+                "api_base": "https://api.openai.com/v1",
                 "test_text": (
                     test_text[:50] + "..." if len(test_text) > 50 else test_text
                 ),
@@ -248,15 +248,19 @@ def test_openrouter_connection():
     result = EnhancedTestResult("OpenRouter", "API Connection")
 
     try:
-        # Configure OpenAI with OpenRouter base
-        openai.api_key = OR_KEY
-        openai.api_base = OR_BASE
+        # Configure OpenAI client for OpenRouter
+        from openai import OpenAI
+        client = OpenAI(
+            api_key=OR_KEY,
+            base_url=OR_BASE
+        )
 
         # List available models
-        response = openai.Model.list()
-
-        model_count = len(response.data)
-        model_samples = [m.id for m in response.data[:5]]
+        response = client.models.list()
+        models = list(response.data)
+        
+        model_count = len(models)
+        model_samples = [m.id for m in models[:5]]
 
         result.success(model_count=model_count, sample_models=model_samples)
 
@@ -277,9 +281,12 @@ def test_openrouter_completion():
     result = EnhancedTestResult("OpenRouter", "Text Completion")
 
     try:
-        # Configure OpenAI with OpenRouter base
-        openai.api_key = OR_KEY
-        openai.api_base = OR_BASE
+        # Configure OpenAI client with OpenRouter base
+        from openai import OpenAI
+        client = OpenAI(
+            api_key=OR_KEY,
+            base_url=OR_BASE
+        )
 
         # Use actual LitAssist model (not OpenAI model through OpenRouter)
         model = "anthropic/claude-3-sonnet"
@@ -293,7 +300,7 @@ def test_openrouter_completion():
             },
         ]
 
-        response = openai.ChatCompletion.create(
+        response = client.chat.completions.create(
             model=model, messages=messages, max_tokens=100, temperature=0
         )
 
@@ -309,7 +316,7 @@ def test_openrouter_completion():
         result.failure(
             e,
             context={
-                "model": model,
+                "model": model if 'model' in locals() else "unknown",
                 "api_base": OR_BASE,
                 "messages": (
                     str(messages)[:200] + "..."
