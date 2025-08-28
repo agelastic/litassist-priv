@@ -58,10 +58,12 @@ logger = logging.getLogger(__name__)
 
 # Model family patterns for dynamic parameter handling
 MODEL_PATTERNS = {
-    "openai_reasoning": r"openai/o\d+",  # Matches o1, o3, o1-pro, o3-pro, etc.
-    "anthropic": r"anthropic/claude",
+    "openai_reasoning": r"openai/o\d+",  # Matches o1, o3, o1-pro, o3-pro, o4, etc.
+    "gpt5": r"openai/gpt-5",  # GPT-5 specific (August 2025)
+    "claude4": r"anthropic/claude-(opus-4|sonnet-4)",  # Claude 4 models
+    "anthropic": r"anthropic/claude",  # Other Claude models
     "google": r"google/(gemini|palm|bard)",
-    "openai_standard": r"openai/(gpt|chatgpt)",
+    "openai_standard": r"openai/(gpt|chatgpt)",  # GPT-4, ChatGPT, etc.
     "xai": r"x-ai/grok",
     "meta": r"meta/(llama|codellama)",
     "mistral": r"mistral/",
@@ -72,8 +74,17 @@ MODEL_PATTERNS = {
 # Parameter profiles by model family
 PARAMETER_PROFILES = {
     "openai_reasoning": {
-        "allowed": ["max_completion_tokens", "reasoning_effort"],
-        "transforms": {"max_tokens": "max_completion_tokens"},
+        "allowed": [
+            "max_completion_tokens",
+            "reasoning",  # OpenRouter reasoning object
+            "verbosity",  # GPT-5 and newer models
+            "seed",
+            "response_format",
+            "structured_outputs",
+        ],
+        "transforms": {
+            "max_tokens": "max_completion_tokens",
+        },
         "system_message_support": False,  # o1/o3 models don't support system messages
     },
     "anthropic": {
@@ -86,7 +97,13 @@ PARAMETER_PROFILES = {
             "stream",
             "metadata",
             "stop_sequences",
+            "reasoning",  # OpenRouter reasoning object
+            # Advanced parameters
+            "min_p",
+            "top_a",
+            "repetition_penalty",
         ],
+        "transforms": {},
     },
     "google": {
         "allowed": [
@@ -98,8 +115,12 @@ PARAMETER_PROFILES = {
             "top_k",
             "safety_settings",
             "stop_sequences",
+            "reasoning",  # OpenRouter reasoning object (if supported)
+            # Advanced parameters
+            "min_p",
+            "top_a",
         ],
-        "transforms": {},  # No longer needed with v1.x - OpenRouter handles this
+        "transforms": {},
     },
     "openai_standard": {
         "allowed": [
@@ -132,6 +153,11 @@ PARAMETER_PROFILES = {
             "frequency_penalty",
             "presence_penalty",
             "stream",
+            "reasoning",  # Grok models support reasoning
+            "verbosity",
+            "min_p",
+            "top_a",
+            "repetition_penalty",
         ],
     },
     "meta": {
@@ -143,6 +169,9 @@ PARAMETER_PROFILES = {
             "frequency_penalty",
             "presence_penalty",
             "stream",
+            "min_p",
+            "top_a",
+            "repetition_penalty",
         ],
     },
     "mistral": {
@@ -154,6 +183,9 @@ PARAMETER_PROFILES = {
             "random_seed",
             "safe_mode",
             "stream",
+            "min_p",
+            "top_a",
+            "repetition_penalty",
         ],
         "transforms": {"seed": "random_seed"},
     },
@@ -179,12 +211,190 @@ PARAMETER_PROFILES = {
             "frequency_penalty",
             "presence_penalty",
             "stream",
+            "min_p",
+            "top_a",
+            "repetition_penalty",
         ],
     },
     "default": {
         "allowed": ["temperature", "top_p", "max_tokens", "stop"],  # Safe defaults
     },
+    # Universal parameters supported by OpenRouter across models
+    "openrouter_universal": {
+        "allowed": [
+            "temperature",
+            "top_p",
+            "max_tokens",
+            "reasoning",  # OpenRouter unified reasoning object
+            "verbosity",
+            "min_p",
+            "top_a",
+            "repetition_penalty",
+            "frequency_penalty",
+            "presence_penalty",
+            "response_format",
+            "logit_bias",
+            "logprobs",
+            "top_logprobs",
+            "seed",
+            "stop",
+        ],
+    },
 }
+
+
+def convert_thinking_effort(effort: str, model_name: str, use_openrouter: bool = True) -> dict:
+    """
+    Convert universal thinking_effort to OpenRouter's reasoning object format.
+    
+    Args:
+        effort: Universal effort level (none, minimal, low, medium, high, max)
+        model_name: Full model name (e.g., "openai/o3-pro", "anthropic/claude-4")
+        use_openrouter: Whether routing through OpenRouter (default True)
+    
+    Returns:
+        Dict with OpenRouter reasoning object or vendor-specific parameters
+    """
+    
+    if effort == "none":
+        return {}  # Don't send reasoning parameter
+    
+    # OpenRouter unified reasoning object approach
+    if use_openrouter:
+        model_family = get_model_family(model_name)
+        
+        # Check model type for appropriate sub-parameters
+        if model_family in ["openai_reasoning", "gpt5", "xai"]:
+            # Effort-based models (OpenAI, Grok, GPT-5)
+            effort_map = {
+                "minimal": "minimal",  # GPT-5 specific
+                "low": "low",
+                "medium": "medium",
+                "high": "high",
+                "max": "high"  # Map max to highest available
+            }
+            mapped_effort = effort_map.get(effort, "medium")
+            
+            # Only include minimal for GPT-5 and o4-mini
+            if mapped_effort == "minimal" and model_family not in ["gpt5"] and "o4" not in model_name:
+                mapped_effort = "low"  # Fallback for non-GPT-5/o4 models
+            
+            # Special handling for o4-mini with summary field
+            if "o4" in model_name:
+                return {
+                    "reasoning": {
+                        "effort": mapped_effort,
+                        "summary": "auto"  # New o4 feature for automatic summarization
+                    }
+                }
+            # GPT-5 supports both reasoning and verbosity
+            elif model_family == "gpt5":
+                return {
+                    "reasoning": {
+                        "effort": mapped_effort
+                    }
+                    # Verbosity handled separately via convert_verbosity
+                }
+            else:
+                return {
+                    "reasoning": {
+                        "effort": mapped_effort
+                    }
+                }
+        
+        elif model_family in ["claude4", "anthropic"]:
+            # Token-based models (Anthropic)
+            token_map = {
+                "minimal": 1024,
+                "low": 1024,
+                "medium": 8192,
+                "high": 16384,
+                "max": 32000  # Max allowed by OpenRouter
+            }
+            return {
+                "reasoning": {
+                    "max_tokens": token_map.get(effort, 8192)
+                }
+            }
+        
+        elif model_family == "google":
+            # Google/Gemini models - try unified reasoning
+            effort_map = {
+                "minimal": "low",
+                "low": "low",
+                "medium": "medium",
+                "high": "high",
+                "max": "high"
+            }
+            return {
+                "reasoning": {
+                    "effort": effort_map.get(effort, "medium")
+                }
+            }
+    
+    else:
+        # Direct vendor API calls (if not using OpenRouter)
+        # This path is rarely used as we route most through OpenRouter
+        model_family = get_model_family(model_name)
+        
+        if model_family in ["openai_reasoning", "gpt5"]:
+            # Direct OpenAI API uses reasoning_effort
+            effort_map = {
+                "minimal": "minimal",
+                "low": "low",
+                "medium": "medium",
+                "high": "high",
+                "max": "high"
+            }
+            mapped = effort_map.get(effort, "medium")
+            if mapped == "minimal" and model_family != "gpt5":
+                mapped = "low"
+            return {"reasoning_effort": mapped}
+        
+        elif model_family in ["anthropic", "claude4"]:
+            # Direct Anthropic API format
+            token_map = {
+                "minimal": 1024,
+                "low": 1024,
+                "medium": 8192,
+                "high": 16384,
+                "max": 32768
+            }
+            budget = token_map.get(effort, 8192)
+            return {
+                "thinking": {
+                    "enabled": True,
+                    "budget_tokens": budget
+                }
+            }
+        
+        elif model_family == "google":
+            # Direct Google API format
+            return {
+                "thinking_config": {
+                    "include_thoughts": True,
+                    "thinking_budget": -1
+                }
+            }
+    
+    return {}
+
+
+def convert_verbosity(level: str, model_name: str = None) -> dict:
+    """
+    Convert verbosity level to API parameter.
+    
+    Args:
+        level: Verbosity level (low, medium, high)
+        model_name: Optional model name for model-specific handling
+    
+    Returns:
+        Dict with verbosity parameter if valid
+    """
+    if level in ["low", "medium", "high"]:
+        # GPT-5 and other models that support verbosity
+        return {"verbosity": level}
+    return {}
 
 
 def get_model_family(model_name: str) -> str:
@@ -217,18 +427,44 @@ def get_model_parameters(model_name: str, requested_params: dict) -> dict:
     Returns:
         Filtered dictionary containing only supported parameters
     """
+    # Determine if routing through OpenRouter
+    use_openrouter = "/" in model_name and not model_name.startswith("direct/")
+    
     model_family = get_model_family(model_name)
     profile = PARAMETER_PROFILES.get(model_family, PARAMETER_PROFILES["default"])
 
     filtered = {}
     transforms = profile.get("transforms", {})
     allowed = profile.get("allowed", [])
-
-    for param, value in requested_params.items():
+    
+    # Copy parameters to avoid modifying original
+    params_to_process = requested_params.copy()
+    
+    # Handle thinking_effort conversion FIRST (highest priority)
+    if "thinking_effort" in params_to_process and params_to_process["thinking_effort"] is not None:
+        effort = params_to_process.pop("thinking_effort")
+        reasoning_params = convert_thinking_effort(effort, model_name, use_openrouter)
+        filtered.update(reasoning_params)
+        
+        # CRITICAL: Remove any conflicting parameters to prevent API errors
+        # OpenRouter doesn't allow both 'reasoning' and 'reasoning_effort'
+        params_to_process.pop("reasoning_effort", None)
+        params_to_process.pop("reasoning", None)
+        params_to_process.pop("thinking", None)
+        params_to_process.pop("thinking_config", None)
+    
+    # Handle verbosity parameter
+    if "verbosity" in params_to_process and params_to_process["verbosity"] is not None:
+        verbosity = params_to_process.pop("verbosity")
+        verbosity_params = convert_verbosity(verbosity, model_name)
+        filtered.update(verbosity_params)
+    
+    # Process remaining parameters
+    for param, value in params_to_process.items():
         # Skip None values
         if value is None:
             continue
-
+        
         # Check if parameter needs transformation
         if param in transforms:
             new_param = transforms[param]
@@ -236,6 +472,7 @@ def get_model_parameters(model_name: str, requested_params: dict) -> dict:
         elif param in allowed:
             filtered[param] = value
         # Silently drop unsupported parameters
+        # Note: We don't add universal parameters automatically to maintain model-specific restrictions
 
     return filtered
 
@@ -272,34 +509,38 @@ class LLMClientFactory:
             "top_p": 0.15,
             "force_verify": True,  # Always verify for foundational docs
         },
-        # Strategy - enhanced multi-step legal reasoning (o3-pro has limited parameters)
+        # Strategy - enhanced multi-step legal reasoning
         "strategy": {
-            "model": "openai/o3-pro",
-            # o3-pro has fixed parameters: temperature=1, top_p=1, presence_penalty=0, frequency_penalty=0
-            # Only max_completion_tokens and reasoning_effort can be controlled
-            "reasoning_effort": "high",
+            "model": "anthropic/claude-opus-4.1",
+            "temperature": 0.2,  # Controlled creativity for strategic thinking
+            "top_p": 0.8,  # Focused but not overly restrictive
+            "thinking_effort": "max",  # Universal parameter, translates to reasoning object
+            "verbosity": "medium",  # Balanced depth in strategic analysis
+            "max_completion_tokens": 16384,  # Extended output for comprehensive strategies
             "force_verify": True,  # Always verify for strategic guidance
         },
         # Strategy sub-type for analysis
         "strategy-analysis": {
             "model": "openai/o3-pro",
-            "temperature": 0.2,
-            "top_p": 0.8,
-            "reasoning_effort": "high",
+            # Note: o3-pro ignores temperature and top_p parameters
+            "thinking_effort": "max",  # Universal parameter, translates to reasoning_effort
         },
         # Brainstorm - varied temperatures for different approaches
         "brainstorm-orthodox": {
             "model": "anthropic/claude-opus-4.1",
             "temperature": 0.3,
             "top_p": 0.7,
+            "thinking_effort": "medium",  # Moderate thinking for balanced analysis
             "force_verify": True,  # Conservative analysis requires verification
         },
         "brainstorm-unorthodox": {
             "model": "x-ai/grok-4",
             "temperature": 0.8,
             "top_p": 0.95,
+            "min_p": 0.05,  # Allow more diverse token selection
+            "repetition_penalty": 1.2,  # Reduce repetitive ideas
             # Kimi-K2 currently has an 8K context window. Supplying an
-            # excessively high `max_tokens` causes “Error processing stream”.
+            # excessively high `max_tokens` causes "Error processing stream".
             # Explicitly cap it so the request succeeds.
             # "max_tokens": 4096,
             "force_verify": True,  # Auto-verify creative outputs
@@ -308,20 +549,26 @@ class LLMClientFactory:
             "model": "openai/o3-pro",
             "temperature": 0.2,
             "top_p": 0.8,
-            "reasoning_effort": "high",
+            "thinking_effort": "high",  # Universal parameter, translates to reasoning_effort
         },
         # Draft - superior technical writing (o3 model with very limited parameter support)
-        "draft": {"model": "openai/o3-pro", "reasoning_effort": "high"},
+        "draft": {
+            "model": "openai/o3-pro", 
+            "thinking_effort": "high",  # Universal parameter
+            "verbosity": "high",  # Comprehensive legal drafting
+            "max_completion_tokens": 32768,  # Extended output for comprehensive drafts
+        },
         # Digest - mode-dependent settings
         "digest-summary": {
             "model": "anthropic/claude-sonnet-4",
             "temperature": 0.1,
-            "top_p": 0,
+            "top_p": 0.1,  # Fixed: was 0, too restrictive
         },
         "digest-issues": {
             "model": "anthropic/claude-opus-4.1",
             "temperature": 0.2,
             "top_p": 0.5,
+            "thinking_effort": "high",  # Deep analysis for issue spotting
         },
         # Lookup - uses Gemini for rapid processing with verification
         # IMPORTANT: When changing models, adjust max_content_tokens in lookup.py
@@ -331,6 +578,8 @@ class LLMClientFactory:
             "model": "google/gemini-2.5-pro",
             "temperature": 0.1,
             "top_p": 0.2,
+            "thinking_effort": "low",  # Fast thinking for rapid search results
+            "verbosity": "low",  # Concise search summaries
             "force_verify": False,  # Don't force strict verification
         },
         # Verification - automatic verification for high-risk commands
@@ -338,6 +587,7 @@ class LLMClientFactory:
             "model": "anthropic/claude-opus-4.1",
             "temperature": 0,
             "top_p": 0.2,
+            "thinking_effort": "high",
             "force_verify": False,  # Don't double-verify since this IS verification
         },
         # Verify sub-commands with specific model assignments
@@ -345,13 +595,14 @@ class LLMClientFactory:
             "model": "openai/o3-pro",  # o3-pro for complex reasoning trace extraction
             "temperature": 0,
             "top_p": 0.2,
-            "reasoning_effort": "high",
+            "thinking_effort": "high",  # Universal parameter, translates to reasoning_effort
             "force_verify": False,
         },
         "verify-soundness": {
             "model": "anthropic/claude-opus-4.1",  # Opus for soundness checking
             "temperature": 0,
             "top_p": 0.2,
+            "thinking_effort": "high",
             "force_verify": False,
         },
         # Counsel's Notes - strategic analysis from advocate's perspective
@@ -359,7 +610,7 @@ class LLMClientFactory:
             "model": "openai/o3-pro",
             "temperature": 0.3,
             "top_p": 0.7,
-            "reasoning_effort": "high",
+            "thinking_effort": "high",  # Universal parameter, translates to reasoning_effort
             "force_verify": True,  # Strategic counsel's notes require verification
         },
         # Barrister's brief - comprehensive document generation
@@ -367,7 +618,8 @@ class LLMClientFactory:
             "model": "openai/o3-pro",
             # o3-pro for comprehensive analysis and superior drafting
             # Extended token limit for detailed briefs
-            "reasoning_effort": "high",
+            "thinking_effort": "high",  # Universal parameter, translates to reasoning object
+            "verbosity": "high",  # Detailed comprehensive briefs
             "max_completion_tokens": 32768,  # 32K tokens for comprehensive output
         },
         # Caseplan - LLM-driven workflow planning
@@ -402,6 +654,7 @@ class LLMClientFactory:
             "model": "anthropic/claude-opus-4.1",  # Independent answering
             "temperature": 0.1,
             "top_p": 0.8,
+            "thinking_effort": "high",
             "force_verify": False,
         },
         "cove-verify": {
@@ -414,6 +667,7 @@ class LLMClientFactory:
             "model": "anthropic/claude-opus-4.1",  # Final regeneration with highest quality
             "temperature": 0.1,
             "top_p": 0.8,
+            "thinking_effort": "high",
             "force_verify": False,
         },
     }
@@ -1114,19 +1368,8 @@ class LLMClient:
                 try:
                     if self.model in ["openai/o1-pro", "openai/o3-pro"]:
                         # o1-pro and o3-pro use special handling via OpenRouter
-                        # Filter parameters - these models only support max_completion_tokens and reasoning_effort
-                        retry_filtered_params = {}
-                        if "max_completion_tokens" in params:
-                            retry_filtered_params["max_completion_tokens"] = params[
-                                "max_completion_tokens"
-                            ]
-                        if (
-                            "reasoning_effort" in params
-                            and self.model == "openai/o3-pro"
-                        ):
-                            retry_filtered_params["reasoning_effort"] = params[
-                                "reasoning_effort"
-                            ]
+                        # Use the same parameter filtering logic for consistency
+                        retry_filtered_params = get_model_parameters(self.model, params)
 
                         # Use chat completions API through OpenRouter
                         retry_response = retry_client.chat.completions.create(

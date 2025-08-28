@@ -43,7 +43,7 @@ class TestLLMClientFactory:
             client = LLMClientFactory.for_command("strategy")
 
             assert isinstance(client, LLMClient)
-            assert client.model == "openai/o3-pro"
+            assert client.model == "anthropic/claude-opus-4.1"  # Updated model
             assert hasattr(client, "_force_verify")
             assert client._force_verify is True
 
@@ -128,21 +128,23 @@ class TestLLMClientFactory:
             mock_config.openrouter_key = "test_key"
             mock_config.openai_key = "test_openai_key"
 
-            # Test o3-pro model (strategy)
+            # Test claude-opus-4.1 model (strategy)
             strategy_client = LLMClientFactory.for_command("strategy")
             strategy_params = strategy_client.default_params
 
-            # o3-pro should have reasoning_effort but not unsupported params
-            assert "reasoning_effort" in strategy_params
-            assert "temperature" not in strategy_params
-            assert "top_p" not in strategy_params
+            # claude-opus-4.1 should have thinking_effort and standard params
+            assert "thinking_effort" in strategy_params
+            assert "temperature" in strategy_params  # Claude supports temperature
+            assert "top_p" in strategy_params  # Claude supports top_p
+            assert strategy_params["temperature"] == 0.2
+            assert strategy_params["top_p"] == 0.8
 
             # Test o3-pro model (draft)
             draft_client = LLMClientFactory.for_command("draft")
             draft_params = draft_client.default_params
 
-            # o3-pro should have reasoning_effort for draft as well
-            assert "reasoning_effort" in draft_params
+            # o3-pro should have thinking_effort for draft as well
+            assert "thinking_effort" in draft_params
 
     def test_environment_variable_override(self):
         """Test that environment variables can override model selection."""
@@ -223,7 +225,7 @@ class TestLLMClientFactoryIntegration:
 
             # Specific model assertions based on current configuration
             assert "gemini" in models["lookup"].lower()  # Uses Gemini for search
-            assert "o3-pro" in models["strategy"].lower()  # Uses o3-pro for strategy
+            assert "claude-opus" in models["strategy"].lower()  # Uses Claude Opus for strategy
             assert "o3-pro" in models["draft"].lower()  # Uses o3-pro for drafting
             assert (
                 "anthropic/claude-sonnet-4" in models["extractfacts"].lower()

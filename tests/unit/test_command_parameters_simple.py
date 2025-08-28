@@ -49,14 +49,14 @@ class TestCommandParameterConfiguration:
         
         assert "strategy" in LLMClientFactory.COMMAND_CONFIGS
         config = LLMClientFactory.COMMAND_CONFIGS["strategy"]
-        assert config["model"] == "openai/o3-pro"
-        assert config["reasoning_effort"] == "high"
+        assert config["model"] == "anthropic/claude-opus-4.1"
+        assert config["thinking_effort"] == "max"
         assert config["force_verify"] is True
         
         client = LLMClientFactory.for_command("strategy")
-        assert client.model == "openai/o3-pro"
+        assert client.model == "anthropic/claude-opus-4.1"
         assert client._force_verify is True
-        assert client.default_params.get("reasoning_effort") == "high"
+        assert client.default_params.get("thinking_effort") == "max"
 
     @patch("litassist.llm.CONFIG")
     def test_draft_configuration(self, mock_config):
@@ -67,7 +67,7 @@ class TestCommandParameterConfiguration:
         assert "draft" in LLMClientFactory.COMMAND_CONFIGS
         config = LLMClientFactory.COMMAND_CONFIGS["draft"]
         assert config["model"] == "openai/o3-pro"
-        assert config["reasoning_effort"] == "high"
+        assert config["thinking_effort"] == "high"
         
         client = LLMClientFactory.for_command("draft")
         assert client.model == "openai/o3-pro"
@@ -80,14 +80,14 @@ class TestCommandParameterConfiguration:
         mock_config.openrouter_key = "test_key"
         mock_config.openai_key = "test_key"
         
-        # Create client with temperature (will be stored but filtered during API call)
-        client = LLMClientFactory.for_command("strategy", temperature=0.9, top_p=0.95)
+        # Use draft command which actually uses o3-pro model
+        client = LLMClientFactory.for_command("draft", temperature=0.9, top_p=0.95)
         
         # Parameters are stored in default_params but will be filtered during API call
         # This is the actual behavior - filtering happens at API call time, not init time
         assert client.default_params.get("temperature") == 0.9  # Stored but will be filtered
         assert client.default_params.get("top_p") == 0.95  # Stored but will be filtered
-        assert client.default_params.get("reasoning_effort") == "high"
+        assert client.default_params.get("thinking_effort") == "high"  # Draft uses high
         
         # Verify the model is correct
         assert client.model == "openai/o3-pro"
@@ -97,7 +97,8 @@ class TestCommandParameterConfiguration:
         filtered = get_model_parameters("openai/o3-pro", client.default_params)
         assert "temperature" not in filtered
         assert "top_p" not in filtered
-        assert filtered.get("reasoning_effort") == "high"
+        assert "reasoning" in filtered  # Should have reasoning object
+        assert filtered["reasoning"] == {"effort": "high"}  # Converted from thinking_effort (max maps to high)
 
     @patch("litassist.llm.CONFIG")
     def test_default_command_configuration(self, mock_config):

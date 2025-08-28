@@ -305,8 +305,8 @@ Federal Court
         
         # Check configuration
         from litassist.llm import LLMClientFactory
-        assert LLMClientFactory.COMMAND_CONFIGS["strategy"]["model"] == "openai/o3-pro"
-        assert LLMClientFactory.COMMAND_CONFIGS["strategy"]["reasoning_effort"] == "high"
+        assert LLMClientFactory.COMMAND_CONFIGS["strategy"]["model"] == "anthropic/claude-opus-4.1"
+        assert LLMClientFactory.COMMAND_CONFIGS["strategy"]["thinking_effort"] == "max"
         assert LLMClientFactory.COMMAND_CONFIGS["strategy"]["force_verify"] is True
 
     @patch("litassist.llm.LLMClientFactory.for_command")
@@ -368,7 +368,7 @@ Federal Court
         # Check configuration
         from litassist.llm import LLMClientFactory
         assert LLMClientFactory.COMMAND_CONFIGS["draft"]["model"] == "openai/o3-pro"
-        assert LLMClientFactory.COMMAND_CONFIGS["draft"]["reasoning_effort"] == "high"
+        assert LLMClientFactory.COMMAND_CONFIGS["draft"]["thinking_effort"] == "high"
 
     @patch("litassist.llm.LLMClientFactory.for_command")
     @patch("litassist.commands.barbrief.validate_case_facts")
@@ -445,11 +445,12 @@ Federal Court
                 # Parameters are stored in default_params but filtered during API call
                 assert client.default_params.get("temperature") == 0.9  # Stored
                 assert client.default_params.get("top_p") == 0.95  # Stored
-                assert client.default_params.get("reasoning_effort") == "high"
+                assert client.default_params.get("thinking_effort") == "high"
                 
                 # Test that get_model_parameters would filter these out
                 from litassist.llm import get_model_parameters
                 filtered = get_model_parameters("openai/o3-pro", client.default_params)
                 assert "temperature" not in filtered
                 assert "top_p" not in filtered
-                assert filtered.get("reasoning_effort") == "high"
+                assert "reasoning" in filtered
+                assert filtered["reasoning"] == {"effort": "high"}
