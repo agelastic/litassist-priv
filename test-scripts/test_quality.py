@@ -15,7 +15,7 @@ import sys
 import argparse
 import yaml
 import json
-import openai
+from openai import OpenAI
 import requests
 import contextlib
 import io
@@ -149,8 +149,7 @@ def test_openai_embedding_quality():
 
         print("Configuring OpenAI API connection...")
         # Configure OpenAI with direct API
-        openai.api_key = OA_KEY
-        openai.api_base = "https://api.openai.com/v1"
+        client = OpenAI(api_key=OA_KEY)
 
         print("Testing embedding quality with legal documents...")
 
@@ -166,7 +165,7 @@ def test_openai_embedding_quality():
         # Generate embeddings
         embeddings = []
         for doc in test_documents:
-            response = openai.Embedding.create(input=doc, model=EMB_MODEL)
+            response = client.embeddings.create(input=doc, model=EMB_MODEL)
             embeddings.append(response.data[0].embedding)
 
         # Quality checks for embeddings
@@ -396,9 +395,8 @@ def test_openrouter_australian_judgment():
             return result
 
         print("Configuring OpenRouter API connection...")
-        # Configure OpenAI with OpenRouter base
-        openai.api_key = OR_KEY
-        openai.api_base = OR_BASE
+        # Configure OpenAI client with OpenRouter base
+        client = OpenAI(api_key=OR_KEY, base_url=OR_BASE)
 
         # Use a model that LitAssist actually uses
         model = "anthropic/claude-sonnet-4"
@@ -427,7 +425,7 @@ def test_openrouter_australian_judgment():
             },
         ]
 
-        response = openai.ChatCompletion.create(
+        response = client.chat.completions.create(
             model=model, messages=messages, max_tokens=250, temperature=0
         )
 
@@ -504,9 +502,8 @@ def test_openrouter_case_citation():
             return result
 
         print("Configuring OpenRouter API connection...")
-        # Configure OpenAI with OpenRouter base
-        openai.api_key = OR_KEY
-        openai.api_base = OR_BASE
+        # Configure OpenAI client with OpenRouter base
+        client = OpenAI(api_key=OR_KEY, base_url=OR_BASE)
 
         # Use a model that LitAssist actually uses
         model = "anthropic/claude-sonnet-4"
@@ -532,7 +529,7 @@ def test_openrouter_case_citation():
             },
         ]
 
-        response = openai.ChatCompletion.create(
+        response = client.chat.completions.create(
             model=model, messages=messages, max_tokens=250, temperature=0
         )
 
@@ -969,20 +966,8 @@ def test_pinecone_vector_operations():
             "Contract law requires offer, acceptance, consideration and intention to create legal relations",
         ]
 
-        # Test embedding creation - temporarily restore OpenAI config for embeddings
-        original_key = openai.api_key
-        original_base = getattr(openai, "api_base", None)
-
-        try:
-            # Set OpenAI config for embeddings
-            openai.api_key = OA_KEY
-            openai.api_base = "https://api.openai.com/v1"
-            embeddings = create_embeddings(test_documents)
-        finally:
-            # Restore whatever config was there before
-            openai.api_key = original_key
-            if original_base:
-                openai.api_base = original_base
+        # Test embedding creation - create_embeddings uses CONFIG internally
+        embeddings = create_embeddings(test_documents)
 
         # Test vector upsert
         test_vectors = [

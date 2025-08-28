@@ -21,7 +21,6 @@ import logging
 import os
 from typing import Dict, Any, Tuple
 
-import aiohttp
 import requests
 import tenacity
 from openai import OpenAI, APIConnectionError, RateLimitError, APIError
@@ -230,8 +229,8 @@ def execute_api_call_with_retry(model_name: str, messages: list, filtered_params
         APIError,
         requests.exceptions.ConnectionError,
         RetryableAPIError,
-        aiohttp.ClientConnectionError,
-        aiohttp.ClientPayloadError,
+        requests.ConnectionError,
+        requests.Timeout,
     )
 
     # Use no wait time during tests to speed up retry tests

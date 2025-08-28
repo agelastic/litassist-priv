@@ -183,7 +183,7 @@ class Config:
         # Validate required entries are non-empty strings
         required_configs = {
             "openrouter.api_key": self.or_key,
-            "openai.api_key": self.oa_key,
+            "openai_api_key": self.oa_key,
             "openai.embedding_model": self.emb_model,
             "google_cse.api_key": self.g_key,
             "google_cse.cse_id": self.cse_id,
@@ -197,11 +197,9 @@ class Config:
 
     def _setup_api_keys(self):
         """Set API keys for external services."""
-        import openai
-
-        openai.api_key = self.oa_key
-        # Don't set api_base unless we're using OpenRouter specifically
-        # openai.api_base = self.or_base
+        # OpenAI SDK v1.0+ no longer uses global api_key
+        # Keys are now passed when creating client instances
+        pass
 
     def using_placeholders(self) -> Dict[str, bool]:
         """

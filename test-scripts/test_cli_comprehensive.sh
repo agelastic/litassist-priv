@@ -635,12 +635,12 @@ test_connectivity() {
     
     # Test 2: OpenAI API (used for direct OpenAI model calls)
     run_test "Connectivity - OpenAI API Direct" \
-        "python -c 'import openai; from litassist.config import CONFIG; openai.api_key = CONFIG.oa_key; openai.api_base = \"https://api.openai.com/v1\"; response = openai.ChatCompletion.create(model=\"gpt-3.5-turbo\", messages=[{\"role\": \"user\", \"content\": \"test\"}], max_tokens=5); print(\"OpenAI Direct API: OK\")' 2>&1" \
+        "python -c 'from openai import OpenAI; from litassist.config import CONFIG; client = OpenAI(api_key=CONFIG.oa_key); response = client.chat.completions.create(model=\"gpt-3.5-turbo\", messages=[{\"role\": \"user\", \"content\": \"test\"}], max_tokens=5); print(\"OpenAI Direct API: OK\")' 2>&1" \
         "OpenAI Direct API: OK"
     
     # Test 3: OpenRouter API (used for non-OpenAI models)
     run_test "Connectivity - OpenRouter API" \
-        "python -c 'import openai; from litassist.config import CONFIG; openai.api_key = CONFIG.or_key; openai.api_base = CONFIG.or_base; response = openai.Model.list(); print(\"OpenRouter API: OK\")' 2>&1" \
+        "python -c 'from openai import OpenAI; from litassist.config import CONFIG; client = OpenAI(api_key=CONFIG.or_key, base_url=CONFIG.or_base); response = client.models.list(); print(\"OpenRouter API: OK\")' 2>&1" \
         "OpenRouter API: OK"
     
     # Test 4: Google CSE API for Jade.io search

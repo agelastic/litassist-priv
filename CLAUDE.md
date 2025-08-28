@@ -85,6 +85,32 @@ LitAssist is a command-line tool for automated litigation support workflows, tai
 2. **Testing**: Run tests with `pytest` before committing
 3. **Documentation**: Update TODO.md and relevant docs when making changes
 
+### Refactoring Guidelines
+
+**Core Principle**: Transform large files (1000+ lines) into focused modules under 500 lines each
+
+**Refactoring Strategy:**
+
+1. **Identify Functional Groups**: Find natural boundaries (data processing, API calls, validation, utilities)
+2. **Create Module Directory**: Convert `module.py` → `module/` with specialized submodules
+3. **Extract by Responsibility**: Each new file handles one specific concern
+4. **Preserve Interface**: Use `__init__.py` to maintain backward compatibility with existing imports
+
+**Design Patterns to Apply:**
+- **Factory Pattern**: Centralize object creation and configuration management
+- **Mixin Classes**: Share common functionality across related classes
+- **Functional Grouping**: Keep related utility functions together
+- **Error Hierarchy**: Dedicated exceptions module for custom error types
+- **Single Responsibility**: Each module should have exactly one reason to change
+
+**Post-Refactoring Tasks:**
+- Update import paths in tests (patch decorators need new module paths)
+- Remove discovered dead code and unused dependencies
+- Migrate deprecated API calls found during refactoring
+- Verify all tests pass after updating imports
+
+**Note**: Only perform refactoring when explicitly requested. During regular work, follow the minimal changes philosophy.
+
 ### YAML File Integrity
 - **Rule:** All changes to `.yaml` files, especially prompt templates in `litassist/prompts/`, must be validated with a YAML linter (e.g., `yamllint`) before committing.
 - **Reasoning:** Prevents syntax and indentation errors that can break application workflows.
