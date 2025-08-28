@@ -94,10 +94,10 @@ params = {"thinking_effort": "high", "temperature": 0.5}
 filtered = get_model_parameters("openai/o3-pro", params)
 # Result: {"reasoning_effort": "high", "max_completion_tokens": ...}
 
-# For Claude
+# For Claude (via OpenRouter - default path)
 params = {"thinking_effort": "medium", "temperature": 0.3}
 filtered = get_model_parameters("anthropic/claude-opus-4.1", params)
-# Result: {"thinking": {"thinking": "enabled", "budget_tokens": 8192}, "temperature": 0.3}
+# Result: {"reasoning": {"max_tokens": 8192}, "temperature": 0.3}
 
 # For Gemini
 params = {"thinking_effort": "low", "temperature": 0.1}

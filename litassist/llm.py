@@ -261,9 +261,11 @@ def convert_thinking_effort(effort: str, model_name: str, use_openrouter: bool =
     
     # OpenRouter unified reasoning object approach
     if use_openrouter:
+        model_family = get_model_family(model_name)
+        
         # Check model type for appropriate sub-parameters
-        if any(x in model_name for x in ["openai/o", "openai/gpt-5", "x-ai/grok"]):
-            # Effort-based models (OpenAI, Grok)
+        if model_family in ["openai_reasoning", "gpt5", "xai"]:
+            # Effort-based models (OpenAI, Grok, GPT-5)
             effort_map = {
                 "minimal": "minimal",  # GPT-5 specific
                 "low": "low",
@@ -273,17 +275,34 @@ def convert_thinking_effort(effort: str, model_name: str, use_openrouter: bool =
             }
             mapped_effort = effort_map.get(effort, "medium")
             
-            # Only include minimal for GPT-5
-            if mapped_effort == "minimal" and "gpt-5" not in model_name:
-                mapped_effort = "low"  # Fallback for non-GPT-5 models
+            # Only include minimal for GPT-5 and o4-mini
+            if mapped_effort == "minimal" and model_family not in ["gpt5"] and "o4" not in model_name:
+                mapped_effort = "low"  # Fallback for non-GPT-5/o4 models
             
-            return {
-                "reasoning": {
-                    "effort": mapped_effort
+            # Special handling for o4-mini with summary field
+            if "o4" in model_name:
+                return {
+                    "reasoning": {
+                        "effort": mapped_effort,
+                        "summary": "auto"  # New o4 feature for automatic summarization
+                    }
                 }
-            }
+            # GPT-5 supports both reasoning and verbosity
+            elif model_family == "gpt5":
+                return {
+                    "reasoning": {
+                        "effort": mapped_effort
+                    }
+                    # Verbosity handled separately via convert_verbosity
+                }
+            else:
+                return {
+                    "reasoning": {
+                        "effort": mapped_effort
+                    }
+                }
         
-        elif "anthropic/" in model_name:
+        elif model_family in ["claude4", "anthropic"]:
             # Token-based models (Anthropic)
             token_map = {
                 "minimal": 1024,
@@ -298,7 +317,7 @@ def convert_thinking_effort(effort: str, model_name: str, use_openrouter: bool =
                 }
             }
         
-        elif "google/" in model_name:
+        elif model_family == "google":
             # Google/Gemini models - try unified reasoning
             effort_map = {
                 "minimal": "low",
@@ -318,7 +337,7 @@ def convert_thinking_effort(effort: str, model_name: str, use_openrouter: bool =
         # This path is rarely used as we route most through OpenRouter
         model_family = get_model_family(model_name)
         
-        if model_family == "openai_reasoning":
+        if model_family in ["openai_reasoning", "gpt5"]:
             # Direct OpenAI API uses reasoning_effort
             effort_map = {
                 "minimal": "minimal",
@@ -328,11 +347,11 @@ def convert_thinking_effort(effort: str, model_name: str, use_openrouter: bool =
                 "max": "high"
             }
             mapped = effort_map.get(effort, "medium")
-            if mapped == "minimal" and "gpt-5" not in model_name:
+            if mapped == "minimal" and model_family != "gpt5":
                 mapped = "low"
             return {"reasoning_effort": mapped}
         
-        elif model_family == "anthropic":
+        elif model_family in ["anthropic", "claude4"]:
             # Direct Anthropic API format
             token_map = {
                 "minimal": 1024,
@@ -344,7 +363,7 @@ def convert_thinking_effort(effort: str, model_name: str, use_openrouter: bool =
             budget = token_map.get(effort, 8192)
             return {
                 "thinking": {
-                    "thinking": "enabled",
+                    "enabled": True,
                     "budget_tokens": budget
                 }
             }
