@@ -12,7 +12,7 @@ from unittest.mock import patch, MagicMock
 from click.testing import CliRunner
 
 from litassist.commands.draft import draft
-from litassist.commands.strategy import validate_case_facts_format
+from litassist.commands.strategy.validators import validate_case_facts_format
 
 
 class TestDraftCommand:

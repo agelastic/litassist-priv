@@ -109,11 +109,11 @@ class TestNoVerifyFlag:
         finally:
             Path(test_file).unlink()
 
-    @patch("litassist.commands.strategy.extract_legal_issues")
-    @patch("litassist.commands.strategy.LLMClientFactory.for_command")
-    @patch("litassist.commands.strategy.verify_content_if_needed")
-    @patch("litassist.commands.strategy.save_command_output")
-    @patch("litassist.commands.strategy.PROMPTS")
+    @patch("litassist.commands.strategy.validators.extract_legal_issues")
+    @patch("litassist.commands.strategy.core.LLMClientFactory.for_command")
+    @patch("litassist.commands.strategy.core.verify_content_if_needed")
+    @patch("litassist.commands.strategy.file_handler.save_command_output")
+    @patch("litassist.commands.strategy.core.PROMPTS")
     def test_strategy_with_noverify_skips_verification(
         self, mock_prompts, mock_save, mock_verify, mock_factory, mock_extract
     ):
@@ -270,11 +270,11 @@ Test objectives
         finally:
             Path(test_file).unlink()
 
-    @patch("litassist.commands.strategy.LLMClientFactory.for_command")
-    @patch("litassist.commands.strategy.run_cove_verification")
-    @patch("litassist.commands.strategy.verify_content_if_needed")
-    @patch("litassist.commands.strategy.save_command_output")
-    @patch("litassist.commands.strategy.PROMPTS")
+    @patch("litassist.commands.strategy.core.LLMClientFactory.for_command")
+    @patch("litassist.commands.strategy.core.run_cove_verification")
+    @patch("litassist.commands.strategy.core.verify_content_if_needed")
+    @patch("litassist.commands.strategy.file_handler.save_command_output")
+    @patch("litassist.commands.strategy.core.PROMPTS")
     def test_strategy_noverify_and_cove_together(
         self, mock_prompts, mock_save, mock_verify, mock_cove, mock_factory
     ):

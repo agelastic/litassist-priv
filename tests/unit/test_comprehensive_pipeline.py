@@ -390,7 +390,7 @@ Worst: Pay $100k progress payment plus costs
              patch("aiohttp.ClientSession"), \
              patch("litassist.helpers.pinecone_config.get_pinecone_client") as mock_get_pinecone_client, \
              patch("litassist.commands.digest.processors.PROMPTS") as mock_prompts, \
-             patch("litassist.commands.strategy.PROMPTS") as mock_strategy_prompts, \
+             patch("litassist.commands.strategy.core.PROMPTS") as mock_strategy_prompts, \
              patch("litassist.commands.brainstorm.PROMPTS") as mock_brainstorm_prompts, \
              patch("litassist.commands.lookup.processors.PROMPTS") as mock_lookup_prompts, \
              patch.object(CONFIG, 'max_chars', 10000), \

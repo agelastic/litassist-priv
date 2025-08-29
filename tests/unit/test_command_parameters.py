@@ -264,9 +264,37 @@ Federal Court
         
         with self.runner.isolated_filesystem():
             with open("facts.txt", "w") as f:
-                f.write("case facts")
+                f.write("""Parties:
+Test parties
+
+Background:
+Test background
+
+Key Events:
+Test events
+
+Legal Issues:
+Test issue
+
+Evidence Available:
+Test evidence
+
+Opposing Arguments:
+Test arguments
+
+Procedural History:
+Test history
+
+Jurisdiction:
+Federal Court
+
+Applicable Law:
+Test law
+
+Client Objectives:
+Test objectives""")
             
-            with patch("litassist.commands.strategy.PROMPTS") as mock_prompts:
+            with patch("litassist.commands.strategy.core.PROMPTS") as mock_prompts:
                 mock_prompts.get_prompt.return_value = "Test prompt"
                 
                 # Mock parse_strategies_file to avoid parsing issues
@@ -274,11 +302,11 @@ Federal Court
                     mock_parse.return_value = []
                     
                     # Mock case facts validation
-                    with patch("litassist.commands.strategy.validate_case_facts_format") as mock_validate:
+                    with patch("litassist.commands.strategy.validators.validate_case_facts_format") as mock_validate:
                         mock_validate.return_value = True
                         
                         # Mock legal issues extraction
-                        with patch("litassist.commands.strategy.extract_legal_issues") as mock_extract:
+                        with patch("litassist.commands.strategy.validators.extract_legal_issues") as mock_extract:
                             mock_extract.return_value = ["Test legal issue 1", "Test legal issue 2"]
                             
                             result = self.runner.invoke(cli, ["strategy", "facts.txt", "--outcome", "Win the case"])
