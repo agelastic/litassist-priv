@@ -14,9 +14,7 @@ from litassist.utils import (
     save_log,
     heartbeat,
     info_message,
-    warning_message,
     success_message,
-    error_message,
 )
 from litassist.config import CONFIG
 from litassist.prompts import PROMPTS
@@ -24,8 +22,11 @@ import time
 from litassist.citation_verify import (
     CitationVerificationError,
 )
-from .api_handlers import execute_api_call_with_retry, get_openai_client
+from .api_handlers import execute_api_call_with_retry
 from .verification import LLMVerificationMixin
+from .response_parser import extract_content_and_usage
+from .retry_handler import handle_citation_retry
+from .citation_handler import process_citation_verification, handle_retry_failure
 
 import logging
 
@@ -1017,169 +1018,34 @@ class LLMClient(LLMVerificationMixin):
                 raise Exception(f"Invalid choice structure: {response.choices[0]}")
 
             # Extract content and usage from chat response
-            content = response.choices[0].message.content or ""
-            # In v1.x, usage is an object with attributes
-            usage = getattr(response, "usage", {})
-            if hasattr(usage, "model_dump"):
-                usage = usage.model_dump()
-            elif hasattr(usage, "dict"):
-                usage = usage.dict()
-            elif not isinstance(usage, dict):
-                usage = {
-                    "prompt_tokens": getattr(usage, "prompt_tokens", 0),
-                    "completion_tokens": getattr(usage, "completion_tokens", 0),
-                    "total_tokens": getattr(usage, "total_tokens", 0),
-                }
+            content, usage = extract_content_and_usage(response)
         finally:
             # No cleanup needed with client instances
             pass
 
         if not skip_citation_verification:
-            # Citation verification - respect force_verify setting
-            # For commands like lookup that have force_verify=False, use lenient mode
-            strict_mode = getattr(
-                self, "_force_verify", True
-            )  # Default to strict unless explicitly disabled
-
+            # Citation verification workflow
             try:
-                verified_content, verification_issues = (
-                    self.validate_and_verify_citations(content, strict_mode=strict_mode)
+                content, verification_issues = process_citation_verification(
+                    content=content,
+                    client_instance=self,
+                    skip_verification=False
                 )
-
-                # If we got here, all citations are verified or were safely removed
-                if verification_issues:
-                    # Log what was cleaned but still proceed
-                    try:
-                        warning_msg = PROMPTS.get(
-                            "warnings.citation_verification_warning",
-                            issue=verification_issues[0],
-                        )
-                    except (KeyError, ValueError):
-                        warning_msg = warning_message(
-                            f"Citation verification: {verification_issues[0]}"
-                        )
-
-                    print(warning_msg)
-                    content = verified_content
 
             except CitationVerificationError as e:
                 # Strict mode failed - attempt retry with enhanced prompt
                 try:
-                    strict_failed_msg = PROMPTS.get(
-                        "warnings.strict_mode_failed", error=str(e)
+                    content, usage, retry_issues = handle_citation_retry(
+                        error=e,
+                        model=self.model,
+                        model_name=model_name,
+                        messages=messages,
+                        params=params,
+                        validate_func=self.validate_and_verify_citations
                     )
-                    retrying_msg = PROMPTS.get("warnings.retrying_with_instructions")
-                except (KeyError, ValueError):
-                    strict_failed_msg = error_message(str(e))
-                    retrying_msg = info_message(
-                        "Retrying with enhanced citation instructions..."
-                    )
-
-                print(strict_failed_msg)
-                print(retrying_msg)
-
-                # Enhance the last user message with strict citation instructions
-                enhanced_messages = messages.copy()
-                citation_instructions = PROMPTS.get(
-                    "verification.citation_retry_instructions"
-                )
-
-                if self.model == "openai/o3-pro":
-                    # For o3 models, append to the enhanced user content from earlier processing
-                    if (
-                        enhanced_messages
-                        and enhanced_messages[-1].get("role") == "user"
-                    ):
-                        enhanced_messages[-1][
-                            "content"
-                        ] += f"\n\n{citation_instructions}"
-                else:
-                    # For regular models with system messages
-                    if (
-                        enhanced_messages
-                        and enhanced_messages[-1].get("role") == "user"
-                    ):
-                        enhanced_messages[-1][
-                            "content"
-                        ] += f"\n\n{citation_instructions}"
-
-                # Retry with enhanced prompt - get appropriate client
-                retry_client = get_openai_client(model_name)
-
-                try:
-                    if self.model in ["openai/o1-pro", "openai/o3-pro"]:
-                        # o1-pro and o3-pro use special handling via OpenRouter
-                        # Use the same parameter filtering logic for consistency
-                        retry_filtered_params = get_model_parameters(self.model, params)
-
-                        # Use chat completions API through OpenRouter
-                        retry_response = retry_client.chat.completions.create(
-                            model=model_name,
-                            messages=enhanced_messages,
-                            **retry_filtered_params,
-                        )
-
-                        # Check for errors in the retry response
-                        if (
-                            hasattr(retry_response, "choices")
-                            and retry_response.choices
-                            and hasattr(retry_response.choices[0], "error")
-                            and retry_response.choices[0].error
-                        ):
-                            error_info = retry_response.choices[0].error
-                            error_msg = error_info.get("message", "Unknown API error")
-                            raise Exception(f"API Error on retry: {error_msg}")
-
-                        if (
-                            hasattr(retry_response, "choices")
-                            and retry_response.choices
-                            and hasattr(retry_response.choices[0], "finish_reason")
-                            and retry_response.choices[0].finish_reason == "error"
-                        ):
-                            if hasattr(retry_response.choices[0], "error"):
-                                error_info = retry_response.choices[0].error
-                                error_msg = error_info.get(
-                                    "message", "Unknown API error"
-                                )
-                                raise Exception(
-                                    f"API retry request failed: {error_msg}"
-                                )
-                            else:
-                                raise Exception(
-                                    "API retry request failed with error finish_reason"
-                                )
-
-                        retry_content = retry_response.choices[0].message.content or ""
-                        retry_usage = getattr(retry_response, "usage", {})
-                    else:
-                        retry_response = retry_client.chat.completions.create(
-                            model=model_name, messages=enhanced_messages, **params
-                        )
-                        retry_content = retry_response.choices[0].message.content
-                        retry_usage = getattr(retry_response, "usage", {})
-
-                    # Verify the retry
-                    (
-                        verified_retry_content,
-                        retry_issues,
-                    ) = self.validate_and_verify_citations(
-                        retry_content, strict_mode=True
-                    )
-
-                    # If retry succeeded, use it
-                    content = verified_retry_content
-                    usage = retry_usage
-                    if retry_issues:
-                        try:
-                            success_msg = PROMPTS.get(
-                                "warnings.retry_successful", issue=retry_issues[0]
-                            )
-                        except (KeyError, ValueError):
-                            success_msg = success_message(
-                                f"Retry successful: {retry_issues[0]}"
-                            )
-                        print(success_msg)
-                    else:
+                    
+                    # Display success message for fully verified retries
+                    if not retry_issues:
                         try:
                             all_verified_msg = PROMPTS.get(
                                 "warnings.all_citations_verified"
@@ -1192,25 +1058,7 @@ class LLMClient(LLMVerificationMixin):
 
                 except CitationVerificationError as retry_error:
                     # Both attempts failed - this is a critical error
-                    try:
-                        retry_failed_msg = PROMPTS.get(
-                            "warnings.retry_also_failed", error=str(retry_error)
-                        )
-                        multiple_attempts_msg = PROMPTS.get(
-                            "warnings.multiple_attempts_failed"
-                        )
-                    except (KeyError, ValueError):
-                        retry_failed_msg = error_message(
-                            f"Retry also failed: {str(retry_error)}"
-                        )
-                        multiple_attempts_msg = (
-                            "CRITICAL: Multiple attempts to generate content with verified citations failed. "
-                            "The AI model is consistently generating unverifiable legal citations. "
-                            "Manual intervention required."
-                        )
-
-                    print(retry_failed_msg)
-                    raise CitationVerificationError(multiple_attempts_msg)
+                    handle_retry_failure(retry_error)
                 finally:
                     # No cleanup needed with client instances
                     pass
