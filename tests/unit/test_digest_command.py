@@ -16,14 +16,13 @@ class TestDigestBasic:
         self.runner = CliRunner()
         self.mock_usage = {"prompt_tokens": 12, "completion_tokens": 6, "total_tokens": 18}
 
-    @patch("litassist.commands.digest.CONFIG")
-    @patch("litassist.commands.digest.PROMPTS")
-    @patch("litassist.commands.digest.show_command_completion")
-    @patch("litassist.commands.digest.save_log")
-    @patch("litassist.commands.digest.save_command_output")
-    @patch("litassist.commands.digest.LLMClientFactory")
-    @patch("litassist.commands.digest.chunk_text")
-    @patch("litassist.commands.digest.read_document")
+    @patch("litassist.commands.digest.processors.PROMPTS")
+    @patch("litassist.commands.digest.core.show_command_completion")
+    @patch("litassist.commands.digest.core.save_log")
+    @patch("litassist.commands.digest.core.save_command_output")
+    @patch("litassist.commands.digest.core.LLMClientFactory")
+    @patch("litassist.commands.digest.chunker.chunk_text")
+    @patch("litassist.commands.digest.chunker.read_document")
     def test_basic_summary(
         self,
         mock_read,
@@ -33,15 +32,13 @@ class TestDigestBasic:
         mock_log,
         mock_show,
         mock_prompts,
-        mock_config,
         tmp_path,
     ):
         # Arrange: patch document reading and chunking
         mock_read.return_value = "Full document text"
         mock_chunk.return_value = ["Chunk1"]
-        # Patch prompts and config
+        # Patch prompts
         mock_prompts.get.return_value = "Any prompt"
-        mock_config.max_chars = 50000
         # Patch LLM client
         mock_client = Mock()
         mock_client.model = "openai"
@@ -58,7 +55,7 @@ class TestDigestBasic:
 
         # Assert: command succeeded and was invoked correctly
         assert result.exit_code == 0
-        mock_factory.for_command.assert_called_once_with("digest", "summary")
+        mock_factory.for_command.assert_called_once_with("digest", mode="summary")
         mock_client.complete.assert_called_once()
         mock_output.assert_called_once()
         mock_show.assert_called_once()
@@ -71,14 +68,13 @@ class TestDigestIssuesMode:
         self.runner = CliRunner()
         self.mock_usage = {"prompt_tokens": 8, "completion_tokens": 4, "total_tokens": 12}
 
-    @patch("litassist.commands.digest.CONFIG")
-    @patch("litassist.commands.digest.PROMPTS")
-    @patch("litassist.commands.digest.show_command_completion")
-    @patch("litassist.commands.digest.save_log")
-    @patch("litassist.commands.digest.save_command_output")
-    @patch("litassist.commands.digest.LLMClientFactory")
-    @patch("litassist.commands.digest.chunk_text")
-    @patch("litassist.commands.digest.read_document")
+    @patch("litassist.commands.digest.processors.PROMPTS")
+    @patch("litassist.commands.digest.core.show_command_completion")
+    @patch("litassist.commands.digest.core.save_log")
+    @patch("litassist.commands.digest.core.save_command_output")
+    @patch("litassist.commands.digest.core.LLMClientFactory")
+    @patch("litassist.commands.digest.chunker.chunk_text")
+    @patch("litassist.commands.digest.chunker.read_document")
     def test_issues_mode_citations(
         self,
         mock_read,
@@ -88,20 +84,18 @@ class TestDigestIssuesMode:
         mock_log,
         mock_show,
         mock_prompts,
-        mock_config,
         tmp_path,
     ):
         # Arrange: patch document reading and single-chunk output
         mock_read.return_value = "Doc text for issues"
         mock_chunk.return_value = ["Chunk1"]
         mock_prompts.get.return_value = "Any prompt"
-        mock_config.max_chars = 50000
         # Patch LLM client with citation warnings
         mock_client = Mock()
         mock_client.model = "openai"
         mock_client.complete.return_value = ("Issue content", self.mock_usage)
         # Simulate citation issues returned
-        mock_client.validate_citations.return_value = ["Warning1", "Warning2"]
+        mock_client.validate_and_verify_citations.return_value = ("Issue content", ["Warning1", "Warning2"])
         mock_factory.for_command.return_value = mock_client
         mock_output.return_value = "digest_issues_output.txt"
 
@@ -114,9 +108,9 @@ class TestDigestIssuesMode:
 
         # Assert: correct mode and citation validation occurred
         assert result.exit_code == 0
-        mock_factory.for_command.assert_called_once_with("digest", "issues")
+        mock_factory.for_command.assert_called_once_with("digest", mode="issues")
         mock_client.complete.assert_called_once()
-        mock_client.validate_citations.assert_called_once_with("Issue content")
+        mock_client.validate_and_verify_citations.assert_called_once_with("Issue content", strict_mode=False)
         mock_output.assert_called_once()
         mock_show.assert_called_once()
         mock_log.assert_called_once()

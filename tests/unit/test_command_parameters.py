@@ -71,19 +71,17 @@ class TestCommandParameterPropagation:
 
     @patch("litassist.llm.LLMClientFactory.for_command")
     @patch("litassist.utils.read_document")
-    @patch("litassist.commands.digest.CONFIG")
-    def test_digest_summary_command_parameters(self, mock_config, mock_read, mock_factory):
+    def test_digest_summary_command_parameters(self, mock_read, mock_factory):
         """Test digest-summary command uses correct parameters."""
         mock_factory.return_value = self.mock_client
         mock_read.return_value = "Test document content"
-        mock_config.max_chars = 50000
         
         with self.runner.isolated_filesystem():
             with open("test.txt", "w") as f:
                 f.write("content")
             
-            with patch("litassist.commands.digest.PROMPTS") as mock_prompts:
-                mock_prompts.get_prompt.return_value = "Test prompt"
+            with patch("litassist.commands.digest.processors.PROMPTS") as mock_prompts:
+                mock_prompts.get.return_value = "Test prompt"
                 
                 result = self.runner.invoke(cli, ["digest", "--mode", "summary", "test.txt"])
             
@@ -96,25 +94,23 @@ class TestCommandParameterPropagation:
                 import traceback
                 traceback.print_tb(result.exc_info[2])
                 
-        # Verify factory was called (digest command passes mode as sub_type)
-        mock_factory.assert_called_once_with("digest", "summary")
+        # Verify factory was called with mode as keyword argument
+        mock_factory.assert_called_once_with("digest", mode="summary")
         assert self.mock_client.complete.called
 
     @patch("litassist.llm.LLMClientFactory.for_command")
     @patch("litassist.utils.read_document")
-    @patch("litassist.commands.digest.CONFIG")
-    def test_digest_issues_command_parameters(self, mock_config, mock_read, mock_factory):
+    def test_digest_issues_command_parameters(self, mock_read, mock_factory):
         """Test digest-issues command uses correct parameters."""
         mock_factory.return_value = self.mock_client
         mock_read.return_value = "Test document content"
-        mock_config.max_chars = 50000
         
         with self.runner.isolated_filesystem():
             with open("test.txt", "w") as f:
                 f.write("content")
             
-            with patch("litassist.commands.digest.PROMPTS") as mock_prompts:
-                mock_prompts.get_prompt.return_value = "Test prompt"
+            with patch("litassist.commands.digest.processors.PROMPTS") as mock_prompts:
+                mock_prompts.get.return_value = "Test prompt"
                 
                 result = self.runner.invoke(cli, ["digest", "--mode", "issues", "test.txt"])
             
@@ -122,8 +118,8 @@ class TestCommandParameterPropagation:
         # The important thing is that the factory was called correctly
         assert result.exit_code in [0, 1]
             
-        # Verify factory was called (digest command passes mode as sub_type)
-        mock_factory.assert_called_once_with("digest", "issues")
+        # Verify factory was called with mode as keyword argument
+        mock_factory.assert_called_once_with("digest", mode="issues")
         assert self.mock_client.complete.called
 
     @patch("litassist.commands.lookup.search.time.sleep")

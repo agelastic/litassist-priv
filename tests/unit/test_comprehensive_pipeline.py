@@ -389,6 +389,7 @@ Worst: Pay $100k progress payment plus costs
              patch("requests.post") as mock_requests_post, \
              patch("aiohttp.ClientSession"), \
              patch("litassist.helpers.pinecone_config.get_pinecone_client") as mock_get_pinecone_client, \
+             patch("litassist.commands.digest.processors.PROMPTS") as mock_prompts, \
              patch.object(CONFIG, 'max_chars', 10000), \
              patch.object(CONFIG, 'use_token_limits', True), \
              patch.object(CONFIG, 'openrouter_key', 'test_key'), \
@@ -397,6 +398,9 @@ Worst: Pay $100k progress payment plus costs
              patch.object(CONFIG, 'or_key', 'test_key'), \
              patch.object(CONFIG, 'google_cse_key', 'test_key'), \
              patch.object(CONFIG, 'google_cse_id', 'test_id'):
+            
+            # Configure PROMPTS mock
+            mock_prompts.get.return_value = "Test prompt content"
             
             # Configure OpenAI v1.x mock client
             mock_client = MagicMock()
