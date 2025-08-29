@@ -7,6 +7,7 @@ handling parameter management and response processing.
 
 import re
 import os
+from datetime import datetime
 from typing import List, Dict, Any, Tuple
 
 from litassist.utils import (
@@ -908,7 +909,8 @@ class LLMClient(LLMVerificationMixin):
             # Find first user message and prepend system content
             for i, msg in enumerate(non_system_messages):
                 if msg.get("role") == "user":
-                    enhanced_content = f"{system_content}\n\n{msg.get('content', '')}"
+                    today_date = datetime.now().strftime("%B %d, %Y")
+                    enhanced_content = f"{system_content}\n\nToday is {today_date}.\n\n{msg.get('content', '')}"
                     modified_messages.append(
                         {"role": "user", "content": enhanced_content}
                     )
@@ -931,7 +933,8 @@ class LLMClient(LLMVerificationMixin):
                         content = msg.get("content", "")
                         # Only prepend if not already present
                         if australian_law_prompt not in content:
-                            content = f"{australian_law_prompt}\n\n{content}"
+                            today_date = datetime.now().strftime("%B %d, %Y")
+                            content = f"{australian_law_prompt}\n\nToday is {today_date}.\n\n{content}"
                         modified_messages.append({"role": "system", "content": content})
                     else:
                         modified_messages.append(msg)
