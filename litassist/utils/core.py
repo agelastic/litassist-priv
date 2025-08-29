@@ -25,7 +25,7 @@ from litassist.utils.formatting import (
 
 
 # ── Logging Setup ───────────────────────────────────────────
-logging.basicConfig(level=logging.INFO, format="%(message)s")
+# Logging is now configured centrally in logging_utils.setup_logging()
 
 
 def timed(func: Callable) -> Callable:
@@ -141,6 +141,7 @@ def show_command_completion(
     output_file: str,
     extra_files: Optional[Dict[str, str]] = None,
     stats: Optional[Dict[str, Any]] = None,
+    ctx: Optional[Any] = None,
 ):
     """
     Display standard completion message for commands.
@@ -150,6 +151,7 @@ def show_command_completion(
         output_file: Path to the main output file
         extra_files: Optional dict of label->path for additional files
         stats: Optional statistics to display
+        ctx: Optional Click context containing log file info
     """
     success_msg = success_message(f"{command_name.replace('_', ' ').title()} complete!")
     click.echo(f"\n{success_msg}")
@@ -163,6 +165,11 @@ def show_command_completion(
         click.echo(f"\n{stats_message('Statistics:')}")
         for key, value in stats.items():
             click.echo(f"   {key}: {value}")
+
+    # Show log file location if verbose mode and context available
+    if ctx and hasattr(ctx, 'obj') and ctx.obj:
+        if ctx.obj.get("verbose") and ctx.obj.get("log_file"):
+            click.echo(info_message(f'Debug logs saved to: {ctx.obj["log_file"]}'))
 
     tip_msg = tip_message(f'View full output: open "{output_file}"')
     click.echo(f"\n{tip_msg}")

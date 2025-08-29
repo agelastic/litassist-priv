@@ -43,17 +43,28 @@ def cli(ctx, log_format, verbose):
     --log-format    Choose log output format (json or markdown).
     --verbose       Enable debug logging and detailed output.
     """
-    # Ensure context object exists
+    # Set up logging first
+    from litassist.logging_utils import setup_logging
+    log_file = setup_logging(verbose=verbose)
+    
+    # Ensure context object exists and store logging info
     ctx.ensure_object(dict)
+    ctx.obj["log_file"] = log_file
+    ctx.obj["verbose"] = verbose
+    
+    # Show log file location if verbose
+    if verbose:
+        click.echo(f"[INFO] Logging to: {log_file}")
+    
+    # Load config after logging is set up
     config = load_config()
+    
     # Use config.yaml value if no CLI option provided
     if log_format is None:
         log_format = config.log_format
     # Store the chosen log format for downstream use
     ctx.obj["log_format"] = log_format
-    # Configure logging level
-    if verbose:
-        logging.getLogger().setLevel(logging.DEBUG)
+    
     logging.debug(
         f"Log format set to: {log_format} (from {'CLI' if ctx.params.get('log_format') else 'config.yaml'})"
     )
