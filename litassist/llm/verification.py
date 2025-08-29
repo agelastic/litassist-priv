@@ -6,16 +6,12 @@ ensuring legal accuracy and citation integrity in Australian legal contexts.
 """
 
 import re
-import time
-from typing import List, Dict, Any, Tuple
+from typing import List, Tuple
 
 from litassist.utils import (
     timed,
-    save_log,
     heartbeat,
     warning_message,
-    success_message,
-    error_message,
 )
 from litassist.config import CONFIG
 from litassist.prompts import PROMPTS

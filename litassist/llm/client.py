@@ -22,8 +22,6 @@ from litassist.config import CONFIG
 from litassist.prompts import PROMPTS
 import time
 from litassist.citation_verify import (
-    verify_all_citations,
-    remove_citation_from_text,
     CitationVerificationError,
 )
 from .api_handlers import execute_api_call_with_retry

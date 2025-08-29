@@ -6,7 +6,6 @@ across different LLM providers. Verification logic is provided by the LLMVerific
 """
 
 import re
-import os
 import time
 from typing import List, Dict, Any, Tuple
 
