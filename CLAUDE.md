@@ -116,6 +116,44 @@ LitAssist is a command-line tool for automated litigation support workflows, tai
 - **Reasoning:** Prevents syntax and indentation errors that can break application workflows.
 - **Action:** Run a linter on any modified `.yaml` files to ensure they are well-formed and properly indented prior to pushing changes.
 
+### Prompt Template Management
+
+**CRITICAL: NEVER HARDCODE PROMPTS IN PYTHON FILES**
+
+**Core Rules:**
+1. **ALL prompts must be in YAML files** - Never write prompt text directly in Python code
+2. **Use PROMPTS.get() exclusively** - Access all prompts via the centralized prompt manager
+3. **No f-strings for prompt keys** - Avoid dynamic prompt key construction unless absolutely necessary
+4. **Explicit permission required** - If you MUST use a hardcoded prompt or f-string key:
+   - Document WHY the code would be "very ugly" without it
+   - Add a comment explaining the exception
+   - Get explicit confirmation that this specific case warrants an exception
+
+**Rationale:**
+- Centralized prompt management enables consistent updates
+- YAML files provide better visibility for prompt engineering
+- Separation of concerns: logic in Python, content in YAML
+- Easier testing and validation of prompt templates
+
+**Examples:**
+```python
+# WRONG: Hardcoded prompt in Python
+prompt = "Analyze this document and provide a summary"
+
+# WRONG: F-string for dynamic key without justification  
+prompt = PROMPTS.get(f"analysis.{mode}_prompt")
+
+# RIGHT: Using static keys from YAML
+prompt = PROMPTS.get("analysis.summary_prompt")
+
+# ACCEPTABLE (with justification): When multiple modes need consistent access
+# Comment: Using f-string to avoid 10+ if/elif blocks for mode selection
+# This pattern is used for digest consolidation where mode is always "summary" or "issues"
+modes = ["summary", "issues"]
+if mode in modes:
+    prompt = PROMPTS.get(f"processing.digest.consolidation_{mode}")
+```
+
 ### Emoji Policy and Terminal Output Standards
 
 **ABSOLUTE PROHIBITION - NO EMOJIS ANYWHERE**

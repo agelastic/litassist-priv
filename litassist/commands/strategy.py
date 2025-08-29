@@ -239,11 +239,11 @@ def strategy(case_facts, outcome, strategies, verify, noverify, cove, output):
 
     # Enhance prompt if strategies are provided
     if parsed_strategies and parsed_strategies["most_likely_count"] > 0:
-        system_prompt += "\n\n" + PROMPTS.get("strategies.brainstormed_strategies_context").format(
+        system_prompt += "\n\n" + PROMPTS.get("strategies.brainstorm.brainstormed_strategies_context").format(
             most_likely_count=parsed_strategies['most_likely_count']
         )
     elif parsed_strategies:
-        system_prompt += "\n\n" + PROMPTS.get("strategies.brainstormed_strategies_context_generic")
+        system_prompt += "\n\n" + PROMPTS.get("strategies.brainstorm.brainstormed_strategies_context_generic")
 
     # Use centralized strategic options instructions
     strategic_instructions = PROMPTS.get(
@@ -260,7 +260,7 @@ def strategy(case_facts, outcome, strategies, verify, noverify, cove, output):
 
     # Add strategies content if provided
     if parsed_strategies:
-        base_user_prompt += "\n" + PROMPTS.get("strategies.brainstormed_strategies_details").format(
+        base_user_prompt += "\n" + PROMPTS.get("strategies.brainstorm.brainstormed_strategies_details").format(
             orthodox_count=parsed_strategies['orthodox_count'],
             unorthodox_count=parsed_strategies['unorthodox_count'],
             most_likely_count=parsed_strategies['most_likely_count'],
