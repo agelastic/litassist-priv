@@ -7,12 +7,11 @@ while maintaining CoVe independence.
 
 import tempfile
 from pathlib import Path
-from unittest.mock import MagicMock, Mock, patch
+from unittest.mock import Mock, patch
 
 import pytest
 from click.testing import CliRunner
 
-from litassist.cli import cli
 from litassist.commands.draft import draft
 from litassist.commands.extractfacts import extractfacts
 from litassist.commands.strategy import strategy
@@ -105,7 +104,7 @@ class TestNoVerifyFlag:
             # Verify that verify_content_if_needed was called with verify_flag=True
             mock_verify.assert_called_once()
             # Check using keyword args or positional args
-            assert mock_verify.call_args.kwargs.get('verify_flag', mock_verify.call_args.args[3] if len(mock_verify.call_args.args) > 3 else None) == True
+            assert mock_verify.call_args.kwargs.get('verify_flag', mock_verify.call_args.args[3] if len(mock_verify.call_args.args) > 3 else None) is True
             
         finally:
             Path(test_file).unlink()
@@ -435,7 +434,7 @@ class TestVerificationDefaults:
             # Should use verification by default
             mock_verify.assert_called_once()
             # Check using keyword args or positional args
-            assert mock_verify.call_args.kwargs.get('verify_flag', mock_verify.call_args.args[3] if len(mock_verify.call_args.args) > 3 else None) == True
+            assert mock_verify.call_args.kwargs.get('verify_flag', mock_verify.call_args.args[3] if len(mock_verify.call_args.args) > 3 else None) is True
             
         finally:
             Path(test_file).unlink()

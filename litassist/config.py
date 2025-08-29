@@ -183,7 +183,7 @@ class Config:
         # Validate required entries are non-empty strings
         required_configs = {
             "openrouter.api_key": self.or_key,
-            "openai_api_key": self.oa_key,
+            "openai.api_key": self.oa_key,
             "openai.embedding_model": self.emb_model,
             "google_cse.api_key": self.g_key,
             "google_cse.cse_id": self.cse_id,

@@ -7,6 +7,7 @@ to produce a structured legal answer citing relevant cases.
 """
 
 import click
+from litassist.config import CONFIG
 from litassist.utils import save_log, timed
 from .search import perform_cse_searches
 from .processors import LookupProcessor
@@ -66,7 +67,6 @@ def lookup(question, mode, extract, comprehensive, context, output, no_fetch):
         click.echo(f"- {link}")
 
     # Initialize processor and fetch content
-    from litassist.config import CONFIG
     processor = LookupProcessor(CONFIG)
     contents = processor.fetch_content(links, all_snippets, no_fetch)
     

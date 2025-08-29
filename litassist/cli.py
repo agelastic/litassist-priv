@@ -80,7 +80,7 @@ def validate_credentials(show_progress=True):
             # Use the new OpenAI v1.0+ API
             client = OpenAI(api_key=config.oa_key)
             # List models to test the connection
-            models = client.models.list()
+            client.models.list()
             if show_progress:
                 print("OK")
         except Exception as e:

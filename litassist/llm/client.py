@@ -24,7 +24,7 @@ import time
 from litassist.citation_verify import (
     CitationVerificationError,
 )
-from .api_handlers import execute_api_call_with_retry
+from .api_handlers import execute_api_call_with_retry, get_openai_client
 from .verification import LLMVerificationMixin
 
 import logging
@@ -1104,7 +1104,6 @@ class LLMClient(LLMVerificationMixin):
                         ] += f"\n\n{citation_instructions}"
 
                 # Retry with enhanced prompt - get appropriate client
-                from .api_handlers import get_openai_client
                 retry_client = get_openai_client(model_name)
 
                 try:
