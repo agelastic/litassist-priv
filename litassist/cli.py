@@ -233,7 +233,8 @@ def test_scraping_capabilities():
             test_url = "https://webscraper.io/test-sites/e-commerce/allinone"  # Dedicated scraping test site
             content = _fetch_url_content_selenium(test_url, timeout=10)
             
-            if content and len(content) > 500:
+            # Lowered threshold for test pages after text extraction
+            if content and len(content) > 100:  # Test pages have less text after extraction
                 print(f"OK (fetched {len(content)} chars)")
             else:
                 print("FAILED")

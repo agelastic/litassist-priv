@@ -148,16 +148,38 @@ def _fetch_url_content_selenium(url: str, timeout: int = 10) -> str:
             # Get the page source after JavaScript has rendered
             page_source = driver.page_source
 
-            # Clean up the HTML
-            page_source = re.sub(
-                r"<script.*?</script>", "", page_source, flags=re.DOTALL
-            )
-            page_source = re.sub(r"<style.*?</style>", "", page_source, flags=re.DOTALL)
-
-            # Check if we got real content
-            text_only = re.sub(r"<[^>]+>", "", page_source)
-            if len(text_only.strip()) > 500:
-                return page_source[:1000000]
+            # Extract text using the same TextExtractor as HTTP scraper
+            try:
+                parser = TextExtractor()
+                parser.feed(page_source)
+                extracted_text = parser.get_text()
+                
+                # Check if we got substantial content (lower threshold for JS-heavy sites)
+                if len(extracted_text) < 200:  # Lower threshold for JS sites with less text
+                    logging.info(f"Selenium: Skipping URL (no substantial text content): {url}")
+                    return ""
+                
+                # Add URL reference at the top for context (same format as HTTP)
+                text_with_source = f"[Source: {url}]\n\n{extracted_text}"
+                
+                # Log the reduction achieved
+                original_size = len(page_source)
+                final_size = len(text_with_source)
+                reduction = 100 - (final_size / original_size * 100)
+                logging.info(f"Selenium extracted text from {url}: {original_size:,} → {final_size:,} chars ({reduction:.1f}% reduction)")
+                
+                # Truncate if still massive (same limit as HTTP)
+                return text_with_source[:250000]  # ~62k tokens max per document
+                
+            except Exception as e:
+                logging.warning(f"Selenium HTML parsing failed for {url}, falling back to regex: {e}")
+                # Fallback to old method if parsing fails
+                page_source = re.sub(r"<script.*?</script>", "", page_source, flags=re.DOTALL)
+                page_source = re.sub(r"<style.*?</style>", "", page_source, flags=re.DOTALL)
+                text_only = re.sub(r"<[^>]+>", "", page_source)
+                if len(text_only.strip()) > 500:
+                    return page_source[:1000000]
+                return ""
 
         finally:
             driver.quit()
