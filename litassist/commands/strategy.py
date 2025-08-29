@@ -239,9 +239,11 @@ def strategy(case_facts, outcome, strategies, verify, noverify, cove, output):
 
     # Enhance prompt if strategies are provided
     if parsed_strategies and parsed_strategies["most_likely_count"] > 0:
-        system_prompt += f"\n\nYou have been provided with brainstormed strategies including {parsed_strategies['most_likely_count']} strategies marked as most likely to succeed. Pay particular attention to these when developing your strategic options."
+        system_prompt += "\n\n" + PROMPTS.get("strategies.brainstormed_strategies_context").format(
+            most_likely_count=parsed_strategies['most_likely_count']
+        )
     elif parsed_strategies:
-        system_prompt += "\n\nYou have been provided with brainstormed strategies including orthodox and unorthodox approaches. Consider these when developing your strategic options, but focus on those most relevant to the specific outcome requested."
+        system_prompt += "\n\n" + PROMPTS.get("strategies.brainstormed_strategies_context_generic")
 
     # Use centralized strategic options instructions
     strategic_instructions = PROMPTS.get(
@@ -258,16 +260,12 @@ def strategy(case_facts, outcome, strategies, verify, noverify, cove, output):
 
     # Add strategies content if provided
     if parsed_strategies:
-        base_user_prompt += "\nBRAINSTORMED STRATEGIES PROVIDED:\n"
-        base_user_prompt += (
-            f"- {parsed_strategies['orthodox_count']} orthodox strategies\n"
+        base_user_prompt += "\n" + PROMPTS.get("strategies.brainstormed_strategies_details").format(
+            orthodox_count=parsed_strategies['orthodox_count'],
+            unorthodox_count=parsed_strategies['unorthodox_count'],
+            most_likely_count=parsed_strategies['most_likely_count'],
+            strategies_content=strategies_content
         )
-        base_user_prompt += (
-            f"- {parsed_strategies['unorthodox_count']} unorthodox strategies\n"
-        )
-        base_user_prompt += f"- {parsed_strategies['most_likely_count']} marked as most likely to succeed\n"
-        base_user_prompt += f"\nFULL BRAINSTORMED CONTENT:\n{strategies_content}\n"
-        base_user_prompt += "\nBuild upon the strategies marked as most likely to succeed, and consider how the orthodox strategies can be refined for the specific outcome requested.\n"
 
     # Add reasoning trace to the prompt
     user_prompt = create_reasoning_prompt(base_user_prompt, "strategy")

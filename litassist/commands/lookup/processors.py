@@ -174,8 +174,7 @@ class LookupProcessor:
     def _build_snippet_content(self, all_snippets):
         """Build formatted snippet content for inclusion in prompt."""
         snippet_text = "=== GOOGLE CSE SEARCH SNIPPETS ===\n"
-        snippet_text += "Note: These are brief search result excerpts from Google, not full content.\n"
-        snippet_text += "Sources include: jade.io, austlii.edu.au, legislation.gov.au, and other legal sites.\n\n"
+        snippet_text += PROMPTS.get("lookup.google_cse_note") + "\n"
 
         # Group snippets by domain for better organization
         snippet_by_domain = {}

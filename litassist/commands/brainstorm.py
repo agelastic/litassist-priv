@@ -571,19 +571,7 @@ def brainstorm(facts, side, area, research, verify, output):
     
     analysis_base_prompt = f"""{analysis_base_content}
 
-{analysis_template}
-
-Please provide output in EXACTLY this format:
-
-## MOST LIKELY TO SUCCEED
-
-1. [Strategy Title from above]
-   [Why this strategy is most likely to succeed]
-
-2. [Strategy Title from above]
-   [Why this strategy is most likely to succeed]
-
-[List 3-5 strategies total that are most likely to succeed]"""
+{analysis_template}"""
 
     analysis_prompt = create_reasoning_prompt(
         analysis_base_prompt, "brainstorm-analysis"
