@@ -76,7 +76,7 @@ def test_validate_side_area_combination_no_warning_for_valid(capsys):
 def test_analyze_research_size_small(monkeypatch, capsys):
     # Patch token counter to small values
     monkeypatch.setattr(
-        'litassist.commands.brainstorm.count_tokens_and_words',
+        'litassist.commands.brainstorm.research_handler.count_tokens_and_words',
         lambda text: (100, 50)
     )
     result = analyze_research_size(['data'], ['file1.txt'])
@@ -93,7 +93,7 @@ def test_analyze_research_size_small(monkeypatch, capsys):
 def test_analyze_research_size_large(monkeypatch, capsys):
     # Patch token counter to large values
     monkeypatch.setattr(
-        'litassist.commands.brainstorm.count_tokens_and_words',
+        'litassist.commands.brainstorm.research_handler.count_tokens_and_words',
         lambda text: (200000, 100000)
     )
     result = analyze_research_size(['data'], ['file1.txt'])

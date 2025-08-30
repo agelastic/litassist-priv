@@ -6,5 +6,10 @@ orthodox, unorthodox, and most-likely-to-succeed analysis.
 """
 
 from .core import brainstorm
+from .research_handler import analyze_research_size, expand_glob_patterns
+from .citation_regenerator import regenerate_bad_strategies
 
-__all__ = ["brainstorm"]
+# Import PROMPTS to make it available at module level for tests
+from litassist.prompts import PROMPTS
+
+__all__ = ["brainstorm", "analyze_research_size", "expand_glob_patterns", "regenerate_bad_strategies", "PROMPTS"]
