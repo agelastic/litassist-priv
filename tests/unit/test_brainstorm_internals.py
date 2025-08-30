@@ -116,17 +116,25 @@ Pursue misleading conduct claim while simultaneously filing ombudsman complaint.
         self.mock_verification_client.model = "anthropic/claude-opus-4.1"
         self.mock_verification_client.verify.return_value = (self.unorthodox_response, {})
     
-    @patch("litassist.commands.brainstorm.LLMClientFactory")
-    @patch("litassist.commands.brainstorm.save_command_output")
-    @patch("litassist.commands.brainstorm.save_log")
-    def test_brainstorm_end_to_end(self, mock_save_log, mock_save_output, mock_factory):
+    @patch("litassist.commands.brainstorm.analysis_generator.LLMClientFactory")
+    @patch("litassist.commands.brainstorm.unorthodox_generator.LLMClientFactory")
+    @patch("litassist.commands.brainstorm.orthodox_generator.LLMClientFactory")
+    @patch("litassist.commands.brainstorm.core.LLMClientFactory")
+    @patch("litassist.commands.brainstorm.core.save_command_output")
+    @patch("litassist.commands.brainstorm.core.save_log")
+    def test_brainstorm_end_to_end(self, mock_save_log, mock_save_output, mock_factory_core, mock_factory_orth, mock_factory_unorth, mock_factory_analysis):
         """Test complete brainstorm flow with all three phases."""
-        # Configure factory to return our mock clients
-        mock_factory.for_command.side_effect = [
-            self.mock_orthodox_client,    # First call for orthodox
-            self.mock_unorthodox_client,   # Second call for unorthodox
-            self.mock_verification_client, # Third call for verification of unorthodox
-            self.mock_analysis_client      # Fourth call for analysis
+        # Configure all factory patches to return our mock clients
+        mock_factory_orth.for_command.return_value = self.mock_orthodox_client
+        mock_factory_unorth.for_command.side_effect = [
+            self.mock_unorthodox_client,   # First call for unorthodox
+            self.mock_verification_client, # Second call for verification
+        ]
+        mock_factory_analysis.for_command.return_value = self.mock_analysis_client
+        mock_factory_core.for_command.side_effect = [
+            self.mock_orthodox_client,    # For regeneration if needed
+            self.mock_unorthodox_client,   # For regeneration if needed
+            self.mock_analysis_client      # For citation check at end
         ]
         
         # Mock save functions to capture output
@@ -153,12 +161,11 @@ Pursue misleading conduct claim while simultaneously filing ombudsman complaint.
             # Check command succeeded
             assert result.exit_code == 0
             
-            # Verify all four clients were created (including verification)
-            assert mock_factory.for_command.call_count == 4
-            mock_factory.for_command.assert_any_call("brainstorm", "orthodox")
-            mock_factory.for_command.assert_any_call("brainstorm", "unorthodox")
-            mock_factory.for_command.assert_any_call("verification")  # For unorthodox verification
-            mock_factory.for_command.assert_any_call("brainstorm", "analysis")
+            # Verify clients were created
+            mock_factory_orth.for_command.assert_called_with("brainstorm", "orthodox")
+            mock_factory_unorth.for_command.assert_any_call("brainstorm", "unorthodox")
+            mock_factory_unorth.for_command.assert_any_call("verification")  # For unorthodox verification
+            mock_factory_analysis.for_command.assert_called_with("brainstorm", "analysis")
             
             # Verify output contains all sections
             output = result.output
@@ -183,27 +190,31 @@ Pursue misleading conduct claim while simultaneously filing ombudsman complaint.
             assert "Unorthodox strategies:" in output
             assert "Most likely to succeed:" in output
     
-    @patch("litassist.commands.brainstorm.LLMClientFactory")
-    def test_brainstorm_with_citation_issues(self, mock_factory):
+    @patch("litassist.commands.brainstorm.analysis_generator.LLMClientFactory")
+    @patch("litassist.commands.brainstorm.unorthodox_generator.LLMClientFactory")
+    @patch("litassist.commands.brainstorm.orthodox_generator.LLMClientFactory")
+    @patch("litassist.commands.brainstorm.core.LLMClientFactory")
+    def test_brainstorm_with_citation_issues(self, mock_factory_core, mock_factory_orth, mock_factory_unorth, mock_factory_analysis):
         """Test brainstorm handling citation validation issues."""
         # Configure citation issues
         self.mock_orthodox_client.validate_citations.return_value = [
             "Found invalid citation: [2024] FAKE 123"
         ]
         
-        mock_factory.for_command.side_effect = [
-            self.mock_orthodox_client,
-            self.mock_unorthodox_client,
-            self.mock_verification_client,  # For unorthodox verification
-            self.mock_analysis_client
+        mock_factory_orth.for_command.return_value = self.mock_orthodox_client
+        mock_factory_unorth.for_command.side_effect = [
+            self.mock_unorthodox_client,   # First call for unorthodox
+            self.mock_verification_client, # Second call for verification
         ]
+        mock_factory_analysis.for_command.return_value = self.mock_analysis_client
+        mock_factory_core.for_command.return_value = self.mock_orthodox_client  # For regeneration
         
         with self.runner.isolated_filesystem():
             with open("facts.txt", "w") as f:
                 f.write("Test facts")
             
             # Mock regenerate function
-            with patch("litassist.commands.brainstorm.regenerate_bad_strategies") as mock_regen:
+            with patch("litassist.commands.brainstorm.core.regenerate_bad_strategies") as mock_regen:
                 mock_regen.return_value = "Fixed orthodox content"
                 
                 result = self.runner.invoke(cli, [
@@ -220,15 +231,19 @@ Pursue misleading conduct claim while simultaneously filing ombudsman complaint.
                 mock_regen.assert_called_once()
                 assert "citation issues in orthodox strategies" in result.output
     
-    @patch("litassist.commands.brainstorm.LLMClientFactory")
-    def test_brainstorm_output_formatting(self, mock_factory):
+    @patch("litassist.commands.brainstorm.analysis_generator.LLMClientFactory")
+    @patch("litassist.commands.brainstorm.unorthodox_generator.LLMClientFactory")
+    @patch("litassist.commands.brainstorm.orthodox_generator.LLMClientFactory")
+    @patch("litassist.commands.brainstorm.core.LLMClientFactory")
+    def test_brainstorm_output_formatting(self, mock_factory_core, mock_factory_orth, mock_factory_unorth, mock_factory_analysis):
         """Test that brainstorm formats output correctly."""
-        mock_factory.for_command.side_effect = [
-            self.mock_orthodox_client,
-            self.mock_unorthodox_client,
-            self.mock_verification_client,  # For unorthodox verification
-            self.mock_analysis_client
+        mock_factory_orth.for_command.return_value = self.mock_orthodox_client
+        mock_factory_unorth.for_command.side_effect = [
+            self.mock_unorthodox_client,   # First call for unorthodox
+            self.mock_verification_client, # Second call for verification
         ]
+        mock_factory_analysis.for_command.return_value = self.mock_analysis_client
+        mock_factory_core.for_command.return_value = self.mock_analysis_client
         
         with self.runner.isolated_filesystem():
             with open("facts.txt", "w") as f:
@@ -257,15 +272,19 @@ Pursue misleading conduct claim while simultaneously filing ombudsman complaint.
             assert "[TIP]" in output
             assert "[INFO]" in output
     
-    @patch("litassist.commands.brainstorm.LLMClientFactory")
-    def test_brainstorm_with_research_files(self, mock_factory):
+    @patch("litassist.commands.brainstorm.analysis_generator.LLMClientFactory")
+    @patch("litassist.commands.brainstorm.unorthodox_generator.LLMClientFactory")
+    @patch("litassist.commands.brainstorm.orthodox_generator.LLMClientFactory")
+    @patch("litassist.commands.brainstorm.core.LLMClientFactory")
+    def test_brainstorm_with_research_files(self, mock_factory_core, mock_factory_orth, mock_factory_unorth, mock_factory_analysis):
         """Test brainstorm with additional research context."""
-        mock_factory.for_command.side_effect = [
-            self.mock_orthodox_client,
-            self.mock_unorthodox_client,
-            self.mock_verification_client,  # For unorthodox verification
-            self.mock_analysis_client
+        mock_factory_orth.for_command.return_value = self.mock_orthodox_client
+        mock_factory_unorth.for_command.side_effect = [
+            self.mock_unorthodox_client,   # First call for unorthodox
+            self.mock_verification_client, # Second call for verification
         ]
+        mock_factory_analysis.for_command.return_value = self.mock_analysis_client
+        mock_factory_core.for_command.return_value = self.mock_analysis_client
         
         with self.runner.isolated_filesystem():
             # Create facts and research files
@@ -303,13 +322,13 @@ Pursue misleading conduct claim while simultaneously filing ombudsman complaint.
                     break
             assert found_research
     
-    @patch("litassist.commands.brainstorm.LLMClientFactory")
-    def test_brainstorm_error_handling(self, mock_factory):
+    @patch("litassist.commands.brainstorm.orthodox_generator.LLMClientFactory")
+    def test_brainstorm_error_handling(self, mock_factory_orth):
         """Test brainstorm handles errors gracefully."""
         # Make orthodox generation fail
         self.mock_orthodox_client.complete.side_effect = Exception("API Error")
         
-        mock_factory.for_command.return_value = self.mock_orthodox_client
+        mock_factory_orth.for_command.return_value = self.mock_orthodox_client
         
         with self.runner.isolated_filesystem():
             with open("facts.txt", "w") as f:
@@ -339,19 +358,23 @@ Pursue misleading conduct claim while simultaneously filing ombudsman complaint.
             assert "Missing option" in result.output
             assert "--side" in result.output
     
-    @patch("litassist.commands.brainstorm.LLMClientFactory")
+    @patch("litassist.commands.brainstorm.analysis_generator.LLMClientFactory")
+    @patch("litassist.commands.brainstorm.unorthodox_generator.LLMClientFactory")
+    @patch("litassist.commands.brainstorm.orthodox_generator.LLMClientFactory")
+    @patch("litassist.commands.brainstorm.core.LLMClientFactory")
     @patch("os.path.exists")
-    def test_brainstorm_default_facts_file(self, mock_exists, mock_factory):
+    def test_brainstorm_default_facts_file(self, mock_exists, mock_factory_core, mock_factory_orth, mock_factory_unorth, mock_factory_analysis):
         """Test brainstorm uses case_facts.txt by default if it exists."""
         # Make it look like case_facts.txt exists
         mock_exists.return_value = True
         
-        mock_factory.for_command.side_effect = [
-            self.mock_orthodox_client,
-            self.mock_unorthodox_client,
-            self.mock_verification_client,  # For unorthodox verification
-            self.mock_analysis_client
+        mock_factory_orth.for_command.return_value = self.mock_orthodox_client
+        mock_factory_unorth.for_command.side_effect = [
+            self.mock_unorthodox_client,   # First call for unorthodox
+            self.mock_verification_client, # Second call for verification
         ]
+        mock_factory_analysis.for_command.return_value = self.mock_analysis_client
+        mock_factory_core.for_command.return_value = self.mock_analysis_client
         
         with self.runner.isolated_filesystem():
             # Create the default file
