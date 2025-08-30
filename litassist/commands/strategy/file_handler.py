@@ -100,7 +100,7 @@ def save_strategy_outputs(
     )
     
     # 4. Save reasoning trace separately
-    trace_metadata = {"Desired Outcome": outcome, "Type": "Consolidated Reasoning Trace"}
+    trace_metadata = {"Desired Outcome": outcome, "Type": "Strategic Reasoning Analysis"}
     trace_file = save_command_output(
         f"{output_prefix}_reasoning" if output_prefix else "strategy_reasoning",
         reasoning_trace,

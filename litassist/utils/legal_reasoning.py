@@ -76,7 +76,7 @@ class LegalReasoningTrace:
                 f"- {source}" for source in self.sources
             )
 
-        return f"""## Reasoning Trace
+        return f"""## Overall Strategic Reasoning
 
 **Issue:** {self.issue}
 
@@ -97,7 +97,7 @@ class LegalReasoningTrace:
         if self.sources:
             sources_text = f"\nSources: {'; '.join(self.sources)}"
 
-        return f"""## Reasoning Trace
+        return f"""## Overall Strategic Reasoning
 Issue: {self.issue}
 Applicable Law: {self.applicable_law}
 Application to Facts: {self.application}
@@ -139,7 +139,7 @@ def extract_reasoning_trace(
     # The pattern now looks for the start of the trace and captures everything
     # until the end of the content or another major header. It is non-greedy.
     trace_pattern = (
-        r"(?:=== REASONING ===|## Reasoning Trace)\s*\n(.*?)(?=\n(?:===|##)|$)"
+        r"(?:=== REASONING ===|## Overall Strategic Reasoning)\s*\n(.*?)(?=\n(?:===|##)|$)"
     )
     match = re.search(trace_pattern, content, re.DOTALL | re.IGNORECASE)
 

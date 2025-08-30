@@ -166,15 +166,23 @@ def strategy(case_facts, outcome, strategies, verify, noverify, cove, output):
     option_traces = []
     
     # Extract options from the strategy content
-    option_pattern = r"## OPTION (\d+):(.*?)(?=## OPTION \d+:|## RECOMMENDED NEXT STEPS|## UNORTHODOX|$)"
+    # Note: We look for OPTIONS (plural) sections to avoid capturing the overall Strategic Reasoning
+    option_pattern = r"## OPTION (\d+):(.*?)(?=## OPTION \d+:|## RECOMMENDED NEXT STEPS|## UNORTHODOX|## Overall Strategic Reasoning|$)"
     options = re.findall(option_pattern, strategy_content, re.DOTALL)
     
     for option_num, option_content in options:
         trace = extract_reasoning_trace(option_content)
         option_traces.append({"option_number": int(option_num), "trace": trace})
     
+    # Extract overall strategic reasoning (if present)
+    overall_pattern = r"## Overall Strategic Reasoning\s*\n(.*?)(?:===|$)"
+    overall_match = re.search(overall_pattern, strategy_content, re.DOTALL)
+    overall_reasoning = None
+    if overall_match:
+        overall_reasoning = extract_reasoning_trace(overall_match.group(0))
+    
     # Create consolidated reasoning trace
-    reasoning_trace = create_consolidated_reasoning_trace(option_traces, outcome)
+    reasoning_trace = create_consolidated_reasoning_trace(option_traces, outcome, overall_reasoning)
     
     # Generate recommended next steps
     next_steps_prompt = PROMPTS.get("strategies.strategy.next_steps_prompt")

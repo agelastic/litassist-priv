@@ -52,7 +52,7 @@ class TestVerifyCommand:
         return """
         Legal analysis of contract breach...
 
-        ## Reasoning Trace
+        ## Overall Strategic Reasoning
         Issue: Whether the defendant breached the service contract by failing to deliver on time
         Applicable Law: Contract law principles regarding breach and remedies under Australian Consumer Law
         Application to Facts: The defendant agreed to deliver goods by March 1 but delivered on March 15
@@ -192,7 +192,7 @@ class TestVerifyCommand:
             mock_client.complete.return_value = (
                 """Analysis of the legal text...
                 
-                ## Reasoning Trace
+                ## Overall Strategic Reasoning
                 Issue: Analysis of native title and negligence principles
                 Applicable Law: Mabo v Queensland, Donoghue v Stevenson
                 Application to Facts: The text discusses landmark cases

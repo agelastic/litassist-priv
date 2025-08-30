@@ -236,7 +236,7 @@ class TestReasoningPrompts:
         result = create_reasoning_prompt(base_prompt, command)
 
         assert base_prompt in result
-        assert "Reasoning Trace" in result
+        assert "Overall Strategic Reasoning" in result
         assert "Issue:" in result
         assert "Applicable Law:" in result
         assert "Application to Facts:" in result
@@ -250,14 +250,14 @@ class TestReasoningPrompts:
         for command in commands:
             result = create_reasoning_prompt(base_prompt, command)
             assert base_prompt in result
-            assert "Reasoning Trace" in result
+            assert "Overall Strategic Reasoning" in result
 
     def test_create_reasoning_prompt_empty_input(self):
         """Test reasoning prompt creation with empty input."""
         result = create_reasoning_prompt("", "strategy")
 
         # Should still contain reasoning structure
-        assert "Reasoning Trace" in result
+        assert "Overall Strategic Reasoning" in result
         assert "Issue:" in result
 
     def test_extract_reasoning_trace_valid_content(self):
@@ -265,7 +265,7 @@ class TestReasoningPrompts:
         content = """
         Some analysis content here.
         
-        ## Reasoning Trace
+        ## Overall Strategic Reasoning
         Issue: Contract breach dispute
         Applicable Law: Contract formation principles
         Application to Facts: Clear breach occurred on specified date
@@ -287,7 +287,7 @@ class TestReasoningPrompts:
     def test_extract_reasoning_trace_missing_sections(self):
         """Test extraction when some reasoning sections are missing."""
         content = """
-        ## Reasoning Trace
+        ## Overall Strategic Reasoning
         Issue: Contract dispute
         Conclusion: Moderate prospects
         """
@@ -308,7 +308,7 @@ class TestReasoningPrompts:
     def test_extract_reasoning_trace_malformed(self):
         """Test extraction from malformed reasoning trace."""
         content = """
-        ## Reasoning Trace
+        ## Overall Strategic Reasoning
         Malformed content without proper structure
         Random text here
         """

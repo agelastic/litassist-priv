@@ -123,7 +123,7 @@ def verify(file, citations, soundness, reasoning, cove, output):
                 click.echo(f"   - Confidence: {existing_trace.confidence}%")
                 # Create a verification report for existing trace
                 report_parts = [
-                    "## Reasoning Trace Verification\n\n",
+                    "## Overall Strategic Reasoning Verification\n\n",
                     "**Status**: Existing trace verified\n",
                     f"**IRAC Structure**: {'Complete' if trace_status['complete'] else 'Incomplete'}\n",
                     f"**Confidence**: {existing_trace.confidence}%\n\n",
@@ -132,7 +132,7 @@ def verify(file, citations, soundness, reasoning, cove, output):
                     report_parts.append("### Issues Found\n\n")
                     report_parts.extend(f"- {issue}\n" for issue in trace_status['issues'])
                     report_parts.append("\n")
-                report_parts.append("### Original Document with Reasoning Trace\n\n")
+                report_parts.append("### Original Document with Overall Strategic Reasoning\n\n")
                 report_parts.append(content)
                 reasoning_response = "".join(report_parts)
                 model_name = "N/A (existing trace verified)"
@@ -177,7 +177,7 @@ def verify(file, citations, soundness, reasoning, cove, output):
                     reasoning_response,
                     "" if output else os.path.basename(base_name),
                     metadata={
-                        "Type": "Reasoning Trace",
+                        "Type": "Overall Strategic Reasoning",
                         "File": file,
                         "Model": model_name,
                         "Action": action.capitalize(),

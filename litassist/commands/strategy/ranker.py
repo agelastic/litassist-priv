@@ -11,7 +11,7 @@ from litassist.prompts import PROMPTS
 
 
 @timed
-def create_consolidated_reasoning_trace(option_traces, outcome):
+def create_consolidated_reasoning_trace(option_traces, outcome, overall_reasoning=None):
     """Create a consolidated reasoning trace from multiple strategy options."""
     
     # Use centralized consolidated reasoning template
@@ -21,6 +21,24 @@ def create_consolidated_reasoning_trace(option_traces, outcome):
     )
     
     consolidated_content = header + "\n\n"
+    
+    # Add overall strategic reasoning if present
+    if overall_reasoning:
+        consolidated_content += "=== OVERALL STRATEGIC REASONING ===\n"
+        consolidated_content += "## OVERALL STRATEGIC ANALYSIS\n\n"
+        
+        if overall_reasoning:
+            overall_trace = PROMPTS.get("reasoning.consolidated.option_trace").format(
+                issue=overall_reasoning.issue,
+                applicable_law=overall_reasoning.applicable_law,
+                application=overall_reasoning.application,
+                conclusion=overall_reasoning.conclusion,
+                confidence=overall_reasoning.confidence,
+                sources=', '.join(overall_reasoning.sources) if overall_reasoning.sources else 'None'
+            )
+            consolidated_content += overall_trace + "\n\n"
+        
+        consolidated_content += "=== END OVERALL STRATEGIC REASONING ===\n\n"
 
     for trace_data in option_traces:
         option_num = trace_data["option_number"]
