@@ -83,6 +83,9 @@ class TestYAMLPromptValidation:
             'case_facts', 'strategies', 'research_count', 'research_content',
             'supporting_count', 'supporting_content', 'config_path',
             
+            # Strategy placeholders
+            'most_likely_count', 'orthodox_count', 'unorthodox_count', 'strategies_content',
+            
             # Additional document placeholders
             'location', 'state', 'date', 'file_number_or_placeholder',
             'witness_address_or_placeholder', 'witness_occupation_if_known'

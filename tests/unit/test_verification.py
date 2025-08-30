@@ -49,8 +49,8 @@ class TestLLMClientVerification:
 
 
     @patch("litassist.utils.save_log")
-    @patch("litassist.llm.LLMClient._get_openai_client")
-    @patch("litassist.llm.CONFIG")
+    @patch("litassist.llm.api_handlers.get_openai_client")
+    @patch("litassist.config.CONFIG")
     def test_verify_with_level_light(self, mock_config, mock_get_client, mock_save_log):
         """Test light verification level."""
         # Setup proper CONFIG values
@@ -89,8 +89,8 @@ class TestLLMClientVerification:
         assert "legal" in call_args[0]["content"].lower()
 
     @patch("litassist.utils.save_log")
-    @patch("litassist.llm.LLMClient._get_openai_client")
-    @patch("litassist.llm.CONFIG")
+    @patch("litassist.llm.api_handlers.get_openai_client")
+    @patch("litassist.config.CONFIG")
     def test_verify_with_level_heavy(self, mock_config, mock_get_client, mock_save_log):
         """Test heavy verification level."""
         # Setup proper CONFIG values

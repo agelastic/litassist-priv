@@ -5,9 +5,9 @@ This module provides a unified interface for chat completions across different L
 handling parameter management and response processing.
 """
 
-from openai import OpenAI
 import re
 import os
+from datetime import datetime
 from typing import List, Dict, Any, Tuple
 
 from litassist.utils import (
@@ -15,42 +15,21 @@ from litassist.utils import (
     save_log,
     heartbeat,
     info_message,
-    warning_message,
     success_message,
-    error_message,
 )
 from litassist.config import CONFIG
 from litassist.prompts import PROMPTS
 import time
 from litassist.citation_verify import (
-    verify_all_citations,
-    remove_citation_from_text,
     CitationVerificationError,
 )
+from .api_handlers import execute_api_call_with_retry
+from .verification import LLMVerificationMixin
+from .response_parser import extract_content_and_usage
+from .retry_handler import handle_citation_retry
+from .citation_handler import process_citation_verification, handle_retry_failure
 
-import tenacity
 import logging
-import requests
-import aiohttp
-
-
-# --- Add missing custom exception classes for retry logic ---
-class RetryableAPIError(Exception):
-    """Custom exception for retryable API errors."""
-
-    pass
-
-
-class StreamingAPIError(Exception):
-    """Custom exception for streaming-related API errors."""
-
-    pass
-
-
-class NonRetryableAPIError(Exception):
-    """Errors that should not be retried (413, 400 with specific messages)."""
-
-    pass
 
 
 logger = logging.getLogger(__name__)
@@ -495,6 +474,8 @@ def supports_system_messages(model_name: str) -> bool:
 class LLMClientFactory:
     """
     Factory class for creating LLMClient instances with command-specific configurations.
+    
+    All models use "provider/model" format and route through OpenRouter.
 
     This centralizes all model and parameter configurations for each command,
     eliminating duplication and providing a single source of truth.
@@ -784,7 +765,7 @@ class LLMClientFactory:
         return cls.COMMAND_CONFIGS.copy()
 
 
-class LLMClient:
+class LLMClient(LLMVerificationMixin):
     """
     Wrapper for LLM API calls with support for completions and self-verification.
 
@@ -865,246 +846,8 @@ class LLMClient:
         self.default_params = default_params
         self._client = None  # Will be created when needed
 
-    def _get_openai_client(self, model_name: str) -> OpenAI:
-        """Get or create OpenAI client with appropriate configuration."""
-        # Determine if we need OpenRouter or direct OpenAI
-        model_family = get_model_family(self.model)
-        use_openrouter = (
-            "/" in self.model and not self.model.startswith("openai/")
-        ) or model_family == "openai_reasoning"
 
-        # Configure client parameters
-        if use_openrouter:
-            base_url = CONFIG.or_base
-            api_key = CONFIG.or_key
 
-            return OpenAI(api_key=api_key, base_url=base_url)
-        else:
-            # Direct OpenAI API
-            return OpenAI(api_key=CONFIG.openai_api_key)
-
-    def parse_openrouter_error(self, error_info):
-        """
-        Parse Google API errors from OpenRouter response.
-
-        Returns:
-            tuple: (error_type, error_message) where error_type is one of:
-                   'auth', 'quota', 'rate_limit', 'billing', 'disabled',
-                   'permission', 'context_length', 'other'
-        """
-        import json
-
-        # Default to generic message
-        error_msg = error_info.get("message", "Unknown API error")
-
-        # Check OpenRouter-level errors first
-        if "maximum context length" in error_msg:
-            return "context_length", error_msg
-
-        # Try to parse the raw Google error
-        if "metadata" in error_info and "raw" in error_info["metadata"]:
-            raw_error = error_info["metadata"]["raw"]
-
-            try:
-                raw_obj = json.loads(raw_error)
-                if "error" in raw_obj:
-                    google_error = raw_obj["error"]
-                    status = google_error.get("status", "")
-                    code = google_error.get("code", 0)
-                    message = google_error.get("message", "")
-
-                    # Check for API key issues regardless of status code
-                    if "API key" in message or "api key" in message.lower():
-                        if (
-                            "expired" in message.lower()
-                            or "invalid" in message.lower()
-                            or "not valid" in message.lower()
-                        ):
-                            return (
-                                "auth",
-                                f"Google API authentication failed: {message}",
-                            )
-
-                    # Also check INVALID_ARGUMENT status specifically
-                    if status == "INVALID_ARGUMENT" and (
-                        "key" in message.lower() or "token" in message.lower()
-                    ):
-                        return "auth", f"Google API authentication failed: {message}"
-
-                    # Determine error type by status code and status field
-                    if status == "UNAUTHENTICATED" or code == 401:
-                        return "auth", f"Google API authentication failed: {message}"
-
-                    elif status == "RESOURCE_EXHAUSTED" or code == 429:
-                        if "quota" in message.lower():
-                            return "quota", f"Google API quota exceeded: {message}"
-                        else:
-                            return "rate_limit", f"Google API rate limit hit: {message}"
-
-                    elif status == "PERMISSION_DENIED" or code == 403:
-                        if "billing" in message.lower():
-                            return (
-                                "billing",
-                                f"Google API billing not enabled: {message}",
-                            )
-                        elif (
-                            "disabled" in message.lower()
-                            or "not been used" in message.lower()
-                        ):
-                            return (
-                                "disabled",
-                                f"Google API not enabled in project: {message}",
-                            )
-                        else:
-                            return (
-                                "permission",
-                                f"Google API permission denied: {message}",
-                            )
-
-                    else:
-                        return "other", f"Google API error ({status}): {message}"
-
-            except (json.JSONDecodeError, TypeError):
-                # Can't parse, check for auth issue using more specific patterns
-                if "UNAUTHENTICATED" in raw_error:
-                    return "auth", "Google API authentication failed"
-
-        return "unknown", error_msg
-
-    def _execute_api_call_with_retry(self, model_name, messages, filtered_params):
-        # --- Begin: Add custom retryable API error for overloaded/rate limit ---
-        # Note: OpenAI v1.x uses different error classes
-        from openai import APIConnectionError, RateLimitError, APIError
-
-        retry_errors = (
-            APIConnectionError,
-            RateLimitError,
-            APIError,
-            requests.exceptions.ConnectionError,
-            RetryableAPIError,
-        )
-        retry_errors = retry_errors + (
-            aiohttp.ClientConnectionError,
-            aiohttp.ClientPayloadError,
-        )
-
-        # Use no wait time during tests to speed up retry tests
-        wait_config = (
-            tenacity.wait_none()  # No wait in tests
-            if os.environ.get("PYTEST_CURRENT_TEST")
-            else tenacity.wait_exponential(multiplier=0.5, max=10)
-        )
-
-        def _call_with_streaming_wrap():
-            try:
-                # Get the appropriate client
-                client = self._get_openai_client(model_name)
-
-                # Create the request
-                resp = client.chat.completions.create(
-                    model=model_name, messages=messages, **filtered_params
-                )
-
-                # Check for error in the response object (OpenRouter v1.x pattern)
-                if hasattr(resp, "error") and resp.error:
-                    error_info = resp.error
-                    if isinstance(error_info, dict):
-                        # Parse the error properly
-                        error_type, error_msg = self.parse_openrouter_error(error_info)
-
-                        # Provide specific guidance based on error type
-                        if error_type == "auth":
-                            raise Exception(
-                                f"{error_msg}. Please configure your Google API key at https://openrouter.ai/settings/keys"
-                            )
-                        elif error_type == "quota":
-                            raise Exception(
-                                f"{error_msg}. Consider waiting or upgrading your Google API quota"
-                            )
-                        elif error_type == "rate_limit":
-                            raise RetryableAPIError(
-                                f"{error_msg}. Will retry after delay"
-                            )
-                        elif error_type == "billing":
-                            raise Exception(
-                                f"{error_msg}. Enable billing at https://console.cloud.google.com/billing"
-                            )
-                        elif error_type == "disabled":
-                            raise Exception(
-                                f"{error_msg}. Enable the API in your Google Cloud project"
-                            )
-                        elif error_type == "context_length":
-                            raise NonRetryableAPIError(
-                                f"{error_msg}. Reduce document size or use selective mode"
-                            )
-                        else:
-                            raise Exception(f"API Error: {error_msg}")
-
-                # Check for API-level errors in response (overloaded, rate limit, etc.)
-                if (
-                    hasattr(resp, "choices")
-                    and resp.choices
-                    and hasattr(resp.choices[0], "error")
-                    and resp.choices[0].error
-                ):
-                    error_info = resp.choices[0].error
-                    error_msg = error_info.get("message", "Unknown API error")
-                    # Retry on overloaded, rate limit, busy, timeout
-                    if any(
-                        kw in error_msg.lower()
-                        for kw in ["overloaded", "rate limit", "timeout", "busy"]
-                    ):
-                        raise RetryableAPIError(f"API Error: {error_msg}")
-                    else:
-                        raise Exception(f"API Error: {error_msg}")
-                return resp
-            except Exception as e:
-                # Check if it's a 413 or similar non-retryable error
-                error_str = str(e)
-                if any(
-                    phrase in error_str.lower()
-                    for phrase in [
-                        "413",
-                        "payload too large",
-                        "prompt is too long",
-                        "request entity too large",
-                    ]
-                ):
-                    raise NonRetryableAPIError(f"Request too large: {error_str}")
-
-                # Also check response codes in the error if available
-                if hasattr(e, "response") and hasattr(e.response, "status_code"):
-                    if e.response.status_code == 413:
-                        raise NonRetryableAPIError(f"HTTP 413: {error_str}")
-
-                # Check for specific OpenAI error types
-                if hasattr(e, "error") and isinstance(e.error, dict):
-                    error_code = e.error.get("code", 0)
-                    if error_code == 413:
-                        raise NonRetryableAPIError(f"API Error 413: {error_str}")
-
-                # Retry on "Error processing stream" or similar streaming errors
-                if (
-                    "Error processing stream" in error_str
-                    or "streaming" in error_str.lower()
-                ):
-                    raise StreamingAPIError(error_str)
-                raise
-
-        @tenacity.retry(
-            stop=tenacity.stop_after_attempt(5),
-            wait=wait_config,
-            retry=(
-                tenacity.retry_if_exception_type(retry_errors)
-                | tenacity.retry_if_exception_type(StreamingAPIError)
-            ),
-            before_sleep=tenacity.before_sleep_log(logger, logging.WARNING),
-            reraise=True,
-        )
-        def _call():
-            return _call_with_streaming_wrap()
-
-        return _call()
 
     # Add heartbeat messages so users see progress during lengthy LLM calls
     # The verification helpers already had their own heartbeat wrapper, but that
@@ -1114,6 +857,10 @@ class LLMClient:
     # generation used by commands such as `extractfacts` – emit "…still working,
     # please wait…" notifications.  Down-stream helpers that themselves call
     # `complete` therefore no longer need their own heartbeat wrappers.
+    def _format_date_string(self):
+        """Get current date formatted for prompt injection."""
+        return datetime.now().strftime("%B %d, %Y")
+
     # The enclosing `complete` method now emits heartbeat updates, so we no
     # longer need a second heartbeat layer here. Retaining only the timing
     # decorator avoids duplicated progress messages.
@@ -1166,7 +913,8 @@ class LLMClient:
             # Find first user message and prepend system content
             for i, msg in enumerate(non_system_messages):
                 if msg.get("role") == "user":
-                    enhanced_content = f"{system_content}\n\n{msg.get('content', '')}"
+                    today_date = self._format_date_string()
+                    enhanced_content = f"{system_content}\n\nToday is {today_date}.\n\n{msg.get('content', '')}"
                     modified_messages.append(
                         {"role": "user", "content": enhanced_content}
                     )
@@ -1189,7 +937,8 @@ class LLMClient:
                         content = msg.get("content", "")
                         # Only prepend if not already present
                         if australian_law_prompt not in content:
-                            content = f"{australian_law_prompt}\n\n{content}"
+                            today_date = self._format_date_string()
+                            content = f"{australian_law_prompt}\n\nToday is {today_date}.\n\n{content}"
                         modified_messages.append({"role": "system", "content": content})
                     else:
                         modified_messages.append(msg)
@@ -1225,7 +974,7 @@ class LLMClient:
             )
 
             # Use ChatCompletion API with retry logic
-            response = self._execute_api_call_with_retry(
+            response = execute_api_call_with_retry(
                 model_name, messages, filtered_params
             )
 
@@ -1276,169 +1025,34 @@ class LLMClient:
                 raise Exception(f"Invalid choice structure: {response.choices[0]}")
 
             # Extract content and usage from chat response
-            content = response.choices[0].message.content or ""
-            # In v1.x, usage is an object with attributes
-            usage = getattr(response, "usage", {})
-            if hasattr(usage, "model_dump"):
-                usage = usage.model_dump()
-            elif hasattr(usage, "dict"):
-                usage = usage.dict()
-            elif not isinstance(usage, dict):
-                usage = {
-                    "prompt_tokens": getattr(usage, "prompt_tokens", 0),
-                    "completion_tokens": getattr(usage, "completion_tokens", 0),
-                    "total_tokens": getattr(usage, "total_tokens", 0),
-                }
+            content, usage = extract_content_and_usage(response)
         finally:
             # No cleanup needed with client instances
             pass
 
         if not skip_citation_verification:
-            # Citation verification - respect force_verify setting
-            # For commands like lookup that have force_verify=False, use lenient mode
-            strict_mode = getattr(
-                self, "_force_verify", True
-            )  # Default to strict unless explicitly disabled
-
+            # Citation verification workflow
             try:
-                verified_content, verification_issues = (
-                    self.validate_and_verify_citations(content, strict_mode=strict_mode)
+                content, verification_issues = process_citation_verification(
+                    content=content,
+                    client_instance=self,
+                    skip_verification=False
                 )
-
-                # If we got here, all citations are verified or were safely removed
-                if verification_issues:
-                    # Log what was cleaned but still proceed
-                    try:
-                        warning_msg = PROMPTS.get(
-                            "warnings.citation_verification_warning",
-                            issue=verification_issues[0],
-                        )
-                    except (KeyError, ValueError):
-                        warning_msg = warning_message(
-                            f"Citation verification: {verification_issues[0]}"
-                        )
-
-                    print(warning_msg)
-                    content = verified_content
 
             except CitationVerificationError as e:
                 # Strict mode failed - attempt retry with enhanced prompt
                 try:
-                    strict_failed_msg = PROMPTS.get(
-                        "warnings.strict_mode_failed", error=str(e)
+                    content, usage, retry_issues = handle_citation_retry(
+                        error=e,
+                        model=self.model,
+                        model_name=model_name,
+                        messages=messages,
+                        params=params,
+                        validate_func=self.validate_and_verify_citations
                     )
-                    retrying_msg = PROMPTS.get("warnings.retrying_with_instructions")
-                except (KeyError, ValueError):
-                    strict_failed_msg = error_message(str(e))
-                    retrying_msg = info_message(
-                        "Retrying with enhanced citation instructions..."
-                    )
-
-                print(strict_failed_msg)
-                print(retrying_msg)
-
-                # Enhance the last user message with strict citation instructions
-                enhanced_messages = messages.copy()
-                citation_instructions = PROMPTS.get(
-                    "verification.citation_retry_instructions"
-                )
-
-                if self.model == "openai/o3-pro":
-                    # For o3 models, append to the enhanced user content from earlier processing
-                    if (
-                        enhanced_messages
-                        and enhanced_messages[-1].get("role") == "user"
-                    ):
-                        enhanced_messages[-1][
-                            "content"
-                        ] += f"\n\n{citation_instructions}"
-                else:
-                    # For regular models with system messages
-                    if (
-                        enhanced_messages
-                        and enhanced_messages[-1].get("role") == "user"
-                    ):
-                        enhanced_messages[-1][
-                            "content"
-                        ] += f"\n\n{citation_instructions}"
-
-                # Retry with enhanced prompt - get appropriate client
-                retry_client = self._get_openai_client(model_name)
-
-                try:
-                    if self.model in ["openai/o1-pro", "openai/o3-pro"]:
-                        # o1-pro and o3-pro use special handling via OpenRouter
-                        # Use the same parameter filtering logic for consistency
-                        retry_filtered_params = get_model_parameters(self.model, params)
-
-                        # Use chat completions API through OpenRouter
-                        retry_response = retry_client.chat.completions.create(
-                            model=model_name,
-                            messages=enhanced_messages,
-                            **retry_filtered_params,
-                        )
-
-                        # Check for errors in the retry response
-                        if (
-                            hasattr(retry_response, "choices")
-                            and retry_response.choices
-                            and hasattr(retry_response.choices[0], "error")
-                            and retry_response.choices[0].error
-                        ):
-                            error_info = retry_response.choices[0].error
-                            error_msg = error_info.get("message", "Unknown API error")
-                            raise Exception(f"API Error on retry: {error_msg}")
-
-                        if (
-                            hasattr(retry_response, "choices")
-                            and retry_response.choices
-                            and hasattr(retry_response.choices[0], "finish_reason")
-                            and retry_response.choices[0].finish_reason == "error"
-                        ):
-                            if hasattr(retry_response.choices[0], "error"):
-                                error_info = retry_response.choices[0].error
-                                error_msg = error_info.get(
-                                    "message", "Unknown API error"
-                                )
-                                raise Exception(
-                                    f"API retry request failed: {error_msg}"
-                                )
-                            else:
-                                raise Exception(
-                                    "API retry request failed with error finish_reason"
-                                )
-
-                        retry_content = retry_response.choices[0].message.content or ""
-                        retry_usage = getattr(retry_response, "usage", {})
-                    else:
-                        retry_response = retry_client.chat.completions.create(
-                            model=model_name, messages=enhanced_messages, **params
-                        )
-                        retry_content = retry_response.choices[0].message.content
-                        retry_usage = getattr(retry_response, "usage", {})
-
-                    # Verify the retry
-                    (
-                        verified_retry_content,
-                        retry_issues,
-                    ) = self.validate_and_verify_citations(
-                        retry_content, strict_mode=True
-                    )
-
-                    # If retry succeeded, use it
-                    content = verified_retry_content
-                    usage = retry_usage
-                    if retry_issues:
-                        try:
-                            success_msg = PROMPTS.get(
-                                "warnings.retry_successful", issue=retry_issues[0]
-                            )
-                        except (KeyError, ValueError):
-                            success_msg = success_message(
-                                f"Retry successful: {retry_issues[0]}"
-                            )
-                        print(success_msg)
-                    else:
+                    
+                    # Display success message for fully verified retries
+                    if not retry_issues:
                         try:
                             all_verified_msg = PROMPTS.get(
                                 "warnings.all_citations_verified"
@@ -1451,25 +1065,7 @@ class LLMClient:
 
                 except CitationVerificationError as retry_error:
                     # Both attempts failed - this is a critical error
-                    try:
-                        retry_failed_msg = PROMPTS.get(
-                            "warnings.retry_also_failed", error=str(retry_error)
-                        )
-                        multiple_attempts_msg = PROMPTS.get(
-                            "warnings.multiple_attempts_failed"
-                        )
-                    except (KeyError, ValueError):
-                        retry_failed_msg = error_message(
-                            f"Retry also failed: {str(retry_error)}"
-                        )
-                        multiple_attempts_msg = (
-                            "CRITICAL: Multiple attempts to generate content with verified citations failed. "
-                            "The AI model is consistently generating unverifiable legal citations. "
-                            "Manual intervention required."
-                        )
-
-                    print(retry_failed_msg)
-                    raise CitationVerificationError(multiple_attempts_msg)
+                    handle_retry_failure(retry_error)
                 finally:
                     # No cleanup needed with client instances
                     pass
@@ -1506,341 +1102,3 @@ class LLMClient:
 
         return content, usage
 
-    @heartbeat()
-    @timed
-    def verify(
-        self,
-        primary_text: str,
-        citation_context: str = None,
-        reasoning_context: str = None,
-    ) -> Tuple[str, str]:
-        """
-        Run a self-critique pass to identify and correct legal inaccuracies in text.
-
-        Uses the same model as the client instance but with deterministic settings
-        (temperature=0, top_p=0.2) to minimize variability in verification.
-
-        Args:
-            primary_text: The text content to verify for legal accuracy.
-            citation_context: Optional citation verification report to inform analysis.
-            reasoning_context: Optional reasoning trace analysis to inform verification.
-
-        Returns:
-            Tuple of (corrections to any legal inaccuracies found, model name used for verification).
-
-        Raises:
-            Exception: If the verification API call fails.
-        """
-        # Use prompts from centralized system - no fallbacks allowed
-        base_prompt = PROMPTS.get("verification.base_prompt")
-        # Select appropriate critique prompt based on available context
-        if citation_context and reasoning_context:
-            # Both contexts available - use comprehensive soundness check
-            self_critique = PROMPTS.get("verification.soundness_with_context")
-        else:
-            # Standard verification
-            self_critique = PROMPTS.get("verification.self_critique")
-
-        # Build the full text with optional verification contexts using === separators
-        full_text = primary_text
-        if citation_context:
-            full_text += "\n\n=== PREVIOUS VERIFICATION: CITATIONS ===\n" + citation_context + "\n=== END PREVIOUS VERIFICATION: CITATIONS ==="
-        if reasoning_context:
-            full_text += "\n\n=== PREVIOUS VERIFICATION: REASONING ANALYSIS ===\n" + reasoning_context + "\n=== END PREVIOUS VERIFICATION: REASONING ANALYSIS ==="
-
-        critique_prompt = [
-            {
-                "role": "system",
-                "content": base_prompt,
-            },
-            {
-                "role": "user",
-                "content": full_text + "\n\n" + self_critique,
-            },
-        ]
-        # Use the configured model for verification (no overrides)
-        params = {"temperature": 0, "top_p": 0.2}
-        if CONFIG.use_token_limits:
-            params["max_tokens"] = 65536  # Large limit for full document verification
-        verification_result, usage = self.complete(
-            critique_prompt, skip_citation_verification=True, **params
-        )
-        return verification_result, self.model
-
-    def validate_and_verify_citations(
-        self, content: str, strict_mode: bool = True
-    ) -> Tuple[str, List[str]]:
-        """
-        Validate and verify citations with strict real-time checking.
-
-        Args:
-            content: Text content to validate and verify
-            strict_mode: If True, raise CitationVerificationError on unverified citations
-
-        Returns:
-            Tuple of (cleaned_content, issues_list)
-
-        Raises:
-            CitationVerificationError: If strict_mode=True and unverified citations found
-        """
-        issues = []
-
-        # Optionally perform offline pattern validation if enabled in config
-        if CONFIG.offline_validation:
-            pattern_issues = self.validate_citations(content, enable_online=False)
-            if pattern_issues:
-                issues.extend(pattern_issues)
-                print(
-                    warning_message(
-                        f"Offline validation found {len(pattern_issues)} potential issues"
-                    )
-                )
-
-        # Always do real-time online database verification
-        verified_citations, unverified_citations = verify_all_citations(content)
-
-        if unverified_citations and strict_mode:
-            # Categorize issues for better error messages
-            format_errors = []
-            existence_errors = []
-            verification_errors = []
-
-            for citation, reason in unverified_citations:
-                # Don't block for offline validation warnings - treat as warnings only
-                if "OFFLINE VALIDATION ONLY" in reason:
-                    continue  # Skip - these are warnings, not errors
-                elif "format" in reason.lower() and "not found" not in reason.lower():
-                    format_errors.append((citation, reason))
-                elif (
-                    "not found" in reason.lower() or "case not found" in reason.lower()
-                ):
-                    existence_errors.append((citation, reason))
-                else:
-                    verification_errors.append((citation, reason))
-
-            # Only raise error if there are actual blocking issues
-            blocking_errors = format_errors + existence_errors + verification_errors
-
-            if blocking_errors:
-                # Build categorized error message using templates
-                categorized_issues = ""
-
-                try:
-                    if existence_errors:
-                        categorized_issues += (
-                            PROMPTS.get("warnings.citation_not_found_header") + "\n"
-                        )
-                        for citation, reason in existence_errors:
-                            categorized_issues += (
-                                PROMPTS.get(
-                                    "warnings.citation_error_item",
-                                    citation=citation,
-                                    reason=reason,
-                                )
-                                + "\n"
-                            )
-                        categorized_issues += "\n"
-
-                    if format_errors:
-                        categorized_issues += (
-                            PROMPTS.get("warnings.citation_format_issues_header") + "\n"
-                        )
-                        for citation, reason in format_errors:
-                            categorized_issues += (
-                                PROMPTS.get(
-                                    "warnings.citation_error_item",
-                                    citation=citation,
-                                    reason=reason,
-                                )
-                                + "\n"
-                            )
-                        categorized_issues += "\n"
-
-                    if verification_errors:
-                        categorized_issues += (
-                            PROMPTS.get(
-                                "warnings.citation_verification_problems_header"
-                            )
-                            + "\n"
-                        )
-                        for citation, reason in verification_errors:
-                            categorized_issues += (
-                                PROMPTS.get(
-                                    "warnings.citation_error_item",
-                                    citation=citation,
-                                    reason=reason,
-                                )
-                                + "\n"
-                            )
-                        categorized_issues += "\n"
-
-                    error_msg = PROMPTS.get(
-                        "warnings.citation_verification_failed",
-                        categorized_issues=categorized_issues.rstrip(),
-                    )
-
-                except (KeyError, ValueError):
-                    # Fallback to hardcoded if templates not available
-                    error_msg = "[CRITICAL] Citation verification failed:\n\n"
-
-                    if existence_errors:
-                        error_msg += "[NOT FOUND] CASES NOT FOUND IN DATABASE:\n"
-                        for citation, reason in existence_errors:
-                            error_msg += f"   • {citation}\n     -> {reason}\n"
-                        error_msg += "\n"
-
-                    if format_errors:
-                        error_msg += "[WARNING] CITATION FORMAT ISSUES:\n"
-                        for citation, reason in format_errors:
-                            error_msg += f"   • {citation}\n     -> {reason}\n"
-                        error_msg += "\n"
-
-                    if verification_errors:
-                        error_msg += "[VERIFICATION] VERIFICATION PROBLEMS:\n"
-                        for citation, reason in verification_errors:
-                            error_msg += f"   • {citation}\n     -> {reason}\n"
-                        error_msg += "\n"
-
-                    error_msg += "[ACTION REQUIRED] These citations appear to be AI hallucinations.\n"
-                    error_msg += "   Remove these citations and regenerate, or verify them independently."
-
-                raise CitationVerificationError(error_msg)
-
-        # If not strict mode or no unverified citations, clean up the content
-        cleaned_content = content
-
-        for citation, reason in unverified_citations:
-            # Add to issues list
-            issues.append(f"UNVERIFIED: {citation} - {reason}")
-
-            # Remove the citation from content
-            cleaned_content = remove_citation_from_text(cleaned_content, citation)
-
-        if unverified_citations:
-            issues.insert(
-                0,
-                f"CITATION VERIFICATION WARNING: {len(unverified_citations)} citations removed as unverified",
-            )
-
-        return cleaned_content, issues
-
-    def should_auto_verify(self, content: str, command: str = None) -> bool:
-        """
-        Determine if content should be automatically verified based on risk factors.
-
-        Args:
-            content: The generated content to analyze
-            command: The command that generated this content (optional)
-
-        Returns:
-            True if auto-verification should be triggered
-        """
-        # Check if factory has set force verification
-        if hasattr(self, "_force_verify") and self._force_verify:
-            return True
-
-        # Always verify critical foundation commands
-        if command in ["extractfacts", "strategy"]:
-            return True
-
-        # Auto-verify Grok outputs (prone to hallucination)
-        if "grok" in self.model.lower():
-            return True
-
-        # Auto-verify when output contains high-risk content
-        risk_patterns = [
-            r"\[\d{4}\]\s+\w+\s+\d+",  # Case citations
-            r"\d+%",  # Percentage claims
-            r'"must"|"cannot"|"will"',  # Strong legal conclusions
-            r"section\s+\d+",  # Statutory references
-            r"rule\s+\d+",  # Court rules
-            r"paragraph\s+\d+",  # Paragraph references
-        ]
-
-        for pattern in risk_patterns:
-            if re.search(pattern, content, re.IGNORECASE):
-                return True
-
-        return False
-
-    def validate_citations(self, content: str, enable_online: bool = True) -> List[str]:
-        """
-        Validate citations using pattern-based checking.
-
-        Delegates to citation_patterns module for the actual validation logic.
-
-        Args:
-            content: Text content to validate
-            enable_online: Whether to perform online database verification after offline checks
-
-        Returns:
-            List of potential citation issues found
-        """
-        from litassist.citation_patterns import validate_citation_patterns
-
-        return validate_citation_patterns(content, enable_online)
-
-    # Heartbeat now handled in `complete`; remove to prevent duplicate messages.
-    def verify_with_level(
-        self, primary_text: str, level: str = "medium"
-    ) -> Tuple[str, str]:
-        """
-        Run verification with different depth levels.
-
-        Args:
-            primary_text: Text to verify
-            level: Verification depth - "light" (spelling only) or "heavy" (comprehensive)
-                  Any other value defaults to standard verification
-
-        Returns:
-            Tuple of (verification feedback, model name used for verification)
-        """
-        if level == "light":
-            # Just check Australian English compliance
-            try:
-                light_verification = PROMPTS.get("verification.light_verification")
-            except KeyError:
-                light_verification = "Check only for Australian English spelling and terminology compliance.\n\nCorrect any non-Australian English spellings or terminology."
-
-            critique_prompt = [
-                {
-                    "role": "system",
-                    "content": light_verification.split("\n\n")[0],
-                },
-                {
-                    "role": "user",
-                    "content": primary_text
-                    + "\n\n"
-                    + light_verification.split("\n\n")[-1],
-                },
-            ]
-        elif level == "heavy":
-            # Full legal accuracy and citation check - no fallbacks allowed
-            system_prompt = PROMPTS.get("verification.heavy_verification_system")
-            heavy_verification = PROMPTS.get("verification.heavy_verification")
-
-            critique_prompt = [
-                {
-                    "role": "system",
-                    "content": system_prompt,
-                },
-                {
-                    "role": "user",
-                    "content": primary_text + "\n\n" + heavy_verification,
-                },
-            ]
-        else:
-            # For any other level, use standard verification
-            # This maintains backward compatibility
-            return self.verify(primary_text)
-
-        # Use the configured verification model
-        from litassist.llm import LLMClientFactory
-        verification_client = LLMClientFactory.for_command("verification")
-        params = {"temperature": 0, "top_p": 0.2}
-        if CONFIG.use_token_limits:
-            params["max_tokens"] = 32768 if level == "light" else 65536
-        verification_result, usage = verification_client.complete(
-            critique_prompt, skip_citation_verification=True, **params
-        )
-        return verification_result, verification_client.model

@@ -16,7 +16,7 @@ from litassist.utils import LegalReasoningTrace, extract_reasoning_trace
 class TestLLMClientFactory:
     """Test LLM client factory functionality."""
 
-    @patch("litassist.llm.CONFIG")
+    @patch("litassist.config.CONFIG")
     def test_factory_for_command_basic(self, mock_config):
         """Test basic LLM client creation for commands."""
         mock_config.llm_model = "openai/gpt-4o"
@@ -28,7 +28,7 @@ class TestLLMClientFactory:
         # Model may be different based on configuration
         assert client.model is not None
 
-    @patch("litassist.llm.CONFIG")
+    @patch("litassist.config.CONFIG")
     def test_factory_with_overrides(self, mock_config):
         """Test LLM client factory with parameter overrides."""
         mock_config.llm_model = "openai/gpt-4o"
@@ -46,8 +46,8 @@ class TestLLMClientFactory:
 class TestLLMClient:
     """Test LLM client functionality with mocked API."""
 
-    @patch("litassist.llm.LLMClient._get_openai_client")
-    @patch("litassist.llm.CONFIG")
+    @patch("litassist.llm.api_handlers.get_openai_client")
+    @patch("litassist.config.CONFIG")
     def test_llm_client_retry_on_connection_error(self, mock_config, mock_get_client):
         """Test retry logic on connection errors."""
         # Setup proper CONFIG values for OpenAI v1.x
@@ -93,8 +93,8 @@ class TestLLMClient:
         assert content == "Retried response"
         assert call_count["count"] == 1
 
-    @patch("litassist.llm.LLMClient._get_openai_client")
-    @patch("litassist.llm.CONFIG")
+    @patch("litassist.llm.api_handlers.get_openai_client")
+    @patch("litassist.config.CONFIG")
     def test_llm_client_api_config_restoration(self, mock_config, mock_get_client):
         """Test API config restoration after retries."""
         # Setup proper CONFIG values
@@ -135,8 +135,8 @@ class TestLLMClient:
             content, usage = client.complete(messages, skip_citation_verification=True)
             assert content == "Success"
 
-    @patch("litassist.llm.LLMClient._get_openai_client")
-    @patch("litassist.llm.CONFIG")
+    @patch("litassist.llm.api_handlers.get_openai_client")
+    @patch("litassist.config.CONFIG")
     def test_llm_client_complete_success(self, mock_config, mock_get_client):
         """Test successful complete operation."""
         # Setup proper CONFIG values
@@ -177,8 +177,8 @@ class TestLLMClient:
         assert usage["prompt_tokens"] == 10
         assert usage["completion_tokens"] == 20
 
-    @patch("litassist.llm.LLMClient._get_openai_client")
-    @patch("litassist.llm.CONFIG")
+    @patch("litassist.llm.api_handlers.get_openai_client")
+    @patch("litassist.config.CONFIG")
     def test_llm_client_verify_with_level(self, mock_config, mock_get_client):
         """Test verify_with_level functionality."""
         # Setup proper CONFIG values
@@ -281,8 +281,8 @@ class TestReasoningExtraction:
 class TestPromptIntegration:
     """Test prompt system integration with LLM."""
 
-    @patch("litassist.llm.LLMClient._get_openai_client")
-    @patch("litassist.llm.CONFIG")
+    @patch("litassist.llm.api_handlers.get_openai_client")
+    @patch("litassist.config.CONFIG")
     @patch("litassist.prompts.PROMPTS")
     def test_prompt_system_integration(self, mock_prompts, mock_config, mock_get_client):
         """Test that prompts are correctly integrated with LLM calls."""
@@ -328,8 +328,8 @@ class TestPromptIntegration:
 class TestErrorHandling:
     """Test error handling in LLM operations."""
 
-    @patch("litassist.llm.LLMClient._get_openai_client")
-    @patch("litassist.llm.CONFIG")
+    @patch("litassist.llm.api_handlers.get_openai_client")
+    @patch("litassist.config.CONFIG")
     def test_api_error_handling(self, mock_config, mock_get_client):
         """Test handling of API errors."""
         # Setup proper CONFIG values
@@ -352,8 +352,8 @@ class TestErrorHandling:
         
         assert "API Error" in str(exc_info.value)
 
-    @patch("litassist.llm.LLMClient._get_openai_client")
-    @patch("litassist.llm.CONFIG")
+    @patch("litassist.llm.api_handlers.get_openai_client")
+    @patch("litassist.config.CONFIG")
     def test_empty_response_handling(self, mock_config, mock_get_client):
         """Test handling of empty API responses."""
         # Setup proper CONFIG values

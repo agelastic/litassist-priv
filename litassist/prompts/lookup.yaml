@@ -2,6 +2,12 @@
 # Used for case law research and citation analysis
 
 lookup:
+  # Google CSE snippets note
+  # USED BY: lookup/processors.py - lines 177-178 (_build_snippet_content)
+  google_cse_note: |
+    Note: These are brief search result excerpts from Google, not full content.
+    Sources include: jade.io, austlii.edu.au, legislation.gov.au, and other legal sites.
+  
   # Research assistant system prompt
   # USED BY: lookup.py lookup() - system prompt for jade.io research
   # LOCATION: lookup.py:304-305 (to be extracted)

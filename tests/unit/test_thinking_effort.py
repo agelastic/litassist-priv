@@ -6,7 +6,7 @@ model-specific thinking/reasoning parameters.
 """
 
 import pytest
-from unittest.mock import patch, MagicMock
+from unittest.mock import patch
 from litassist.llm import (
     convert_thinking_effort,
     get_model_parameters,

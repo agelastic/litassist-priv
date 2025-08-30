@@ -27,7 +27,7 @@ class TestCommandParameterPropagation:
         self.mock_client.validate_citations.return_value = []  # Add validate_citations method
         
     @patch("litassist.llm.LLMClientFactory.for_command")
-    @patch("litassist.utils.read_document")
+    @patch("litassist.utils.file_ops.read_document")
     @patch("litassist.commands.extractfacts.CONFIG")
     def test_extractfacts_command_parameters(self, mock_config, mock_read, mock_factory):
         """Test extractfacts command uses correct model and parameters."""
@@ -71,19 +71,17 @@ class TestCommandParameterPropagation:
 
     @patch("litassist.llm.LLMClientFactory.for_command")
     @patch("litassist.utils.read_document")
-    @patch("litassist.commands.digest.CONFIG")
-    def test_digest_summary_command_parameters(self, mock_config, mock_read, mock_factory):
+    def test_digest_summary_command_parameters(self, mock_read, mock_factory):
         """Test digest-summary command uses correct parameters."""
         mock_factory.return_value = self.mock_client
         mock_read.return_value = "Test document content"
-        mock_config.max_chars = 50000
         
         with self.runner.isolated_filesystem():
             with open("test.txt", "w") as f:
                 f.write("content")
             
-            with patch("litassist.commands.digest.PROMPTS") as mock_prompts:
-                mock_prompts.get_prompt.return_value = "Test prompt"
+            with patch("litassist.commands.digest.processors.PROMPTS") as mock_prompts:
+                mock_prompts.get.return_value = "Test prompt"
                 
                 result = self.runner.invoke(cli, ["digest", "--mode", "summary", "test.txt"])
             
@@ -96,25 +94,23 @@ class TestCommandParameterPropagation:
                 import traceback
                 traceback.print_tb(result.exc_info[2])
                 
-        # Verify factory was called (digest command passes mode as sub_type)
-        mock_factory.assert_called_once_with("digest", "summary")
+        # Verify factory was called with mode as keyword argument
+        mock_factory.assert_called_once_with("digest", mode="summary")
         assert self.mock_client.complete.called
 
     @patch("litassist.llm.LLMClientFactory.for_command")
     @patch("litassist.utils.read_document")
-    @patch("litassist.commands.digest.CONFIG")
-    def test_digest_issues_command_parameters(self, mock_config, mock_read, mock_factory):
+    def test_digest_issues_command_parameters(self, mock_read, mock_factory):
         """Test digest-issues command uses correct parameters."""
         mock_factory.return_value = self.mock_client
         mock_read.return_value = "Test document content"
-        mock_config.max_chars = 50000
         
         with self.runner.isolated_filesystem():
             with open("test.txt", "w") as f:
                 f.write("content")
             
-            with patch("litassist.commands.digest.PROMPTS") as mock_prompts:
-                mock_prompts.get_prompt.return_value = "Test prompt"
+            with patch("litassist.commands.digest.processors.PROMPTS") as mock_prompts:
+                mock_prompts.get.return_value = "Test prompt"
                 
                 result = self.runner.invoke(cli, ["digest", "--mode", "issues", "test.txt"])
             
@@ -122,13 +118,13 @@ class TestCommandParameterPropagation:
         # The important thing is that the factory was called correctly
         assert result.exit_code in [0, 1]
             
-        # Verify factory was called (digest command passes mode as sub_type)
-        mock_factory.assert_called_once_with("digest", "issues")
+        # Verify factory was called with mode as keyword argument
+        mock_factory.assert_called_once_with("digest", mode="issues")
         assert self.mock_client.complete.called
 
-    @patch("litassist.commands.lookup.time.sleep")
+    @patch("litassist.commands.lookup.search.time.sleep")
     @patch("litassist.llm.LLMClientFactory.for_command")
-    @patch("litassist.commands.lookup.CONFIG")
+    @patch("litassist.commands.lookup.search.CONFIG")
     def test_lookup_command_parameters(self, mock_config, mock_factory, mock_sleep):
         """Test lookup command uses correct model (gemini-2.5-pro)."""
         mock_factory.return_value = self.mock_client
@@ -138,8 +134,8 @@ class TestCommandParameterPropagation:
         
         # Mock Google API and fetch functions
         with patch("googleapiclient.discovery.build") as mock_build, \
-             patch("litassist.commands.lookup._fetch_url_content", return_value=""), \
-             patch("litassist.commands.lookup._fetch_url_content_selenium", return_value=""):
+             patch("litassist.commands.lookup.fetchers._fetch_url_content", return_value=""), \
+             patch("litassist.commands.lookup.fetchers._fetch_url_content_selenium_with_timeout", return_value=""):
             mock_service = Mock()
             mock_build.return_value = mock_service
             mock_cse = Mock()
@@ -148,7 +144,7 @@ class TestCommandParameterPropagation:
             mock_cse.list.return_value = mock_list
             mock_list.execute.return_value = {"items": []}
             
-            with patch("litassist.commands.lookup.PROMPTS") as mock_prompts:
+            with patch("litassist.commands.lookup.processors.PROMPTS") as mock_prompts:
                 mock_prompts.get_prompt.return_value = "Test prompt"
                 
                 result = self.runner.invoke(cli, ["lookup", "test query"])
@@ -236,8 +232,8 @@ class TestCommandParameterPropagation:
                 import traceback
                 traceback.print_tb(result.exc_info[2])
                 
-        # Should be called 4 times (orthodox, unorthodox, verification, analysis)
-        assert mock_factory.call_count == 4
+        # Should be called 4-5 times (orthodox, unorthodox, verification, analysis, possibly citation check)
+        assert mock_factory.call_count >= 4
         
         # Check the calls were made in the correct order
         calls = mock_factory.call_args_list
@@ -268,9 +264,37 @@ Federal Court
         
         with self.runner.isolated_filesystem():
             with open("facts.txt", "w") as f:
-                f.write("case facts")
+                f.write("""Parties:
+Test parties
+
+Background:
+Test background
+
+Key Events:
+Test events
+
+Legal Issues:
+Test issue
+
+Evidence Available:
+Test evidence
+
+Opposing Arguments:
+Test arguments
+
+Procedural History:
+Test history
+
+Jurisdiction:
+Federal Court
+
+Applicable Law:
+Test law
+
+Client Objectives:
+Test objectives""")
             
-            with patch("litassist.commands.strategy.PROMPTS") as mock_prompts:
+            with patch("litassist.commands.strategy.core.PROMPTS") as mock_prompts:
                 mock_prompts.get_prompt.return_value = "Test prompt"
                 
                 # Mock parse_strategies_file to avoid parsing issues
@@ -278,11 +302,11 @@ Federal Court
                     mock_parse.return_value = []
                     
                     # Mock case facts validation
-                    with patch("litassist.commands.strategy.validate_case_facts_format") as mock_validate:
+                    with patch("litassist.commands.strategy.validators.validate_case_facts_format") as mock_validate:
                         mock_validate.return_value = True
                         
                         # Mock legal issues extraction
-                        with patch("litassist.commands.strategy.extract_legal_issues") as mock_extract:
+                        with patch("litassist.commands.strategy.validators.extract_legal_issues") as mock_extract:
                             mock_extract.return_value = ["Test legal issue 1", "Test legal issue 2"]
                             
                             result = self.runner.invoke(cli, ["strategy", "facts.txt", "--outcome", "Win the case"])

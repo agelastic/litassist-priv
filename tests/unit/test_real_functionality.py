@@ -90,13 +90,16 @@ class TestCLICommandsWithRealFiles:
                 f.write("Test case facts")
 
             # Mock the actual command logic
-            with patch("litassist.commands.brainstorm.LLMClient") as mock_client:
+            with patch("litassist.llm.LLMClientFactory.for_command") as mock_factory:
                 mock_instance = Mock()
                 mock_instance.complete.return_value = (
                     "Strategy",
                     {"total_tokens": 100},
                 )
-                mock_client.return_value = mock_instance
+                mock_instance.validate_citations.return_value = []
+                mock_instance.verify.return_value = ("Verified", {})
+                mock_instance.model = "test-model"
+                mock_factory.return_value = mock_instance
 
                 # Run with real file
                 result = runner.invoke(

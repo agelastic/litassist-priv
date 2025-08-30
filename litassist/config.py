@@ -2,7 +2,7 @@
 Configuration management for LitAssist.
 
 This module handles loading, validation, and access to configuration values
-required for LitAssist's operation.
+required for LitAssist's operation. All LLM calls route through OpenRouter API.
 """
 
 import os
@@ -197,11 +197,9 @@ class Config:
 
     def _setup_api_keys(self):
         """Set API keys for external services."""
-        import openai
-
-        openai.api_key = self.oa_key
-        # Don't set api_base unless we're using OpenRouter specifically
-        # openai.api_base = self.or_base
+        # OpenAI SDK v1.0+ no longer uses global api_key
+        # Keys are now passed when creating client instances
+        pass
 
     def using_placeholders(self) -> Dict[str, bool]:
         """

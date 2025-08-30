@@ -26,6 +26,63 @@ os.makedirs(LOG_DIR, exist_ok=True)
 os.makedirs(OUTPUT_DIR, exist_ok=True)
 
 
+# ── Logging Configuration ───────────────────────────────────
+def setup_logging(verbose: bool = False) -> str:
+    """
+    Configure logging with file output and optional console output.
+    
+    All logs are saved to a timestamped file. Console output is only
+    shown when verbose mode is enabled.
+    
+    Args:
+        verbose: If True, also output logs to console
+        
+    Returns:
+        Path to the log file
+    """
+    # Create timestamped log file
+    timestamp = time.strftime("%Y%m%d_%H%M%S")
+    log_file = os.path.join(LOG_DIR, f"litassist_{timestamp}.log")
+    
+    # Root logger configuration
+    root_logger = logging.getLogger()
+    root_logger.setLevel(logging.DEBUG)  # Capture everything
+    
+    # Clear existing handlers to avoid duplicates
+    root_logger.handlers.clear()
+    
+    # File handler - captures everything
+    file_handler = logging.FileHandler(log_file)
+    file_handler.setLevel(logging.DEBUG)
+    file_formatter = logging.Formatter(
+        '%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+        datefmt='%Y-%m-%d %H:%M:%S'
+    )
+    file_handler.setFormatter(file_formatter)
+    root_logger.addHandler(file_handler)
+    
+    # Console handler - only if verbose
+    if verbose:
+        console_handler = logging.StreamHandler()
+        console_handler.setLevel(logging.DEBUG)
+        # Simple format for console - just the message
+        console_formatter = logging.Formatter('%(message)s')
+        console_handler.setFormatter(console_formatter)
+        root_logger.addHandler(console_handler)
+    
+    # Configure specific loggers to appropriate levels
+    # These will log to file always, console only if verbose
+    for logger_name in ['httpx', 'openai', 'httpcore', 'urllib3']:
+        logger = logging.getLogger(logger_name)
+        logger.setLevel(logging.INFO)
+    
+    # Log the startup
+    logging.info(f"LitAssist logging initialized - verbose mode: {verbose}")
+    logging.debug(f"Log file: {log_file}")
+    
+    return log_file
+
+
 # ── JSON Sanitization ───────────────────────────────────────
 def _sanitize_for_json(obj):
     """

@@ -85,10 +85,74 @@ LitAssist is a command-line tool for automated litigation support workflows, tai
 2. **Testing**: Run tests with `pytest` before committing
 3. **Documentation**: Update TODO.md and relevant docs when making changes
 
+### Refactoring Guidelines
+
+**Core Principle**: Transform large files (1000+ lines) into focused modules under 500 lines each
+
+**Refactoring Strategy:**
+
+1. **Identify Functional Groups**: Find natural boundaries (data processing, API calls, validation, utilities)
+2. **Create Module Directory**: Convert `module.py` → `module/` with specialized submodules
+3. **Extract by Responsibility**: Each new file handles one specific concern
+4. **Preserve Interface**: Use `__init__.py` to maintain backward compatibility with existing imports
+
+**Design Patterns to Apply:**
+- **Factory Pattern**: Centralize object creation and configuration management
+- **Mixin Classes**: Share common functionality across related classes
+- **Functional Grouping**: Keep related utility functions together
+- **Error Hierarchy**: Dedicated exceptions module for custom error types
+- **Single Responsibility**: Each module should have exactly one reason to change
+
+**Post-Refactoring Tasks:**
+- Update import paths in tests (patch decorators need new module paths)
+- Remove discovered dead code and unused dependencies
+- Migrate deprecated API calls found during refactoring
+- Verify all tests pass after updating imports
+
+**Note**: Only perform refactoring when explicitly requested. During regular work, follow the minimal changes philosophy.
+
 ### YAML File Integrity
 - **Rule:** All changes to `.yaml` files, especially prompt templates in `litassist/prompts/`, must be validated with a YAML linter (e.g., `yamllint`) before committing.
 - **Reasoning:** Prevents syntax and indentation errors that can break application workflows.
 - **Action:** Run a linter on any modified `.yaml` files to ensure they are well-formed and properly indented prior to pushing changes.
+
+### Prompt Template Management
+
+**CRITICAL: NEVER HARDCODE PROMPTS IN PYTHON FILES**
+
+**Core Rules:**
+1. **ALL prompts must be in YAML files** - Never write prompt text directly in Python code
+2. **Use PROMPTS.get() exclusively** - Access all prompts via the centralized prompt manager
+3. **No f-strings for prompt keys** - Avoid dynamic prompt key construction unless absolutely necessary
+4. **Explicit permission required** - If you MUST use a hardcoded prompt or f-string key:
+   - Document WHY the code would be "very ugly" without it
+   - Add a comment explaining the exception
+   - Get explicit confirmation that this specific case warrants an exception
+
+**Rationale:**
+- Centralized prompt management enables consistent updates
+- YAML files provide better visibility for prompt engineering
+- Separation of concerns: logic in Python, content in YAML
+- Easier testing and validation of prompt templates
+
+**Examples:**
+```python
+# WRONG: Hardcoded prompt in Python
+prompt = "Analyze this document and provide a summary"
+
+# WRONG: F-string for dynamic key without justification  
+prompt = PROMPTS.get(f"analysis.{mode}_prompt")
+
+# RIGHT: Using static keys from YAML
+prompt = PROMPTS.get("analysis.summary_prompt")
+
+# ACCEPTABLE (with justification): When multiple modes need consistent access
+# Comment: Using f-string to avoid 10+ if/elif blocks for mode selection
+# This pattern is used for digest consolidation where mode is always "summary" or "issues"
+modes = ["summary", "issues"]
+if mode in modes:
+    prompt = PROMPTS.get(f"processing.digest.consolidation_{mode}")
+```
 
 ### Emoji Policy and Terminal Output Standards
 
@@ -175,6 +239,7 @@ When adding new models or providers:
 2. Only consider direct API access if OpenRouter doesn't support the model
 3. All current production models successfully route through OpenRouter, but this will change if the developer's BYOKs change
 4. This approach centralizes API management and leverages existing BYOK setups
+5. Model names with "/" (e.g., "anthropic/claude-sonnet-4") indicate OpenRouter routing
 
 ### Refactoring Philosophy
 

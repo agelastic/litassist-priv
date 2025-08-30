@@ -367,15 +367,15 @@ Jurisdiction:
 Federal Court
 """)
             
-            with patch('litassist.commands.strategy.validate_case_facts_format') as mock_validate_format, \
-                 patch('litassist.commands.strategy.extract_legal_issues') as mock_extract, \
-                 patch('litassist.commands.strategy.LLMClientFactory') as mock_factory, \
+            with patch('litassist.commands.strategy.validators.validate_case_facts_format') as mock_validate_format, \
+                 patch('litassist.commands.strategy.validators.extract_legal_issues') as mock_extract, \
+                 patch('litassist.commands.strategy.core.LLMClientFactory') as mock_factory, \
                  patch('litassist.verification_chain.run_cove_verification') as mock_cove, \
-                 patch('litassist.commands.strategy.verify_content_if_needed') as mock_verify, \
-                 patch('litassist.commands.strategy.PROMPTS') as mock_prompts, \
-                 patch('litassist.commands.strategy.save_command_output') as mock_save, \
-                 patch('litassist.commands.strategy.save_log'), \
-                 patch('litassist.commands.strategy.parse_strategies_file') as mock_parse:
+                 patch('litassist.commands.strategy.core.verify_content_if_needed') as mock_verify, \
+                 patch('litassist.commands.strategy.core.PROMPTS') as mock_prompts, \
+                 patch('litassist.commands.strategy.file_handler.save_command_output') as mock_save, \
+                 patch('litassist.commands.strategy.file_handler.save_log'), \
+                 patch('litassist.utils.parse_strategies_file') as mock_parse:
                 
                 # Setup mocks
                 mock_validate_format.return_value = True

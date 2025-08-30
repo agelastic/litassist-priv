@@ -8,8 +8,8 @@ and serves as the entry point for the LitAssist application.
 import sys
 import click
 import logging
-import openai
 import pinecone
+from openai import OpenAI
 
 from litassist.config import load_config
 from litassist.commands import register_commands
@@ -43,17 +43,28 @@ def cli(ctx, log_format, verbose):
     --log-format    Choose log output format (json or markdown).
     --verbose       Enable debug logging and detailed output.
     """
-    # Ensure context object exists
+    # Set up logging first
+    from litassist.logging_utils import setup_logging
+    log_file = setup_logging(verbose=verbose)
+    
+    # Ensure context object exists and store logging info
     ctx.ensure_object(dict)
+    ctx.obj["log_file"] = log_file
+    ctx.obj["verbose"] = verbose
+    
+    # Show log file location if verbose
+    if verbose:
+        click.echo(f"[INFO] Logging to: {log_file}")
+    
+    # Load config after logging is set up
     config = load_config()
+    
     # Use config.yaml value if no CLI option provided
     if log_format is None:
         log_format = config.log_format
     # Store the chosen log format for downstream use
     ctx.obj["log_format"] = log_format
-    # Configure logging level
-    if verbose:
-        logging.getLogger().setLevel(logging.DEBUG)
+    
     logging.debug(
         f"Log format set to: {log_format} (from {'CLI' if ctx.params.get('log_format') else 'config.yaml'})"
     )
@@ -77,7 +88,10 @@ def validate_credentials(show_progress=True):
         try:
             if show_progress:
                 print("  - Testing OpenAI API... ", end="", flush=True)
-            openai.Model.list()
+            # Use the new OpenAI v1.0+ API
+            client = OpenAI(api_key=config.oa_key)
+            # List models to test the connection
+            client.models.list()
             if show_progress:
                 print("OK")
         except Exception as e:
@@ -191,13 +205,13 @@ def test_scraping_capabilities():
     # Test plain HTTP scraping
     print("  - Testing plain HTTP scraping... ", end="", flush=True)
     try:
-        from litassist.commands.lookup import _fetch_url_content
+        from litassist.commands.lookup.fetchers import _fetch_url_content
         
         # Test with a reliable static HTML page
-        test_url = "https://httpbin.org/html"
+        test_url = "https://webscraper.io/test-sites"  # Dedicated scraping test site
         content = _fetch_url_content(test_url, timeout=5)
         
-        if content and len(content) > 1000:
+        if content and len(content) > 1000:  # webscraper.io has substantial content
             print(f"OK (fetched {len(content)} chars)")
         else:
             print("FAILED")
@@ -209,17 +223,18 @@ def test_scraping_capabilities():
     # Test Selenium scraping
     print("  - Testing Selenium scraping... ", end="", flush=True)
     try:
-        from litassist.commands.lookup import SELENIUM_AVAILABLE, _fetch_url_content_selenium
+        from litassist.commands.lookup.fetchers import SELENIUM_AVAILABLE, _fetch_url_content_selenium
         
         if not SELENIUM_AVAILABLE:
             print("")  # New line
             print(f"    {warning_message('Selenium not installed - install with: pip install selenium')}")
         else:
             # Test with a page that has substantial content
-            test_url = "https://www.python.org"  # Python.org has plenty of content
+            test_url = "https://webscraper.io/test-sites/e-commerce/allinone"  # Dedicated scraping test site
             content = _fetch_url_content_selenium(test_url, timeout=10)
             
-            if content and len(content) > 500:
+            # Lowered threshold for test pages after text extraction
+            if content and len(content) > 100:  # Test pages have less text after extraction
                 print(f"OK (fetched {len(content)} chars)")
             else:
                 print("FAILED")

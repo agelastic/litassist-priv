@@ -72,7 +72,14 @@ strategies:
       **IMPORTANT:** After the analysis of the 5 strategies, you MUST conclude with a section titled "## MOST LIKELY TO SUCCEED". Under this exact heading, list the top 1-3 strategies from your analysis that you most strongly recommend. This section is critical for downstream processing.
 
       ## MOST LIKELY TO SUCCEED
-      (List the 1-3 best strategies here, including their titles and brief descriptions)
+      
+      1. [Strategy Title from above]
+         [Why this strategy is most likely to succeed]
+      
+      2. [Strategy Title from above]
+         [Why this strategy is most likely to succeed]
+      
+      [List 3-5 strategies total that are most likely to succeed]
     
     # Regeneration prompt with feedback incorporation
     # NOT USED - Template not referenced in codebase
@@ -82,6 +89,28 @@ strategies:
       Please regenerate the strategic analysis, incorporating this feedback while maintaining the same analytical rigor and Australian legal focus.
       
       {citation_instructions}
+    
+    # Context about brainstormed strategies for strategy generation
+    # USED BY: strategy.py - line 242 (when most_likely_count > 0)
+    brainstormed_strategies_context: |
+      You have been provided with brainstormed strategies including {most_likely_count} strategies marked as most likely to succeed. Pay particular attention to these when developing your strategic options.
+    
+    # USED BY: strategy.py - line 244 (when most_likely_count == 0)
+    brainstormed_strategies_context_generic: |
+      You have been provided with brainstormed strategies including orthodox and unorthodox approaches. Consider these when developing your strategic options, but focus on those most relevant to the specific outcome requested.
+    
+    # USED BY: strategy.py - lines 261-270 (user prompt context)
+    brainstormed_strategies_details: |
+      
+      BRAINSTORMED STRATEGIES PROVIDED:
+      - {orthodox_count} orthodox strategies
+      - {unorthodox_count} unorthodox strategies
+      - {most_likely_count} marked as most likely to succeed
+      
+      FULL BRAINSTORMED CONTENT:
+      {strategies_content}
+      
+      Build upon the strategies marked as most likely to succeed, and consider how the orthodox strategies can be refined for the specific outcome requested.
     
     # Base prompts for brainstorm generation
     # USED BY: brainstorm.py - building orthodox base prompt
@@ -215,6 +244,7 @@ strategies:
       - Identify genuine hurdles based on the case facts provided
       - Note actual missing facts from the case materials
       - Do not introduce facts not in the case materials
+      - Include a reasoning trace WITHIN EACH OPTION using the format: === REASONING === followed by Issue, Applicable Law, Application to Facts, Conclusion, Confidence, and Sources
     
     # Next steps generation prompt
     # USED BY: strategy.py - for generating immediate action items

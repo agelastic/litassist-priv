@@ -384,11 +384,15 @@ Worst: Pay $100k progress payment plus costs
     def test_full_pipeline(self):
         """Test complete litassist pipeline with all external calls mocked."""
         # Use context managers to patch everything
-        with patch("litassist.llm.LLMClient._get_openai_client") as mock_get_client, \
+        with patch("litassist.llm.api_handlers.get_openai_client") as mock_get_client, \
              patch("requests.get") as mock_requests_get, \
              patch("requests.post") as mock_requests_post, \
              patch("aiohttp.ClientSession"), \
              patch("litassist.helpers.pinecone_config.get_pinecone_client") as mock_get_pinecone_client, \
+             patch("litassist.commands.digest.processors.PROMPTS") as mock_prompts, \
+             patch("litassist.commands.strategy.core.PROMPTS") as mock_strategy_prompts, \
+             patch("litassist.commands.brainstorm.PROMPTS") as mock_brainstorm_prompts, \
+             patch("litassist.commands.lookup.processors.PROMPTS") as mock_lookup_prompts, \
              patch.object(CONFIG, 'max_chars', 10000), \
              patch.object(CONFIG, 'use_token_limits', True), \
              patch.object(CONFIG, 'openrouter_key', 'test_key'), \
@@ -397,6 +401,16 @@ Worst: Pay $100k progress payment plus costs
              patch.object(CONFIG, 'or_key', 'test_key'), \
              patch.object(CONFIG, 'google_cse_key', 'test_key'), \
              patch.object(CONFIG, 'google_cse_id', 'test_id'):
+            
+            # Configure PROMPTS mock - return actual strings with format method
+            class MockPromptString(str):
+                def format(self, **kwargs):
+                    return "Test prompt content"
+            
+            mock_prompts.get.return_value = MockPromptString("Test prompt content")
+            mock_strategy_prompts.get.return_value = MockPromptString("Test prompt content")
+            mock_brainstorm_prompts.get.return_value = MockPromptString("Test prompt content")
+            mock_lookup_prompts.get.return_value = MockPromptString("Test prompt content")
             
             # Configure OpenAI v1.x mock client
             mock_client = MagicMock()

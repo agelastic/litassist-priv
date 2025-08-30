@@ -44,8 +44,8 @@ def test_streaming_error_retry(monkeypatch):
                 raise Exception("Error processing stream")
             return MockResponse("Success on third try")
         
-        # Mock the _get_openai_client method to return a properly mocked client
-        with patch.object(client, "_get_openai_client") as mock_get_client:
+        # Mock the get_openai_client function to return a properly mocked client
+        with patch("litassist.llm.api_handlers.get_openai_client") as mock_get_client:
             mock_client = MagicMock()
             mock_get_client.return_value = mock_client
             mock_client.chat.completions.create.side_effect = mock_create
@@ -68,8 +68,8 @@ def test_streaming_error_max_retries(monkeypatch):
         def always_streaming_error(*args, **kwargs):
             raise Exception("Error processing stream")
         
-        # Mock the _get_openai_client method to return a properly mocked client
-        with patch.object(client, "_get_openai_client") as mock_get_client:
+        # Mock the get_openai_client function to return a properly mocked client
+        with patch("litassist.llm.api_handlers.get_openai_client") as mock_get_client:
             mock_client = MagicMock()
             mock_get_client.return_value = mock_client
             mock_client.chat.completions.create.side_effect = always_streaming_error
