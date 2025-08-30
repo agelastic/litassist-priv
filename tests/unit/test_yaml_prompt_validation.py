@@ -88,7 +88,10 @@ class TestYAMLPromptValidation:
             
             # Additional document placeholders
             'location', 'state', 'date', 'file_number_or_placeholder',
-            'witness_address_or_placeholder', 'witness_occupation_if_known'
+            'witness_address_or_placeholder', 'witness_occupation_if_known',
+            
+            # CoVe citation context placeholders
+            'legal_context', 'questions'
         }
         
         errors = []

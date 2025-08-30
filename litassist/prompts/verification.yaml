@@ -206,6 +206,34 @@ verification:
       For each question, answer: Yes/No/Uncertain with brief explanation.
       Format: 1. Yes - [explanation], 2. No - [explanation], etc.
     
+    # USED BY: verification_chain.py run_cove_verification() - Stage 2 with legal context
+    # LOCATION: verification_chain.py:217
+    answers_with_context: |
+      You have been provided with COMPLETE legal documents to answer verification questions.
+      Read the full documents carefully as they contain the authoritative legal text.
+      
+      {legal_context}
+      
+      === QUESTIONS TO ANSWER ===
+      {questions}
+      === END QUESTIONS ===
+      
+      Instructions:
+      1. Answer each question as: Yes/No/Uncertain with detailed explanation
+      2. Quote directly from the legal authorities provided above
+      3. Include specific section numbers, paragraph numbers, or page references
+      4. If the authority contradicts the question's premise, explain the discrepancy
+      5. Use the FULL context of the documents, not just keyword matches
+      
+      Format each answer as:
+      "1. [Yes/No/Uncertain] - [Detailed explanation with direct quotes and references]"
+      
+      Example:
+      "1. Yes - Section 18(1) of the Competition and Consumer Act 2010 states: 
+      'A person must not, in trade or commerce, engage in conduct that is 
+      misleading or deceptive or is likely to mislead or deceive.' This directly
+      prohibits the conduct described in the question."
+    
     # USED BY: verification_chain.py run_cove_verification() - Stage 3: Detect inconsistencies
     # LOCATION: verification_chain.py:177
     inconsistency_detection: |

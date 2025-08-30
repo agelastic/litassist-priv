@@ -214,6 +214,23 @@ def extract_citations(text: str) -> List[str]:
     for match in matches8:
         citations.add(match.group(0))
 
+    # Pattern 9: Australian statutes with year
+    # e.g., Competition and Consumer Act 2010, Corporations Act 2001
+    pattern9 = r'[A-Z][A-Za-z]+(?:\s+(?:and\s+)?[A-Za-z]+)*\s+Act\s+\d{4}'
+    matches9 = re.finditer(pattern9, text)
+    for match in matches9:
+        citations.add(match.group(0))
+
+    # Pattern 10: Australian regulations with year
+    # e.g., Fair Work Regulations 2009
+    pattern10 = r'[A-Z][A-Za-z]+(?:\s+(?:and\s+)?[A-Za-z]+)*\s+Regulations?\s+\d{4}'
+    matches10 = re.finditer(pattern10, text)
+    for match in matches10:
+        citations.add(match.group(0))
+
+    # Note: Section references (e.g., "section 18", "s 18") are not extracted as standalone
+    # citations because they need the Act context to be meaningful
+
     return list(citations)
 
 

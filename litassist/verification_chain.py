@@ -154,10 +154,75 @@ def run_cove_verification(
         "model": client_questions.model,
     }
 
-    # Step 2: Answer questions independently (factored approach)
-    answers_prompt = PROMPTS.get("verification.cove.answers_verification").format(
-        content=questions
-    )
+    # NEW Step 1.5: Extract and fetch FULL citation documents
+    legal_context = {}
+    total_context_size = 0
+    
+    try:
+        from litassist.citation_patterns import extract_citations
+        from litassist.citation_context import fetch_citation_context
+        
+        # Extract citations from generated questions
+        citations = extract_citations(questions)
+        
+        if citations:
+            # Log what we're fetching
+            save_log("cove_citation_extraction", {
+                "command": command,
+                "citations_found": list(citations),
+                "count": len(citations)
+            })
+            
+            # Fetch FULL documents (limit to 3 to manage tokens)
+            # User can adjust max_citations based on their token budget
+            max_citations = 3  # Could make this configurable
+            legal_context = fetch_citation_context(citations, max_citations=max_citations)
+            
+            if legal_context:
+                total_context_size = sum(len(v) for v in legal_context.values())
+                
+                save_log("cove_citation_context", {
+                    "command": command,
+                    "citations_fetched": list(legal_context.keys()),
+                    "total_chars": total_context_size,
+                    "estimated_tokens": total_context_size // 4  # Rough estimate
+                })
+                
+                # Warn if context is very large
+                if total_context_size > 100000:  # ~25k tokens
+                    save_log("cove_large_context_warning", {
+                        "command": command,
+                        "size_chars": total_context_size,
+                        "message": "Large legal context may impact token usage"
+                    })
+    except Exception as e:
+        # Log but don't fail
+        save_log("cove_citation_error", {
+            "command": command,
+            "error": str(e),
+            "error_type": type(e).__name__
+        })
+
+    # Step 2: Answer questions with FULL legal documents or without
+    if legal_context:
+        # Build context section with COMPLETE documents
+        context_text = "\n=== LEGAL AUTHORITIES (FULL TEXT) ===\n"
+        for citation, full_text in legal_context.items():
+            context_text += f"\n=== {citation} ===\n"
+            context_text += full_text
+            context_text += f"\n=== END {citation} ===\n\n"
+        context_text += "=== END LEGAL AUTHORITIES ===\n\n"
+        
+        # Use enhanced prompt with context
+        answers_prompt = PROMPTS.get("verification.cove.answers_with_context").format(
+            questions=questions,
+            legal_context=context_text
+        )
+    else:
+        # Existing prompt without context
+        answers_prompt = PROMPTS.get("verification.cove.answers_verification").format(
+            content=questions
+        )
 
     # Set stage context for logging
     client_answers.command_context = f"cove_stage2_answers_{command}"
