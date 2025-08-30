@@ -15,14 +15,22 @@ class TestPromptValidation:
     # List of command files that use PROMPTS
     COMMAND_FILES = [
         "litassist/commands/barbrief.py",
-        "litassist/commands/brainstorm.py",
+        # Brainstorm module files (refactored from brainstorm.py)
+        "litassist/commands/brainstorm/analysis_generator.py",
+        "litassist/commands/brainstorm/citation_regenerator.py",
+        "litassist/commands/brainstorm/core.py",
+        "litassist/commands/brainstorm/orthodox_generator.py",
+        "litassist/commands/brainstorm/unorthodox_generator.py",
         "litassist/commands/caseplan.py",
         "litassist/commands/counselnotes.py",
         "litassist/commands/digest/processors.py",
         "litassist/commands/draft.py",
         "litassist/commands/extractfacts.py",
         "litassist/commands/lookup/processors.py",
-        "litassist/commands/strategy.py",
+        # Strategy module files (refactored from strategy.py)
+        "litassist/commands/strategy/core.py",
+        "litassist/commands/strategy/document_generator.py",
+        "litassist/commands/strategy/ranker.py",
         "litassist/commands/verify.py",
     ]
     

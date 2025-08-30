@@ -857,6 +857,10 @@ class LLMClient(LLMVerificationMixin):
     # generation used by commands such as `extractfacts` – emit "…still working,
     # please wait…" notifications.  Down-stream helpers that themselves call
     # `complete` therefore no longer need their own heartbeat wrappers.
+    def _format_date_string(self):
+        """Get current date formatted for prompt injection."""
+        return datetime.now().strftime("%B %d, %Y")
+
     # The enclosing `complete` method now emits heartbeat updates, so we no
     # longer need a second heartbeat layer here. Retaining only the timing
     # decorator avoids duplicated progress messages.
@@ -909,7 +913,7 @@ class LLMClient(LLMVerificationMixin):
             # Find first user message and prepend system content
             for i, msg in enumerate(non_system_messages):
                 if msg.get("role") == "user":
-                    today_date = datetime.now().strftime("%B %d, %Y")
+                    today_date = self._format_date_string()
                     enhanced_content = f"{system_content}\n\nToday is {today_date}.\n\n{msg.get('content', '')}"
                     modified_messages.append(
                         {"role": "user", "content": enhanced_content}
@@ -933,7 +937,7 @@ class LLMClient(LLMVerificationMixin):
                         content = msg.get("content", "")
                         # Only prepend if not already present
                         if australian_law_prompt not in content:
-                            today_date = datetime.now().strftime("%B %d, %Y")
+                            today_date = self._format_date_string()
                             content = f"{australian_law_prompt}\n\nToday is {today_date}.\n\n{content}"
                         modified_messages.append({"role": "system", "content": content})
                     else:
