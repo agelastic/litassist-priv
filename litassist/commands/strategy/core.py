@@ -168,7 +168,7 @@ def strategy(case_facts, outcome, strategies, verify, noverify, cove, output):
     option_traces = []
     
     # Extract options from the strategy content
-    option_pattern = r"## OPTION (\d+):(.*?)(?=## OPTION \d+:|## RECOMMENDED NEXT STEPS|$)"
+    option_pattern = r"## OPTION (\d+):(.*?)(?=## OPTION \d+:|## RECOMMENDED NEXT STEPS|## UNORTHODOX|$)"
     options = re.findall(option_pattern, strategy_content, re.DOTALL)
     
     for option_num, option_content in options:
