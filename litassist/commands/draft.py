@@ -296,13 +296,13 @@ def draft(ctx, documents, query, noverify, cove, diversity, output):
         critiques.append(("Factual Accuracy Warning", warning_text))
         
         # Also add to main content for visibility
-        warning_header = "=== FACTUAL ACCURACY WARNING ===\n"
+        warning_header = "# FACTUAL ACCURACY WARNING\n\n"
         warning_header += "The following potentially hallucinated facts were detected:\n"
         for warning in hallucination_warnings:
             warning_header += f"- {warning}\n"
         warning_header += "\nPlease verify all facts against source documents before use.\n"
-        warning_header += "Replace any invented details with placeholders like [TO BE PROVIDED].\n"
-        warning_header += "=" * 32 + "\n\n"
+        warning_header += "Replace any invented details with placeholders like [TO BE PROVIDED].\n\n"
+        warning_header += "---\n\n"
         content = warning_header + content
 
     # Save output using utility

@@ -244,7 +244,7 @@ strategies:
       - Identify genuine hurdles based on the case facts provided
       - Note actual missing facts from the case materials
       - Do not introduce facts not in the case materials
-      - Include a reasoning trace WITHIN EACH OPTION using the format: === REASONING === followed by Issue, Applicable Law, Application to Facts, Conclusion, Confidence, and Sources
+      - Include a reasoning trace WITHIN EACH OPTION using a "### Reasoning" markdown header (level 3) followed by Issue, Applicable Law, Application to Facts, Conclusion, Confidence, and Sources
     
     # Next steps generation prompt
     # USED BY: strategy.py - for generating immediate action items

@@ -234,14 +234,14 @@ def brainstorm(facts, side, area, research, verify, output):
     )
 
     # Note: Citation issues now handled automatically in LLMClient.complete()
-    # Combine all sections with clear === separators
-    combined_content = f"""=== ORTHODOX STRATEGIES ===
-{orthodox_content}
-=== END OF ORTHODOX STRATEGIES ===
+    # Combine all sections with markdown headers for clean output
+    combined_content = f"""## ORTHODOX STRATEGIES
 
-=== UNORTHODOX STRATEGIES ===
+{orthodox_content}
+
+## UNORTHODOX STRATEGIES
+
 {unorthodox_content}
-=== END OF UNORTHODOX STRATEGIES ===
 
 {analysis_content}"""
 

@@ -73,9 +73,9 @@ class LLMVerificationMixin:
         # Build the full text with optional verification contexts using === separators
         full_text = primary_text
         if citation_context:
-            full_text += "\n\n=== PREVIOUS VERIFICATION: CITATIONS ===\n" + citation_context + "\n=== END PREVIOUS VERIFICATION: CITATIONS ==="
+            full_text += "\n\n# Previous Verification: Citations\n\n" + citation_context
         if reasoning_context:
-            full_text += "\n\n=== PREVIOUS VERIFICATION: REASONING ANALYSIS ===\n" + reasoning_context + "\n=== END PREVIOUS VERIFICATION: REASONING ANALYSIS ==="
+            full_text += "\n\n# Previous Verification: Reasoning Analysis\n\n" + reasoning_context
 
         critique_prompt = [
             {

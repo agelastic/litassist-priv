@@ -138,8 +138,9 @@ def extract_reasoning_trace(
     """
     # The pattern now looks for the start of the trace and captures everything
     # until the end of the content or another major header. It is non-greedy.
+    # Recognizes both === separators (internal LLM processing) and markdown headers (output files)
     trace_pattern = (
-        r"(?:=== REASONING ===|## Overall Strategic Reasoning)\s*\n(.*?)(?=\n(?:===|##)|$)"
+        r"(?:=== REASONING ===|### Reasoning|## Overall Strategic Reasoning)\s*\n(.*?)(?=\n(?:===|##|###|#)|$)"
     )
     match = re.search(trace_pattern, content, re.DOTALL | re.IGNORECASE)
 
