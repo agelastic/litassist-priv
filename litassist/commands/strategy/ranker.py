@@ -24,7 +24,6 @@ def create_consolidated_reasoning_trace(option_traces, outcome, overall_reasonin
     
     # Add overall strategic reasoning if present
     if overall_reasoning:
-        consolidated_content += "=== OVERALL STRATEGIC REASONING ===\n"
         consolidated_content += "## OVERALL STRATEGIC ANALYSIS\n\n"
         
         if overall_reasoning:
@@ -37,15 +36,10 @@ def create_consolidated_reasoning_trace(option_traces, outcome, overall_reasonin
                 sources=', '.join(overall_reasoning.sources) if overall_reasoning.sources else 'None'
             )
             consolidated_content += overall_trace + "\n\n"
-        
-        consolidated_content += "=== END OVERALL STRATEGIC REASONING ===\n\n"
 
     for trace_data in option_traces:
         option_num = trace_data["option_number"]
         trace = trace_data["trace"]
-
-        # Add START marker for the option
-        consolidated_content += f"=== OPTION {option_num} ===\n"
         
         option_header = PROMPTS.get("reasoning.consolidated.option_header").format(
             option_num=option_num
@@ -64,7 +58,5 @@ def create_consolidated_reasoning_trace(option_traces, outcome, overall_reasonin
             consolidated_content += option_trace + "\n\n"
         else:
             consolidated_content += PROMPTS.get("reasoning.consolidated.no_trace") + "\n\n"
-
-        consolidated_content += f"=== END OPTION {option_num} ===\n\n"
 
     return consolidated_content
