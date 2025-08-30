@@ -67,6 +67,7 @@ def strategy(case_facts, outcome, strategies, verify, noverify, cove, output):
         click.ClickException: If case facts are invalid or LLM errors occur
     """
     # Read and validate case facts
+    click.echo(info_message("Validating case facts format..."))
     case_text = case_facts.read()
     
     # Check case facts file size
@@ -78,6 +79,7 @@ def strategy(case_facts, outcome, strategies, verify, noverify, cove, output):
         )
     
     # Extract legal issues
+    click.echo(info_message("Extracting legal issues..."))
     legal_issues = extract_legal_issues(case_text)
     if not legal_issues:
         raise click.ClickException(
@@ -91,6 +93,7 @@ def strategy(case_facts, outcome, strategies, verify, noverify, cove, output):
     strategies_content = ""
     parsed_strategies = None
     if strategies:
+        click.echo(info_message("Reading strategies from brainstorm file..."))
         strategies_content = strategies.read()
         
         # Check strategies file size
@@ -118,6 +121,7 @@ def strategy(case_facts, outcome, strategies, verify, noverify, cove, output):
             )
     
     # Generate strategic options
+    click.echo(info_message("Generating strategic options..."))
     system_prompt = PROMPTS.get("commands.strategy.system")
     
     # Enhance prompt if strategies are provided
@@ -163,6 +167,7 @@ def strategy(case_facts, outcome, strategies, verify, noverify, cove, output):
         raise click.ClickException(f"LLM strategy generation error: {e}")
     
     # Extract reasoning traces for each option
+    click.echo(info_message("Extracting reasoning traces..."))
     option_traces = []
     
     # Extract options from the strategy content
@@ -185,6 +190,7 @@ def strategy(case_facts, outcome, strategies, verify, noverify, cove, output):
     reasoning_trace = create_consolidated_reasoning_trace(option_traces, outcome, overall_reasoning)
     
     # Generate recommended next steps
+    click.echo(info_message("Generating recommended next steps..."))
     next_steps_prompt = PROMPTS.get("strategies.strategy.next_steps_prompt")
     
     try:
@@ -200,7 +206,9 @@ def strategy(case_facts, outcome, strategies, verify, noverify, cove, output):
         raise click.ClickException(f"LLM next steps generation error: {e}")
     
     # Determine document type and generate draft
+    click.echo(info_message("Determining document type..."))
     doc_type = determine_document_type(outcome)
+    click.echo(info_message(f"Generating draft {doc_type}..."))
     document_content = generate_draft_document(
         llm_client,
         system_prompt,
@@ -211,6 +219,7 @@ def strategy(case_facts, outcome, strategies, verify, noverify, cove, output):
     )
     
     # Validate and verify strategy content (most important)
+    click.echo(info_message("Validating citations..."))
     citation_issues = llm_client.validate_citations(strategy_content)
     if citation_issues:
         # Prepend warnings to strategy content
@@ -247,6 +256,7 @@ def strategy(case_facts, outcome, strategies, verify, noverify, cove, output):
         click.echo(info_message("Standard verification skipped by --noverify flag"))
     
     # Save all outputs
+    click.echo(info_message("Saving strategy outputs..."))
     strategy_file, steps_file, draft_file, trace_file = save_strategy_outputs(
         strategy_content=strategy_content,
         next_steps_content=next_steps_content,
