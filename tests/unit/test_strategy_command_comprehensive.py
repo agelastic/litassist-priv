@@ -255,6 +255,7 @@ class TestLegalIssuesExtraction:
         
         Evidence Available:
         Documents
+        
         """
         issues = extract_legal_issues(content)
         assert issues == []
