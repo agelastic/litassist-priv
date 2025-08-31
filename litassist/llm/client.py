@@ -124,6 +124,9 @@ PARAMETER_PROFILES = {
         ],
     },
     "xai": {
+        # TODO: Migrate to OpenRouter SDK to support min_p and other extended parameters
+        # Currently using OpenAI SDK which doesn't support min_p, causing API errors
+        # Once migrated, add back: "min_p", "top_a", and other OpenRouter-specific params
         "allowed": [
             "temperature",
             "top_p",
@@ -134,7 +137,7 @@ PARAMETER_PROFILES = {
             "stream",
             "reasoning",  # Grok models support reasoning
             "verbosity",
-            "min_p",
+            # "min_p",  # Removed: OpenAI SDK doesn't support, restore after OpenRouter SDK migration
             "top_a",
             "repetition_penalty",
         ],

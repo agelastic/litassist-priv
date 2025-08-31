@@ -319,8 +319,9 @@ class TestAdvancedParameters:
         
         # For models that support advanced parameters
         filtered = get_model_parameters("x-ai/grok-4", params)
-        assert "min_p" in filtered
-        assert filtered["min_p"] == 0.05
+        # min_p temporarily removed for xai models due to OpenAI SDK limitation
+        # Will be restored after migration to OpenRouter SDK
+        assert "min_p" not in filtered  # Currently filtered out for xai
         assert "top_a" in filtered
         assert filtered["top_a"] == 0.8
         assert "repetition_penalty" in filtered
