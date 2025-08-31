@@ -9,7 +9,7 @@ It implements a fallback strategy from AustLII to comprehensive government sourc
 from typing import Dict, List, Optional
 from googleapiclient.discovery import build
 from litassist.config import CONFIG
-from litassist.commands.lookup.fetchers import fetch_and_extract_text
+from litassist.commands.lookup.fetchers import _fetch_url_content
 from litassist.utils import save_log
 import time
 import re
@@ -60,10 +60,13 @@ def fetch_citation_context(citations: List[str], max_citations: int = 3) -> Dict
                     for item in res['items']:
                         link = item.get('link', '')
                         if '/au/cases/' in link or '/au/legis/' in link:
-                            # Test if URL works (AustLII has 410 issues)
+                            # Test if URL works (use browser User-Agent to avoid anti-bot blocks)
                             try:
-                                r = requests.head(link, timeout=3, allow_redirects=True)
-                                if r.status_code == 200:
+                                headers = {
+                                    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
+                                }
+                                r = requests.head(link, timeout=10, allow_redirects=True, headers=headers)
+                                if r.status_code == 200 or r.status_code == 302:  # Accept redirects too
                                     url = link
                                     break
                             except Exception:
@@ -94,7 +97,7 @@ def fetch_citation_context(citations: List[str], max_citations: int = 3) -> Dict
         # Fetch COMPLETE content if we found a URL
         if url:
             try:
-                content = fetch_and_extract_text(url, timeout=15)
+                content = _fetch_url_content(url, timeout=15)
                 if content:
                     # Clean up garbage at the end but keep full document
                     cleaned_content = _clean_document(content)

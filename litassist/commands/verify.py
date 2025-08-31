@@ -78,6 +78,7 @@ def verify(file, citations, soundness, reasoning, cove, output):
 
     # 1. Citation Verification
     if citations:
+        click.echo(verifying_message("Starting citation verification..."))
         try:
             verified, unverified = verify_all_citations(content)
             citation_report = _format_citation_report(
@@ -109,6 +110,7 @@ def verify(file, citations, soundness, reasoning, cove, output):
 
     # 2. Reasoning Trace Verification/Generation (run BEFORE soundness to allow combination)
     if reasoning:
+        click.echo(verifying_message("Starting reasoning trace verification..."))
         try:
             client = None  # Initialize client variable
             existing_trace = extract_reasoning_trace(content)
@@ -193,6 +195,7 @@ def verify(file, citations, soundness, reasoning, cove, output):
 
     # 3. Legal Soundness Verification
     if soundness:
+        click.echo(verifying_message("Starting legal soundness check..."))
         try:
             client = LLMClientFactory.for_command("verify-soundness")
             # Pass both citation and reasoning contexts if available
@@ -202,7 +205,7 @@ def verify(file, citations, soundness, reasoning, cove, output):
                 reasoning_context=reasoning_response
             )
             issues = _parse_soundness_issues(soundness_result)
-            soundness_report = _format_soundness_report(issues, soundness_result, soundness_model)
+            soundness_report = _format_soundness_report(issues, soundness_result)
             soundness_file = save_command_output(
                 f"{output}_soundness" if output else "verify_soundness",
                 soundness_report,
@@ -233,6 +236,7 @@ def verify(file, citations, soundness, reasoning, cove, output):
                 "CoVe skipped: --cove flag is ignored when only verifying citations"
             ))
         else:
+            click.echo(verifying_message("Starting Chain of Verification..."))
             try:
                 # Use the most refined version of content available
                 final_content = content
@@ -276,12 +280,8 @@ def verify(file, citations, soundness, reasoning, cove, output):
                 # Save CoVe report with full dialogue
                 cove_report = format_cove_report(cove_results)
                 
-                # Prepare full CoVe dialogue for critique section
-                cove_critiques = [
-                    ("CoVe Stage 1: Questions Generated", cove_results['cove']['questions']),
-                    ("CoVe Stage 2: Independent Answers", cove_results['cove']['answers']),
-                    ("CoVe Stage 3: Verification Analysis", cove_results['cove']['issues'])
-                ]
+                # Don't pass critique_sections - the cove_report already contains all the information
+                # Passing it causes duplication with "AI CRITIQUE & VERIFICATION" section
                 
                 cove_file = save_command_output(
                     f"{output}_cove" if output else "verify_cove",
@@ -292,8 +292,8 @@ def verify(file, citations, soundness, reasoning, cove, output):
                         "File": file,
                         "Status": "[REGENERATED]" if cove_results['cove']['regenerated'] else "[VERIFIED]",
                         "Issues": "Fixed" if cove_results['cove']['regenerated'] else "None"
-                    },
-                    critique_sections=cove_critiques
+                    }
+                    # critique_sections removed to prevent duplication
                 )
                 status = "[REGENERATED]" if cove_results['cove']['regenerated'] else "[VERIFIED]"
                 click.echo(f"\n{status} Chain of Verification complete")
@@ -374,7 +374,7 @@ def _parse_soundness_issues(soundness_result: str) -> list:
     return issues
 
 
-def _format_soundness_report(issues: list, full_response: str, model: str) -> str:
+def _format_soundness_report(issues: list, full_response: str) -> str:
     """Format legal soundness verification report (content only, no headers)."""
     lines = [
         f"**Issues identified**: {len(issues)}",

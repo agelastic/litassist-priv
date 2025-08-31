@@ -1,9 +1,11 @@
 """Minimal verification chain orchestrator - no overengineering."""
 
 import time
+import traceback
 from typing import Dict, Optional, Tuple
-from litassist.citation_patterns import validate_citation_patterns
+from litassist.citation_patterns import validate_citation_patterns, extract_citations
 from litassist.citation_verify import verify_all_citations
+from litassist.citation_context import fetch_citation_context
 from litassist.llm import LLMClientFactory
 from litassist.prompts import PROMPTS
 from litassist.logging_utils import save_log
@@ -159,20 +161,18 @@ def run_cove_verification(
     total_context_size = 0
     
     try:
-        from litassist.citation_patterns import extract_citations
-        from litassist.citation_context import fetch_citation_context
-        
         # Extract citations from generated questions
         citations = extract_citations(questions)
         
+        # Always log extraction result, even if empty
+        save_log("cove_citation_extraction", {
+            "command": command,
+            "citations_found": list(citations) if citations else [],
+            "count": len(citations) if citations else 0,
+            "questions_length": len(questions)
+        })
+        
         if citations:
-            # Log what we're fetching
-            save_log("cove_citation_extraction", {
-                "command": command,
-                "citations_found": list(citations),
-                "count": len(citations)
-            })
-            
             # Fetch FULL documents (limit to 3 to manage tokens)
             # User can adjust max_citations based on their token budget
             max_citations = 3  # Could make this configurable
@@ -195,12 +195,25 @@ def run_cove_verification(
                         "size_chars": total_context_size,
                         "message": "Large legal context may impact token usage"
                     })
+            else:
+                save_log("cove_citation_fetch_empty", {
+                    "command": command,
+                    "citations_requested": list(citations),
+                    "message": "fetch_citation_context returned empty result"
+                })
+        else:
+            save_log("cove_no_citations_found", {
+                "command": command,
+                "questions_sample": questions[:500],
+                "message": "No citations extracted from questions"
+            })
     except Exception as e:
-        # Log but don't fail
+        # Log with full traceback for debugging
         save_log("cove_citation_error", {
             "command": command,
             "error": str(e),
-            "error_type": type(e).__name__
+            "error_type": type(e).__name__,
+            "traceback": traceback.format_exc()
         })
 
     # Step 2: Answer questions with FULL legal documents or without
