@@ -229,10 +229,10 @@ def _extract_pdf_text(url: str, pdf_bytes: bytes) -> str:
 
     except ImportError:
         logging.warning("pdfplumber not installed - cannot extract PDF text")
-        return ""
+        return f"[PDF DOCUMENT at {url}]\n[Note: PDF text extraction unavailable - pdfplumber not installed]\n"
     except Exception as e:
         logging.warning(f"Failed to extract text from PDF {url}: {e}")
-        return ""
+        return f"[PDF DOCUMENT at {url}]\n[Note: PDF extraction failed - {str(e)[:100]}]\n"
 
 
 def _fetch_url_content(url: str, timeout: int = 5) -> str:

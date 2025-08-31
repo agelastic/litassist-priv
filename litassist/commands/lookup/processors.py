@@ -102,8 +102,9 @@ class LookupProcessor:
             content = _fetch_url_content(link, timeout=self.config.fetch_timeout)
 
             # If HTTP fetch got minimal/no content, try Selenium for non-Jade sites
+            # Never try Selenium for PDFs - it won't work
             if (not content or len(content) < 1000) and selenium_enabled:
-                if "jade.io" not in link.lower():
+                if "jade.io" not in link.lower() and ".pdf" not in link.lower():
                     click.echo(f"  [↻ Trying Selenium for {link.split('/')[2]}...]")
                     selenium_content = _fetch_url_content_selenium_with_timeout(
                         link,
