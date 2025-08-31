@@ -326,20 +326,20 @@ class TestStrategyFileParsing:
     def test_parse_strategies_file_complete_structure(self):
         """Test parsing of complete strategy file structure."""
         content = """## ORTHODOX STRATEGIES
-1. Traditional contract claim
+### 1. Traditional contract claim
 Standard approach using established precedents.
 
-2. Alternative dispute resolution
+### 2. Alternative dispute resolution
 Mediation and arbitration before litigation.
 
-3. Statutory remedies
+### 3. Statutory remedies
 Consumer protection law applications.
 
 ## UNORTHODOX STRATEGIES
-1. Novel legal theory
+### Strategy 1: Novel legal theory
 Innovative approach to the problem.
 
-2. Strategic timing
+### Strategy 2: Strategic timing
 Delay tactics for better positioning.
 
 ## MOST LIKELY TO SUCCEED
@@ -363,7 +363,7 @@ Facts support immediate resolution.
     def test_parse_strategies_file_partial_sections(self):
         """Test parsing when only some sections are present."""
         content = """## ORTHODOX STRATEGIES
-1. Standard approach
+### 1. Standard approach
 Traditional method.
 
 ## MOST LIKELY TO SUCCEED
@@ -417,7 +417,7 @@ Highest success probability.
 # Area: Contract Law
 
 ## ORTHODOX STRATEGIES
-1. Standard claim
+### 1. Standard claim
 Traditional approach.
 """
 

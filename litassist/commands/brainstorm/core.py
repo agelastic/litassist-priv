@@ -234,12 +234,8 @@ def brainstorm(facts, side, area, research, verify, output):
     )
 
     # Note: Citation issues now handled automatically in LLMClient.complete()
-    # Combine all sections with markdown headers for clean output
-    combined_content = f"""## ORTHODOX STRATEGIES
-
-{orthodox_content}
-
-## UNORTHODOX STRATEGIES
+    # Combine all sections - headers already included in LLM output
+    combined_content = f"""{orthodox_content}
 
 {unorthodox_content}
 

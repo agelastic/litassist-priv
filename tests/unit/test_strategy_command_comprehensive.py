@@ -820,15 +820,15 @@ class TestStrategyFileIntegration:
 
         strategies_content = """## ORTHODOX STRATEGIES
 
-1. Standard contract breach claim
+### 1. Standard contract breach claim
 Traditional approach to contract disputes.
 
-2. Alternative dispute resolution
+### 2. Alternative dispute resolution
 Mediation and arbitration options.
 
 ## UNORTHODOX STRATEGIES
 
-1. Creative legal theory
+### Strategy 1: Creative legal theory
 Novel approach to the problem.
 
 ## MOST LIKELY TO SUCCEED
