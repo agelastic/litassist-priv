@@ -11,8 +11,11 @@ from litassist.utils import (
     timed,
     save_command_output,
     show_command_completion,
+    info_message,
+    warning_message,
 )
 from litassist.llm import LLMClientFactory, NonRetryableAPIError
+from litassist.prompts import PROMPTS
 
 from .chunker import (
     determine_chunk_size,
@@ -203,6 +206,36 @@ def digest(ctx, file, mode, context, output):
 
     # Combine all file outputs
     final_output = "\n".join(all_documents_output)
+    
+    # Add cross-file consolidation if multiple files
+    if len(file) > 1:
+        click.echo(info_message("Consolidating across all files..."))
+        try:
+            # Build consolidation prompt using mode-specific template
+            # Comment: Using f-string to avoid if/elif blocks for mode selection
+            prompt_key = f"processing.digest.consolidation_cross_file_{mode}"
+            consolidation_prompt = PROMPTS.get(
+                prompt_key,
+                file_count=len(file),
+                file_digests="\n\n".join(all_documents_output)
+            )
+            
+            # Make consolidation call
+            messages = [
+                {"role": "system", "content": PROMPTS.get("processing.digest.system_prompt")},
+                {"role": "user", "content": consolidation_prompt}
+            ]
+            cross_file_summary, usage = llm_client.complete(messages)
+            
+            # Append to output
+            final_output += f"\n\n{'='*80}\nCROSS-FILE CONSOLIDATION\n{'='*80}\n{cross_file_summary}"
+            
+            # Update usage stats
+            all_usage["prompt_tokens"] += usage.get("prompt_tokens", 0)
+            all_usage["completion_tokens"] += usage.get("completion_tokens", 0)
+            all_usage["total_tokens"] += usage.get("total_tokens", 0)
+        except Exception as e:
+            click.echo(warning_message(f"Cross-file consolidation skipped: {str(e)}"))
 
     # Add error summary if there were chunk failures
     if all_chunk_errors:

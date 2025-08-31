@@ -91,7 +91,10 @@ class TestYAMLPromptValidation:
             'witness_address_or_placeholder', 'witness_occupation_if_known',
             
             # CoVe citation context placeholders
-            'legal_context', 'questions'
+            'legal_context', 'questions',
+            
+            # Cross-file consolidation placeholders
+            'file_count', 'file_digests'
         }
         
         errors = []
