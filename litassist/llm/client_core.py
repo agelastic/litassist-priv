@@ -117,6 +117,8 @@ PARAMETER_PROFILES = {
         ],
     },
     "xai": {
+        # OpenRouter-specific parameters (min_p, top_a, repetition_penalty) are handled
+        # through extra_body in api_handlers.py, not as direct parameters
         "allowed": [
             "temperature",
             "top_p",
@@ -127,9 +129,7 @@ PARAMETER_PROFILES = {
             "stream",
             "reasoning",  # Grok models support reasoning
             "verbosity",
-            "min_p",
-            "top_a",
-            "repetition_penalty",
+            # OpenRouter-specific params removed from here, handled via extra_body
         ],
     },
     "meta": {

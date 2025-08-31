@@ -124,9 +124,8 @@ PARAMETER_PROFILES = {
         ],
     },
     "xai": {
-        # TODO: Migrate to OpenRouter SDK to support min_p and other extended parameters
-        # Currently using OpenAI SDK which doesn't support min_p, causing API errors
-        # Once migrated, add back: "min_p", "top_a", and other OpenRouter-specific params
+        # OpenRouter-specific parameters (min_p, top_a, repetition_penalty) are handled
+        # through extra_body in api_handlers.py, not as direct parameters
         "allowed": [
             "temperature",
             "top_p",
@@ -137,9 +136,7 @@ PARAMETER_PROFILES = {
             "stream",
             "reasoning",  # Grok models support reasoning
             "verbosity",
-            # "min_p",  # Removed: OpenAI SDK doesn't support, restore after OpenRouter SDK migration
-            "top_a",
-            "repetition_penalty",
+            # OpenRouter-specific params removed from here, handled via extra_body
         ],
     },
     "meta": {
@@ -395,6 +392,19 @@ def get_model_family(model_name: str) -> str:
     return "default"
 
 
+def get_openrouter_params() -> set:
+    """
+    Get the set of OpenRouter-specific parameters that need special handling.
+    
+    These parameters are not part of the standard OpenAI API and must be
+    passed through extra_body when using the OpenAI SDK with OpenRouter.
+    
+    Returns:
+        Set of parameter names that are OpenRouter-specific
+    """
+    return {"reasoning", "min_p", "top_a", "repetition_penalty"}
+
+
 def get_model_parameters(model_name: str, requested_params: dict) -> dict:
     """
     Dynamically filter parameters based on model patterns.
@@ -441,6 +451,9 @@ def get_model_parameters(model_name: str, requested_params: dict) -> dict:
         verbosity_params = convert_verbosity(verbosity, model_name)
         filtered.update(verbosity_params)
     
+    # Get OpenRouter-specific parameters
+    openrouter_params = get_openrouter_params()
+    
     # Process remaining parameters
     for param, value in params_to_process.items():
         # Skip None values
@@ -453,7 +466,10 @@ def get_model_parameters(model_name: str, requested_params: dict) -> dict:
             filtered[new_param] = value
         elif param in allowed:
             filtered[param] = value
-        # Silently drop unsupported parameters
+        elif use_openrouter and param in openrouter_params:
+            # Preserve OpenRouter-specific params - they'll be moved to extra_body in api_handlers
+            filtered[param] = value
+        # Silently drop other unsupported parameters
         # Note: We don't add universal parameters automatically to maintain model-specific restrictions
 
     return filtered

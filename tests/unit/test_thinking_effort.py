@@ -317,15 +317,21 @@ class TestAdvancedParameters:
             "max_tokens": 1000,
         }
         
-        # For models that support advanced parameters
+        # For xai models using OpenRouter
         filtered = get_model_parameters("x-ai/grok-4", params)
-        # min_p temporarily removed for xai models due to OpenAI SDK limitation
-        # Will be restored after migration to OpenRouter SDK
-        assert "min_p" not in filtered  # Currently filtered out for xai
-        assert "top_a" in filtered
+        # OpenRouter-specific params are preserved for extra_body handling
+        assert "min_p" in filtered  # Will be moved to extra_body
+        assert filtered["min_p"] == 0.05
+        assert "top_a" in filtered  # Will be moved to extra_body
         assert filtered["top_a"] == 0.8
-        assert "repetition_penalty" in filtered
+        assert "repetition_penalty" in filtered  # Will be moved to extra_body
         assert filtered["repetition_penalty"] == 1.2
+        
+        # Standard params should also be present
+        assert "temperature" in filtered
+        assert filtered["temperature"] == 0.7
+        assert "max_tokens" in filtered
+        assert filtered["max_tokens"] == 1000
 
 
 if __name__ == "__main__":

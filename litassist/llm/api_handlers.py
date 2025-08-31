@@ -244,14 +244,20 @@ def execute_api_call_with_retry(model_name: str, messages: list, filtered_params
 
     def _call_with_streaming_wrap():
         """Internal wrapper for API call with comprehensive error handling."""
+        # Avoid circular import by importing locally
+        from .client import get_openrouter_params
+        
         try:
             # Get the appropriate client
             client = get_openai_client_func(model_name)
 
             # Extract OpenRouter-specific parameters that need to go in extra_body
             extra_body = {}
-            if "reasoning" in filtered_params:
-                extra_body["reasoning"] = filtered_params.pop("reasoning")
+            # Get OpenRouter-specific parameters from centralized definition
+            openrouter_params = get_openrouter_params()
+            for param in openrouter_params:
+                if param in filtered_params:
+                    extra_body[param] = filtered_params.pop(param)
             
             # Create the request with extra_body for OpenRouter parameters
             if extra_body:
