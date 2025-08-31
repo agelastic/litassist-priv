@@ -152,8 +152,8 @@ class TestCommandParameterPropagation:
         # Check command executed successfully
         assert result.exit_code == 0
         
-        # Verify factory was called with correct command (lookup sets temperature/top_p based on mode)
-        mock_factory.assert_called_once_with("lookup", temperature=0, top_p=0.1)
+        # Verify factory was called with correct command (lookup sets temperature/top_p/max_tokens based on mode)
+        mock_factory.assert_called_once_with("lookup", temperature=0, top_p=0.1, max_tokens=16384)
         
         # Check configuration
         from litassist.llm import LLMClientFactory

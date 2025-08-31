@@ -276,20 +276,20 @@ class LookupProcessor:
                 overrides = {
                     "temperature": 0,
                     "top_p": 0.05,
-                    "max_tokens": 8192,
+                    "max_tokens": 16384,
                 }  # Maximum precision
             else:  # broad
                 overrides = {
                     "temperature": 0.3,
                     "top_p": 0.7,
-                    "max_tokens": 8192,
+                    "max_tokens": 16384,
                 }  # Controlled creativity
         else:
             # Standard parameters
             if mode == "irac":
-                overrides = {"temperature": 0, "top_p": 0.1}
+                overrides = {"temperature": 0, "top_p": 0.1, "max_tokens": 16384}
             else:
-                overrides = {"temperature": 0.5, "top_p": 0.9}
+                overrides = {"temperature": 0.5, "top_p": 0.9, "max_tokens": 16384}
 
         return LLMClientFactory.for_command("lookup", **overrides)
     
