@@ -70,6 +70,8 @@ strategies:
       4. FOURTH: Under that header, list your top 3-5 recommended strategies from the 8 analyzed above
       5. FINALLY: The reasoning trace will be added at the very end (do NOT add it yourself)
 
+      **IMPORTANT: DO NOT use divider lines, dashes, or any separators between strategies. Use only a single blank line to separate each strategy from the next.**
+
       Start your output with:
       
       ## STRATEGIES SELECTED FOR ANALYSIS
@@ -82,6 +84,8 @@ strategies:
       2. **Implementation roadmap** (3-5 key sequential steps)
       3. **Risk assessment** (potential downsides and mitigation)
       4. **Success probability** (a percentage with qualitative justification)
+      
+      **Remember: After completing each strategy's analysis, add only ONE blank line before starting the next strategy. NO divider lines, NO dashes, NO separators.**
 
       After completing ALL 8 strategy analyses, you MUST add this section:
 
