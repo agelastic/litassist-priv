@@ -362,7 +362,7 @@ def counselnotes(files, extract, verify, cove, output):
         },
     )
 
-    # Save comprehensive audit log
+    # Save comprehensive audit log (without response content)
     save_log(
         f"counselnotes_{extract if extract else 'analysis'}",
         {
@@ -375,7 +375,7 @@ def counselnotes(files, extract, verify, cove, output):
                 "chunks_processed": len(chunks),
             },
             "params": f"extract={extract}, verify={verify}, files={len(files)}",
-            "responses": comprehensive_log["responses"],
+            # Response content removed - already logged by LLMClient separately
             "usage": comprehensive_log["total_usage"],
             "output_file": output_file,
         },

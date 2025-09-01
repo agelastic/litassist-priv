@@ -88,11 +88,23 @@ def _sanitize_for_json(obj):
     """
     Recursively sanitize an object for JSON serialization.
     Handles Mock objects and other non-serializable types.
+    Also filters out combined_content from research_analysis.
     """
     if isinstance(obj, Mock):
         return str(obj)
     elif isinstance(obj, dict):
-        return {k: _sanitize_for_json(v) for k, v in obj.items()}
+        # Special handling for research_analysis with combined_content
+        if "combined_content" in obj and all(
+            key in obj for key in ["total_tokens", "total_words", "file_count"]
+        ):
+            # This looks like research_analysis - filter out combined_content
+            return {
+                k: _sanitize_for_json(v)
+                for k, v in obj.items()
+                if k != "combined_content"
+            }
+        else:
+            return {k: _sanitize_for_json(v) for k, v in obj.items()}
     elif isinstance(obj, (list, tuple)):
         return [_sanitize_for_json(item) for item in obj]
     elif hasattr(obj, "__dict__"):
@@ -293,7 +305,33 @@ def _write_command_output_markdown(f, tag: str, ts: str, payload: dict):
         inputs = payload["inputs"]
         if isinstance(inputs, dict):
             for key, value in inputs.items():
-                f.write(f"- **{key}**: {value}  \n")
+                # Special handling for complex data structures
+                if isinstance(value, dict):
+                    # Check for research_analysis with combined_content
+                    if key == "research_analysis" and "combined_content" in value:
+                        # Only log metadata, not the massive content
+                        f.write(f"- **{key}**:\n")
+                        f.write(f"  - Total tokens: {value.get('total_tokens', 'N/A')}\n")
+                        f.write(f"  - Total words: {value.get('total_words', 'N/A')}\n")
+                        f.write(f"  - File count: {value.get('file_count', 'N/A')}\n")
+                        f.write(f"  - Exceeds threshold: {value.get('exceeds_threshold', 'N/A')}\n")
+                    else:
+                        # Format dict as JSON code block
+                        f.write(f"- **{key}**:\n```json\n{json.dumps(value, indent=2, ensure_ascii=False)}\n```\n")
+                elif isinstance(value, list):
+                    if len(value) > 10:
+                        # For long lists, show count and first few items
+                        f.write(f"- **{key}**: {len(value)} items\n")
+                        f.write(f"  First 3: {value[:3]}\n")
+                    else:
+                        # Short lists can be shown inline
+                        f.write(f"- **{key}**: {value}  \n")
+                elif isinstance(value, str) and len(value) > 1000:
+                    # Truncate very long strings
+                    f.write(f"- **{key}**: {value[:500]}... (truncated, {len(value)} chars total)  \n")
+                else:
+                    # Simple values
+                    f.write(f"- **{key}**: {value}  \n")
         else:
             f.write(f"{inputs}  \n")
         f.write("\n")
@@ -327,6 +365,8 @@ def _write_llm_messages_markdown(f, tag: str, ts: str, payload: dict):
     f.write("## Model Information\n\n")
     f.write(f"- **Model**: {payload.get('model', 'N/A')}\n")
     f.write(f"- **Timestamp**: {payload.get('timestamp', ts)}\n")
+    if 'correlation_id' in payload:
+        f.write(f"- **Correlation ID**: {payload['correlation_id']}\n")
     if 'command_context' in payload:
         f.write(f"- **Context**: {payload['command_context']}\n")
     f.write("\n")

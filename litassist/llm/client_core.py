@@ -5,6 +5,7 @@ This module provides the core LLMClient class with essential functionality for c
 across different LLM providers. Verification logic is provided by the LLMVerificationMixin.
 """
 
+import os
 import re
 import time
 from typing import List, Dict, Any, Tuple
@@ -488,14 +489,17 @@ class LLMClient(LLMVerificationMixin):
             # Filter parameters based on model capabilities
             filtered_params = get_model_parameters(self.model, params)
 
-            # Log the request
-            self._log_request(messages, filtered_params)
+            # Log the request and get correlation ID
+            correlation_id = self._log_request(messages, filtered_params)
 
             # Execute API call with retry logic
             response = execute_api_call_with_retry(model_name, messages, filtered_params)
 
             # Validate and extract response content
             content, usage = self._extract_response_content(response)
+            
+            # Log the response separately
+            self._log_response(correlation_id, content, usage)
 
             # Handle citation verification if not skipped
             if not skip_citation_verification:
@@ -571,14 +575,32 @@ class LLMClient(LLMVerificationMixin):
 
         return model_name
 
-    def _log_request(self, messages: List[Dict[str, str]], filtered_params: dict) -> None:
-        """Log the API request details."""
+    def _log_request(self, messages: List[Dict[str, str]], filtered_params: dict) -> str:
+        """Log the API request details and return correlation ID."""
+        # Generate unique correlation ID
+        correlation_id = f"{time.strftime('%Y%m%d_%H%M%S')}_{os.getpid()}_{id(self) % 1000000}"
+        
         save_log(
-            f"llm_{self.model.replace('/', '_')}_messages",
+            f"llm_request_{self.model.replace('/', '_')}",
             {
+                "correlation_id": correlation_id,
                 "model": self.model,
-                "messages_sent": messages,
+                "messages": messages,
                 "params": filtered_params,
+                "timestamp": time.strftime("%Y-%m-%d %H:%M:%S"),
+            },
+        )
+        return correlation_id
+
+    def _log_response(self, correlation_id: str, content: str, usage: Dict[str, Any]) -> None:
+        """Log the API response details separately."""
+        save_log(
+            f"llm_response_{self.model.replace('/', '_')}",
+            {
+                "correlation_id": correlation_id,
+                "model": self.model,
+                "response": content,
+                "usage": usage,
                 "timestamp": time.strftime("%Y-%m-%d %H:%M:%S"),
             },
         )
@@ -767,23 +789,6 @@ class LLMClient(LLMVerificationMixin):
         elif not isinstance(usage, dict):
             usage = {"raw": str(usage)}
 
-        # Create log tag with optional CoVe stage identification
-        log_tag = f"llm_{self.model.replace('/', '_')}"
-        command_context = getattr(self, "command_context", None)
-
-        if command_context and "cove" in command_context:
-            log_tag = f"{command_context}_{self.model.replace('/', '_')}"
-
-        save_log(
-            log_tag,
-            {
-                "method": "complete",
-                "model": self.model,
-                "command_context": command_context,
-                "messages": messages,
-                "params": params,
-                "response": content,
-                "usage": usage,
-                "timestamp": time.strftime("%Y-%m-%d %H:%M:%S"),
-            },
-        )
+        # Combined logging removed - now using separate request/response logging
+        # The request was logged in _log_request() and response in _log_response()
+        # Each with their own files and linked by correlation_id

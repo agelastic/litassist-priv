@@ -206,13 +206,13 @@ def extractfacts(file, verify, noverify, cove, output):
         metadata=verification_metadata,
     )
 
-    # Audit log
+    # Audit log (without response content)
     save_log(
         "extractfacts",
         {
             "inputs": {"source_files": list(file), "chunks": len(chunks)},
             "params": "verify=True (auto-enabled)",
-            "response": combined,
+            # Response content removed - already logged by LLMClient separately
             "output_file": output_file,
         },
     )

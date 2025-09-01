@@ -348,19 +348,25 @@ def brainstorm(facts, side, area, research, verify, output):
         "\nTo use these strategies with other commands, manually create or update strategies.txt"
     )
 
-    # Save comprehensive audit log
+    # Save comprehensive audit log (without massive content blobs)
     save_log(
         "brainstorm",
         {
             "inputs": {
                 "facts_files": facts_sources,
                 "research_files": list(research) if research else [],
-                "research_analysis": research_analysis,
+                "research_analysis": {
+                    # Only log metadata, not the combined_content
+                    "total_tokens": research_analysis.get("total_tokens", 0),
+                    "total_words": research_analysis.get("total_words", 0),
+                    "file_count": research_analysis.get("file_count", 0),
+                    "exceeds_threshold": research_analysis.get("exceeds_threshold", False),
+                },
             },
             "params": f"verify={'full' if verify else 'unorthodox-only'}, orthodox_temp=0.3, unorthodox_temp=0.9, analysis_temp=0.4",
-            "response": combined_content,  # Log the final, verified content
-            "usage": usage,
+            # Response content removed - already logged by LLMClient separately
             "output_file": output_file,
+            "usage": usage,
             "stages": {
                 "orthodox": {"usage": orthodox_usage, "temperature": 0.3},
                 "unorthodox": {"usage": unorthodox_usage, "temperature": 0.9},

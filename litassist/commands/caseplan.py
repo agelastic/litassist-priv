@@ -175,7 +175,7 @@ def caseplan(case_facts, context, budget, output):
                 "inputs": {"case_facts": facts_content},
                 "params": {"model": llm_client.model},
                 "usage": usage,
-                "response": assessment,
+                # Response content removed - already logged by LLMClient separately
                 "output_file": output_file,
             },
         )
@@ -260,7 +260,7 @@ def caseplan(case_facts, context, budget, output):
                 "inputs": {"case_facts": facts_content},
                 "params": {"model": llm_client.model, "context": context, "budget": budget},
                 "usage": usage,
-                "response": plan_content,
+                # Response content removed - already logged by LLMClient separately
                 "output_file": output_file,
                 "commands_file": commands_file,
             },

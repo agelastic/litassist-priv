@@ -317,16 +317,16 @@ def draft(ctx, documents, query, noverify, cove, diversity, output):
     # Reasoning trace is embedded in the main output, not saved separately
     extra_files = None
 
-    # Save audit log
+    # Save audit log (without response content)
     save_log(
         "draft",
         {
             "inputs": {
                 "documents": list(documents),
                 "query": query,
-                "context": context,
+                "context": context if context else None,
             },
-            "response": content,
+            # Response content removed - already logged by LLMClient separately
             "usage": usage,
             "verification": "cove_applied" if cove else "disabled",
             "output_file": output_file,
