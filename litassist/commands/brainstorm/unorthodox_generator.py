@@ -8,11 +8,7 @@ import click
 import logging
 
 from litassist.llm import LLMClientFactory
-from litassist.utils import (
-    create_reasoning_prompt,
-    verifying_message,
-    success_message,
-)
+from litassist.utils import create_reasoning_prompt
 from litassist.prompts import PROMPTS
 
 
@@ -62,22 +58,8 @@ def generate_unorthodox_strategies(facts: str, side: str, area: str):
     ]
 
     # Execute the query for unorthodox strategies
-    corrected_unorthodox = None  # Initialize for critique capture
     try:
         unorthodox_content, unorthodox_usage = unorthodox_client.complete(unorthodox_messages)
-        
-        # ALWAYS verify unorthodox strategies regardless of model
-        click.echo(verifying_message("Verifying unorthodox strategies..."))
-        verify_client = LLMClientFactory.for_command("verification")
-        corrected_unorthodox, _ = verify_client.verify(unorthodox_content)
-        
-        # Replace with corrected content if changes were made
-        if corrected_unorthodox and not corrected_unorthodox.lower().startswith("no corrections"):
-            unorthodox_content = corrected_unorthodox
-            click.echo(success_message("Unorthodox strategies verified and corrected"))
-        else:
-            click.echo(success_message("Unorthodox strategies verified - no corrections needed"))
-                
     except Exception as e:
         raise click.ClickException(
             f"Error generating unorthodox strategies: {str(e)}"
@@ -88,4 +70,4 @@ def generate_unorthodox_strategies(facts: str, side: str, area: str):
         unorthodox_content
     )
     
-    return unorthodox_content, unorthodox_usage, unorthodox_citation_issues, corrected_unorthodox
+    return unorthodox_content, unorthodox_usage, unorthodox_citation_issues

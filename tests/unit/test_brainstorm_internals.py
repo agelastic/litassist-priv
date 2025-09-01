@@ -164,14 +164,12 @@ Pursue misleading conduct claim while simultaneously filing ombudsman complaint.
             # Verify clients were created
             mock_factory_orth.for_command.assert_called_with("brainstorm", "orthodox")
             mock_factory_unorth.for_command.assert_any_call("brainstorm", "unorthodox")
-            mock_factory_unorth.for_command.assert_any_call("verification")  # For unorthodox verification
             mock_factory_analysis.for_command.assert_called_with("brainstorm", "analysis")
             
             # Verify output contains all sections
             output = result.output
             assert "Generating orthodox strategies..." in output
             assert "Generating unorthodox strategies..." in output
-            assert "Verifying unorthodox strategies..." in output
             assert "Analyzing most promising strategies..." in output
             
             # Check saved content structure

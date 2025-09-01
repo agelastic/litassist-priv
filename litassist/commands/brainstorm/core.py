@@ -201,7 +201,7 @@ def brainstorm(facts, side, area, research, verify, output):
         )
 
     # Generate Unorthodox Strategies
-    unorthodox_content, unorthodox_usage, unorthodox_citation_issues, corrected_unorthodox = (
+    unorthodox_content, unorthodox_usage, unorthodox_citation_issues = (
         generate_unorthodox_strategies(facts, side, area)
     )
     
@@ -264,9 +264,6 @@ def brainstorm(facts, side, area, research, verify, output):
     if orthodox_citation_issues:
         critiques.append(("Orthodox Strategy Citation Issues", "\n".join(orthodox_citation_issues)))
 
-    # Add unorthodox verification
-    if corrected_unorthodox:
-        critiques.append(("Unorthodox Strategy Verification", corrected_unorthodox))
     
     # Add unorthodox citation issues if any
     if unorthodox_citation_issues:

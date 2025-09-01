@@ -33,6 +33,7 @@ class LegalReasoningTrace:
         confidence: int,
         sources: List[str] = None,
         command: str = None,
+        header: str = None,
     ):
         """
         Initialize a reasoning trace.
@@ -45,6 +46,7 @@ class LegalReasoningTrace:
             confidence: Confidence level (0-100%)
             sources: List of legal sources cited
             command: The LitAssist command that generated this reasoning
+            header: Custom header for this reasoning trace (defaults to "Overall Strategic Reasoning")
         """
         self.issue = issue
         self.applicable_law = applicable_law
@@ -53,6 +55,7 @@ class LegalReasoningTrace:
         self.confidence = confidence  # No clamping - let validation catch errors
         self.sources = sources or []
         self.command = command
+        self.header = header or "Overall Strategic Reasoning"
         self.timestamp = time.strftime("%Y-%m-%d %H:%M:%S")
 
     def to_dict(self) -> Dict[str, Any]:
@@ -76,7 +79,7 @@ class LegalReasoningTrace:
                 f"- {source}" for source in self.sources
             )
 
-        return f"""## Overall Strategic Reasoning
+        return f"""## {self.header}
 
 **Issue:** {self.issue}
 
@@ -97,7 +100,7 @@ class LegalReasoningTrace:
         if self.sources:
             sources_text = f"\nSources: {'; '.join(self.sources)}"
 
-        return f"""## Overall Strategic Reasoning
+        return f"""## {self.header}
 Issue: {self.issue}
 Applicable Law: {self.applicable_law}
 Application to Facts: {self.application}
@@ -119,7 +122,22 @@ def create_reasoning_prompt(base_prompt: str, command: str) -> str:
         Enhanced prompt that will generate reasoning traces
     """
     
-    reasoning_instruction = PROMPTS.get("reasoning.instruction").format(command=command)
+    # Map command types to specific reasoning headers
+    reasoning_headers = {
+        "brainstorm-orthodox": "Overall Orthodox Strategic Reasoning",
+        "brainstorm-unorthodox": "Overall Unorthodox Strategic Reasoning",
+        "brainstorm-analysis": "Strategy Selection Reasoning",
+        # Default for other commands
+        "default": "Overall Strategic Reasoning"
+    }
+    
+    # Get the appropriate header for this command
+    header = reasoning_headers.get(command, reasoning_headers["default"])
+    
+    reasoning_instruction = PROMPTS.get("reasoning.instruction").format(
+        command=command,
+        reasoning_header=header
+    )
     return base_prompt + reasoning_instruction
 
 
@@ -139,8 +157,9 @@ def extract_reasoning_trace(
     # The pattern now looks for the start of the trace and captures everything
     # until the end of the content or another major header. It is non-greedy.
     # Recognizes both === separators (internal LLM processing) and markdown headers (output files)
+    # Also recognizes the new specific reasoning headers for orthodox, unorthodox, and strategy selection
     trace_pattern = (
-        r"(?:=== REASONING ===|### Reasoning|## Overall Strategic Reasoning)\s*\n(.*?)(?=\n(?:===|##|###|#)|$)"
+        r"(?:=== REASONING ===|### Reasoning|## Overall (?:Orthodox |Unorthodox |)?Strategic Reasoning|## Strategy Selection Reasoning)\s*\n(.*?)(?=\n(?:===|##|###|#)|$)"
     )
     match = re.search(trace_pattern, content, re.DOTALL | re.IGNORECASE)
 

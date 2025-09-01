@@ -94,7 +94,10 @@ class TestYAMLPromptValidation:
             'legal_context', 'questions',
             
             # Cross-file consolidation placeholders
-            'file_count', 'file_digests'
+            'file_count', 'file_digests',
+            
+            # Reasoning trace placeholders
+            'reasoning_header'
         }
         
         errors = []

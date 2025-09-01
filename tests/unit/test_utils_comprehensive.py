@@ -236,7 +236,11 @@ class TestReasoningPrompts:
         result = create_reasoning_prompt(base_prompt, command)
 
         assert base_prompt in result
-        assert "Overall Strategic Reasoning" in result
+        # Check that some form of strategic reasoning header is present
+        assert ("Overall Strategic Reasoning" in result or 
+                "Overall Orthodox Strategic Reasoning" in result or
+                "Overall Unorthodox Strategic Reasoning" in result or
+                "Strategy Selection Reasoning" in result)
         assert "Issue:" in result
         assert "Applicable Law:" in result
         assert "Application to Facts:" in result
@@ -250,14 +254,15 @@ class TestReasoningPrompts:
         for command in commands:
             result = create_reasoning_prompt(base_prompt, command)
             assert base_prompt in result
-            assert "Overall Strategic Reasoning" in result
+            # Should have some form of reasoning header
+            assert ("Strategic Reasoning" in result or "Selection Reasoning" in result)
 
     def test_create_reasoning_prompt_empty_input(self):
         """Test reasoning prompt creation with empty input."""
         result = create_reasoning_prompt("", "strategy")
 
         # Should still contain reasoning structure
-        assert "Overall Strategic Reasoning" in result
+        assert ("Strategic Reasoning" in result or "Selection Reasoning" in result)
         assert "Issue:" in result
 
     def test_extract_reasoning_trace_valid_content(self):

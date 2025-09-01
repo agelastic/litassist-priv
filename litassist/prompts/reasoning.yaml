@@ -7,9 +7,9 @@ reasoning:
   # LOCATION: utils.py:553
   instruction: |
     
-    IMPORTANT: After your main analysis, provide a clear reasoning trace using this exact format (DO NOT repeat any sections):
+    IMPORTANT: At the VERY END of ALL your content (after the MOST LIKELY TO SUCCEED section if present), provide a clear reasoning trace using this exact format (DO NOT repeat any sections):
     
-    ## Overall Strategic Reasoning
+    ## {reasoning_header}
     
     Issue: [State the primary legal question or issue being analyzed - write this only once]
     
