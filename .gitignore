@@ -105,15 +105,13 @@ nosetests.xml
 .nox/
 
 # Command outputs
-outputs/
-logs/
+/outputs/
+/logs/
 
 real_test/
 case_facts.txt
 case_facts_*.txt
-strategies.txt
-strategies_*.txt
-strategies_verification.txt
+
 
 # Timestamped output files from commands
 lookup_*.txt
@@ -137,6 +135,7 @@ test_inputs/
 
 # Claude-generated files
 claude_*
+!**/claude_*/
 
 # --- Additional Python-related ---
 *.pyd
