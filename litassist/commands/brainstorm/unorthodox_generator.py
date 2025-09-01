@@ -6,9 +6,15 @@ Generates creative and unconventional legal strategies with automatic verificati
 
 import click
 import logging
+import re
 
 from litassist.llm import LLMClientFactory
-from litassist.utils import create_reasoning_prompt
+from litassist.utils import (
+    create_reasoning_prompt,
+    verifying_message,
+    success_message,
+    warning_message,
+)
 from litassist.prompts import PROMPTS
 
 
@@ -64,6 +70,30 @@ def generate_unorthodox_strategies(facts: str, side: str, area: str):
         raise click.ClickException(
             f"Error generating unorthodox strategies: {str(e)}"
         )
+
+    # Verify the unorthodox strategies for legal accuracy
+    click.echo(verifying_message("Verifying unorthodox strategies..."))
+    verify_client = LLMClientFactory.for_command("verification")
+    verification_result, _ = verify_client.verify(unorthodox_content)
+
+    # Try to extract just the verified document part
+    match = re.search(
+        r"## Verified and Corrected Document\s*\n(.*)",
+        verification_result,
+        re.DOTALL
+    )
+
+    if match:
+        # Successfully extracted the verified document section
+        verified_content = match.group(1).strip()
+        unorthodox_content = verified_content
+        click.echo(success_message("Unorthodox strategies verified"))
+    else:
+        # Could not find expected format - log error and use whole output
+        logging.error("Unexpected verification format - expected '## Verified and Corrected Document' header")
+        # Use the whole verification result as-is
+        unorthodox_content = verification_result
+        click.echo(warning_message("Verification format unexpected - using complete output"))
 
     # Validate citations
     unorthodox_citation_issues = unorthodox_client.validate_citations(

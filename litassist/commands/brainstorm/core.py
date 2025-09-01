@@ -7,6 +7,7 @@ Coordinates generation of orthodox, unorthodox, and analysis strategies.
 import click
 import os
 import logging
+import re
 
 from litassist.utils import (
     read_document,
@@ -280,12 +281,24 @@ def brainstorm(facts, side, area, research, verify, output):
             # Use verification config for full document
             verify_client = LLMClientFactory.for_command("verification")
             correction, _ = verify_client.verify(combined_content)
-            full_verification_result = correction  # Capture for critique section
+            full_verification_result = correction  # Keep full result for critique
             
-            # Replace content if corrections made
-            if correction.strip() and not correction.lower().startswith("no corrections needed"):
-                combined_content = correction
+            # Try to extract just the verified document part
+            match = re.search(
+                r"## Verified and Corrected Document\s*\n(.*)",
+                correction,
+                re.DOTALL
+            )
+            
+            if match:
+                # Successfully extracted the document
+                combined_content = match.group(1).strip()
                 click.echo(success_message("Full output verified and corrected"))
+            else:
+                # Could not find expected format - use whole output
+                logging.warning("Could not extract verified document section - using complete verification output")
+                combined_content = correction
+                click.echo(warning_message("Verification format unexpected - using complete output"))
             
             # Also run citation validation
             citation_issues = verify_client.validate_citations(combined_content)
@@ -296,8 +309,8 @@ def brainstorm(facts, side, area, research, verify, output):
         except Exception as e:
             raise click.ClickException(f"Verification error during brainstorming: {e}")
     else:
-        # Unorthodox already verified, just do citation check
-        click.echo(info_message("Skipping full verification (unorthodox already verified)"))
+        # Unorthodox was verified independently, just do citation check
+        click.echo(info_message("Skipping full document verification (unorthodox was verified independently)"))
         try:
             # Quick citation check using the analysis client
             analysis_client = LLMClientFactory.for_command("brainstorm", "analysis")

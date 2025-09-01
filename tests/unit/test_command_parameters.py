@@ -232,14 +232,15 @@ class TestCommandParameterPropagation:
                 import traceback
                 traceback.print_tb(result.exc_info[2])
                 
-        # Should be called 3 times (orthodox, unorthodox, analysis)
-        assert mock_factory.call_count >= 3
+        # Should be called 4 times (orthodox, unorthodox, verification, analysis)
+        assert mock_factory.call_count >= 4
         
         # Check the calls were made in the correct order
         calls = mock_factory.call_args_list
         assert calls[0][0][0] == "brainstorm"  # orthodox
         assert calls[1][0][0] == "brainstorm"  # unorthodox
-        assert calls[2][0][0] == "brainstorm"  # analysis
+        assert calls[2][0][0] == "verification"  # verification of unorthodox
+        assert calls[3][0][0] == "brainstorm"  # analysis
 
     @patch("litassist.llm.LLMClientFactory.for_command")
     @patch("litassist.utils.read_document")
