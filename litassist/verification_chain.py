@@ -179,12 +179,8 @@ def run_cove_verification(
         )
 
         if citations:
-            # Fetch FULL documents (limit to 3 to manage tokens)
-            # User can adjust max_citations based on their token budget
-            max_citations = 3  # Could make this configurable
-            legal_context = fetch_citation_context(
-                citations, max_citations=max_citations
-            )
+            # Fetch FULL documents for all citations found
+            legal_context = fetch_citation_context(citations)
 
             if legal_context:
                 total_context_size = sum(len(v) for v in legal_context.values())
