@@ -35,7 +35,11 @@ from litassist.verification_chain import run_cove_verification
 @click.command()
 @click.argument("documents", nargs=-1, required=True, type=click.Path(exists=True))
 @click.argument("query")
-@click.option("--noverify", is_flag=True, help="Skip standard verification (does not affect --cove)")
+@click.option(
+    "--noverify",
+    is_flag=True,
+    help="Skip standard verification (does not affect --cove)",
+)
 @click.option("--cove", is_flag=True, help="Use Chain of Verification (experimental)")
 @click.option(
     "--diversity",
@@ -127,7 +131,11 @@ def draft(ctx, documents, query, noverify, cove, diversity, output):
     context_parts = []
 
     if structured_content["case_facts"]:
-        context_parts.append("=== CASE FACTS ===\n" + structured_content["case_facts"] + "\n=== END CASE FACTS ===")
+        context_parts.append(
+            "=== CASE FACTS ===\n"
+            + structured_content["case_facts"]
+            + "\n=== END CASE FACTS ==="
+        )
 
     if structured_content["strategies"]:
         context_parts.append(
@@ -137,7 +145,9 @@ def draft(ctx, documents, query, noverify, cove, diversity, output):
         )
 
     for doc_path, text in structured_content["other_text"]:
-        context_parts.append(f"=== SUPPORTING DOCUMENT: {doc_path} ===\n{text}\n=== END SUPPORTING DOCUMENT: {doc_path} ===")
+        context_parts.append(
+            f"=== SUPPORTING DOCUMENT: {doc_path} ===\n{text}\n=== END SUPPORTING DOCUMENT: {doc_path} ==="
+        )
 
     combined_text_context = "\n\n".join(context_parts) if context_parts else ""
 
@@ -193,9 +203,11 @@ def draft(ctx, documents, query, noverify, cove, diversity, output):
         except Exception as e:
             raise click.ClickException(f"Pinecone retrieval error: {e}")
 
-        retrieved_context = "\n\n=== RETRIEVED CONTEXT ===\n" + "\n\n".join(
-            context_list
-        ) + "\n=== END RETRIEVED CONTEXT ==="
+        retrieved_context = (
+            "\n\n=== RETRIEVED CONTEXT ===\n"
+            + "\n\n".join(context_list)
+            + "\n=== END RETRIEVED CONTEXT ==="
+        )
 
     # Combine all context with proper === separation
     context = combined_text_context
@@ -241,7 +253,7 @@ def draft(ctx, documents, query, noverify, cove, diversity, output):
         raise click.ClickException(f"LLM draft error: {e}")
 
     # Note: Citation verification now handled automatically in LLMClient.complete()
-    
+
     # Apply standard verification (uses verification chain like extractfacts/strategy)
     if not noverify:
         content, _ = verify_content_if_needed(
@@ -253,37 +265,59 @@ def draft(ctx, documents, query, noverify, cove, diversity, output):
 
     # Track critiques for appending to output
     critiques = []
-    
+
     # Optional CoVe verification
     if cove:
         try:
             click.echo(info_message("Running Chain of Verification..."))
             original_content = content  # Capture original BEFORE regeneration
-            content, cove_results = run_cove_verification(content, 'draft')
-            
+            content, cove_results = run_cove_verification(content, "draft")
+
             # Capture CoVe dialogue for critique section
-            if 'cove' in cove_results:
-                critiques.append(("CoVe Stage 1: Questions Generated", cove_results['cove']['questions']))
-                critiques.append(("CoVe Stage 2: Independent Answers", cove_results['cove']['answers']))
-                if cove_results['cove']['issues']:
-                    critiques.append(("CoVe Stage 3: Issues Identified", cove_results['cove']['issues']))
-            
-            if not cove_results['cove']['passed']:
+            if "cove" in cove_results:
+                critiques.append(
+                    (
+                        "CoVe Stage 1: Questions Generated",
+                        cove_results["cove"]["questions"],
+                    )
+                )
+                critiques.append(
+                    (
+                        "CoVe Stage 2: Independent Answers",
+                        cove_results["cove"]["answers"],
+                    )
+                )
+                if cove_results["cove"]["issues"]:
+                    critiques.append(
+                        (
+                            "CoVe Stage 3: Issues Identified",
+                            cove_results["cove"]["issues"],
+                        )
+                    )
+
+            if not cove_results["cove"]["passed"]:
                 # Content has been regenerated to fix issues
-                click.echo(success_message("CoVe corrected issues - document regenerated"))
+                click.echo(
+                    success_message("CoVe corrected issues - document regenerated")
+                )
                 # Log regeneration details for audit trail
-                save_log("draft_cove_regeneration", {
-                    "original_length": len(original_content),
-                    "regenerated_length": len(content),
-                    "issues_fixed": cove_results['cove']['issues'],
-                    "model": "See cove_draft_summary.json for model details"
-                })
+                save_log(
+                    "draft_cove_regeneration",
+                    {
+                        "original_length": len(original_content),
+                        "regenerated_length": len(content),
+                        "issues_fixed": cove_results["cove"]["issues"],
+                        "model": "See cove_draft_summary.json for model details",
+                    },
+                )
             else:
-                click.echo(success_message("CoVe verification passed - no issues found"))
+                click.echo(
+                    success_message("CoVe verification passed - no issues found")
+                )
         except Exception as e:
             click.echo(warning_message(f"CoVe verification failed: {e}"))
             # Continue without CoVe if it fails
-    
+
     # Check for potential hallucinations
     hallucination_warnings = detect_factual_hallucinations(content, context)
     if hallucination_warnings:
@@ -291,18 +325,28 @@ def draft(ctx, documents, query, noverify, cove, diversity, output):
         warning_text = "The following potentially hallucinated facts were detected:\n"
         for warning in hallucination_warnings:
             warning_text += f"- {warning}\n"
-        warning_text += "\nPlease verify all facts against source documents before use.\n"
-        warning_text += "Replace any invented details with placeholders like [TO BE PROVIDED]."
+        warning_text += (
+            "\nPlease verify all facts against source documents before use.\n"
+        )
+        warning_text += (
+            "Replace any invented details with placeholders like [TO BE PROVIDED]."
+        )
         critiques.append(("Factual Accuracy Warning", warning_text))
-        
+
         # Also add to main content for visibility
-        warning_header = "=== FACTUAL ACCURACY WARNING ===\n"
-        warning_header += "The following potentially hallucinated facts were detected:\n"
+        warning_header = "# FACTUAL ACCURACY WARNING\n\n"
+        warning_header += (
+            "The following potentially hallucinated facts were detected:\n"
+        )
         for warning in hallucination_warnings:
             warning_header += f"- {warning}\n"
-        warning_header += "\nPlease verify all facts against source documents before use.\n"
-        warning_header += "Replace any invented details with placeholders like [TO BE PROVIDED].\n"
-        warning_header += "=" * 32 + "\n\n"
+        warning_header += (
+            "\nPlease verify all facts against source documents before use.\n"
+        )
+        warning_header += (
+            "Replace any invented details with placeholders like [TO BE PROVIDED].\n\n"
+        )
+        warning_header += "---\n\n"
         content = warning_header + content
 
     # Save output using utility
@@ -311,22 +355,22 @@ def draft(ctx, documents, query, noverify, cove, diversity, output):
         content,
         "" if output else query,
         metadata={"Query": query, "Documents": ", ".join(documents)},
-        critique_sections=critiques if critiques else None
+        critique_sections=critiques if critiques else None,
     )
 
     # Reasoning trace is embedded in the main output, not saved separately
     extra_files = None
 
-    # Save audit log
+    # Save audit log (without response content)
     save_log(
         "draft",
         {
             "inputs": {
                 "documents": list(documents),
                 "query": query,
-                "context": context,
+                "context": context if context else None,
             },
-            "response": content,
+            # Response content removed - already logged by LLMClient separately
             "usage": usage,
             "verification": "cove_applied" if cove else "disabled",
             "output_file": output_file,

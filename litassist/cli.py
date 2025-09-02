@@ -45,26 +45,27 @@ def cli(ctx, log_format, verbose):
     """
     # Set up logging first
     from litassist.logging_utils import setup_logging
+
     log_file = setup_logging(verbose=verbose)
-    
+
     # Ensure context object exists and store logging info
     ctx.ensure_object(dict)
     ctx.obj["log_file"] = log_file
     ctx.obj["verbose"] = verbose
-    
+
     # Show log file location if verbose
     if verbose:
         click.echo(f"[INFO] Logging to: {log_file}")
-    
+
     # Load config after logging is set up
     config = load_config()
-    
+
     # Use config.yaml value if no CLI option provided
     if log_format is None:
         log_format = config.log_format
     # Store the chosen log format for downstream use
     ctx.obj["log_format"] = log_format
-    
+
     logging.debug(
         f"Log format set to: {log_format} (from {'CLI' if ctx.params.get('log_format') else 'config.yaml'})"
     )
@@ -198,19 +199,19 @@ def validate_credentials(show_progress=True):
 def test_scraping_capabilities():
     """Test web scraping functionality for both plain HTTP and Selenium."""
     print("Verifying web scraping capabilities...")
-    
+
     # Import utilities for colored output
     from litassist.utils import warning_message, error_message
-    
+
     # Test plain HTTP scraping
     print("  - Testing plain HTTP scraping... ", end="", flush=True)
     try:
         from litassist.commands.lookup.fetchers import _fetch_url_content
-        
+
         # Test with a reliable static HTML page
         test_url = "https://webscraper.io/test-sites"  # Dedicated scraping test site
         content = _fetch_url_content(test_url, timeout=5)
-        
+
         if content and len(content) > 1000:  # webscraper.io has substantial content
             print(f"OK (fetched {len(content)} chars)")
         else:
@@ -219,22 +220,29 @@ def test_scraping_capabilities():
     except Exception as e:
         print("FAILED")
         print(f"    {error_message(f'HTTP scraping error: {e}')}")
-    
+
     # Test Selenium scraping
     print("  - Testing Selenium scraping... ", end="", flush=True)
     try:
-        from litassist.commands.lookup.fetchers import SELENIUM_AVAILABLE, _fetch_url_content_selenium
-        
+        from litassist.commands.lookup.fetchers import (
+            SELENIUM_AVAILABLE,
+            _fetch_url_content_selenium,
+        )
+
         if not SELENIUM_AVAILABLE:
             print("")  # New line
-            print(f"    {warning_message('Selenium not installed - install with: pip install selenium')}")
+            print(
+                f"    {warning_message('Selenium not installed - install with: pip install selenium')}"
+            )
         else:
             # Test with a page that has substantial content
             test_url = "https://webscraper.io/test-sites/e-commerce/allinone"  # Dedicated scraping test site
             content = _fetch_url_content_selenium(test_url, timeout=10)
-            
+
             # Lowered threshold for test pages after text extraction
-            if content and len(content) > 100:  # Test pages have less text after extraction
+            if (
+                content and len(content) > 100
+            ):  # Test pages have less text after extraction
                 print(f"OK (fetched {len(content)} chars)")
             else:
                 print("FAILED")
@@ -244,12 +252,16 @@ def test_scraping_capabilities():
         error_str = str(e)
         # Check for common issues
         if "chromedriver" in error_str.lower() or "chrome version" in error_str.lower():
-            print(f"    {warning_message('ChromeDriver version mismatch - update with: brew upgrade chromedriver')}")
+            print(
+                f"    {warning_message('ChromeDriver version mismatch - update with: brew upgrade chromedriver')}"
+            )
         elif "session not created" in error_str.lower():
-            print(f"    {warning_message('ChromeDriver/Chrome compatibility issue - check versions')}")
+            print(
+                f"    {warning_message('ChromeDriver/Chrome compatibility issue - check versions')}"
+            )
         else:
             print(f"    {error_message(f'Selenium error: {str(e)[:100]}')}")
-    
+
     print("\nAll scraping tests completed.")
 
 

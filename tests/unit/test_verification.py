@@ -47,7 +47,6 @@ class TestLLMClientVerification:
         content = "This is a simple summary of events"
         assert self.client.should_auto_verify(content, "digest") is False
 
-
     @patch("litassist.utils.save_log")
     @patch("litassist.llm.api_handlers.get_openai_client")
     @patch("litassist.config.CONFIG")
@@ -57,11 +56,11 @@ class TestLLMClientVerification:
         mock_config.or_base = "https://openrouter.ai/api/v1"
         mock_config.or_key = "test-key"
         mock_config.openai_key = "test-key"
-        
+
         # Mock the OpenAI client
         mock_client = MagicMock()
         mock_get_client.return_value = mock_client
-        
+
         mock_response = Mock()
         mock_response.choices = [Mock()]
         mock_response.choices[0].message = Mock(content="Corrected text")
@@ -75,7 +74,7 @@ class TestLLMClientVerification:
                 "prompt_tokens": 100,
                 "completion_tokens": 50,
                 "total_tokens": 150,
-            }
+            },
         )
         mock_client.chat.completions.create.return_value = mock_response
 
@@ -97,11 +96,11 @@ class TestLLMClientVerification:
         mock_config.or_base = "https://openrouter.ai/api/v1"
         mock_config.or_key = "test-key"
         mock_config.openai_key = "test-key"
-        
+
         # Mock the OpenAI client
         mock_client = MagicMock()
         mock_get_client.return_value = mock_client
-        
+
         mock_response = Mock()
         mock_response.choices = [Mock()]
         mock_response.choices[0].message = Mock(content="Thoroughly reviewed content")
@@ -115,7 +114,7 @@ class TestLLMClientVerification:
                 "prompt_tokens": 200,
                 "completion_tokens": 100,
                 "total_tokens": 300,
-            }
+            },
         )
         mock_client.chat.completions.create.return_value = mock_response
 

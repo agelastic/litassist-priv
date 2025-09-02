@@ -124,6 +124,8 @@ PARAMETER_PROFILES = {
         ],
     },
     "xai": {
+        # OpenRouter-specific parameters (min_p, top_a, repetition_penalty) are handled
+        # through extra_body in api_handlers.py, not as direct parameters
         "allowed": [
             "temperature",
             "top_p",
@@ -134,9 +136,7 @@ PARAMETER_PROFILES = {
             "stream",
             "reasoning",  # Grok models support reasoning
             "verbosity",
-            "min_p",
-            "top_a",
-            "repetition_penalty",
+            # OpenRouter-specific params removed from here, handled via extra_body
         ],
     },
     "meta": {
@@ -222,26 +222,28 @@ PARAMETER_PROFILES = {
 }
 
 
-def convert_thinking_effort(effort: str, model_name: str, use_openrouter: bool = True) -> dict:
+def convert_thinking_effort(
+    effort: str, model_name: str, use_openrouter: bool = True
+) -> dict:
     """
     Convert universal thinking_effort to OpenRouter's reasoning object format.
-    
+
     Args:
         effort: Universal effort level (none, minimal, low, medium, high, max)
         model_name: Full model name (e.g., "openai/o3-pro", "anthropic/claude-4")
         use_openrouter: Whether routing through OpenRouter (default True)
-    
+
     Returns:
         Dict with OpenRouter reasoning object or vendor-specific parameters
     """
-    
+
     if effort == "none":
         return {}  # Don't send reasoning parameter
-    
+
     # OpenRouter unified reasoning object approach
     if use_openrouter:
         model_family = get_model_family(model_name)
-        
+
         # Check model type for appropriate sub-parameters
         if model_family in ["openai_reasoning", "gpt5", "xai"]:
             # Effort-based models (OpenAI, Grok, GPT-5)
@@ -250,37 +252,35 @@ def convert_thinking_effort(effort: str, model_name: str, use_openrouter: bool =
                 "low": "low",
                 "medium": "medium",
                 "high": "high",
-                "max": "high"  # Map max to highest available
+                "max": "high",  # Map max to highest available
             }
             mapped_effort = effort_map.get(effort, "medium")
-            
+
             # Only include minimal for GPT-5 and o4-mini
-            if mapped_effort == "minimal" and model_family not in ["gpt5"] and "o4" not in model_name:
+            if (
+                mapped_effort == "minimal"
+                and model_family not in ["gpt5"]
+                and "o4" not in model_name
+            ):
                 mapped_effort = "low"  # Fallback for non-GPT-5/o4 models
-            
+
             # Special handling for o4-mini with summary field
             if "o4" in model_name:
                 return {
                     "reasoning": {
                         "effort": mapped_effort,
-                        "summary": "auto"  # New o4 feature for automatic summarization
+                        "summary": "auto",  # New o4 feature for automatic summarization
                     }
                 }
             # GPT-5 supports both reasoning and verbosity
             elif model_family == "gpt5":
                 return {
-                    "reasoning": {
-                        "effort": mapped_effort
-                    }
+                    "reasoning": {"effort": mapped_effort}
                     # Verbosity handled separately via convert_verbosity
                 }
             else:
-                return {
-                    "reasoning": {
-                        "effort": mapped_effort
-                    }
-                }
-        
+                return {"reasoning": {"effort": mapped_effort}}
+
         elif model_family in ["claude4", "anthropic"]:
             # Token-based models (Anthropic)
             token_map = {
@@ -288,14 +288,10 @@ def convert_thinking_effort(effort: str, model_name: str, use_openrouter: bool =
                 "low": 1024,
                 "medium": 8192,
                 "high": 16384,
-                "max": 32000  # Max allowed by OpenRouter
+                "max": 32000,  # Max allowed by OpenRouter
             }
-            return {
-                "reasoning": {
-                    "max_tokens": token_map.get(effort, 8192)
-                }
-            }
-        
+            return {"reasoning": {"max_tokens": token_map.get(effort, 8192)}}
+
         elif model_family == "google":
             # Google/Gemini models - try unified reasoning
             effort_map = {
@@ -303,19 +299,15 @@ def convert_thinking_effort(effort: str, model_name: str, use_openrouter: bool =
                 "low": "low",
                 "medium": "medium",
                 "high": "high",
-                "max": "high"
+                "max": "high",
             }
-            return {
-                "reasoning": {
-                    "effort": effort_map.get(effort, "medium")
-                }
-            }
-    
+            return {"reasoning": {"effort": effort_map.get(effort, "medium")}}
+
     else:
         # Direct vendor API calls (if not using OpenRouter)
         # This path is rarely used as we route most through OpenRouter
         model_family = get_model_family(model_name)
-        
+
         if model_family in ["openai_reasoning", "gpt5"]:
             # Direct OpenAI API uses reasoning_effort
             effort_map = {
@@ -323,13 +315,13 @@ def convert_thinking_effort(effort: str, model_name: str, use_openrouter: bool =
                 "low": "low",
                 "medium": "medium",
                 "high": "high",
-                "max": "high"
+                "max": "high",
             }
             mapped = effort_map.get(effort, "medium")
             if mapped == "minimal" and model_family != "gpt5":
                 mapped = "low"
             return {"reasoning_effort": mapped}
-        
+
         elif model_family in ["anthropic", "claude4"]:
             # Direct Anthropic API format
             token_map = {
@@ -337,36 +329,28 @@ def convert_thinking_effort(effort: str, model_name: str, use_openrouter: bool =
                 "low": 1024,
                 "medium": 8192,
                 "high": 16384,
-                "max": 32768
+                "max": 32768,
             }
             budget = token_map.get(effort, 8192)
-            return {
-                "thinking": {
-                    "enabled": True,
-                    "budget_tokens": budget
-                }
-            }
-        
+            return {"thinking": {"enabled": True, "budget_tokens": budget}}
+
         elif model_family == "google":
             # Direct Google API format
             return {
-                "thinking_config": {
-                    "include_thoughts": True,
-                    "thinking_budget": -1
-                }
+                "thinking_config": {"include_thoughts": True, "thinking_budget": -1}
             }
-    
+
     return {}
 
 
 def convert_verbosity(level: str, model_name: str = None) -> dict:
     """
     Convert verbosity level to API parameter.
-    
+
     Args:
         level: Verbosity level (low, medium, high)
         model_name: Optional model name for model-specific handling
-    
+
     Returns:
         Dict with verbosity parameter if valid
     """
@@ -392,6 +376,19 @@ def get_model_family(model_name: str) -> str:
     return "default"
 
 
+def get_openrouter_params() -> set:
+    """
+    Get the set of OpenRouter-specific parameters that need special handling.
+
+    These parameters are not part of the standard OpenAI API and must be
+    passed through extra_body when using the OpenAI SDK with OpenRouter.
+
+    Returns:
+        Set of parameter names that are OpenRouter-specific
+    """
+    return {"reasoning", "min_p", "top_a", "repetition_penalty"}
+
+
 def get_model_parameters(model_name: str, requested_params: dict) -> dict:
     """
     Dynamically filter parameters based on model patterns.
@@ -408,49 +405,58 @@ def get_model_parameters(model_name: str, requested_params: dict) -> dict:
     """
     # Determine if routing through OpenRouter
     use_openrouter = "/" in model_name and not model_name.startswith("direct/")
-    
+
     model_family = get_model_family(model_name)
     profile = PARAMETER_PROFILES.get(model_family, PARAMETER_PROFILES["default"])
 
     filtered = {}
     transforms = profile.get("transforms", {})
     allowed = profile.get("allowed", [])
-    
+
     # Copy parameters to avoid modifying original
     params_to_process = requested_params.copy()
-    
+
     # Handle thinking_effort conversion FIRST (highest priority)
-    if "thinking_effort" in params_to_process and params_to_process["thinking_effort"] is not None:
+    if (
+        "thinking_effort" in params_to_process
+        and params_to_process["thinking_effort"] is not None
+    ):
         effort = params_to_process.pop("thinking_effort")
         reasoning_params = convert_thinking_effort(effort, model_name, use_openrouter)
         filtered.update(reasoning_params)
-        
+
         # CRITICAL: Remove any conflicting parameters to prevent API errors
         # OpenRouter doesn't allow both 'reasoning' and 'reasoning_effort'
         params_to_process.pop("reasoning_effort", None)
         params_to_process.pop("reasoning", None)
         params_to_process.pop("thinking", None)
         params_to_process.pop("thinking_config", None)
-    
+
     # Handle verbosity parameter
     if "verbosity" in params_to_process and params_to_process["verbosity"] is not None:
         verbosity = params_to_process.pop("verbosity")
         verbosity_params = convert_verbosity(verbosity, model_name)
         filtered.update(verbosity_params)
-    
+
+    # Get OpenRouter-specific parameters
+    openrouter_params = get_openrouter_params()
+
     # Process remaining parameters
     for param, value in params_to_process.items():
         # Skip None values
         if value is None:
             continue
-        
+
         # Check if parameter needs transformation
         if param in transforms:
             new_param = transforms[param]
             filtered[new_param] = value
         elif param in allowed:
             filtered[param] = value
-        # Silently drop unsupported parameters
+        elif use_openrouter and param in openrouter_params:
+            # Preserve OpenRouter-specific params - they'll be moved to extra_body in api_handlers
+            filtered[param] = value
+        # Silently drop other unsupported parameters
         # Note: We don't add universal parameters automatically to maintain model-specific restrictions
 
     return filtered
@@ -474,7 +480,7 @@ def supports_system_messages(model_name: str) -> bool:
 class LLMClientFactory:
     """
     Factory class for creating LLMClient instances with command-specific configurations.
-    
+
     All models use "provider/model" format and route through OpenRouter.
 
     This centralizes all model and parameter configurations for each command,
@@ -534,7 +540,7 @@ class LLMClientFactory:
         },
         # Draft - superior technical writing (o3 model with very limited parameter support)
         "draft": {
-            "model": "openai/o3-pro", 
+            "model": "openai/o3-pro",
             "thinking_effort": "high",  # Universal parameter
             "verbosity": "high",  # Comprehensive legal drafting
             "max_completion_tokens": 32768,  # Extended output for comprehensive drafts
@@ -543,7 +549,7 @@ class LLMClientFactory:
         "digest-summary": {
             "model": "anthropic/claude-sonnet-4",
             "temperature": 0.1,
-            "top_p": 0.1,  # Fixed: was 0, too restrictive
+            "top_p": 0.3,  # Fixed: was 0, too restrictive
         },
         "digest-issues": {
             "model": "anthropic/claude-opus-4.1",
@@ -557,8 +563,8 @@ class LLMClientFactory:
         # Other models have smaller limits - see lookup.py line 528
         "lookup": {
             "model": "google/gemini-2.5-pro",
-            "temperature": 0.1,
-            "top_p": 0.2,
+            "temperature": 0.2,
+            "top_p": 0.4,
             "thinking_effort": "low",  # Fast thinking for rapid search results
             "verbosity": "low",  # Concise search summaries
             "force_verify": False,  # Don't force strict verification
@@ -566,23 +572,23 @@ class LLMClientFactory:
         # Verification - automatic verification for high-risk commands
         "verification": {
             "model": "anthropic/claude-opus-4.1",
-            "temperature": 0,
-            "top_p": 0.2,
+            "temperature": 0.1,
+            "top_p": 0.3,
             "thinking_effort": "high",
             "force_verify": False,  # Don't double-verify since this IS verification
         },
         # Verify sub-commands with specific model assignments
         "verify-reasoning": {
             "model": "openai/o3-pro",  # o3-pro for complex reasoning trace extraction
-            "temperature": 0,
-            "top_p": 0.2,
+            "temperature": 0.1,
+            "top_p": 0.3,
             "thinking_effort": "high",  # Universal parameter, translates to reasoning_effort
             "force_verify": False,
         },
         "verify-soundness": {
             "model": "anthropic/claude-opus-4.1",  # Opus for soundness checking
-            "temperature": 0,
-            "top_p": 0.2,
+            "temperature": 0.1,
+            "top_p": 0.3,
             "thinking_effort": "high",
             "force_verify": False,
         },
@@ -846,9 +852,6 @@ class LLMClient(LLMVerificationMixin):
         self.default_params = default_params
         self._client = None  # Will be created when needed
 
-
-
-
     # Add heartbeat messages so users see progress during lengthy LLM calls
     # The verification helpers already had their own heartbeat wrapper, but that
     # resulted in progress messages only during the verification stage.  By
@@ -864,7 +867,7 @@ class LLMClient(LLMVerificationMixin):
     # The enclosing `complete` method now emits heartbeat updates, so we no
     # longer need a second heartbeat layer here. Retaining only the timing
     # decorator avoids duplicated progress messages.
-    @heartbeat(CONFIG.heartbeat_interval)
+    @heartbeat(CONFIG.heartbeat_interval if CONFIG else 15)
     @timed
     def complete(
         self,
@@ -1034,9 +1037,7 @@ class LLMClient(LLMVerificationMixin):
             # Citation verification workflow
             try:
                 content, verification_issues = process_citation_verification(
-                    content=content,
-                    client_instance=self,
-                    skip_verification=False
+                    content=content, client_instance=self, skip_verification=False
                 )
 
             except CitationVerificationError as e:
@@ -1048,9 +1049,9 @@ class LLMClient(LLMVerificationMixin):
                         model_name=model_name,
                         messages=messages,
                         params=params,
-                        validate_func=self.validate_and_verify_citations
+                        validate_func=self.validate_and_verify_citations,
                     )
-                    
+
                     # Display success message for fully verified retries
                     if not retry_issues:
                         try:
@@ -1101,4 +1102,3 @@ class LLMClient(LLMVerificationMixin):
         )
 
         return content, usage
-

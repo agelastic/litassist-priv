@@ -31,16 +31,19 @@ from litassist.config import CONFIG
 # Custom exception classes for retry logic
 class RetryableAPIError(Exception):
     """Custom exception for retryable API errors."""
+
     pass
 
 
 class StreamingAPIError(Exception):
     """Custom exception for streaming-related API errors."""
+
     pass
 
 
 class NonRetryableAPIError(Exception):
     """Errors that should not be retried (413, 400 with specific messages)."""
+
     pass
 
 
@@ -50,19 +53,19 @@ logger = logging.getLogger(__name__)
 def get_openai_client(model_name: str) -> OpenAI:
     """
     Get or create OpenAI client with appropriate configuration.
-    
+
     Routes through OpenRouter for all models (indicated by "/" in model name).
-    
+
     Determines whether to use OpenRouter or direct OpenAI API based on the model name
     and configures the client accordingly. This function handles the routing logic
     for different model providers through the unified OpenAI client interface.
-    
+
     Args:
         model_name: The model identifier (e.g., 'openai/gpt-4', 'anthropic/claude-sonnet-4')
-    
+
     Returns:
         Configured OpenAI client instance
-        
+
     Note:
         - Models with "/" prefix (except "openai/") are routed through OpenRouter
         - OpenAI reasoning models (o1, o3 series) always use OpenRouter for BYOK access
@@ -70,7 +73,7 @@ def get_openai_client(model_name: str) -> OpenAI:
     """
     # Avoid circular import by importing locally
     from .client import get_model_family
-    
+
     # Determine if we need OpenRouter or direct OpenAI
     model_family = get_model_family(model_name)
     use_openrouter = (
@@ -90,19 +93,19 @@ def get_openai_client(model_name: str) -> OpenAI:
 def parse_openrouter_error(error_info: Dict[str, Any]) -> Tuple[str, str]:
     """
     Parse Google API errors from OpenRouter response.
-    
+
     OpenRouter provides detailed error information from underlying providers like Google
     in a nested format. This function extracts and classifies these errors to provide
     actionable error messages and appropriate retry behavior.
-    
+
     Args:
         error_info: Error information dictionary from OpenRouter response
-        
+
     Returns:
         tuple: (error_type, error_message) where error_type is one of:
                'auth', 'quota', 'rate_limit', 'billing', 'disabled',
                'permission', 'context_length', 'other'
-               
+
     Error Classifications:
         - auth: Authentication failures, invalid API keys
         - quota: API quota exceeded
@@ -191,29 +194,31 @@ def parse_openrouter_error(error_info: Dict[str, Any]) -> Tuple[str, str]:
     return "unknown", error_msg
 
 
-def execute_api_call_with_retry(model_name: str, messages: list, filtered_params: dict, get_openai_client_func=None) -> Any:
+def execute_api_call_with_retry(
+    model_name: str, messages: list, filtered_params: dict, get_openai_client_func=None
+) -> Any:
     """
     Execute API call with comprehensive retry logic and error handling.
-    
+
     This function implements a robust retry mechanism for LLM API calls, handling
     various types of transient and permanent errors. It uses exponential backoff
     for retryable errors and provides detailed error classification and guidance.
-    
+
     Args:
         model_name: The model identifier for the API call
         messages: List of message dictionaries for the chat completion
         filtered_params: Parameters dictionary filtered for model compatibility
         get_openai_client_func: Optional function to get OpenAI client (defaults to module function)
-        
+
     Returns:
         API response object from successful completion
-        
+
     Raises:
         RetryableAPIError: For errors that should be retried (rate limits, overload)
         NonRetryableAPIError: For errors that shouldn't be retried (413, context length)
         StreamingAPIError: For streaming-related errors
         Exception: For other API errors with detailed messages
-        
+
     Retry Behavior:
         - Retries up to 5 times with exponential backoff
         - No wait time during tests (PYTEST_CURRENT_TEST environment variable)
@@ -223,7 +228,7 @@ def execute_api_call_with_retry(model_name: str, messages: list, filtered_params
     # Use module function if not provided
     if get_openai_client_func is None:
         get_openai_client_func = get_openai_client
-    
+
     # Define retryable error types
     retry_errors = (
         APIConnectionError,
@@ -244,19 +249,28 @@ def execute_api_call_with_retry(model_name: str, messages: list, filtered_params
 
     def _call_with_streaming_wrap():
         """Internal wrapper for API call with comprehensive error handling."""
+        # Avoid circular import by importing locally
+        from .client import get_openrouter_params
+
         try:
             # Get the appropriate client
             client = get_openai_client_func(model_name)
 
             # Extract OpenRouter-specific parameters that need to go in extra_body
             extra_body = {}
-            if "reasoning" in filtered_params:
-                extra_body["reasoning"] = filtered_params.pop("reasoning")
-            
+            # Get OpenRouter-specific parameters from centralized definition
+            openrouter_params = get_openrouter_params()
+            for param in openrouter_params:
+                if param in filtered_params:
+                    extra_body[param] = filtered_params.pop(param)
+
             # Create the request with extra_body for OpenRouter parameters
             if extra_body:
                 resp = client.chat.completions.create(
-                    model=model_name, messages=messages, extra_body=extra_body, **filtered_params
+                    model=model_name,
+                    messages=messages,
+                    extra_body=extra_body,
+                    **filtered_params,
                 )
             else:
                 resp = client.chat.completions.create(
@@ -280,9 +294,7 @@ def execute_api_call_with_retry(model_name: str, messages: list, filtered_params
                             f"{error_msg}. Consider waiting or upgrading your Google API quota"
                         )
                     elif error_type == "rate_limit":
-                        raise RetryableAPIError(
-                            f"{error_msg}. Will retry after delay"
-                        )
+                        raise RetryableAPIError(f"{error_msg}. Will retry after delay")
                     elif error_type == "billing":
                         raise Exception(
                             f"{error_msg}. Enable billing at https://console.cloud.google.com/billing"
@@ -316,7 +328,7 @@ def execute_api_call_with_retry(model_name: str, messages: list, filtered_params
                 else:
                     raise Exception(f"API Error: {error_msg}")
             return resp
-            
+
         except Exception as e:
             # Check if it's a 413 or similar non-retryable error
             error_str = str(e)

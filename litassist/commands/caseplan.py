@@ -13,7 +13,7 @@ from litassist.utils import (
     save_command_output,
 )
 from litassist.llm import LLMClientFactory
-from litassist.utils import saved_message, tip_message, success_message
+from litassist.utils import saved_message, tip_message, success_message, warning_message
 from litassist.prompts import PROMPTS
 
 
@@ -30,7 +30,7 @@ def extract_cli_commands(plan_content):
         "",
     ]
 
-    lines = plan_content.split('\n')
+    lines = plan_content.split("\n")
     lines_iter = iter(enumerate(lines))
     current_phase = "Initial Setup"
 
@@ -38,70 +38,80 @@ def extract_cli_commands(plan_content):
         stripped_line = line.strip()
 
         # Track current phase/section - handle various formats
-        if 'PHASE' in stripped_line.upper() and ':' in stripped_line:
+        if "PHASE" in stripped_line.upper() and ":" in stripped_line:
             # Extract phase name after colon for better formatting
-            phase_parts = stripped_line.split(':', 1)
+            phase_parts = stripped_line.split(":", 1)
             if len(phase_parts) > 1:
                 # Clean up the phase number part and description
-                phase_num = phase_parts[0].replace('#', '').strip()
+                phase_num = phase_parts[0].replace("#", "").strip()
                 phase_desc = phase_parts[1].strip()
                 current_phase = f"{phase_num}: {phase_desc}"
             else:
-                current_phase = stripped_line.replace('#', '').strip()
+                current_phase = stripped_line.replace("#", "").strip()
 
         # Look for bash code blocks
-        if stripped_line == '```bash':
+        if stripped_line == "```bash":
             block_content = []
             current_command = []
-            
+
             # Collect all lines within the code block
             for _, block_line in lines_iter:
-                if block_line.strip() == '```':
+                if block_line.strip() == "```":
                     # Save any pending command
                     if current_command:
-                        block_content.append(' '.join(current_command))
+                        block_content.append(" ".join(current_command))
                     break
-                
+
                 # Check if this line starts a new command or continues the previous one
-                if block_line.strip().startswith('litassist'):
+                if block_line.strip().startswith("litassist"):
                     # Save previous command if exists
                     if current_command:
-                        block_content.append(' '.join(current_command))
+                        block_content.append(" ".join(current_command))
                     # Start new command
                     current_command = [block_line.rstrip()]
-                elif current_command and (block_line.startswith('  ') or block_line.endswith('\\') or block_line.strip().startswith('--') or block_line.strip().startswith('"')):
+                elif current_command and (
+                    block_line.startswith("  ")
+                    or block_line.endswith("\\")
+                    or block_line.strip().startswith("--")
+                    or block_line.strip().startswith('"')
+                ):
                     # This is a continuation of the current command
                     # Remove trailing backslash if present
                     cleaned_line = block_line.rstrip()
-                    if cleaned_line.endswith('\\'):
+                    if cleaned_line.endswith("\\"):
                         cleaned_line = cleaned_line[:-1].rstrip()
                     current_command.append(cleaned_line.strip())
-            
+
             # Add commands from this block
             if block_content:
                 commands.append(f"\n# {current_phase}")
                 commands.extend(block_content)
 
         # Fallback for commands not in a block
-        elif stripped_line.startswith('litassist'):
+        elif stripped_line.startswith("litassist"):
             commands.append(f"\n# {current_phase}")
             # Check if this is a multi-line command
             full_command = [line.rstrip()]
             next_idx = idx + 1
-            while next_idx < len(lines) and (lines[next_idx].startswith('  ') or lines[next_idx].rstrip().endswith('\\')):
+            while next_idx < len(lines) and (
+                lines[next_idx].startswith("  ")
+                or lines[next_idx].rstrip().endswith("\\")
+            ):
                 cleaned_line = lines[next_idx].rstrip()
-                if cleaned_line.endswith('\\'):
+                if cleaned_line.endswith("\\"):
                     cleaned_line = cleaned_line[:-1].rstrip()
                 full_command.append(cleaned_line.strip())
                 next_idx += 1
-            commands.append(' '.join(full_command))
+            commands.append(" ".join(full_command))
 
-    commands.extend([
-        "\n# End of extracted commands",
-        "# Remember to update case_facts.txt after digest phases",
-    ])
+    commands.extend(
+        [
+            "\n# End of extracted commands",
+            "# Remember to update case_facts.txt after digest phases",
+        ]
+    )
 
-    return '\n'.join(commands)
+    return "\n".join(commands)
 
 
 @click.command()
@@ -114,8 +124,18 @@ def extract_cli_commands(plan_content):
     help="Budget constraint level (if not specified, LLM will recommend)",
 )
 @click.option("--output", type=str, help="Custom output filename prefix")
+@click.option(
+    "--verify",
+    is_flag=True,
+    help="Not supported - caseplan outputs are not verified. Use 'litassist verify' command for verification.",
+)
+@click.option(
+    "--noverify",
+    is_flag=True,
+    help="Not supported - caseplan has no internal verification.",
+)
 @timed
-def caseplan(case_facts, context, budget, output):
+def caseplan(case_facts, context, budget, output, verify, noverify):
     """
     Generate customized litigation workflow plan based on case facts.
 
@@ -131,6 +151,20 @@ def caseplan(case_facts, context, budget, output):
         litassist caseplan case_facts.txt --context "property dispute"
         litassist caseplan case_facts.txt --budget minimal
     """
+    # Handle unsupported verification flags
+    if verify:
+        click.echo(
+            warning_message(
+                "--verify not supported: This command has no internal verification. Use 'litassist verify' for post-processing verification."
+            )
+        )
+    if noverify:
+        click.echo(
+            warning_message(
+                "--noverify not supported: This command has no verification to skip."
+            )
+        )
+
     facts_content = case_facts.read()
     validate_file_size_limit(facts_content, 50000, "Case facts")
 
@@ -145,8 +179,10 @@ def caseplan(case_facts, context, budget, output):
         user_prompt = PROMPTS.get("analysis.base_case_facts_prompt").format(
             facts_content=facts_content
         )
-        
-        user_prompt += f"\n\n{PROMPTS.get('commands.caseplan.budget_assessment_instructions')}"
+
+        user_prompt += (
+            f"\n\n{PROMPTS.get('commands.caseplan.budget_assessment_instructions')}"
+        )
 
         @timed
         def assess_budget():
@@ -175,7 +211,7 @@ def caseplan(case_facts, context, budget, output):
                 "inputs": {"case_facts": facts_content},
                 "params": {"model": llm_client.model},
                 "usage": usage,
-                "response": assessment,
+                # Response content removed - already logged by LLMClient separately
                 "output_file": output_file,
             },
         )
@@ -187,7 +223,9 @@ def caseplan(case_facts, context, budget, output):
         click.echo("=" * 60)
         msg = saved_message(f'Recommendation saved to: "{output_file}"')
         click.echo(f"\n{msg}")
-        click.echo(f"\n{tip_message('To generate full plan, run again with recommended budget:')}")
+        click.echo(
+            f"\n{tip_message('To generate full plan, run again with recommended budget:')}"
+        )
         click.echo("   e.g., litassist caseplan case_facts.txt --budget standard")
 
     else:
@@ -239,28 +277,32 @@ def caseplan(case_facts, context, budget, output):
             metadata["Context"] = context
 
         output_file = save_command_output(
-            f"{output}_plan" if output else "caseplan", 
-            plan_content, 
-            "" if output else case_facts.name, 
-            metadata=metadata
+            f"{output}_plan" if output else "caseplan",
+            plan_content,
+            "" if output else case_facts.name,
+            metadata=metadata,
         )
 
         # Extract and save CLI commands
         extracted_commands = extract_cli_commands(plan_content)
         commands_file = save_command_output(
-            f"{output}_commands" if output else f"caseplan_commands_{budget}", 
-            extracted_commands, 
-            "" if output else case_facts.name, 
-            metadata={"Type": "Executable Commands", "Budget": budget}
+            f"{output}_commands" if output else f"caseplan_commands_{budget}",
+            extracted_commands,
+            "" if output else case_facts.name,
+            metadata={"Type": "Executable Commands", "Budget": budget},
         )
 
         save_log(
             "caseplan",
             {
                 "inputs": {"case_facts": facts_content},
-                "params": {"model": llm_client.model, "context": context, "budget": budget},
+                "params": {
+                    "model": llm_client.model,
+                    "context": context,
+                    "budget": budget,
+                },
                 "usage": usage,
-                "response": plan_content,
+                # Response content removed - already logged by LLMClient separately
                 "output_file": output_file,
                 "commands_file": commands_file,
             },

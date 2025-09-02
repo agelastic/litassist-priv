@@ -623,4 +623,5 @@ When saving Claude-generated files to the project:
 - **Trust LLM Output**: Following CLAUDE.md principles - no local parsing of verification results
 
 ---
-Last Updated: 2025-08-23
+Last Updated: 2025-08-30
+- Always use the most common and generic user agent for web access. Never use a weird one that can be filtered out by scraping protections

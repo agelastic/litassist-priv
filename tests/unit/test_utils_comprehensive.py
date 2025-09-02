@@ -61,7 +61,9 @@ class TestFileOperations:
         outcome = "test_outcome"
         metadata = {"key": "value"}
 
-        with patch("litassist.logging_utils.time.strftime", return_value="20240101_120000"):
+        with patch(
+            "litassist.logging_utils.time.strftime", return_value="20240101_120000"
+        ):
             result = save_command_output(command, content, outcome, metadata)
 
         # Check that result contains expected components (path may be absolute)
@@ -80,7 +82,9 @@ class TestFileOperations:
         command = "test_command"
         outcome = "Test/Invalid\\Filename:Characters"
 
-        with patch("litassist.logging_utils.time.strftime", return_value="20240101_120000"):
+        with patch(
+            "litassist.logging_utils.time.strftime", return_value="20240101_120000"
+        ):
             result = save_command_output(command, content, outcome)
 
         # Extract just the filename from the full path
@@ -97,7 +101,8 @@ class TestFileOperations:
         with patch("litassist.logging_utils.open", new_callable=mock_open) as mock_file:
             with patch("litassist.logging_utils.os.makedirs"):
                 with patch(
-                    "litassist.logging_utils.time.strftime", return_value="20240101_120000"
+                    "litassist.logging_utils.time.strftime",
+                    return_value="20240101_120000",
                 ):
                     result = save_command_output("test", "", "empty")
 
@@ -120,7 +125,9 @@ class TestLogging:
             "response": "test response",
         }
 
-        with patch("litassist.logging_utils.time.strftime", return_value="20240101_120000"):
+        with patch(
+            "litassist.logging_utils.time.strftime", return_value="20240101_120000"
+        ):
             save_log(command, log_data)
 
         # Verify file opened for writing
@@ -154,7 +161,9 @@ class TestLogging:
         assert "metadata" in saved_data
         assert saved_data["metadata"]["outcome"] == "test outcome"
 
-    @patch("litassist.logging_utils.open", side_effect=PermissionError("Permission denied"))
+    @patch(
+        "litassist.logging_utils.open", side_effect=PermissionError("Permission denied")
+    )
     @patch("litassist.logging_utils.os.makedirs")
     def test_save_log_permission_error(self, mock_makedirs, mock_file):
         """Test log saving handles permission errors gracefully."""
@@ -236,7 +245,13 @@ class TestReasoningPrompts:
         result = create_reasoning_prompt(base_prompt, command)
 
         assert base_prompt in result
-        assert "Reasoning Trace" in result
+        # Check that some form of strategic reasoning header is present
+        assert (
+            "Overall Strategic Reasoning" in result
+            or "Overall Orthodox Strategic Reasoning" in result
+            or "Overall Unorthodox Strategic Reasoning" in result
+            or "Strategy Selection Reasoning" in result
+        )
         assert "Issue:" in result
         assert "Applicable Law:" in result
         assert "Application to Facts:" in result
@@ -250,14 +265,15 @@ class TestReasoningPrompts:
         for command in commands:
             result = create_reasoning_prompt(base_prompt, command)
             assert base_prompt in result
-            assert "Reasoning Trace" in result
+            # Should have some form of reasoning header
+            assert "Strategic Reasoning" in result or "Selection Reasoning" in result
 
     def test_create_reasoning_prompt_empty_input(self):
         """Test reasoning prompt creation with empty input."""
         result = create_reasoning_prompt("", "strategy")
 
         # Should still contain reasoning structure
-        assert "Reasoning Trace" in result
+        assert "Strategic Reasoning" in result or "Selection Reasoning" in result
         assert "Issue:" in result
 
     def test_extract_reasoning_trace_valid_content(self):
@@ -265,7 +281,7 @@ class TestReasoningPrompts:
         content = """
         Some analysis content here.
         
-        ## Reasoning Trace
+        ## Overall Strategic Reasoning
         Issue: Contract breach dispute
         Applicable Law: Contract formation principles
         Application to Facts: Clear breach occurred on specified date
@@ -287,7 +303,7 @@ class TestReasoningPrompts:
     def test_extract_reasoning_trace_missing_sections(self):
         """Test extraction when some reasoning sections are missing."""
         content = """
-        ## Reasoning Trace
+        ## Overall Strategic Reasoning
         Issue: Contract dispute
         Conclusion: Moderate prospects
         """
@@ -308,7 +324,7 @@ class TestReasoningPrompts:
     def test_extract_reasoning_trace_malformed(self):
         """Test extraction from malformed reasoning trace."""
         content = """
-        ## Reasoning Trace
+        ## Overall Strategic Reasoning
         Malformed content without proper structure
         Random text here
         """
@@ -326,20 +342,20 @@ class TestStrategyFileParsing:
     def test_parse_strategies_file_complete_structure(self):
         """Test parsing of complete strategy file structure."""
         content = """## ORTHODOX STRATEGIES
-1. Traditional contract claim
+### 1. Traditional contract claim
 Standard approach using established precedents.
 
-2. Alternative dispute resolution
+### 2. Alternative dispute resolution
 Mediation and arbitration before litigation.
 
-3. Statutory remedies
+### 3. Statutory remedies
 Consumer protection law applications.
 
 ## UNORTHODOX STRATEGIES
-1. Novel legal theory
+### Strategy 1: Novel legal theory
 Innovative approach to the problem.
 
-2. Strategic timing
+### Strategy 2: Strategic timing
 Delay tactics for better positioning.
 
 ## MOST LIKELY TO SUCCEED
@@ -363,7 +379,7 @@ Facts support immediate resolution.
     def test_parse_strategies_file_partial_sections(self):
         """Test parsing when only some sections are present."""
         content = """## ORTHODOX STRATEGIES
-1. Standard approach
+### 1. Standard approach
 Traditional method.
 
 ## MOST LIKELY TO SUCCEED
@@ -417,7 +433,7 @@ Highest success probability.
 # Area: Contract Law
 
 ## ORTHODOX STRATEGIES
-1. Standard claim
+### 1. Standard claim
 Traditional approach.
 """
 
@@ -431,12 +447,15 @@ Traditional approach.
 class TestContentVerification:
     """Test content verification functionality."""
 
-    @patch('litassist.verification_chain.run_verification_chain')
+    @patch("litassist.verification_chain.run_verification_chain")
     def test_verify_content_if_needed_enabled(self, mock_run_verification_chain):
         """Test content verification when enabled."""
         # Mock the verification chain for strategy command
-        mock_run_verification_chain.return_value = ("Legal analysis content", {"llm": {"corrections_made": False}})
-        
+        mock_run_verification_chain.return_value = (
+            "Legal analysis content",
+            {"llm": {"corrections_made": False}},
+        )
+
         mock_client = MagicMock()
         mock_client.should_auto_verify.return_value = False
         mock_client.verify_with_level.return_value = "Minor corrections needed"
@@ -452,12 +471,15 @@ class TestContentVerification:
         assert result_content == content
         mock_run_verification_chain.assert_called_once_with(content, "strategy")
 
-    @patch('litassist.verification_chain.run_verification_chain')
+    @patch("litassist.verification_chain.run_verification_chain")
     def test_verify_content_if_needed_disabled(self, mock_run_verification_chain):
         """Test content verification when disabled."""
         # Mock the verification chain for strategy command
-        mock_run_verification_chain.return_value = ("Legal analysis content", {"llm": {"corrections_made": False}})
-        
+        mock_run_verification_chain.return_value = (
+            "Legal analysis content",
+            {"llm": {"corrections_made": False}},
+        )
+
         mock_client = MagicMock()
         mock_client.should_auto_verify.return_value = False
 
@@ -482,33 +504,40 @@ class TestContentVerification:
         with pytest.raises(Exception):
             verify_content_if_needed(mock_client, content, "strategy", verify_flag=True)
 
-    @patch('litassist.verification_chain.run_verification_chain')
-    def test_verify_content_if_needed_with_corrections(self, mock_run_verification_chain):
+    @patch("litassist.verification_chain.run_verification_chain")
+    def test_verify_content_if_needed_with_corrections(
+        self, mock_run_verification_chain
+    ):
         """Test verification chain when corrections are made."""
         # Mock the verification chain to return corrections
         mock_run_verification_chain.return_value = (
-            "Corrected legal analysis content", 
-            {"llm": {"corrections_made": True}}
+            "Corrected legal analysis content",
+            {"llm": {"corrections_made": True}},
         )
-        
+
         mock_client = MagicMock()
         content = "Legal analysis content"
-        
+
         result_content, verified = verify_content_if_needed(
             mock_client, content, "strategy", verify_flag=True
         )
-        
+
         # Should return corrected content and True when corrections made
         assert verified is True
         assert result_content == "Corrected legal analysis content"
         mock_run_verification_chain.assert_called_once_with(content, "strategy")
-    
-    @patch('litassist.verification_chain.run_verification_chain')
-    def test_verify_content_if_needed_citation_already_verified(self, mock_run_verification_chain):
+
+    @patch("litassist.verification_chain.run_verification_chain")
+    def test_verify_content_if_needed_citation_already_verified(
+        self, mock_run_verification_chain
+    ):
         """Test that citation validation is skipped when already verified."""
         # Mock the verification chain for strategy command
-        mock_run_verification_chain.return_value = ("Legal analysis content", {"llm": {"corrections_made": False}})
-        
+        mock_run_verification_chain.return_value = (
+            "Legal analysis content",
+            {"llm": {"corrections_made": False}},
+        )
+
         mock_client = MagicMock()
         mock_client.should_auto_verify.return_value = False
         mock_client.verify_with_level.return_value = "Minor corrections needed"
@@ -586,7 +615,8 @@ class TestErrorHandling:
     def test_file_operations_disk_full(self):
         """Test file operations when disk is full."""
         with patch(
-            "litassist.logging_utils.open", side_effect=OSError("No space left on device")
+            "litassist.logging_utils.open",
+            side_effect=OSError("No space left on device"),
         ):
             with pytest.raises(OSError):
                 save_command_output("test", "content", "outcome")

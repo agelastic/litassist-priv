@@ -1,9 +1,11 @@
 """Minimal verification chain orchestrator - no overengineering."""
 
 import time
+import traceback
 from typing import Dict, Optional, Tuple
-from litassist.citation_patterns import validate_citation_patterns
+from litassist.citation_patterns import validate_citation_patterns, extract_citations
 from litassist.citation_verify import verify_all_citations
+from litassist.citation_context import fetch_citation_context
 from litassist.llm import LLMClientFactory
 from litassist.prompts import PROMPTS
 from litassist.logging_utils import save_log
@@ -64,7 +66,7 @@ def run_verification_chain(
 
     # Note: CoVe is now handled directly by extractfacts and strategy commands
     # when --cove flag is passed, to avoid double verification
-    
+
     return content, results
 
 
@@ -106,7 +108,7 @@ def run_cove_verification(
     client_questions = LLMClientFactory.for_command("cove-questions")
     client_answers = LLMClientFactory.for_command("cove-answers")
     client_verify = LLMClientFactory.for_command("cove-verify")
-    
+
     prior_contexts = prior_contexts or {}
 
     # Track all stages for summary logging
@@ -116,7 +118,9 @@ def run_cove_verification(
     context_summary = ""
     if prior_contexts.get("citations"):
         context_summary += "\n\n=== PRIOR VERIFICATION: CITATIONS ===\n"
-        context_summary += "Citation verification found issues that should be addressed.\n"
+        context_summary += (
+            "Citation verification found issues that should be addressed.\n"
+        )
         context_summary += "=== END PRIOR VERIFICATION: CITATIONS ===\n"
     if prior_contexts.get("reasoning"):
         context_summary += "\n\n=== PRIOR VERIFICATION: REASONING ===\n"
@@ -135,13 +139,14 @@ def run_cove_verification(
 
     # Step 1: Generate questions (let LLM do the work)
     questions_prompt = PROMPTS.get("verification.cove.questions_generation").format(
-        context=context_summary,
-        content=content
+        context=context_summary, content=content
     )
 
     # Set stage context for logging
     client_questions.command_context = f"cove_stage1_questions_{command}"
-    questions, usage1 = client_questions.complete([{"role": "user", "content": questions_prompt}])
+    questions, usage1 = client_questions.complete(
+        [{"role": "user", "content": questions_prompt}]
+    )
 
     # Store full information for debugging
     cove_stages["questions"] = {
@@ -154,14 +159,107 @@ def run_cove_verification(
         "model": client_questions.model,
     }
 
-    # Step 2: Answer questions independently (factored approach)
-    answers_prompt = PROMPTS.get("verification.cove.answers_verification").format(
-        content=questions
-    )
+    # NEW Step 1.5: Extract and fetch FULL citation documents
+    legal_context = {}
+    total_context_size = 0
+
+    try:
+        # Extract citations from generated questions
+        citations = extract_citations(questions)
+
+        # Always log extraction result, even if empty
+        save_log(
+            "cove_citation_extraction",
+            {
+                "command": command,
+                "citations_found": list(citations) if citations else [],
+                "count": len(citations) if citations else 0,
+                "questions_length": len(questions),
+            },
+        )
+
+        if citations:
+            # Fetch FULL documents for all citations found
+            legal_context = fetch_citation_context(citations)
+
+            if legal_context:
+                total_context_size = sum(len(v) for v in legal_context.values())
+
+                save_log(
+                    "cove_citation_context",
+                    {
+                        "command": command,
+                        "citations_fetched": list(legal_context.keys()),
+                        "total_chars": total_context_size,
+                        "estimated_tokens": total_context_size // 4,  # Rough estimate
+                    },
+                )
+
+                # Warn if context is very large
+                if total_context_size > 100000:  # ~25k tokens
+                    save_log(
+                        "cove_large_context_warning",
+                        {
+                            "command": command,
+                            "size_chars": total_context_size,
+                            "message": "Large legal context may impact token usage",
+                        },
+                    )
+            else:
+                save_log(
+                    "cove_citation_fetch_empty",
+                    {
+                        "command": command,
+                        "citations_requested": list(citations),
+                        "message": "fetch_citation_context returned empty result",
+                    },
+                )
+        else:
+            save_log(
+                "cove_no_citations_found",
+                {
+                    "command": command,
+                    "questions_sample": questions[:500],
+                    "message": "No citations extracted from questions",
+                },
+            )
+    except Exception as e:
+        # Log with full traceback for debugging
+        save_log(
+            "cove_citation_error",
+            {
+                "command": command,
+                "error": str(e),
+                "error_type": type(e).__name__,
+                "traceback": traceback.format_exc(),
+            },
+        )
+
+    # Step 2: Answer questions with FULL legal documents or without
+    if legal_context:
+        # Build context section with COMPLETE documents
+        context_text = "\n=== LEGAL AUTHORITIES (FULL TEXT) ===\n"
+        for citation, full_text in legal_context.items():
+            context_text += f"\n=== {citation} ===\n"
+            context_text += full_text
+            context_text += f"\n=== END {citation} ===\n\n"
+        context_text += "=== END LEGAL AUTHORITIES ===\n\n"
+
+        # Use enhanced prompt with context
+        answers_prompt = PROMPTS.get("verification.cove.answers_with_context").format(
+            questions=questions, legal_context=context_text
+        )
+    else:
+        # Existing prompt without context
+        answers_prompt = PROMPTS.get("verification.cove.answers_verification").format(
+            content=questions
+        )
 
     # Set stage context for logging
     client_answers.command_context = f"cove_stage2_answers_{command}"
-    answers, usage2 = client_answers.complete([{"role": "user", "content": answers_prompt}])
+    answers, usage2 = client_answers.complete(
+        [{"role": "user", "content": answers_prompt}]
+    )
 
     cove_stages["answers"] = {
         "prompt": answers_prompt,  # Full prompt for legal accountability
@@ -175,13 +273,14 @@ def run_cove_verification(
 
     # Step 3: Detect inconsistencies (let LLM compare)
     verify_prompt = PROMPTS.get("verification.cove.inconsistency_detection").format(
-        context=answers,
-        content=content
+        context=answers, content=content
     )
 
     # Set stage context for logging
     client_verify.command_context = f"cove_stage3_verify_{command}"
-    issues, usage3 = client_verify.complete([{"role": "user", "content": verify_prompt}])
+    issues, usage3 = client_verify.complete(
+        [{"role": "user", "content": verify_prompt}]
+    )
 
     cove_stages["verification"] = {
         "prompt": verify_prompt,  # Full prompt for legal accountability
@@ -195,24 +294,24 @@ def run_cove_verification(
 
     # Determine if verification passed
     passed = "no issues found" in issues.lower()
-    
+
     # Step 4: Generate final verified response (Meta paper's critical step)
     final_content = content
     if not passed:
         # Create final client only when needed
         client_final = LLMClientFactory.for_command("cove-final")
-        
+
         # This is the missing step from the Meta paper - regenerate to fix issues
         regenerate_prompt = PROMPTS.get("verification.cove.regeneration").format(
-            context=issues,
-            prompt=answers,
-            content=content
+            context=issues, prompt=answers, content=content
         )
-        
+
         # Set stage context for logging
         client_final.command_context = f"cove_stage4_regenerate_{command}"
-        final_content, usage4 = client_final.complete([{"role": "user", "content": regenerate_prompt}])
-        
+        final_content, usage4 = client_final.complete(
+            [{"role": "user", "content": regenerate_prompt}]
+        )
+
         cove_stages["regeneration"] = {
             "prompt": regenerate_prompt,  # Full prompt for legal accountability
             "prompt_truncated": regenerate_prompt[:500],
@@ -227,7 +326,7 @@ def run_cove_verification(
         # No regeneration needed
         cove_stages["regeneration"] = {
             "skipped": True,
-            "reason": "No issues found - regeneration not needed"
+            "reason": "No issues found - regeneration not needed",
         }
 
     # Save aggregated CoVe summary log
@@ -250,7 +349,11 @@ def run_cove_verification(
                 usage1.get("total_tokens", 0)
                 + usage2.get("total_tokens", 0)
                 + usage3.get("total_tokens", 0)
-                + (usage4.get("total_tokens", 0) if not passed and 'usage4' in locals() else 0)
+                + (
+                    usage4.get("total_tokens", 0)
+                    if not passed and "usage4" in locals()
+                    else 0
+                )
             ),
         },
     )

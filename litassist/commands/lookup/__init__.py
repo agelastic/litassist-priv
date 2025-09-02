@@ -7,7 +7,7 @@ to produce a structured legal answer citing relevant cases.
 """
 
 import click
-from litassist.config import CONFIG
+from litassist.config import get_config
 from litassist.utils import save_log, timed
 from .search import perform_cse_searches
 from .processors import LookupProcessor
@@ -36,8 +36,20 @@ from .processors import LookupProcessor
 )
 @click.option("--output", type=str, help="Custom output filename prefix")
 @click.option("--no-fetch", is_flag=True, help="Skip content fetching, use URLs only")
+@click.option(
+    "--verify",
+    is_flag=True,
+    help="Not supported - lookup results are not verified. Use 'litassist verify' command for verification.",
+)
+@click.option(
+    "--noverify",
+    is_flag=True,
+    help="Not supported - lookup has no internal verification.",
+)
 @timed
-def lookup(question, mode, extract, comprehensive, context, output, no_fetch):
+def lookup(
+    question, mode, extract, comprehensive, context, output, no_fetch, verify, noverify
+):
     """
     Rapid case-law lookup via Jade CSE + Gemini.
 
@@ -58,34 +70,51 @@ def lookup(question, mode, extract, comprehensive, context, output, no_fetch):
     Raises:
         click.ClickException: If there are errors with the search or LLM API calls.
     """
+    # Handle unsupported verification flags
+    if verify:
+        from litassist.utils import warning_message
+
+        click.echo(
+            warning_message(
+                "--verify not supported: This command has no internal verification. Use 'litassist verify' for post-processing verification."
+            )
+        )
+    if noverify:
+        from litassist.utils import warning_message
+
+        click.echo(
+            warning_message(
+                "--noverify not supported: This command has no verification to skip."
+            )
+        )
+
     # Initialize search service and perform searches
     links, all_snippets = perform_cse_searches(question, comprehensive, context)
-    
+
     # Display found links
     click.echo("Found links:")
     for link in links:
         click.echo(f"- {link}")
 
     # Initialize processor and fetch content
-    processor = LookupProcessor(CONFIG)
+    processor = LookupProcessor(get_config())
     contents = processor.fetch_content(links, all_snippets, no_fetch)
-    
+
     # Build prompt and get LLM response
     content_text, estimated_tokens = processor.prepare_content(contents)
     prompt = processor.build_prompt(
-        question, mode, extract, comprehensive, context, 
-        links, contents, content_text
+        question, mode, extract, comprehensive, context, links, contents, content_text
     )
-    
+
     # Get LLM client with appropriate parameters
     client = processor.get_llm_client(mode, comprehensive)
     system_content = processor.build_system_prompt(extract, comprehensive)
-    
+
     # Execute LLM request with retry logic
     content, usage = processor.execute_llm_request(
         client, system_content, prompt, estimated_tokens, contents
     )
-    
+
     # Save the output
     output_file = processor.save_output(
         content, question, mode, extract, comprehensive, context, output

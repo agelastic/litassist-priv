@@ -42,19 +42,17 @@ def mock_openai():
         # Create mock client instance
         mock_client = Mock()
         mock_openai_class.return_value = mock_client
-        
+
         # Mock embeddings.create and chat.completions.create
         mock_embed = mock_client.embeddings.create
         mock_chat = mock_client.chat.completions.create
-        
+
         # Mock embedding response
         mock_embed.return_value = Mock(data=[Mock(embedding=[0.1] * 1536)])
 
         # Mock chat completion response
         mock_chat.return_value = Mock(
-            choices=[
-                Mock(message=Mock(content="Test response"), finish_reason="stop")
-            ],
+            choices=[Mock(message=Mock(content="Test response"), finish_reason="stop")],
             usage=Mock(total_tokens=100, prompt_tokens=50, completion_tokens=50),
         )
 

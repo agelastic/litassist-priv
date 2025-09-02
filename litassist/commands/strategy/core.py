@@ -43,8 +43,16 @@ from .file_handler import save_strategy_outputs, save_strategy_log
 @click.option(
     "--verify", is_flag=True, help="Enable self-critique pass (default: auto-enabled)"
 )
-@click.option("--noverify", is_flag=True, help="Skip standard verification (does not affect --cove)")
-@click.option("--cove", is_flag=True, help="Use Chain of Verification instead of standard verification")
+@click.option(
+    "--noverify",
+    is_flag=True,
+    help="Skip standard verification (does not affect --cove)",
+)
+@click.option(
+    "--cove",
+    is_flag=True,
+    help="Use Chain of Verification instead of standard verification",
+)
 @click.option("--output", type=str, help="Custom output filename prefix")
 @timed
 def strategy(case_facts, outcome, strategies, verify, noverify, cove, output):
@@ -67,37 +75,40 @@ def strategy(case_facts, outcome, strategies, verify, noverify, cove, output):
         click.ClickException: If case facts are invalid or LLM errors occur
     """
     # Read and validate case facts
+    click.echo(info_message("Validating case facts format..."))
     case_text = case_facts.read()
-    
+
     # Check case facts file size
     validate_file_size_limit(case_text, 100000, "Case facts")
-    
+
     if not validate_case_facts_format(case_text):
         raise click.ClickException(
             "Case facts file must follow the required 10-heading structure. Run 'litassist extractfacts' first."
         )
-    
+
     # Extract legal issues
+    click.echo(info_message("Extracting legal issues..."))
     legal_issues = extract_legal_issues(case_text)
     if not legal_issues:
         raise click.ClickException(
             "Could not extract legal issues from the case facts file."
         )
-    
+
     # Initialize LLM client using factory
     llm_client = LLMClientFactory.for_command("strategy")
-    
+
     # Read and parse strategies file if provided
     strategies_content = ""
     parsed_strategies = None
     if strategies:
+        click.echo(info_message("Reading strategies from brainstorm file..."))
         strategies_content = strategies.read()
-        
+
         # Check strategies file size
         validate_file_size_limit(strategies_content, 100000, "Strategies")
-        
+
         parsed_strategies = parse_strategies_file(strategies_content)
-        
+
         # Display what was found
         click.echo("Using strategies from brainstorm:")
         click.echo(f"  - {parsed_strategies['orthodox_count']} orthodox strategies")
@@ -105,80 +116,97 @@ def strategy(case_facts, outcome, strategies, verify, noverify, cove, output):
         click.echo(
             f"  - {parsed_strategies['most_likely_count']} marked as most likely to succeed"
         )
-        
+
         if parsed_strategies["metadata"]:
             click.echo(
                 f"  - Generated for: {parsed_strategies['metadata'].get('side', 'unknown')} in {parsed_strategies['metadata'].get('area', 'unknown')} law"
             )
-        
+
         # Show warning if no "most likely to succeed" found
         if parsed_strategies["most_likely_count"] == 0:
             click.echo(
                 "  - Warning: No strategies marked as 'most likely to succeed' found"
             )
-    
+
     # Generate strategic options
+    click.echo(info_message("Generating strategic options..."))
     system_prompt = PROMPTS.get("commands.strategy.system")
-    
+
     # Enhance prompt if strategies are provided
     if parsed_strategies and parsed_strategies["most_likely_count"] > 0:
-        system_prompt += "\n\n" + PROMPTS.get("strategies.brainstorm.brainstormed_strategies_context").format(
-            most_likely_count=parsed_strategies['most_likely_count']
-        )
+        system_prompt += "\n\n" + PROMPTS.get(
+            "strategies.brainstorm.brainstormed_strategies_context"
+        ).format(most_likely_count=parsed_strategies["most_likely_count"])
     elif parsed_strategies:
-        system_prompt += "\n\n" + PROMPTS.get("strategies.brainstorm.brainstormed_strategies_context_generic")
-    
+        system_prompt += "\n\n" + PROMPTS.get(
+            "strategies.brainstorm.brainstormed_strategies_context_generic"
+        )
+
     # Use centralized strategic options instructions
     strategic_instructions = PROMPTS.get(
         "strategies.strategy.strategic_options_instructions"
     )
-    
+
     # Build the user prompt with case facts
     base_user_prompt = PROMPTS.get("analysis.case_facts_prompt").format(
-        facts_content=case_text,
-        outcome=outcome,
-        legal_issues=legal_issues
+        facts_content=case_text, outcome=outcome, legal_issues=legal_issues
     )
     base_user_prompt += f"\n\n{strategic_instructions}"
-    
+
     # Add strategies content if provided
     if parsed_strategies:
-        base_user_prompt += "\n" + PROMPTS.get("strategies.brainstorm.brainstormed_strategies_details").format(
-            orthodox_count=parsed_strategies['orthodox_count'],
-            unorthodox_count=parsed_strategies['unorthodox_count'],
-            most_likely_count=parsed_strategies['most_likely_count'],
-            strategies_content=strategies_content
+        base_user_prompt += "\n" + PROMPTS.get(
+            "strategies.brainstorm.brainstormed_strategies_details"
+        ).format(
+            orthodox_count=parsed_strategies["orthodox_count"],
+            unorthodox_count=parsed_strategies["unorthodox_count"],
+            most_likely_count=parsed_strategies["most_likely_count"],
+            strategies_content=strategies_content,
         )
-    
+
     # Create reasoning prompt
     user_prompt = create_reasoning_prompt(base_user_prompt, "strategy")
-    
+
     # Generate strategic options with reasoning
     try:
         strategy_content, strategy_usage = llm_client.complete(
-            [{"role": "system", "content": system_prompt}, 
-             {"role": "user", "content": user_prompt}]
+            [
+                {"role": "system", "content": system_prompt},
+                {"role": "user", "content": user_prompt},
+            ]
         )
     except Exception as e:
         raise click.ClickException(f"LLM strategy generation error: {e}")
-    
+
     # Extract reasoning traces for each option
+    click.echo(info_message("Extracting reasoning traces..."))
     option_traces = []
-    
+
     # Extract options from the strategy content
-    option_pattern = r"## OPTION (\d+):(.*?)(?=## OPTION \d+:|## RECOMMENDED NEXT STEPS|## UNORTHODOX|$)"
+    # Note: We look for OPTIONS (plural) sections to avoid capturing the overall Strategic Reasoning
+    option_pattern = r"## OPTION (\d+):(.*?)(?=## OPTION \d+:|## RECOMMENDED NEXT STEPS|## UNORTHODOX|## Overall Strategic Reasoning|$)"
     options = re.findall(option_pattern, strategy_content, re.DOTALL)
-    
+
     for option_num, option_content in options:
         trace = extract_reasoning_trace(option_content)
         option_traces.append({"option_number": int(option_num), "trace": trace})
-    
+
+    # Extract overall strategic reasoning (if present)
+    overall_pattern = r"## Overall Strategic Reasoning\s*\n(.*?)(?:===|$)"
+    overall_match = re.search(overall_pattern, strategy_content, re.DOTALL)
+    overall_reasoning = None
+    if overall_match:
+        overall_reasoning = extract_reasoning_trace(overall_match.group(0))
+
     # Create consolidated reasoning trace
-    reasoning_trace = create_consolidated_reasoning_trace(option_traces, outcome)
-    
+    reasoning_trace = create_consolidated_reasoning_trace(
+        option_traces, outcome, overall_reasoning
+    )
+
     # Generate recommended next steps
+    click.echo(info_message("Generating recommended next steps..."))
     next_steps_prompt = PROMPTS.get("strategies.strategy.next_steps_prompt")
-    
+
     try:
         next_steps_content, _ = llm_client.complete(
             [
@@ -190,19 +218,17 @@ def strategy(case_facts, outcome, strategies, verify, noverify, cove, output):
         )
     except Exception as e:
         raise click.ClickException(f"LLM next steps generation error: {e}")
-    
+
     # Determine document type and generate draft
+    click.echo(info_message("Determining document type..."))
     doc_type = determine_document_type(outcome)
+    click.echo(info_message(f"Generating draft {doc_type}..."))
     document_content = generate_draft_document(
-        llm_client,
-        system_prompt,
-        user_prompt,
-        strategy_content,
-        outcome,
-        doc_type
+        llm_client, system_prompt, user_prompt, strategy_content, outcome, doc_type
     )
-    
+
     # Validate and verify strategy content (most important)
+    click.echo(info_message("Validating citations..."))
     citation_issues = llm_client.validate_citations(strategy_content)
     if citation_issues:
         # Prepend warnings to strategy content
@@ -210,23 +236,30 @@ def strategy(case_facts, outcome, strategies, verify, noverify, cove, output):
         citation_warning += "\n".join(citation_issues)
         citation_warning += "\n" + "-" * 40 + "\n\n"
         strategy_content = citation_warning + strategy_content
-    
+
     # Apply verification - either CoVe or standard
     cove_results = None
     if cove:
         # Use CoVe INSTEAD of standard verification
         click.echo(info_message("Running Chain of Verification..."))
         original_content = strategy_content
-        strategy_content, cove_results = run_cove_verification(strategy_content, 'strategy')
-        
-        if not cove_results['cove']['passed']:
-            click.echo(success_message("CoVe corrected issues - strategies regenerated"))
-            save_log("strategy_cove_regeneration", {
-                "original_length": len(original_content),
-                "regenerated_length": len(strategy_content),
-                "issues_fixed": cove_results['cove']['issues'],
-                "model": "See cove_strategy_summary.json for model details"
-            })
+        strategy_content, cove_results = run_cove_verification(
+            strategy_content, "strategy"
+        )
+
+        if not cove_results["cove"]["passed"]:
+            click.echo(
+                success_message("CoVe corrected issues - strategies regenerated")
+            )
+            save_log(
+                "strategy_cove_regeneration",
+                {
+                    "original_length": len(original_content),
+                    "regenerated_length": len(strategy_content),
+                    "issues_fixed": cove_results["cove"]["issues"],
+                    "model": "See cove_strategy_summary.json for model details",
+                },
+            )
         else:
             click.echo(success_message("CoVe verification passed - no issues found"))
     elif not noverify:
@@ -237,8 +270,9 @@ def strategy(case_facts, outcome, strategies, verify, noverify, cove, output):
         click.echo(info_message("Standard verification applied"))
     else:
         click.echo(info_message("Standard verification skipped by --noverify flag"))
-    
+
     # Save all outputs
+    click.echo(info_message("Saving strategy outputs..."))
     strategy_file, steps_file, draft_file, trace_file = save_strategy_outputs(
         strategy_content=strategy_content,
         next_steps_content=next_steps_content,
@@ -252,12 +286,12 @@ def strategy(case_facts, outcome, strategies, verify, noverify, cove, output):
         citation_issues=citation_issues,
         cove_results=cove_results,
         cove=cove,
-        llm_model=llm_client.model
+        llm_model=llm_client.model,
     )
-    
+
     # Save log
     save_strategy_log(outcome, strategy_content, strategy_usage, cove_results)
-    
+
     # Show completion message
     click.echo()
     click.echo(success_message("Strategy generation complete!"))

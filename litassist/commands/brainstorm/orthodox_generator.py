@@ -11,16 +11,18 @@ from litassist.utils import create_reasoning_prompt
 from litassist.prompts import PROMPTS
 
 
-def generate_orthodox_strategies(facts: str, side: str, area: str, research_context: str = ""):
+def generate_orthodox_strategies(
+    facts: str, side: str, area: str, research_context: str = ""
+):
     """
     Generate orthodox legal strategies.
-    
+
     Args:
         facts: Case facts content
         side: Which side (plaintiff/defendant/etc)
         area: Legal area (civil/criminal/etc)
         research_context: Optional research context to inform strategies
-    
+
     Returns:
         Tuple of (content, usage, citation_issues)
     """
@@ -33,15 +35,12 @@ def generate_orthodox_strategies(facts: str, side: str, area: str, research_cont
     )
     # Build orthodox base prompt from template
     orthodox_base_content = PROMPTS.get("strategies.brainstorm.orthodox_base").format(
-        facts=facts,
-        side=side,
-        area=area,
-        research=orthodox_template
+        facts=facts, side=side, area=area, research=orthodox_template
     )
-    
-    orthodox_base_prompt = PROMPTS.get("strategies.brainstorm.orthodox_output_format").format(
-        content=orthodox_base_content
-    )
+
+    orthodox_base_prompt = PROMPTS.get(
+        "strategies.brainstorm.orthodox_output_format"
+    ).format(content=orthodox_base_content)
 
     # Add reasoning trace to orthodox prompt
     orthodox_prompt = create_reasoning_prompt(
@@ -59,11 +58,9 @@ def generate_orthodox_strategies(facts: str, side: str, area: str, research_cont
     try:
         orthodox_content, orthodox_usage = orthodox_client.complete(orthodox_messages)
     except Exception as e:
-        raise click.ClickException(
-            f"Error generating orthodox strategies: {str(e)}"
-        )
+        raise click.ClickException(f"Error generating orthodox strategies: {str(e)}")
 
     # Validate citations
     orthodox_citation_issues = orthodox_client.validate_citations(orthodox_content)
-    
+
     return orthodox_content, orthodox_usage, orthodox_citation_issues

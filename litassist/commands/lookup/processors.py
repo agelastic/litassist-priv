@@ -22,16 +22,24 @@ from litassist.utils import (
 from litassist.logging_utils import LOG_DIR
 from litassist.llm import LLMClientFactory
 from litassist.prompts import PROMPTS
-from .fetchers import _fetch_url_content, _fetch_url_content_selenium_with_timeout, SELENIUM_AVAILABLE
-from .error_handlers import handle_llm_error, check_model_token_limits, warn_large_content_non_gemini
+from .fetchers import (
+    _fetch_url_content,
+    _fetch_url_content_selenium_with_timeout,
+    SELENIUM_AVAILABLE,
+)
+from .error_handlers import (
+    handle_llm_error,
+    check_model_token_limits,
+    warn_large_content_non_gemini,
+)
 
 
 class LookupProcessor:
     """Orchestrates the lookup processing workflow."""
-    
+
     def __init__(self, config):
         self.config = config
-    
+
     def fetch_content(self, links, all_snippets, no_fetch):
         """
         Fetch content from all provided links with appropriate handling
@@ -41,7 +49,7 @@ class LookupProcessor:
         fetched_count = 0
         skipped_count = 0
         pdf_count = 0
-        
+
         # Check if Selenium should be disabled
         selenium_enabled = SELENIUM_AVAILABLE and self.config.selenium_enabled
         if SELENIUM_AVAILABLE and not self.config.selenium_enabled:
@@ -54,7 +62,7 @@ class LookupProcessor:
             if all_snippets:
                 contents.append(self._build_snippet_content(all_snippets))
             return contents
-        
+
         max_time = self.config.max_fetch_time
         start_time = time.time()
 
@@ -73,7 +81,9 @@ class LookupProcessor:
         # Track last fetch time per domain for rate limiting
         domain_last_fetch = {}
 
-        click.echo(f"  Attempting to fetch content from {len(ordered_links)} sources...")
+        click.echo(
+            f"  Attempting to fetch content from {len(ordered_links)} sources..."
+        )
 
         for i, link in enumerate(ordered_links):
             # Safety check: don't run forever
@@ -102,12 +112,14 @@ class LookupProcessor:
             content = _fetch_url_content(link, timeout=self.config.fetch_timeout)
 
             # If HTTP fetch got minimal/no content, try Selenium for non-Jade sites
+            # Never try Selenium for PDFs - it won't work
             if (not content or len(content) < 1000) and selenium_enabled:
-                if "jade.io" not in link.lower():
+                if "jade.io" not in link.lower() and ".pdf" not in link.lower():
                     click.echo(f"  [↻ Trying Selenium for {link.split('/')[2]}...]")
                     selenium_content = _fetch_url_content_selenium_with_timeout(
                         link,
-                        timeout=self.config.fetch_timeout * self.config.selenium_timeout_multiplier,
+                        timeout=self.config.fetch_timeout
+                        * self.config.selenium_timeout_multiplier,
                     )
                     if selenium_content and len(selenium_content) > len(content or ""):
                         content = selenium_content
@@ -141,7 +153,9 @@ class LookupProcessor:
 
         # Summary of fetch results
         if fetched_count > 0:
-            click.echo(f"\n  Successfully fetched content from {fetched_count} source(s)")
+            click.echo(
+                f"\n  Successfully fetched content from {fetched_count} source(s)"
+            )
         if pdf_count > 0:
             click.echo(f"  Extracted text from {pdf_count} PDF document(s)")
         if skipped_count > 0:
@@ -152,9 +166,9 @@ class LookupProcessor:
         # Add search snippets to the beginning of content if available
         if all_snippets:
             contents.insert(0, self._build_snippet_content(all_snippets))
-            
+
         return contents
-    
+
     def _save_fetched_content(self, content, link):
         """Save fetched content to log file."""
         timestamp = time.strftime("%Y%m%d-%H%M%S")
@@ -165,12 +179,12 @@ class LookupProcessor:
             log_file = os.path.join(LOG_DIR, f"pdf_extracted_{domain}_{timestamp}.txt")
         else:
             log_file = os.path.join(LOG_DIR, f"fetched_{domain}_{timestamp}.html")
-            
+
         with open(log_file, "w", encoding="utf-8") as f:
             f.write(f"<!-- URL: {link} -->\n")
             f.write(f"<!-- Fetched: {time.strftime('%Y-%m-%d %H:%M:%S')} -->\n")
             f.write(content)
-    
+
     def _build_snippet_content(self, all_snippets):
         """Build formatted snippet content for inclusion in prompt."""
         snippet_text = "=== GOOGLE CSE SEARCH SNIPPETS ===\n"
@@ -197,12 +211,12 @@ class LookupProcessor:
 
         snippet_text += "\n=== END OF SEARCH SNIPPETS ===\n"
         return snippet_text
-    
+
     def prepare_content(self, contents):
         """Prepare content for LLM processing with intelligent truncation."""
         if not contents:
             return "", 0
-            
+
         # Calculate token estimate
         total_chars = sum(len(c) for c in contents)
         estimated_tokens = total_chars / 4  # Rough estimate: 4 chars per token
@@ -232,10 +246,20 @@ class LookupProcessor:
             click.echo(
                 f"  [Using all {len(contents)} fetched documents (~{int(estimated_tokens):,} tokens)]"
             )
-        
+
         return content_text, estimated_tokens
-    
-    def build_prompt(self, question, mode, extract, comprehensive, context, links, contents, content_text):
+
+    def build_prompt(
+        self,
+        question,
+        mode,
+        extract,
+        comprehensive,
+        context,
+        links,
+        contents,
+        content_text,
+    ):
         """Build the appropriate prompt based on available content and options."""
         if contents:
             # Create a rich prompt with actual content
@@ -243,14 +267,14 @@ class LookupProcessor:
                 question=question,
                 count=len(contents),
                 links=chr(10).join(links),
-                content=content_text
+                content=content_text,
             )
         else:
             # Fallback to URL-only prompt
             prompt = PROMPTS.get("analysis.lookup.question_prompt").format(
                 question=question, links="\n".join(links)
             )
-            
+
         if context:
             prompt = PROMPTS.get("analysis.lookup.context_prompt").format(
                 context=context, prompt=prompt
@@ -259,14 +283,20 @@ class LookupProcessor:
         # Add extraction-specific instructions
         if extract:
             if extract == "citations":
-                prompt += f"\n\n{PROMPTS.get('lookup.extraction_instructions.citations')}"
+                prompt += (
+                    f"\n\n{PROMPTS.get('lookup.extraction_instructions.citations')}"
+                )
             elif extract == "principles":
-                prompt += f"\n\n{PROMPTS.get('lookup.extraction_instructions.principles')}"
+                prompt += (
+                    f"\n\n{PROMPTS.get('lookup.extraction_instructions.principles')}"
+                )
             elif extract == "checklist":
-                prompt += f"\n\n{PROMPTS.get('lookup.extraction_instructions.checklist')}"
-        
+                prompt += (
+                    f"\n\n{PROMPTS.get('lookup.extraction_instructions.checklist')}"
+                )
+
         return prompt
-    
+
     def get_llm_client(self, mode, comprehensive):
         """Get appropriately configured LLM client."""
         # Set parameters based on mode and comprehensive flag
@@ -275,23 +305,23 @@ class LookupProcessor:
                 overrides = {
                     "temperature": 0,
                     "top_p": 0.05,
-                    "max_tokens": 8192,
+                    "max_tokens": 16384,
                 }  # Maximum precision
             else:  # broad
                 overrides = {
                     "temperature": 0.3,
                     "top_p": 0.7,
-                    "max_tokens": 8192,
+                    "max_tokens": 16384,
                 }  # Controlled creativity
         else:
             # Standard parameters
             if mode == "irac":
-                overrides = {"temperature": 0, "top_p": 0.1}
+                overrides = {"temperature": 0, "top_p": 0.1, "max_tokens": 16384}
             else:
-                overrides = {"temperature": 0.5, "top_p": 0.9}
+                overrides = {"temperature": 0.5, "top_p": 0.9, "max_tokens": 16384}
 
         return LLMClientFactory.for_command("lookup", **overrides)
-    
+
     def build_system_prompt(self, extract, comprehensive):
         """Build the system prompt based on mode and options."""
         base_system = PROMPTS.get("base.australian_law")
@@ -305,7 +335,9 @@ class LookupProcessor:
             citation_requirements = PROMPTS.get(
                 "lookup.comprehensive_analysis.citation_requirements"
             )
-            output_structure = PROMPTS.get("lookup.comprehensive_analysis.output_structure")
+            output_structure = PROMPTS.get(
+                "lookup.comprehensive_analysis.output_structure"
+            )
             return f"""{base_system} Provide exhaustive legal analysis.
 
 {requirements}
@@ -316,8 +348,10 @@ class LookupProcessor:
         else:
             standard_instructions = PROMPTS.get("lookup.standard_analysis.instructions")
             return f"{base_system}\n\n{standard_instructions}"
-    
-    def execute_llm_request(self, client, system_content, prompt, estimated_tokens, contents):
+
+    def execute_llm_request(
+        self, client, system_content, prompt, estimated_tokens, contents
+    ):
         """Execute LLM request with retry logic and error handling."""
         # Token pre-flight check
         system_tokens = len(system_content) / 4
@@ -328,11 +362,17 @@ class LookupProcessor:
         warn_large_content_non_gemini(client, estimated_tokens)
 
         # Check token limits and truncate if needed
-        should_truncate, max_tokens = check_model_token_limits(client, total_request_tokens)
+        should_truncate, max_tokens = check_model_token_limits(
+            client, total_request_tokens
+        )
         if should_truncate:
             # Truncate the prompt to fit
-            max_prompt_chars = int(max_tokens * 0.8 * 4)  # 80% for prompt, convert to chars
-            prompt = prompt[:max_prompt_chars] + "\n[Content truncated due to token limits]"
+            max_prompt_chars = int(
+                max_tokens * 0.8 * 4
+            )  # 80% for prompt, convert to chars
+            prompt = (
+                prompt[:max_prompt_chars] + "\n[Content truncated due to token limits]"
+            )
 
         # Retry logic for transient errors
         max_retries = 2
@@ -356,7 +396,8 @@ class LookupProcessor:
 
                 # Check if this is a retryable error
                 if attempt < max_retries and any(
-                    x in error_str.lower() for x in ["choices", "timeout", "rate", "retry"]
+                    x in error_str.lower()
+                    for x in ["choices", "timeout", "rate", "retry"]
                 ):
                     click.echo(
                         warning_message(
@@ -372,9 +413,10 @@ class LookupProcessor:
                 raise click.ClickException("Lookup failed - see error details above")
 
         return content, usage
-    
-    
-    def save_output(self, content, question, mode, extract, comprehensive, context, output):
+
+    def save_output(
+        self, content, question, mode, extract, comprehensive, context, output
+    ):
         """Save the lookup output with appropriate metadata."""
         if extract:
             # Extraction mode - content is already formatted by LLM
@@ -406,8 +448,10 @@ class LookupProcessor:
                 "" if output else question,
                 metadata=metadata,
             )
-    
-    def display_completion_summary(self, output_file, question, extract, comprehensive, context, links):
+
+    def display_completion_summary(
+        self, output_file, question, extract, comprehensive, context, links
+    ):
         """Display completion summary and statistics."""
         # Show summary instead of full content
         click.echo(f"\n{success_message('Lookup complete!')}")

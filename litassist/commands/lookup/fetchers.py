@@ -32,43 +32,56 @@ class TextExtractor(HTMLParser):
     Extract text from HTML, removing all tags, scripts, and styles.
     Reduces token count by 80-90% while preserving legal content.
     """
+
     def __init__(self):
         super().__init__()
         self.text = []
-        self.skip_tags = {'script', 'style', 'meta', 'link', 'noscript'}
+        self.skip_tags = {"script", "style", "meta", "link", "noscript"}
         self.in_skip = False
         self.current_tag = None
-        
+
     def handle_starttag(self, tag, attrs):
         self.current_tag = tag.lower()
         if self.current_tag in self.skip_tags:
             self.in_skip = True
         # Add newlines for block elements to preserve structure
-        elif tag.lower() in ['p', 'div', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'br', 'li', 'tr']:
-            self.text.append('\n')
-            
+        elif tag.lower() in [
+            "p",
+            "div",
+            "h1",
+            "h2",
+            "h3",
+            "h4",
+            "h5",
+            "h6",
+            "br",
+            "li",
+            "tr",
+        ]:
+            self.text.append("\n")
+
     def handle_endtag(self, tag):
         if tag.lower() in self.skip_tags:
             self.in_skip = False
         # Add newlines after block elements
-        elif tag.lower() in ['p', 'div', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6']:
-            self.text.append('\n')
-            
+        elif tag.lower() in ["p", "div", "h1", "h2", "h3", "h4", "h5", "h6"]:
+            self.text.append("\n")
+
     def handle_data(self, data):
         if not self.in_skip:
             text = data.strip()
             if text:
                 # Clean up excessive whitespace but preserve structure
-                text = ' '.join(text.split())
+                text = " ".join(text.split())
                 self.text.append(text)
-                
+
     def get_text(self):
         """Get the extracted text with cleaned whitespace."""
-        raw_text = ' '.join(self.text)
+        raw_text = " ".join(self.text)
         # Clean up multiple newlines but keep paragraph structure
-        lines = [line.strip() for line in raw_text.split('\n')]
+        lines = [line.strip() for line in raw_text.split("\n")]
         lines = [line for line in lines if line]
-        return '\n'.join(lines)
+        return "\n".join(lines)
 
 
 def _fetch_url_content_selenium_with_timeout(url: str, timeout: int = 10) -> str:
@@ -153,29 +166,41 @@ def _fetch_url_content_selenium(url: str, timeout: int = 10) -> str:
                 parser = TextExtractor()
                 parser.feed(page_source)
                 extracted_text = parser.get_text()
-                
+
                 # Check if we got substantial content (lower threshold for JS-heavy sites)
-                if len(extracted_text) < 200:  # Lower threshold for JS sites with less text
-                    logging.info(f"Selenium: Skipping URL (no substantial text content): {url}")
+                if (
+                    len(extracted_text) < 200
+                ):  # Lower threshold for JS sites with less text
+                    logging.info(
+                        f"Selenium: Skipping URL (no substantial text content): {url}"
+                    )
                     return ""
-                
+
                 # Add URL reference at the top for context (same format as HTTP)
                 text_with_source = f"[Source: {url}]\n\n{extracted_text}"
-                
+
                 # Log the reduction achieved
                 original_size = len(page_source)
                 final_size = len(text_with_source)
                 reduction = 100 - (final_size / original_size * 100)
-                logging.info(f"Selenium extracted text from {url}: {original_size:,} → {final_size:,} chars ({reduction:.1f}% reduction)")
-                
+                logging.info(
+                    f"Selenium extracted text from {url}: {original_size:,} → {final_size:,} chars ({reduction:.1f}% reduction)"
+                )
+
                 # Truncate if still massive (same limit as HTTP)
                 return text_with_source[:250000]  # ~62k tokens max per document
-                
+
             except Exception as e:
-                logging.warning(f"Selenium HTML parsing failed for {url}, falling back to regex: {e}")
+                logging.warning(
+                    f"Selenium HTML parsing failed for {url}, falling back to regex: {e}"
+                )
                 # Fallback to old method if parsing fails
-                page_source = re.sub(r"<script.*?</script>", "", page_source, flags=re.DOTALL)
-                page_source = re.sub(r"<style.*?</style>", "", page_source, flags=re.DOTALL)
+                page_source = re.sub(
+                    r"<script.*?</script>", "", page_source, flags=re.DOTALL
+                )
+                page_source = re.sub(
+                    r"<style.*?</style>", "", page_source, flags=re.DOTALL
+                )
                 text_only = re.sub(r"<[^>]+>", "", page_source)
                 if len(text_only.strip()) > 500:
                     return page_source[:1000000]
@@ -229,10 +254,12 @@ def _extract_pdf_text(url: str, pdf_bytes: bytes) -> str:
 
     except ImportError:
         logging.warning("pdfplumber not installed - cannot extract PDF text")
-        return ""
+        return f"[PDF DOCUMENT at {url}]\n[Note: PDF text extraction unavailable - pdfplumber not installed]\n"
     except Exception as e:
         logging.warning(f"Failed to extract text from PDF {url}: {e}")
-        return ""
+        return (
+            f"[PDF DOCUMENT at {url}]\n[Note: PDF extraction failed - {str(e)[:100]}]\n"
+        )
 
 
 def _fetch_url_content(url: str, timeout: int = 5) -> str:
@@ -272,25 +299,37 @@ def _fetch_url_content(url: str, timeout: int = 5) -> str:
                     if response.status_code == 200 and len(response.text) > 2000:
                         # Got substantial content from print version!
                         html = response.text
-                        
+
                         # Extract text content
                         try:
                             parser = TextExtractor()
                             parser.feed(html)
                             extracted_text = parser.get_text()
-                            
+
                             if len(extracted_text) > 500:
-                                logging.info("Success: Got content from Jade.io /print URL")
-                                text_with_source = f"[Source: {print_url}]\n\n{extracted_text}"
+                                logging.info(
+                                    "Success: Got content from Jade.io /print URL"
+                                )
+                                text_with_source = (
+                                    f"[Source: {print_url}]\n\n{extracted_text}"
+                                )
                                 return text_with_source[:250000]
                         except Exception as e:
-                            logging.warning(f"HTML parsing with TextExtractor failed for {print_url}, falling back to regex: {e}")
+                            logging.warning(
+                                f"HTML parsing with TextExtractor failed for {print_url}, falling back to regex: {e}"
+                            )
                             # Fallback to regex method
-                            html = re.sub(r"<script.*?</script>", "", html, flags=re.DOTALL)
-                            html = re.sub(r"<style.*?</style>", "", html, flags=re.DOTALL)
+                            html = re.sub(
+                                r"<script.*?</script>", "", html, flags=re.DOTALL
+                            )
+                            html = re.sub(
+                                r"<style.*?</style>", "", html, flags=re.DOTALL
+                            )
                             text_only = re.sub(r"<[^>]+>", "", html)
                             if len(text_only.strip()) > 500:
-                                logging.info("Success: Got content from Jade.io /print URL")
+                                logging.info(
+                                    "Success: Got content from Jade.io /print URL"
+                                )
                                 return html[:1000000]
                 except Exception as e:
                     logging.debug(f"Jade.io /print attempt failed: {e}")
@@ -345,26 +384,30 @@ def _fetch_url_content(url: str, timeout: int = 5) -> str:
                 parser = TextExtractor()
                 parser.feed(html)
                 extracted_text = parser.get_text()
-                
+
                 # Check if we got actual legal content
                 if len(extracted_text) < 500:
                     logging.info(f"Skipping URL (no substantial text content): {url}")
                     return ""
-                
+
                 # Add URL reference at the top for context
                 text_with_source = f"[Source: {url}]\n\n{extracted_text}"
-                
+
                 # Log the reduction achieved
                 original_size = len(html)
                 final_size = len(text_with_source)
                 reduction = 100 - (final_size / original_size * 100)
-                logging.info(f"Extracted text from {url}: {original_size:,} → {final_size:,} chars ({reduction:.1f}% reduction)")
-                
+                logging.info(
+                    f"Extracted text from {url}: {original_size:,} → {final_size:,} chars ({reduction:.1f}% reduction)"
+                )
+
                 # Truncate if still massive (some judgments can be quite long)
                 return text_with_source[:250000]  # ~62k tokens max per document
-                
+
             except Exception as e:
-                logging.warning(f"HTML parsing failed for {url}, falling back to regex: {e}")
+                logging.warning(
+                    f"HTML parsing failed for {url}, falling back to regex: {e}"
+                )
                 # Fallback to old method if parsing fails
                 html = re.sub(r"<script.*?</script>", "", html, flags=re.DOTALL)
                 html = re.sub(r"<style.*?</style>", "", html, flags=re.DOTALL)

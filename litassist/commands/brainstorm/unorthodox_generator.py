@@ -6,12 +6,14 @@ Generates creative and unconventional legal strategies with automatic verificati
 
 import click
 import logging
+import re
 
 from litassist.llm import LLMClientFactory
 from litassist.utils import (
     create_reasoning_prompt,
     verifying_message,
     success_message,
+    warning_message,
 )
 from litassist.prompts import PROMPTS
 
@@ -19,12 +21,12 @@ from litassist.prompts import PROMPTS
 def generate_unorthodox_strategies(facts: str, side: str, area: str):
     """
     Generate unorthodox legal strategies with automatic verification.
-    
+
     Args:
         facts: Case facts content
         side: Which side (plaintiff/defendant/etc)
         area: Legal area (civil/criminal/etc)
-    
+
     Returns:
         Tuple of (content, usage, citation_issues, verification_result)
     """
@@ -38,16 +40,13 @@ def generate_unorthodox_strategies(facts: str, side: str, area: str):
     # Use centralized unorthodox prompt template
     unorthodox_template = PROMPTS.get("strategies.brainstorm.unorthodox_prompt")
     # Build unorthodox base prompt from template
-    unorthodox_base_content = PROMPTS.get("strategies.brainstorm.unorthodox_base").format(
-        facts=facts,
-        side=side,
-        area=area,
-        research=unorthodox_template
-    )
-    
-    unorthodox_base_prompt = PROMPTS.get("strategies.brainstorm.unorthodox_output_format").format(
-        content=unorthodox_base_content
-    )
+    unorthodox_base_content = PROMPTS.get(
+        "strategies.brainstorm.unorthodox_base"
+    ).format(facts=facts, side=side, area=area, research=unorthodox_template)
+
+    unorthodox_base_prompt = PROMPTS.get(
+        "strategies.brainstorm.unorthodox_output_format"
+    ).format(content=unorthodox_base_content)
 
     # Add reasoning trace to unorthodox prompt
     unorthodox_prompt = create_reasoning_prompt(
@@ -62,30 +61,42 @@ def generate_unorthodox_strategies(facts: str, side: str, area: str):
     ]
 
     # Execute the query for unorthodox strategies
-    corrected_unorthodox = None  # Initialize for critique capture
     try:
-        unorthodox_content, unorthodox_usage = unorthodox_client.complete(unorthodox_messages)
-        
-        # ALWAYS verify unorthodox strategies regardless of model
-        click.echo(verifying_message("Verifying unorthodox strategies..."))
-        verify_client = LLMClientFactory.for_command("verification")
-        corrected_unorthodox, _ = verify_client.verify(unorthodox_content)
-        
-        # Replace with corrected content if changes were made
-        if corrected_unorthodox and not corrected_unorthodox.lower().startswith("no corrections"):
-            unorthodox_content = corrected_unorthodox
-            click.echo(success_message("Unorthodox strategies verified and corrected"))
-        else:
-            click.echo(success_message("Unorthodox strategies verified - no corrections needed"))
-                
+        unorthodox_content, unorthodox_usage = unorthodox_client.complete(
+            unorthodox_messages
+        )
     except Exception as e:
-        raise click.ClickException(
-            f"Error generating unorthodox strategies: {str(e)}"
+        raise click.ClickException(f"Error generating unorthodox strategies: {str(e)}")
+
+    # Verify the unorthodox strategies for legal accuracy
+    click.echo(verifying_message("Verifying unorthodox strategies..."))
+    verify_client = LLMClientFactory.for_command("verification")
+    verification_result, _ = verify_client.verify(unorthodox_content)
+
+    # Try to extract just the verified document part
+    match = re.search(
+        r"## Verified and Corrected Document\s*\n(.*)", verification_result, re.DOTALL
+    )
+
+    if match:
+        # Successfully extracted the verified document section
+        verified_content = match.group(1).strip()
+        unorthodox_content = verified_content
+        click.echo(success_message("Unorthodox strategies verified"))
+    else:
+        # Could not find expected format - log error and use whole output
+        logging.error(
+            "Unexpected verification format - expected '## Verified and Corrected Document' header"
+        )
+        # Use the whole verification result as-is
+        unorthodox_content = verification_result
+        click.echo(
+            warning_message("Verification format unexpected - using complete output")
         )
 
     # Validate citations
     unorthodox_citation_issues = unorthodox_client.validate_citations(
         unorthodox_content
     )
-    
-    return unorthodox_content, unorthodox_usage, unorthodox_citation_issues, corrected_unorthodox
+
+    return unorthodox_content, unorthodox_usage, unorthodox_citation_issues

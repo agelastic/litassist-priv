@@ -78,8 +78,8 @@ class TestLLMClientComplete:
             model_dump=lambda: {
                 "total_tokens": 50,
                 "prompt_tokens": 25,
-                "completion_tokens": 25
-            }
+                "completion_tokens": 25,
+            },
         )
 
         mock_execute.return_value = mock_response
@@ -124,8 +124,8 @@ class TestLLMClientComplete:
             model_dump=lambda: {
                 "total_tokens": 50,
                 "prompt_tokens": 25,
-                "completion_tokens": 25
-            }
+                "completion_tokens": 25,
+            },
         )
 
         mock_execute.return_value = mock_response
@@ -172,8 +172,8 @@ class TestLLMClientComplete:
             model_dump=lambda: {
                 "total_tokens": 50,
                 "prompt_tokens": 25,
-                "completion_tokens": 25
-            }
+                "completion_tokens": 25,
+            },
         )
 
         mock_execute.return_value = mock_response
@@ -242,8 +242,8 @@ class TestLLMClientComplete:
             model_dump=lambda: {
                 "total_tokens": 50,
                 "prompt_tokens": 25,
-                "completion_tokens": 25
-            }
+                "completion_tokens": 25,
+            },
         )
 
         mock_execute.return_value = mock_response
@@ -283,8 +283,8 @@ class TestLLMClientComplete:
             model_dump=lambda: {
                 "total_tokens": 50,
                 "prompt_tokens": 25,
-                "completion_tokens": 25
-            }
+                "completion_tokens": 25,
+            },
         )
 
         mock_execute.return_value = mock_response
@@ -315,8 +315,8 @@ class TestLLMClientComplete:
             model_dump=lambda: {
                 "total_tokens": 50,
                 "prompt_tokens": 25,
-                "completion_tokens": 25
-            }
+                "completion_tokens": 25,
+            },
         )
 
         mock_execute.return_value = mock_response
@@ -346,8 +346,8 @@ class TestLLMClientComplete:
             model_dump=lambda: {
                 "total_tokens": 50,
                 "prompt_tokens": 25,
-                "completion_tokens": 25
-            }
+                "completion_tokens": 25,
+            },
         )
 
         mock_execute.return_value = mock_response
@@ -386,8 +386,8 @@ class TestLLMClientComplete:
             model_dump=lambda: {
                 "total_tokens": 50,
                 "prompt_tokens": 25,
-                "completion_tokens": 25
-            }
+                "completion_tokens": 25,
+            },
         )
 
         mock_execute.return_value = mock_response

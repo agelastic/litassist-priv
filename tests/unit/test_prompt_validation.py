@@ -11,7 +11,7 @@ from litassist.prompts import PROMPTS
 
 class TestPromptValidation:
     """Test that all prompt keys referenced in commands exist."""
-    
+
     # List of command files that use PROMPTS
     COMMAND_FILES = [
         "litassist/commands/barbrief.py",
@@ -33,22 +33,22 @@ class TestPromptValidation:
         "litassist/commands/strategy/ranker.py",
         "litassist/commands/verify.py",
     ]
-    
+
     @pytest.mark.parametrize("command_file", COMMAND_FILES)
     def test_prompts_exist(self, command_file):
         """Test that all PROMPTS.get() calls reference existing keys."""
         filepath = Path(command_file)
-        
+
         if not filepath.exists():
             pytest.skip(f"File {command_file} does not exist")
-        
-        with open(filepath, 'r') as f:
+
+        with open(filepath, "r") as f:
             content = f.read()
-        
+
         # Find all PROMPTS.get("...") calls with static strings
         # Matches: PROMPTS.get("key") or PROMPTS.get('key')
         static_keys = re.findall(r'PROMPTS\.get\s*\(\s*["\']([^"\']+)["\']', content)
-        
+
         # Check each key exists
         missing = []
         for key in static_keys:
@@ -56,14 +56,14 @@ class TestPromptValidation:
                 PROMPTS.get(key)
             except KeyError:
                 missing.append(key)
-        
+
         # Find f-string uses (just report them, don't try to resolve)
         # Matches: PROMPTS.get(f"...") or PROMPTS.get(f'...')
         fstring_uses = re.findall(r'PROMPTS\.get\s*\(\s*f["\']([^"\']+)["\']', content)
-        
+
         # Report missing keys as test failure
         assert not missing, f"Missing prompt keys in {command_file}: {missing}"
-        
+
         # Report f-string usage as warning (doesn't fail test)
         if fstring_uses:
             print(f"\nWarning: {command_file} uses f-string prompt keys:")

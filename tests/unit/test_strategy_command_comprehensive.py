@@ -621,9 +621,9 @@ class TestDocumentTypeSelection:
             # The logic checks for keywords like "injunction", "order", "interim", "stay"
             keywords = ["injunction", "order", "stay", "restraining", "interlocutory"]
             has_keyword = any(term in outcome.lower() for term in keywords)
-            assert (
-                has_keyword
-            ), f"Outcome '{outcome}' should contain one of the keywords: {keywords}"
+            assert has_keyword, (
+                f"Outcome '{outcome}' should contain one of the keywords: {keywords}"
+            )
 
     def test_document_type_selection_affidavit(self):
         """Test document type selection for affidavit outcomes."""
@@ -793,7 +793,9 @@ class TestErrorHandling:
 
         try:
             runner = CliRunner()
-            with patch("litassist.commands.strategy.file_handler.save_command_output") as mock_save:
+            with patch(
+                "litassist.commands.strategy.file_handler.save_command_output"
+            ) as mock_save:
                 with patch("litassist.commands.strategy.file_handler.save_log"):
                     mock_save.return_value = "test_output.txt"
                     _ = runner.invoke(
@@ -820,15 +822,15 @@ class TestStrategyFileIntegration:
 
         strategies_content = """## ORTHODOX STRATEGIES
 
-1. Standard contract breach claim
+### 1. Standard contract breach claim
 Traditional approach to contract disputes.
 
-2. Alternative dispute resolution
+### 2. Alternative dispute resolution
 Mediation and arbitration options.
 
 ## UNORTHODOX STRATEGIES
 
-1. Creative legal theory
+### Strategy 1: Creative legal theory
 Novel approach to the problem.
 
 ## MOST LIKELY TO SUCCEED

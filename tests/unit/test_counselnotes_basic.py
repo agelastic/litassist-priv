@@ -120,7 +120,7 @@ class TestCounselNotesBasic:
             # Basic assertions
             assert result.exit_code == 0
             mock_client.complete.assert_called_once()
-            
+
             # Verify output was saved with formatted text
             mock_output.assert_called_once()
         finally:

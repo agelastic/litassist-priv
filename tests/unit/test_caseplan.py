@@ -147,3 +147,41 @@ class TestCaseplanCommand:
 
         assert result.exit_code == 2
         assert "Invalid value for '--budget'" in result.output
+
+    @patch("litassist.commands.caseplan.LLMClientFactory")
+    def test_verify_flag_not_supported(self, mock_factory, tmp_path):
+        """Test that --verify flag shows appropriate warning."""
+        case_facts = tmp_path / "case_facts.txt"
+        case_facts.write_text(
+            "1. Parties: Test\n2. Background: Test\n3. Key Events: Test\n4. Legal Issues: Test\n5. Evidence: Test\n6. Arguments: Test\n7. Procedural History: Test\n8. Jurisdiction: Test\n9. Applicable Law: Test\n10. Client's Objectives: Test"
+        )
+
+        mock_client = MagicMock()
+        mock_client.complete.return_value = ("Test assessment", {"total_tokens": 100})
+        mock_factory.for_command.return_value = mock_client
+
+        runner = CliRunner()
+        result = runner.invoke(caseplan, [str(case_facts), "--verify"])
+
+        assert result.exit_code == 0
+        assert "--verify not supported" in result.output
+        assert "Use 'litassist verify'" in result.output
+
+    @patch("litassist.commands.caseplan.LLMClientFactory")
+    def test_noverify_flag_not_supported(self, mock_factory, tmp_path):
+        """Test that --noverify flag shows appropriate warning."""
+        case_facts = tmp_path / "case_facts.txt"
+        case_facts.write_text(
+            "1. Parties: Test\n2. Background: Test\n3. Key Events: Test\n4. Legal Issues: Test\n5. Evidence: Test\n6. Arguments: Test\n7. Procedural History: Test\n8. Jurisdiction: Test\n9. Applicable Law: Test\n10. Client's Objectives: Test"
+        )
+
+        mock_client = MagicMock()
+        mock_client.complete.return_value = ("Test assessment", {"total_tokens": 100})
+        mock_factory.for_command.return_value = mock_client
+
+        runner = CliRunner()
+        result = runner.invoke(caseplan, [str(case_facts), "--noverify"])
+
+        assert result.exit_code == 0
+        assert "--noverify not supported" in result.output
+        assert "no verification to skip" in result.output

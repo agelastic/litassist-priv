@@ -9,13 +9,18 @@ from click.testing import CliRunner
 
 from litassist.commands.extractfacts import extractfacts
 
+
 class TestExtractFactsBasic:
     """Basic test suite for the extractfacts command."""
 
     def setup_method(self):
         self.runner = CliRunner()
         # Simulated token usage return from LLM
-        self.mock_usage = {"prompt_tokens": 10, "completion_tokens": 5, "total_tokens": 15}
+        self.mock_usage = {
+            "prompt_tokens": 10,
+            "completion_tokens": 5,
+            "total_tokens": 15,
+        }
 
     @patch("litassist.commands.extractfacts.CONFIG")
     @patch("litassist.commands.extractfacts.PROMPTS")

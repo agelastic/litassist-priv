@@ -137,6 +137,48 @@ processing:
       {chunk_analyses}
       
       Provide consolidated legal issues analysis that integrates all identified problems and concerns.
+
+    consolidation_cross_file_summary: |
+      Create a comprehensive executive summary consolidating analyses from {file_count} documents.
+      
+      **EXECUTIVE SUMMARY**
+      
+      Provide a high-level overview synthesizing the key findings across all documents.
+      
+      **KEY THEMES ACROSS DOCUMENTS**
+      
+      - Theme 1: [Description across files]
+      - Theme 2: [Description across files]
+      
+      **CROSS-DOCUMENT TIMELINE**
+      
+      Merge chronological events from all files into unified timeline:
+      - [Date]: [Event noting which document(s)]
+      
+      **PATTERNS AND CONNECTIONS**
+      
+      Identify relationships and patterns between the documents.
+      
+      Individual file analyses:
+      {file_digests}
+
+    consolidation_cross_file_issues: |
+      Create a unified legal issues analysis consolidating {file_count} documents.
+      
+      **CONSOLIDATED LEGAL ISSUES**
+      
+      Synthesize legal issues identifying which documents support each issue.
+      
+      **ISSUE PRIORITY MATRIX**
+      
+      Rank issues by significance across all documents.
+      
+      **CONTRADICTIONS AND GAPS**
+      
+      Note any inconsistencies between documents.
+      
+      Individual file analyses:
+      {file_digests}
   
   # Draft command prompts
   # USED BY: draft.py - legal document generation

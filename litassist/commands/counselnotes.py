@@ -171,8 +171,12 @@ def counselnotes(files, extract, verify, cove, output):
             final_content = f"[Consolidated from {len(extraction_results)} document chunks]\n\n{consolidated_text}"
         else:
             # Single chunk - use as is
-            final_content = extraction_results[0] if extraction_results else "No extraction results."
-        
+            final_content = (
+                extraction_results[0]
+                if extraction_results
+                else "No extraction results."
+            )
+
         all_output.append(final_content)
 
     else:
@@ -265,12 +269,14 @@ def counselnotes(files, extract, verify, cove, output):
 
             # Now consolidate all chunk analyses into final strategic notes
             click.echo(
-                info_message("Consolidating analyses into comprehensive strategic notes...")
+                info_message(
+                    "Consolidating analyses into comprehensive strategic notes..."
+                )
             )
 
             consolidated_content = "\n\n".join(
                 [
-                    f"=== ANALYSIS FROM DOCUMENT SECTION {i+1} ===\n{analysis}\n=== END ANALYSIS FROM DOCUMENT SECTION {i+1} ==="
+                    f"=== ANALYSIS FROM DOCUMENT SECTION {i + 1} ===\n{analysis}\n=== END ANALYSIS FROM DOCUMENT SECTION {i + 1} ==="
                     for i, analysis in enumerate(chunk_analyses)
                 ]
             )
@@ -326,14 +332,16 @@ def counselnotes(files, extract, verify, cove, output):
     # Apply Chain of Verification if requested
     if cove:
         original_content = final_content
-        final_content, cove_results = run_cove_verification(final_content, 'counselnotes')
-        if not cove_results['cove']['passed']:
+        final_content, cove_results = run_cove_verification(
+            final_content, "counselnotes"
+        )
+        if not cove_results["cove"]["passed"]:
             # Content has been regenerated to fix issues
             click.echo(success_message("CoVe corrected issues - notes regenerated"))
             comprehensive_log["cove_regeneration"] = {
                 "original_length": len(original_content),
                 "regenerated_length": len(final_content),
-                "issues_fixed": cove_results['cove']['issues']
+                "issues_fixed": cove_results["cove"]["issues"],
             }
         else:
             click.echo(success_message("CoVe verification passed - no issues found"))
@@ -341,7 +349,7 @@ def counselnotes(files, extract, verify, cove, output):
     # Prepare metadata for save_command_output
     files_summary = ", ".join([info["name"] for info in file_info])
     mode_description = f"extraction ({extract})" if extract else "strategic analysis"
-    
+
     # Note: Header is now handled by save_command_output, not added to content
 
     # Save output using utility
@@ -362,7 +370,7 @@ def counselnotes(files, extract, verify, cove, output):
         },
     )
 
-    # Save comprehensive audit log
+    # Save comprehensive audit log (without response content)
     save_log(
         f"counselnotes_{extract if extract else 'analysis'}",
         {
@@ -375,7 +383,7 @@ def counselnotes(files, extract, verify, cove, output):
                 "chunks_processed": len(chunks),
             },
             "params": f"extract={extract}, verify={verify}, files={len(files)}",
-            "responses": comprehensive_log["responses"],
+            # Response content removed - already logged by LLMClient separately
             "usage": comprehensive_log["total_usage"],
             "output_file": output_file,
         },
