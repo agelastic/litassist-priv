@@ -867,7 +867,7 @@ class LLMClient(LLMVerificationMixin):
     # The enclosing `complete` method now emits heartbeat updates, so we no
     # longer need a second heartbeat layer here. Retaining only the timing
     # decorator avoids duplicated progress messages.
-    @heartbeat(CONFIG.heartbeat_interval)
+    @heartbeat(CONFIG.heartbeat_interval if CONFIG else 15)
     @timed
     def complete(
         self,
