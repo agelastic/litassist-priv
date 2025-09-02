@@ -5,20 +5,46 @@ Tests for the lookup command functionality.
 from unittest.mock import Mock, patch
 from click.testing import CliRunner
 
-from litassist.commands.lookup import lookup
-
 
 class TestLookupCommand:
     """Test the lookup command functionality."""
 
-
+    @patch("litassist.commands.lookup.get_config")
+    @patch("litassist.commands.lookup.search.get_config")
     @patch("litassist.commands.lookup.fetchers._fetch_url_content", return_value="")
-    @patch("litassist.commands.lookup.fetchers._fetch_url_content_selenium_with_timeout", return_value="")
+    @patch(
+        "litassist.commands.lookup.fetchers._fetch_url_content_selenium_with_timeout",
+        return_value="",
+    )
     @patch("litassist.commands.lookup.search.time.sleep")
     @patch("googleapiclient.discovery.build")
     @patch("litassist.llm.LLMClientFactory.for_command")
-    def test_lookup_command_standard_mode(self, mock_factory, mock_build, mock_sleep, mock_fetch_selenium, mock_fetch):
+    def test_lookup_command_standard_mode(
+        self,
+        mock_factory,
+        mock_build,
+        mock_sleep,
+        mock_fetch_selenium,
+        mock_fetch,
+        mock_search_get_config,
+        mock_init_get_config,
+    ):
         """Test lookup command in standard mode."""
+        from litassist.commands.lookup import lookup
+
+        # Mock config with all required attributes
+        mock_config = Mock()
+        mock_config.g_key = "test_key"
+        mock_config.cse_id = "test_cse"
+        mock_config.cse_id_austlii = None
+        mock_config.cse_id_comprehensive = None
+        mock_config.max_fetch_time = 60
+        mock_config.fetch_timeout = 10
+        mock_config.selenium_timeout_multiplier = 2
+        mock_config.selenium_enabled = False
+        mock_search_get_config.return_value = mock_config
+        mock_init_get_config.return_value = mock_config
+
         # Mock the CSE service
         mock_cse_service = Mock()
         mock_build.return_value = mock_cse_service
@@ -39,12 +65,12 @@ class TestLookupCommand:
         mock_factory.return_value = mock_client
 
         # Mock save functions
-        with patch(
-            "litassist.commands.lookup.processors.save_command_output"
-        ) as mock_save_output, patch(
-            "litassist.commands.lookup.save_log"
-        ) as _mock_save_log:
-
+        with (
+            patch(
+                "litassist.commands.lookup.processors.save_command_output"
+            ) as mock_save_output,
+            patch("litassist.commands.lookup.save_log") as _mock_save_log,
+        ):
             mock_save_output.return_value = "output_file.txt"
 
             runner = CliRunner()
@@ -55,13 +81,42 @@ class TestLookupCommand:
             assert "[SUCCESS] Lookup complete!" in result.output
             assert "Standard search: 2 sources analyzed" in result.output
 
+    @patch("litassist.commands.lookup.get_config")
+    @patch("litassist.commands.lookup.search.get_config")
     @patch("litassist.commands.lookup.fetchers._fetch_url_content", return_value="")
-    @patch("litassist.commands.lookup.fetchers._fetch_url_content_selenium_with_timeout", return_value="")
+    @patch(
+        "litassist.commands.lookup.fetchers._fetch_url_content_selenium_with_timeout",
+        return_value="",
+    )
     @patch("litassist.commands.lookup.search.time.sleep")
     @patch("googleapiclient.discovery.build")
     @patch("litassist.llm.LLMClientFactory.for_command")
-    def test_lookup_command_comprehensive_mode(self, mock_factory, mock_build, mock_sleep, mock_fetch_selenium, mock_fetch):
+    def test_lookup_command_comprehensive_mode(
+        self,
+        mock_factory,
+        mock_build,
+        mock_sleep,
+        mock_fetch_selenium,
+        mock_fetch,
+        mock_search_get_config,
+        mock_init_get_config,
+    ):
         """Test lookup command in comprehensive mode."""
+        from litassist.commands.lookup import lookup
+
+        # Mock config with all required attributes
+        mock_config = Mock()
+        mock_config.g_key = "test_key"
+        mock_config.cse_id = "test_cse"
+        mock_config.cse_id_austlii = None
+        mock_config.cse_id_comprehensive = None
+        mock_config.max_fetch_time = 60
+        mock_config.fetch_timeout = 10
+        mock_config.selenium_timeout_multiplier = 2
+        mock_config.selenium_enabled = False
+        mock_search_get_config.return_value = mock_config
+        mock_init_get_config.return_value = mock_config
+
         # Mock the CSE service to return multiple results for different queries
         mock_cse_service = Mock()
         mock_build.return_value = mock_cse_service
@@ -83,12 +138,12 @@ class TestLookupCommand:
         mock_factory.return_value = mock_client
 
         # Mock save functions
-        with patch(
-            "litassist.commands.lookup.processors.save_command_output"
-        ) as mock_save_output, patch(
-            "litassist.commands.lookup.save_log"
-        ) as _mock_save_log:
-
+        with (
+            patch(
+                "litassist.commands.lookup.processors.save_command_output"
+            ) as mock_save_output,
+            patch("litassist.commands.lookup.save_log") as _mock_save_log,
+        ):
             mock_save_output.return_value = "output_file.txt"
 
             runner = CliRunner()
@@ -97,13 +152,42 @@ class TestLookupCommand:
             assert result.exit_code == 0
             assert "Exhaustive search:" in result.output
 
+    @patch("litassist.commands.lookup.get_config")
+    @patch("litassist.commands.lookup.search.get_config")
     @patch("litassist.commands.lookup.fetchers._fetch_url_content", return_value="")
-    @patch("litassist.commands.lookup.fetchers._fetch_url_content_selenium_with_timeout", return_value="")
+    @patch(
+        "litassist.commands.lookup.fetchers._fetch_url_content_selenium_with_timeout",
+        return_value="",
+    )
     @patch("litassist.commands.lookup.search.time.sleep")
     @patch("googleapiclient.discovery.build")
     @patch("litassist.llm.LLMClientFactory.for_command")
-    def test_lookup_command_with_extraction(self, mock_factory, mock_build, mock_sleep, mock_fetch_selenium, mock_fetch):
+    def test_lookup_command_with_extraction(
+        self,
+        mock_factory,
+        mock_build,
+        mock_sleep,
+        mock_fetch_selenium,
+        mock_fetch,
+        mock_search_get_config,
+        mock_init_get_config,
+    ):
         """Test lookup command with extract option."""
+        from litassist.commands.lookup import lookup
+
+        # Mock config with all required attributes
+        mock_config = Mock()
+        mock_config.g_key = "test_key"
+        mock_config.cse_id = "test_cse"
+        mock_config.cse_id_austlii = None
+        mock_config.cse_id_comprehensive = None
+        mock_config.max_fetch_time = 60
+        mock_config.fetch_timeout = 10
+        mock_config.selenium_timeout_multiplier = 2
+        mock_config.selenium_enabled = False
+        mock_search_get_config.return_value = mock_config
+        mock_init_get_config.return_value = mock_config
+
         # Mock the CSE service
         mock_cse_service = Mock()
         mock_build.return_value = mock_cse_service
@@ -121,18 +205,18 @@ class TestLookupCommand:
         mock_factory.return_value = mock_client
 
         # Mock save functions
-        with patch(
-            "litassist.commands.lookup.processors.save_command_output"
-        ) as mock_save_output, patch(
-            "litassist.commands.lookup.save_log"
-        ) as _mock_save_log:
-
+        with (
+            patch(
+                "litassist.commands.lookup.processors.save_command_output"
+            ) as mock_save_output,
+            patch("litassist.commands.lookup.save_log") as _mock_save_log,
+        ):
             mock_save_output.return_value = "output_file.txt"
-            
+
             # Mock the LLM to return formatted text directly
             mock_client.complete.return_value = (
                 "CITATIONS FOUND:\n• [2021] FCA 123",
-                {"total_tokens": 100}
+                {"total_tokens": 100},
             )
 
             runner = CliRunner()
@@ -140,23 +224,48 @@ class TestLookupCommand:
 
             assert result.exit_code == 0
             assert "Citations extracted" in result.output
-            
+
             # Verify save_command_output was called with formatted text
             mock_save_output.assert_called_once()
 
+    @patch("litassist.commands.lookup.get_config")
+    @patch("litassist.commands.lookup.search.get_config")
     @patch("litassist.commands.lookup.fetchers._fetch_url_content", return_value="")
-    @patch("litassist.commands.lookup.fetchers._fetch_url_content_selenium_with_timeout", return_value="")
+    @patch(
+        "litassist.commands.lookup.fetchers._fetch_url_content_selenium_with_timeout",
+        return_value="",
+    )
     @patch("litassist.commands.lookup.search.time.sleep")
-    def test_lookup_command_irac_vs_broad_mode(self, mock_sleep, mock_fetch_selenium, mock_fetch):
+    def test_lookup_command_irac_vs_broad_mode(
+        self,
+        mock_sleep,
+        mock_fetch_selenium,
+        mock_fetch,
+        mock_search_get_config,
+        mock_init_get_config,
+    ):
         """Test that IRAC and broad modes use different LLM parameters."""
-        with patch("googleapiclient.discovery.build") as mock_build, patch(
-            "litassist.llm.LLMClientFactory.for_command"
-        ) as mock_factory, patch(
-            "litassist.commands.lookup.processors.save_command_output"
-        ), patch(
-            "litassist.commands.lookup.save_log"
-        ):
+        from litassist.commands.lookup import lookup
 
+        # Mock config with all required attributes
+        mock_config = Mock()
+        mock_config.g_key = "test_key"
+        mock_config.cse_id = "test_cse"
+        mock_config.cse_id_austlii = None
+        mock_config.cse_id_comprehensive = None
+        mock_config.max_fetch_time = 60
+        mock_config.fetch_timeout = 10
+        mock_config.selenium_timeout_multiplier = 2
+        mock_config.selenium_enabled = False
+        mock_search_get_config.return_value = mock_config
+        mock_init_get_config.return_value = mock_config
+
+        with (
+            patch("googleapiclient.discovery.build") as mock_build,
+            patch("litassist.llm.LLMClientFactory.for_command") as mock_factory,
+            patch("litassist.commands.lookup.processors.save_command_output"),
+            patch("litassist.commands.lookup.save_log"),
+        ):
             # Mock CSE
             mock_cse_service = Mock()
             mock_build.return_value = mock_cse_service
@@ -166,7 +275,9 @@ class TestLookupCommand:
 
             # Mock LLM client
             mock_client = Mock()
-            mock_client.model = "test-model"  # Add model attribute for token limit checks
+            mock_client.model = (
+                "test-model"  # Add model attribute for token limit checks
+            )
             mock_client.complete.return_value = ("Analysis", {"total_tokens": 100})
             mock_factory.return_value = mock_client
 
@@ -194,23 +305,180 @@ class TestLookupCommand:
             assert call_args[1]["temperature"] == 0.5
             assert call_args[1]["top_p"] == 0.9
 
+    @patch.dict("os.environ", {"CSE_RATE_LIMIT_DELAY": "0"})
+    @patch("litassist.commands.lookup.get_config")
+    @patch("litassist.commands.lookup.search.get_config")
+    @patch("litassist.commands.lookup.fetchers._fetch_url_content", return_value="")
+    @patch(
+        "litassist.commands.lookup.fetchers._fetch_url_content_selenium_with_timeout",
+        return_value="",
+    )
+    @patch("time.sleep")
+    @patch("googleapiclient.discovery.build")
+    @patch("litassist.llm.LLMClientFactory.for_command")
+    def test_verify_flag_not_supported(
+        self,
+        mock_factory,
+        mock_build,
+        mock_sleep,
+        mock_fetch_selenium,
+        mock_fetch,
+        mock_search_get_config,
+        mock_init_get_config,
+    ):
+        """Test that --verify flag shows appropriate warning."""
+        from litassist.commands.lookup import lookup
+
+        # Mock config with all required attributes
+        mock_config = Mock()
+        mock_config.g_key = "test_key"
+        mock_config.cse_id = "test_cse"
+        mock_config.cse_id_austlii = None
+        mock_config.cse_id_comprehensive = None
+        mock_config.max_fetch_time = 60  # Required by processors.py
+        mock_config.fetch_timeout = 10  # Required by processors.py
+        mock_config.selenium_timeout_multiplier = 2  # Required by processors.py
+        mock_config.selenium_enabled = False  # Required by processors.py
+        mock_search_get_config.return_value = mock_config
+        mock_init_get_config.return_value = mock_config
+
+        # Mock CSE service
+        mock_cse_service = Mock()
+        mock_build.return_value = mock_cse_service
+        mock_cse_service.cse.return_value.list.return_value.execute.return_value = {
+            "items": [{"link": "http://example.com", "snippet": "Test snippet"}]
+        }
+
+        # Mock LLM client
+        mock_client = Mock()
+        mock_client.model = "test-model"
+        mock_client.complete.return_value = ("Test response", {"total_tokens": 100})
+        mock_factory.return_value = mock_client
+
+        # Mock save functions
+        with (
+            patch(
+                "litassist.commands.lookup.processors.save_command_output"
+            ) as mock_save_output,
+            patch("litassist.commands.lookup.save_log") as _mock_save_log,
+        ):
+            mock_save_output.return_value = "test_output.txt"
+
+            runner = CliRunner()
+            result = runner.invoke(
+                lookup, ["test question", "--verify"], catch_exceptions=False
+            )
+            assert "--verify not supported" in result.output
+            assert "Use 'litassist verify'" in result.output
+
+    @patch.dict("os.environ", {"CSE_RATE_LIMIT_DELAY": "0"})
+    @patch("litassist.commands.lookup.get_config")
+    @patch("litassist.commands.lookup.search.get_config")
+    @patch("litassist.commands.lookup.fetchers._fetch_url_content", return_value="")
+    @patch(
+        "litassist.commands.lookup.fetchers._fetch_url_content_selenium_with_timeout",
+        return_value="",
+    )
+    @patch("time.sleep")
+    @patch("googleapiclient.discovery.build")
+    @patch("litassist.llm.LLMClientFactory.for_command")
+    def test_noverify_flag_not_supported(
+        self,
+        mock_factory,
+        mock_build,
+        mock_sleep,
+        mock_fetch_selenium,
+        mock_fetch,
+        mock_search_get_config,
+        mock_init_get_config,
+    ):
+        """Test that --noverify flag shows appropriate warning."""
+        from litassist.commands.lookup import lookup
+
+        # Mock config with all required attributes
+        mock_config = Mock()
+        mock_config.g_key = "test_key"
+        mock_config.cse_id = "test_cse"
+        mock_config.cse_id_austlii = None
+        mock_config.cse_id_comprehensive = None
+        mock_config.max_fetch_time = 60  # Required by processors.py
+        mock_config.fetch_timeout = 10  # Required by processors.py
+        mock_config.selenium_timeout_multiplier = 2  # Required by processors.py
+        mock_config.selenium_enabled = False  # Required by processors.py
+        mock_search_get_config.return_value = mock_config
+        mock_init_get_config.return_value = mock_config
+
+        # Mock CSE service
+        mock_cse_service = Mock()
+        mock_build.return_value = mock_cse_service
+        mock_cse_service.cse.return_value.list.return_value.execute.return_value = {
+            "items": [{"link": "http://example.com", "snippet": "Test snippet"}]
+        }
+
+        # Mock LLM client
+        mock_client = Mock()
+        mock_client.model = "test-model"
+        mock_client.complete.return_value = ("Test response", {"total_tokens": 100})
+        mock_factory.return_value = mock_client
+
+        # Mock save functions
+        with (
+            patch(
+                "litassist.commands.lookup.processors.save_command_output"
+            ) as mock_save_output,
+            patch("litassist.commands.lookup.save_log") as _mock_save_log,
+        ):
+            mock_save_output.return_value = "test_output.txt"
+
+            runner = CliRunner()
+            result = runner.invoke(lookup, ["test question", "--noverify"])
+
+            assert result.exit_code == 0
+            assert "--noverify not supported" in result.output
+            assert "no verification to skip" in result.output
+
 
 class TestLookupCommandIntegration:
     """Integration tests for lookup command."""
 
+    @patch("litassist.commands.lookup.get_config")
+    @patch("litassist.commands.lookup.search.get_config")
     @patch("litassist.commands.lookup.fetchers._fetch_url_content", return_value="")
-    @patch("litassist.commands.lookup.fetchers._fetch_url_content_selenium_with_timeout", return_value="")
+    @patch(
+        "litassist.commands.lookup.fetchers._fetch_url_content_selenium_with_timeout",
+        return_value="",
+    )
     @patch("litassist.commands.lookup.search.time.sleep")
-    def test_comprehensive_mode_parameters(self, mock_sleep, mock_fetch_selenium, mock_fetch):
+    def test_comprehensive_mode_parameters(
+        self,
+        mock_sleep,
+        mock_fetch_selenium,
+        mock_fetch,
+        mock_search_get_config,
+        mock_init_get_config,
+    ):
         """Test that comprehensive mode uses correct parameters."""
-        with patch("googleapiclient.discovery.build") as mock_build, patch(
-            "litassist.llm.LLMClientFactory.for_command"
-        ) as mock_factory, patch(
-            "litassist.commands.lookup.processors.save_command_output"
-        ), patch(
-            "litassist.commands.lookup.save_log"
-        ):
+        from litassist.commands.lookup import lookup
 
+        # Mock config with all required attributes
+        mock_config = Mock()
+        mock_config.g_key = "test_key"
+        mock_config.cse_id = "test_cse"
+        mock_config.cse_id_austlii = None
+        mock_config.cse_id_comprehensive = None
+        mock_config.max_fetch_time = 60
+        mock_config.fetch_timeout = 10
+        mock_config.selenium_timeout_multiplier = 2
+        mock_config.selenium_enabled = False
+        mock_search_get_config.return_value = mock_config
+        mock_init_get_config.return_value = mock_config
+
+        with (
+            patch("googleapiclient.discovery.build") as mock_build,
+            patch("litassist.llm.LLMClientFactory.for_command") as mock_factory,
+            patch("litassist.commands.lookup.processors.save_command_output"),
+            patch("litassist.commands.lookup.save_log"),
+        ):
             # Mock CSE
             mock_cse_service = Mock()
             mock_build.return_value = mock_cse_service
@@ -220,7 +488,9 @@ class TestLookupCommandIntegration:
 
             # Mock LLM client
             mock_client = Mock()
-            mock_client.model = "test-model"  # Add model attribute for token limit checks
+            mock_client.model = (
+                "test-model"  # Add model attribute for token limit checks
+            )
             mock_client.complete.return_value = ("Analysis", {"total_tokens": 100})
             mock_factory.return_value = mock_client
 
@@ -240,6 +510,8 @@ class TestLookupCommandIntegration:
 
     def test_no_engine_option_anymore(self):
         """Test that --engine option is no longer available."""
+        from litassist.commands.lookup import lookup
+
         runner = CliRunner()
         result = runner.invoke(lookup, ["test", "--engine", "google"])
 

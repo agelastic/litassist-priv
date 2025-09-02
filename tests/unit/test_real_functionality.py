@@ -25,7 +25,9 @@ class TestActualFunctionality:
         # Verify text is preserved (may have whitespace normalization)
         reconstructed = "".join(chunks)
         # Allow for some text compression due to whitespace normalization
-        assert len(reconstructed) >= len(text) * 0.95  # Allow 5% compression from normalization
+        assert (
+            len(reconstructed) >= len(text) * 0.95
+        )  # Allow 5% compression from normalization
 
     def test_real_config_mock(self):
         """Test with properly mocked config."""
@@ -34,7 +36,6 @@ class TestActualFunctionality:
         # The config should be mocked by conftest.py
         assert CONFIG is not None
         assert hasattr(CONFIG, "openai_api_key")
-
 
     def test_save_log_creates_file(self):
         """Test save_log creates actual files."""
@@ -48,7 +49,7 @@ class TestActualFunctionality:
             with patch("litassist.logging_utils.LOG_DIR", temp_dir):
                 payload = {"input": "test", "response": "result"}
                 save_log("test", payload)
-                
+
                 # Check that a file was created
                 files = os.listdir(temp_dir)
                 assert len(files) == 1

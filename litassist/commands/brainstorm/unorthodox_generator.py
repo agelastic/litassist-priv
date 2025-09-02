@@ -21,12 +21,12 @@ from litassist.prompts import PROMPTS
 def generate_unorthodox_strategies(facts: str, side: str, area: str):
     """
     Generate unorthodox legal strategies with automatic verification.
-    
+
     Args:
         facts: Case facts content
         side: Which side (plaintiff/defendant/etc)
         area: Legal area (civil/criminal/etc)
-    
+
     Returns:
         Tuple of (content, usage, citation_issues, verification_result)
     """
@@ -40,16 +40,13 @@ def generate_unorthodox_strategies(facts: str, side: str, area: str):
     # Use centralized unorthodox prompt template
     unorthodox_template = PROMPTS.get("strategies.brainstorm.unorthodox_prompt")
     # Build unorthodox base prompt from template
-    unorthodox_base_content = PROMPTS.get("strategies.brainstorm.unorthodox_base").format(
-        facts=facts,
-        side=side,
-        area=area,
-        research=unorthodox_template
-    )
-    
-    unorthodox_base_prompt = PROMPTS.get("strategies.brainstorm.unorthodox_output_format").format(
-        content=unorthodox_base_content
-    )
+    unorthodox_base_content = PROMPTS.get(
+        "strategies.brainstorm.unorthodox_base"
+    ).format(facts=facts, side=side, area=area, research=unorthodox_template)
+
+    unorthodox_base_prompt = PROMPTS.get(
+        "strategies.brainstorm.unorthodox_output_format"
+    ).format(content=unorthodox_base_content)
 
     # Add reasoning trace to unorthodox prompt
     unorthodox_prompt = create_reasoning_prompt(
@@ -65,11 +62,11 @@ def generate_unorthodox_strategies(facts: str, side: str, area: str):
 
     # Execute the query for unorthodox strategies
     try:
-        unorthodox_content, unorthodox_usage = unorthodox_client.complete(unorthodox_messages)
-    except Exception as e:
-        raise click.ClickException(
-            f"Error generating unorthodox strategies: {str(e)}"
+        unorthodox_content, unorthodox_usage = unorthodox_client.complete(
+            unorthodox_messages
         )
+    except Exception as e:
+        raise click.ClickException(f"Error generating unorthodox strategies: {str(e)}")
 
     # Verify the unorthodox strategies for legal accuracy
     click.echo(verifying_message("Verifying unorthodox strategies..."))
@@ -78,9 +75,7 @@ def generate_unorthodox_strategies(facts: str, side: str, area: str):
 
     # Try to extract just the verified document part
     match = re.search(
-        r"## Verified and Corrected Document\s*\n(.*)",
-        verification_result,
-        re.DOTALL
+        r"## Verified and Corrected Document\s*\n(.*)", verification_result, re.DOTALL
     )
 
     if match:
@@ -90,14 +85,18 @@ def generate_unorthodox_strategies(facts: str, side: str, area: str):
         click.echo(success_message("Unorthodox strategies verified"))
     else:
         # Could not find expected format - log error and use whole output
-        logging.error("Unexpected verification format - expected '## Verified and Corrected Document' header")
+        logging.error(
+            "Unexpected verification format - expected '## Verified and Corrected Document' header"
+        )
         # Use the whole verification result as-is
         unorthodox_content = verification_result
-        click.echo(warning_message("Verification format unexpected - using complete output"))
+        click.echo(
+            warning_message("Verification format unexpected - using complete output")
+        )
 
     # Validate citations
     unorthodox_citation_issues = unorthodox_client.validate_citations(
         unorthodox_content
     )
-    
+
     return unorthodox_content, unorthodox_usage, unorthodox_citation_issues

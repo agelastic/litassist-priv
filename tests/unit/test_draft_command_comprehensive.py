@@ -42,7 +42,7 @@ class TestDraftCommand:
         mock_client.validate_citations.return_value = []
         mock_client.verify.return_value = (
             "STATEMENT OF CLAIM\n1. The plaintiff claims...",
-            "mock-model"
+            "mock-model",
         )
         mock_llm_factory.return_value = mock_client
         mock_save_output.return_value = "outputs/draft_test.txt"
@@ -125,7 +125,7 @@ class TestDraftCommand:
         mock_client.validate_citations.return_value = []
         mock_client.verify.return_value = (
             "AFFIDAVIT OF JOHN SMITH\nI, John Smith, make oath and say:",
-            "mock-model"
+            "mock-model",
         )
         mock_llm_factory.return_value = mock_client
         mock_save_output.return_value = "outputs/affidavit_test.txt"
@@ -443,7 +443,7 @@ class TestDraftIntegration:
         ]
         mock_client.verify.return_value = (
             "STATEMENT OF CLAIM\nWith invalid citation [2025] FAKE 999",
-            "mock-model"
+            "mock-model",
         )
         mock_llm_factory.return_value = mock_client
         mock_save_output.return_value = "test_output.txt"
@@ -503,7 +503,7 @@ class TestDraftIntegration:
         mock_client.validate_citations.return_value = []
         mock_client.verify.return_value = (
             "PREMIUM STATEMENT OF CLAIM\nDetailed legal analysis...",
-            "mock-model"
+            "mock-model",
         )
         mock_llm_factory.return_value = mock_client
         mock_save_output.return_value = "outputs/premium_draft.txt"

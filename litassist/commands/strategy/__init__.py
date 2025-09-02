@@ -7,4 +7,4 @@ legal strategies and documents for Australian civil proceedings.
 
 from .core import strategy
 
-__all__ = ['strategy']
+__all__ = ["strategy"]

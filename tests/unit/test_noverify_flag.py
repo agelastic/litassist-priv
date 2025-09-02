@@ -46,25 +46,22 @@ class TestNoVerifyFlag:
         mock_prompts.get_system_prompt.return_value = "System prompt"
         mock_save.return_value = "output.txt"
         mock_verify.return_value = ("Content", None)
-        
+
         # Create test file
         with tempfile.NamedTemporaryFile(mode="w", suffix=".txt", delete=False) as f:
             f.write("Test document content")
             test_file = f.name
-        
+
         try:
             # Run command with --noverify
-            result = self.runner.invoke(
-                extractfacts,
-                [test_file, "--noverify"]
-            )
-            
+            result = self.runner.invoke(extractfacts, [test_file, "--noverify"])
+
             # Verify command succeeded
             assert result.exit_code == 0
-            
+
             # Verify that verify_content_if_needed was NOT called when --noverify is set
             mock_verify.assert_not_called()
-            
+
         finally:
             Path(test_file).unlink()
 
@@ -85,27 +82,32 @@ class TestNoVerifyFlag:
         mock_prompts.get_system_prompt.return_value = "System prompt"
         mock_save.return_value = "output.txt"
         mock_verify.return_value = ("Verified content", None)
-        
+
         # Create test file
         with tempfile.NamedTemporaryFile(mode="w", suffix=".txt", delete=False) as f:
             f.write("Test document content")
             test_file = f.name
-        
+
         try:
             # Run command without --noverify
-            result = self.runner.invoke(
-                extractfacts,
-                [test_file]
-            )
-            
+            result = self.runner.invoke(extractfacts, [test_file])
+
             # Verify command succeeded
             assert result.exit_code == 0
-            
+
             # Verify that verify_content_if_needed was called with verify_flag=True
             mock_verify.assert_called_once()
             # Check using keyword args or positional args
-            assert mock_verify.call_args.kwargs.get('verify_flag', mock_verify.call_args.args[3] if len(mock_verify.call_args.args) > 3 else None) is True
-            
+            assert (
+                mock_verify.call_args.kwargs.get(
+                    "verify_flag",
+                    mock_verify.call_args.args[3]
+                    if len(mock_verify.call_args.args) > 3
+                    else None,
+                )
+                is True
+            )
+
         finally:
             Path(test_file).unlink()
 
@@ -125,7 +127,7 @@ class TestNoVerifyFlag:
         mock_save.return_value = "output.txt"
         mock_verify.return_value = ("Content", None)
         mock_extract.return_value = ["Issue 1", "Issue 2"]
-        
+
         # Create test case facts file with proper format
         with tempfile.NamedTemporaryFile(mode="w", suffix=".txt", delete=False) as f:
             f.write("""
@@ -160,20 +162,19 @@ Client Objectives:
 Test objectives
             """)
             facts_file = f.name
-        
+
         try:
             # Run command with --noverify
             result = self.runner.invoke(
-                strategy,
-                [facts_file, "--outcome", "Win case", "--noverify"]
+                strategy, [facts_file, "--outcome", "Win case", "--noverify"]
             )
-            
+
             # Verify command succeeded
             assert result.exit_code == 0
-            
+
             # Verify that verify_content_if_needed was NOT called when --noverify is set
             mock_verify.assert_not_called()
-            
+
         finally:
             Path(facts_file).unlink()
 
@@ -189,29 +190,29 @@ Test objectives
         mock_factory.return_value = self.mock_client
         mock_prompts.get.return_value = "Test prompt"
         mock_save.return_value = "output.txt"
-        
+
         # Create test file
         with tempfile.NamedTemporaryFile(mode="w", suffix=".txt", delete=False) as f:
             f.write("Test document content")
             test_file = f.name
-        
+
         try:
             # Run command with --noverify
             result = self.runner.invoke(
                 draft,
                 [test_file, "Draft a witness statement", "--noverify"],
-                obj={"premium": False}
+                obj={"premium": False},
             )
-            
+
             # Verify command succeeded
             assert result.exit_code == 0
-            
+
             # Verify that verify_content_if_needed was NOT called
             mock_verify.assert_not_called()
-            
+
             # Verify the skip message appears
             assert "Standard verification skipped" in result.output
-            
+
         finally:
             Path(test_file).unlink()
 
@@ -233,40 +234,42 @@ Test objectives
         mock_prompts.get_system_prompt.return_value = "System prompt"
         mock_save.return_value = "output.txt"
         mock_verify.return_value = ("Content", None)
-        
+
         # Mock CoVe to return success
-        mock_cove.return_value = ("CoVe verified content", {
-            'cove': {
-                'passed': True,
-                'regenerated': False,
-                'issues': None,
-                'questions': 'Test questions',
-                'answers': 'Test answers'
-            }
-        })
-        
+        mock_cove.return_value = (
+            "CoVe verified content",
+            {
+                "cove": {
+                    "passed": True,
+                    "regenerated": False,
+                    "issues": None,
+                    "questions": "Test questions",
+                    "answers": "Test answers",
+                }
+            },
+        )
+
         # Create test file
         with tempfile.NamedTemporaryFile(mode="w", suffix=".txt", delete=False) as f:
             f.write("Test document content")
             test_file = f.name
-        
+
         try:
             # Run command with both --noverify and --cove
             result = self.runner.invoke(
-                extractfacts,
-                [test_file, "--noverify", "--cove"]
+                extractfacts, [test_file, "--noverify", "--cove"]
             )
-            
+
             # Verify command succeeded
             assert result.exit_code == 0
-            
+
             # When CoVe is enabled, standard verification is NOT called
             # because CoVe replaces it entirely (see extractfacts.py line 180-199)
             mock_verify.assert_not_called()
-            
+
             # But CoVe verification should still run despite --noverify
             mock_cove.assert_called_once()
-            
+
         finally:
             Path(test_file).unlink()
 
@@ -283,18 +286,21 @@ Test objectives
         mock_factory.return_value = self.mock_client
         mock_prompts.get.return_value = "Test prompt"
         mock_save.return_value = "output.txt"
-        
+
         # Mock CoVe to return regenerated content
-        mock_cove.return_value = ("CoVe regenerated content", {
-            'cove': {
-                'passed': False,
-                'regenerated': True,
-                'issues': 'Found issues',
-                'questions': 'Test questions',
-                'answers': 'Test answers'
-            }
-        })
-        
+        mock_cove.return_value = (
+            "CoVe regenerated content",
+            {
+                "cove": {
+                    "passed": False,
+                    "regenerated": True,
+                    "issues": "Found issues",
+                    "questions": "Test questions",
+                    "answers": "Test answers",
+                }
+            },
+        )
+
         # Create test case facts file
         with tempfile.NamedTemporaryFile(mode="w", suffix=".txt", delete=False) as f:
             f.write("""
@@ -329,24 +335,23 @@ Client Objectives:
 Test objectives
             """)
             facts_file = f.name
-        
+
         try:
             # Run command with both flags
             result = self.runner.invoke(
-                strategy,
-                [facts_file, "--outcome", "Win case", "--noverify", "--cove"]
+                strategy, [facts_file, "--outcome", "Win case", "--noverify", "--cove"]
             )
-            
+
             # Verify command succeeded
             assert result.exit_code == 0
-            
+
             # Standard verification should be skipped
             # But since CoVe is enabled, verify_content_if_needed won't be called
             # because CoVe takes precedence
-            
+
             # CoVe should run despite --noverify
             mock_cove.assert_called_once()
-            
+
         finally:
             Path(facts_file).unlink()
 
@@ -363,34 +368,35 @@ Test objectives
         mock_factory.return_value = self.mock_client
         mock_prompts.get.return_value = "Test prompt"
         mock_save.return_value = "output.txt"
-        
+
         # Mock CoVe
-        mock_cove.return_value = ("CoVe content", {
-            'cove': {'passed': True, 'regenerated': False}
-        })
-        
+        mock_cove.return_value = (
+            "CoVe content",
+            {"cove": {"passed": True, "regenerated": False}},
+        )
+
         # Create test file
         with tempfile.NamedTemporaryFile(mode="w", suffix=".txt", delete=False) as f:
             f.write("Test content")
             test_file = f.name
-        
+
         try:
             # Run with both flags
             result = self.runner.invoke(
                 draft,
                 [test_file, "Draft statement", "--noverify", "--cove"],
-                obj={"premium": False}
+                obj={"premium": False},
             )
-            
+
             # Command should succeed
             assert result.exit_code == 0
-            
+
             # Standard verification skipped
             mock_verify.assert_not_called()
-            
+
             # CoVe should still run
             mock_cove.assert_called_once()
-            
+
         finally:
             Path(test_file).unlink()
 
@@ -422,20 +428,28 @@ class TestVerificationDefaults:
         mock_prompts.get_system_prompt.return_value = "System"
         mock_save.return_value = "out.txt"
         mock_verify.return_value = ("Content", None)
-        
+
         with tempfile.NamedTemporaryFile(mode="w", suffix=".txt", delete=False) as f:
             f.write("Content")
             test_file = f.name
-        
+
         try:
             result = self.runner.invoke(extractfacts, [test_file])
             assert result.exit_code == 0
-            
+
             # Should use verification by default
             mock_verify.assert_called_once()
             # Check using keyword args or positional args
-            assert mock_verify.call_args.kwargs.get('verify_flag', mock_verify.call_args.args[3] if len(mock_verify.call_args.args) > 3 else None) is True
-            
+            assert (
+                mock_verify.call_args.kwargs.get(
+                    "verify_flag",
+                    mock_verify.call_args.args[3]
+                    if len(mock_verify.call_args.args) > 3
+                    else None,
+                )
+                is True
+            )
+
         finally:
             Path(test_file).unlink()
 

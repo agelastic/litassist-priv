@@ -69,9 +69,7 @@ def regenerate_bad_strategies(
             )
             strategies_to_regenerate.append((i, strategy))
         else:
-            click.echo(
-                success_message(f"Strategy {i}: Citations verified")
-            )
+            click.echo(success_message(f"Strategy {i}: Citations verified"))
             strategy_results[i] = strategy
 
     # Regenerate problematic strategies
@@ -91,14 +89,13 @@ def regenerate_bad_strategies(
             # Create focused regeneration prompt
             # Use centralized regeneration prompt template
             # Build regeneration prompt from template
-            regen_content = PROMPTS.get("strategies.brainstorm.regeneration_template").format(
-                base_prompt=base_prompt
-            )
-            
-            regen_prompt = PROMPTS.get("strategies.brainstorm.regeneration_format").format(
-                content=regen_content,
-                strategy_num=strategy_num
-            )
+            regen_content = PROMPTS.get(
+                "strategies.brainstorm.regeneration_template"
+            ).format(base_prompt=base_prompt)
+
+            regen_prompt = PROMPTS.get(
+                "strategies.brainstorm.regeneration_format"
+            ).format(content=regen_content, strategy_num=strategy_num)
 
             try:
                 # Generate single replacement strategy

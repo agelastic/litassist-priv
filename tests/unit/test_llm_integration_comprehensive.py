@@ -56,14 +56,14 @@ class TestLLMClient:
         mock_config.or_base = "https://openrouter.ai/api/v1"
         mock_config.or_key = "test-key"
         mock_config.openai_key = "test-key"
-        
+
         # Mock the OpenAI client
         mock_client = MagicMock()
         mock_get_client.return_value = mock_client
-        
+
         # Simulate connection error for first attempt, then success
         call_count = {"count": 0}
-        
+
         def side_effect(*args, **kwargs):
             if call_count["count"] < 1:
                 call_count["count"] += 1
@@ -81,12 +81,12 @@ class TestLLMClient:
                     "prompt_tokens": 10,
                     "completion_tokens": 5,
                     "total_tokens": 15,
-                }
+                },
             )
             return mock_response
-        
+
         mock_client.chat.completions.create.side_effect = side_effect
-        
+
         client = LLMClient("openai/gpt-4o")
         messages = [{"role": "user", "content": "Test prompt"}]
         content, usage = client.complete(messages, skip_citation_verification=True)
@@ -103,11 +103,11 @@ class TestLLMClient:
         mock_config.or_base = "https://openrouter.ai/api/v1"
         mock_config.or_key = "test-key"
         mock_config.openai_key = "test-key"
-        
+
         # Mock the OpenAI client
         mock_client = MagicMock()
         mock_get_client.return_value = mock_client
-        
+
         # Always succeed
         mock_response = Mock()
         mock_response.choices = [Mock()]
@@ -122,14 +122,14 @@ class TestLLMClient:
                 "prompt_tokens": 10,
                 "completion_tokens": 5,
                 "total_tokens": 15,
-            }
+            },
         )
-        
+
         mock_client.chat.completions.create.return_value = mock_response
-        
+
         client = LLMClient("openai/gpt-4o")
         messages = [{"role": "user", "content": "Test prompt"}]
-        
+
         # Try multiple times to ensure config is preserved
         for _ in range(3):
             content, usage = client.complete(messages, skip_citation_verification=True)
@@ -145,11 +145,11 @@ class TestLLMClient:
         mock_config.or_base = "https://openrouter.ai/api/v1"
         mock_config.or_key = "test-key"
         mock_config.openai_key = "test-key"
-        
+
         # Mock the OpenAI client
         mock_client = MagicMock()
         mock_get_client.return_value = mock_client
-        
+
         mock_response = Mock()
         mock_response.choices = [Mock()]
         mock_response.choices[0].message = Mock(content="Test response")
@@ -163,15 +163,15 @@ class TestLLMClient:
                 "prompt_tokens": 10,
                 "completion_tokens": 20,
                 "total_tokens": 30,
-            }
+            },
         )
-        
+
         mock_client.chat.completions.create.return_value = mock_response
-        
+
         client = LLMClient("openai/gpt-4o", temperature=0.7)
         messages = [{"role": "user", "content": "Test prompt"}]
         content, usage = client.complete(messages, skip_citation_verification=True)
-        
+
         assert content == "Test response"
         assert usage["total_tokens"] == 30
         assert usage["prompt_tokens"] == 10
@@ -187,11 +187,11 @@ class TestLLMClient:
         mock_config.or_base = "https://openrouter.ai/api/v1"
         mock_config.or_key = "test-key"
         mock_config.openai_key = "test-key"
-        
+
         # Mock the OpenAI client
         mock_client = MagicMock()
         mock_get_client.return_value = mock_client
-        
+
         mock_response = Mock()
         mock_response.choices = [Mock()]
         mock_response.choices[0].message = Mock(content="Verified content")
@@ -205,25 +205,28 @@ class TestLLMClient:
                 "prompt_tokens": 100,
                 "completion_tokens": 50,
                 "total_tokens": 150,
-            }
+            },
         )
-        
+
         mock_client.chat.completions.create.return_value = mock_response
-        
+
         client = LLMClient("openai/gpt-4o")
         result = client.verify_with_level("Content to verify", "light")
-        
+
         # verify_with_level returns a tuple of (content, model_used)
         if isinstance(result, tuple):
             content, model_used = result
             assert content == "Verified content"
         else:
             assert result == "Verified content"
-        
+
         # Verify appropriate token limits were used
         call_args = mock_client.chat.completions.create.call_args
         # Check that max_tokens was set appropriately for light mode
-        assert call_args[1].get("max_tokens", 0) > 0 or call_args[1].get("max_completion_tokens", 0) > 0
+        assert (
+            call_args[1].get("max_tokens", 0) > 0
+            or call_args[1].get("max_completion_tokens", 0) > 0
+        )
 
 
 class TestCitationValidation:
@@ -284,7 +287,9 @@ class TestPromptIntegration:
     @patch("litassist.llm.api_handlers.get_openai_client")
     @patch("litassist.config.CONFIG")
     @patch("litassist.prompts.PROMPTS")
-    def test_prompt_system_integration(self, mock_prompts, mock_config, mock_get_client):
+    def test_prompt_system_integration(
+        self, mock_prompts, mock_config, mock_get_client
+    ):
         """Test that prompts are correctly integrated with LLM calls."""
         # Setup proper CONFIG values
         mock_config.llm_model = "openai/gpt-4o"
@@ -292,14 +297,14 @@ class TestPromptIntegration:
         mock_config.or_base = "https://openrouter.ai/api/v1"
         mock_config.or_key = "test-key"
         mock_config.openai_key = "test-key"
-        
+
         # Mock prompts
         mock_prompts.get.return_value = "Test system prompt"
-        
+
         # Mock the OpenAI client
         mock_client = MagicMock()
         mock_get_client.return_value = mock_client
-        
+
         mock_response = Mock()
         mock_response.choices = [Mock()]
         mock_response.choices[0].message = Mock(content="Response with prompt")
@@ -313,15 +318,15 @@ class TestPromptIntegration:
                 "prompt_tokens": 10,
                 "completion_tokens": 5,
                 "total_tokens": 15,
-            }
+            },
         )
-        
+
         mock_client.chat.completions.create.return_value = mock_response
-        
+
         client = LLMClient("openai/gpt-4o")
         messages = [{"role": "user", "content": "Test"}]
         content, usage = client.complete(messages, skip_citation_verification=True)
-        
+
         assert content == "Response with prompt"
 
 
@@ -338,18 +343,18 @@ class TestErrorHandling:
         mock_config.or_base = "https://openrouter.ai/api/v1"
         mock_config.or_key = "test-key"
         mock_config.openai_key = "test-key"
-        
+
         # Mock the OpenAI client to raise an error
         mock_client = MagicMock()
         mock_get_client.return_value = mock_client
         mock_client.chat.completions.create.side_effect = Exception("API Error")
-        
+
         client = LLMClient("openai/gpt-4o")
         messages = [{"role": "user", "content": "Test"}]
-        
+
         with pytest.raises(Exception) as exc_info:
             client.complete(messages, skip_citation_verification=True)
-        
+
         assert "API Error" in str(exc_info.value)
 
     @patch("litassist.llm.api_handlers.get_openai_client")
@@ -362,16 +367,16 @@ class TestErrorHandling:
         mock_config.or_base = "https://openrouter.ai/api/v1"
         mock_config.or_key = "test-key"
         mock_config.openai_key = "test-key"
-        
+
         # Mock the OpenAI client to return empty response
         mock_client = MagicMock()
         mock_get_client.return_value = mock_client
         mock_client.chat.completions.create.return_value = None
-        
+
         client = LLMClient("openai/gpt-4o")
         messages = [{"role": "user", "content": "Test"}]
-        
+
         with pytest.raises(Exception) as exc_info:
             client.complete(messages, skip_citation_verification=True)
-        
+
         assert "Empty response" in str(exc_info.value)

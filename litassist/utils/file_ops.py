@@ -70,7 +70,7 @@ def validate_file_size(
     if len(content) > max_size:
         raise click.ClickException(
             f"{file_type.capitalize()} file too large ({len(content):,} characters). "
-            f"Please provide a file under {max_size:,} characters (~{max_size//5:,} words)."
+            f"Please provide a file under {max_size:,} characters (~{max_size // 5:,} words)."
         )
 
     return content
@@ -79,16 +79,16 @@ def validate_file_size(
 def is_text_file(file_path: str) -> bool:
     """
     Check if a file should be treated as a plain text file.
-    
+
     Treats .txt and .md files identically as text files.
-    
+
     Args:
         file_path: Path to the file
-        
+
     Returns:
         True if file is .txt or .md, False otherwise
     """
-    return file_path.lower().endswith(('.txt', '.md'))
+    return file_path.lower().endswith((".txt", ".md"))
 
 
 def validate_file_size_limit(content: str, max_size: int, context: str):
@@ -106,5 +106,5 @@ def validate_file_size_limit(content: str, max_size: int, context: str):
     if len(content) > max_size:
         raise click.ClickException(
             f"{context} file too large ({len(content):,} characters). "
-            f"Please provide a file under {max_size:,} characters (~{max_size//5:,} words)."
+            f"Please provide a file under {max_size:,} characters (~{max_size // 5:,} words)."
         )

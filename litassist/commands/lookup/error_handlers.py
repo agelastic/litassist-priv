@@ -135,9 +135,9 @@ def check_model_token_limits(client, total_request_tokens):
             model_type = "claude"
         elif "gpt" in model_str:
             model_type = "gpt-4"
-    
+
     max_tokens = model_limits.get(model_type, 100000)  # Conservative default
-    
+
     if total_request_tokens > max_tokens * 0.9:  # 90% safety margin
         click.echo(
             warning_message(
@@ -146,7 +146,7 @@ def check_model_token_limits(client, total_request_tokens):
             )
         )
         return True, max_tokens
-    
+
     return False, max_tokens
 
 

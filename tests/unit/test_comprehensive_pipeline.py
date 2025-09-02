@@ -18,29 +18,29 @@ from litassist.config import CONFIG
 
 class TestComprehensivePipeline:
     """Test full litassist pipeline with all external calls mocked."""
-    
+
     def setup_method(self):
         """Set up test environment."""
         # Create a temporary directory for test files
         self.test_dir = tempfile.mkdtemp()
         self.original_cwd = os.getcwd()
         os.chdir(self.test_dir)
-        
+
         # Register commands
         register_commands(cli)
         self.runner = CliRunner()
-        
+
         # Create sample test files
         self._create_test_files()
-        
+
         # Set up mock responses for different services
         self._setup_mock_responses()
-    
+
     def teardown_method(self):
         """Clean up test environment."""
         os.chdir(self.original_cwd)
         shutil.rmtree(self.test_dir)
-    
+
     def _create_test_files(self):
         """Create sample case files for testing."""
         # Case facts file with required 10-heading structure
@@ -92,7 +92,7 @@ Supreme Court of Victoria, Commercial Court
 ## CLIENT OBJECTIVES
 Plaintiff seeks to compel defendant to complete construction at original contract price or obtain damages for breach of contract.
 """)
-        
+
         # Sample research file
         with open("research_contracts.txt", "w") as f:
             f.write("""
@@ -112,12 +112,15 @@ Key Cases:
 - Grocon Constructors v Planit Cocciardi [2016] VSC 23
 - Seabay Properties v Galvin Construction [2018] VSC 432
 """)
-        
+
         # Create outputs directory
         os.makedirs("outputs", exist_ok=True)
-        
+
         # Create a dummy strategies file for the strategy command
-        with open("outputs/brainstorm_commercial_plaintiff_plaintiff_in_commercial_law.txt", "w") as f:
+        with open(
+            "outputs/brainstorm_commercial_plaintiff_plaintiff_in_commercial_law.txt",
+            "w",
+        ) as f:
             f.write("""## ORTHODOX STRATEGIES
 
 1. Security of Payment Act Defense
@@ -132,7 +135,7 @@ Key Cases:
 
 1. Security of Payment Act Defense - 75% likelihood
 """)
-    
+
     def _setup_mock_responses(self):
         """Set up canned responses for all external services."""
         self.mock_responses = {
@@ -153,7 +156,6 @@ Key Cases:
 2. Common law suspension rights
 3. Damages for wrongful suspension
 """,
-            
             "extractfacts": """## EXTRACTED CASE FACTS
 
 ### PARTIES
@@ -176,7 +178,6 @@ Key Cases:
 2. Whether payment was properly due
 3. Whether suspension was justified
 """,
-            
             "digest": """## CHRONOLOGICAL SUMMARY
 
 **1 January 2024**: Smith and Jones Construction enter into building contract for $500,000
@@ -199,7 +200,6 @@ Key Cases:
 3. Completion of foundation work as payment trigger
 4. Damages for breach of contract
 """,
-            
             "brainstorm_orthodox": """## ORTHODOX LEGAL STRATEGIES
 
 1. Security of Payment Act Claim
@@ -210,7 +210,6 @@ Key Cases:
    Argue that completion of foundation work was a condition precedent to the progress payment obligation. Apply strict interpretation of payment milestones.
    Key principles: Construction of payment clauses per Seabay Properties v Galvin Construction [2018] VSC 432
 """,
-            
             "brainstorm_unorthodox": """## UNORTHODOX STRATEGIES
 
 1. Quantum Meruit Counterclaim
@@ -221,7 +220,6 @@ Key Cases:
    Lodge complaint with Victorian Building Authority regarding abandoned site and safety issues. Regulatory pressure may encourage commercial resolution.
    Key principles: Leverage regulatory compliance obligations
 """,
-            
             "brainstorm_analysis": """## MOST LIKELY TO SUCCEED
 
 1. Security of Payment Act Defense
@@ -232,7 +230,6 @@ Key Cases:
    Success likelihood: 70%
    Courts strictly construe payment triggers in building contracts. Strong documentary evidence supports incomplete foundations.
 """,
-            
             "verification": """## VERIFIED UNORTHODOX STRATEGIES
 
 1. Quantum Meruit Counterclaim
@@ -243,7 +240,6 @@ Key Cases:
    Lodge complaint with Victorian Building Authority regarding abandoned site and safety issues. Regulatory pressure may encourage commercial resolution.
    Key principles: Leverage regulatory compliance obligations
 """,
-            
             "strategy": """## RECOMMENDED LITIGATION STRATEGY
 
 ### PRIMARY APPROACH
@@ -266,7 +262,6 @@ Run the Security of Payment Act defense while simultaneously pursuing wrongful s
 - Acceptable: Mutual termination with part payment for work done
 - Walk-away: Less than $50,000 payment to defendant
 """,
-            
             "draft": """IN THE SUPREME COURT OF VICTORIA
 AT MELBOURNE
 COMMERCIAL COURT
@@ -305,7 +300,6 @@ DATED: [DATE TO BE PROVIDED]
 
 [DEFENDANT'S SOLICITORS TO BE PROVIDED]
 """,
-            
             "barbrief": """## BARRISTER'S BRIEF - SMITH V JONES CONSTRUCTION
 
 ### MATTER SUMMARY
@@ -337,9 +331,7 @@ Best: Completion at original price
 Acceptable: Termination with $200-250k payment
 Worst: Pay $100k progress payment plus costs
 """,
-            
             "verify": """No corrections needed.""",
-            
             "lookup": """## CASE LAW LOOKUP RESULTS
 
 ### Grocon Constructors v Planit Cocciardi [2016] VSC 23
@@ -352,10 +344,8 @@ Worst: Pay $100k progress payment plus costs
 - Substantial completion required unless contract specifies otherwise
 - Photos and expert evidence admissible on completion issues
 """,
-            
             # Mock LLM responses
             "llm_complete": "Mock LLM response for testing",
-            
             # Mock Pinecone responses
             "pinecone_query": {
                 "matches": [
@@ -364,70 +354,80 @@ Worst: Pay $100k progress payment plus costs
                         "score": 0.92,
                         "metadata": {
                             "text": "Progress payments in building contracts require strict compliance with contractual milestones."
-                        }
+                        },
                     }
                 ]
             },
-            
             # Mock Google CSE response
             "google_cse": {
                 "items": [
                     {
                         "title": "[2016] VSC 23",
                         "link": "https://jade.io/case/2016_VSC_23",
-                        "snippet": "Grocon Constructors v Planit Cocciardi - Security of Payment Act"
+                        "snippet": "Grocon Constructors v Planit Cocciardi - Security of Payment Act",
                     }
                 ]
-            }
+            },
         }
-    
+
     def test_full_pipeline(self):
         """Test complete litassist pipeline with all external calls mocked."""
         # Use context managers to patch everything
-        with patch("litassist.llm.api_handlers.get_openai_client") as mock_get_client, \
-             patch("requests.get") as mock_requests_get, \
-             patch("requests.post") as mock_requests_post, \
-             patch("aiohttp.ClientSession"), \
-             patch("litassist.helpers.pinecone_config.get_pinecone_client") as mock_get_pinecone_client, \
-             patch("litassist.commands.digest.processors.PROMPTS") as mock_prompts, \
-             patch("litassist.commands.strategy.core.PROMPTS") as mock_strategy_prompts, \
-             patch("litassist.commands.brainstorm.PROMPTS") as mock_brainstorm_prompts, \
-             patch("litassist.commands.lookup.processors.PROMPTS") as mock_lookup_prompts, \
-             patch.object(CONFIG, 'max_chars', 10000), \
-             patch.object(CONFIG, 'use_token_limits', True), \
-             patch.object(CONFIG, 'openrouter_key', 'test_key'), \
-             patch.object(CONFIG, 'openai_key', 'test_key'), \
-             patch.object(CONFIG, 'or_base', 'https://openrouter.ai/api/v1'), \
-             patch.object(CONFIG, 'or_key', 'test_key'), \
-             patch.object(CONFIG, 'google_cse_key', 'test_key'), \
-             patch.object(CONFIG, 'google_cse_id', 'test_id'):
-            
+        with (
+            patch("litassist.llm.api_handlers.get_openai_client") as mock_get_client,
+            patch("requests.get") as mock_requests_get,
+            patch("requests.post") as mock_requests_post,
+            patch("aiohttp.ClientSession"),
+            patch(
+                "litassist.helpers.pinecone_config.get_pinecone_client"
+            ) as mock_get_pinecone_client,
+            patch("litassist.commands.digest.processors.PROMPTS") as mock_prompts,
+            patch("litassist.commands.strategy.core.PROMPTS") as mock_strategy_prompts,
+            patch("litassist.commands.brainstorm.PROMPTS") as mock_brainstorm_prompts,
+            patch(
+                "litassist.commands.lookup.processors.PROMPTS"
+            ) as mock_lookup_prompts,
+            patch.object(CONFIG, "max_chars", 10000),
+            patch.object(CONFIG, "use_token_limits", True),
+            patch.object(CONFIG, "openrouter_key", "test_key"),
+            patch.object(CONFIG, "openai_key", "test_key"),
+            patch.object(CONFIG, "or_base", "https://openrouter.ai/api/v1"),
+            patch.object(CONFIG, "or_key", "test_key"),
+            patch.object(CONFIG, "google_cse_key", "test_key"),
+            patch.object(CONFIG, "google_cse_id", "test_id"),
+        ):
             # Configure PROMPTS mock - return actual strings with format method
             class MockPromptString(str):
                 def format(self, **kwargs):
                     return "Test prompt content"
-            
+
             mock_prompts.get.return_value = MockPromptString("Test prompt content")
-            mock_strategy_prompts.get.return_value = MockPromptString("Test prompt content")
-            mock_brainstorm_prompts.get.return_value = MockPromptString("Test prompt content")
-            mock_lookup_prompts.get.return_value = MockPromptString("Test prompt content")
-            
+            mock_strategy_prompts.get.return_value = MockPromptString(
+                "Test prompt content"
+            )
+            mock_brainstorm_prompts.get.return_value = MockPromptString(
+                "Test prompt content"
+            )
+            mock_lookup_prompts.get.return_value = MockPromptString(
+                "Test prompt content"
+            )
+
             # Configure OpenAI v1.x mock client
             mock_client = MagicMock()
             mock_get_client.return_value = mock_client
-            
+
             def openai_side_effect(*args, **kwargs):
                 messages = kwargs.get("messages", [])
                 if not messages:
                     messages = args[0] if args else []
-                
+
                 # Determine response based on the messages content
                 user_content = ""
                 for msg in messages:
                     if msg.get("role") == "user":
                         user_content = msg.get("content", "").lower()
                         break
-                
+
                 # Create mock response
                 mock_response = Mock()
                 mock_response.choices = [Mock()]
@@ -435,9 +435,13 @@ Worst: Pay $100k progress payment plus costs
                     total_tokens=100,
                     prompt_tokens=50,
                     completion_tokens=50,
-                    model_dump=lambda: {"total_tokens": 100, "prompt_tokens": 50, "completion_tokens": 50}
+                    model_dump=lambda: {
+                        "total_tokens": 100,
+                        "prompt_tokens": 50,
+                        "completion_tokens": 50,
+                    },
                 )
-                
+
                 # Route to appropriate mock response
                 if "case plan" in user_content:
                     content = self.mock_responses["caseplan"]
@@ -464,15 +468,15 @@ Worst: Pay $100k progress payment plus costs
                     content = self.mock_responses["verify"]
                 else:
                     content = self.mock_responses["llm_complete"]
-                
+
                 mock_response.choices[0].message = Mock(content=content)
                 mock_response.choices[0].error = None
                 mock_response.choices[0].finish_reason = "stop"
-                
+
                 return mock_response
-            
+
             mock_client.chat.completions.create.side_effect = openai_side_effect
-            
+
             # Configure Google CSE mock (for citation verification)
             def requests_get_side_effect(url, **kwargs):
                 mock_resp = Mock()
@@ -482,146 +486,207 @@ Worst: Pay $100k progress payment plus costs
                 else:
                     mock_resp.status_code = 404
                 return mock_resp
-            
+
             mock_requests_get.side_effect = requests_get_side_effect
-            
+
             # Configure Pinecone mock
             mock_index = Mock()
             mock_index.query.return_value = self.mock_responses["pinecone_query"]
             mock_get_pinecone_client.return_value = mock_index
-            
+
             # Track all external calls
             external_calls = []
-            
+
             # Patch all external call points to track them
             original_openai = mock_client.chat.completions.create.side_effect
+
             def track_openai(*args, **kwargs):
                 external_calls.append(("openai", args, kwargs))
                 return original_openai(*args, **kwargs)
+
             mock_client.chat.completions.create.side_effect = track_openai
-            
+
             original_requests_get = mock_requests_get.side_effect
+
             def track_requests_get(*args, **kwargs):
                 external_calls.append(("requests_get", args, kwargs))
                 return original_requests_get(*args, **kwargs)
+
             mock_requests_get.side_effect = track_requests_get
-            
+
             # Execute the pipeline commands in sequence
             commands = [
                 ("caseplan", ["caseplan", "case_facts.txt", "--budget", "standard"]),
                 ("extractfacts", ["extractfacts", "case_facts.txt"]),
                 ("digest", ["digest", "case_facts.txt", "--mode", "summary"]),
-                ("brainstorm", ["brainstorm", "--facts", "case_facts.txt", "--side", "plaintiff", "--area", "commercial"]),
-                ("strategy", ["strategy", "case_facts.txt", "--outcome", "Defendant to complete construction at original price", "--strategies", "outputs/brainstorm_commercial_plaintiff_plaintiff_in_commercial_law.txt"]),
-                ("draft", ["draft", "case_facts.txt", "Draft a defence and counterclaim for the defendant"]),
+                (
+                    "brainstorm",
+                    [
+                        "brainstorm",
+                        "--facts",
+                        "case_facts.txt",
+                        "--side",
+                        "plaintiff",
+                        "--area",
+                        "commercial",
+                    ],
+                ),
+                (
+                    "strategy",
+                    [
+                        "strategy",
+                        "case_facts.txt",
+                        "--outcome",
+                        "Defendant to complete construction at original price",
+                        "--strategies",
+                        "outputs/brainstorm_commercial_plaintiff_plaintiff_in_commercial_law.txt",
+                    ],
+                ),
+                (
+                    "draft",
+                    [
+                        "draft",
+                        "case_facts.txt",
+                        "Draft a defence and counterclaim for the defendant",
+                    ],
+                ),
                 ("barbrief", ["barbrief", "case_facts.txt", "--hearing-type", "trial"]),
             ]
-            
+
             # Store outputs for verification
             outputs = {}
-            
+
             for cmd_name, cmd_args in commands:
                 result = self.runner.invoke(cli, cmd_args)
-                
+
                 # Command should succeed
-                assert result.exit_code == 0, f"{cmd_name} failed: {result.output}\nException: {result.exception}"
-                
+                assert result.exit_code == 0, (
+                    f"{cmd_name} failed: {result.output}\nException: {result.exception}"
+                )
+
                 # Store output
                 outputs[cmd_name] = result.output
-                
+
                 # Verify output contains expected content
                 if cmd_name == "caseplan":
-                    assert "Litigation plan generated" in result.output or "Plan saved" in result.output
+                    assert (
+                        "Litigation plan generated" in result.output
+                        or "Plan saved" in result.output
+                    )
                 elif cmd_name == "extractfacts":
-                    assert "Facts extracted" in result.output or "[SAVED]" in result.output
+                    assert (
+                        "Facts extracted" in result.output or "[SAVED]" in result.output
+                    )
                 elif cmd_name == "digest":
-                    assert "Digest complete" in result.output or "[SAVED]" in result.output
+                    assert (
+                        "Digest complete" in result.output or "[SAVED]" in result.output
+                    )
                 elif cmd_name == "brainstorm":
-                    assert "Generated strategies" in result.output or "Brainstorm complete" in result.output
+                    assert (
+                        "Generated strategies" in result.output
+                        or "Brainstorm complete" in result.output
+                    )
                 elif cmd_name == "strategy":
-                    assert "strategies analyzed" in result.output or "[SAVED]" in result.output
+                    assert (
+                        "strategies analyzed" in result.output
+                        or "[SAVED]" in result.output
+                    )
                 elif cmd_name == "draft":
-                    assert "Draft created" in result.output or "[SAVED]" in result.output
+                    assert (
+                        "Draft created" in result.output or "[SAVED]" in result.output
+                    )
                 elif cmd_name == "barbrief":
-                    assert "Brief created" in result.output or "[SAVED]" in result.output
-            
+                    assert (
+                        "Brief created" in result.output or "[SAVED]" in result.output
+                    )
+
             # Verify outputs directory exists (commands create it)
             assert os.path.exists("outputs"), "Outputs directory should exist"
-            
+
             # The fact that all commands ran successfully without real API calls
             # demonstrates the pipeline works with mocked external services
-            
+
             # Verify external calls were made (but all mocked)
             assert len(external_calls) > 0, "Should have made external calls"
-            assert any(call[0] == "openai" for call in external_calls), "Should have called OpenAI"
-            
+            assert any(call[0] == "openai" for call in external_calls), (
+                "Should have called OpenAI"
+            )
+
             # Ensure no real HTTP calls were made
-            assert mock_requests_post.call_count == 0, "Should not make real POST requests"
-            assert all(call[0] in ["openai", "requests_get"] for call in external_calls), "Only expected mocked calls"
-    
+            assert mock_requests_post.call_count == 0, (
+                "Should not make real POST requests"
+            )
+            assert all(
+                call[0] in ["openai", "requests_get"] for call in external_calls
+            ), "Only expected mocked calls"
+
     def test_env_var_overrides(self):
         """Test that environment variables override model configurations."""
         # Set environment variables
         test_env = {
             "OPENAI_MODEL": "gpt-4-turbo-preview",
-            "ANTHROPIC_MODEL": "claude-3-opus", 
+            "ANTHROPIC_MODEL": "claude-3-opus",
             "GOOGLE_MODEL": "gemini-ultra",
             "XGROK_MODEL": "grok-2-beta",
         }
-        
+
         with patch.dict(os.environ, test_env):
             # Test that config picks up environment variables
             from litassist.config import Config
-            
+
             # Create a config instance that should pick up env vars
-            with patch.object(Config, '_load_config', return_value={}):
+            with patch.object(Config, "_load_config", return_value={}):
                 Config()
-                
+
                 # The get_required_key method should return env values when available
                 # Testing model overrides
                 assert os.environ.get("OPENAI_MODEL") == "gpt-4-turbo-preview"
                 assert os.environ.get("ANTHROPIC_MODEL") == "claude-3-opus"
                 assert os.environ.get("GOOGLE_MODEL") == "gemini-ultra"
                 assert os.environ.get("XGROK_MODEL") == "grok-2-beta"
-                
+
                 # Test that LLMClientFactory would use these when creating clients
                 with patch("litassist.llm.CONFIG") as mock_config:
                     mock_config.openrouter_key = "test_key"
                     mock_config.openai_key = "test_key"
-                    
+
                     # Mock the model retrieval to use env var
-                    with patch.object(LLMClientFactory, 'get_model_for_command') as mock_get_model:
+                    with patch.object(
+                        LLMClientFactory, "get_model_for_command"
+                    ) as mock_get_model:
                         # When env var is set, it should override default model
                         mock_get_model.return_value = test_env["GOOGLE_MODEL"]
-                        
+
                         # Verify the override is returned
                         model = LLMClientFactory.get_model_for_command("lookup")
                         assert model == "gemini-ultra"
-    
+
     def test_token_limit_enforcement(self):
         """Test that token limits are enforced when CONFIG.use_token_limits=True."""
         # Test with use_token_limits = True
-        with patch.object(CONFIG, 'use_token_limits', True), \
-             patch.object(CONFIG, 'openrouter_key', 'test_key'), \
-             patch.object(CONFIG, 'openai_key', 'test_key'):
-            
+        with (
+            patch.object(CONFIG, "use_token_limits", True),
+            patch.object(CONFIG, "openrouter_key", "test_key"),
+            patch.object(CONFIG, "openai_key", "test_key"),
+        ):
             # Create an LLMClient which should apply token limits
             client = LLMClient("openai/gpt-4")
-            
+
             # For models without explicit overrides, should have 32768 cap
             expected_limit = 32768
-            
+
             # Check that default_params includes max_tokens
             assert "max_tokens" in client.default_params
             assert client.default_params["max_tokens"] == expected_limit
-        
+
         # Test with use_token_limits = False
-        with patch.object(CONFIG, 'use_token_limits', False), \
-             patch.object(CONFIG, 'openrouter_key', 'test_key'), \
-             patch.object(CONFIG, 'openai_key', 'test_key'):
-            
+        with (
+            patch.object(CONFIG, "use_token_limits", False),
+            patch.object(CONFIG, "openrouter_key", "test_key"),
+            patch.object(CONFIG, "openai_key", "test_key"),
+        ):
             # Create another client
             client2 = LLMClient("openai/gpt-4")
-            
+
             # Should not include max_tokens when disabled
             assert "max_tokens" not in client2.default_params

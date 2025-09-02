@@ -38,14 +38,14 @@ from litassist.config import CONFIG
 __all__ = [
     # API handlers
     "get_openai_client",
-    "parse_openrouter_error", 
+    "parse_openrouter_error",
     "execute_api_call_with_retry",
     "RetryableAPIError",
-    "StreamingAPIError", 
+    "StreamingAPIError",
     "NonRetryableAPIError",
     # Main client classes and functions
     "LLMClient",
-    "LLMClientFactory", 
+    "LLMClientFactory",
     "get_model_family",
     "get_model_parameters",
     "get_openrouter_params",

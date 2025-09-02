@@ -10,7 +10,7 @@ import warnings
 import os
 import logging
 import time
-from litassist.config import CONFIG
+from litassist.config import get_config
 from litassist.utils import info_message
 from litassist.logging_utils import LOG_DIR
 
@@ -49,12 +49,12 @@ def _perform_cse_search(service, query, cse_id, limit, primary=False):
 def perform_cse_searches(question, comprehensive, context):
     """
     Perform all configured Custom Search Engine searches.
-    
+
     Args:
         question: The search query
         comprehensive: Whether to use comprehensive mode
         context: Additional context to include in comprehensive search
-        
+
     Returns:
         tuple: (links, all_snippets) - combined results from all searches
     """
@@ -62,8 +62,9 @@ def perform_cse_searches(question, comprehensive, context):
     try:
         from googleapiclient.discovery import build
 
+        config = get_config()
         service = build(
-            "customsearch", "v1", developerKey=CONFIG.g_key, cache_discovery=False
+            "customsearch", "v1", developerKey=config.g_key, cache_discovery=False
         )
     except Exception as e:
         raise click.ClickException(f"Search initialization error: {e}")
@@ -71,29 +72,29 @@ def perform_cse_searches(question, comprehensive, context):
     # Collect links and snippets from configured Custom Search Engines
     links = []
     all_snippets = []  # Collect all search snippets from Google CSE
-    
+
     # Determine per-source limits
     if comprehensive:
         jade_limit = austlii_limit = comp_limit = 10
     else:
         jade_limit = austlii_limit = 5
-    
+
     # Primary Jade CSE search
     jade_links, jade_snippets = _perform_cse_search(
-        service, question, CONFIG.cse_id, jade_limit, primary=True
+        service, question, config.cse_id, jade_limit, primary=True
     )
     links.extend(jade_links)
     all_snippets.extend(jade_snippets)
 
     # Rate limit delay between CSE calls
     cse_delay = float(os.environ.get("CSE_RATE_LIMIT_DELAY", "1.5"))
-    if cse_delay > 0 and (getattr(CONFIG, "cse_id_austlii", None) or comprehensive):
+    if cse_delay > 0 and (getattr(config, "cse_id_austlii", None) or comprehensive):
         click.echo(f"Rate limiting: waiting {cse_delay}s...")
         time.sleep(cse_delay)
 
     # AustLII CSE search (optional)
     austlii_links, austlii_snippets = _perform_cse_search(
-        service, question, getattr(CONFIG, "cse_id_austlii", None), austlii_limit
+        service, question, getattr(config, "cse_id_austlii", None), austlii_limit
     )
     links.extend(austlii_links)
     all_snippets.extend(austlii_snippets)
@@ -111,21 +112,24 @@ def perform_cse_searches(question, comprehensive, context):
             comp_query = f"{question} {context}"
         else:
             comp_query = question
-        
+
         comp_links, comp_snippets = _perform_cse_search(
-            service, comp_query, getattr(CONFIG, "cse_id_comprehensive", None), comp_limit
+            service,
+            comp_query,
+            getattr(config, "cse_id_comprehensive", None),
+            comp_limit,
         )
         links.extend(comp_links)
         all_snippets.extend(comp_snippets)
-    
+
     # Remove duplicate and empty links while preserving order
     links = list(dict.fromkeys(filter(None, links)))
-    
+
     # Save search snippets if any were collected
     if all_snippets:
         _save_search_snippets(all_snippets, question, context, comprehensive)
         click.echo(info_message(f"Saved {len(all_snippets)} search snippet(s) to logs"))
-    
+
     return links, all_snippets
 
 
@@ -149,13 +153,9 @@ def _save_search_snippets(all_snippets, question, context, comprehensive):
         for snippet in all_snippets:
             # Extract domain from the link line in the snippet
             lines = snippet.split("\n")
-            link_line = next(
-                (line for line in lines if line.startswith("http")), ""
-            )
+            link_line = next((line for line in lines if line.startswith("http")), "")
             domain = (
-                link_line.split("/")[2]
-                if link_line and "/" in link_line
-                else "unknown"
+                link_line.split("/")[2] if link_line and "/" in link_line else "unknown"
             )
 
             if domain not in snippet_by_domain:

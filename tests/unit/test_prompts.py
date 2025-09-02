@@ -242,9 +242,9 @@ class TestTemplateValidation:
             1 for heading in required_headings if heading.lower() in case_facts.lower()
         )
 
-        assert (
-            found_headings >= 7
-        ), f"Case facts template missing essential headings. Found {found_headings}/10"
+        assert found_headings >= 7, (
+            f"Case facts template missing essential headings. Found {found_headings}/10"
+        )
 
     def test_templates_are_strings(self):
         """Test that all loaded templates are valid strings."""

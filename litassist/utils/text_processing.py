@@ -42,6 +42,7 @@ def create_embeddings(texts: List[str]) -> List[Any]:
 
     # Use the model without custom dimensions since our index is 1536-dimensional
     from openai import OpenAI
+
     client = OpenAI(api_key=CONFIG.openai_api_key)
     response = client.embeddings.create(input=texts, model=CONFIG.emb_model)
     return response.data

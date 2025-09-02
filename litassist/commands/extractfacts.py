@@ -32,8 +32,16 @@ from litassist.verification_chain import run_cove_verification
 @click.option(
     "--verify", is_flag=True, help="Enable self-critique pass (default: auto-enabled)"
 )
-@click.option("--noverify", is_flag=True, help="Skip standard verification (does not affect --cove)")
-@click.option("--cove", is_flag=True, help="Use Chain of Verification instead of standard verification")
+@click.option(
+    "--noverify",
+    is_flag=True,
+    help="Skip standard verification (does not affect --cove)",
+)
+@click.option(
+    "--cove",
+    is_flag=True,
+    help="Use Chain of Verification instead of standard verification",
+)
 @click.option("--output", type=str, help="Custom output filename prefix")
 @timed
 def extractfacts(file, verify, noverify, cove, output):
@@ -72,8 +80,7 @@ def extractfacts(file, verify, noverify, cove, output):
         # Use centralized format template
         format_instructions = PROMPTS.get_format_template("case_facts_10_heading")
         base_prompt = PROMPTS.get("analysis.extraction.base_prompt").format(
-            format_instructions=format_instructions,
-            content=chunks[0]
+            format_instructions=format_instructions, content=chunks[0]
         )
 
         # Add reasoning trace to prompt
@@ -105,8 +112,10 @@ def extractfacts(file, verify, noverify, cove, output):
             for idx, chunk in enumerate(bar, 1):
                 chunk_template = PROMPTS.get("processing.extraction.chunk_facts_prompt")
                 prompt = PROMPTS.get("analysis.extraction.chunk_prompt").format(
-                    chunk_template=chunk_template.format(chunk_num=idx, total_chunks=len(chunks)),
-                    chunk=chunk
+                    chunk_template=chunk_template.format(
+                        chunk_num=idx, total_chunks=len(chunks)
+                    ),
+                    chunk=chunk,
                 )
 
                 try:
@@ -133,7 +142,9 @@ def extractfacts(file, verify, noverify, cove, output):
         # Add END marker after each chunk's facts
         facts_with_markers = []
         for idx, facts in enumerate(accumulated_facts, 1):
-            facts_with_markers.append(f"=== CHUNK {idx} FACTS ===\n{facts}\n=== END CHUNK {idx} FACTS ===")
+            facts_with_markers.append(
+                f"=== CHUNK {idx} FACTS ===\n{facts}\n=== END CHUNK {idx} FACTS ==="
+            )
         all_facts = "\n\n".join(facts_with_markers)
 
         # Use centralized format template for organizing
@@ -167,19 +178,24 @@ def extractfacts(file, verify, noverify, cove, output):
         # Use CoVe INSTEAD of standard verification
         click.echo(info_message("Running Chain of Verification..."))
         original_content = combined
-        combined, cove_results = run_cove_verification(combined, 'extractfacts')
-        
+        combined, cove_results = run_cove_verification(combined, "extractfacts")
+
         verification_metadata["Verification"] = "Chain of Verification (CoVe)"
-        verification_metadata["CoVe Status"] = "REGENERATED" if not cove_results['cove']['passed'] else "PASSED"
-        
-        if not cove_results['cove']['passed']:
+        verification_metadata["CoVe Status"] = (
+            "REGENERATED" if not cove_results["cove"]["passed"] else "PASSED"
+        )
+
+        if not cove_results["cove"]["passed"]:
             click.echo(success_message("CoVe corrected issues - facts regenerated"))
-            save_log("extractfacts_cove_regeneration", {
-                "original_length": len(original_content),
-                "regenerated_length": len(combined),
-                "issues_fixed": cove_results['cove']['issues'],
-                "model": "See cove_extractfacts_summary.json for model details"
-            })
+            save_log(
+                "extractfacts_cove_regeneration",
+                {
+                    "original_length": len(original_content),
+                    "regenerated_length": len(combined),
+                    "issues_fixed": cove_results["cove"]["issues"],
+                    "model": "See cove_extractfacts_summary.json for model details",
+                },
+            )
         else:
             click.echo(success_message("CoVe verification passed - no issues found"))
     elif not noverify:
@@ -198,7 +214,7 @@ def extractfacts(file, verify, noverify, cove, output):
     # Save output using utility (reasoning trace remains inline)
     slug = "_".join(source_files[:3])  # Use first 3 files for slug
     if len(source_files) > 3:
-        slug += f"_and_{len(source_files)-3}_more"
+        slug += f"_and_{len(source_files) - 3}_more"
     output_file = save_command_output(
         output if output else "extractfacts",
         combined,
@@ -221,7 +237,7 @@ def extractfacts(file, verify, noverify, cove, output):
     chunk_desc = f"{len(chunks)} chunks" if len(chunks) > 1 else "single document"
     source_desc = ", ".join(source_files[:3])
     if len(source_files) > 3:
-        source_desc += f" + {len(source_files)-3} more"
+        source_desc += f" + {len(source_files) - 3} more"
     stats = {
         "Sources": (
             f"{len(source_files)} files" if len(source_files) > 1 else source_files[0]

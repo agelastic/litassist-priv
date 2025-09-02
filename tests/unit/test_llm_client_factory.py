@@ -109,18 +109,18 @@ class TestLLMClientFactory:
             for command in strict_commands:
                 client = LLMClientFactory.for_command(command)
                 assert hasattr(client, "_force_verify")
-                assert (
-                    client._force_verify is True
-                ), f"{command} should force verification"
+                assert client._force_verify is True, (
+                    f"{command} should force verification"
+                )
 
             # Commands that should not force verification
             lenient_commands = ["lookup"]
             for command in lenient_commands:
                 client = LLMClientFactory.for_command(command)
                 assert hasattr(client, "_force_verify")
-                assert (
-                    client._force_verify is False
-                ), f"{command} should not force verification"
+                assert client._force_verify is False, (
+                    f"{command} should not force verification"
+                )
 
     def test_model_parameter_restrictions(self):
         """Test that o1/o3 models have correct parameter restrictions."""
@@ -225,7 +225,9 @@ class TestLLMClientFactoryIntegration:
 
             # Specific model assertions based on current configuration
             assert "gemini" in models["lookup"].lower()  # Uses Gemini for search
-            assert "claude-opus" in models["strategy"].lower()  # Uses Claude Opus for strategy
+            assert (
+                "claude-opus" in models["strategy"].lower()
+            )  # Uses Claude Opus for strategy
             assert "o3-pro" in models["draft"].lower()  # Uses o3-pro for drafting
             assert (
                 "anthropic/claude-sonnet-4" in models["extractfacts"].lower()

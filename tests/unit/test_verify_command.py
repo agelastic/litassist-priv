@@ -72,14 +72,11 @@ class TestVerifyCommand:
         with open(temp_file, "w") as f:
             f.write(sample_legal_text)
 
-        with patch(
-            "litassist.commands.verify.verify_all_citations"
-        ) as mock_citations, patch(
-            "litassist.commands.verify.LLMClientFactory"
-        ) as mock_llm_factory, patch(
-            "litassist.commands.verify.save_log"
-        ) as _mock_save_log:
-
+        with (
+            patch("litassist.commands.verify.verify_all_citations") as mock_citations,
+            patch("litassist.commands.verify.LLMClientFactory") as mock_llm_factory,
+            patch("litassist.commands.verify.save_log") as _mock_save_log,
+        ):
             mock_citations.return_value = (
                 [
                     "Mabo v Queensland (No 2) [1992] HCA 23",
@@ -112,14 +109,11 @@ class TestVerifyCommand:
         with open(temp_file, "w") as f:
             f.write(sample_legal_text)
 
-        with patch(
-            "litassist.commands.verify.verify_all_citations"
-        ) as mock_citations, patch(
-            "litassist.commands.verify.extract_citations"
-        ) as mock_extract, patch(
-            "litassist.commands.verify.save_log"
-        ) as _mock_save_log:
-
+        with (
+            patch("litassist.commands.verify.verify_all_citations") as mock_citations,
+            patch("litassist.commands.verify.extract_citations") as mock_extract,
+            patch("litassist.commands.verify.save_log") as _mock_save_log,
+        ):
             mock_extract.return_value = ["Mabo v Queensland (No 2) [1992] HCA 23"]
             mock_citations.return_value = (
                 ["Mabo v Queensland (No 2) [1992] HCA 23"],
@@ -138,12 +132,10 @@ class TestVerifyCommand:
         with open(temp_file, "w") as f:
             f.write(sample_legal_text)
 
-        with patch(
-            "litassist.commands.verify.LLMClientFactory"
-        ) as mock_llm_factory, patch(
-            "litassist.commands.verify.save_log"
-        ) as _mock_save_log:
-
+        with (
+            patch("litassist.commands.verify.LLMClientFactory") as mock_llm_factory,
+            patch("litassist.commands.verify.save_log") as _mock_save_log,
+        ):
             mock_client = Mock()
             mock_client.verify.return_value = (
                 """
@@ -182,12 +174,10 @@ class TestVerifyCommand:
         with open(temp_file, "w") as f:
             f.write(sample_legal_text)
 
-        with patch(
-            "litassist.commands.verify.LLMClientFactory"
-        ) as mock_llm_factory, patch(
-            "litassist.commands.verify.save_log"
-        ) as _mock_save_log:
-
+        with (
+            patch("litassist.commands.verify.LLMClientFactory") as mock_llm_factory,
+            patch("litassist.commands.verify.save_log") as _mock_save_log,
+        ):
             mock_client = Mock()
             mock_client.complete.return_value = (
                 """Analysis of the legal text...
@@ -305,14 +295,11 @@ class TestVerifyCommand:
         """Test that output files are created with correct names."""
         with open(temp_file, "w") as f:
             f.write(sample_legal_text)
-        with patch(
-            "litassist.commands.verify.verify_all_citations"
-        ) as mock_citations, patch(
-            "litassist.commands.verify.LLMClientFactory"
-        ) as mock_llm_factory, patch(
-            "litassist.commands.verify.save_log"
-        ) as _mock_save_log:
-
+        with (
+            patch("litassist.commands.verify.verify_all_citations") as mock_citations,
+            patch("litassist.commands.verify.LLMClientFactory") as mock_llm_factory,
+            patch("litassist.commands.verify.save_log") as _mock_save_log,
+        ):
             mock_citations.return_value = (["Case1"], [])
             mock_client = Mock()
             mock_client.verify.return_value = ("No issues", "anthropic/claude-opus-4.1")

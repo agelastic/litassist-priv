@@ -140,9 +140,7 @@ class Config:
             self.cse_id_comprehensive = self.cfg["google_cse"].get(
                 "cse_id_comprehensive", None
             )
-            self.cse_id_austlii = self.cfg["google_cse"].get(
-                "cse_id_austlii", None
-            )
+            self.cse_id_austlii = self.cfg["google_cse"].get("cse_id_austlii", None)
             self.pc_key = self.cfg["pinecone"]["api_key"]
             self.pc_env = self.cfg["pinecone"]["environment"]
             self.pc_index = self.cfg["pinecone"]["index_name"]
@@ -167,13 +165,15 @@ class Config:
             if citation_config is None:
                 citation_config = {}
             self.offline_validation = citation_config.get("offline_validation", False)
-            
+
             # Web scraping settings with good defaults
             web_scraping_config = self.cfg.get("web_scraping", {})
             self.fetch_timeout = web_scraping_config.get("fetch_timeout", 10)
             self.max_fetch_time = web_scraping_config.get("max_fetch_time", 300)
             self.selenium_enabled = web_scraping_config.get("selenium_enabled", True)
-            self.selenium_timeout_multiplier = web_scraping_config.get("selenium_timeout_multiplier", 2)
+            self.selenium_timeout_multiplier = web_scraping_config.get(
+                "selenium_timeout_multiplier", 2
+            )
 
         # Jade API key is no longer used - functionality now uses public endpoint
 
@@ -229,17 +229,23 @@ def load_config(config_path: str | None = None) -> "Config":
     return CONFIG
 
 
-# Automatically attempt to load configuration on module import.
-# This ensures CONFIG is populated for modules that import CONFIG
-# directly (e.g., litassist.llm, litassist.utils) even when the
-# application is executed outside the main CLI entry point.
-if CONFIG is None:
-    try:
-        CONFIG = Config()
-    except ConfigError as e:
-        import sys
+def get_config() -> "Config":
+    """Get the global configuration instance, loading it if necessary.
 
-        print(
-            f"WARNING: Could not load configuration automatically. {e}", file=sys.stderr
-        )
-        pass
+    This should be used instead of directly accessing CONFIG to ensure
+    lazy loading and better testability.
+    """
+    global CONFIG
+    if CONFIG is None:
+        try:
+            CONFIG = Config()
+        except ConfigError as e:
+            import sys
+
+            print(f"WARNING: Could not load configuration. {e}", file=sys.stderr)
+            raise
+    return CONFIG
+
+
+# DO NOT automatically load configuration on module import - use get_config() instead
+# This prevents CONFIG from being loaded during test collection when modules are imported

@@ -12,4 +12,10 @@ from .citation_regenerator import regenerate_bad_strategies
 # Import PROMPTS to make it available at module level for tests
 from litassist.prompts import PROMPTS
 
-__all__ = ["brainstorm", "analyze_research_size", "expand_glob_patterns", "regenerate_bad_strategies", "PROMPTS"]
+__all__ = [
+    "brainstorm",
+    "analyze_research_size",
+    "expand_glob_patterns",
+    "regenerate_bad_strategies",
+    "PROMPTS",
+]

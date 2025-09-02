@@ -33,10 +33,10 @@ from litassist.verification_chain import run_cove_verification
 def validate_case_facts(content: str) -> bool:
     """
     Validate that case facts follow the 10-heading format.
-    
+
     Args:
         content: The case facts content to validate
-        
+
     Returns:
         True if valid, False otherwise
     """
@@ -52,7 +52,7 @@ def validate_case_facts(content: str) -> bool:
         "Applicable Law",
         "Client Objectives",
     ]
-    
+
     content_lower = content.lower()
     return all(heading.lower() in content_lower for heading in required_headings)
 
@@ -68,7 +68,7 @@ def prepare_brief_sections(
 ) -> Dict[str, Any]:
     """
     Prepare the sections and content for the barrister's brief.
-    
+
     Args:
         case_facts: Structured case facts content
         strategies: Optional brainstormed strategies
@@ -76,7 +76,7 @@ def prepare_brief_sections(
         supporting_docs: List of supporting documents
         context: Optional additional context
         hearing_type: Type of hearing
-        
+
     Returns:
         Dictionary containing prepared sections
     """
@@ -91,7 +91,7 @@ def prepare_brief_sections(
         "supporting_content": "\n\n---\n\n".join(supporting_docs),
         "context": context or "No specific context provided.",
     }
-    
+
     return sections
 
 
@@ -99,11 +99,11 @@ def expand_glob_patterns(ctx, param, value):
     """Expand glob patterns in file paths."""
     if not value:
         return value
-    
+
     expanded_paths = []
     for pattern in value:
         # Check if it's a glob pattern (contains *, ?, or [)
-        if any(char in pattern for char in ['*', '?', '[']):
+        if any(char in pattern for char in ["*", "?", "["]):
             # Expand the glob pattern
             matches = glob.glob(pattern)
             if not matches:
@@ -114,7 +114,7 @@ def expand_glob_patterns(ctx, param, value):
             if not os.path.exists(pattern):
                 raise click.BadParameter(f"File not found: {pattern}")
             expanded_paths.append(pattern)
-    
+
     # Remove duplicates while preserving order
     seen = set()
     unique_paths = []
@@ -122,7 +122,7 @@ def expand_glob_patterns(ctx, param, value):
         if path not in seen:
             seen.add(path)
             unique_paths.append(path)
-    
+
     return tuple(unique_paths)
 
 
@@ -183,11 +183,11 @@ def barbrief(
 ):
     """
     Generate comprehensive barrister's brief for Australian litigation.
-    
+
     Creates a structured brief combining case facts, legal strategies,
     research, and supporting documents. The brief follows Australian
     legal conventions and includes proper citation formatting.
-    
+
     Args:
         case_facts: Path to structured case facts (10-heading format)
         strategies: Optional path to brainstormed strategies
@@ -196,19 +196,19 @@ def barbrief(
         context: Optional additional context to guide the analysis
         hearing_type: Type of hearing (trial/directions/interlocutory/appeal)
         verify: Whether to verify citations
-        
+
     Raises:
         click.ClickException: If case facts are invalid or API calls fail
     """
     # Read and validate case facts
     click.echo("Reading case facts...")
     case_facts_content = read_document(case_facts)
-    
+
     if not validate_case_facts(case_facts_content):
         raise click.ClickException(
             "Case facts must be in 10-heading format from extractfacts command"
         )
-    
+
     # Read optional inputs
     strategies_content = ""
     if strategies:
@@ -220,19 +220,21 @@ def barbrief(
             strategy_parts = []
             for strategy_file in strategies:
                 content = read_document(strategy_file)
-                strategy_parts.append(f"=== SOURCE: {strategy_file} ===\n{content}\n=== END SOURCE: {strategy_file} ===")
+                strategy_parts.append(
+                    f"=== SOURCE: {strategy_file} ===\n{content}\n=== END SOURCE: {strategy_file} ==="
+                )
             strategies_content = "\n\n".join(strategy_parts)
-    
+
     research_docs = []
     for research_file in research:
         click.echo(f"Reading research: {research_file}")
         research_docs.append(read_document(research_file))
-    
+
     supporting_docs = []
     for doc_file in documents:
         click.echo(f"Reading document: {doc_file}")
         supporting_docs.append(read_document(doc_file))
-    
+
     # Prepare sections
     sections = prepare_brief_sections(
         case_facts_content,
@@ -242,16 +244,19 @@ def barbrief(
         context,
         hearing_type,
     )
-    
+
     # Estimate total input size
     total_content = (
-        case_facts_content + "\n" +
-        strategies_content + "\n" +
-        "\n".join(research_docs) + "\n" +
-        "\n".join(supporting_docs)
+        case_facts_content
+        + "\n"
+        + strategies_content
+        + "\n"
+        + "\n".join(research_docs)
+        + "\n"
+        + "\n".join(supporting_docs)
     )
     total_tokens, _ = count_tokens_and_words(total_content)
-    
+
     # Warn if large
     if total_tokens > 80000:
         click.echo(
@@ -260,28 +265,28 @@ def barbrief(
                 f"This may exceed API limits. Consider using fewer documents."
             )
         )
-    
+
     # Get LLM client
     try:
         client = LLMClientFactory.for_command("barbrief")
     except Exception as e:
         raise click.ClickException(f"Failed to initialize LLM client: {e}")
-    
+
     # Create reasoning-enabled prompt
     try:
         base_prompt = PROMPTS.get("barbrief.main", **sections)
         prompt_with_reasoning = create_reasoning_prompt(base_prompt, "barbrief")
     except Exception as e:
         raise click.ClickException(f"Failed to prepare prompt: {e}")
-    
+
     # Generate the brief
     click.echo("\nGenerating barrister's brief...")
-    
+
     messages = [
         {"role": "system", "content": PROMPTS.get("barbrief.system")},
         {"role": "user", "content": prompt_with_reasoning},
     ]
-    
+
     try:
         content, usage = client.complete(messages, skip_citation_verification=True)
     except Exception as e:
@@ -306,18 +311,16 @@ def barbrief(
             )
         else:
             raise click.ClickException(f"LLM API error: {e}")
-    
+
     click.echo(f"\nGenerated brief ({usage.get('total_tokens', 'N/A')} tokens used)")
-    
+
     # Run citation verification if requested
     if verify:
         click.echo("\nVerifying citations...")
         verified, unverified = verify_all_citations(content)
-        
+
         if unverified:
-            click.echo(
-                f"Warning: {len(unverified)} citations could not be verified"
-            )
+            click.echo(f"Warning: {len(unverified)} citations could not be verified")
             # Save verification report
             verification_content = (
                 f"CITATION VERIFICATION REPORT\n\n"
@@ -327,36 +330,37 @@ def barbrief(
             verification_content += "INVALID CITATIONS:\n"
             for cit, reason in unverified:
                 verification_content += f"- {cit}: {reason}\n"
-            
+
             verify_file = save_command_output(
                 "barbrief", verification_content, "citation_verification"
             )
             click.echo(f"Verification report saved: {verify_file}")
-    
+
     # Apply Chain of Verification if requested
     if cove:
         original_content = content
-        content, cove_results = run_cove_verification(content, 'barbrief')
-        if not cove_results['cove']['passed']:
+        content, cove_results = run_cove_verification(content, "barbrief")
+        if not cove_results["cove"]["passed"]:
             # Content has been regenerated to fix issues
             click.echo(success_message("CoVe corrected issues - brief regenerated"))
             # Log that regeneration occurred
-            save_log("barbrief_cove_regeneration", {
-                "original_length": len(original_content),
-                "regenerated_length": len(content),
-                "issues_fixed": cove_results['cove']['issues'],
-                "model": "See cove_barbrief_summary.json for model details"
-            })
+            save_log(
+                "barbrief_cove_regeneration",
+                {
+                    "original_length": len(original_content),
+                    "regenerated_length": len(content),
+                    "issues_fixed": cove_results["cove"]["issues"],
+                    "model": "See cove_barbrief_summary.json for model details",
+                },
+            )
         else:
             click.echo(success_message("CoVe verification passed - no issues found"))
-    
+
     # Save the brief
     output_file = save_command_output(
-        output if output else "barbrief", 
-        content, 
-        "" if output else hearing_type
+        output if output else "barbrief", content, "" if output else hearing_type
     )
-    
+
     # Show completion message
     show_command_completion(
         "Barristers brief generated",

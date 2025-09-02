@@ -21,11 +21,11 @@ def save_strategy_outputs(
     citation_issues: Optional[List[str]] = None,
     cove_results: Optional[Dict] = None,
     cove: bool = False,
-    llm_model: str = None
+    llm_model: str = None,
 ) -> Tuple[str, str, str, str]:
     """
     Save all strategy command outputs to separate files.
-    
+
     Args:
         strategy_content: Main strategic options content
         next_steps_content: Recommended next steps
@@ -40,74 +40,79 @@ def save_strategy_outputs(
         cove_results: Optional CoVe verification results
         cove: Whether CoVe was used
         llm_model: LLM model used
-        
+
     Returns:
         Tuple of (strategy_file, steps_file, draft_file, trace_file) paths
     """
     # Collect all critiques
     critiques = []
-    
+
     # Add citation issues if any
     if citation_issues:
         critiques.append(("Citation Validation Issues", "\n".join(citation_issues)))
-    
+
     # Add CoVe dialogue if used
     if cove and cove_results:
-        critiques.append(("CoVe Questions", cove_results['cove']['questions']))
-        critiques.append(("CoVe Answers", cove_results['cove']['answers']))
-        critiques.append(("CoVe Analysis", cove_results['cove']['issues']))
-    
+        critiques.append(("CoVe Questions", cove_results["cove"]["questions"]))
+        critiques.append(("CoVe Answers", cove_results["cove"]["answers"]))
+        critiques.append(("CoVe Analysis", cove_results["cove"]["issues"]))
+
     # Build metadata
     metadata = {"Desired Outcome": outcome, "Case Facts File": case_facts_name}
     if strategies_name:
         metadata["Strategies File"] = strategies_name
-    
+
     # Add verification metadata
     if cove:
         metadata["Verification"] = "Chain of Verification (CoVe)"
         if cove_results:
-            metadata["CoVe Status"] = "REGENERATED" if not cove_results['cove']['passed'] else "PASSED"
+            metadata["CoVe Status"] = (
+                "REGENERATED" if not cove_results["cove"]["passed"] else "PASSED"
+            )
     else:
         metadata["Verification"] = "Standard verification"
         if llm_model:
             metadata["Model"] = llm_model
-    
+
     # 1. Save main strategic options with critiques
     strategy_file = save_command_output(
         f"{output_prefix}_options" if output_prefix else "strategy",
         strategy_content,
         "" if output_prefix else outcome,
         metadata=metadata,
-        critique_sections=critiques if critiques else None
+        critique_sections=critiques if critiques else None,
     )
-    
+
     # 2. Save next steps separately
     steps_metadata = {"Desired Outcome": outcome, "Type": "Recommended Next Steps"}
     steps_file = save_command_output(
         f"{output_prefix}_nextsteps" if output_prefix else "strategy_nextsteps",
         next_steps_content,
         "" if output_prefix else outcome,
-        metadata=steps_metadata
+        metadata=steps_metadata,
     )
-    
+
     # 3. Save draft document separately
     draft_metadata = {"Desired Outcome": outcome, "Document Type": doc_type.title()}
     draft_file = save_command_output(
         f"{output_prefix}_draft" if output_prefix else "strategy_draft",
         document_content,
         "" if output_prefix else outcome,
-        metadata=draft_metadata
+        metadata=draft_metadata,
     )
-    
+
     # 4. Save reasoning trace separately
-    trace_metadata = {"Desired Outcome": outcome, "Type": "Strategic Reasoning Analysis"}
+    trace_metadata = {
+        "Desired Outcome": outcome,
+        "Type": "Strategic Reasoning Analysis",
+    }
     trace_file = save_command_output(
         f"{output_prefix}_reasoning" if output_prefix else "strategy_reasoning",
         reasoning_trace,
         "" if output_prefix else outcome,
-        metadata=trace_metadata
+        metadata=trace_metadata,
     )
-    
+
     return strategy_file, steps_file, draft_file, trace_file
 
 
@@ -115,11 +120,11 @@ def save_strategy_log(
     outcome: str,
     strategy_content: str,
     usage: Dict,
-    cove_results: Optional[Dict] = None
+    cove_results: Optional[Dict] = None,
 ):
     """
     Save strategy generation log.
-    
+
     Args:
         outcome: Desired legal outcome
         strategy_content: Generated strategy content
@@ -129,13 +134,13 @@ def save_strategy_log(
     log_data = {
         "outcome": outcome,
         "usage": usage,
-        "content_length": len(strategy_content)
+        "content_length": len(strategy_content),
     }
-    
+
     if cove_results:
         log_data["cove_regeneration"] = {
-            "issues_fixed": cove_results['cove']['issues'],
-            "passed": cove_results['cove']['passed']
+            "issues_fixed": cove_results["cove"]["issues"],
+            "passed": cove_results["cove"]["passed"],
         }
-    
+
     save_log("strategy", log_data)

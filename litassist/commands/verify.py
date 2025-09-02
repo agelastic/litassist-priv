@@ -19,8 +19,11 @@ from litassist.citation_verify import verify_all_citations
 from litassist.citation_patterns import extract_citations
 from litassist.llm import LLMClientFactory
 from litassist.utils import (
-    verifying_message, success_message, error_message, warning_message,
-    save_command_output
+    verifying_message,
+    success_message,
+    error_message,
+    warning_message,
+    save_command_output,
 )
 from litassist.verification_chain import run_cove_verification, format_cove_report
 from litassist.utils import (
@@ -35,7 +38,7 @@ from litassist.utils import (
 
 def _handle_verification_error(step_name: str, exception: Exception) -> None:
     """Handle verification step errors with consistent formatting and logging."""
-    msg = error_message(f'{step_name} failed: {exception}')
+    msg = error_message(f"{step_name} failed: {exception}")
     click.echo(f"\n{msg}")
     logging.error(f"{step_name} error: {exception}")
 
@@ -94,8 +97,8 @@ def verify(file, citations, soundness, reasoning, cove, output):
                     "Total Citations": str(len(extract_citations(content))),
                     "Verified": str(len(verified)),
                     "Unverified": str(len(unverified)),
-                    "Status": "[VERIFIED]" if not unverified else "[WARNING]"
-                }
+                    "Status": "[VERIFIED]" if not unverified else "[WARNING]",
+                },
             )
             status = "[VERIFIED]" if not unverified else "[WARNING]"
             click.echo(f"\n{status} Citation verification complete")
@@ -117,7 +120,7 @@ def verify(file, citations, soundness, reasoning, cove, output):
             if existing_trace:
                 action = "verified"
                 trace_status = _verify_reasoning_trace(existing_trace)
-                msg = success_message(f'Reasoning trace {action}')
+                msg = success_message(f"Reasoning trace {action}")
                 click.echo(f"\n{msg}")
                 click.echo(
                     f"   - IRAC structure {'complete' if trace_status['complete'] else 'incomplete'}"
@@ -130,11 +133,15 @@ def verify(file, citations, soundness, reasoning, cove, output):
                     f"**IRAC Structure**: {'Complete' if trace_status['complete'] else 'Incomplete'}\n",
                     f"**Confidence**: {existing_trace.confidence}%\n\n",
                 ]
-                if trace_status['issues']:
+                if trace_status["issues"]:
                     report_parts.append("### Issues Found\n\n")
-                    report_parts.extend(f"- {issue}\n" for issue in trace_status['issues'])
+                    report_parts.extend(
+                        f"- {issue}\n" for issue in trace_status["issues"]
+                    )
                     report_parts.append("\n")
-                report_parts.append("### Original Document with Overall Strategic Reasoning\n\n")
+                report_parts.append(
+                    "### Original Document with Overall Strategic Reasoning\n\n"
+                )
                 report_parts.append(content)
                 reasoning_response = "".join(report_parts)
                 model_name = "N/A (existing trace verified)"
@@ -143,7 +150,9 @@ def verify(file, citations, soundness, reasoning, cove, output):
                 enhanced_prompt = create_reasoning_prompt(content, "verify")
                 # Append citation report if available
                 if citation_report:
-                    enhanced_prompt += "\n\n## Citation Verification Results\n" + citation_report
+                    enhanced_prompt += (
+                        "\n\n## Citation Verification Results\n" + citation_report
+                    )
                 messages = [
                     {
                         "role": "system",
@@ -152,7 +161,9 @@ def verify(file, citations, soundness, reasoning, cove, output):
                     {"role": "user", "content": enhanced_prompt},
                 ]
                 response, _ = client.complete(messages, skip_citation_verification=True)
-                reasoning_response = response  # Store for potential combination with soundness
+                reasoning_response = (
+                    response  # Store for potential combination with soundness
+                )
                 existing_trace = extract_reasoning_trace(response)
                 if not existing_trace:
                     existing_trace = LegalReasoningTrace(
@@ -165,12 +176,12 @@ def verify(file, citations, soundness, reasoning, cove, output):
                         command="verify",
                     )
                 action = "generated"
-                msg = success_message(f'Reasoning trace {action}')
+                msg = success_message(f"Reasoning trace {action}")
                 click.echo(f"\n{msg}")
                 click.echo("   - IRAC structure complete")
                 click.echo(f"   - Confidence: {existing_trace.confidence}%")
                 model_name = client.model
-            
+
             # Save the reasoning trace to a file
             if reasoning_response:
                 # Pass only the reasoning content, let save_command_output handle headers
@@ -184,8 +195,10 @@ def verify(file, citations, soundness, reasoning, cove, output):
                         "Model": model_name,
                         "Action": action.capitalize(),
                         "IRAC Structure": "Complete" if existing_trace else "Generated",
-                        "Confidence": f"{existing_trace.confidence}%" if existing_trace else "N/A"
-                    }
+                        "Confidence": f"{existing_trace.confidence}%"
+                        if existing_trace
+                        else "N/A",
+                    },
                 )
                 click.echo(f"   - Details: {reasoning_file}")
                 extra_files["Reasoning analysis"] = reasoning_file
@@ -202,7 +215,7 @@ def verify(file, citations, soundness, reasoning, cove, output):
             soundness_result, soundness_model = client.verify(
                 content,
                 citation_context=citation_report,
-                reasoning_context=reasoning_response
+                reasoning_context=reasoning_response,
             )
             issues = _parse_soundness_issues(soundness_result)
             soundness_report = _format_soundness_report(issues, soundness_result)
@@ -215,9 +228,11 @@ def verify(file, citations, soundness, reasoning, cove, output):
                     "File": file,
                     "Model": soundness_model,
                     "Issues Found": str(len(issues)),
-                    "Compliance": "[VERIFIED]" if not issues else "[WARNING] Issues found",
-                    "Status": "[VERIFIED]" if not issues else "[WARNING]"
-                }
+                    "Compliance": "[VERIFIED]"
+                    if not issues
+                    else "[WARNING] Issues found",
+                    "Status": "[VERIFIED]" if not issues else "[WARNING]",
+                },
             )
             status = "[VERIFIED]" if not issues else "[WARNING]"
             click.echo(f"\n{status} Legal soundness check complete")
@@ -232,36 +247,40 @@ def verify(file, citations, soundness, reasoning, cove, output):
     if cove:
         # Skip CoVe if only citations are being verified
         if citations and not soundness and not reasoning:
-            click.echo(warning_message(
-                "CoVe skipped: --cove flag is ignored when only verifying citations"
-            ))
+            click.echo(
+                warning_message(
+                    "CoVe skipped: --cove flag is ignored when only verifying citations"
+                )
+            )
         else:
             click.echo(verifying_message("Starting Chain of Verification..."))
             try:
                 # Use the most refined version of content available
                 final_content = content
-                if soundness and 'soundness_result' in locals():
+                if soundness and "soundness_result" in locals():
                     # Extract corrected document from soundness result if available
                     match = re.search(
                         r"## Verified and Corrected Document\s*\n(.*)",
                         soundness_result,
-                        re.DOTALL
+                        re.DOTALL,
                     )
                     if match:
                         final_content = match.group(1).strip()
-                
+
                 cove_content, cove_results = run_cove_verification(
                     final_content,
-                    'verify',
+                    "verify",
                     prior_contexts={
-                        'citations': citation_report,
-                        'reasoning': reasoning_response,
-                        'soundness': issues if soundness and 'issues' in locals() else None
-                    }
+                        "citations": citation_report,
+                        "reasoning": reasoning_response,
+                        "soundness": issues
+                        if soundness and "issues" in locals()
+                        else None,
+                    },
                 )
-                
+
                 # Update final_content if regenerated
-                if cove_results['cove']['regenerated']:
+                if cove_results["cove"]["regenerated"]:
                     final_content = cove_content
                     # Save regenerated document
                     regen_file = save_command_output(
@@ -272,17 +291,17 @@ def verify(file, citations, soundness, reasoning, cove, output):
                             "Type": "CoVe Regenerated Document",
                             "File": file,
                             "Status": "[REGENERATED]",
-                            "Issues Fixed": cove_results['cove']['issues']
-                        }
+                            "Issues Fixed": cove_results["cove"]["issues"],
+                        },
                     )
                     extra_files["Regenerated document"] = regen_file
-                
+
                 # Save CoVe report with full dialogue
                 cove_report = format_cove_report(cove_results)
-                
+
                 # Don't pass critique_sections - the cove_report already contains all the information
                 # Passing it causes duplication with "AI CRITIQUE & VERIFICATION" section
-                
+
                 cove_file = save_command_output(
                     f"{output}_cove" if output else "verify_cove",
                     cove_report,
@@ -290,15 +309,23 @@ def verify(file, citations, soundness, reasoning, cove, output):
                     metadata={
                         "Type": "Chain of Verification",
                         "File": file,
-                        "Status": "[REGENERATED]" if cove_results['cove']['regenerated'] else "[VERIFIED]",
-                        "Issues": "Fixed" if cove_results['cove']['regenerated'] else "None"
-                    }
+                        "Status": "[REGENERATED]"
+                        if cove_results["cove"]["regenerated"]
+                        else "[VERIFIED]",
+                        "Issues": "Fixed"
+                        if cove_results["cove"]["regenerated"]
+                        else "None",
+                    },
                     # critique_sections removed to prevent duplication
                 )
-                status = "[REGENERATED]" if cove_results['cove']['regenerated'] else "[VERIFIED]"
+                status = (
+                    "[REGENERATED]"
+                    if cove_results["cove"]["regenerated"]
+                    else "[VERIFIED]"
+                )
                 click.echo(f"\n{status} Chain of Verification complete")
                 click.echo(f"   - Analysis: {cove_file}")
-                if cove_results['cove']['regenerated']:
+                if cove_results["cove"]["regenerated"]:
                     click.echo(f"   - Regenerated: {regen_file}")
                 extra_files["CoVe report"] = cove_file
                 reports_generated += 1

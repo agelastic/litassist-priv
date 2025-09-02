@@ -195,25 +195,27 @@ PARAMETER_PROFILES = {
 }
 
 
-def convert_thinking_effort(effort: str, model_name: str, use_openrouter: bool = True) -> dict:
+def convert_thinking_effort(
+    effort: str, model_name: str, use_openrouter: bool = True
+) -> dict:
     """
     Convert universal thinking_effort to OpenRouter's reasoning object format.
-    
+
     Args:
         effort: Universal effort level (none, minimal, low, medium, high, max)
         model_name: Full model name (e.g., "openai/o3-pro", "anthropic/claude-4")
         use_openrouter: Whether routing through OpenRouter (default True)
-    
+
     Returns:
         Dict with OpenRouter reasoning object or vendor-specific parameters
     """
     if effort == "none":
         return {}  # Don't send reasoning parameter
-    
+
     # OpenRouter unified reasoning object approach
     if use_openrouter:
         model_family = get_model_family(model_name)
-        
+
         # Check model type for appropriate sub-parameters
         if model_family in ["openai_reasoning", "gpt5", "xai"]:
             # Effort-based models (OpenAI, Grok, GPT-5)
@@ -222,37 +224,35 @@ def convert_thinking_effort(effort: str, model_name: str, use_openrouter: bool =
                 "low": "low",
                 "medium": "medium",
                 "high": "high",
-                "max": "high"  # Map max to highest available
+                "max": "high",  # Map max to highest available
             }
             mapped_effort = effort_map.get(effort, "medium")
-            
+
             # Only include minimal for GPT-5 and o4-mini
-            if mapped_effort == "minimal" and model_family not in ["gpt5"] and "o4" not in model_name:
+            if (
+                mapped_effort == "minimal"
+                and model_family not in ["gpt5"]
+                and "o4" not in model_name
+            ):
                 mapped_effort = "low"  # Fallback for non-GPT-5/o4 models
-            
+
             # Special handling for o4-mini with summary field
             if "o4" in model_name:
                 return {
                     "reasoning": {
                         "effort": mapped_effort,
-                        "summary": "auto"  # New o4 feature for automatic summarization
+                        "summary": "auto",  # New o4 feature for automatic summarization
                     }
                 }
             # GPT-5 supports both reasoning and verbosity
             elif model_family == "gpt5":
                 return {
-                    "reasoning": {
-                        "effort": mapped_effort
-                    }
+                    "reasoning": {"effort": mapped_effort}
                     # Verbosity handled separately via convert_verbosity
                 }
             else:
-                return {
-                    "reasoning": {
-                        "effort": mapped_effort
-                    }
-                }
-        
+                return {"reasoning": {"effort": mapped_effort}}
+
         elif model_family in ["claude4", "anthropic"]:
             # Token-based models (Anthropic)
             token_map = {
@@ -260,14 +260,10 @@ def convert_thinking_effort(effort: str, model_name: str, use_openrouter: bool =
                 "low": 1024,
                 "medium": 8192,
                 "high": 16384,
-                "max": 32000  # Max allowed by OpenRouter
+                "max": 32000,  # Max allowed by OpenRouter
             }
-            return {
-                "reasoning": {
-                    "max_tokens": token_map.get(effort, 8192)
-                }
-            }
-        
+            return {"reasoning": {"max_tokens": token_map.get(effort, 8192)}}
+
         elif model_family == "google":
             # Google/Gemini models - try unified reasoning
             effort_map = {
@@ -275,25 +271,21 @@ def convert_thinking_effort(effort: str, model_name: str, use_openrouter: bool =
                 "low": "low",
                 "medium": "medium",
                 "high": "high",
-                "max": "high"
+                "max": "high",
             }
-            return {
-                "reasoning": {
-                    "effort": effort_map.get(effort, "medium")
-                }
-            }
-    
+            return {"reasoning": {"effort": effort_map.get(effort, "medium")}}
+
     return {}
 
 
 def convert_verbosity(level: str, model_name: str = None) -> dict:
     """
     Convert verbosity level to API parameter.
-    
+
     Args:
         level: Verbosity level (low, medium, high)
         model_name: Optional model name for model-specific handling
-    
+
     Returns:
         Dict with verbosity parameter if valid
     """
@@ -335,42 +327,45 @@ def get_model_parameters(model_name: str, requested_params: dict) -> dict:
     """
     # Determine if routing through OpenRouter
     use_openrouter = "/" in model_name and not model_name.startswith("direct/")
-    
+
     model_family = get_model_family(model_name)
     profile = PARAMETER_PROFILES.get(model_family, PARAMETER_PROFILES["default"])
 
     filtered = {}
     transforms = profile.get("transforms", {})
     allowed = profile.get("allowed", [])
-    
+
     # Copy parameters to avoid modifying original
     params_to_process = requested_params.copy()
-    
+
     # Handle thinking_effort conversion FIRST (highest priority)
-    if "thinking_effort" in params_to_process and params_to_process["thinking_effort"] is not None:
+    if (
+        "thinking_effort" in params_to_process
+        and params_to_process["thinking_effort"] is not None
+    ):
         effort = params_to_process.pop("thinking_effort")
         reasoning_params = convert_thinking_effort(effort, model_name, use_openrouter)
         filtered.update(reasoning_params)
-        
+
         # CRITICAL: Remove any conflicting parameters to prevent API errors
         # OpenRouter doesn't allow both 'reasoning' and 'reasoning_effort'
         params_to_process.pop("reasoning_effort", None)
         params_to_process.pop("reasoning", None)
         params_to_process.pop("thinking", None)
         params_to_process.pop("thinking_config", None)
-    
+
     # Handle verbosity parameter
     if "verbosity" in params_to_process and params_to_process["verbosity"] is not None:
         verbosity = params_to_process.pop("verbosity")
         verbosity_params = convert_verbosity(verbosity, model_name)
         filtered.update(verbosity_params)
-    
+
     # Process remaining parameters
     for param, value in params_to_process.items():
         # Skip None values
         if value is None:
             continue
-        
+
         # Check if parameter needs transformation
         if param in transforms:
             new_param = transforms[param]
@@ -493,28 +488,36 @@ class LLMClient(LLMVerificationMixin):
             correlation_id = self._log_request(messages, filtered_params)
 
             # Execute API call with retry logic
-            response = execute_api_call_with_retry(model_name, messages, filtered_params)
+            response = execute_api_call_with_retry(
+                model_name, messages, filtered_params
+            )
 
             # Validate and extract response content
             content, usage = self._extract_response_content(response)
-            
+
             # Log the response separately
             self._log_response(correlation_id, content, usage)
 
             # Handle citation verification if not skipped
             if not skip_citation_verification:
-                content = self._handle_citation_verification(content, messages, model_name, params)
+                content = self._handle_citation_verification(
+                    content, messages, model_name, params
+                )
 
         except Exception:
             # Re-raise any exceptions after cleanup
             raise
 
         # Log the completion
-        self._log_completion(messages, {**self.default_params, **overrides}, content, usage)
+        self._log_completion(
+            messages, {**self.default_params, **overrides}, content, usage
+        )
 
         return content, usage
 
-    def _merge_system_messages_for_unsupported_models(self, messages: List[Dict[str, str]]) -> List[Dict[str, str]]:
+    def _merge_system_messages_for_unsupported_models(
+        self, messages: List[Dict[str, str]]
+    ) -> List[Dict[str, str]]:
         """Merge system messages into first user message for models that don't support system messages."""
         modified_messages = []
         system_content = PROMPTS.get("base.australian_law")
@@ -525,7 +528,9 @@ class LLMClient(LLMVerificationMixin):
 
         if system_messages:
             # Combine all system content
-            system_content = "\n".join([msg.get("content", "") for msg in system_messages])
+            system_content = "\n".join(
+                [msg.get("content", "") for msg in system_messages]
+            )
             if "Australian English" not in system_content:
                 system_content += "\n" + PROMPTS.get("base.australian_law")
 
@@ -542,7 +547,9 @@ class LLMClient(LLMVerificationMixin):
 
         return modified_messages
 
-    def _prepend_australian_law_to_system_messages(self, messages: List[Dict[str, str]]) -> List[Dict[str, str]]:
+    def _prepend_australian_law_to_system_messages(
+        self, messages: List[Dict[str, str]]
+    ) -> List[Dict[str, str]]:
         """Prepend Australian law prompt to all system messages."""
         australian_law_prompt = PROMPTS.get("base.australian_law")
         if not australian_law_prompt:
@@ -575,11 +582,15 @@ class LLMClient(LLMVerificationMixin):
 
         return model_name
 
-    def _log_request(self, messages: List[Dict[str, str]], filtered_params: dict) -> str:
+    def _log_request(
+        self, messages: List[Dict[str, str]], filtered_params: dict
+    ) -> str:
         """Log the API request details and return correlation ID."""
         # Generate unique correlation ID
-        correlation_id = f"{time.strftime('%Y%m%d_%H%M%S')}_{os.getpid()}_{id(self) % 1000000}"
-        
+        correlation_id = (
+            f"{time.strftime('%Y%m%d_%H%M%S')}_{os.getpid()}_{id(self) % 1000000}"
+        )
+
         save_log(
             f"llm_request_{self.model.replace('/', '_')}",
             {
@@ -592,7 +603,9 @@ class LLMClient(LLMVerificationMixin):
         )
         return correlation_id
 
-    def _log_response(self, correlation_id: str, content: str, usage: Dict[str, Any]) -> None:
+    def _log_response(
+        self, correlation_id: str, content: str, usage: Dict[str, Any]
+    ) -> None:
         """Log the API response details separately."""
         save_log(
             f"llm_response_{self.model.replace('/', '_')}",
@@ -612,7 +625,7 @@ class LLMClient(LLMVerificationMixin):
 
         # Extract content
         content = response.choices[0].message.content or ""
-        
+
         # Extract usage statistics
         usage = getattr(response, "usage", {})
         if hasattr(usage, "model_dump"):
@@ -656,7 +669,9 @@ class LLMClient(LLMVerificationMixin):
                 error_msg = error_info.get("message", "Unknown API error")
                 raise Exception(f"API request failed: {error_msg}")
             else:
-                raise Exception("API request failed with error finish_reason but no error details")
+                raise Exception(
+                    "API request failed with error finish_reason but no error details"
+                )
 
         # Check for missing choices
         if not hasattr(response, "choices") or not response.choices:
@@ -664,7 +679,9 @@ class LLMClient(LLMVerificationMixin):
             error_msg = "API response missing 'choices' field"
             if hasattr(response, "error") and response.error:
                 if hasattr(response.error, "get"):
-                    error_msg = f"API error: {response.error.get('message', 'Unknown error')}"
+                    error_msg = (
+                        f"API error: {response.error.get('message', 'Unknown error')}"
+                    )
                 else:
                     error_msg = f"API error: {response.error}"
             raise Exception(error_msg)
@@ -674,15 +691,15 @@ class LLMClient(LLMVerificationMixin):
             raise Exception(f"Invalid choice structure: {response.choices[0]}")
 
     def _handle_citation_verification(
-        self, 
-        content: str, 
-        messages: List[Dict[str, str]], 
-        model_name: str, 
-        params: dict
+        self,
+        content: str,
+        messages: List[Dict[str, str]],
+        model_name: str,
+        params: dict,
     ) -> str:
         """Handle citation verification and potential retry."""
         from litassist.citation_verify import CitationVerificationError
-        
+
         # Determine verification mode based on force_verify setting
         strict_mode = getattr(self, "_force_verify", True)
 
@@ -693,34 +710,41 @@ class LLMClient(LLMVerificationMixin):
 
             if verification_issues:
                 # Log warnings but proceed
-                warning_msg = warning_message(f"Citation verification: {verification_issues[0]}")
+                warning_msg = warning_message(
+                    f"Citation verification: {verification_issues[0]}"
+                )
                 print(warning_msg)
                 content = verified_content
 
         except CitationVerificationError as e:
             # Handle citation verification failure with retry
-            content = self._retry_with_enhanced_citations(e, messages, model_name, params)
+            content = self._retry_with_enhanced_citations(
+                e, messages, model_name, params
+            )
 
         return content
 
     def _retry_with_enhanced_citations(
-        self, 
-        error: Exception, 
-        messages: List[Dict[str, str]], 
-        model_name: str, 
-        params: dict
+        self,
+        error: Exception,
+        messages: List[Dict[str, str]],
+        model_name: str,
+        params: dict,
     ) -> str:
         """Retry completion with enhanced citation instructions after verification failure."""
         from litassist.citation_verify import CitationVerificationError
-        
+
         print(error_message(str(error)))
         print(info_message("Retrying with enhanced citation instructions..."))
 
         # Enhance messages with citation instructions
-        enhanced_messages = self._enhance_messages_with_citation_instructions(messages.copy())
+        enhanced_messages = self._enhance_messages_with_citation_instructions(
+            messages.copy()
+        )
 
         # Get retry client and execute
         from .api_handlers import get_openai_client
+
         retry_client = get_openai_client(model_name)
 
         try:
@@ -758,7 +782,9 @@ class LLMClient(LLMVerificationMixin):
                 "Manual intervention required."
             )
 
-    def _enhance_messages_with_citation_instructions(self, messages: List[Dict[str, str]]) -> List[Dict[str, str]]:
+    def _enhance_messages_with_citation_instructions(
+        self, messages: List[Dict[str, str]]
+    ) -> List[Dict[str, str]]:
         """Add citation instructions to messages."""
         citation_instructions = PROMPTS.get("verification.citation_retry_instructions")
 
@@ -774,11 +800,11 @@ class LLMClient(LLMVerificationMixin):
         return messages
 
     def _log_completion(
-        self, 
-        messages: List[Dict[str, str]], 
-        params: dict, 
-        content: str, 
-        usage: Dict[str, Any]
+        self,
+        messages: List[Dict[str, str]],
+        params: dict,
+        content: str,
+        usage: Dict[str, Any],
     ) -> None:
         """Log the completion details."""
         # Normalize usage data for serialization

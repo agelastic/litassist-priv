@@ -167,9 +167,9 @@ def show_command_completion(
             click.echo(f"   {key}: {value}")
 
     # Show log file location if verbose mode and context available
-    if ctx and hasattr(ctx, 'obj') and ctx.obj:
+    if ctx and hasattr(ctx, "obj") and ctx.obj:
         if ctx.obj.get("verbose") and ctx.obj.get("log_file"):
-            click.echo(info_message(f'Debug logs saved to: {ctx.obj["log_file"]}'))
+            click.echo(info_message(f"Debug logs saved to: {ctx.obj['log_file']}"))
 
     tip_msg = tip_message(f'View full output: open "{output_file}"')
     click.echo(f"\n{tip_msg}")
@@ -206,7 +206,9 @@ def parse_strategies_file(strategies_text: str) -> dict:
 
     # Find ORTHODOX STRATEGIES section - look for content until next ## header at line start or end
     orthodox_match = re.search(
-        r"## ORTHODOX STRATEGIES.*?\n(.*?)(?=^## |\Z)", strategies_text, re.DOTALL | re.MULTILINE
+        r"## ORTHODOX STRATEGIES.*?\n(.*?)(?=^## |\Z)",
+        strategies_text,
+        re.DOTALL | re.MULTILINE,
     )
     if orthodox_match:
         orthodox_text = orthodox_match.group(1)
@@ -230,7 +232,9 @@ def parse_strategies_file(strategies_text: str) -> dict:
 
     # Find MOST LIKELY TO SUCCEED section - look for content until === divider or end
     likely_match = re.search(
-        r"## MOST LIKELY TO SUCCEED.*?\n(.*?)(?=^===|\Z)", strategies_text, re.DOTALL | re.MULTILINE
+        r"## MOST LIKELY TO SUCCEED.*?\n(.*?)(?=^===|\Z)",
+        strategies_text,
+        re.DOTALL | re.MULTILINE,
     )
     if likely_match:
         likely_text = likely_match.group(1)

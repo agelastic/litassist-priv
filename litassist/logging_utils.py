@@ -30,56 +30,56 @@ os.makedirs(OUTPUT_DIR, exist_ok=True)
 def setup_logging(verbose: bool = False) -> str:
     """
     Configure logging with file output and optional console output.
-    
+
     All logs are saved to a timestamped file. Console output is only
     shown when verbose mode is enabled.
-    
+
     Args:
         verbose: If True, also output logs to console
-        
+
     Returns:
         Path to the log file
     """
     # Create timestamped log file
     timestamp = time.strftime("%Y%m%d_%H%M%S")
     log_file = os.path.join(LOG_DIR, f"litassist_{timestamp}.log")
-    
+
     # Root logger configuration
     root_logger = logging.getLogger()
     root_logger.setLevel(logging.DEBUG)  # Capture everything
-    
+
     # Clear existing handlers to avoid duplicates
     root_logger.handlers.clear()
-    
+
     # File handler - captures everything
     file_handler = logging.FileHandler(log_file)
     file_handler.setLevel(logging.DEBUG)
     file_formatter = logging.Formatter(
-        '%(asctime)s - %(name)s - %(levelname)s - %(message)s',
-        datefmt='%Y-%m-%d %H:%M:%S'
+        "%(asctime)s - %(name)s - %(levelname)s - %(message)s",
+        datefmt="%Y-%m-%d %H:%M:%S",
     )
     file_handler.setFormatter(file_formatter)
     root_logger.addHandler(file_handler)
-    
+
     # Console handler - only if verbose
     if verbose:
         console_handler = logging.StreamHandler()
         console_handler.setLevel(logging.DEBUG)
         # Simple format for console - just the message
-        console_formatter = logging.Formatter('%(message)s')
+        console_formatter = logging.Formatter("%(message)s")
         console_handler.setFormatter(console_formatter)
         root_logger.addHandler(console_handler)
-    
+
     # Configure specific loggers to appropriate levels
     # These will log to file always, console only if verbose
-    for logger_name in ['httpx', 'openai', 'httpcore', 'urllib3']:
+    for logger_name in ["httpx", "openai", "httpcore", "urllib3"]:
         logger = logging.getLogger(logger_name)
         logger.setLevel(logging.INFO)
-    
+
     # Log the startup
     logging.info(f"LitAssist logging initialized - verbose mode: {verbose}")
     logging.debug(f"Log file: {log_file}")
-    
+
     return log_file
 
 
@@ -182,9 +182,12 @@ def save_log(tag: str, payload: dict):
                 _write_http_validation_markdown(f, tag, ts, payload)
             elif tag == "austlii_search_validation":
                 _write_search_validation_markdown(f, tag, ts, payload)
-            elif (tag.startswith("llm_") or tag.startswith("cove_") or 
-                  "messages_sent" in payload or 
-                  (isinstance(payload.get("messages"), list) and payload.get("model"))):
+            elif (
+                tag.startswith("llm_")
+                or tag.startswith("cove_")
+                or "messages_sent" in payload
+                or (isinstance(payload.get("messages"), list) and payload.get("model"))
+            ):
                 # LLM message logs (includes both sent messages and responses)
                 _write_llm_messages_markdown(f, tag, ts, payload)
             elif "response" in payload or "inputs" in payload:
@@ -257,7 +260,9 @@ def _write_citation_validation_markdown(f, tag: str, ts: str, payload: dict):
     """Write markdown for citation validation logs."""
     f.write(f"# {tag} — {ts}\n\n")
     f.write("## Summary\n\n")
-    f.write(f"- **Method**: `{payload.get('method', 'validate_citation_patterns')}`  \n")
+    f.write(
+        f"- **Method**: `{payload.get('method', 'validate_citation_patterns')}`  \n"
+    )
     issues = payload.get("issues", [])
     f.write(f"- **Issues Found**: {len(issues)}  \n")
     f.write(f"- **Online Enabled**: {payload.get('online_enabled', False)}  \n")
@@ -311,13 +316,19 @@ def _write_command_output_markdown(f, tag: str, ts: str, payload: dict):
                     if key == "research_analysis" and "combined_content" in value:
                         # Only log metadata, not the massive content
                         f.write(f"- **{key}**:\n")
-                        f.write(f"  - Total tokens: {value.get('total_tokens', 'N/A')}\n")
+                        f.write(
+                            f"  - Total tokens: {value.get('total_tokens', 'N/A')}\n"
+                        )
                         f.write(f"  - Total words: {value.get('total_words', 'N/A')}\n")
                         f.write(f"  - File count: {value.get('file_count', 'N/A')}\n")
-                        f.write(f"  - Exceeds threshold: {value.get('exceeds_threshold', 'N/A')}\n")
+                        f.write(
+                            f"  - Exceeds threshold: {value.get('exceeds_threshold', 'N/A')}\n"
+                        )
                     else:
                         # Format dict as JSON code block
-                        f.write(f"- **{key}**:\n```json\n{json.dumps(value, indent=2, ensure_ascii=False)}\n```\n")
+                        f.write(
+                            f"- **{key}**:\n```json\n{json.dumps(value, indent=2, ensure_ascii=False)}\n```\n"
+                        )
                 elif isinstance(value, list):
                     if len(value) > 10:
                         # For long lists, show count and first few items
@@ -328,7 +339,9 @@ def _write_command_output_markdown(f, tag: str, ts: str, payload: dict):
                         f.write(f"- **{key}**: {value}  \n")
                 elif isinstance(value, str) and len(value) > 1000:
                     # Truncate very long strings
-                    f.write(f"- **{key}**: {value[:500]}... (truncated, {len(value)} chars total)  \n")
+                    f.write(
+                        f"- **{key}**: {value[:500]}... (truncated, {len(value)} chars total)  \n"
+                    )
                 else:
                     # Simple values
                     f.write(f"- **{key}**: {value}  \n")
@@ -342,7 +355,9 @@ def _write_command_output_markdown(f, tag: str, ts: str, payload: dict):
         response = payload["response"]
         # Handle long responses
         if isinstance(response, str) and len(response) > 10000:
-            f.write(f"{response[:10000]}\n\n... (truncated, {len(response)} total characters)\n")
+            f.write(
+                f"{response[:10000]}\n\n... (truncated, {len(response)} total characters)\n"
+            )
         else:
             f.write(f"{response}\n")
         f.write("\n")
@@ -360,52 +375,56 @@ def _write_command_output_markdown(f, tag: str, ts: str, payload: dict):
 def _write_llm_messages_markdown(f, tag: str, ts: str, payload: dict):
     """Write markdown for LLM message logs."""
     f.write(f"# {tag} — {ts}\n\n")
-    
+
     # Model information
     f.write("## Model Information\n\n")
     f.write(f"- **Model**: {payload.get('model', 'N/A')}\n")
     f.write(f"- **Timestamp**: {payload.get('timestamp', ts)}\n")
-    if 'correlation_id' in payload:
+    if "correlation_id" in payload:
         f.write(f"- **Correlation ID**: {payload['correlation_id']}\n")
-    if 'command_context' in payload:
+    if "command_context" in payload:
         f.write(f"- **Context**: {payload['command_context']}\n")
     f.write("\n")
-    
+
     # Messages - check both 'messages' and 'messages_sent' for compatibility
-    messages = payload.get('messages', payload.get('messages_sent', []))
+    messages = payload.get("messages", payload.get("messages_sent", []))
     if messages:
         f.write("## Messages Sent\n\n")
         for msg in messages:
-            role = msg.get('role', 'unknown')
-            content = msg.get('content', '')
-            
-            if role == 'system':
+            role = msg.get("role", "unknown")
+            content = msg.get("content", "")
+
+            if role == "system":
                 f.write("### System Message\n\n")
-            elif role == 'user':
+            elif role == "user":
                 f.write("### User Message\n\n")
-            elif role == 'assistant':
+            elif role == "assistant":
                 f.write("### Assistant Message\n\n")
             else:
                 f.write(f"### {role.title()} Message\n\n")
-            
+
             # Handle long content
             if len(content) > 50000:
-                f.write(f"{content[:50000]}\n\n[... truncated, {len(content)} total characters ...]\n\n")
+                f.write(
+                    f"{content[:50000]}\n\n[... truncated, {len(content)} total characters ...]\n\n"
+                )
             else:
                 f.write(f"{content}\n\n")
-    
+
     # LLM Response - the actual output from the model
-    response = payload.get('response')
+    response = payload.get("response")
     if response:
         f.write("## LLM Response\n\n")
         # Handle very long responses (some can be 50K+ chars)
         if len(response) > 100000:
-            f.write(f"{response[:100000]}\n\n[... truncated, {len(response)} total characters ...]\n\n")
+            f.write(
+                f"{response[:100000]}\n\n[... truncated, {len(response)} total characters ...]\n\n"
+            )
         else:
             f.write(f"{response}\n\n")
-    
+
     # Parameters
-    params = payload.get('params', {})
+    params = payload.get("params", {})
     if params:
         f.write("## Parameters\n\n")
         f.write("| Parameter | Value |\n")
@@ -413,9 +432,9 @@ def _write_llm_messages_markdown(f, tag: str, ts: str, payload: dict):
         for key, value in params.items():
             f.write(f"| {key} | {value} |\n")
         f.write("\n")
-    
+
     # Usage stats if present
-    usage = payload.get('usage', {})
+    usage = payload.get("usage", {})
     if usage:
         f.write("## Token Usage\n\n")
         for key, value in usage.items():
@@ -427,7 +446,7 @@ def _format_dict_as_markdown(d: dict, indent: int = 0) -> str:
     """Recursively format a dictionary as markdown lists."""
     lines = []
     prefix = "  " * indent + "- "
-    
+
     for key, value in d.items():
         if isinstance(value, dict):
             lines.append(f"{prefix}**{key}**:")
@@ -441,7 +460,7 @@ def _format_dict_as_markdown(d: dict, indent: int = 0) -> str:
                     lines.append(f"  {'  ' * indent}- {item}")
         else:
             lines.append(f"{prefix}**{key}**: {value}")
-    
+
     return "\n".join(lines)
 
 
@@ -449,7 +468,7 @@ def _write_generic_markdown(f, tag: str, ts: str, payload: dict):
     """Write pure markdown for unknown log types - no JSON."""
     f.write(f"# {tag} — {ts}\n\n")
     f.write("## Log Data\n\n")
-    
+
     # Convert the payload to pure markdown format
     if payload:
         markdown_content = _format_dict_as_markdown(payload)
@@ -487,7 +506,7 @@ def save_command_output(
     if query_or_slug:  # Non-empty slug means normal usage
         sanitized_slug = re.sub(r"[^\w\s-]", "", query_or_slug.lower())
         slug = re.sub(r"[-\s]+", "_", sanitized_slug)[:40].strip("_")
-    
+
     if slug:
         output_file = os.path.join(OUTPUT_DIR, f"{command_name}_{slug}_{timestamp}.txt")
     else:
@@ -506,13 +525,13 @@ def save_command_output(
         f.write(f"Timestamp: {time.strftime('%Y-%m-%d %H:%M:%S')}\n")
         f.write("-" * 80 + "\n\n")
         f.write(content)
-        
+
         # Append critique sections if provided
         if critique_sections:
             f.write("\n\n" + "=" * 80 + "\n")
             f.write("AI CRITIQUE & VERIFICATION\n")
             f.write("=" * 80 + "\n\n")
-            
+
             for title, critique_content in critique_sections:
                 f.write(f"## {title}\n\n")
                 f.write(critique_content)

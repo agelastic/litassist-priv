@@ -25,13 +25,13 @@ from litassist.citation_verify import (
 class LLMVerificationMixin:
     """
     Mixin class providing verification and citation validation functionality for LLM clients.
-    
+
     This mixin provides methods for:
     - Content verification and self-critique
     - Citation validation and verification
     - Risk-based auto-verification logic
     - Multi-level verification depth control
-    
+
     Designed to be mixed into LLMClient instances to add verification capabilities.
     """
 
@@ -75,7 +75,10 @@ class LLMVerificationMixin:
         if citation_context:
             full_text += "\n\n# Previous Verification: Citations\n\n" + citation_context
         if reasoning_context:
-            full_text += "\n\n# Previous Verification: Reasoning Analysis\n\n" + reasoning_context
+            full_text += (
+                "\n\n# Previous Verification: Reasoning Analysis\n\n"
+                + reasoning_context
+            )
 
         critique_prompt = [
             {
@@ -364,6 +367,7 @@ class LLMVerificationMixin:
 
         # Use the configured verification model
         from litassist.llm import LLMClientFactory
+
         verification_client = LLMClientFactory.for_command("verification")
         params = {"temperature": 0, "top_p": 0.2}
         if CONFIG.use_token_limits:
@@ -377,7 +381,7 @@ class LLMVerificationMixin:
 class LLMVerificationClient:
     """
     Standalone verification client for content verification without requiring a full LLM client.
-    
+
     This class provides verification capabilities that can be used independently,
     useful for verification-only operations or when you need verification functionality
     without the full LLM client overhead.
@@ -386,90 +390,77 @@ class LLMVerificationClient:
     def __init__(self, model: str = "anthropic/claude-opus-4.1", **params):
         """
         Initialize a verification-specific LLM client.
-        
+
         Args:
             model: The model to use for verification (defaults to Opus for accuracy)
             **params: Additional parameters for the verification model
         """
         from litassist.llm.client import LLMClient
-        
+
         # Create a lightweight LLM client configured for verification
-        verification_params = {
-            "temperature": 0,
-            "top_p": 0.2,
-            **params
-        }
-        
+        verification_params = {"temperature": 0, "top_p": 0.2, **params}
+
         self.client = LLMClient(model, **verification_params)
-        
+
         # Apply the verification mixin
         self.client.__class__ = type(
             "LLMClientWithVerification",
             (self.client.__class__, LLMVerificationMixin),
-            {}
+            {},
         )
 
     def verify_content(
-        self, 
-        content: str, 
-        citation_context: str = None, 
-        reasoning_context: str = None
+        self, content: str, citation_context: str = None, reasoning_context: str = None
     ) -> Tuple[str, str]:
         """
         Verify content for legal accuracy and correctness.
-        
+
         Args:
             content: The content to verify
             citation_context: Optional citation verification context
             reasoning_context: Optional reasoning analysis context
-            
+
         Returns:
             Tuple of (verification feedback, model name used)
         """
         return self.client.verify(content, citation_context, reasoning_context)
-    
+
     def verify_citations(
-        self, 
-        content: str, 
-        strict_mode: bool = True
+        self, content: str, strict_mode: bool = True
     ) -> Tuple[str, List[str]]:
         """
         Verify and validate citations in content.
-        
+
         Args:
             content: Content to verify citations for
             strict_mode: Whether to use strict verification mode
-            
+
         Returns:
             Tuple of (cleaned content, list of issues)
         """
         return self.client.validate_and_verify_citations(content, strict_mode)
-    
+
     def assess_verification_need(self, content: str, command: str = None) -> bool:
         """
         Assess whether content needs verification based on risk factors.
-        
+
         Args:
             content: Content to assess
             command: Command that generated the content
-            
+
         Returns:
             True if verification is recommended
         """
         return self.client.should_auto_verify(content, command)
-    
-    def verify_with_depth(
-        self, 
-        content: str, 
-        level: str = "medium"
-    ) -> Tuple[str, str]:
+
+    def verify_with_depth(self, content: str, level: str = "medium") -> Tuple[str, str]:
         """
         Verify content with specified depth level.
-        
+
         Args:
             content: Content to verify
             level: Verification level ("light", "medium", "heavy")
-            
+
         Returns:
             Tuple of (verification feedback, model name used)
         """

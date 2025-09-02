@@ -12,22 +12,18 @@ from litassist.prompts import PROMPTS
 
 
 def generate_analysis(
-    facts: str,
-    side: str, 
-    area: str,
-    orthodox_content: str,
-    unorthodox_content: str
+    facts: str, side: str, area: str, orthodox_content: str, unorthodox_content: str
 ):
     """
     Analyze strategies and identify most likely to succeed.
-    
+
     Args:
         facts: Case facts content
         side: Which side (plaintiff/defendant/etc)
         area: Legal area (civil/criminal/etc)
         orthodox_content: Generated orthodox strategies
         unorthodox_content: Generated unorthodox strategies
-    
+
     Returns:
         Tuple of (content, usage)
     """
@@ -42,9 +38,9 @@ def generate_analysis(
         side=side,
         area=area,
         orthodox_strategies=orthodox_content,
-        unorthodox_strategies=unorthodox_content
+        unorthodox_strategies=unorthodox_content,
     )
-    
+
     analysis_base_prompt = f"""{analysis_base_content}
 
 {analysis_template}"""
@@ -65,5 +61,5 @@ def generate_analysis(
         analysis_content, analysis_usage = analysis_client.complete(analysis_messages)
     except Exception as e:
         raise click.ClickException(f"Error analyzing strategies: {e}")
-    
+
     return analysis_content, analysis_usage

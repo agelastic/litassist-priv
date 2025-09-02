@@ -274,11 +274,7 @@ def search_jade_via_google_cse(citation: str, timeout: int = 10) -> bool:
         )
 
         # Search using configured CSE
-        res = (
-            service.cse()
-            .list(q=search_query, cx=CONFIG.cse_id, num=10)
-            .execute()
-        )
+        res = service.cse().list(q=search_query, cx=CONFIG.cse_id, num=10).execute()
 
         # Enhanced search with multiple variations to handle different citation formats
         success = False
