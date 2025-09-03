@@ -8,7 +8,7 @@ and handling various file types used throughout LitAssist.
 import click
 from pypdf import PdfReader
 
-from litassist.utils.core import timed
+from litassist.timing import timed
 
 
 @timed

@@ -7,8 +7,8 @@ with optional diversity-based re-ranking using Maximal Marginal Relevance (MMR).
 
 from typing import List, Dict, Any, Optional
 
-from litassist.utils import timed
-from litassist.config import CONFIG
+from litassist.timing import timed
+from litassist.config import get_config
 
 
 class MockPineconeIndex:
@@ -53,8 +53,10 @@ def get_pinecone_client():
     Returns:
         A Pinecone index object, or a mock index if credentials are placeholder values.
     """
+    config = get_config()
+    
     # Check if we're using placeholder values for Pinecone
-    if "YOUR_PINECONE" in CONFIG.pc_key or "YOUR_PINECONE" in CONFIG.pc_env:
+    if "YOUR_PINECONE" in config.pc_key or "YOUR_PINECONE" in config.pc_env:
         print(
             "WARNING: Using placeholder Pinecone credentials. Some features will be limited."
         )
@@ -63,17 +65,17 @@ def get_pinecone_client():
     # Import locally to allow for mock usage when pinecone-client isn't installed
     from litassist.helpers.pinecone_config import get_pinecone_client as get_pc
 
-    pc_index = get_pc(CONFIG.pc_key, CONFIG.pc_env, CONFIG.pc_index)
+    pc_index = get_pc(config.pc_key, config.pc_env, config.pc_index)
 
     # Test if we can access it
     try:
         stats = pc_index.describe_index_stats()
         print(
-            f"[OK] Connected to index '{CONFIG.pc_index}' (dimension: {stats.dimension}, vectors: {stats.total_vector_count})"
+            f"[OK] Connected to index '{config.pc_index}' (dimension: {stats.dimension}, vectors: {stats.total_vector_count})"
         )
         return pc_index
     except Exception as e:
-        print(f"WARNING: Cannot access index '{CONFIG.pc_index}'.")
+        print(f"WARNING: Cannot access index '{config.pc_index}'.")
         print(f"Error: {e}")
         print("Using mock index for testing.")
         return MockPineconeIndex()

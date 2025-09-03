@@ -18,18 +18,19 @@ from litassist.prompts import PROMPTS
 from litassist.citation_verify import verify_all_citations
 from litassist.citation_patterns import extract_citations
 from litassist.llm import LLMClientFactory
-from litassist.utils import (
+from litassist.utils.formatting import (
     verifying_message,
     success_message,
     error_message,
     warning_message,
-    save_command_output,
 )
+from litassist.logging_utils import save_command_output
 from litassist.verification_chain import run_cove_verification, format_cove_report
-from litassist.utils import (
-    timed,
-    save_log,
-    read_document,
+from litassist.citation_context import fetch_citation_context
+from litassist.timing import timed
+from litassist.logging_utils import save_log
+from litassist.utils.file_ops import read_document
+from litassist.utils.legal_reasoning import (
     create_reasoning_prompt,
     extract_reasoning_trace,
     LegalReasoningTrace,
@@ -78,6 +79,7 @@ def verify(file, citations, soundness, reasoning, cove, output):
     extra_files = {}
     citation_report = None  # Track citation report for passing to other steps
     reasoning_response = None  # Track reasoning response for potential combination
+    case_content = {}  # Track fetched case content for reasoning verification
 
     # 1. Citation Verification
     if citations:
@@ -87,6 +89,14 @@ def verify(file, citations, soundness, reasoning, cove, output):
             citation_report = _format_citation_report(
                 verified, unverified, total_found=len(extract_citations(content))
             )
+            
+            # Fetch FULL case content for ALL verified citations - NO LIMITS
+            case_content = {}
+            if verified:
+                click.echo(verifying_message(f"Fetching full content for {len(verified)} verified cases..."))
+                case_content = fetch_citation_context(verified)  # Pass ALL verified citations
+                if case_content:
+                    click.echo(success_message(f"Fetched content for {len(case_content)} cases"))
             citation_file = save_command_output(
                 f"{output}_citations" if output else "verify_citations",
                 citation_report,
@@ -114,6 +124,16 @@ def verify(file, citations, soundness, reasoning, cove, output):
     # 2. Reasoning Trace Verification/Generation (run BEFORE soundness to allow combination)
     if reasoning:
         click.echo(verifying_message("Starting reasoning trace verification..."))
+        
+        # If citations weren't verified but we're doing reasoning, still fetch case content
+        if not case_content:
+            all_citations = extract_citations(content)
+            if all_citations:
+                click.echo(verifying_message(f"Fetching content for {len(all_citations)} citations..."))
+                case_content = fetch_citation_context(all_citations)
+                if case_content:
+                    click.echo(success_message(f"Fetched content for {len(case_content)} cases"))
+        
         try:
             client = None  # Initialize client variable
             existing_trace = extract_reasoning_trace(content)
@@ -148,10 +168,18 @@ def verify(file, citations, soundness, reasoning, cove, output):
             else:
                 client = LLMClientFactory.for_command("verify-reasoning")
                 enhanced_prompt = create_reasoning_prompt(content, "verify")
-                # Append citation report if available
+                
+                # Append FULL case content if available
+                if case_content:
+                    enhanced_prompt += "\n\n## Full Legal Context\n\n"
+                    enhanced_prompt += "Below are the complete legal documents referenced in the text:\n\n"
+                    for citation, full_text in case_content.items():
+                        enhanced_prompt += f"=== {citation} ===\n\n{full_text}\n\n"
+                
+                # Also append citation report summary if available
                 if citation_report:
                     enhanced_prompt += (
-                        "\n\n## Citation Verification Results\n" + citation_report
+                        "\n\n## Citation Verification Summary\n" + citation_report
                     )
                 messages = [
                     {
@@ -160,7 +188,50 @@ def verify(file, citations, soundness, reasoning, cove, output):
                     },
                     {"role": "user", "content": enhanced_prompt},
                 ]
-                response, _ = client.complete(messages, skip_citation_verification=True)
+                
+                # Try with full context, implement backoff if prompt overload
+                response = None
+                cases_to_include = list(case_content.items()) if case_content else []
+                attempts = 0
+                
+                while response is None and attempts < 5:
+                    try:
+                        response, _ = client.complete(messages, skip_citation_verification=True)
+                    except Exception as e:
+                        error_str = str(e).lower()
+                        # Check for token/context limit errors
+                        if any(x in error_str for x in ['token', 'context', 'length', 'too long', 'maximum']):
+                            if cases_to_include:
+                                # Find and drop the largest case
+                                largest_idx = max(range(len(cases_to_include)), 
+                                                key=lambda i: len(cases_to_include[i][1]))
+                                dropped_case = cases_to_include.pop(largest_idx)
+                                click.echo(warning_message(
+                                    f"Prompt exceeded token limit. Dropping largest case: {dropped_case[0]}"
+                                ))
+                                
+                                # Rebuild prompt without the dropped case
+                                enhanced_prompt = create_reasoning_prompt(content, "verify")
+                                if cases_to_include:
+                                    enhanced_prompt += "\n\n## Full Legal Context\n\n"
+                                    enhanced_prompt += "Below are the complete legal documents referenced in the text:\n\n"
+                                    for citation, full_text in cases_to_include:
+                                        enhanced_prompt += f"=== {citation} ===\n\n{full_text}\n\n"
+                                if citation_report:
+                                    enhanced_prompt += (
+                                        "\n\n## Citation Verification Summary\n" + citation_report
+                                    )
+                                messages[1]["content"] = enhanced_prompt
+                                attempts += 1
+                            else:
+                                # No more cases to drop, re-raise the error
+                                raise
+                        else:
+                            # Not a token limit error, re-raise
+                            raise
+                
+                if response is None:
+                    raise click.ClickException("Failed to get response after dropping all case content")
                 reasoning_response = (
                     response  # Store for potential combination with soundness
                 )
@@ -209,12 +280,32 @@ def verify(file, citations, soundness, reasoning, cove, output):
     # 3. Legal Soundness Verification
     if soundness:
         click.echo(verifying_message("Starting legal soundness check..."))
+        
+        # If citations weren't fetched yet but we're doing soundness, still fetch case content
+        if not case_content:
+            all_citations = extract_citations(content)
+            if all_citations:
+                click.echo(verifying_message(f"Fetching content for {len(all_citations)} citations..."))
+                case_content = fetch_citation_context(all_citations)
+                if case_content:
+                    click.echo(success_message(f"Fetched content for {len(case_content)} cases"))
+        
         try:
             client = LLMClientFactory.for_command("verify-soundness")
+            
+            # Build citation context with FULL case content if available
+            full_citation_context = ""
+            if case_content:
+                full_citation_context = "## Full Legal Documents\n\n"
+                for citation, full_text in case_content.items():
+                    full_citation_context += f"=== {citation} ===\n\n{full_text}\n\n"
+            if citation_report:
+                full_citation_context += "\n\n## Citation Verification Summary\n" + citation_report
+            
             # Pass both citation and reasoning contexts if available
             soundness_result, soundness_model = client.verify(
                 content,
-                citation_context=citation_report,
+                citation_context=full_citation_context if full_citation_context else None,
                 reasoning_context=reasoning_response,
             )
             issues = _parse_soundness_issues(soundness_result)

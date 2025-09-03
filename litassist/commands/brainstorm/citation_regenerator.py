@@ -8,7 +8,7 @@ import re
 import click
 
 from litassist.llm import LLMClient
-from litassist.utils import (
+from litassist.utils.formatting import (
     info_message,
     warning_message,
     success_message,

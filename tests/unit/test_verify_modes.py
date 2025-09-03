@@ -42,7 +42,7 @@ class TestVerifyModes:
         assert result == "Spelling check complete. All correct."
 
         # Verify LLMClientFactory was called with correct command
-        mock_for_command.assert_called_once_with("verification")
+        mock_for_command.assert_called_once_with("verification-light")
 
         # Verify complete was called once
         assert mock_instance.complete.call_count == 1
@@ -63,8 +63,7 @@ class TestVerifyModes:
 
         # Check that parameters were passed correctly
         kwargs = mock_instance.complete.call_args[1]
-        assert kwargs.get("temperature") == 0
-        assert kwargs.get("top_p") == 0.2
+        # No hardcoded temperature/top_p anymore - let factory handle it
         assert kwargs.get("max_tokens") == 32768  # light mode uses smaller limit
         assert kwargs.get("skip_citation_verification") is True
 
@@ -92,8 +91,8 @@ class TestVerifyModes:
             == "Comprehensive legal review complete. Found issues with citations."
         )
 
-        # Verify LLMClientFactory was called with correct command
-        mock_for_command.assert_called_once_with("verification")
+        # Verify LLMClientFactory was called with correct command for heavy verification
+        mock_for_command.assert_called_once_with("verification-heavy")
 
         # Verify complete was called once
         assert mock_instance.complete.call_count == 1
@@ -119,8 +118,7 @@ class TestVerifyModes:
 
         # Check parameters
         kwargs = mock_instance.complete.call_args[1]
-        assert kwargs.get("temperature") == 0
-        assert kwargs.get("top_p") == 0.2
+        # No hardcoded temperature/top_p anymore - let factory handle it
         assert kwargs.get("max_tokens") == 65536  # heavy mode uses larger limit
 
     @patch("litassist.llm.LLMClient.verify")
@@ -171,11 +169,13 @@ class TestVerifyModes:
             )
 
     @patch("litassist.llm.LLMClientFactory.for_command")
-    @patch("litassist.llm.verification.CONFIG")
-    def test_token_limits_disabled(self, mock_config, mock_for_command):
+    @patch("litassist.llm.verification.get_config")
+    def test_token_limits_disabled(self, mock_get_config, mock_for_command):
         """Test behavior when token limits are disabled."""
         # Configure mock with token limits disabled
+        mock_config = Mock()
         mock_config.use_token_limits = False
+        mock_get_config.return_value = mock_config
 
         # Create a mock instance
         mock_instance = Mock()
@@ -191,8 +191,7 @@ class TestVerifyModes:
             # Check that max_tokens was NOT set
             kwargs = mock_instance.complete.call_args[1]
             assert "max_tokens" not in kwargs
-            assert kwargs.get("temperature") == 0
-            assert kwargs.get("top_p") == 0.2
+            # No hardcoded temperature/top_p anymore - let factory handle it
 
     @patch("litassist.llm.LLMClient.verify")
     def test_unknown_level_calls_standard_verify(self, mock_verify):

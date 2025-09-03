@@ -9,14 +9,16 @@ import os
 import logging
 import re
 
-from litassist.utils import (
+from litassist.utils.file_ops import (
     read_document,
-    save_log,
+    validate_file_size_limit,
+)
+from litassist.utils.core import (
     timed,
     parse_strategies_file,
     validate_side_area_combination,
-    validate_file_size_limit,
-    save_command_output,
+)
+from litassist.utils.formatting import (
     warning_message,
     success_message,
     saved_message,
@@ -24,6 +26,10 @@ from litassist.utils import (
     info_message,
     verifying_message,
     tip_message,
+)
+from litassist.logging_utils import (
+    save_log,
+    save_command_output,
 )
 from litassist.llm import LLMClientFactory
 from litassist.prompts import PROMPTS

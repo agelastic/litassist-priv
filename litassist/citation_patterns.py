@@ -7,7 +7,8 @@ the real-time verification in citation_verify.py.
 
 import re
 from typing import List
-from litassist.utils import save_log, timed
+from litassist.logging_utils import save_log
+from litassist.timing import timed
 import time
 
 
@@ -214,12 +215,14 @@ def extract_citations(text: str) -> List[str]:
     for match in matches8:
         citations.add(match.group(0))
 
-    # Pattern 9: Australian statutes with year
-    # e.g., Competition and Consumer Act 2010, Corporations Act 2001
-    pattern9 = r"[A-Z][A-Za-z]+(?:\s+(?:and\s+)?[A-Za-z]+)*\s+Act\s+\d{4}"
-    matches9 = re.finditer(pattern9, text)
-    for match in matches9:
-        citations.add(match.group(0))
+    # Pattern 9: Australian statutes with year and optional jurisdiction
+    # e.g., Migration Act 1958 (Cth), Family Violence Act 2016 (ACT)
+    # Extract Act names when preceded by "the", "under", "to", "of"
+    act_pattern_str = r"([A-Z][a-zA-Z]+(?:\s+and\s+[A-Z][a-zA-Z]+|\s+[A-Z][a-zA-Z]+)*\s+Act\s+\d{4}(?:\s+\([A-Z][a-zA-Z]+\))?)"
+    # Combine all preposition patterns into one for efficiency and maintainability
+    combined_pattern = rf"\b(?:the|under|of(?: the)?|to(?: the)?)\s+{act_pattern_str}"
+    for match in re.finditer(combined_pattern, text):
+        citations.add(match.group(1))
 
     # Pattern 10: Australian regulations with year
     # e.g., Fair Work Regulations 2009

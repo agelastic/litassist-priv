@@ -20,7 +20,7 @@ from litassist.commands.verify import (  # noqa: E402
     _parse_soundness_issues,
     _verify_reasoning_trace,
 )
-from litassist.utils import LegalReasoningTrace  # noqa: E402
+from litassist.utils.legal_reasoning import LegalReasoningTrace  # noqa: E402
 
 
 class TestVerifyCommand:
@@ -74,6 +74,7 @@ class TestVerifyCommand:
 
         with (
             patch("litassist.commands.verify.verify_all_citations") as mock_citations,
+            patch("litassist.commands.verify.fetch_citation_context") as mock_fetch,
             patch("litassist.commands.verify.LLMClientFactory") as mock_llm_factory,
             patch("litassist.commands.verify.save_log") as _mock_save_log,
         ):
@@ -84,6 +85,7 @@ class TestVerifyCommand:
                 ],
                 [("Smith v Jones [2025] NSWSC 999", "Future citation")],
             )
+            mock_fetch.return_value = {}  # Mock empty case content
             mock_client = Mock()
             mock_client.verify.return_value = (
                 "No legal issues found.",
@@ -111,6 +113,7 @@ class TestVerifyCommand:
 
         with (
             patch("litassist.commands.verify.verify_all_citations") as mock_citations,
+            patch("litassist.commands.verify.fetch_citation_context") as mock_fetch,
             patch("litassist.commands.verify.extract_citations") as mock_extract,
             patch("litassist.commands.verify.save_log") as _mock_save_log,
         ):
@@ -119,6 +122,7 @@ class TestVerifyCommand:
                 ["Mabo v Queensland (No 2) [1992] HCA 23"],
                 [],
             )
+            mock_fetch.return_value = {}  # Mock empty case content
             result = runner.invoke(verify, [temp_file, "--citations"])
             assert result.exit_code == 0
             assert "Citation verification complete" in result.output
@@ -133,9 +137,11 @@ class TestVerifyCommand:
             f.write(sample_legal_text)
 
         with (
+            patch("litassist.commands.verify.fetch_citation_context") as mock_fetch,
             patch("litassist.commands.verify.LLMClientFactory") as mock_llm_factory,
             patch("litassist.commands.verify.save_log") as _mock_save_log,
         ):
+            mock_fetch.return_value = {}  # Mock empty case content
             mock_client = Mock()
             mock_client.verify.return_value = (
                 """
@@ -160,7 +166,11 @@ class TestVerifyCommand:
         with open(temp_file, "w") as f:
             f.write(sample_text_with_reasoning)
 
-        with patch("litassist.commands.verify.save_log") as _mock_save_log:
+        with (
+            patch("litassist.commands.verify.fetch_citation_context") as mock_fetch,
+            patch("litassist.commands.verify.save_log") as _mock_save_log,
+        ):
+            mock_fetch.return_value = {}  # Mock empty case content
             result = runner.invoke(verify, [temp_file, "--reasoning"])
             assert result.exit_code == 0
             assert "Reasoning trace verified" in result.output
@@ -175,9 +185,11 @@ class TestVerifyCommand:
             f.write(sample_legal_text)
 
         with (
+            patch("litassist.commands.verify.fetch_citation_context") as mock_fetch,
             patch("litassist.commands.verify.LLMClientFactory") as mock_llm_factory,
             patch("litassist.commands.verify.save_log") as _mock_save_log,
         ):
+            mock_fetch.return_value = {}  # Mock empty case content
             mock_client = Mock()
             mock_client.complete.return_value = (
                 """Analysis of the legal text...
@@ -297,10 +309,12 @@ class TestVerifyCommand:
             f.write(sample_legal_text)
         with (
             patch("litassist.commands.verify.verify_all_citations") as mock_citations,
+            patch("litassist.commands.verify.fetch_citation_context") as mock_fetch,
             patch("litassist.commands.verify.LLMClientFactory") as mock_llm_factory,
             patch("litassist.commands.verify.save_log") as _mock_save_log,
         ):
             mock_citations.return_value = (["Case1"], [])
+            mock_fetch.return_value = {}  # Mock empty case content
             mock_client = Mock()
             mock_client.verify.return_value = ("No issues", "anthropic/claude-opus-4.1")
             mock_client.complete.return_value = ("Analysis", {})

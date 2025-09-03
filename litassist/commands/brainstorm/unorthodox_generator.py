@@ -9,8 +9,8 @@ import logging
 import re
 
 from litassist.llm import LLMClientFactory
-from litassist.utils import (
-    create_reasoning_prompt,
+from litassist.utils.legal_reasoning import create_reasoning_prompt
+from litassist.utils.formatting import (
     verifying_message,
     success_message,
     warning_message,

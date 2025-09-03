@@ -45,7 +45,7 @@ class TestMockConfig:
         from litassist.config import CONFIG
 
         assert CONFIG is not None
-        assert CONFIG.openai_api_key == "test-openai-key"
+        assert CONFIG.oa_key == "test-openai-key"
         assert CONFIG.get_openai_api_key() == "test-openai-key"
 
 

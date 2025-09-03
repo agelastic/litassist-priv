@@ -9,7 +9,7 @@ import sys
 import atexit
 import signal
 from typing import Dict, Any, Optional
-from litassist.utils import save_command_output
+from litassist.logging_utils import save_command_output
 
 
 class EmergencySaveHandler:

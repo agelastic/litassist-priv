@@ -92,10 +92,12 @@ class TestCoVeRegeneration:
 
             mock_factory.for_command.side_effect = get_client
 
-            # Mock save_log to avoid file operations
+            # Mock save_log and fetch_citation_context to avoid file operations and PDF processing
             with patch("litassist.verification_chain.save_log"):
-                # Run CoVe verification
-                final_content, results = run_cove_verification(original_content, "test")
+                with patch("litassist.verification_chain.fetch_citation_context") as mock_fetch:
+                    mock_fetch.return_value = {}  # Return empty dict, no citations to fetch
+                    # Run CoVe verification
+                    final_content, results = run_cove_verification(original_content, "test")
 
             # Assertions
             assert final_content != original_content, "Content should be regenerated"
@@ -181,10 +183,12 @@ class TestCoVeRegeneration:
 
             mock_factory.for_command.side_effect = get_client
 
-            # Mock save_log
+            # Mock save_log and fetch_citation_context to avoid file operations and PDF processing
             with patch("litassist.verification_chain.save_log"):
-                # Run CoVe verification
-                final_content, results = run_cove_verification(original_content, "test")
+                with patch("litassist.verification_chain.fetch_citation_context") as mock_fetch:
+                    mock_fetch.return_value = {}  # Return empty dict, no citations to fetch
+                    # Run CoVe verification
+                    final_content, results = run_cove_verification(original_content, "test")
 
             # Assertions
             assert final_content == original_content, (
@@ -351,7 +355,7 @@ class TestCommandCoVeIntegration:
                 f.write("Test content")
 
             with (
-                patch("litassist.commands.extractfacts.CONFIG") as mock_config,
+                patch("litassist.commands.extractfacts.get_config") as mock_config,
                 patch(
                     "litassist.commands.extractfacts.validate_file_size"
                 ) as mock_validate,
@@ -373,7 +377,9 @@ class TestCommandCoVeIntegration:
                 patch("litassist.commands.extractfacts.show_command_completion"),
             ):
                 # Setup mocks
-                mock_config.max_chars = 100000
+                mock_config_obj = Mock()
+                mock_config_obj.max_chars = 100000
+                mock_config.return_value = mock_config_obj
                 mock_validate.return_value = "Test content"
                 mock_chunk.return_value = ["Test chunk"]
                 mock_prompts.get_format_template.return_value = "Format"
@@ -453,7 +459,7 @@ Federal Court
                     "litassist.commands.strategy.file_handler.save_command_output"
                 ) as mock_save,
                 patch("litassist.commands.strategy.file_handler.save_log"),
-                patch("litassist.utils.parse_strategies_file") as mock_parse,
+                patch("litassist.utils.core.parse_strategies_file") as mock_parse,
             ):
                 # Setup mocks
                 mock_validate_format.return_value = True
@@ -518,9 +524,10 @@ the principles of statutory interpretation.
                 patch(
                     "litassist.commands.verify.verify_all_citations"
                 ) as mock_verify_citations,
+                patch("litassist.commands.verify.fetch_citation_context") as mock_fetch,
                 patch("litassist.commands.verify.save_command_output") as mock_save,
                 patch("litassist.commands.verify.save_log"),
-                patch("litassist.utils.show_command_completion"),
+                patch("litassist.utils.core.show_command_completion"),
                 patch("litassist.commands.verify.extract_citations") as mock_extract,
                 patch("litassist.commands.verify.LLMClientFactory") as mock_factory,
                 patch(
@@ -564,6 +571,7 @@ the principles of statutory interpretation.
                     },
                 )
 
+                mock_fetch.return_value = {}  # Mock empty case content
                 mock_save.return_value = "output.txt"
 
                 # Test 1: WITH --cove flag ONLY (defaults to all verifications + CoVe)

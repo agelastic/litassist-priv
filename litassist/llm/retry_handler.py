@@ -7,7 +7,7 @@ verification, enhancing prompts and re-attempting with stricter instructions.
 
 from typing import List, Dict, Any, Tuple, Optional
 from litassist.prompts import PROMPTS
-from litassist.utils import error_message, info_message, success_message
+from litassist.utils.formatting import error_message, info_message, success_message
 from .api_handlers import get_openai_client
 from .response_parser import extract_content_and_usage
 

@@ -10,14 +10,11 @@ import os
 from datetime import datetime
 from typing import List, Dict, Any, Tuple
 
-from litassist.utils import (
-    timed,
-    save_log,
-    heartbeat,
-    info_message,
-    success_message,
-)
-from litassist.config import CONFIG
+from litassist.timing import timed
+from litassist.logging_utils import save_log
+from litassist.utils.core import heartbeat
+from litassist.utils.formatting import info_message, success_message
+from litassist.config import get_config
 from litassist.prompts import PROMPTS
 import time
 from litassist.citation_verify import (
@@ -222,124 +219,84 @@ PARAMETER_PROFILES = {
 }
 
 
-def convert_thinking_effort(
-    effort: str, model_name: str, use_openrouter: bool = True
-) -> dict:
+def convert_thinking_effort(effort: str, model_name: str) -> dict:
     """
     Convert universal thinking_effort to OpenRouter's reasoning object format.
 
     Args:
         effort: Universal effort level (none, minimal, low, medium, high, max)
         model_name: Full model name (e.g., "openai/o3-pro", "anthropic/claude-4")
-        use_openrouter: Whether routing through OpenRouter (default True)
 
     Returns:
-        Dict with OpenRouter reasoning object or vendor-specific parameters
+        Dict with OpenRouter reasoning object
     """
 
     if effort == "none":
         return {}  # Don't send reasoning parameter
 
-    # OpenRouter unified reasoning object approach
-    if use_openrouter:
-        model_family = get_model_family(model_name)
+    # OpenRouter unified reasoning object approach - ALL models go through OpenRouter
+    model_family = get_model_family(model_name)
 
-        # Check model type for appropriate sub-parameters
-        if model_family in ["openai_reasoning", "gpt5", "xai"]:
-            # Effort-based models (OpenAI, Grok, GPT-5)
-            effort_map = {
-                "minimal": "minimal",  # GPT-5 specific
-                "low": "low",
-                "medium": "medium",
-                "high": "high",
-                "max": "high",  # Map max to highest available
-            }
-            mapped_effort = effort_map.get(effort, "medium")
+    # Check model type for appropriate sub-parameters
+    if model_family in ["openai_reasoning", "gpt5", "xai"]:
+        # Effort-based models (OpenAI, Grok, GPT-5)
+        effort_map = {
+            "minimal": "minimal",  # GPT-5 specific
+            "low": "low",
+            "medium": "medium",
+            "high": "high",
+            "max": "high",  # Map max to highest available
+        }
+        mapped_effort = effort_map.get(effort, "medium")
 
-            # Only include minimal for GPT-5 and o4-mini
-            if (
-                mapped_effort == "minimal"
-                and model_family not in ["gpt5"]
-                and "o4" not in model_name
-            ):
-                mapped_effort = "low"  # Fallback for non-GPT-5/o4 models
+        # Only include minimal for GPT-5 and o4-mini
+        if (
+            mapped_effort == "minimal"
+            and model_family not in ["gpt5"]
+            and "o4" not in model_name
+        ):
+            mapped_effort = "low"  # Fallback for non-GPT-5/o4 models
 
-            # Special handling for o4-mini with summary field
-            if "o4" in model_name:
-                return {
-                    "reasoning": {
-                        "effort": mapped_effort,
-                        "summary": "auto",  # New o4 feature for automatic summarization
-                    }
-                }
-            # GPT-5 supports both reasoning and verbosity
-            elif model_family == "gpt5":
-                return {
-                    "reasoning": {"effort": mapped_effort}
-                    # Verbosity handled separately via convert_verbosity
-                }
-            else:
-                return {"reasoning": {"effort": mapped_effort}}
-
-        elif model_family in ["claude4", "anthropic"]:
-            # Token-based models (Anthropic)
-            token_map = {
-                "minimal": 1024,
-                "low": 1024,
-                "medium": 8192,
-                "high": 16384,
-                "max": 32000,  # Max allowed by OpenRouter
-            }
-            return {"reasoning": {"max_tokens": token_map.get(effort, 8192)}}
-
-        elif model_family == "google":
-            # Google/Gemini models - try unified reasoning
-            effort_map = {
-                "minimal": "low",
-                "low": "low",
-                "medium": "medium",
-                "high": "high",
-                "max": "high",
-            }
-            return {"reasoning": {"effort": effort_map.get(effort, "medium")}}
-
-    else:
-        # Direct vendor API calls (if not using OpenRouter)
-        # This path is rarely used as we route most through OpenRouter
-        model_family = get_model_family(model_name)
-
-        if model_family in ["openai_reasoning", "gpt5"]:
-            # Direct OpenAI API uses reasoning_effort
-            effort_map = {
-                "minimal": "minimal",
-                "low": "low",
-                "medium": "medium",
-                "high": "high",
-                "max": "high",
-            }
-            mapped = effort_map.get(effort, "medium")
-            if mapped == "minimal" and model_family != "gpt5":
-                mapped = "low"
-            return {"reasoning_effort": mapped}
-
-        elif model_family in ["anthropic", "claude4"]:
-            # Direct Anthropic API format
-            token_map = {
-                "minimal": 1024,
-                "low": 1024,
-                "medium": 8192,
-                "high": 16384,
-                "max": 32768,
-            }
-            budget = token_map.get(effort, 8192)
-            return {"thinking": {"enabled": True, "budget_tokens": budget}}
-
-        elif model_family == "google":
-            # Direct Google API format
+        # Special handling for o4-mini with summary field
+        if "o4" in model_name:
             return {
-                "thinking_config": {"include_thoughts": True, "thinking_budget": -1}
+                "reasoning": {
+                    "effort": mapped_effort,
+                    "summary": "auto",  # New o4 feature for automatic summarization
+                }
             }
+        # GPT-5 supports both reasoning and verbosity
+        elif model_family == "gpt5":
+            return {
+                "reasoning": {"effort": mapped_effort}
+                # Verbosity handled separately via convert_verbosity
+            }
+        else:
+            return {"reasoning": {"effort": mapped_effort}}
 
+    elif model_family in ["claude4", "anthropic"]:
+        # Token-based models (Anthropic)
+        token_map = {
+            "minimal": 1024,
+            "low": 1024,
+            "medium": 8192,
+            "high": 16384,
+            "max": 32000,  # Max allowed by OpenRouter
+        }
+        return {"reasoning": {"max_tokens": token_map.get(effort, 8192)}}
+
+    elif model_family == "google":
+        # Google/Gemini models - try unified reasoning
+        effort_map = {
+            "minimal": "low",
+            "low": "low",
+            "medium": "medium",
+            "high": "high",
+            "max": "high",
+        }
+        return {"reasoning": {"effort": effort_map.get(effort, "medium")}}
+
+    # For all other models, don't add reasoning parameters
     return {}
 
 
@@ -403,9 +360,7 @@ def get_model_parameters(model_name: str, requested_params: dict) -> dict:
     Returns:
         Filtered dictionary containing only supported parameters
     """
-    # Determine if routing through OpenRouter
-    use_openrouter = "/" in model_name and not model_name.startswith("direct/")
-
+    # All models go through OpenRouter
     model_family = get_model_family(model_name)
     profile = PARAMETER_PROFILES.get(model_family, PARAMETER_PROFILES["default"])
 
@@ -422,7 +377,7 @@ def get_model_parameters(model_name: str, requested_params: dict) -> dict:
         and params_to_process["thinking_effort"] is not None
     ):
         effort = params_to_process.pop("thinking_effort")
-        reasoning_params = convert_thinking_effort(effort, model_name, use_openrouter)
+        reasoning_params = convert_thinking_effort(effort, model_name)
         filtered.update(reasoning_params)
 
         # CRITICAL: Remove any conflicting parameters to prevent API errors
@@ -453,7 +408,7 @@ def get_model_parameters(model_name: str, requested_params: dict) -> dict:
             filtered[new_param] = value
         elif param in allowed:
             filtered[param] = value
-        elif use_openrouter and param in openrouter_params:
+        elif param in openrouter_params:
             # Preserve OpenRouter-specific params - they'll be moved to extra_body in api_handlers
             filtered[param] = value
         # Silently drop other unsupported parameters
@@ -494,6 +449,7 @@ class LLMClientFactory:
             "model": "anthropic/claude-sonnet-4",
             "temperature": 0,
             "top_p": 0.15,
+            "thinking_effort": "high",  # Critical foundational command needs thorough thinking
             "force_verify": True,  # Always verify for foundational docs
         },
         # Strategy - enhanced multi-step legal reasoning
@@ -548,8 +504,9 @@ class LLMClientFactory:
         # Digest - mode-dependent settings
         "digest-summary": {
             "model": "anthropic/claude-sonnet-4",
-            "temperature": 0.1,
+            "temperature": 0.2,
             "top_p": 0.3,  # Fixed: was 0, too restrictive
+            "thinking_effort": "medium",  # Simple summarization task
         },
         "digest-issues": {
             "model": "anthropic/claude-opus-4.1",
@@ -572,24 +529,38 @@ class LLMClientFactory:
         # Verification - automatic verification for high-risk commands
         "verification": {
             "model": "anthropic/claude-opus-4.1",
-            "temperature": 0.1,
+            "temperature": 0.2,
             "top_p": 0.3,
             "thinking_effort": "high",
             "force_verify": False,  # Don't double-verify since this IS verification
         },
+        "verification-light": {
+            "model": "anthropic/claude-sonnet-4",  # Cost-effective for spelling/terminology
+            "temperature": 0.2,  # Optimal for factual tasks per hallucination report
+            "top_p": 0.2,  # Focused beam for consistency
+            "thinking_effort": "medium",  # Just spelling/terminology checks
+            "force_verify": False,  # Avoid loops
+        },
+        "verification-heavy": {
+            "model": "openai/gpt-5",  # <1% hallucination rate for critical verification
+            "temperature": 0.2,  # Optimal per hallucination report
+            "top_p": 0.3,  # Slightly wider beam for comprehensive checking
+            "thinking_effort": "max",  # max for critical tasks (maps to high for GPT-5)
+            "force_verify": False,  # Avoid loops
+        },
         # Verify sub-commands with specific model assignments
         "verify-reasoning": {
             "model": "openai/o3-pro",  # o3-pro for complex reasoning trace extraction
-            "temperature": 0.1,
+            "temperature": 0.2,  # o3-pro ignores temperature but set for consistency
             "top_p": 0.3,
             "thinking_effort": "high",  # Universal parameter, translates to reasoning_effort
             "force_verify": False,
         },
         "verify-soundness": {
             "model": "anthropic/claude-opus-4.1",  # Opus for soundness checking
-            "temperature": 0.1,
+            "temperature": 0.2,
             "top_p": 0.3,
-            "thinking_effort": "high",
+            "thinking_effort": "max",  # max gives 32K thinking tokens vs 16K for high
             "force_verify": False,
         },
         # Counsel's Notes - strategic analysis from advocate's perspective
@@ -628,6 +599,7 @@ class LLMClientFactory:
             "model": "anthropic/claude-sonnet-4",
             "temperature": 0.2,
             "top_p": 0.8,
+            "thinking_effort": "medium",  # General CoVe coordination
             "force_verify": False,  # Avoid recursive verification
         },
         # CoVe sub-stages with separate model control
@@ -635,26 +607,28 @@ class LLMClientFactory:
             "model": "anthropic/claude-sonnet-4",  # Fast question generation
             "temperature": 0.2,
             "top_p": 0.8,
+            "thinking_effort": "low",  # Fast question generation, minimal thinking needed
             "force_verify": False,
         },
         "cove-answers": {
-            "model": "anthropic/claude-opus-4.1",  # Independent answering
-            "temperature": 0.1,
-            "top_p": 0.8,
-            "thinking_effort": "high",
+            "model": "openai/gpt-5",  # GPT-5 for <1% hallucination rate
+            "temperature": 0.2,
+            "top_p": 0.3,
+            "thinking_effort": "max",  # max for consistency (maps to high for GPT-5)
             "force_verify": False,
         },
         "cove-verify": {
             "model": "anthropic/claude-sonnet-4",  # Inconsistency detection
             "temperature": 0.2,
-            "top_p": 0.8,
+            "top_p": 0.3,
+            "thinking_effort": "high",  # Critical inconsistency detection needs careful analysis
             "force_verify": False,
         },
         "cove-final": {
-            "model": "anthropic/claude-opus-4.1",  # Final regeneration with highest quality
-            "temperature": 0.1,
-            "top_p": 0.8,
-            "thinking_effort": "high",
+            "model": "openai/gpt-5",  # GPT-5 for <1% hallucination rate in final output
+            "temperature": 0.2,
+            "top_p": 0.4,
+            "thinking_effort": "max",  # max for consistency (maps to high for GPT-5)
             "force_verify": False,
         },
     }
@@ -814,7 +788,8 @@ class LLMClient(LLMVerificationMixin):
         self.command_context = None  # Track which command is using this client
 
         # Set model-specific token limits if enabled in config and not explicitly specified
-        if CONFIG.use_token_limits:
+        config = get_config()
+        if config.use_token_limits:
             # Determine if we need to transform max_tokens to another parameter
             test_params = {"max_tokens": 1}
             filtered = get_model_parameters(model, test_params)
@@ -867,7 +842,7 @@ class LLMClient(LLMVerificationMixin):
     # The enclosing `complete` method now emits heartbeat updates, so we no
     # longer need a second heartbeat layer here. Retaining only the timing
     # decorator avoids duplicated progress messages.
-    @heartbeat(CONFIG.heartbeat_interval if CONFIG else 15)
+    @heartbeat()  # Uses heartbeat_interval from config.yaml
     @timed
     def complete(
         self,

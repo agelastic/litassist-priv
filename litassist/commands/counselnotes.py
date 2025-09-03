@@ -9,17 +9,21 @@ perspective, complementing the neutral analysis provided by the digest command.
 import click
 import os
 
-from litassist.config import CONFIG
+from litassist.config import get_config
 from litassist.prompts import PROMPTS
-from litassist.utils import (
-    read_document,
-    chunk_text,
-    save_log,
+from litassist.utils.file_ops import read_document
+from litassist.utils.text_processing import chunk_text
+from litassist.utils.core import (
     timed,
-    save_command_output,
     show_command_completion,
+)
+from litassist.utils.formatting import (
     info_message,
     success_message,
+)
+from litassist.logging_utils import (
+    save_log,
+    save_command_output,
 )
 from litassist.llm import LLMClientFactory
 from litassist.verification_chain import run_cove_verification
@@ -84,9 +88,9 @@ def counselnotes(files, extract, verify, cove, output):
     combined_content = "\n\n".join(all_content)
 
     # Check if content needs chunking
-    if len(combined_content) > CONFIG.max_chars:
+    if len(combined_content) > get_config().max_chars:
         # For large content, chunk and process separately then synthesize
-        chunks = chunk_text(combined_content, max_chars=CONFIG.max_chars)
+        chunks = chunk_text(combined_content, max_chars=get_config().max_chars)
         processing_mode = "chunked"
     else:
         # Process all content together for better synthesis

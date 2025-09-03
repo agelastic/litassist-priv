@@ -14,8 +14,9 @@ from typing import List, Tuple, Dict
 import threading
 
 # Import logging utility and config
-from litassist.utils import save_log, timed
-from litassist.config import CONFIG
+from litassist.logging_utils import save_log
+from litassist.timing import timed
+from litassist.config import get_config
 from litassist.citation_patterns import extract_citations
 
 # Cache for verified citations to avoid repeated requests
@@ -184,6 +185,29 @@ def normalize_citation(citation: str) -> str:
     return citation
 
 
+def is_legislation_reference(citation: str) -> bool:
+    """
+    Check if a citation is legislation (Act or Regulation) rather than case law.
+    
+    Legislation doesn't need case law database verification.
+    
+    Args:
+        citation: Citation text to check
+        
+    Returns:
+        True if this is legislation, False if it's case law
+    """
+    # Check for Acts with year (e.g., "Migration Act 1958", "Family Violence Act 2016 (ACT)")
+    if re.search(r'\bAct\s+\d{4}(?:\s+\([A-Za-z]+\))?', citation):
+        return True
+        
+    # Check for Regulations with year (e.g., "Fair Work Regulations 2009")
+    if re.search(r'\bRegulations?\s+\d{4}(?:\s+\([A-Za-z]+\))?', citation):
+        return True
+        
+    return False
+
+
 def check_international_citation(citation: str) -> str:
     """
     Check if citation is UK/International (valid but not Australian).
@@ -263,9 +287,11 @@ def search_jade_via_google_cse(citation: str, timeout: int = 10) -> bool:
     try:
         from googleapiclient.discovery import build
 
+        config = get_config()
+        
         # Use Google Custom Search to search Jade.io
         service = build(
-            "customsearch", "v1", developerKey=CONFIG.g_key, cache_discovery=False
+            "customsearch", "v1", developerKey=config.g_key, cache_discovery=False
         )
 
         # Format citation for search - clean format for better matching
@@ -274,7 +300,7 @@ def search_jade_via_google_cse(citation: str, timeout: int = 10) -> bool:
         )
 
         # Search using configured CSE
-        res = service.cse().list(q=search_query, cx=CONFIG.cse_id, num=10).execute()
+        res = service.cse().list(q=search_query, cx=config.cse_id, num=10).execute()
 
         # Enhanced search with multiple variations to handle different citation formats
         success = False
@@ -437,6 +463,17 @@ def verify_single_citation(citation: str) -> Tuple[bool, str, str]:
                 "checked_at": time.time(),
             }
         return True, "", international_reason
+    
+    # Skip verification for legislation - Acts and Regulations aren't in case law databases
+    if is_legislation_reference(normalized):
+        with _cache_lock:
+            _citation_cache[normalized] = {
+                "exists": True,  # Legislation is assumed valid
+                "url": "",
+                "reason": "Legislation reference - verification skipped",
+                "checked_at": time.time(),
+            }
+        return True, "", "Legislation reference - verification skipped"
 
     # Check for format issues using offline validation
     from litassist.citation_patterns import validate_citation_patterns
@@ -470,16 +507,16 @@ def verify_single_citation(citation: str) -> Tuple[bool, str, str]:
     except Exception:
         pass  # Fall through to offline validation
 
-    # If online verification fails, accept with offline validation warning
-    reason = "[WARNING] OFFLINE VALIDATION ONLY - Online verification unavailable, passed pattern analysis"
+    # If online verification fails, mark as UNVERIFIED
+    reason = "Citation not found in online databases"
     with _cache_lock:
         _citation_cache[normalized] = {
-            "exists": True,
+            "exists": False,
             "url": "",
             "reason": reason,
             "checked_at": time.time(),
         }
-    return True, "", reason
+    return False, "", reason
 
 
 @timed

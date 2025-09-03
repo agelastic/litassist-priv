@@ -928,7 +928,7 @@ def test_pinecone_vector_operations():
             )
             return result
 
-        from litassist.utils import create_embeddings
+        from litassist.utils.text_processing import create_embeddings
         from litassist.helpers.pinecone_config import PineconeWrapper
 
         # Use PineconeWrapper - the pinecone-client package is broken

@@ -8,17 +8,16 @@ All tests run offline using mocked dependencies.
 import pytest
 import os
 import time
-from unittest.mock import patch, MagicMock, mock_open
+from unittest.mock import patch, MagicMock, mock_open, Mock
 
-from litassist.utils import (
-    heartbeat,
-    timed,
+from litassist.utils.core import heartbeat, parse_strategies_file
+from litassist.timing import timed
+from litassist.utils.legal_reasoning import (
     create_reasoning_prompt,
     extract_reasoning_trace,
-    parse_strategies_file,
-    validate_file_size_limit,
     verify_content_if_needed,
 )
+from litassist.utils.file_ops import validate_file_size_limit
 from litassist.logging_utils import save_log, save_command_output
 
 
@@ -113,10 +112,16 @@ class TestFileOperations:
 class TestLogging:
     """Test logging functionality."""
 
-    @patch("litassist.logging_utils.open", new_callable=mock_open)
+    @patch("litassist.config.get_config")
     @patch("litassist.logging_utils.json.dump")
-    def test_save_log_success(self, mock_json_dump, mock_file):
+    @patch("litassist.logging_utils.open", new_callable=mock_open)
+    def test_save_log_success(self, mock_file, mock_json_dump, mock_get_config):
         """Test successful log saving."""
+        # Mock config to return json format
+        mock_config = Mock()
+        mock_config.log_format = "json"
+        mock_get_config.return_value = mock_config
+        
         command = "test_command"
         log_data = {
             "inputs": {"test": "data"},
@@ -136,11 +141,17 @@ class TestLogging:
         # Verify JSON dumped
         mock_json_dump.assert_called_once()
 
-    @patch("litassist.logging_utils.open", new_callable=mock_open)
-    @patch("litassist.logging_utils.os.makedirs")
+    @patch("litassist.config.get_config")
     @patch("litassist.logging_utils.json.dump")
-    def test_save_log_with_metadata(self, mock_json_dump, mock_makedirs, mock_file):
+    @patch("litassist.logging_utils.os.makedirs")
+    @patch("litassist.logging_utils.open", new_callable=mock_open)
+    def test_save_log_with_metadata(self, mock_file, mock_makedirs, mock_json_dump, mock_get_config):
         """Test log saving with additional metadata."""
+        # Mock config to return json format
+        mock_config = Mock()
+        mock_config.log_format = "json"
+        mock_get_config.return_value = mock_config
+        
         command = "strategy"
         log_data = {
             "inputs": {"case_facts": "test facts"},

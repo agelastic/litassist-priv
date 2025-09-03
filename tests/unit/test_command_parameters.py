@@ -31,14 +31,16 @@ class TestCommandParameterPropagation:
 
     @patch("litassist.llm.LLMClientFactory.for_command")
     @patch("litassist.utils.file_ops.read_document")
-    @patch("litassist.commands.extractfacts.CONFIG")
+    @patch("litassist.commands.extractfacts.get_config")
     def test_extractfacts_command_parameters(
         self, mock_config, mock_read, mock_factory
     ):
         """Test extractfacts command uses correct model and parameters."""
         mock_factory.return_value = self.mock_client
         mock_read.return_value = "Test document content"
-        mock_config.max_chars = 1000  # Add missing config attribute
+        mock_config_obj = Mock()
+        mock_config_obj.max_chars = 1000  # Add missing config attribute
+        mock_config.return_value = mock_config_obj
 
         with self.runner.isolated_filesystem():
             with open("test.pdf", "w") as f:
@@ -84,7 +86,7 @@ class TestCommandParameterPropagation:
         )
 
     @patch("litassist.llm.LLMClientFactory.for_command")
-    @patch("litassist.utils.read_document")
+    @patch("litassist.utils.file_ops.read_document")
     def test_digest_summary_command_parameters(self, mock_read, mock_factory):
         """Test digest-summary command uses correct parameters."""
         mock_factory.return_value = self.mock_client
@@ -116,7 +118,7 @@ class TestCommandParameterPropagation:
         assert self.mock_client.complete.called
 
     @patch("litassist.llm.LLMClientFactory.for_command")
-    @patch("litassist.utils.read_document")
+    @patch("litassist.utils.file_ops.read_document")
     def test_digest_issues_command_parameters(self, mock_read, mock_factory):
         """Test digest-issues command uses correct parameters."""
         mock_factory.return_value = self.mock_client
@@ -197,7 +199,7 @@ class TestCommandParameterPropagation:
         assert LLMClientFactory.COMMAND_CONFIGS["lookup"]["force_verify"] is False
 
     @patch("litassist.llm.LLMClientFactory.for_command")
-    @patch("litassist.utils.read_document")
+    @patch("litassist.utils.file_ops.read_document")
     @patch("litassist.citation_verify.verify_all_citations")
     @patch("litassist.citation_patterns.extract_citations")
     def test_verify_command_parameters(
@@ -225,7 +227,7 @@ class TestCommandParameterPropagation:
         assert mock_factory.called
 
     @patch("litassist.llm.LLMClientFactory.for_command")
-    @patch("litassist.utils.read_document")
+    @patch("litassist.utils.file_ops.read_document")
     def test_brainstorm_command_parameters(self, mock_read, mock_factory):
         """Test brainstorm command uses correct parameters."""
         # Create a verification client for unorthodox verification
@@ -291,7 +293,7 @@ class TestCommandParameterPropagation:
         assert calls[3][0][0] == "brainstorm"  # analysis
 
     @patch("litassist.llm.LLMClientFactory.for_command")
-    @patch("litassist.utils.read_document")
+    @patch("litassist.utils.file_ops.read_document")
     def test_strategy_command_parameters(self, mock_read, mock_factory):
         """Test strategy command uses o3-pro model."""
         mock_factory.return_value = self.mock_client
@@ -346,7 +348,7 @@ Test objectives""")
                 mock_prompts.get_prompt.return_value = "Test prompt"
 
                 # Mock parse_strategies_file to avoid parsing issues
-                with patch("litassist.utils.parse_strategies_file") as mock_parse:
+                with patch("litassist.utils.core.parse_strategies_file") as mock_parse:
                     mock_parse.return_value = []
 
                     # Mock case facts validation
@@ -399,9 +401,9 @@ Test objectives""")
         assert LLMClientFactory.COMMAND_CONFIGS["strategy"]["force_verify"] is True
 
     @patch("litassist.llm.LLMClientFactory.for_command")
-    @patch("litassist.utils.read_document")
+    @patch("litassist.utils.file_ops.read_document")
     @patch("litassist.helpers.retriever.get_pinecone_client")
-    @patch("litassist.commands.draft.CONFIG")
+    @patch("litassist.commands.draft.get_config")
     def test_draft_command_parameters(
         self, mock_config, mock_pinecone, mock_read, mock_factory
     ):
@@ -426,7 +428,9 @@ Test objectives""")
         ]
 
         mock_read.return_value = "Instructions"
-        mock_config.rag_max_chars = 8000
+        mock_config_obj = Mock()
+        mock_config_obj.rag_max_chars = 8000
+        mock_config.return_value = mock_config_obj
 
         # Mock pinecone
         mock_pc_index = Mock()

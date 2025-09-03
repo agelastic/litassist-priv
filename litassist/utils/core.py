@@ -94,26 +94,43 @@ def timed(func: Callable) -> Callable:
     return wrapper
 
 
-def heartbeat(interval: int = 30):
+def heartbeat(interval: Optional[int] = None):
     """
     Decorator to emit a heartbeat message every `interval` seconds while a long-running function executes.
 
     Args:
-        interval: Number of seconds between heartbeat messages. Defaults to 30.
+        interval: Number of seconds between heartbeat messages. If None, uses config value. Defaults to None.
 
     Returns:
         A decorator function that wraps the target function with heartbeat functionality.
 
     Example:
-        @heartbeat(60)
+        @heartbeat(60)  # Explicit interval
         def long_running_function():
-            # Function that takes a long time to execute
+            pass
+        
+        @heartbeat()  # Uses config.yaml value
+        def another_function():
             pass
     """
 
     def decorator(fn):
         @functools.wraps(fn)
         def wrapper(*args, **kwargs):
+            # Determine interval at runtime
+            actual_interval = interval
+            if actual_interval is None:
+                try:
+                    from litassist.config import get_config
+                    config_interval = get_config().heartbeat_interval
+                    # Ensure we have a valid number (not a Mock object from tests)
+                    if isinstance(config_interval, (int, float)):
+                        actual_interval = config_interval
+                    else:
+                        actual_interval = 20  # Fallback if Mock or invalid
+                except Exception:
+                    actual_interval = 20  # Fallback to Config class default
+            
             done = threading.Event()
 
             def ping():
@@ -121,7 +138,7 @@ def heartbeat(interval: int = 30):
                     # Suppress during pytest runs
                     if not os.environ.get("PYTEST_CURRENT_TEST"):
                         click.echo("…still working, please wait…", err=True)
-                    time.sleep(interval)
+                    time.sleep(actual_interval)
 
             t = threading.Thread(target=ping, daemon=True)
             t.start()

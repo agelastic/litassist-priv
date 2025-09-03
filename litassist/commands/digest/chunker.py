@@ -7,7 +7,8 @@ based on model-specific token limits.
 
 from typing import List, Tuple
 import click
-from litassist.utils import chunk_text, read_document
+from litassist.utils.text_processing import chunk_text
+from litassist.utils.file_ops import read_document
 
 
 # Model-aware chunk sizing

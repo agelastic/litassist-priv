@@ -7,7 +7,7 @@ retry logic coordination, and issue reporting.
 
 from typing import Tuple, List, Optional, Any
 from litassist.prompts import PROMPTS
-from litassist.utils import warning_message
+from litassist.utils.formatting import warning_message
 from litassist.citation_verify import CitationVerificationError
 
 
@@ -82,7 +82,7 @@ def handle_retry_failure(retry_error: CitationVerificationError) -> None:
         )
         multiple_attempts_msg = PROMPTS.get("warnings.multiple_attempts_failed")
     except (KeyError, ValueError):
-        from litassist.utils import error_message
+        from litassist.utils.formatting import error_message
 
         retry_failed_msg = error_message(f"Retry also failed: {str(retry_error)}")
         multiple_attempts_msg = (

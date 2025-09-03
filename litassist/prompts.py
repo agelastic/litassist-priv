@@ -26,8 +26,14 @@ class PromptManager:
     def __init__(self):
         """Initialize the prompt manager with templates from YAML files."""
         self.prompts_dir = Path(__file__).parent / "prompts"
-        self.templates = self._load_templates()
-        self._templates_loaded = bool(self.templates)
+        self.templates = None  # Lazy load - don't load until actually needed
+        self._templates_loaded = False
+
+    def _ensure_loaded(self):
+        """Ensure templates are loaded when first accessed."""
+        if self.templates is None:
+            self.templates = self._load_templates()
+            self._templates_loaded = bool(self.templates)
 
     def _merge_dicts(self, a: dict, b: dict) -> dict:
         """
@@ -85,6 +91,9 @@ class PromptManager:
             KeyError: If the template is not found
             ValueError: If required template parameters are missing
         """
+        # Ensure templates are loaded on first access
+        self._ensure_loaded()
+        
         if not self._templates_loaded:
             raise KeyError(
                 f"Unable to retrieve template '{template_key}': no templates loaded"
@@ -199,7 +208,8 @@ class PromptManager:
         Returns:
             Dictionary of all loaded templates
         """
-        return self.templates.copy()
+        self._ensure_loaded()
+        return self.templates.copy() if self.templates else {}
 
 
 # Global instance for easy import

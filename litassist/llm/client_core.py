@@ -10,16 +10,16 @@ import re
 import time
 from typing import List, Dict, Any, Tuple
 
-from litassist.utils import (
-    timed,
-    save_log,
-    heartbeat,
+from litassist.timing import timed
+from litassist.logging_utils import save_log
+from litassist.utils.core import heartbeat
+from litassist.utils.formatting import (
     info_message,
     warning_message,
     success_message,
     error_message,
 )
-from litassist.config import CONFIG
+from litassist.config import get_config
 from litassist.prompts import PROMPTS
 from .api_handlers import execute_api_call_with_retry
 from .verification import LLMVerificationMixin
@@ -195,25 +195,21 @@ PARAMETER_PROFILES = {
 }
 
 
-def convert_thinking_effort(
-    effort: str, model_name: str, use_openrouter: bool = True
-) -> dict:
+def convert_thinking_effort(effort: str, model_name: str) -> dict:
     """
     Convert universal thinking_effort to OpenRouter's reasoning object format.
 
     Args:
         effort: Universal effort level (none, minimal, low, medium, high, max)
         model_name: Full model name (e.g., "openai/o3-pro", "anthropic/claude-4")
-        use_openrouter: Whether routing through OpenRouter (default True)
 
     Returns:
-        Dict with OpenRouter reasoning object or vendor-specific parameters
+        Dict with OpenRouter reasoning object
     """
     if effort == "none":
         return {}  # Don't send reasoning parameter
 
-    # OpenRouter unified reasoning object approach
-    if use_openrouter:
+    # OpenRouter unified reasoning object approach - ALL models go through OpenRouter
         model_family = get_model_family(model_name)
 
         # Check model type for appropriate sub-parameters
@@ -325,9 +321,7 @@ def get_model_parameters(model_name: str, requested_params: dict) -> dict:
     Returns:
         Filtered dictionary containing only supported parameters
     """
-    # Determine if routing through OpenRouter
-    use_openrouter = "/" in model_name and not model_name.startswith("direct/")
-
+    # All models go through OpenRouter
     model_family = get_model_family(model_name)
     profile = PARAMETER_PROFILES.get(model_family, PARAMETER_PROFILES["default"])
 
@@ -344,7 +338,7 @@ def get_model_parameters(model_name: str, requested_params: dict) -> dict:
         and params_to_process["thinking_effort"] is not None
     ):
         effort = params_to_process.pop("thinking_effort")
-        reasoning_params = convert_thinking_effort(effort, model_name, use_openrouter)
+        reasoning_params = convert_thinking_effort(effort, model_name)
         filtered.update(reasoning_params)
 
         # CRITICAL: Remove any conflicting parameters to prevent API errors
@@ -418,7 +412,8 @@ class LLMClient(LLMVerificationMixin):
         self.command_context = None  # Track which command is using this client
 
         # Set model-specific token limits if enabled in config and not explicitly specified
-        if CONFIG.use_token_limits:
+        config = get_config()
+        if config.use_token_limits:
             # Determine if we need to transform max_tokens to another parameter
             test_params = {"max_tokens": 1}
             filtered = get_model_parameters(model, test_params)
@@ -446,7 +441,7 @@ class LLMClient(LLMVerificationMixin):
         self.default_params = default_params
         self._client = None  # Will be created when needed
 
-    @heartbeat(CONFIG.heartbeat_interval if CONFIG else 15)
+    @heartbeat()  # Uses heartbeat_interval from config.yaml
     @timed
     def complete(
         self,
@@ -742,22 +737,19 @@ class LLMClient(LLMVerificationMixin):
             messages.copy()
         )
 
-        # Get retry client and execute
-        from .api_handlers import get_openai_client
-
-        retry_client = get_openai_client(model_name)
+        # Execute retry through proper API pipeline
+        from .api_handlers import execute_api_call
 
         try:
-            # Execute retry with filtered parameters
-            retry_filtered_params = get_model_parameters(self.model, params)
-            retry_response = retry_client.chat.completions.create(
-                model=model_name,
-                messages=enhanced_messages,
-                **retry_filtered_params,
+            # Use execute_api_call which handles all parameter preparation including thinking_effort
+            retry_response, _ = execute_api_call(
+                model_name,
+                enhanced_messages,
+                params,  # Pass original params - execute_api_call will handle preparation
+                stream=False
             )
 
-            # Validate retry response
-            self._validate_response_structure(retry_response)
+            # Extract content from response
             retry_content = retry_response.choices[0].message.content or ""
 
             # Verify the retry

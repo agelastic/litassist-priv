@@ -30,7 +30,7 @@ class TestCounselNotesBasic:
     @patch("litassist.commands.counselnotes.save_log")
     @patch("litassist.commands.counselnotes.show_command_completion")
     @patch("litassist.commands.counselnotes.PROMPTS")
-    @patch("litassist.commands.counselnotes.CONFIG")
+    @patch("litassist.commands.counselnotes.get_config")
     @patch("click.DateTime.convert")
     def test_basic_strategic_analysis(
         self,
@@ -46,7 +46,9 @@ class TestCounselNotesBasic:
         """Test basic strategic analysis mode."""
         # Setup mocks
         mock_datetime.return_value = "2025-01-07 13:51:00"
-        mock_config.max_chars = 10000  # Set a reasonable limit
+        mock_config_obj = Mock()
+        mock_config_obj.max_chars = 10000  # Set a reasonable limit
+        mock_config.return_value = mock_config_obj
         mock_read.return_value = "Sample legal document content"
         mock_client = Mock()
         mock_client.complete.return_value = (
@@ -79,7 +81,7 @@ class TestCounselNotesBasic:
     @patch("litassist.commands.counselnotes.save_log")
     @patch("litassist.commands.counselnotes.show_command_completion")
     @patch("litassist.commands.counselnotes.PROMPTS")
-    @patch("litassist.commands.counselnotes.CONFIG")
+    @patch("litassist.commands.counselnotes.get_config")
     @patch("click.DateTime.convert")
     def test_extraction_mode(
         self,
@@ -95,7 +97,9 @@ class TestCounselNotesBasic:
         """Test extraction mode."""
         # Setup mocks
         mock_datetime.return_value = "2025-01-07 13:51:00"
-        mock_config.max_chars = 10000  # Set a reasonable limit
+        mock_config_obj = Mock()
+        mock_config_obj.max_chars = 10000  # Set a reasonable limit
+        mock_config.return_value = mock_config_obj
         mock_read.return_value = "Sample legal document content"
         mock_client = Mock()
 

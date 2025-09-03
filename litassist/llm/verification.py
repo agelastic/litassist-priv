@@ -8,12 +8,10 @@ ensuring legal accuracy and citation integrity in Australian legal contexts.
 import re
 from typing import List, Tuple
 
-from litassist.utils import (
-    timed,
-    heartbeat,
-    warning_message,
-)
-from litassist.config import CONFIG
+from litassist.timing import timed
+from litassist.utils.core import heartbeat
+from litassist.utils.formatting import warning_message
+from litassist.config import get_config
 from litassist.prompts import PROMPTS
 from litassist.citation_verify import (
     verify_all_citations,
@@ -90,9 +88,10 @@ class LLMVerificationMixin:
                 "content": full_text + "\n\n" + self_critique,
             },
         ]
-        # Use the configured model for verification (no overrides)
-        params = {"temperature": 0, "top_p": 0.2}
-        if CONFIG.use_token_limits:
+        # Let the factory configuration handle temperature and top_p
+        params = {}
+        config = get_config()
+        if config.use_token_limits:
             params["max_tokens"] = 65536  # Large limit for full document verification
         verification_result, usage = self.complete(
             critique_prompt, skip_citation_verification=True, **params
@@ -118,7 +117,8 @@ class LLMVerificationMixin:
         issues = []
 
         # Optionally perform offline pattern validation if enabled in config
-        if CONFIG.offline_validation:
+        config = get_config()
+        if config.offline_validation:
             pattern_issues = self.validate_citations(content, enable_online=False)
             if pattern_issues:
                 issues.extend(pattern_issues)
@@ -365,12 +365,20 @@ class LLMVerificationMixin:
             # This maintains backward compatibility
             return self.verify(primary_text)
 
-        # Use the configured verification model
+        # Use the appropriate verification model based on level
         from litassist.llm import LLMClientFactory
 
-        verification_client = LLMClientFactory.for_command("verification")
-        params = {"temperature": 0, "top_p": 0.2}
-        if CONFIG.use_token_limits:
+        if level == "light":
+            verification_client = LLMClientFactory.for_command("verification-light")
+        elif level == "heavy":
+            verification_client = LLMClientFactory.for_command("verification-heavy")
+        else:
+            verification_client = LLMClientFactory.for_command("verification")
+        
+        # No hardcoded params - let the factory config handle it
+        params = {}
+        config = get_config()
+        if config.use_token_limits:
             params["max_tokens"] = 32768 if level == "light" else 65536
         verification_result, usage = verification_client.complete(
             critique_prompt, skip_citation_verification=True, **params

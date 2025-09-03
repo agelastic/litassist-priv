@@ -26,12 +26,14 @@ class TestCitationVerificationBasic:
         citations = extract_citations("")
         assert isinstance(citations, list)
 
-    @patch("litassist.citation_verify.CONFIG")
+    @patch("litassist.citation_verify.get_config")
     @patch("googleapiclient.discovery.build")
-    def test_search_jade_via_google_cse_not_found(self, mock_build, mock_config):
+    def test_search_jade_via_google_cse_not_found(self, mock_build, mock_get_config):
         """Test Jade search when nothing found."""
+        mock_config = Mock()
         mock_config.g_key = "test_key"
         mock_config.cse_id = "test_cse_id"
+        mock_get_config.return_value = mock_config
 
         mock_service = Mock()
         mock_build.return_value = mock_service

@@ -8,7 +8,8 @@ import os
 import glob
 import click
 
-from litassist.utils import count_tokens_and_words, info_message, warning_message
+from litassist.utils.text_processing import count_tokens_and_words
+from litassist.utils.formatting import info_message, warning_message
 
 
 def analyze_research_size(research_contents: list, research_paths: list) -> dict:

@@ -6,6 +6,13 @@ verification:
   # USED BY: llm.py LLMClient.verify() method - default verification for all commands
   # LOCATION: llm.py:528-539
   self_critique: |
+    CRITICAL ANTI-HALLUCINATION INSTRUCTIONS:
+    - NEVER fabricate case citations, legal references, or specific facts
+    - If unsure about any information, explicitly state "Cannot verify" or "Uncertain"
+    - For each correction, indicate confidence: HIGH (certain), MEDIUM (probable), LOW (uncertain)
+    - If information is outside your knowledge, clearly state this limitation
+    - Do not invent plausible-sounding details when you cannot recall exact information
+
     CRITICAL INSTRUCTION: You MUST return the COMPLETE document with ALL original text.
     DO NOT use ANY placeholders, summaries, or abbreviations like:
     - "[Section reproduced in full...]"
@@ -95,6 +102,8 @@ verification:
   # LOCATION: llm.py:758-767
   heavy_verification: |
     Provide comprehensive legal accuracy review: verify all citations, check legal reasoning, identify any errors in law or procedure, ensure Australian English compliance, and VERIFY JURISDICTION - confirm the correct state/federal law is applied, cases are from appropriate courts, and legislation is current for the relevant jurisdiction.
+    
+    ANTI-HALLUCINATION: For every citation or legal claim, indicate your confidence level (HIGH/MEDIUM/LOW). If you cannot verify a citation or are uncertain about a legal principle, explicitly state "Cannot verify" rather than guessing.
 
   # Standard verification system prompt
   # USED BY: llm.py LLMClient.verify_with_level() method - system prompt for heavy verification
@@ -277,6 +286,13 @@ verification:
   # LOCATION: llm.py:1302 (previously fallback, now required)
   base_prompt: |
     Australian law only. Use Australian English spellings and terminology (e.g., 'judgement' not 'judgment', 'defence' not 'defense').
+    
+    CRITICAL ANTI-HALLUCINATION INSTRUCTIONS:
+    - NEVER fabricate case citations, legal references, or specific facts
+    - If you are unsure about any information, explicitly state "Not given" or "Cannot determine with certainty"
+    - For each major claim or correction, indicate confidence level: HIGH (certain), MEDIUM (probable), LOW (uncertain)
+    - If information is outside your training data or knowledge cutoff, clearly state this limitation
+    - When you cannot recall exact details, say so rather than inventing plausible-sounding information
 
   # NOT USED - Template not referenced in codebase
   # # Jurisdiction verification checklist

@@ -10,7 +10,7 @@ from unittest.mock import patch, Mock, MagicMock
 from openai import APIConnectionError
 
 from litassist.llm import LLMClientFactory, LLMClient
-from litassist.utils import LegalReasoningTrace, extract_reasoning_trace
+from litassist.utils.legal_reasoning import LegalReasoningTrace, extract_reasoning_trace
 
 
 class TestLLMClientFactory:

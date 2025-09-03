@@ -8,7 +8,8 @@ to produce a structured legal answer citing relevant cases.
 
 import click
 from litassist.config import get_config
-from litassist.utils import save_log, timed
+from litassist.logging_utils import save_log
+from litassist.timing import timed
 from .search import perform_cse_searches
 from .processors import LookupProcessor
 
@@ -72,7 +73,7 @@ def lookup(
     """
     # Handle unsupported verification flags
     if verify:
-        from litassist.utils import warning_message
+        from litassist.utils.formatting import warning_message
 
         click.echo(
             warning_message(
@@ -80,7 +81,7 @@ def lookup(
             )
         )
     if noverify:
-        from litassist.utils import warning_message
+        from litassist.utils.formatting import warning_message
 
         click.echo(
             warning_message(

@@ -7,10 +7,8 @@ It implements a fallback strategy from AustLII to comprehensive government sourc
 """
 
 from typing import Dict, List, Optional
-from googleapiclient.discovery import build
-from litassist.config import CONFIG
-from litassist.commands.lookup.fetchers import _fetch_url_content
-from litassist.utils import save_log
+from litassist.config import get_config
+from litassist.logging_utils import save_log
 import time
 import re
 import requests
@@ -41,16 +39,19 @@ def fetch_citation_context(
 
     # Build service once
     try:
+        # Lazy import to avoid loading googleapiclient when not needed
+        from googleapiclient.discovery import build
         service = build(
-            "customsearch", "v1", developerKey=CONFIG.g_key, cache_discovery=False
+            "customsearch", "v1", developerKey=get_config().g_key, cache_discovery=False
         )
     except Exception as e:
         save_log("cove_cse_init_error", {"error": str(e)})
         return context
 
     # Get CSE IDs
-    cse_austlii = getattr(CONFIG, "cse_id_austlii", None)
-    cse_comprehensive = getattr(CONFIG, "cse_id_comprehensive", None)
+    config = get_config()
+    cse_austlii = getattr(config, "cse_id_austlii", None)
+    cse_comprehensive = getattr(config, "cse_id_comprehensive", None)
 
     for citation in citations[:max_citations]:  # Limit for token management
         # Try AustLII first
@@ -111,6 +112,8 @@ def fetch_citation_context(
         # Fetch COMPLETE content if we found a URL
         if url:
             try:
+                # Lazy import to avoid circular dependency
+                from litassist.commands.lookup.fetchers import _fetch_url_content
                 content = _fetch_url_content(url, timeout=15)
                 if content:
                     # Clean up garbage at the end but keep full document

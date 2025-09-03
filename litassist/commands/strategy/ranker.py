@@ -6,7 +6,7 @@ and managing strategy rankings.
 """
 
 import time
-from litassist.utils import timed
+from litassist.timing import timed
 from litassist.prompts import PROMPTS
 
 

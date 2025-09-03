@@ -23,9 +23,8 @@ from typing import Dict, Any, Tuple
 
 import requests
 import tenacity
-from openai import OpenAI, APIConnectionError, RateLimitError, APIError
 
-from litassist.config import CONFIG
+from litassist.config import get_config
 
 
 # Custom exception classes for retry logic
@@ -50,44 +49,31 @@ class NonRetryableAPIError(Exception):
 logger = logging.getLogger(__name__)
 
 
-def get_openai_client(model_name: str) -> OpenAI:
+def get_openai_client(model_name: str):
     """
     Get or create OpenAI client with appropriate configuration.
 
-    Routes through OpenRouter for all models (indicated by "/" in model name).
-
-    Determines whether to use OpenRouter or direct OpenAI API based on the model name
-    and configures the client accordingly. This function handles the routing logic
-    for different model providers through the unified OpenAI client interface.
+    ALL models are routed through OpenRouter. No exceptions.
 
     Args:
         model_name: The model identifier (e.g., 'openai/gpt-4', 'anthropic/claude-sonnet-4')
 
     Returns:
-        Configured OpenAI client instance
+        Configured OpenAI client instance routed through OpenRouter
 
     Note:
-        - Models with "/" prefix (except "openai/") are routed through OpenRouter
-        - OpenAI reasoning models (o1, o3 series) always use OpenRouter for BYOK access
-        - Direct OpenAI API is used only for standard OpenAI models
+        - ALL LLM calls go through OpenRouter
+        - Model names with "/" indicate OpenRouter routing
+        - No fallback or direct OpenAI API path exists
     """
-    # Avoid circular import by importing locally
-    from .client import get_model_family
-
-    # Determine if we need OpenRouter or direct OpenAI
-    model_family = get_model_family(model_name)
-    use_openrouter = (
-        "/" in model_name and not model_name.startswith("openai/")
-    ) or model_family == "openai_reasoning"
-
-    # Configure client parameters
-    if use_openrouter:
-        base_url = CONFIG.or_base
-        api_key = CONFIG.or_key
-        return OpenAI(api_key=api_key, base_url=base_url)
-    else:
-        # Direct OpenAI API
-        return OpenAI(api_key=CONFIG.openai_api_key)
+    # Lazy import to avoid loading OpenAI library when not needed
+    from openai import OpenAI
+    
+    # ALL models go through OpenRouter - single code path only
+    config = get_config()
+    base_url = config.or_base
+    api_key = config.or_key
+    return OpenAI(api_key=api_key, base_url=base_url)
 
 
 def parse_openrouter_error(error_info: Dict[str, Any]) -> Tuple[str, str]:
@@ -229,6 +215,9 @@ def execute_api_call_with_retry(
     if get_openai_client_func is None:
         get_openai_client_func = get_openai_client
 
+    # Lazy import OpenAI exceptions to avoid loading library when not needed
+    from openai import APIConnectionError, RateLimitError, APIError
+    
     # Define retryable error types
     retry_errors = (
         APIConnectionError,
