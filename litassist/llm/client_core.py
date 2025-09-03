@@ -737,22 +737,19 @@ class LLMClient(LLMVerificationMixin):
             messages.copy()
         )
 
-        # Get retry client and execute
-        from .api_handlers import get_openai_client
-
-        retry_client = get_openai_client(model_name)
+        # Execute retry through proper API pipeline
+        from .api_handlers import execute_api_call
 
         try:
-            # Execute retry with filtered parameters
-            retry_filtered_params = get_model_parameters(self.model, params)
-            retry_response = retry_client.chat.completions.create(
-                model=model_name,
-                messages=enhanced_messages,
-                **retry_filtered_params,
+            # Use execute_api_call which handles all parameter preparation including thinking_effort
+            retry_response, _ = execute_api_call(
+                model_name,
+                enhanced_messages,
+                params,  # Pass original params - execute_api_call will handle preparation
+                stream=False
             )
 
-            # Validate retry response
-            self._validate_response_structure(retry_response)
+            # Extract content from response
             retry_content = retry_response.choices[0].message.content or ""
 
             # Verify the retry
