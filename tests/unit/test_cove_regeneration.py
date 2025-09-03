@@ -92,10 +92,12 @@ class TestCoVeRegeneration:
 
             mock_factory.for_command.side_effect = get_client
 
-            # Mock save_log to avoid file operations
+            # Mock save_log and fetch_citation_context to avoid file operations and PDF processing
             with patch("litassist.verification_chain.save_log"):
-                # Run CoVe verification
-                final_content, results = run_cove_verification(original_content, "test")
+                with patch("litassist.verification_chain.fetch_citation_context") as mock_fetch:
+                    mock_fetch.return_value = {}  # Return empty dict, no citations to fetch
+                    # Run CoVe verification
+                    final_content, results = run_cove_verification(original_content, "test")
 
             # Assertions
             assert final_content != original_content, "Content should be regenerated"
@@ -181,10 +183,12 @@ class TestCoVeRegeneration:
 
             mock_factory.for_command.side_effect = get_client
 
-            # Mock save_log
+            # Mock save_log and fetch_citation_context to avoid file operations and PDF processing
             with patch("litassist.verification_chain.save_log"):
-                # Run CoVe verification
-                final_content, results = run_cove_verification(original_content, "test")
+                with patch("litassist.verification_chain.fetch_citation_context") as mock_fetch:
+                    mock_fetch.return_value = {}  # Return empty dict, no citations to fetch
+                    # Run CoVe verification
+                    final_content, results = run_cove_verification(original_content, "test")
 
             # Assertions
             assert final_content == original_content, (
