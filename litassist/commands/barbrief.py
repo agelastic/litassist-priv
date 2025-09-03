@@ -292,7 +292,7 @@ def barbrief(
     ]
 
     try:
-        content, usage = client.complete(messages, skip_citation_verification=True)
+        content, usage = client.complete(messages)
     except Exception as e:
         # Provide helpful error message for common issues
         if "timeout" in str(e).lower():
@@ -318,7 +318,9 @@ def barbrief(
 
     click.echo(f"\nGenerated brief ({usage.get('total_tokens', 'N/A')} tokens used)")
 
-    # Run citation verification if requested
+    # Run manual citation verification if requested
+    # Note: Automatic verification already happens during generation via client.complete()
+    # This provides additional detailed reporting when --verify flag is used
     if verify:
         click.echo("\nVerifying citations...")
         verified, unverified = verify_all_citations(content)
