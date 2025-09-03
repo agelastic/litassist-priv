@@ -28,7 +28,7 @@ def create_embeddings(texts: List[str]) -> List[Any]:
         ValueError: If any text exceeds the model's token limit.
     """
     # Import here to avoid circular imports
-    from litassist.config import CONFIG
+    from litassist.config import get_config
 
     # Validate text lengths (8191 tokens ≈ 32000 chars for safety)
     MAX_CHARS = 32000
@@ -43,8 +43,9 @@ def create_embeddings(texts: List[str]) -> List[Any]:
     # Use the model without custom dimensions since our index is 1536-dimensional
     from openai import OpenAI
 
-    client = OpenAI(api_key=CONFIG.openai_api_key)
-    response = client.embeddings.create(input=texts, model=CONFIG.emb_model)
+    config = get_config()
+    client = OpenAI(api_key=config.openai_api_key)
+    response = client.embeddings.create(input=texts, model=config.emb_model)
     return response.data
 
 

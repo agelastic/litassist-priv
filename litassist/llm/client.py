@@ -17,7 +17,7 @@ from litassist.utils import (
     info_message,
     success_message,
 )
-from litassist.config import CONFIG
+from litassist.config import get_config
 from litassist.prompts import PROMPTS
 import time
 from litassist.citation_verify import (
@@ -833,7 +833,8 @@ class LLMClient(LLMVerificationMixin):
         self.command_context = None  # Track which command is using this client
 
         # Set model-specific token limits if enabled in config and not explicitly specified
-        if CONFIG.use_token_limits:
+        config = get_config()
+        if config.use_token_limits:
             # Determine if we need to transform max_tokens to another parameter
             test_params = {"max_tokens": 1}
             filtered = get_model_parameters(model, test_params)
@@ -886,7 +887,7 @@ class LLMClient(LLMVerificationMixin):
     # The enclosing `complete` method now emits heartbeat updates, so we no
     # longer need a second heartbeat layer here. Retaining only the timing
     # decorator avoids duplicated progress messages.
-    @heartbeat(CONFIG.heartbeat_interval if CONFIG else 15)
+    @heartbeat(15)  # Default heartbeat interval
     @timed
     def complete(
         self,

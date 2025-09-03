@@ -169,11 +169,13 @@ class TestVerifyModes:
             )
 
     @patch("litassist.llm.LLMClientFactory.for_command")
-    @patch("litassist.llm.verification.CONFIG")
-    def test_token_limits_disabled(self, mock_config, mock_for_command):
+    @patch("litassist.llm.verification.get_config")
+    def test_token_limits_disabled(self, mock_get_config, mock_for_command):
         """Test behavior when token limits are disabled."""
         # Configure mock with token limits disabled
+        mock_config = Mock()
         mock_config.use_token_limits = False
+        mock_get_config.return_value = mock_config
 
         # Create a mock instance
         mock_instance = Mock()

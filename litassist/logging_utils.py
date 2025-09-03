@@ -134,7 +134,7 @@ def save_log(tag: str, payload: dict):
         click.ClickException: If there's an error writing the log file.
     """
     from click import get_current_context
-    from litassist.config import CONFIG
+    from litassist.config import get_config
 
     ts = time.strftime("%Y%m%d-%H%M%S")
     ctx = get_current_context(silent=True)
@@ -144,7 +144,8 @@ def save_log(tag: str, payload: dict):
         log_format = ctx.obj["log_format"]
     else:
         # Fall back to CONFIG setting when not in a click context (e.g., during tests)
-        log_format = getattr(CONFIG, "log_format", "json")
+        config = get_config()
+        log_format = config.log_format if config else "json"
 
     # JSON logging
     if log_format == "json":

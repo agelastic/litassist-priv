@@ -15,7 +15,7 @@ import threading
 
 # Import logging utility and config
 from litassist.utils import save_log, timed
-from litassist.config import CONFIG
+from litassist.config import get_config
 from litassist.citation_patterns import extract_citations
 
 # Cache for verified citations to avoid repeated requests
@@ -263,9 +263,11 @@ def search_jade_via_google_cse(citation: str, timeout: int = 10) -> bool:
     try:
         from googleapiclient.discovery import build
 
+        config = get_config()
+        
         # Use Google Custom Search to search Jade.io
         service = build(
-            "customsearch", "v1", developerKey=CONFIG.g_key, cache_discovery=False
+            "customsearch", "v1", developerKey=config.g_key, cache_discovery=False
         )
 
         # Format citation for search - clean format for better matching
@@ -274,7 +276,7 @@ def search_jade_via_google_cse(citation: str, timeout: int = 10) -> bool:
         )
 
         # Search using configured CSE
-        res = service.cse().list(q=search_query, cx=CONFIG.cse_id, num=10).execute()
+        res = service.cse().list(q=search_query, cx=config.cse_id, num=10).execute()
 
         # Enhanced search with multiple variations to handle different citation formats
         success = False

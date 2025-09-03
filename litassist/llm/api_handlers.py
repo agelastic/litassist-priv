@@ -25,7 +25,7 @@ import requests
 import tenacity
 from openai import OpenAI, APIConnectionError, RateLimitError, APIError
 
-from litassist.config import CONFIG
+from litassist.config import get_config
 
 
 # Custom exception classes for retry logic
@@ -81,13 +81,14 @@ def get_openai_client(model_name: str) -> OpenAI:
     ) or model_family == "openai_reasoning"
 
     # Configure client parameters
+    config = get_config()
     if use_openrouter:
-        base_url = CONFIG.or_base
-        api_key = CONFIG.or_key
+        base_url = config.or_base
+        api_key = config.or_key
         return OpenAI(api_key=api_key, base_url=base_url)
     else:
         # Direct OpenAI API
-        return OpenAI(api_key=CONFIG.openai_api_key)
+        return OpenAI(api_key=config.openai_api_key)
 
 
 def parse_openrouter_error(error_info: Dict[str, Any]) -> Tuple[str, str]:

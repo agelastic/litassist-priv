@@ -9,7 +9,7 @@ with ten standard headings.
 import click
 import os
 
-from litassist.config import CONFIG
+from litassist.config import get_config
 from litassist.prompts import PROMPTS
 from litassist.utils import (
     chunk_text,
@@ -69,7 +69,7 @@ def extractfacts(file, verify, noverify, cove, output):
         all_text += f"\n\n--- SOURCE: {os.path.basename(f)} ---\n\n{text}"
 
     # Use existing chunking on combined text
-    chunks = chunk_text(all_text, max_chars=CONFIG.max_chars)
+    chunks = chunk_text(all_text, max_chars=get_config().max_chars)
 
     # Initialize the LLM client using factory
     client = LLMClientFactory.for_command("extractfacts")

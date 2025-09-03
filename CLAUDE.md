@@ -103,6 +103,34 @@ LitAssist is a command-line tool for automated litigation support workflows, tai
 - **Error Hierarchy**: Dedicated exceptions module for custom error types
 - **Single Responsibility**: Each module should have exactly one reason to change
 
+**CRITICAL: Complete Migration Rule**
+
+When changing any API or usage pattern (e.g., CONFIG → get_config()):
+
+1. **Find ALL usages FIRST**
+   ```bash
+   grep -r "pattern_to_change" . --include="*.py" > migration_list.txt
+   ```
+
+2. **Update everything atomically** - NEVER leave mixed old/new patterns
+   - Core module → dependent modules → tests → docs (in that order)
+   - Run `pytest tests/unit/ -x` after each group
+
+3. **Migration completeness check**
+   ```bash
+   # Verify old pattern is completely gone
+   grep -r "old_pattern" . --include="*.py"  # Should return nothing
+   ```
+
+**Red Flags:**
+- AttributeError on None = incomplete lazy-load migration  
+- Import errors = missed module path updates
+- Mixed old/new patterns in codebase = migration not finished
+
+**Example Failure:** Created get_config() but left CODE using CONFIG directly → AttributeError
+
+**Golden Rule:** Change the API everywhere or nowhere. No partial migrations.
+
 **Post-Refactoring Tasks:**
 - Update import paths in tests (patch decorators need new module paths)
 - Remove discovered dead code and unused dependencies

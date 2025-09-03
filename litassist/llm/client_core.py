@@ -19,7 +19,7 @@ from litassist.utils import (
     success_message,
     error_message,
 )
-from litassist.config import CONFIG
+from litassist.config import get_config
 from litassist.prompts import PROMPTS
 from .api_handlers import execute_api_call_with_retry
 from .verification import LLMVerificationMixin
@@ -418,7 +418,8 @@ class LLMClient(LLMVerificationMixin):
         self.command_context = None  # Track which command is using this client
 
         # Set model-specific token limits if enabled in config and not explicitly specified
-        if CONFIG.use_token_limits:
+        config = get_config()
+        if config.use_token_limits:
             # Determine if we need to transform max_tokens to another parameter
             test_params = {"max_tokens": 1}
             filtered = get_model_parameters(model, test_params)
@@ -446,7 +447,7 @@ class LLMClient(LLMVerificationMixin):
         self.default_params = default_params
         self._client = None  # Will be created when needed
 
-    @heartbeat(CONFIG.heartbeat_interval if CONFIG else 15)
+    @heartbeat(15)  # Default heartbeat interval
     @timed
     def complete(
         self,

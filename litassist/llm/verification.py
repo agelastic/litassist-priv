@@ -13,7 +13,7 @@ from litassist.utils import (
     heartbeat,
     warning_message,
 )
-from litassist.config import CONFIG
+from litassist.config import get_config
 from litassist.prompts import PROMPTS
 from litassist.citation_verify import (
     verify_all_citations,
@@ -92,7 +92,8 @@ class LLMVerificationMixin:
         ]
         # Let the factory configuration handle temperature and top_p
         params = {}
-        if CONFIG.use_token_limits:
+        config = get_config()
+        if config.use_token_limits:
             params["max_tokens"] = 65536  # Large limit for full document verification
         verification_result, usage = self.complete(
             critique_prompt, skip_citation_verification=True, **params
@@ -118,7 +119,8 @@ class LLMVerificationMixin:
         issues = []
 
         # Optionally perform offline pattern validation if enabled in config
-        if CONFIG.offline_validation:
+        config = get_config()
+        if config.offline_validation:
             pattern_issues = self.validate_citations(content, enable_online=False)
             if pattern_issues:
                 issues.extend(pattern_issues)
@@ -377,7 +379,8 @@ class LLMVerificationMixin:
         
         # No hardcoded params - let the factory config handle it
         params = {}
-        if CONFIG.use_token_limits:
+        config = get_config()
+        if config.use_token_limits:
             params["max_tokens"] = 32768 if level == "light" else 65536
         verification_result, usage = verification_client.complete(
             critique_prompt, skip_citation_verification=True, **params

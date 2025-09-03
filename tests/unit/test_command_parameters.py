@@ -31,14 +31,16 @@ class TestCommandParameterPropagation:
 
     @patch("litassist.llm.LLMClientFactory.for_command")
     @patch("litassist.utils.file_ops.read_document")
-    @patch("litassist.commands.extractfacts.CONFIG")
+    @patch("litassist.commands.extractfacts.get_config")
     def test_extractfacts_command_parameters(
         self, mock_config, mock_read, mock_factory
     ):
         """Test extractfacts command uses correct model and parameters."""
         mock_factory.return_value = self.mock_client
         mock_read.return_value = "Test document content"
-        mock_config.max_chars = 1000  # Add missing config attribute
+        mock_config_obj = Mock()
+        mock_config_obj.max_chars = 1000  # Add missing config attribute
+        mock_config.return_value = mock_config_obj
 
         with self.runner.isolated_filesystem():
             with open("test.pdf", "w") as f:
@@ -401,7 +403,7 @@ Test objectives""")
     @patch("litassist.llm.LLMClientFactory.for_command")
     @patch("litassist.utils.read_document")
     @patch("litassist.helpers.retriever.get_pinecone_client")
-    @patch("litassist.commands.draft.CONFIG")
+    @patch("litassist.commands.draft.get_config")
     def test_draft_command_parameters(
         self, mock_config, mock_pinecone, mock_read, mock_factory
     ):
@@ -426,7 +428,9 @@ Test objectives""")
         ]
 
         mock_read.return_value = "Instructions"
-        mock_config.rag_max_chars = 8000
+        mock_config_obj = Mock()
+        mock_config_obj.rag_max_chars = 8000
+        mock_config.return_value = mock_config_obj
 
         # Mock pinecone
         mock_pc_index = Mock()

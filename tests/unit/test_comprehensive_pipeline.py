@@ -13,7 +13,8 @@ from click.testing import CliRunner
 from litassist.cli import cli
 from litassist.commands import register_commands
 from litassist.llm import LLMClientFactory, LLMClient
-from litassist.config import CONFIG
+from litassist.config import get_config
+CONFIG = get_config()
 
 
 class TestComprehensivePipeline:

@@ -351,7 +351,7 @@ class TestCommandCoVeIntegration:
                 f.write("Test content")
 
             with (
-                patch("litassist.commands.extractfacts.CONFIG") as mock_config,
+                patch("litassist.commands.extractfacts.get_config") as mock_config,
                 patch(
                     "litassist.commands.extractfacts.validate_file_size"
                 ) as mock_validate,
@@ -373,7 +373,9 @@ class TestCommandCoVeIntegration:
                 patch("litassist.commands.extractfacts.show_command_completion"),
             ):
                 # Setup mocks
-                mock_config.max_chars = 100000
+                mock_config_obj = Mock()
+                mock_config_obj.max_chars = 100000
+                mock_config.return_value = mock_config_obj
                 mock_validate.return_value = "Test content"
                 mock_chunk.return_value = ["Test chunk"]
                 mock_prompts.get_format_template.return_value = "Format"

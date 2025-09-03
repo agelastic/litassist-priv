@@ -9,7 +9,7 @@ with GPT-4o that incorporates these citations.
 
 import click
 
-from litassist.config import CONFIG
+from litassist.config import get_config
 from litassist.prompts import PROMPTS
 from litassist.utils import (
     read_document,
@@ -163,7 +163,7 @@ def draft(ctx, documents, query, noverify, cove, diversity, output):
 
         for doc_path, text in structured_content["pdf_documents"]:
             # Chunk each document
-            chunks = chunk_text(text, max_chars=CONFIG.rag_max_chars)
+            chunks = chunk_text(text, max_chars=get_config().rag_max_chars)
             for chunk in chunks:
                 doc_counter += 1
                 all_chunks.append((f"d{doc_counter}", chunk, doc_path))
