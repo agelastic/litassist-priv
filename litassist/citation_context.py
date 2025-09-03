@@ -7,7 +7,6 @@ It implements a fallback strategy from AustLII to comprehensive government sourc
 """
 
 from typing import Dict, List, Optional
-from googleapiclient.discovery import build
 from litassist.config import get_config
 from litassist.utils import save_log
 import time
@@ -40,6 +39,8 @@ def fetch_citation_context(
 
     # Build service once
     try:
+        # Lazy import to avoid loading googleapiclient when not needed
+        from googleapiclient.discovery import build
         service = build(
             "customsearch", "v1", developerKey=get_config().g_key, cache_discovery=False
         )
