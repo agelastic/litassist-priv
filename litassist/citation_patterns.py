@@ -215,12 +215,24 @@ def extract_citations(text: str) -> List[str]:
     for match in matches8:
         citations.add(match.group(0))
 
-    # Pattern 9: Australian statutes with year
-    # e.g., Competition and Consumer Act 2010, Corporations Act 2001
-    pattern9 = r"[A-Z][A-Za-z]+(?:\s+(?:and\s+)?[A-Za-z]+)*\s+Act\s+\d{4}"
-    matches9 = re.finditer(pattern9, text)
-    for match in matches9:
-        citations.add(match.group(0))
+    # Pattern 9: Australian statutes with year and optional jurisdiction
+    # e.g., Migration Act 1958 (Cth), Family Violence Act 2016 (ACT)
+    # Extract Act names when preceded by "the", "under", "to", "of"
+    pattern9a = r"\bthe\s+([A-Z][a-zA-Z]+(?:\s+and\s+[A-Z][a-zA-Z]+|\s+[A-Z][a-zA-Z]+)*\s+Act\s+\d{4}(?:\s+\([A-Z][a-zA-Z]+\))?)"
+    for match in re.finditer(pattern9a, text):
+        citations.add(match.group(1))
+    
+    pattern9b = r"\bunder\s+([A-Z][a-zA-Z]+(?:\s+and\s+[A-Z][a-zA-Z]+|\s+[A-Z][a-zA-Z]+)*\s+Act\s+\d{4}(?:\s+\([A-Z][a-zA-Z]+\))?)"
+    for match in re.finditer(pattern9b, text):
+        citations.add(match.group(1))
+    
+    pattern9c = r"\bof\s+(?:the\s+)?([A-Z][a-zA-Z]+(?:\s+and\s+[A-Z][a-zA-Z]+|\s+[A-Z][a-zA-Z]+)*\s+Act\s+\d{4}(?:\s+\([A-Z][a-zA-Z]+\))?)"
+    for match in re.finditer(pattern9c, text):
+        citations.add(match.group(1))
+    
+    pattern9d = r"\bto\s+(?:the\s+)?([A-Z][a-zA-Z]+(?:\s+and\s+[A-Z][a-zA-Z]+|\s+[A-Z][a-zA-Z]+)*\s+Act\s+\d{4}(?:\s+\([A-Z][a-zA-Z]+\))?)"
+    for match in re.finditer(pattern9d, text):
+        citations.add(match.group(1))
 
     # Pattern 10: Australian regulations with year
     # e.g., Fair Work Regulations 2009
