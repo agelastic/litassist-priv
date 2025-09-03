@@ -441,7 +441,7 @@ class LLMClient(LLMVerificationMixin):
         self.default_params = default_params
         self._client = None  # Will be created when needed
 
-    @heartbeat(15)  # Default heartbeat interval
+    @heartbeat()  # Uses heartbeat_interval from config.yaml
     @timed
     def complete(
         self,
