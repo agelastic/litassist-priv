@@ -548,7 +548,7 @@ class LLMClientFactory:
         # Digest - mode-dependent settings
         "digest-summary": {
             "model": "anthropic/claude-sonnet-4",
-            "temperature": 0.1,
+            "temperature": 0.2,
             "top_p": 0.3,  # Fixed: was 0, too restrictive
         },
         "digest-issues": {
@@ -572,7 +572,7 @@ class LLMClientFactory:
         # Verification - automatic verification for high-risk commands
         "verification": {
             "model": "anthropic/claude-opus-4.1",
-            "temperature": 0.1,
+            "temperature": 0.2,
             "top_p": 0.3,
             "thinking_effort": "high",
             "force_verify": False,  # Don't double-verify since this IS verification
@@ -593,14 +593,14 @@ class LLMClientFactory:
         # Verify sub-commands with specific model assignments
         "verify-reasoning": {
             "model": "openai/o3-pro",  # o3-pro for complex reasoning trace extraction
-            "temperature": 0.1,
+            "temperature": 0.2,  # o3-pro ignores temperature but set for consistency
             "top_p": 0.3,
             "thinking_effort": "high",  # Universal parameter, translates to reasoning_effort
             "force_verify": False,
         },
         "verify-soundness": {
             "model": "anthropic/claude-opus-4.1",  # Opus for soundness checking
-            "temperature": 0.1,
+            "temperature": 0.2,
             "top_p": 0.3,
             "thinking_effort": "high",
             "force_verify": False,
@@ -651,22 +651,22 @@ class LLMClientFactory:
             "force_verify": False,
         },
         "cove-answers": {
-            "model": "anthropic/claude-opus-4.1",  # Independent answering
+            "model": "openai/gpt-5",  # GPT-5 for <1% hallucination rate
             "temperature": 0.2,
-            "top_p": 0.8,
+            "top_p": 0.3,
             "thinking_effort": "high",
             "force_verify": False,
         },
         "cove-verify": {
             "model": "anthropic/claude-sonnet-4",  # Inconsistency detection
             "temperature": 0.2,
-            "top_p": 0.8,
+            "top_p": 0.3,
             "force_verify": False,
         },
         "cove-final": {
             "model": "openai/gpt-5",  # GPT-5 for <1% hallucination rate in final output
             "temperature": 0.2,
-            "top_p": 0.8,
+            "top_p": 0.4,
             "thinking_effort": "high",
             "force_verify": False,
         },
