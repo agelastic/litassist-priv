@@ -10,13 +10,10 @@ import os
 from datetime import datetime
 from typing import List, Dict, Any, Tuple
 
-from litassist.utils import (
-    timed,
-    save_log,
-    heartbeat,
-    info_message,
-    success_message,
-)
+from litassist.timing import timed
+from litassist.logging_utils import save_log
+from litassist.utils.core import heartbeat
+from litassist.utils.formatting import info_message, success_message
 from litassist.config import get_config
 from litassist.prompts import PROMPTS
 import time

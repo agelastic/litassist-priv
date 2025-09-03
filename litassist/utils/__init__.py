@@ -5,53 +5,8 @@ This module provides utility functions and classes organized into specialized su
 for better maintainability and organization.
 """
 
-# Import from specialized modules for backward compatibility
-from litassist.utils.formatting import (
-    Colors,
-    colored_message,
-    success_message,
-    warning_message,
-    error_message,
-    info_message,
-    stats_message,
-    tip_message,
-    saved_message,
-    verifying_message,
-)
-
-from litassist.utils.file_ops import (
-    read_document,
-    validate_file_size,
-    is_text_file,
-    validate_file_size_limit,
-)
-
-from litassist.utils.text_processing import (
-    create_embeddings,
-    count_tokens_and_words,
-    chunk_text,
-)
-
-from litassist.utils.legal_reasoning import (
-    LegalReasoningTrace,
-    create_reasoning_prompt,
-    extract_reasoning_trace,
-    save_reasoning_trace,
-    detect_factual_hallucinations,
-    verify_content_if_needed,
-)
-
-# Import remaining functions from original utils
-from litassist.utils.core import (
-    timed,
-    heartbeat,
-    show_command_completion,
-    parse_strategies_file,
-    validate_side_area_combination,
-)
-
-# Import logging utilities that were previously in utils.py
-from litassist.logging_utils import OUTPUT_DIR, save_log, save_command_output
+# NOTE: Imports removed for performance - import directly from submodules instead
+# e.g., from litassist.utils.formatting import success_message
 
 # Re-export for backward compatibility
 __all__ = [

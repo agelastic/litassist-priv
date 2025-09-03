@@ -8,7 +8,7 @@ types of errors that can occur during lookup operations.
 import click
 import time
 import os
-from litassist.utils import (
+from litassist.utils.formatting import (
     warning_message,
     error_message,
     info_message,

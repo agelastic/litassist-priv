@@ -9,7 +9,7 @@ import re
 import logging
 from typing import List, Any
 
-from litassist.utils.core import timed
+from litassist.timing import timed
 
 
 @timed

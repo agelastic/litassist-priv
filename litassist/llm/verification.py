@@ -8,11 +8,9 @@ ensuring legal accuracy and citation integrity in Australian legal contexts.
 import re
 from typing import List, Tuple
 
-from litassist.utils import (
-    timed,
-    heartbeat,
-    warning_message,
-)
+from litassist.timing import timed
+from litassist.utils.core import heartbeat
+from litassist.utils.formatting import warning_message
 from litassist.config import get_config
 from litassist.prompts import PROMPTS
 from litassist.citation_verify import (

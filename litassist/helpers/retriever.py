@@ -7,7 +7,7 @@ with optional diversity-based re-ranking using Maximal Marginal Relevance (MMR).
 
 from typing import List, Dict, Any, Optional
 
-from litassist.utils import timed
+from litassist.timing import timed
 from litassist.config import get_config
 
 

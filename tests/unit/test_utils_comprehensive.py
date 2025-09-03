@@ -10,15 +10,14 @@ import os
 import time
 from unittest.mock import patch, MagicMock, mock_open, Mock
 
-from litassist.utils import (
-    heartbeat,
-    timed,
+from litassist.utils.core import heartbeat, parse_strategies_file
+from litassist.timing import timed
+from litassist.utils.legal_reasoning import (
     create_reasoning_prompt,
     extract_reasoning_trace,
-    parse_strategies_file,
-    validate_file_size_limit,
     verify_content_if_needed,
 )
+from litassist.utils.file_ops import validate_file_size_limit
 from litassist.logging_utils import save_log, save_command_output
 
 

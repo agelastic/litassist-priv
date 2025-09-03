@@ -18,19 +18,19 @@ from litassist.prompts import PROMPTS
 from litassist.citation_verify import verify_all_citations
 from litassist.citation_patterns import extract_citations
 from litassist.llm import LLMClientFactory
-from litassist.utils import (
+from litassist.utils.formatting import (
     verifying_message,
     success_message,
     error_message,
     warning_message,
-    save_command_output,
 )
+from litassist.logging_utils import save_command_output
 from litassist.verification_chain import run_cove_verification, format_cove_report
 from litassist.citation_context import fetch_citation_context
-from litassist.utils import (
-    timed,
-    save_log,
-    read_document,
+from litassist.timing import timed
+from litassist.logging_utils import save_log
+from litassist.utils.file_ops import read_document
+from litassist.utils.legal_reasoning import (
     create_reasoning_prompt,
     extract_reasoning_trace,
     LegalReasoningTrace,

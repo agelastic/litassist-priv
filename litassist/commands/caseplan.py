@@ -6,14 +6,11 @@ and generates a customized, efficient litigation workflow plan.
 """
 
 import click
-from litassist.utils import (
-    save_log,
-    timed,
-    validate_file_size_limit,
-    save_command_output,
-)
+from litassist.logging_utils import save_log, save_command_output
+from litassist.timing import timed
+from litassist.utils.file_ops import validate_file_size_limit
 from litassist.llm import LLMClientFactory
-from litassist.utils import saved_message, tip_message, success_message, warning_message
+from litassist.utils.formatting import saved_message, tip_message, success_message, warning_message
 from litassist.prompts import PROMPTS
 
 

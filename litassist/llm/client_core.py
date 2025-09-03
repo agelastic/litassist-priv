@@ -10,10 +10,10 @@ import re
 import time
 from typing import List, Dict, Any, Tuple
 
-from litassist.utils import (
-    timed,
-    save_log,
-    heartbeat,
+from litassist.timing import timed
+from litassist.logging_utils import save_log
+from litassist.utils.core import heartbeat
+from litassist.utils.formatting import (
     info_message,
     warning_message,
     success_message,

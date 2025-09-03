@@ -20,7 +20,7 @@ from litassist.commands.verify import (  # noqa: E402
     _parse_soundness_issues,
     _verify_reasoning_trace,
 )
-from litassist.utils import LegalReasoningTrace  # noqa: E402
+from litassist.utils.legal_reasoning import LegalReasoningTrace  # noqa: E402
 
 
 class TestVerifyCommand:

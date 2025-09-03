@@ -11,22 +11,17 @@ import click
 
 from litassist.config import get_config
 from litassist.prompts import PROMPTS
-from litassist.utils import (
-    read_document,
-    chunk_text,
-    create_embeddings,
-    save_log,
-    timed,
-    info_message,
-    warning_message,
-    success_message,
+from litassist.utils.file_ops import read_document, is_text_file
+from litassist.utils.text_processing import chunk_text, create_embeddings
+from litassist.logging_utils import save_log, save_command_output
+from litassist.timing import timed
+from litassist.utils.formatting import info_message, warning_message, success_message
+from litassist.utils.legal_reasoning import (
     create_reasoning_prompt,
-    save_command_output,
-    show_command_completion,
     detect_factual_hallucinations,
-    is_text_file,
     verify_content_if_needed,
 )
+from litassist.utils.core import show_command_completion
 from litassist.llm import LLMClientFactory
 from litassist.helpers.retriever import Retriever, get_pinecone_client
 from litassist.verification_chain import run_cove_verification

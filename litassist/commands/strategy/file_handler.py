@@ -5,7 +5,7 @@ This module handles saving strategy outputs and related files.
 """
 
 from typing import Dict, List, Tuple, Optional
-from litassist.utils import save_command_output, save_log
+from litassist.logging_utils import save_command_output, save_log
 
 
 def save_strategy_outputs(

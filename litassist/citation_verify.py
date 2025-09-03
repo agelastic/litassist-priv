@@ -14,7 +14,8 @@ from typing import List, Tuple, Dict
 import threading
 
 # Import logging utility and config
-from litassist.utils import save_log, timed
+from litassist.logging_utils import save_log
+from litassist.timing import timed
 from litassist.config import get_config
 from litassist.citation_patterns import extract_citations
 

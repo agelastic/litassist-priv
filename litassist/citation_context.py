@@ -8,7 +8,7 @@ It implements a fallback strategy from AustLII to comprehensive government sourc
 
 from typing import Dict, List, Optional
 from litassist.config import get_config
-from litassist.utils import save_log
+from litassist.logging_utils import save_log
 import time
 import re
 import requests

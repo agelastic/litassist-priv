@@ -11,7 +11,7 @@ import os
 import logging
 import time
 from litassist.config import get_config
-from litassist.utils import info_message
+from litassist.utils.formatting import info_message
 from litassist.logging_utils import LOG_DIR
 
 # Suppress Google API cache warning

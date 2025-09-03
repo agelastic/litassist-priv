@@ -9,8 +9,8 @@ import click
 import logging
 import time
 import os
-from litassist.utils import (
-    save_command_output,
+from litassist.logging_utils import save_command_output
+from litassist.utils.formatting import (
     warning_message,
     success_message,
     saved_message,
