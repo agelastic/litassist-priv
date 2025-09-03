@@ -218,20 +218,10 @@ def extract_citations(text: str) -> List[str]:
     # Pattern 9: Australian statutes with year and optional jurisdiction
     # e.g., Migration Act 1958 (Cth), Family Violence Act 2016 (ACT)
     # Extract Act names when preceded by "the", "under", "to", "of"
-    pattern9a = r"\bthe\s+([A-Z][a-zA-Z]+(?:\s+and\s+[A-Z][a-zA-Z]+|\s+[A-Z][a-zA-Z]+)*\s+Act\s+\d{4}(?:\s+\([A-Z][a-zA-Z]+\))?)"
-    for match in re.finditer(pattern9a, text):
-        citations.add(match.group(1))
-    
-    pattern9b = r"\bunder\s+([A-Z][a-zA-Z]+(?:\s+and\s+[A-Z][a-zA-Z]+|\s+[A-Z][a-zA-Z]+)*\s+Act\s+\d{4}(?:\s+\([A-Z][a-zA-Z]+\))?)"
-    for match in re.finditer(pattern9b, text):
-        citations.add(match.group(1))
-    
-    pattern9c = r"\bof\s+(?:the\s+)?([A-Z][a-zA-Z]+(?:\s+and\s+[A-Z][a-zA-Z]+|\s+[A-Z][a-zA-Z]+)*\s+Act\s+\d{4}(?:\s+\([A-Z][a-zA-Z]+\))?)"
-    for match in re.finditer(pattern9c, text):
-        citations.add(match.group(1))
-    
-    pattern9d = r"\bto\s+(?:the\s+)?([A-Z][a-zA-Z]+(?:\s+and\s+[A-Z][a-zA-Z]+|\s+[A-Z][a-zA-Z]+)*\s+Act\s+\d{4}(?:\s+\([A-Z][a-zA-Z]+\))?)"
-    for match in re.finditer(pattern9d, text):
+    act_pattern_str = r"([A-Z][a-zA-Z]+(?:\s+and\s+[A-Z][a-zA-Z]+|\s+[A-Z][a-zA-Z]+)*\s+Act\s+\d{4}(?:\s+\([A-Z][a-zA-Z]+\))?)"
+    # Combine all preposition patterns into one for efficiency and maintainability
+    combined_pattern = rf"\b(?:the|under|of(?: the)?|to(?: the)?)\s+{act_pattern_str}"
+    for match in re.finditer(combined_pattern, text):
         citations.add(match.group(1))
 
     # Pattern 10: Australian regulations with year
