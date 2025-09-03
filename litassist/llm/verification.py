@@ -90,8 +90,8 @@ class LLMVerificationMixin:
                 "content": full_text + "\n\n" + self_critique,
             },
         ]
-        # Use the configured model for verification (no overrides)
-        params = {"temperature": 0, "top_p": 0.2}
+        # Let the factory configuration handle temperature and top_p
+        params = {}
         if CONFIG.use_token_limits:
             params["max_tokens"] = 65536  # Large limit for full document verification
         verification_result, usage = self.complete(
@@ -365,11 +365,18 @@ class LLMVerificationMixin:
             # This maintains backward compatibility
             return self.verify(primary_text)
 
-        # Use the configured verification model
+        # Use the appropriate verification model based on level
         from litassist.llm import LLMClientFactory
 
-        verification_client = LLMClientFactory.for_command("verification")
-        params = {"temperature": 0, "top_p": 0.2}
+        if level == "light":
+            verification_client = LLMClientFactory.for_command("verification-light")
+        elif level == "heavy":
+            verification_client = LLMClientFactory.for_command("verification-heavy")
+        else:
+            verification_client = LLMClientFactory.for_command("verification")
+        
+        # No hardcoded params - let the factory config handle it
+        params = {}
         if CONFIG.use_token_limits:
             params["max_tokens"] = 32768 if level == "light" else 65536
         verification_result, usage = verification_client.complete(

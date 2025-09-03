@@ -577,6 +577,19 @@ class LLMClientFactory:
             "thinking_effort": "high",
             "force_verify": False,  # Don't double-verify since this IS verification
         },
+        "verification-light": {
+            "model": "anthropic/claude-sonnet-4",  # Cost-effective for spelling/terminology
+            "temperature": 0.2,  # Optimal for factual tasks per hallucination report
+            "top_p": 0.2,  # Focused beam for consistency
+            "force_verify": False,  # Avoid loops
+        },
+        "verification-heavy": {
+            "model": "openai/gpt-5",  # <1% hallucination rate for critical verification
+            "temperature": 0.2,  # Optimal per hallucination report
+            "top_p": 0.3,  # Slightly wider beam for comprehensive checking
+            "thinking_effort": "max",  # Maximum accuracy for legal verification
+            "force_verify": False,  # Avoid loops
+        },
         # Verify sub-commands with specific model assignments
         "verify-reasoning": {
             "model": "openai/o3-pro",  # o3-pro for complex reasoning trace extraction
@@ -639,7 +652,7 @@ class LLMClientFactory:
         },
         "cove-answers": {
             "model": "anthropic/claude-opus-4.1",  # Independent answering
-            "temperature": 0.1,
+            "temperature": 0.2,
             "top_p": 0.8,
             "thinking_effort": "high",
             "force_verify": False,
@@ -651,8 +664,8 @@ class LLMClientFactory:
             "force_verify": False,
         },
         "cove-final": {
-            "model": "anthropic/claude-opus-4.1",  # Final regeneration with highest quality
-            "temperature": 0.1,
+            "model": "openai/gpt-5",  # GPT-5 for <1% hallucination rate in final output
+            "temperature": 0.2,
             "top_p": 0.8,
             "thinking_effort": "high",
             "force_verify": False,
