@@ -20,76 +20,76 @@ class TestThinkingEffortConversion:
     def test_openai_reasoning_conversion(self):
         """Test OpenAI o1/o3 model reasoning object conversion for OpenRouter."""
         # Test effort-based mapping for OpenRouter
-        assert convert_thinking_effort("low", "openai/o3-pro", True) == {
+        assert convert_thinking_effort("low", "openai/o3-pro") == {
             "reasoning": {"effort": "low"}
         }
-        assert convert_thinking_effort("medium", "openai/o3-pro", True) == {
+        assert convert_thinking_effort("medium", "openai/o3-pro") == {
             "reasoning": {"effort": "medium"}
         }
-        assert convert_thinking_effort("high", "openai/o3-pro", True) == {
+        assert convert_thinking_effort("high", "openai/o3-pro") == {
             "reasoning": {"effort": "high"}
         }
 
         # Test max maps to high
-        assert convert_thinking_effort("max", "openai/o3-pro", True) == {
+        assert convert_thinking_effort("max", "openai/o3-pro") == {
             "reasoning": {"effort": "high"}
         }
 
         # Test none returns empty
-        assert convert_thinking_effort("none", "openai/o3-pro", True) == {}
+        assert convert_thinking_effort("none", "openai/o3-pro") == {}
 
         # Test GPT-5 minimal support
-        assert convert_thinking_effort("minimal", "openai/gpt-5", True) == {
+        assert convert_thinking_effort("minimal", "openai/gpt-5") == {
             "reasoning": {"effort": "minimal"}
         }
 
         # Test minimal fallback for non-GPT-5
-        assert convert_thinking_effort("minimal", "openai/o3-pro", True) == {
+        assert convert_thinking_effort("minimal", "openai/o3-pro") == {
             "reasoning": {"effort": "low"}
         }
 
     def test_anthropic_thinking_conversion(self):
         """Test Anthropic Claude reasoning object conversion for OpenRouter."""
         # Test none returns empty
-        assert convert_thinking_effort("none", "anthropic/claude-4", True) == {}
+        assert convert_thinking_effort("none", "anthropic/claude-4") == {}
 
         # Test token-based allocation for OpenRouter
-        assert convert_thinking_effort("low", "anthropic/claude-4", True) == {
+        assert convert_thinking_effort("low", "anthropic/claude-4") == {
             "reasoning": {"max_tokens": 1024}
         }
 
-        assert convert_thinking_effort("medium", "anthropic/claude-4", True) == {
+        assert convert_thinking_effort("medium", "anthropic/claude-4") == {
             "reasoning": {"max_tokens": 8192}
         }
 
-        assert convert_thinking_effort("high", "anthropic/claude-4", True) == {
+        assert convert_thinking_effort("high", "anthropic/claude-4") == {
             "reasoning": {"max_tokens": 16384}
         }
 
-        assert convert_thinking_effort("max", "anthropic/claude-4", True) == {
+        assert convert_thinking_effort("max", "anthropic/claude-4") == {
             "reasoning": {"max_tokens": 32000}
         }
 
     def test_google_thinking_config_conversion(self):
         """Test Google Gemini reasoning object conversion for OpenRouter."""
         # Test none returns empty
-        assert convert_thinking_effort("none", "google/gemini-2.5-pro", True) == {}
+        assert convert_thinking_effort("none", "google/gemini-2.5-pro") == {}
 
         # Test effort-based for OpenRouter
-        assert convert_thinking_effort("low", "google/gemini-2.5-pro", True) == {
+        assert convert_thinking_effort("low", "google/gemini-2.5-pro") == {
             "reasoning": {"effort": "low"}
         }
 
-        assert convert_thinking_effort("medium", "google/gemini-2.5-pro", True) == {
+        assert convert_thinking_effort("medium", "google/gemini-2.5-pro") == {
             "reasoning": {"effort": "medium"}
         }
 
-        assert convert_thinking_effort("high", "google/gemini-2.5-pro", True) == {
+        assert convert_thinking_effort("high", "google/gemini-2.5-pro") == {
             "reasoning": {"effort": "high"}
         }
 
         # Test max maps to high
-        assert convert_thinking_effort("max", "google/gemini-2.5-pro", True) == {
+        assert convert_thinking_effort("max", "google/gemini-2.5-pro") == {
             "reasoning": {"effort": "high"}
         }
 

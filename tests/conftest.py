@@ -11,7 +11,7 @@ from pathlib import Path
 import sys
 
 mock_config = Mock()
-mock_config.openai_api_key = "test-openai-key"
+mock_config.oa_key = "test-openai-key"
 mock_config.get_openai_api_key = Mock(return_value="test-openai-key")
 mock_config.get_jade_api_key = Mock(return_value="test-jade-key")
 mock_config.openrouter_api_key = "test-openrouter-key"

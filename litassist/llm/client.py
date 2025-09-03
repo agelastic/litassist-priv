@@ -222,124 +222,84 @@ PARAMETER_PROFILES = {
 }
 
 
-def convert_thinking_effort(
-    effort: str, model_name: str, use_openrouter: bool = True
-) -> dict:
+def convert_thinking_effort(effort: str, model_name: str) -> dict:
     """
     Convert universal thinking_effort to OpenRouter's reasoning object format.
 
     Args:
         effort: Universal effort level (none, minimal, low, medium, high, max)
         model_name: Full model name (e.g., "openai/o3-pro", "anthropic/claude-4")
-        use_openrouter: Whether routing through OpenRouter (default True)
 
     Returns:
-        Dict with OpenRouter reasoning object or vendor-specific parameters
+        Dict with OpenRouter reasoning object
     """
 
     if effort == "none":
         return {}  # Don't send reasoning parameter
 
-    # OpenRouter unified reasoning object approach
-    if use_openrouter:
-        model_family = get_model_family(model_name)
+    # OpenRouter unified reasoning object approach - ALL models go through OpenRouter
+    model_family = get_model_family(model_name)
 
-        # Check model type for appropriate sub-parameters
-        if model_family in ["openai_reasoning", "gpt5", "xai"]:
-            # Effort-based models (OpenAI, Grok, GPT-5)
-            effort_map = {
-                "minimal": "minimal",  # GPT-5 specific
-                "low": "low",
-                "medium": "medium",
-                "high": "high",
-                "max": "high",  # Map max to highest available
-            }
-            mapped_effort = effort_map.get(effort, "medium")
+    # Check model type for appropriate sub-parameters
+    if model_family in ["openai_reasoning", "gpt5", "xai"]:
+        # Effort-based models (OpenAI, Grok, GPT-5)
+        effort_map = {
+            "minimal": "minimal",  # GPT-5 specific
+            "low": "low",
+            "medium": "medium",
+            "high": "high",
+            "max": "high",  # Map max to highest available
+        }
+        mapped_effort = effort_map.get(effort, "medium")
 
-            # Only include minimal for GPT-5 and o4-mini
-            if (
-                mapped_effort == "minimal"
-                and model_family not in ["gpt5"]
-                and "o4" not in model_name
-            ):
-                mapped_effort = "low"  # Fallback for non-GPT-5/o4 models
+        # Only include minimal for GPT-5 and o4-mini
+        if (
+            mapped_effort == "minimal"
+            and model_family not in ["gpt5"]
+            and "o4" not in model_name
+        ):
+            mapped_effort = "low"  # Fallback for non-GPT-5/o4 models
 
-            # Special handling for o4-mini with summary field
-            if "o4" in model_name:
-                return {
-                    "reasoning": {
-                        "effort": mapped_effort,
-                        "summary": "auto",  # New o4 feature for automatic summarization
-                    }
-                }
-            # GPT-5 supports both reasoning and verbosity
-            elif model_family == "gpt5":
-                return {
-                    "reasoning": {"effort": mapped_effort}
-                    # Verbosity handled separately via convert_verbosity
-                }
-            else:
-                return {"reasoning": {"effort": mapped_effort}}
-
-        elif model_family in ["claude4", "anthropic"]:
-            # Token-based models (Anthropic)
-            token_map = {
-                "minimal": 1024,
-                "low": 1024,
-                "medium": 8192,
-                "high": 16384,
-                "max": 32000,  # Max allowed by OpenRouter
-            }
-            return {"reasoning": {"max_tokens": token_map.get(effort, 8192)}}
-
-        elif model_family == "google":
-            # Google/Gemini models - try unified reasoning
-            effort_map = {
-                "minimal": "low",
-                "low": "low",
-                "medium": "medium",
-                "high": "high",
-                "max": "high",
-            }
-            return {"reasoning": {"effort": effort_map.get(effort, "medium")}}
-
-    else:
-        # Direct vendor API calls (if not using OpenRouter)
-        # This path is rarely used as we route most through OpenRouter
-        model_family = get_model_family(model_name)
-
-        if model_family in ["openai_reasoning", "gpt5"]:
-            # Direct OpenAI API uses reasoning_effort
-            effort_map = {
-                "minimal": "minimal",
-                "low": "low",
-                "medium": "medium",
-                "high": "high",
-                "max": "high",
-            }
-            mapped = effort_map.get(effort, "medium")
-            if mapped == "minimal" and model_family != "gpt5":
-                mapped = "low"
-            return {"reasoning_effort": mapped}
-
-        elif model_family in ["anthropic", "claude4"]:
-            # Direct Anthropic API format
-            token_map = {
-                "minimal": 1024,
-                "low": 1024,
-                "medium": 8192,
-                "high": 16384,
-                "max": 32768,
-            }
-            budget = token_map.get(effort, 8192)
-            return {"thinking": {"enabled": True, "budget_tokens": budget}}
-
-        elif model_family == "google":
-            # Direct Google API format
+        # Special handling for o4-mini with summary field
+        if "o4" in model_name:
             return {
-                "thinking_config": {"include_thoughts": True, "thinking_budget": -1}
+                "reasoning": {
+                    "effort": mapped_effort,
+                    "summary": "auto",  # New o4 feature for automatic summarization
+                }
             }
+        # GPT-5 supports both reasoning and verbosity
+        elif model_family == "gpt5":
+            return {
+                "reasoning": {"effort": mapped_effort}
+                # Verbosity handled separately via convert_verbosity
+            }
+        else:
+            return {"reasoning": {"effort": mapped_effort}}
 
+    elif model_family in ["claude4", "anthropic"]:
+        # Token-based models (Anthropic)
+        token_map = {
+            "minimal": 1024,
+            "low": 1024,
+            "medium": 8192,
+            "high": 16384,
+            "max": 32000,  # Max allowed by OpenRouter
+        }
+        return {"reasoning": {"max_tokens": token_map.get(effort, 8192)}}
+
+    elif model_family == "google":
+        # Google/Gemini models - try unified reasoning
+        effort_map = {
+            "minimal": "low",
+            "low": "low",
+            "medium": "medium",
+            "high": "high",
+            "max": "high",
+        }
+        return {"reasoning": {"effort": effort_map.get(effort, "medium")}}
+
+    # For all other models, don't add reasoning parameters
     return {}
 
 
@@ -403,9 +363,7 @@ def get_model_parameters(model_name: str, requested_params: dict) -> dict:
     Returns:
         Filtered dictionary containing only supported parameters
     """
-    # Determine if routing through OpenRouter
-    use_openrouter = "/" in model_name and not model_name.startswith("direct/")
-
+    # All models go through OpenRouter
     model_family = get_model_family(model_name)
     profile = PARAMETER_PROFILES.get(model_family, PARAMETER_PROFILES["default"])
 
@@ -422,7 +380,7 @@ def get_model_parameters(model_name: str, requested_params: dict) -> dict:
         and params_to_process["thinking_effort"] is not None
     ):
         effort = params_to_process.pop("thinking_effort")
-        reasoning_params = convert_thinking_effort(effort, model_name, use_openrouter)
+        reasoning_params = convert_thinking_effort(effort, model_name)
         filtered.update(reasoning_params)
 
         # CRITICAL: Remove any conflicting parameters to prevent API errors
@@ -453,7 +411,7 @@ def get_model_parameters(model_name: str, requested_params: dict) -> dict:
             filtered[new_param] = value
         elif param in allowed:
             filtered[param] = value
-        elif use_openrouter and param in openrouter_params:
+        elif param in openrouter_params:
             # Preserve OpenRouter-specific params - they'll be moved to extra_body in api_handlers
             filtered[param] = value
         # Silently drop other unsupported parameters

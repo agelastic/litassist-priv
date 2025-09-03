@@ -195,25 +195,21 @@ PARAMETER_PROFILES = {
 }
 
 
-def convert_thinking_effort(
-    effort: str, model_name: str, use_openrouter: bool = True
-) -> dict:
+def convert_thinking_effort(effort: str, model_name: str) -> dict:
     """
     Convert universal thinking_effort to OpenRouter's reasoning object format.
 
     Args:
         effort: Universal effort level (none, minimal, low, medium, high, max)
         model_name: Full model name (e.g., "openai/o3-pro", "anthropic/claude-4")
-        use_openrouter: Whether routing through OpenRouter (default True)
 
     Returns:
-        Dict with OpenRouter reasoning object or vendor-specific parameters
+        Dict with OpenRouter reasoning object
     """
     if effort == "none":
         return {}  # Don't send reasoning parameter
 
-    # OpenRouter unified reasoning object approach
-    if use_openrouter:
+    # OpenRouter unified reasoning object approach - ALL models go through OpenRouter
         model_family = get_model_family(model_name)
 
         # Check model type for appropriate sub-parameters
@@ -325,9 +321,7 @@ def get_model_parameters(model_name: str, requested_params: dict) -> dict:
     Returns:
         Filtered dictionary containing only supported parameters
     """
-    # Determine if routing through OpenRouter
-    use_openrouter = "/" in model_name and not model_name.startswith("direct/")
-
+    # All models go through OpenRouter
     model_family = get_model_family(model_name)
     profile = PARAMETER_PROFILES.get(model_family, PARAMETER_PROFILES["default"])
 
@@ -344,7 +338,7 @@ def get_model_parameters(model_name: str, requested_params: dict) -> dict:
         and params_to_process["thinking_effort"] is not None
     ):
         effort = params_to_process.pop("thinking_effort")
-        reasoning_params = convert_thinking_effort(effort, model_name, use_openrouter)
+        reasoning_params = convert_thinking_effort(effort, model_name)
         filtered.update(reasoning_params)
 
         # CRITICAL: Remove any conflicting parameters to prevent API errors

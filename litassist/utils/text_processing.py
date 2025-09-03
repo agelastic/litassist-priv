@@ -44,7 +44,7 @@ def create_embeddings(texts: List[str]) -> List[Any]:
     from openai import OpenAI
 
     config = get_config()
-    client = OpenAI(api_key=config.openai_api_key)
+    client = OpenAI(api_key=config.oa_key)
     response = client.embeddings.create(input=texts, model=config.emb_model)
     return response.data
 
