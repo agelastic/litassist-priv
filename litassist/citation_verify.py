@@ -472,16 +472,16 @@ def verify_single_citation(citation: str) -> Tuple[bool, str, str]:
     except Exception:
         pass  # Fall through to offline validation
 
-    # If online verification fails, accept with offline validation warning
-    reason = "[WARNING] OFFLINE VALIDATION ONLY - Online verification unavailable, passed pattern analysis"
+    # If online verification fails, mark as UNVERIFIED
+    reason = "Citation not found in online databases"
     with _cache_lock:
         _citation_cache[normalized] = {
-            "exists": True,
+            "exists": False,
             "url": "",
             "reason": reason,
             "checked_at": time.time(),
         }
-    return True, "", reason
+    return False, "", reason
 
 
 @timed
