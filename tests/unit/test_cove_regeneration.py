@@ -520,6 +520,7 @@ the principles of statutory interpretation.
                 patch(
                     "litassist.commands.verify.verify_all_citations"
                 ) as mock_verify_citations,
+                patch("litassist.commands.verify.fetch_citation_context") as mock_fetch,
                 patch("litassist.commands.verify.save_command_output") as mock_save,
                 patch("litassist.commands.verify.save_log"),
                 patch("litassist.utils.show_command_completion"),
@@ -566,6 +567,7 @@ the principles of statutory interpretation.
                     },
                 )
 
+                mock_fetch.return_value = {}  # Mock empty case content
                 mock_save.return_value = "output.txt"
 
                 # Test 1: WITH --cove flag ONLY (defaults to all verifications + CoVe)

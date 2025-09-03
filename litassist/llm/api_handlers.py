@@ -23,7 +23,6 @@ from typing import Dict, Any, Tuple
 
 import requests
 import tenacity
-from openai import OpenAI, APIConnectionError, RateLimitError, APIError
 
 from litassist.config import get_config
 
@@ -50,7 +49,7 @@ class NonRetryableAPIError(Exception):
 logger = logging.getLogger(__name__)
 
 
-def get_openai_client(model_name: str) -> OpenAI:
+def get_openai_client(model_name: str):
     """
     Get or create OpenAI client with appropriate configuration.
 
@@ -67,6 +66,9 @@ def get_openai_client(model_name: str) -> OpenAI:
         - Model names with "/" indicate OpenRouter routing
         - No fallback or direct OpenAI API path exists
     """
+    # Lazy import to avoid loading OpenAI library when not needed
+    from openai import OpenAI
+    
     # ALL models go through OpenRouter - single code path only
     config = get_config()
     base_url = config.or_base
@@ -213,6 +215,9 @@ def execute_api_call_with_retry(
     if get_openai_client_func is None:
         get_openai_client_func = get_openai_client
 
+    # Lazy import OpenAI exceptions to avoid loading library when not needed
+    from openai import APIConnectionError, RateLimitError, APIError
+    
     # Define retryable error types
     retry_errors = (
         APIConnectionError,
