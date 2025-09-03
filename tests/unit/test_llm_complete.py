@@ -151,7 +151,7 @@ class TestLLMClientComplete:
         assert called_messages[1]["content"] == "Hello"
 
     @patch("litassist.config.CONFIG")
-    @patch("litassist.utils.save_log")
+    @patch("litassist.logging_utils.save_log")
     @patch("litassist.llm.client.execute_api_call_with_retry")
     def test_complete_with_verification_enabled(
         self, mock_execute, mock_save_log, mock_config
@@ -393,8 +393,8 @@ class TestLLMClientComplete:
         mock_execute.return_value = mock_response
 
         # Patch the decorators
-        with patch("litassist.utils.heartbeat") as mock_heartbeat:
-            with patch("litassist.utils.timed") as mock_timed:
+        with patch("litassist.utils.core.heartbeat") as mock_heartbeat:
+            with patch("litassist.utils.core.timed") as mock_timed:
                 # Make decorators passthrough
                 mock_heartbeat.side_effect = lambda f: f
                 mock_timed.side_effect = lambda f: f

@@ -455,7 +455,7 @@ Federal Court
                     "litassist.commands.strategy.file_handler.save_command_output"
                 ) as mock_save,
                 patch("litassist.commands.strategy.file_handler.save_log"),
-                patch("litassist.utils.parse_strategies_file") as mock_parse,
+                patch("litassist.utils.core.parse_strategies_file") as mock_parse,
             ):
                 # Setup mocks
                 mock_validate_format.return_value = True
@@ -523,7 +523,7 @@ the principles of statutory interpretation.
                 patch("litassist.commands.verify.fetch_citation_context") as mock_fetch,
                 patch("litassist.commands.verify.save_command_output") as mock_save,
                 patch("litassist.commands.verify.save_log"),
-                patch("litassist.utils.show_command_completion"),
+                patch("litassist.utils.core.show_command_completion"),
                 patch("litassist.commands.verify.extract_citations") as mock_extract,
                 patch("litassist.commands.verify.LLMClientFactory") as mock_factory,
                 patch(

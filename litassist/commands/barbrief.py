@@ -13,16 +13,20 @@ import os
 from typing import List, Optional, Dict, Any
 
 from litassist.prompts import PROMPTS
-from litassist.utils import (
-    read_document,
+from litassist.utils.file_ops import read_document
+from litassist.utils.core import (
     timed,
-    create_reasoning_prompt,
-    save_command_output,
     show_command_completion,
+)
+from litassist.utils.legal_reasoning import create_reasoning_prompt
+from litassist.utils.formatting import (
     warning_message,
     success_message,
+)
+from litassist.utils.text_processing import count_tokens_and_words
+from litassist.logging_utils import (
     save_log,
-    count_tokens_and_words,
+    save_command_output,
 )
 from litassist.llm import LLMClientFactory
 from litassist.citation_verify import verify_all_citations

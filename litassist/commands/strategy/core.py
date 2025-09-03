@@ -8,20 +8,24 @@ legal strategy generation for Australian civil proceedings.
 import click
 import re
 
-from litassist.utils import (
-    save_log,
+from litassist.utils.core import (
     timed,
+    parse_strategies_file,
+)
+from litassist.utils.file_ops import validate_file_size_limit
+from litassist.utils.legal_reasoning import (
     create_reasoning_prompt,
     extract_reasoning_trace,
+    verify_content_if_needed,
+)
+from litassist.utils.formatting import (
     success_message,
     saved_message,
     stats_message,
     info_message,
     tip_message,
-    parse_strategies_file,
-    validate_file_size_limit,
-    verify_content_if_needed,
 )
+from litassist.logging_utils import save_log
 from litassist.llm import LLMClientFactory
 from litassist.prompts import PROMPTS
 from litassist.verification_chain import run_cove_verification

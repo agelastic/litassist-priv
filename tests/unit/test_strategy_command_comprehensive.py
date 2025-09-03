@@ -818,7 +818,7 @@ class TestStrategyFileIntegration:
 
     def test_parse_strategies_file_structured(self):
         """Test parsing of well-structured strategies file."""
-        from litassist.utils import parse_strategies_file
+        from litassist.utils.core import parse_strategies_file
 
         strategies_content = """## ORTHODOX STRATEGIES
 
@@ -850,7 +850,7 @@ Clear case with strong evidence.
 
     def test_parse_strategies_file_unstructured(self):
         """Test parsing of unstructured strategies content."""
-        from litassist.utils import parse_strategies_file
+        from litassist.utils.core import parse_strategies_file
 
         strategies_content = """
         1. First strategy approach
@@ -873,7 +873,7 @@ Clear case with strong evidence.
 
     def test_parse_strategies_file_empty(self):
         """Test parsing of empty strategies file."""
-        from litassist.utils import parse_strategies_file
+        from litassist.utils.core import parse_strategies_file
 
         result = parse_strategies_file("")
 

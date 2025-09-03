@@ -1,13 +1,15 @@
 """
 Utility functions for LitAssist.
 
-This module provides helper functions and decorators used throughout the LitAssist application.
-All functions have been moved to specialized submodules for better organization.
-This file maintains backward compatibility by re-exporting all functions.
+This module has been refactored into specialized submodules for better organization.
+Direct imports from utils are deprecated - import from specific submodules instead.
 """
 
-# Re-export everything from the utils module for backward compatibility
-from litassist.utils import *  # noqa: F401, F403
-
-# Import logging utilities that were previously imported here
-from litassist.logging_utils import OUTPUT_DIR, save_log, save_command_output  # noqa: F401
+# NOTE: This file is kept for backward compatibility only.
+# New code should import directly from the appropriate submodule:
+# - litassist.utils.core
+# - litassist.utils.formatting
+# - litassist.utils.file_ops
+# - litassist.utils.text_processing
+# - litassist.utils.legal_reasoning
+# - litassist.logging_utils

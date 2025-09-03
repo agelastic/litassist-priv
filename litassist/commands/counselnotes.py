@@ -11,15 +11,19 @@ import os
 
 from litassist.config import get_config
 from litassist.prompts import PROMPTS
-from litassist.utils import (
-    read_document,
-    chunk_text,
-    save_log,
+from litassist.utils.file_ops import read_document
+from litassist.utils.text_processing import chunk_text
+from litassist.utils.core import (
     timed,
-    save_command_output,
     show_command_completion,
+)
+from litassist.utils.formatting import (
     info_message,
     success_message,
+)
+from litassist.logging_utils import (
+    save_log,
+    save_command_output,
 )
 from litassist.llm import LLMClientFactory
 from litassist.verification_chain import run_cove_verification

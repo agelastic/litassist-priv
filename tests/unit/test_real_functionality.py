@@ -4,7 +4,7 @@ from unittest.mock import Mock, patch
 import tempfile
 from pathlib import Path
 
-from litassist.utils import chunk_text
+from litassist.utils.text_processing import chunk_text
 
 
 class TestActualFunctionality:
@@ -59,7 +59,7 @@ class TestActualFunctionality:
 
     def test_real_file_operations(self):
         """Test file operations with real temp files."""
-        from litassist.utils import read_document
+        from litassist.utils.file_ops import read_document
 
         # Create a real temporary file
         with tempfile.NamedTemporaryFile(mode="w", suffix=".txt", delete=False) as f:

@@ -328,7 +328,7 @@ class TestLookupCommand:
     ):
         """Test that --verify flag shows appropriate warning."""
         # Just test the warning message logic without running the full command
-        from litassist.utils import warning_message
+        from litassist.utils.formatting import warning_message
         
         # The actual warning message from the command
         expected_msg = warning_message(
@@ -363,7 +363,7 @@ class TestLookupCommand:
     ):
         """Test that --noverify flag shows appropriate warning."""
         # Just test the warning message logic without running the full command
-        from litassist.utils import warning_message
+        from litassist.utils.formatting import warning_message
         
         # The actual warning message from the command
         expected_msg = warning_message(

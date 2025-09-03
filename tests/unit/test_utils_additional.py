@@ -6,8 +6,8 @@ import os
 import click
 import pytest
 
-from litassist.utils import (
-    validate_file_size,
+from litassist.utils.file_ops import validate_file_size
+from litassist.utils.core import (
     parse_strategies_file,
     validate_side_area_combination,
 )
