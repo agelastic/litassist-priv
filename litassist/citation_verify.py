@@ -185,6 +185,29 @@ def normalize_citation(citation: str) -> str:
     return citation
 
 
+def is_legislation_reference(citation: str) -> bool:
+    """
+    Check if a citation is legislation (Act or Regulation) rather than case law.
+    
+    Legislation doesn't need case law database verification.
+    
+    Args:
+        citation: Citation text to check
+        
+    Returns:
+        True if this is legislation, False if it's case law
+    """
+    # Check for Acts with year (e.g., "Migration Act 1958", "Family Violence Act 2016 (ACT)")
+    if re.search(r'\bAct\s+\d{4}(?:\s+\([A-Za-z]+\))?', citation):
+        return True
+        
+    # Check for Regulations with year (e.g., "Fair Work Regulations 2009")
+    if re.search(r'\bRegulations?\s+\d{4}(?:\s+\([A-Za-z]+\))?', citation):
+        return True
+        
+    return False
+
+
 def check_international_citation(citation: str) -> str:
     """
     Check if citation is UK/International (valid but not Australian).
@@ -440,6 +463,17 @@ def verify_single_citation(citation: str) -> Tuple[bool, str, str]:
                 "checked_at": time.time(),
             }
         return True, "", international_reason
+    
+    # Skip verification for legislation - Acts and Regulations aren't in case law databases
+    if is_legislation_reference(normalized):
+        with _cache_lock:
+            _citation_cache[normalized] = {
+                "exists": True,  # Legislation is assumed valid
+                "url": "",
+                "reason": "Legislation reference - verification skipped",
+                "checked_at": time.time(),
+            }
+        return True, "", "Legislation reference - verification skipped"
 
     # Check for format issues using offline validation
     from litassist.citation_patterns import validate_citation_patterns
