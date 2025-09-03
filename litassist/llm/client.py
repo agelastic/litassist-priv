@@ -494,6 +494,7 @@ class LLMClientFactory:
             "model": "anthropic/claude-sonnet-4",
             "temperature": 0,
             "top_p": 0.15,
+            "thinking_effort": "high",  # Critical foundational command needs thorough thinking
             "force_verify": True,  # Always verify for foundational docs
         },
         # Strategy - enhanced multi-step legal reasoning
@@ -550,6 +551,7 @@ class LLMClientFactory:
             "model": "anthropic/claude-sonnet-4",
             "temperature": 0.2,
             "top_p": 0.3,  # Fixed: was 0, too restrictive
+            "thinking_effort": "medium",  # Simple summarization task
         },
         "digest-issues": {
             "model": "anthropic/claude-opus-4.1",
@@ -581,13 +583,14 @@ class LLMClientFactory:
             "model": "anthropic/claude-sonnet-4",  # Cost-effective for spelling/terminology
             "temperature": 0.2,  # Optimal for factual tasks per hallucination report
             "top_p": 0.2,  # Focused beam for consistency
+            "thinking_effort": "medium",  # Just spelling/terminology checks
             "force_verify": False,  # Avoid loops
         },
         "verification-heavy": {
             "model": "openai/gpt-5",  # <1% hallucination rate for critical verification
             "temperature": 0.2,  # Optimal per hallucination report
             "top_p": 0.3,  # Slightly wider beam for comprehensive checking
-            "thinking_effort": "max",  # Maximum accuracy for legal verification
+            "thinking_effort": "max",  # max for critical tasks (maps to high for GPT-5)
             "force_verify": False,  # Avoid loops
         },
         # Verify sub-commands with specific model assignments
@@ -602,7 +605,7 @@ class LLMClientFactory:
             "model": "anthropic/claude-opus-4.1",  # Opus for soundness checking
             "temperature": 0.2,
             "top_p": 0.3,
-            "thinking_effort": "high",
+            "thinking_effort": "max",  # max gives 32K thinking tokens vs 16K for high
             "force_verify": False,
         },
         # Counsel's Notes - strategic analysis from advocate's perspective
@@ -641,6 +644,7 @@ class LLMClientFactory:
             "model": "anthropic/claude-sonnet-4",
             "temperature": 0.2,
             "top_p": 0.8,
+            "thinking_effort": "medium",  # General CoVe coordination
             "force_verify": False,  # Avoid recursive verification
         },
         # CoVe sub-stages with separate model control
@@ -648,26 +652,28 @@ class LLMClientFactory:
             "model": "anthropic/claude-sonnet-4",  # Fast question generation
             "temperature": 0.2,
             "top_p": 0.8,
+            "thinking_effort": "low",  # Fast question generation, minimal thinking needed
             "force_verify": False,
         },
         "cove-answers": {
             "model": "openai/gpt-5",  # GPT-5 for <1% hallucination rate
             "temperature": 0.2,
             "top_p": 0.3,
-            "thinking_effort": "high",
+            "thinking_effort": "max",  # max for consistency (maps to high for GPT-5)
             "force_verify": False,
         },
         "cove-verify": {
             "model": "anthropic/claude-sonnet-4",  # Inconsistency detection
             "temperature": 0.2,
             "top_p": 0.3,
+            "thinking_effort": "high",  # Critical inconsistency detection needs careful analysis
             "force_verify": False,
         },
         "cove-final": {
             "model": "openai/gpt-5",  # GPT-5 for <1% hallucination rate in final output
             "temperature": 0.2,
             "top_p": 0.4,
-            "thinking_effort": "high",
+            "thinking_effort": "max",  # max for consistency (maps to high for GPT-5)
             "force_verify": False,
         },
     }
