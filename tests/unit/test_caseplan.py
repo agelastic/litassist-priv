@@ -91,7 +91,7 @@ class TestCaseplanCommand:
         assert result.exit_code == 0
         call_args = mock_client.complete.call_args[0][0]
         assert any(
-            "CONTEXT: property" in msg["content"]
+            "USER ANALYSIS GUIDANCE" in msg["content"] and "property" in msg["content"]
             for msg in call_args
             if msg["role"] == "user"
         )
