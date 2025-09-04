@@ -371,7 +371,7 @@ def search_legal_database_via_cse(citation: str, cse_id: str = None, cse_name: s
     except Exception:
         success = False
 
-    # Log the search attempt
+    # Log the search attempt with URL
     save_log(
         "google_cse_validation",
         {
@@ -380,6 +380,7 @@ def search_legal_database_via_cse(citation: str, cse_id: str = None, cse_name: s
             "cse_id": cse_id,
             "citation": citation,
             "success": success,
+            "url": found_url if found_url else None,
             "response_time_ms": round((time.time() - start_time) * 1000, 2),
             "timeout": timeout,
             "timestamp": time.strftime("%Y-%m-%d %H:%M:%S"),
