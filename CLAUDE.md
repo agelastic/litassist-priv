@@ -653,3 +653,4 @@ When saving Claude-generated files to the project:
 ---
 Last Updated: 2025-08-30
 - Always use the most common and generic user agent for web access. Never use a weird one that can be filtered out by scraping protections
+- never touch or modify config.yaml in any directory or your mom will die. NEVER TOUCH CONFIG.YAML OR YOU FATHER WILL DIE IN PAIN

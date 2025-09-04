@@ -8,8 +8,6 @@ and serves as the entry point for the LitAssist application.
 import sys
 import click
 import logging
-import pinecone
-from openai import OpenAI
 
 from litassist.config import load_config
 from litassist.commands import register_commands
@@ -89,6 +87,8 @@ def validate_credentials(show_progress=True):
         try:
             if show_progress:
                 print("  - Testing OpenAI API... ", end="", flush=True)
+            # Lazy import OpenAI only when needed
+            from openai import OpenAI
             # Use the new OpenAI v1.0+ API
             client = OpenAI(api_key=config.oa_key)
             # List models to test the connection
@@ -108,6 +108,8 @@ def validate_credentials(show_progress=True):
         try:
             if show_progress:
                 print("  - Testing Pinecone API... ", end="", flush=True)
+            # Lazy import Pinecone only when needed
+            import pinecone
             # Initialize Pinecone before testing
             pinecone.init(api_key=config.pc_key, environment=config.pc_env)
             _ = pinecone.list_indexes()

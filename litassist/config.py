@@ -41,7 +41,7 @@ class Config:
 
     def _find_config_file(self) -> str:
         """
-        Find config.yaml in the package directory (global configuration only).
+        Find config.yaml - ONLY uses {config_dir}/config.yaml.
 
         This enforces a single global configuration to prevent secret duplication.
 
@@ -53,46 +53,29 @@ class Config:
         """
         from pathlib import Path
 
-        # For development installs (-e flag), use the actual source directory
-        package_dir = Path(__file__).parent.parent
-
-        # Check if this is an editable install by looking for config.yaml in source
-        if (package_dir / "config.yaml").exists():
-            return str(package_dir / "config.yaml")
-
-        # For pipx/pip installs, check common global locations
-        possible_locations = [
-            Path.home() / ".config" / "litassist" / "config.yaml",  # XDG config
-            Path.home() / ".litassist" / "config.yaml",  # Home directory
-            Path("/etc/litassist/config.yaml"),  # System-wide
-        ]
-
-        for config_path in possible_locations:
-            if config_path.exists():
-                return str(config_path)
-
-        # If no config found, provide helpful message
         config_dir = Path.home() / ".config" / "litassist"
         config_path = config_dir / "config.yaml"
+
+        # ONLY check {config_dir}/config.yaml - no other locations
+        if config_path.exists():
+            return str(config_path)
+
+        # If no config found, provide helpful message
+        package_dir = Path(__file__).parent.parent
         template_path = package_dir / "config.yaml.template"
 
         message = (
             "Error: No config.yaml found.\n"
             f"To set up LitAssist:\n  mkdir -p {config_dir}\n  cp {template_path} {config_path}\n  # Edit {config_path} with your API keys\n\n"
-            "LitAssist will look for config.yaml in:\n"
-            f"  1. {config_dir}/config.yaml (recommended)\n"
-            "  2. ~/.litassist/config.yaml\n"
-            "  3. /etc/litassist/config.yaml"
+            f"Configuration file MUST be at: {config_dir}/config.yaml\n"
+            "This is the ONLY location that will be checked."
         )
         if template_path.exists():
             raise ConfigError(message)
         else:
             raise ConfigError(
                 "Error: config.yaml not found.\n"
-                "Create a config.yaml file with your API keys in one of:\n"
-                f"  1. {config_dir}/config.yaml (recommended)\n"
-                "  2. ~/.litassist/config.yaml\n"
-                "  3. /etc/litassist/config.yaml"
+                f"Configuration file MUST be at: {config_dir}/config.yaml"
             )
 
     def _load_config(self) -> Dict[str, Any]:

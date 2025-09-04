@@ -269,18 +269,18 @@ def check_international_citation(citation: str) -> str:
     return ""  # Not international
 
 
-def search_jade_via_google_cse(citation: str, timeout: int = 10) -> bool:
+def search_legal_database_via_cse(citation: str, cse_id: str = None, cse_name: str = "Jade.io", timeout: int = 10) -> bool:
     """
-    Search Jade.io for a citation using Google Custom Search Engine.
-
-    This is now the primary citation verification method, replacing AustLII.
+    Search legal databases for a citation using Google Custom Search Engine.
 
     Args:
         citation: The citation to search for
+        cse_id: The CSE ID to use (if None, uses default Jade CSE)
+        cse_name: Name of the CSE for logging (e.g., "Jade.io", "Comprehensive", "AustLII")
         timeout: Request timeout in seconds
 
     Returns:
-        True if citation is found in Jade search results via Google CSE
+        True if citation is found in search results via Google CSE
     """
     start_time = time.time()
 
@@ -289,7 +289,11 @@ def search_jade_via_google_cse(citation: str, timeout: int = 10) -> bool:
 
         config = get_config()
         
-        # Use Google Custom Search to search Jade.io
+        # Use specified CSE or default to Jade CSE
+        if cse_id is None:
+            cse_id = config.cse_id
+        
+        # Use Google Custom Search to search legal databases
         service = build(
             "customsearch", "v1", developerKey=config.g_key, cache_discovery=False
         )
@@ -299,8 +303,8 @@ def search_jade_via_google_cse(citation: str, timeout: int = 10) -> bool:
             citation.replace("(", "").replace(")", "").replace("[", "").replace("]", "")
         )
 
-        # Search using configured CSE
-        res = service.cse().list(q=search_query, cx=config.cse_id, num=10).execute()
+        # Search using specified CSE
+        res = service.cse().list(q=search_query, cx=cse_id, num=10).execute()
 
         # Enhanced search with multiple variations to handle different citation formats
         success = False
@@ -368,7 +372,9 @@ def search_jade_via_google_cse(citation: str, timeout: int = 10) -> bool:
     save_log(
         "google_cse_validation",
         {
-            "method": "search_jade_via_google_cse",
+            "method": "search_legal_database_via_cse",
+            "cse_name": cse_name,
+            "cse_id": cse_id,
             "citation": citation,
             "success": success,
             "response_time_ms": round((time.time() - start_time) * 1000, 2),
@@ -378,6 +384,20 @@ def search_jade_via_google_cse(citation: str, timeout: int = 10) -> bool:
     )
 
     return success
+
+
+def search_jade_via_google_cse(citation: str, timeout: int = 10) -> bool:
+    """
+    Backward compatibility wrapper for search_legal_database_via_cse.
+    
+    Args:
+        citation: The citation to search for
+        timeout: Request timeout in seconds
+    
+    Returns:
+        True if citation is found in Jade search results via Google CSE
+    """
+    return search_legal_database_via_cse(citation, cse_id=None, cse_name="Jade.io", timeout=timeout)
 
 
 def is_traditional_citation_format(citation: str) -> bool:
@@ -491,10 +511,13 @@ def verify_single_citation(citation: str) -> Tuple[bool, str, str]:
         return False, "", f"Invalid citation format: {format_issues[0]}"
 
     # Primary verification: Use Jade.io via Google CSE for ALL citations
+    config = get_config()
+    
     try:
-        exists_in_jade = search_jade_via_google_cse(normalized, timeout=5)
+        # Try Jade.io CSE first (primary source)
+        exists_in_jade = search_legal_database_via_cse(normalized, cse_id=config.cse_id, cse_name="Jade.io", timeout=5)
         if exists_in_jade:
-            reason = "Verified via Google CSE search of Jade.io"
+            reason = "Verified via Jade.io CSE"
 
             with _cache_lock:
                 _citation_cache[normalized] = {
@@ -504,10 +527,51 @@ def verify_single_citation(citation: str) -> Tuple[bool, str, str]:
                     "checked_at": time.time(),
                 }
             return True, "", reason
+            
+        # Fallback to comprehensive CSE if configured and Jade didn't find it
+        if hasattr(config, 'cse_id_comprehensive') and config.cse_id_comprehensive:
+            exists_in_comprehensive = search_legal_database_via_cse(
+                normalized, 
+                cse_id=config.cse_id_comprehensive, 
+                cse_name="Comprehensive legal sources", 
+                timeout=5
+            )
+            if exists_in_comprehensive:
+                reason = "Verified via comprehensive legal sources CSE"
+                
+                with _cache_lock:
+                    _citation_cache[normalized] = {
+                        "exists": True,
+                        "url": "",
+                        "reason": reason,
+                        "checked_at": time.time(),
+                    }
+                return True, "", reason
+                
+        # Final fallback to AustLII CSE if configured
+        if hasattr(config, 'cse_id_austlii') and config.cse_id_austlii:
+            exists_in_austlii = search_legal_database_via_cse(
+                normalized,
+                cse_id=config.cse_id_austlii,
+                cse_name="AustLII",
+                timeout=5
+            )
+            if exists_in_austlii:
+                reason = "Verified via AustLII CSE"
+                
+                with _cache_lock:
+                    _citation_cache[normalized] = {
+                        "exists": True,
+                        "url": "",
+                        "reason": reason,
+                        "checked_at": time.time(),
+                    }
+                return True, "", reason
+                
     except Exception:
-        pass  # Fall through to offline validation
+        pass  # Fall through to mark as unverified
 
-    # If online verification fails, mark as UNVERIFIED
+    # If all verification attempts fail, mark as UNVERIFIED
     reason = "Citation not found in online databases"
     with _cache_lock:
         _citation_cache[normalized] = {
