@@ -9,6 +9,7 @@ It implements a fallback strategy from AustLII to comprehensive government sourc
 from typing import Dict, List, Optional
 from litassist.config import get_config
 from litassist.logging_utils import save_log
+from litassist.citation_verify import _citation_cache, _cache_lock, normalize_citation
 import time
 import re
 import requests
@@ -54,10 +55,17 @@ def fetch_citation_context(
     cse_comprehensive = getattr(config, "cse_id_comprehensive", None)
 
     for citation in citations[:max_citations]:  # Limit for token management
-        # Try AustLII first
+        # Check cache first for URL from verification
         url = None
-
-        if cse_austlii:
+        with _cache_lock:
+            normalized = normalize_citation(citation)
+            if normalized in _citation_cache:
+                cached_url = _citation_cache[normalized].get("url", "")
+                if cached_url and "jade.io" not in cached_url.lower():
+                    url = cached_url
+        
+        # If no cached URL, try AustLII first
+        if not url and cse_austlii:
             try:
                 res = service.cse().list(q=citation, cx=cse_austlii, num=5).execute()
                 if "items" in res:

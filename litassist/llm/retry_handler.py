@@ -8,7 +8,7 @@ verification, enhancing prompts and re-attempting with stricter instructions.
 from typing import List, Dict, Any, Tuple, Optional
 from litassist.prompts import PROMPTS
 from litassist.utils.formatting import error_message, info_message, success_message
-from .api_handlers import get_openai_client
+from . import api_handlers
 from .response_parser import extract_content_and_usage
 
 
@@ -70,9 +70,9 @@ def execute_retry_request(
         Tuple of (response object, content string, usage dict)
     """
     # Import here to avoid circular dependency
-    from .client_core import get_model_parameters
+    from .client import get_model_parameters
 
-    retry_client = get_openai_client(model_name)
+    retry_client = api_handlers.get_openai_client(model_name)
 
     if model in ["openai/o1-pro", "openai/o3-pro"]:
         # Special handling for reasoning models
@@ -87,9 +87,10 @@ def execute_retry_request(
         # Check for API errors in response
         check_retry_response_errors(retry_response)
     else:
-        # Standard model handling
+        # Standard model handling - filter parameters for all models
+        retry_filtered_params = get_model_parameters(model, params)
         retry_response = retry_client.chat.completions.create(
-            model=model_name, messages=enhanced_messages, **params
+            model=model_name, messages=enhanced_messages, **retry_filtered_params
         )
 
     content, usage = extract_content_and_usage(retry_response)

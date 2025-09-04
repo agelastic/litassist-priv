@@ -739,7 +739,7 @@ class LLMClient(LLMVerificationMixin):
 
         # Execute retry through proper API pipeline
         from .api_handlers import execute_api_call_with_retry
-        from .model_params import get_model_parameters
+        from .client import get_model_parameters
 
         try:
             # Filter parameters for model compatibility

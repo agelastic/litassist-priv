@@ -308,6 +308,7 @@ def search_legal_database_via_cse(citation: str, cse_id: str = None, cse_name: s
 
         # Enhanced search with multiple variations to handle different citation formats
         success = False
+        found_url = ""
         if "items" in res:
             # Create multiple search variations for better matching
             base_citation = (
@@ -345,6 +346,7 @@ def search_legal_database_via_cse(citation: str, cse_id: str = None, cse_name: s
                 for variation in citation_variations:
                     if variation in combined_text:
                         success = True
+                        found_url = item.get("link", "")
                         break
 
                 if success:
@@ -363,6 +365,7 @@ def search_legal_database_via_cse(citation: str, cse_id: str = None, cse_name: s
                         and page in combined_text
                     ):
                         success = True
+                        found_url = item.get("link", "")
                         break
 
     except Exception:
@@ -383,7 +386,7 @@ def search_legal_database_via_cse(citation: str, cse_id: str = None, cse_name: s
         },
     )
 
-    return success
+    return (success, found_url)
 
 
 def search_jade_via_google_cse(citation: str, timeout: int = 10) -> bool:
@@ -397,7 +400,8 @@ def search_jade_via_google_cse(citation: str, timeout: int = 10) -> bool:
     Returns:
         True if citation is found in Jade search results via Google CSE
     """
-    return search_legal_database_via_cse(citation, cse_id=None, cse_name="Jade.io", timeout=timeout)
+    success, url = search_legal_database_via_cse(citation, cse_id=None, cse_name="Jade.io", timeout=timeout)
+    return success
 
 
 def is_traditional_citation_format(citation: str) -> bool:
@@ -515,22 +519,22 @@ def verify_single_citation(citation: str) -> Tuple[bool, str, str]:
     
     try:
         # Try Jade.io CSE first (primary source)
-        exists_in_jade = search_legal_database_via_cse(normalized, cse_id=config.cse_id, cse_name="Jade.io", timeout=5)
+        exists_in_jade, url_jade = search_legal_database_via_cse(normalized, cse_id=config.cse_id, cse_name="Jade.io", timeout=5)
         if exists_in_jade:
             reason = "Verified via Jade.io CSE"
 
             with _cache_lock:
                 _citation_cache[normalized] = {
                     "exists": True,
-                    "url": "",  # No direct URLs - use Jade.io for access
+                    "url": url_jade,
                     "reason": reason,
                     "checked_at": time.time(),
                 }
-            return True, "", reason
+            return True, url_jade, reason
             
         # Fallback to comprehensive CSE if configured and Jade didn't find it
         if hasattr(config, 'cse_id_comprehensive') and config.cse_id_comprehensive:
-            exists_in_comprehensive = search_legal_database_via_cse(
+            exists_in_comprehensive, url_comp = search_legal_database_via_cse(
                 normalized, 
                 cse_id=config.cse_id_comprehensive, 
                 cse_name="Comprehensive legal sources", 
@@ -542,15 +546,15 @@ def verify_single_citation(citation: str) -> Tuple[bool, str, str]:
                 with _cache_lock:
                     _citation_cache[normalized] = {
                         "exists": True,
-                        "url": "",
+                        "url": url_comp,
                         "reason": reason,
                         "checked_at": time.time(),
                     }
-                return True, "", reason
+                return True, url_comp, reason
                 
         # Final fallback to AustLII CSE if configured
         if hasattr(config, 'cse_id_austlii') and config.cse_id_austlii:
-            exists_in_austlii = search_legal_database_via_cse(
+            exists_in_austlii, url_austlii = search_legal_database_via_cse(
                 normalized,
                 cse_id=config.cse_id_austlii,
                 cse_name="AustLII",
@@ -562,11 +566,11 @@ def verify_single_citation(citation: str) -> Tuple[bool, str, str]:
                 with _cache_lock:
                     _citation_cache[normalized] = {
                         "exists": True,
-                        "url": "",
+                        "url": url_austlii,
                         "reason": reason,
                         "checked_at": time.time(),
                     }
-                return True, "", reason
+                return True, url_austlii, reason
                 
     except Exception:
         pass  # Fall through to mark as unverified
