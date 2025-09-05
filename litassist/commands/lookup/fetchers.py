@@ -24,6 +24,14 @@ def _fetch_via_jina(url: str, timeout: int = 15) -> str:
         Extracted text content or empty string if failed
     """
     try:
+        # Apply URL tricks for known sites to get full content
+        original_url = url
+        
+        # Queensland legislation - use /whole to get full document
+        if "legislation.qld.gov.au/view/html/inforce" in url and "/whole" not in url:
+            url = url.rstrip('/') + '/whole'
+            click.echo(f"  → Using full document URL: {url}")
+        
         headers = {}
         # Use Jina API key if configured for higher rate limits
         from litassist.config import get_config
@@ -34,9 +42,10 @@ def _fetch_via_jina(url: str, timeout: int = 15) -> str:
         response = requests.get(f"https://r.jina.ai/{url}", headers=headers, timeout=timeout)
         
         if response.status_code == 200 and len(response.text) > 500:
-            content = f"[Source: {url}]\n\n{response.text}"
+            content = f"[Source: {original_url}]\n\n{response.text}"
             save_log("fetch_attempt", {
-                "url": url,
+                "url": original_url,
+                "actual_url": url if url != original_url else None,
                 "method": "jina_reader",
                 "status": "success",
                 "content_size": len(response.text),
@@ -46,7 +55,8 @@ def _fetch_via_jina(url: str, timeout: int = 15) -> str:
             return content[:250000]
         else:
             save_log("fetch_attempt", {
-                "url": url,
+                "url": original_url,
+                "actual_url": url if url != original_url else None,
                 "method": "jina_reader",
                 "status": "failed",
                 "http_status": response.status_code,
@@ -56,9 +66,10 @@ def _fetch_via_jina(url: str, timeout: int = 15) -> str:
             })
             return ""
     except Exception as e:
-        logging.warning(f"Jina Reader failed for {url}: {e}")
+        logging.warning(f"Jina Reader failed for {original_url}: {e}")
         save_log("fetch_attempt", {
-            "url": url,
+            "url": original_url,
+            "actual_url": url if url != original_url else None,
             "method": "jina_reader",
             "status": "failed",
             "error": str(e),
