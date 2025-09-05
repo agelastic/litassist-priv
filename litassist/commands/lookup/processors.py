@@ -22,11 +22,7 @@ from litassist.utils.formatting import (
 from litassist.logging_utils import LOG_DIR
 from litassist.llm import LLMClientFactory
 from litassist.prompts import PROMPTS
-from .fetchers import (
-    _fetch_url_content,
-    _fetch_url_content_selenium_with_timeout,
-    SELENIUM_AVAILABLE,
-)
+from .fetchers import _fetch_url_content
 from .error_handlers import (
     handle_llm_error,
     check_model_token_limits,
@@ -50,10 +46,7 @@ class LookupProcessor:
         skipped_count = 0
         pdf_count = 0
 
-        # Check if Selenium should be disabled
-        selenium_enabled = SELENIUM_AVAILABLE and self.config.selenium_enabled
-        if SELENIUM_AVAILABLE and not self.config.selenium_enabled:
-            click.echo("  [Info: Selenium disabled in config]")
+        # Selenium removed - using Jina Reader instead
 
         # Skip fetching if --no-fetch flag is set
         if no_fetch:
@@ -112,24 +105,8 @@ class LookupProcessor:
             content = _fetch_url_content(link, timeout=self.config.fetch_timeout)
 
             # If HTTP fetch got minimal/no content, try Selenium for non-Jade sites
-            # Never try Selenium for PDFs - it won't work
-            if (not content or len(content) < 1000) and selenium_enabled:
-                if "jade.io" not in link.lower() and ".pdf" not in link.lower():
-                    click.echo(f"  [↻ Trying Selenium for {link.split('/')[2]}...]")
-                    selenium_content = _fetch_url_content_selenium_with_timeout(
-                        link,
-                        timeout=self.config.fetch_timeout
-                        * self.config.selenium_timeout_multiplier,
-                    )
-                    if selenium_content and len(selenium_content) > len(content or ""):
-                        content = selenium_content
-                        method = "Selenium"
-                    else:
-                        method = "HTTP"
-                else:
-                    method = "HTTP"
-            else:
-                method = "HTTP"
+            # Method determination (Jina fallback is handled inside _fetch_url_content)
+            method = "HTTP/Jina" if content else "Failed"
 
             if content:
                 # Save fetched page to logs

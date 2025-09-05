@@ -892,7 +892,7 @@ class LLMClient(LLMVerificationMixin):
             for i, msg in enumerate(non_system_messages):
                 if msg.get("role") == "user":
                     today_date = self._format_date_string()
-                    enhanced_content = f"{system_content}\n\nToday is {today_date}.\n\n{msg.get('content', '')}"
+                    enhanced_content = f"{system_content}\n\nTreat today as {today_date} (Australia/Sydney). When citing sources, keep their original dates; do not rewrite those dates as today.\n\n{msg.get('content', '')}"
                     modified_messages.append(
                         {"role": "user", "content": enhanced_content}
                     )
@@ -916,7 +916,7 @@ class LLMClient(LLMVerificationMixin):
                         # Only prepend if not already present
                         if australian_law_prompt not in content:
                             today_date = self._format_date_string()
-                            content = f"{australian_law_prompt}\n\nToday is {today_date}.\n\n{content}"
+                            content = f"{australian_law_prompt}\n\nTreat today as {today_date} (Australia/Sydney). When citing sources, keep their original dates; do not rewrite those dates as today.\n\n{content}"
                         modified_messages.append({"role": "system", "content": content})
                     else:
                         modified_messages.append(msg)

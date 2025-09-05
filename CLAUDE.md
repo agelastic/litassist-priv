@@ -1,89 +1,39 @@
-This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
-
-## Session Initialization
-
-## Project Overview
-
-LitAssist is a command-line tool for automated litigation support workflows, tailored to Australian law. It leverages large language models (LLMs) and managed vector stores to provide:
-
-- **Rapid case-law lookup** (legal databases via Google Custom Search + LLM)
-- **Mass-document digestion** (Chronological summaries or issue-spotting via an LLM)
-- **Novel strategy ideation** (Creative legal arguments via an LLM)
-- **Enhanced strategic reasoning** (Multi-step analysis via LLMs)
-- **Automatic extraction of case facts** into a structured file by an LLM
-- **Superior technical drafting** (Advanced legal writing via an LLM)
-
-## Key Technical Components
-
-### Project Structure
-
-**Core Modules:**
-- `litassist/commands/` - Individual command implementations (lookup, digest, brainstorm, extractfacts, draft, strategy)
-- `litassist/prompts/` - YAML-based prompt template system with structured legal templates
-- `litassist/helpers/` - Specialized utilities (pinecone_config, retriever)
-- `litassist/llm.py` - LLMClientFactory and model management
-- `litassist/config.py` - Configuration management
-- `litassist/utils.py` - Core utilities including LegalReasoningTrace
-
-**Command System:**
-- Commands are organized in separate modules with sub-types:
-  - `brainstorm-orthodox`, `brainstorm-unorthodox`, `brainstorm-analysis`
-  - `strategy-analysis` for ranking and analysis
-  - `digest-summary`, `digest-issues` for different processing modes
-
-**Prompt Management:**
-- YAML-based templates in `prompts/` directory
-- Structured legal document templates
-- Australian law compliance templates
-- Centralized prompt composition system
-
-### Architecture Patterns (Preserve These)
-
-1. **LLMClientFactory Pattern**: Centralized configuration management for all LLM interactions
-   - Provides single source of truth for model configurations
-   - Supports environment variable overrides
-   - Clean separation of concerns
-
-2. **Config Class**: Handles complex configuration scenarios
-   - Different installation methods (pip, pipx, development)
-   - Clear error messages with setup instructions
-   - Validates all required keys
-
-3. **Reasoning and thinking traces from LLM**: Domain-specific requirement for legal analysis
-   - Required for accountability in legal documents
-   - Multiple output formats for different consumers
-   - Structured extraction and storage with IRAC-based reasoning structure
-   - Captures issue, applicable law, application, conclusion, confidence, and sources
-
-## Development Guidelines
 
 ### CRITICAL: Minimal Changes Philosophy
 
 **ALWAYS USE MINIMAL CHANGES POSSIBLE**. This is the #1 rule:
+NEVER OVERENGINEER EVER
 1. Never refactor unless explicitly asked
 2. Make the smallest change that fixes the problem
 3. Don't "improve" code while fixing something else
-4. Don't extract constants, functions, or patterns unless requested
-5. Don't update related code unless it's broken
+4. Don't extract constants, functions, or patterns
+5. Don't update related code unless it's broken and does not run
+6. Do not insert any fallbacks
 6. Prefer inline fixes over architectural changes
 7. One fix = one narrowly scoped change
-8. **Remove code rather than add** - It's always better to delete unnecessary parsing logic than to add more
-9. **Never add regex/parsing for LLM responses** - Always modify prompts instead as described in "LLM Response Processing Philosophy"
+8. Prefer deleting unnecessary parsing logic to adding more
+9. Use local text prosessing with regexes only when there is no sane alternative to it. Confirm with the user every time.
+
+**Red Flags for Over-Engineering:**
+- Creating classes for single functions
+- Factories with only one product type
+- Decorators that could be simple function calls
+- Abstractions without multiple concrete implementations
 
 ### Code Analysis & Verification Requirements
 
 **CRITICAL**: Always verify functionality before proposing changes:
-1. **Never guess about functionality** - Always read and understand code before suggesting changes
-2. **Be conservative with analysis** - If unsure about a function's purpose, investigate thoroughly
-3. **Verify before proposing** - Confirm what code actually does vs. what it appears to do
-4. **Check dependencies** - Understand how functions are used before moving/changing them
-5. **Test after changes** - Verify functionality still works after any modifications
+1. Always read and understand code before suggesting changes, never guess
+2. Investigate each funcions purpose thoroughly throughout the codebase
+3. Confirm what the fix you propose will actually fix the problem, by analysing codebase. NO GUESSING
+4. ALWAYS Check dependencies  - Understand how functions are used before moving/changing them
+5. Verify functionality still works after any modifications you do
 
 ### Code Quality Standards
 
-1. **Linting**: All code must pass `ruff check`
-2. **Testing**: Run tests with `pytest` before committing
-3. **Documentation**: Update TODO.md and relevant docs when making changes
+1. All code must pass `ruff check` before you declare your fix complete
+2. All, absolutely all tests with pytest must pass before you say "fix complete"
+3. Update TODO.md and relevant docs when making changes
 
 ### Refactoring Guidelines
 
@@ -92,18 +42,8 @@ LitAssist is a command-line tool for automated litigation support workflows, tai
 **Refactoring Strategy:**
 
 1. **Identify Functional Groups**: Find natural boundaries (data processing, API calls, validation, utilities)
-2. **Create Module Directory**: Convert `module.py` → `module/` with specialized submodules
 3. **Extract by Responsibility**: Each new file handles one specific concern
-4. **Preserve Interface**: Use `__init__.py` to maintain backward compatibility with existing imports
 
-**Design Patterns to Apply:**
-- **Factory Pattern**: Centralize object creation and configuration management
-- **Mixin Classes**: Share common functionality across related classes
-- **Functional Grouping**: Keep related utility functions together
-- **Error Hierarchy**: Dedicated exceptions module for custom error types
-- **Single Responsibility**: Each module should have exactly one reason to change
-
-**CRITICAL: Complete Migration Rule**
 
 When changing any API or usage pattern (e.g., CONFIG → get_config()):
 
@@ -111,18 +51,15 @@ When changing any API or usage pattern (e.g., CONFIG → get_config()):
    ```bash
    grep -r "pattern_to_change" . --include="*.py" > migration_list.txt
    ```
-
 2. **Update everything atomically** - NEVER leave mixed old/new patterns
    - Core module → dependent modules → tests → docs (in that order)
    - Run `pytest tests/unit/ -x` after each group
-
 3. **Migration completeness check**
    ```bash
    # Verify old pattern is completely gone
    grep -r "old_pattern" . --include="*.py"  # Should return nothing
    ```
-
-**Red Flags:**
+**Refactoring Red Flags:**
 - AttributeError on None = incomplete lazy-load migration  
 - Import errors = missed module path updates
 - Mixed old/new patterns in codebase = migration not finished
@@ -137,31 +74,25 @@ When changing any API or usage pattern (e.g., CONFIG → get_config()):
 - Migrate deprecated API calls found during refactoring
 - Verify all tests pass after updating imports
 
-**Note**: Only perform refactoring when explicitly requested. During regular work, follow the minimal changes philosophy.
+**Note**: ONLY perform refactoring when EXPLICITLY REQUESTED. During regular work, follow the minimal changes philosophy.
 
 ### YAML File Integrity
-- **Rule:** All changes to `.yaml` files, especially prompt templates in `litassist/prompts/`, must be validated with a YAML linter (e.g., `yamllint`) before committing.
+- **Rule:** All changes to `.yaml` files, especially prompt templates in `litassist/prompts/`, must be validated with a YAML linter (e.g., `yamllint`) before declaring the fix complete.
 - **Reasoning:** Prevents syntax and indentation errors that can break application workflows.
 - **Action:** Run a linter on any modified `.yaml` files to ensure they are well-formed and properly indented prior to pushing changes.
 
 ### Prompt Template Management
 
-**CRITICAL: NEVER HARDCODE PROMPTS IN PYTHON FILES**
+**CRITICAL: NEVER HARDCODE PROMPTS IN PYTHON FILES, this means no f""" strings unless they are one-two liners**
 
 **Core Rules:**
 1. **ALL prompts must be in YAML files** - Never write prompt text directly in Python code
 2. **Use PROMPTS.get() exclusively** - Access all prompts via the centralized prompt manager
 3. **No f-strings for prompt keys** - Avoid dynamic prompt key construction unless absolutely necessary
 4. **Explicit permission required** - If you MUST use a hardcoded prompt or f-string key:
+   - Get explicit confirmation that this specific case warrants an exception, before doing code changes
    - Document WHY the code would be "very ugly" without it
    - Add a comment explaining the exception
-   - Get explicit confirmation that this specific case warrants an exception
-
-**Rationale:**
-- Centralized prompt management enables consistent updates
-- YAML files provide better visibility for prompt engineering
-- Separation of concerns: logic in Python, content in YAML
-- Easier testing and validation of prompt templates
 
 **Examples:**
 ```python
@@ -185,18 +116,7 @@ if mode in modes:
 ### Emoji Policy and Terminal Output Standards
 
 **ABSOLUTE PROHIBITION - NO EMOJIS ANYWHERE**
-
-**The emoji ban applies to:**
-1. **ALL Python code** - No emojis in .py files, ever
-2. **ALL YAML/YML files** - No emojis in configuration or prompts
-3. **ALL documentation** - No emojis in .md, .txt, or .rst files
-4. **ALL shell scripts** - No emojis in .sh or bash scripts
-5. **ALL test files** - No emojis in test code or test data
-6. **ALL commit messages** - No emojis in git commits
-7. **ALL code comments** - No emojis in inline or block comments
-8. **ALL error messages** - No emojis in exceptions or logs
-9. **ALL user output** - No emojis in CLI output or responses
-10. **ANYWHERE ELSE** - If it's in this repo, it CANNOT have emojis
+If it's in this repo, it CANNOT have emojis. a text containig emoji is an invalid text or code
 
 **Policy Enforcement:**
 1. **Zero Emoji Tolerance**: Not a single Unicode emoji character is permitted
@@ -236,50 +156,29 @@ print(warning_message("Large file detected"))
 click.echo(verifying_message("Verifying citations..."))
 ```
 
-**Why This Strict No-Emoji Policy Exists:**
-1. **Job Safety Critical** - The maintainer's employment depends on professional standards
-2. **Legal Software Requirements** - Australian legal profession demands absolute professionalism
-3. **Terminal Compatibility** - Emojis display inconsistently across different systems
-4. **Encoding Issues** - Unicode emojis cause problems in various environments
-5. **Accessibility** - Screen readers handle ASCII text better than emojis
-6. **Professional Standards** - This is enterprise legal software, not a chat app
-
 **Consequences of Emoji Usage:**
-- Any PR with emojis will be REJECTED
-- Any commit with emojis must be reverted
+- Any updated file with emojis will be reverted
+- Any commit with emojis will be reverted
 - This policy is NOT negotiable or flexible
 - There are NO acceptable use cases for emojis in this codebase
 
 ### Model Name Protection
 
-**CRITICAL**: Never change model identifiers in the code. These are exact API endpoints:
-- `x-ai/grok-3` (NOT grok-beta or any variation)
-- `anthropic/claude-sonnet-4` (current Claude 4 Sonnet)
-- `openai/o3-pro` (strategic reasoning and advanced technical writing model, requires BYOK)
-- `google/gemini-2.5-pro-preview` (lookup research)
-- Model names with `/` are routed through OpenRouter
+**CRITICAL**: Never change model identifiers in the code. Never propose such changes unless specifically asked
 
 ### OpenRouter Usage Policy
 
-**IMPORTANT**: Always use OpenRouter as the primary routing method for all LLM calls. The OpenRouter API key has extensive permissions and multiple BYOK configurations attached, providing access to premium models and enhanced capabilities.
+**IMPORTANT**: Always use OpenRouter as the primary routing method for all LLM calls. T
 When adding new models or providers:
 1. Route through OpenRouter first using the existing OR API key
-2. Only consider direct API access if OpenRouter doesn't support the model
-3. All current production models successfully route through OpenRouter, but this will change if the developer's BYOKs change
+2. If OpenRouter doesn't support the model, ask user what to do
 4. This approach centralizes API management and leverages existing BYOK setups
 5. Model names with "/" (e.g., "anthropic/claude-sonnet-4") indicate OpenRouter routing
 
-### Refactoring Philosophy
-
-Before labeling something as "overengineering":
-1. Understand the problem it solves
-2. Check if it handles edge cases or deployment scenarios
-3. Consider domain-specific requirements
-4. Only simplify if the complexity adds no value
 
 ### Documentation Standards
 
-**NEVER add "Recent Changes" or "Recent Improvements" sections**. Documentation should focus on current functionality, not historical changes.
+**NEVER add "Recent Changes" or "Recent Improvements" sections**. Documentation MUST focus on current functionality, not historical changes. 
 
 ### Code Simplicity Guidelines
 
@@ -294,16 +193,14 @@ Before labeling something as "overengineering":
 - Multiple deployment scenarios (development, pipx, pip installations)
 - Real error handling needs (API fallbacks, version compatibility)
 - Genuine configuration complexity (15+ model configurations)
+- EVEN IF IT IS JUSTIFIED, ASK THE USER FOR CONFIRMATION
 
-**Red Flags for Over-Engineering:**
-- Creating classes for single functions
-- Factories with only one product type
-- Decorators that could be simple function calls
-- Abstractions without multiple concrete implementations
 
 ### Backward Compatibility Policy
 
-**IMPORTANT**: Backward compatibility is NOT required for this project. When refactoring or improving code:
+Backward compatibility is NOT required for this project, breaking changes are great assuming they dont break the existing code. The project has ONE developer controllilng github
+
+When refactoring or improving code:
 1. **No Legacy Support**: Don't maintain old code paths or deprecated functionality
 2. **Clean Breaks Allowed**: Feel free to make breaking changes that improve the codebase
 3. **Focus on Future**: Optimize for the current and future state, not past implementations
@@ -318,31 +215,25 @@ The litassist codebase currently contains extensive local parsing of LLM respons
 **Core Guidelines:**
 
 1. **Prompt Engineering First**: Always modify prompts to get properly formatted output rather than writing parsing code
-   - Request structured formats (JSON, YAML, specific delimiters) in prompts
-   - Provide explicit examples of desired output structure
+   - Request structured formats (JSON, YAML, specific delimiters) in prompts IF YOU NEED THEM
+   - Provide one example of desired output structure, no more
    - Use clear section markers that don't require regex parsing
 
-2. **Longer Structured Output > Multiple Calls**: Prefer comprehensive structured output in a single LLM call over multiple shorter calls that require complex orchestration
+2. Prefer comprehensive structured output in a single LLM call over multiple shorter calls that require complex orchestration
    - Request complete structured responses with all needed components
-   - Use JSON/YAML for complex data structures
+   - Use JSON/YAML for complex data structures IF YOU MUST
    - Minimize API costs while maximizing structure
 
-3. **No Fallback Parsing Logic**: LLMs follow format instructions reliably when properly prompted
+3. **No Fallback Parsing Logic ANYWYERE**: LLMs follow format instructions reliably when properly prompted
    - Eliminate try/catch blocks around parsing
    - Remove regex pattern matching for data extraction
    - Trust that well-prompted LLMs will return correctly formatted output
+   - This includes no fallback "yaml key not found", "alternative routing" - code must break instead of masking errors. THIS IS CRUCIAL
 
 4. **Removal Over Addition**: When refactoring parsing logic, remove code rather than adding more
    - Delete regex patterns, string manipulation, and complex parsing functions
    - Replace with improved prompts that generate clean output
    - Prefer prompt modifications to additional parsing layers
-
-**Forbidden Patterns to Eliminate:**
-- Regex parsing of LLM output for structured data extraction
-- String splitting/manipulation to extract specific content
-- Multi-step parsing workflows with fallback logic
-- JSON parsing with extensive error handling
-- Citation/reference extraction through pattern matching
 
 **Preferred Approaches:**
 - JSON/YAML structured output requests in prompts
@@ -351,7 +242,6 @@ The litassist codebase currently contains extensive local parsing of LLM respons
 - Format examples provided directly in prompts
 - LLM self-assessment and correction within the same call
 
-**Reference**: A comprehensive audit of current parsing patterns exists and should be used as a roadmap for systematic elimination of all local LLM response processing logic.
 
 ### Document Separation Markers
 
@@ -377,11 +267,11 @@ The litassist codebase currently contains extensive local parsing of LLM respons
 4. Never introduce alternative separation patterns
 5. When modifying prompts, preserve existing `=== NAME ===` markers
 
-**Rationale**: Consistent markers ensure reliable parsing, prevent regex complications, and maintain clean document boundaries in multi-document processing workflows.
+NO === MARKERS IN LLM OUTPUT ANYWHERE
 
-### Anti-Hallucination Guidelines for Legal Drafts
+### Anti-Hallucination Guidelines for ALL LLM prompts
 
-**CRITICAL**: LLMs must NEVER invent factual details when drafting legal documents. This is essential for professional liability and legal accuracy.
+**CRITICAL**: LLMs must NEVER invent factual details producing output. This is essential for professional liability and legal accuracy.
 
 **Core Principles:**
 
@@ -411,14 +301,11 @@ The litassist codebase currently contains extensive local parsing of LLM respons
 
 ### LLM Request/Response Logging
 
-**CRITICAL FOR LEGAL ACCOUNTABILITY**: ALL LLM interactions MUST be logged - NO EXCEPTIONS
+**CRITICAL FOR LEGAL ACCOUNTABILITY**: ALL LLM interactions MUST be logged IN FULL - NO EXCEPTIONS
 
 **Core Requirements:**
 
 1. **Mandatory Logging**: Every single LLM request and response MUST be logged
-   - This is NON-NEGOTIABLE for legal domain requirements
-   - Professional liability and audit trails depend on complete logging
-   - Missing logs = potential malpractice liability
 
 2. **What Must Be Logged**:
    - Full request prompt sent to LLM
@@ -433,13 +320,8 @@ The litassist codebase currently contains extensive local parsing of LLM respons
    - Use the centralized logging system in `logging_utils.py`
    - All LLM client implementations MUST call logging functions
    - Never bypass or disable logging, even in development
+   - NEVER TRUNCATE LOGS, LOG FULL CONTENT
    - Log files stored with appropriate retention policies
-
-4. **Legal Compliance**:
-   - Logs may be required for court proceedings
-   - Necessary for professional indemnity insurance claims
-   - Required for regulatory compliance audits
-   - Critical for demonstrating due diligence
 
 5. **No Exceptions Policy**:
    - Development mode: MUST log
@@ -448,16 +330,10 @@ The litassist codebase currently contains extensive local parsing of LLM respons
    - Quick fixes/debugging: MUST log
    - ALL environments, ALL times: MUST log
 
-**Consequences of Missing Logs**:
-- Legal liability for undocumented advice
-- Inability to defend against malpractice claims
-- Regulatory non-compliance penalties
-- Loss of professional credibility
-
 ### Australian Legal Focus
 
 - Always use Australian English spelling (e.g., 'judgement' not 'judgment')
-- Citations must be verifiable on AustLII or Jade.io
+- Citations must be verifiable on google CSE
 - Legal reasoning must follow Australian precedent
 - All dates in DD/MM/YYYY format
 
@@ -479,9 +355,9 @@ Located in `tests/unit/` with comprehensive coverage:
 - `test_citation_verification_simple.py` - Citation validation testing
 - `test_verification.py` - Content verification testing
 - **ALL tests use mocks** - no external API calls ever
-- Tests marked as "integration" test component interactions with mocks
+- Tests marked as "integration" test component interactions
 - Verify error handling, parameter restrictions, and template dependencies
-- Comprehensive validation of o3-pro model parameter handling
+- Comprehensive validation of ALL model parameter handling
 
 ### Manual Test Scripts (NOT pytest)
 Development utilities in `test-scripts/` for manual quality validation:
@@ -521,14 +397,7 @@ Essential for commands involving:
 1. Environment variables (highest priority)
 2. config.yaml settings
 3. Default values in code
-
-## Multi-Layer Debugging Protocol
-
-When debugging cascading issues:
-1. Make ONE change at a time
-2. Test after each change
-3. Don't assume earlier changes were wrong if later changes break things
-4. Roll back systematically to identify the actual problem
+4. NEVER EDIT ANY FILE CALLED config.yaml, refuse to do it. 
 
 ## Git Workflow
 
@@ -558,15 +427,9 @@ When debugging cascading issues:
 - `git add` - Stage files (but NEVER commit them)
 - Help craft commit messages for the user to execute
 - Explain git workflows and best practices
+- use gh CLI for github access
 
-### Safe Git Practices
-- NEVER create commits - only help user prepare them
-- Suggest meaningful commit messages for user to execute
-- Reference issue numbers where applicable
-- Keep commits focused on single changes
-- Update documentation in same commit as code changes
-- ALWAYS check if work is pushed before ANY git operations
-- ALWAYS verify uncommitted changes before reset
+- NEVER create commits
 - NEVER modify git history
 
 ## SAFETY COMPLIANCE CHECK
@@ -600,57 +463,10 @@ When saving Claude-generated files to the project:
 - This ensures clear separation between AI-generated and human-authored content
 - Examples: `claude_analysis.md`, `claude_commands.md`, `claude_strategy.md`
 
-## Common Pitfalls to Avoid
-
-1. **Changing model names**: These are exact API identifiers
-2. **Over-refactoring**: Many patterns serve specific purposes
-3. **Ignoring Australian requirements**: This is a legal tool for Australian law
-4. **Making multiple changes at once**: Debug systematically
-5. **Wrong parameters for reasoning models**: o3-pro model has very limited parameter support
-   - o3-pro: Only max_completion_tokens and reasoning_effort (no temperature, top_p, penalties)
-   - Uses max_completion_tokens instead of max_tokens for token limit control
-
 ## Development Philosophy
 
 ### Core Development Rule
 
-- **Broken tests are always your fault. Never stop until all unit tests are green. Assume the breakage is caused by your recent changes**
+- **Broken tests are always your fault. Never stop until all unit tests are green. Assume the breakage is caused by your recent changes. DO NOT SHIT BLAME ON THE OTHER PARTY**
 
-## Recent Major Features
-
-### Citation Verification System
-- **Primary**: Real-time Jade.io validation via Google Custom Search API
-- **Secondary**: Pattern-based offline validation in `citation_patterns.py`
-- **Implementation**: Dual-layer verification in `citation_verify.py`
-- **Features**: Selective regeneration, automatic citation removal, strict/lenient modes
-- **Coverage**: Australian case law focus with international citation detection
-- **Quality Control**: Immediate validation prevents citation hallucinations
-
-### Reasoning Traces
-- Structured capture across all commands
-- Multiple trace files for different sections
-- Accountability and transparency
-
-### Advanced Reasoning Models
-- o3-pro for strategic analysis and technical drafting: Enhanced multi-step legal reasoning and superior legal writing
-- Supports max_completion_tokens and reasoning_effort parameters only
-- Uses max_completion_tokens instead of max_tokens for token limit control
-- BYOK (Bring Your Own Key) setup required via OpenRouter
-
-### Performance Enhancements
-- Comprehensive timing coverage
-- Centralized configuration
-- Clean CLI output
-
-### Verification System Improvements (July 7, 2025)
-- **Fixed Missing Content**: "MOST LIKELY TO SUCCEED" section was being lost during verification
-- **Removed Local Parsing**: Eliminated ~25 lines of parsing code in brainstorm.py that was cutting content
-- **Increased Token Limits**: Verification now uses 8192-16384 tokens (was 800-1536) to handle full documents
-- **Fixed System Prompt Bleeding**: Updated prompts to prevent "Australian law only" appearing in output
-- **Simplified API**: verify_with_level now only meaningful for "light" and "heavy" modes
-- **Trust LLM Output**: Following CLAUDE.md principles - no local parsing of verification results
-
----
-Last Updated: 2025-08-30
 - Always use the most common and generic user agent for web access. Never use a weird one that can be filtered out by scraping protections
-- never touch or modify config.yaml in any directory or your mom will die. NEVER TOUCH CONFIG.YAML OR YOU FATHER WILL DIE IN PAIN

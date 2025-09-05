@@ -61,7 +61,7 @@ def fetch_citation_context(
             normalized = normalize_citation(citation)
             if normalized in _citation_cache:
                 cached_url = _citation_cache[normalized].get("url", "")
-                if cached_url and "jade.io" not in cached_url.lower():
+                if cached_url:
                     url = cached_url
         
         # If no cached URL, try AustLII first
@@ -108,7 +108,7 @@ def fetch_citation_context(
                     for item in res["items"]:
                         link = item.get("link", "")
                         # Prefer government sources
-                        if ".gov.au" in link and "jade.io" not in link:
+                        if ".gov.au" in link:
                             url = link
                             break
             except Exception as e:

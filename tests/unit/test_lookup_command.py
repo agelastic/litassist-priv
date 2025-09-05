@@ -12,10 +12,6 @@ class TestLookupCommand:
     @patch("litassist.commands.lookup.get_config")
     @patch("litassist.commands.lookup.search.get_config")
     @patch("litassist.commands.lookup.fetchers._fetch_url_content", return_value="")
-    @patch(
-        "litassist.commands.lookup.fetchers._fetch_url_content_selenium_with_timeout",
-        return_value="",
-    )
     @patch("litassist.commands.lookup.search.time.sleep")
     @patch("googleapiclient.discovery.build")
     @patch("litassist.llm.LLMClientFactory.for_command")
@@ -24,7 +20,6 @@ class TestLookupCommand:
         mock_factory,
         mock_build,
         mock_sleep,
-        mock_fetch_selenium,
         mock_fetch,
         mock_search_get_config,
         mock_init_get_config,
@@ -84,10 +79,6 @@ class TestLookupCommand:
     @patch("litassist.commands.lookup.get_config")
     @patch("litassist.commands.lookup.search.get_config")
     @patch("litassist.commands.lookup.fetchers._fetch_url_content", return_value="")
-    @patch(
-        "litassist.commands.lookup.fetchers._fetch_url_content_selenium_with_timeout",
-        return_value="",
-    )
     @patch("litassist.commands.lookup.search.time.sleep")
     @patch("googleapiclient.discovery.build")
     @patch("litassist.llm.LLMClientFactory.for_command")
@@ -96,7 +87,6 @@ class TestLookupCommand:
         mock_factory,
         mock_build,
         mock_sleep,
-        mock_fetch_selenium,
         mock_fetch,
         mock_search_get_config,
         mock_init_get_config,
@@ -155,10 +145,6 @@ class TestLookupCommand:
     @patch("litassist.commands.lookup.get_config")
     @patch("litassist.commands.lookup.search.get_config")
     @patch("litassist.commands.lookup.fetchers._fetch_url_content", return_value="")
-    @patch(
-        "litassist.commands.lookup.fetchers._fetch_url_content_selenium_with_timeout",
-        return_value="",
-    )
     @patch("litassist.commands.lookup.search.time.sleep")
     @patch("googleapiclient.discovery.build")
     @patch("litassist.llm.LLMClientFactory.for_command")
@@ -167,7 +153,6 @@ class TestLookupCommand:
         mock_factory,
         mock_build,
         mock_sleep,
-        mock_fetch_selenium,
         mock_fetch,
         mock_search_get_config,
         mock_init_get_config,
@@ -231,15 +216,10 @@ class TestLookupCommand:
     @patch("litassist.commands.lookup.get_config")
     @patch("litassist.commands.lookup.search.get_config")
     @patch("litassist.commands.lookup.fetchers._fetch_url_content", return_value="")
-    @patch(
-        "litassist.commands.lookup.fetchers._fetch_url_content_selenium_with_timeout",
-        return_value="",
-    )
     @patch("litassist.commands.lookup.search.time.sleep")
     def test_lookup_command_irac_vs_broad_mode(
         self,
         mock_sleep,
-        mock_fetch_selenium,
         mock_fetch,
         mock_search_get_config,
         mock_init_get_config,
@@ -309,10 +289,6 @@ class TestLookupCommand:
     @patch("litassist.commands.lookup.get_config")
     @patch("litassist.commands.lookup.search.get_config")
     @patch("litassist.commands.lookup.fetchers._fetch_url_content", return_value="")
-    @patch(
-        "litassist.commands.lookup.fetchers._fetch_url_content_selenium_with_timeout",
-        return_value="",
-    )
     @patch("time.sleep")
     @patch("googleapiclient.discovery.build")
     @patch("litassist.llm.LLMClientFactory.for_command")
@@ -321,7 +297,6 @@ class TestLookupCommand:
         mock_factory,
         mock_build,
         mock_sleep,
-        mock_fetch_selenium,
         mock_fetch,
         mock_search_get_config,
         mock_init_get_config,
@@ -344,10 +319,6 @@ class TestLookupCommand:
     @patch("litassist.commands.lookup.get_config")
     @patch("litassist.commands.lookup.search.get_config")
     @patch("litassist.commands.lookup.fetchers._fetch_url_content", return_value="")
-    @patch(
-        "litassist.commands.lookup.fetchers._fetch_url_content_selenium_with_timeout",
-        return_value="",
-    )
     @patch("time.sleep")
     @patch("googleapiclient.discovery.build")
     @patch("litassist.llm.LLMClientFactory.for_command")
@@ -356,7 +327,6 @@ class TestLookupCommand:
         mock_factory,
         mock_build,
         mock_sleep,
-        mock_fetch_selenium,
         mock_fetch,
         mock_search_get_config,
         mock_init_get_config,
@@ -382,15 +352,10 @@ class TestLookupCommandIntegration:
     @patch("litassist.commands.lookup.get_config")
     @patch("litassist.commands.lookup.search.get_config")
     @patch("litassist.commands.lookup.fetchers._fetch_url_content", return_value="")
-    @patch(
-        "litassist.commands.lookup.fetchers._fetch_url_content_selenium_with_timeout",
-        return_value="",
-    )
     @patch("litassist.commands.lookup.search.time.sleep")
     def test_comprehensive_mode_parameters(
         self,
         mock_sleep,
-        mock_fetch_selenium,
         mock_fetch,
         mock_search_get_config,
         mock_init_get_config,
