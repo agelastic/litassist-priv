@@ -12,7 +12,7 @@ from litassist.logging_utils import save_log
 from litassist.citation_verify import _citation_cache, _cache_lock, normalize_citation
 import time
 import re
-import requests
+import click
 
 
 def fetch_citation_context(
@@ -55,6 +55,7 @@ def fetch_citation_context(
     cse_comprehensive = getattr(config, "cse_id_comprehensive", None)
 
     for citation in citations:  # Fetch ALL citations - NO LIMITS
+        click.echo(f"[CITATION] Fetching: {citation}")
         # Check cache first for URL from verification
         url = None
         with _cache_lock:
@@ -84,6 +85,7 @@ def fetch_citation_context(
                             # Prefer government sources for legislation
                             if ".gov.au" in link:
                                 url = link
+                                click.echo(f"  → Found gov source: {url}")
                                 save_log("cove_found_gov_source", {
                                     "citation": citation,
                                     "url": url,
@@ -105,6 +107,7 @@ def fetch_citation_context(
                                 link = item.get("link", "")
                                 if "/au/legis/" in link:
                                     url = link
+                                    click.echo(f"  → Fallback to AustLII: {url}")
                                     save_log("cove_fallback_austlii", {
                                         "citation": citation,
                                         "url": url,
@@ -125,6 +128,7 @@ def fetch_citation_context(
                                 link = item.get("link", "")
                                 if "/au/cases/" in link:
                                     url = link
+                                    click.echo(f"  → Found AustLII case: {url}")
                                     save_log("cove_found_austlii_case", {
                                         "citation": citation,
                                         "url": url
@@ -145,6 +149,7 @@ def fetch_citation_context(
                                 # Accept any non-jade.io source
                                 if ".gov.au" in link or "austlii.edu.au" in link:
                                     url = link
+                                    click.echo(f"  → Fallback comprehensive: {url}")
                                     save_log("cove_fallback_comprehensive_case", {
                                         "citation": citation,
                                         "url": url
@@ -180,6 +185,7 @@ def fetch_citation_context(
                         context[citation] = cleaned_content
 
                     # Log size for monitoring
+                    click.echo(f"  ✓ Fetched {len(context[citation])} chars")
                     save_log(
                         "cove_document_fetched",
                         {
@@ -194,6 +200,7 @@ def fetch_citation_context(
                     {"citation": citation, "url": url, "error": str(e)},
                 )
         else:
+            click.echo(f"  ✗ No URL found for {citation}")
             save_log(
                 "cove_no_url_found",
                 {

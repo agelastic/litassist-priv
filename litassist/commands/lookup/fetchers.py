@@ -9,6 +9,7 @@ import logging
 import requests
 import time
 from litassist.logging_utils import save_log
+import click
 
 
 def _fetch_via_jina(url: str, timeout: int = 15) -> str:
@@ -138,6 +139,8 @@ def _fetch_url_content(url: str, timeout: int = 10) -> str:
     """
     Fetch content from URL - uses Jina for HTML, direct download for PDFs.
     """
+    click.echo(f"[FETCH] Checking: {url}")
+    
     # Skip jade.io entirely (blocked by Jina, JS-heavy, no good fallback)
     if 'jade.io' in url.lower():
         logging.info(f"Skipping Jade.io URL (blocked by scrapers): {url}")
@@ -166,6 +169,7 @@ def _fetch_url_content(url: str, timeout: int = 10) -> str:
         is_pdf = "application/pdf" in content_type or url.lower().endswith(".pdf")
         
         if is_pdf:
+            click.echo("  → Downloading PDF...")
             # Download PDF directly
             response = requests.get(
                 url,
@@ -180,6 +184,7 @@ def _fetch_url_content(url: str, timeout: int = 10) -> str:
                 logging.warning(f"Failed to download PDF from {url}: HTTP {response.status_code}")
                 return ""
         else:
+            click.echo("  → Fetching via Jina Reader...")
             # Use Jina for all HTML content
             return _fetch_via_jina(url, timeout)
             
