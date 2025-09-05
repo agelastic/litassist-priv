@@ -418,6 +418,8 @@ def verify(file, citations, soundness, reasoning, cove, output):
                 click.echo(f"   - Analysis: {cove_file}")
                 if cove_results["cove"]["regenerated"]:
                     click.echo(f"   - Regenerated: {regen_file}")
+                else:
+                    click.echo("   - No rewrite needed (document verified as accurate)")
                 extra_files["CoVe report"] = cove_file
                 reports_generated += 1
             except Exception as e:
