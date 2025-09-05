@@ -16,19 +16,19 @@ import requests
 
 
 def fetch_citation_context(
-    citations: List[str], max_citations: int = 3
+    citations: List[str]
 ) -> Dict[str, str]:
     """
-    Fetch COMPLETE legal documents for citations with multi-CSE fallback.
+    Fetch COMPLETE legal documents for citations with smart source prioritization.
 
     Strategy:
-    1. Try AustLII CSE first (if configured)
-    2. Fall back to Comprehensive CSE for gov.au sources
-    3. Skip Jade.io results (unscrapeable)
+    - LEGISLATION (Acts, Regulations, etc): Prefer government sites via Comprehensive CSE
+      (they have full text in HTML/PDF), fallback to AustLII
+    - CASE LAW: Prefer AustLII first (better structured), fallback to Comprehensive CSE
+    - Skip Jade.io results (blocked by scrapers)
 
     Args:
         citations: List of citations to fetch
-        max_citations: Maximum number to fetch (default 3 to control tokens)
 
     Returns:
         Dict mapping citations to FULL document text
@@ -54,7 +54,7 @@ def fetch_citation_context(
     cse_austlii = getattr(config, "cse_id_austlii", None)
     cse_comprehensive = getattr(config, "cse_id_comprehensive", None)
 
-    for citation in citations[:max_citations]:  # Limit for token management
+    for citation in citations:  # Fetch ALL citations - NO LIMITS
         # Check cache first for URL from verification
         url = None
         with _cache_lock:
@@ -64,58 +64,97 @@ def fetch_citation_context(
                 if cached_url:
                     url = cached_url
         
-        # If no cached URL, try AustLII first
-        if not url and cse_austlii:
-            try:
-                res = service.cse().list(q=citation, cx=cse_austlii, num=5).execute()
-                if "items" in res:
-                    # Look for primary sources only
-                    for item in res["items"]:
-                        link = item.get("link", "")
-                        if "/au/cases/" in link or "/au/legis/" in link:
-                            # Test if URL works (use browser User-Agent to avoid anti-bot blocks)
-                            try:
-                                headers = {
-                                    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
-                                }
-                                r = requests.head(
-                                    link,
-                                    timeout=10,
-                                    allow_redirects=True,
-                                    headers=headers,
-                                )
-                                if (
-                                    r.status_code == 200 or r.status_code == 302
-                                ):  # Accept redirects too
+        # Determine if this is legislation or case law
+        citation_lower = citation.lower()
+        is_legislation = any(term in citation_lower for term in [
+            'act', 'regulation', 'regulations', 'code', 'rules', 
+            'ordinance', 'statute', '(cth)', '(qld)', '(nsw)', '(vic)',
+            '(sa)', '(wa)', '(tas)', '(act)', '(nt)'
+        ])
+        
+        # STRATEGY: Legislation -> Gov sites first, Case law -> AustLII first
+        if not url:
+            if is_legislation and cse_comprehensive:
+                # Try government sites FIRST for legislation
+                try:
+                    res = service.cse().list(q=citation, cx=cse_comprehensive, num=5).execute()
+                    if "items" in res:
+                        for item in res["items"]:
+                            link = item.get("link", "")
+                            # Prefer government sources for legislation
+                            if ".gov.au" in link:
+                                url = link
+                                save_log("cove_found_gov_source", {
+                                    "citation": citation,
+                                    "url": url,
+                                    "source": "comprehensive_cse"
+                                })
+                                break
+                except Exception as e:
+                    save_log(
+                        "cove_comprehensive_search_error",
+                        {"citation": citation, "error": str(e)},
+                    )
+                
+                # Fallback to AustLII if no gov source found
+                if not url and cse_austlii:
+                    try:
+                        res = service.cse().list(q=citation, cx=cse_austlii, num=5).execute()
+                        if "items" in res:
+                            for item in res["items"]:
+                                link = item.get("link", "")
+                                if "/au/legis/" in link:
                                     url = link
+                                    save_log("cove_fallback_austlii", {
+                                        "citation": citation,
+                                        "url": url,
+                                        "reason": "no_gov_source"
+                                    })
                                     break
-                            except Exception:
-                                continue
-            except Exception as e:
-                save_log(
-                    "cove_austlii_search_error", {"citation": citation, "error": str(e)}
-                )
-
-        # Fallback to comprehensive CSE
-        if not url and cse_comprehensive:
-            try:
-                res = (
-                    service.cse()
-                    .list(q=citation, cx=cse_comprehensive, num=5)
-                    .execute()
-                )
-                if "items" in res:
-                    for item in res["items"]:
-                        link = item.get("link", "")
-                        # Prefer government sources
-                        if ".gov.au" in link:
-                            url = link
-                            break
-            except Exception as e:
-                save_log(
-                    "cove_comprehensive_search_error",
-                    {"citation": citation, "error": str(e)},
-                )
+                    except Exception as e:
+                        save_log(
+                            "cove_austlii_search_error", {"citation": citation, "error": str(e)}
+                        )
+            else:
+                # Case law - try AustLII FIRST
+                if cse_austlii:
+                    try:
+                        res = service.cse().list(q=citation, cx=cse_austlii, num=5).execute()
+                        if "items" in res:
+                            for item in res["items"]:
+                                link = item.get("link", "")
+                                if "/au/cases/" in link:
+                                    url = link
+                                    save_log("cove_found_austlii_case", {
+                                        "citation": citation,
+                                        "url": url
+                                    })
+                                    break
+                    except Exception as e:
+                        save_log(
+                            "cove_austlii_search_error", {"citation": citation, "error": str(e)}
+                        )
+                
+                # Fallback to comprehensive for case law
+                if not url and cse_comprehensive:
+                    try:
+                        res = service.cse().list(q=citation, cx=cse_comprehensive, num=5).execute()
+                        if "items" in res:
+                            for item in res["items"]:
+                                link = item.get("link", "")
+                                # Accept any non-jade.io source
+                                if ".gov.au" in link or "austlii.edu.au" in link:
+                                    url = link
+                                    save_log("cove_fallback_comprehensive_case", {
+                                        "citation": citation,
+                                        "url": url
+                                    })
+                                    break
+                    except Exception as e:
+                        save_log(
+                            "cove_comprehensive_search_error",
+                            {"citation": citation, "error": str(e)},
+                        )
 
         # Fetch COMPLETE content if we found a URL
         if url:
