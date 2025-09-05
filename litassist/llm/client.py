@@ -970,6 +970,18 @@ class LLMClient(LLMVerificationMixin):
                 response = execute_api_call_with_retry(
                     model_name, messages, filtered_params_with_tools
                 )
+                
+                # Check if response is empty (some models don't support forced tool calls)
+                if (hasattr(response, 'choices') and response.choices and
+                    hasattr(response.choices[0], 'message') and
+                    not response.choices[0].message.content and
+                    not getattr(response.choices[0].message, 'tool_calls', None)):
+                    # Empty response - model doesn't support forced tools
+                    # Fall back to regular call without tools
+                    logging.info(f"Model {model_name} returned empty with forced tools, falling back")
+                    response = execute_api_call_with_retry(
+                        model_name, messages, filtered_params
+                    )
             except Exception as e:
                 # If tools aren't supported, fall back to regular call
                 if "tools" in str(e).lower() or "tool_choice" in str(e).lower():
