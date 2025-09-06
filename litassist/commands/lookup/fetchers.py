@@ -44,7 +44,7 @@ def _fetch_via_jina(url: str, timeout: int = 15) -> str:
         
         response = requests.get(f"https://r.jina.ai/{url}", headers=headers, timeout=timeout)
         
-        if response.status_code == 200 and len(response.text) > 500:
+        if response.status_code == 200 and response.text.strip():
             content = f"[Source: {original_url}]\n\n{response.text}"
             save_log("fetch_attempt", {
                 "url": original_url,
@@ -57,13 +57,13 @@ def _fetch_via_jina(url: str, timeout: int = 15) -> str:
             })
             return content
         else:
-            # Just show what happened without parsing
+            # Show error or empty response
             if response.status_code != 200:
                 # Try to get error message from response body
                 error_msg = response.text.strip() if response.text else f"HTTP {response.status_code}"
                 click.echo(f"  [✗ Jina error: {error_msg}]")
             else:
-                click.echo(f"  [✗ Insufficient content from Jina ({len(response.text)} chars)]")
+                click.echo("  [✗ Jina returned empty content]")
             
             save_log("fetch_attempt", {
                 "url": original_url,
