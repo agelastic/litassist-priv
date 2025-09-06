@@ -33,6 +33,9 @@ def _fetch_via_jina(url: str, timeout: int = 15) -> str:
             click.echo(f"  → Using full document URL: {url}")
         
         headers = {}
+        # Request markdown format for better document structure preservation
+        headers['x-respond-with'] = 'markdown'
+        
         # Use Jina API key if configured for higher rate limits
         from litassist.config import get_config
         config = get_config()
