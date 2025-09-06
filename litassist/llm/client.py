@@ -1030,11 +1030,7 @@ class LLMClient(LLMVerificationMixin):
                 # We'll try with tools, and fall back without if it fails
                 filtered_params_with_tools = filtered_params.copy()
                 filtered_params_with_tools["tools"] = tools
-                # Force the model to call the now() tool first
-                filtered_params_with_tools["tool_choice"] = {
-                    "type": "function",
-                    "function": {"name": "now"},
-                }
+                # Let the model decide when to call tools (follows "MUST" instruction in prompt)
 
                 # Log the final messages being sent to the API
                 save_log(
