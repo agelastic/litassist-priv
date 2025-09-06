@@ -9,10 +9,10 @@ NEVER OVERENGINEER EVER
 4. Don't extract constants, functions, or patterns
 5. Don't update related code unless it's broken and does not run
 6. Do not insert any fallbacks
-6. Prefer inline fixes over architectural changes
-7. One fix = one narrowly scoped change
-8. Prefer deleting unnecessary parsing logic to adding more
-9. Use local text prosessing with regexes only when there is no sane alternative to it. Confirm with the user every time.
+7. Prefer inline fixes over architectural changes
+8. One fix = one narrowly scoped change
+9. Prefer deleting unnecessary parsing logic to adding more
+10. Use local text processing with regexes only when there is no sane alternative to it. Confirm with the user every time.
 
 **Red Flags for Over-Engineering:**
 - Creating classes for single functions
@@ -24,8 +24,8 @@ NEVER OVERENGINEER EVER
 
 **CRITICAL**: Always verify functionality before proposing changes:
 1. Always read and understand code before suggesting changes, never guess
-2. Investigate each funcions purpose thoroughly throughout the codebase
-3. Confirm what the fix you propose will actually fix the problem, by analysing codebase. NO GUESSING
+2. Investigate each function's purpose thoroughly throughout the codebase
+3. Confirm that the fix you propose will actually fix the problem, by analysing codebase. NO GUESSING
 4. ALWAYS Check dependencies  - Understand how functions are used before moving/changing them
 5. Verify functionality still works after any modifications you do
 
@@ -42,7 +42,7 @@ NEVER OVERENGINEER EVER
 **Refactoring Strategy:**
 
 1. **Identify Functional Groups**: Find natural boundaries (data processing, API calls, validation, utilities)
-3. **Extract by Responsibility**: Each new file handles one specific concern
+2. **Extract by Responsibility**: Each new file handles one specific concern
 
 
 When changing any API or usage pattern (e.g., CONFIG → get_config()):
@@ -116,7 +116,7 @@ if mode in modes:
 ### Emoji Policy and Terminal Output Standards
 
 **ABSOLUTE PROHIBITION - NO EMOJIS ANYWHERE**
-If it's in this repo, it CANNOT have emojis. a text containig emoji is an invalid text or code
+If it's in this repo, it CANNOT have emojis. A text containing emoji is an invalid text or code
 
 **Policy Enforcement:**
 1. **Zero Emoji Tolerance**: Not a single Unicode emoji character is permitted
@@ -168,11 +168,11 @@ click.echo(verifying_message("Verifying citations..."))
 
 ### OpenRouter Usage Policy
 
-**IMPORTANT**: Always use OpenRouter as the primary routing method for all LLM calls. T
+**IMPORTANT**: Always use OpenRouter as the primary routing method for all LLM calls.
 When adding new models or providers:
 1. Route through OpenRouter first using the existing OR API key
 2. If OpenRouter doesn't support the model, ask user what to do
-4. This approach centralizes API management and leverages existing BYOK setups
+3. This approach centralizes API management and leverages existing BYOK setups
 5. Model names with "/" (e.g., "anthropic/claude-sonnet-4") indicate OpenRouter routing
 
 
@@ -198,7 +198,7 @@ When adding new models or providers:
 
 ### Backward Compatibility Policy
 
-Backward compatibility is NOT required for this project, breaking changes are great assuming they dont break the existing code. The project has ONE developer controllilng github
+Backward compatibility is NOT required for this project, breaking changes are great assuming they don't break the existing code. The project has ONE developer controlling github
 
 When refactoring or improving code:
 1. **No Legacy Support**: Don't maintain old code paths or deprecated functionality
@@ -224,7 +224,7 @@ The litassist codebase currently contains extensive local parsing of LLM respons
    - Use JSON/YAML for complex data structures IF YOU MUST
    - Minimize API costs while maximizing structure
 
-3. **No Fallback Parsing Logic ANYWYERE**: LLMs follow format instructions reliably when properly prompted
+3. **No Fallback Parsing Logic ANYWHERE**: LLMs follow format instructions reliably when properly prompted
    - Eliminate try/catch blocks around parsing
    - Remove regex pattern matching for data extraction
    - Trust that well-prompted LLMs will return correctly formatted output
@@ -271,7 +271,7 @@ NO === MARKERS IN LLM OUTPUT ANYWHERE
 
 ### Anti-Hallucination Guidelines for ALL LLM prompts
 
-**CRITICAL**: LLMs must NEVER invent factual details producing output. This is essential for professional liability and legal accuracy.
+**CRITICAL**: LLMs must NEVER invent factual details when producing output. This is essential for professional liability and legal accuracy.
 
 **Core Principles:**
 
@@ -467,6 +467,6 @@ When saving Claude-generated files to the project:
 
 ### Core Development Rule
 
-- **Broken tests are always your fault. Never stop until all unit tests are green. Assume the breakage is caused by your recent changes. DO NOT SHIT BLAME ON THE OTHER PARTY**
+- **Broken tests are always your fault. Never stop until all unit tests are green. Assume the breakage is caused by your recent changes. DO NOT SHIFT BLAME ON THE OTHER PARTY**
 
 - Always use the most common and generic user agent for web access. Never use a weird one that can be filtered out by scraping protections
