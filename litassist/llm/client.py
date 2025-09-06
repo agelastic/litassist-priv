@@ -583,16 +583,14 @@ class LLMClientFactory:
         },
         # Caseplan - LLM-driven workflow planning
         "caseplan": {
-            "model": "openai/o4-mini-high",
-            "temperature": 0.3,
-            "top_p": 0.7,
+            "model": "anthropic/claude-sonnet-4",
+            "temperature": 0.5,
             "force_verify": False,
         },
         # Caseplan assessment - budget recommendation (Sonnet)
         "caseplan-assessment": {
-            "model": "openai/o4-mini-high",
-            "temperature": 0.2,
-            "top_p": 0.7,
+            "model": "anthropic/claude-sonnet-4",
+            "temperature": 0.5,
             "force_verify": False,
         },
         # Chain of Verification - fast, efficient question generation
@@ -940,10 +938,10 @@ class LLMClient(LLMVerificationMixin):
         try:
             # Filter parameters based on model capabilities
             filtered_params = get_model_parameters(self.model, params)
-            
+
             # Add tool definitions for date handling
             tools = get_tool_definitions()
-            
+
             # Add tools to parameters (most models support this)
             # We'll try with tools, and fall back without if it fails
             filtered_params_with_tools = filtered_params.copy()
@@ -951,7 +949,7 @@ class LLMClient(LLMVerificationMixin):
             # Force the model to call the now() tool first
             filtered_params_with_tools["tool_choice"] = {
                 "type": "function",
-                "function": {"name": "now"}
+                "function": {"name": "now"},
             }
 
             # Log the final messages being sent to the API
@@ -970,37 +968,53 @@ class LLMClient(LLMVerificationMixin):
                 response = execute_api_call_with_retry(
                     model_name, messages, filtered_params_with_tools
                 )
-                
+
                 # Check if response is empty (some models don't support forced tool calls)
-                if (hasattr(response, 'choices') and response.choices and
-                    hasattr(response.choices[0], 'message') and
-                    not response.choices[0].message.content and
-                    not getattr(response.choices[0].message, 'tool_calls', None)):
+                if (
+                    hasattr(response, "choices")
+                    and response.choices
+                    and hasattr(response.choices[0], "message")
+                    and not response.choices[0].message.content
+                    and not getattr(response.choices[0].message, "tool_calls", None)
+                ):
                     # Empty response - model doesn't support forced tools
                     # Fall back to regular call without tools
-                    logging.info(f"Model {model_name} returned empty with forced tools, falling back")
+                    logging.info(
+                        f"Model {model_name} returned empty with forced tools, falling back"
+                    )
                     response = execute_api_call_with_retry(
                         model_name, messages, filtered_params
                     )
             except Exception as e:
                 # If tools aren't supported, fall back to regular call
                 if "tools" in str(e).lower() or "tool_choice" in str(e).lower():
-                    logging.info(f"Model {model_name} doesn't support tools, falling back")
-                    
+                    logging.info(
+                        f"Model {model_name} doesn't support tools, falling back"
+                    )
+
                     # Replace tool instruction with direct date injection in messages
                     fallback_messages = []
                     today_date = self._format_date_string()
-                    date_fallback = PROMPTS.get("base.date_fallback_instruction").format(date=today_date)
+                    date_fallback = PROMPTS.get(
+                        "base.date_fallback_instruction"
+                    ).format(date=today_date)
                     tool_instruction = PROMPTS.get("base.date_tool_instruction")
-                    
+
                     for msg in messages:
-                        if msg.get("role") in ["system", "user"] and tool_instruction in msg.get("content", ""):
+                        if msg.get("role") in [
+                            "system",
+                            "user",
+                        ] and tool_instruction in msg.get("content", ""):
                             # Replace tool instruction with date fallback
-                            new_content = msg["content"].replace(tool_instruction, date_fallback)
-                            fallback_messages.append({"role": msg["role"], "content": new_content})
+                            new_content = msg["content"].replace(
+                                tool_instruction, date_fallback
+                            )
+                            fallback_messages.append(
+                                {"role": msg["role"], "content": new_content}
+                            )
                         else:
                             fallback_messages.append(msg)
-                    
+
                     response = execute_api_call_with_retry(
                         model_name, fallback_messages, filtered_params
                     )
@@ -1054,28 +1068,32 @@ class LLMClient(LLMVerificationMixin):
                 raise Exception(f"Invalid choice structure: {response.choices[0]}")
 
             # Check if the response contains tool calls
-            if (hasattr(response.choices[0].message, "tool_calls") and 
-                response.choices[0].message.tool_calls):
+            if (
+                hasattr(response.choices[0].message, "tool_calls")
+                and response.choices[0].message.tool_calls
+            ):
                 # Handle tool calls - wrap in try/except for test compatibility
                 try:
                     tool_calls = response.choices[0].message.tool_calls
-                    
+
                     for tool_call in tool_calls:
                         tool_name = tool_call.function.name
                         # Execute the tool (we know it's the now() function)
                         tool_result = execute_tool(tool_name)
-                        
+
                         # Format the tool response for the model
                         tool_message = format_tool_response(tool_name, tool_result)
-                        
+
                         # Add tool response to messages for follow-up
                         messages.append(response.choices[0].message.model_dump())
-                        messages.append({
-                            "role": "tool",
-                            "tool_call_id": tool_call.id,
-                            "content": tool_message
-                        })
-                    
+                        messages.append(
+                            {
+                                "role": "tool",
+                                "tool_call_id": tool_call.id,
+                                "content": tool_message,
+                            }
+                        )
+
                     # Make a follow-up call with the tool results
                     # This time without forcing tool use
                     filtered_params_followup = filtered_params.copy()
@@ -1084,7 +1102,9 @@ class LLMClient(LLMVerificationMixin):
                     )
                 except (TypeError, AttributeError):
                     # In tests or if tool_calls is not properly formed, skip tool handling
-                    logging.debug("Tool calls not available or malformed, skipping tool handling")
+                    logging.debug(
+                        "Tool calls not available or malformed, skipping tool handling"
+                    )
 
             # Extract content and usage from chat response
             content, usage = extract_content_and_usage(response)
