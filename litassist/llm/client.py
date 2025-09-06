@@ -62,7 +62,7 @@ PARAMETER_PROFILES = {
         "transforms": {
             "max_tokens": "max_completion_tokens",
         },
-        "system_message_support": False,  # o1/o3 models don't support system messages
+        "system_message_support": False,  # o1/o3 models don't support system messages (but DO support tools as of 2025)
     },
     "anthropic": {
         "allowed": [
@@ -452,7 +452,7 @@ class LLMClientFactory:
             "top_p": 0.15,
             "thinking_effort": "high",  # Critical foundational command needs thorough thinking
             "force_verify": True,  # Always verify for foundational docs
-            "disable_tools": True,  # Skip tool calling due to OpenRouter issues with Claude Sonnet 4
+            "disable_tools": True,  # Claude Sonnet 4 has tool calling issues on OpenRouter (Sept 2025)
         },
         # Strategy - enhanced multi-step legal reasoning
         "strategy": {
@@ -509,7 +509,7 @@ class LLMClientFactory:
             "temperature": 0.2,
             "top_p": 0.3,  # Fixed: was 0, too restrictive
             "thinking_effort": "medium",  # Simple summarization task
-            "disable_tools": True,  # Skip tool calling due to OpenRouter issues with Claude Sonnet 4
+            "disable_tools": True,  # Claude Sonnet 4 has tool calling issues on OpenRouter (Sept 2025)
         },
         "digest-issues": {
             "model": "anthropic/claude-opus-4.1",
@@ -543,7 +543,7 @@ class LLMClientFactory:
             "top_p": 0.2,  # Focused beam for consistency
             "thinking_effort": "medium",  # Just spelling/terminology checks
             "force_verify": False,  # Avoid loops
-            "disable_tools": True,  # Skip tool calling due to OpenRouter issues with Claude Sonnet 4
+            "disable_tools": True,  # Claude Sonnet 4 has tool calling issues on OpenRouter (Sept 2025)
         },
         "verification-heavy": {
             "model": "openai/gpt-5",  # <1% hallucination rate for critical verification
@@ -589,14 +589,14 @@ class LLMClientFactory:
             "model": "anthropic/claude-sonnet-4",
             "temperature": 0.5,
             "force_verify": False,
-            "disable_tools": True,  # Skip tool calling due to OpenRouter issues with Claude Sonnet 4
+            "disable_tools": True,  # Claude Sonnet 4 has tool calling issues on OpenRouter (Sept 2025)
         },
         # Caseplan assessment - budget recommendation (Sonnet)
         "caseplan-assessment": {
             "model": "anthropic/claude-sonnet-4",
             "temperature": 0.5,
             "force_verify": False,
-            "disable_tools": True,  # Skip tool calling due to OpenRouter issues with Claude Sonnet 4
+            "disable_tools": True,  # Claude Sonnet 4 has tool calling issues on OpenRouter (Sept 2025)
         },
         # Chain of Verification - fast, efficient question generation
         "cove": {
@@ -605,7 +605,7 @@ class LLMClientFactory:
             "top_p": 0.8,
             "thinking_effort": "medium",  # General CoVe coordination
             "force_verify": False,  # Avoid recursive verification
-            "disable_tools": True,  # Skip tool calling due to OpenRouter issues with Claude Sonnet 4
+            "disable_tools": True,  # Claude Sonnet 4 has tool calling issues on OpenRouter (Sept 2025)
         },
         # CoVe sub-stages with separate model control
         "cove-questions": {
@@ -614,7 +614,7 @@ class LLMClientFactory:
             "top_p": 0.8,
             "thinking_effort": "low",  # Fast question generation, minimal thinking needed
             "force_verify": False,
-            "disable_tools": True,  # Skip tool calling due to OpenRouter issues with Claude Sonnet 4
+            "disable_tools": True,  # Claude Sonnet 4 has tool calling issues on OpenRouter (Sept 2025)
         },
         "cove-answers": {
             "model": "openai/gpt-5",  # GPT-5 for <1% hallucination rate
@@ -629,7 +629,7 @@ class LLMClientFactory:
             "top_p": 0.3,
             "thinking_effort": "high",  # Critical inconsistency detection needs careful analysis
             "force_verify": False,
-            "disable_tools": True,  # Skip tool calling due to OpenRouter issues with Claude Sonnet 4
+            "disable_tools": True,  # Claude Sonnet 4 has tool calling issues on OpenRouter (Sept 2025)
         },
         "cove-final": {
             "model": "openai/gpt-5",  # GPT-5 for <1% hallucination rate in final output
@@ -680,7 +680,7 @@ class LLMClientFactory:
                 "model": "anthropic/claude-sonnet-4",
                 "temperature": 0.3,
                 "top_p": 0.7,
-                "disable_tools": True,  # Skip tool calling due to OpenRouter issues with Claude Sonnet 4
+                "disable_tools": True,  # Claude Sonnet 4 has tool calling issues on OpenRouter (Sept 2025)
             }
             # Use default configuration for commands without specific config
             # This is expected behavior for many commands
@@ -850,6 +850,85 @@ class LLMClient(LLMVerificationMixin):
         import pytz
         sydney_tz = pytz.timezone('Australia/Sydney')
         return datetime.now(sydney_tz).strftime("%B %d, %Y")
+    
+    def _prepare_messages_for_model(self, messages: List[Dict[str, str]]) -> List[Dict[str, str]]:
+        """Prepare messages based on model's system message support."""
+        if not supports_system_messages(self.model):
+            # For o1/o3 models - merge system into first user message
+            return self._merge_system_into_user(messages)
+        else:
+            # For all other models - add Australian law to system messages
+            return self._add_australian_law_to_system(messages)
+    
+    def _merge_system_into_user(self, messages: List[Dict[str, str]]) -> List[Dict[str, str]]:
+        """Merge system messages into first user message for o1/o3 models."""
+        system_messages = [msg for msg in messages if msg.get("role") == "system"]
+        non_system_messages = [msg for msg in messages if msg.get("role") != "system"]
+        
+        if not system_messages:
+            # No system messages to merge
+            return messages
+        
+        # Combine all system content
+        system_content = "\n".join([msg.get("content", "") for msg in system_messages])
+        if "Australian English" not in system_content:
+            system_content += "\n" + PROMPTS.get("base.australian_law")
+        
+        # Find first user message and prepend system content
+        modified_messages = []
+        for i, msg in enumerate(non_system_messages):
+            if msg.get("role") == "user":
+                content = f"{system_content}\n\n{msg.get('content', '')}"
+                modified_messages.append({"role": "user", "content": content})
+                modified_messages.extend(non_system_messages[i + 1:])
+                return modified_messages
+        
+        # No user message found - just return non-system messages
+        return non_system_messages
+    
+    def _add_australian_law_to_system(self, messages: List[Dict[str, str]]) -> List[Dict[str, str]]:
+        """Add Australian law prompt to system messages."""
+        australian_law = PROMPTS.get("base.australian_law")
+        if not australian_law:
+            return messages
+            
+        modified_messages = []
+        for msg in messages:
+            if msg.get("role") == "system":
+                content = msg.get("content", "")
+                # Only add if not already present
+                if australian_law not in content:
+                    content = f"{australian_law}\n\n{content}"
+                modified_messages.append({"role": "system", "content": content})
+            else:
+                modified_messages.append(msg)
+        
+        return modified_messages
+    
+    def _add_date_instruction(self, messages: List[Dict[str, str]]) -> List[Dict[str, str]]:
+        """Add appropriate date instruction based on tool availability."""
+        if getattr(self, '_disable_tools', False):
+            # Tools disabled - inject date directly
+            today_date = self._format_date_string()
+            date_text = PROMPTS.get("base.date_fallback_instruction").format(date=today_date)
+        else:
+            # Tools enabled - use tool instruction
+            date_text = PROMPTS.get("base.date_tool_instruction")
+        
+        # Add to first system or user message
+        modified_messages = []
+        date_added = False
+        
+        for msg in messages:
+            if not date_added and msg.get("role") in ["system", "user"]:
+                content = msg.get("content", "")
+                content = f"{date_text}\n\n{content}"
+                modified_messages.append({"role": msg["role"], "content": content})
+                date_added = True
+            else:
+                modified_messages.append(msg)
+        
+        return modified_messages
 
     # The enclosing `complete` method now emits heartbeat updates, so we no
     # longer need a second heartbeat layer here. Retaining only the timing
@@ -880,73 +959,11 @@ class LLMClient(LLMVerificationMixin):
         Raises:
             Exception: If the API call fails or returns an error.
         """
-        # Check if this model supports system messages
-        if not supports_system_messages(self.model):
-            # This model doesn't support system messages - merge into first user message
-            modified_messages = []
-            system_content = PROMPTS.get("base.australian_law")
-
-            # Collect all system messages
-            system_messages = [msg for msg in messages if msg.get("role") == "system"]
-            non_system_messages = [
-                msg for msg in messages if msg.get("role") != "system"
-            ]
-
-            if system_messages:
-                # Combine all system content
-                system_content = "\n".join(
-                    [msg.get("content", "") for msg in system_messages]
-                )
-                if "Australian English" not in system_content:
-                    system_content += "\n" + PROMPTS.get("base.australian_law")
-
-            # Find first user message and prepend system content
-            for i, msg in enumerate(non_system_messages):
-                if msg.get("role") == "user":
-                    # Only include tool instruction if tools are enabled
-                    if getattr(self, '_disable_tools', False):
-                        # Tools disabled - inject date directly
-                        today_date = self._format_date_string()
-                        date_instruction = PROMPTS.get("base.date_fallback_instruction").format(date=today_date)
-                    else:
-                        # Tools enabled - use tool instruction
-                        date_instruction = PROMPTS.get("base.date_tool_instruction")
-                    enhanced_content = f"{system_content}\n\n{date_instruction}\n\n{msg.get('content', '')}"
-                    modified_messages.append(
-                        {"role": "user", "content": enhanced_content}
-                    )
-                    # Add remaining messages as-is
-                    modified_messages.extend(non_system_messages[i + 1 :])
-                    break
-            else:
-                # No user message found, just use non-system messages
-                modified_messages = non_system_messages
-
-            messages = modified_messages
-        else:
-            # Regular models - handle system messages normally
-            # Prepend base.australian_law to all system messages
-            australian_law_prompt = PROMPTS.get("base.australian_law")
-            if australian_law_prompt:
-                modified_messages = []
-                for msg in messages:
-                    if msg.get("role") == "system":
-                        content = msg.get("content", "")
-                        # Only prepend if not already present
-                        if australian_law_prompt not in content:
-                            # Only include tool instruction if tools are enabled
-                            if getattr(self, '_disable_tools', False):
-                                # Tools disabled - inject date directly
-                                today_date = self._format_date_string()
-                                date_instruction = PROMPTS.get("base.date_fallback_instruction").format(date=today_date)
-                            else:
-                                # Tools enabled - use tool instruction
-                                date_instruction = PROMPTS.get("base.date_tool_instruction")
-                            content = f"{australian_law_prompt}\n\n{date_instruction}\n\n{content}"
-                        modified_messages.append({"role": "system", "content": content})
-                    else:
-                        modified_messages.append(msg)
-                messages = modified_messages
+        # Step 1: Handle model-specific message formatting
+        messages = self._prepare_messages_for_model(messages)
+        
+        # Step 2: Add date instruction (tool or direct based on disable_tools)
+        messages = self._add_date_instruction(messages)
 
         # Merge default and override parameters
         params = {**self.default_params, **overrides}
