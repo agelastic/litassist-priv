@@ -52,23 +52,32 @@ def _fetch_via_jina(url: str, timeout: int = 15) -> str:
                 "method": "jina_reader",
                 "status": "success",
                 "content_size": len(response.text),
-                "content": content[:250000],
+                "content": content,
                 "timestamp": time.time()
             })
-            return content[:250000]
+            return content
         else:
+            # Just show what happened without parsing
+            if response.status_code != 200:
+                # Try to get error message from response body
+                error_msg = response.text.strip() if response.text else f"HTTP {response.status_code}"
+                click.echo(f"  [✗ Jina error: {error_msg}]")
+            else:
+                click.echo(f"  [✗ Insufficient content from Jina ({len(response.text)} chars)]")
+            
             save_log("fetch_attempt", {
                 "url": original_url,
                 "actual_url": url if url != original_url else None,
                 "method": "jina_reader",
                 "status": "failed",
                 "http_status": response.status_code,
-                "reason": f"HTTP {response.status_code}" if response.status_code != 200 else "Insufficient content",
-                "content": "",
+                "response_size": len(response.text),
+                "error_message": response.text if response.status_code != 200 else None,
                 "timestamp": time.time()
             })
             return ""
     except Exception as e:
+        click.echo(f"  [✗ Jina error: {str(e)}]")
         logging.warning(f"Jina Reader failed for {original_url}: {e}")
         save_log("fetch_attempt", {
             "url": original_url,
@@ -109,9 +118,7 @@ def _extract_pdf_text(url: str, pdf_bytes: bytes) -> str:
                 header += f"[Source: {url}]\n"
                 header += "=" * 80 + "\n"
 
-                if len(extracted_text) > 1000000:
-                    extracted_text = extracted_text[:1000000]
-                    header += "[Note: Text truncated to 1M chars]\n"
+                # No truncation - full PDF content is preserved
 
                 logging.info(f"Successfully extracted text from PDF: {url}")
                 pdf_content = header + extracted_text + "\n" + "=" * 80 + "\n[END OF PDF]"
@@ -208,7 +215,9 @@ def _fetch_url_content(url: str, timeout: int = 10) -> str:
         # Try Jina as fallback (in case HEAD failed but URL is valid)
         try:
             return _fetch_via_jina(url, timeout)
-        except Exception:
+        except Exception as jina_error:
+            logging.error(f"Jina fallback also failed for {url}: {jina_error}")
+            # Don't swallow - let the error be logged
             pass
         
         save_log("fetch_attempt", {

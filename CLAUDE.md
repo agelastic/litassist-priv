@@ -470,3 +470,4 @@ When saving Claude-generated files to the project:
 - **Broken tests are always your fault. Never stop until all unit tests are green. Assume the breakage is caused by your recent changes. DO NOT SHIFT BLAME ON THE OTHER PARTY**
 
 - Always use the most common and generic user agent for web access. Never use a weird one that can be filtered out by scraping protections
+- Never truncate any text received from an API call
