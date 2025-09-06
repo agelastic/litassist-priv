@@ -241,7 +241,10 @@ def caseplan(case_facts, context, budget, output, verify, noverify):
             f"BUDGET LEVEL: {budget}",
         ]
         if context:
-            prompt_parts.append(f"CONTEXT: {context}")
+            prompt_parts.append(
+                f"USER ANALYSIS GUIDANCE (NOT case facts): {context}\n"
+                f"IMPORTANT: This is guidance for your analysis, not factual information from the case."
+            )
 
         # Select appropriate analysis instructions based on budget level
         analysis_prompt_key = f"commands.caseplan.analysis_instructions_{budget}"

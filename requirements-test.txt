@@ -1,3 +1,2 @@
-# Minimal testing requirements
+# Test runner
 pytest>=7.0.0
-black>=23.0.0

@@ -377,12 +377,13 @@ Worst: Pay $100k progress payment plus costs
         # Setup citation mocks first to prevent ANY real API calls
         with patch("litassist.citation_verify.verify_all_citations") as mock_verify_citations:
             with patch("litassist.citation_context.fetch_citation_context") as mock_fetch_context:
-                with patch("litassist.citation_verify.search_jade_via_google_cse") as mock_search_jade:
+                with patch("litassist.citation_verify.search_legal_database_via_cse") as mock_search_cse:
                     # Configure citation mocks to prevent real API calls
                     verified_citations = ["[2016] VSC 23", "[2018] VSC 432", "Security of Payment Act"]
                     mock_verify_citations.return_value = (verified_citations, [])
                     mock_fetch_context.return_value = {}
-                    mock_search_jade.return_value = True  # Mock Jade search to always find citations
+                    # Mock CSE search to always find citations and return a URL
+                    mock_search_cse.return_value = (True, "https://jade.io/citation/test")
                     
                     self._run_pipeline_test()
     

@@ -96,4 +96,10 @@ analysis:
     question_prompt: "Question: {question}\nLinks:\n{links}"
     # USED BY: lookup.py - lines 135-138 (adding context to prompt)
     # LOCATION: Prepends context information to search prompt
-    context_prompt: "Context: {context}\n\n{prompt}"
+    context_prompt: |
+      === USER GUIDANCE (NOT facts from sources) ===
+      The user wants you to consider: {context}
+      IMPORTANT: This is analysis guidance only. Extract facts ONLY from the sources below.
+      === END USER GUIDANCE ===
+      
+      {prompt}

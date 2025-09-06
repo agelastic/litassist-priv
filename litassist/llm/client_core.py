@@ -738,15 +738,18 @@ class LLMClient(LLMVerificationMixin):
         )
 
         # Execute retry through proper API pipeline
-        from .api_handlers import execute_api_call
+        from .api_handlers import execute_api_call_with_retry
+        from .client import get_model_parameters
 
         try:
-            # Use execute_api_call which handles all parameter preparation including thinking_effort
-            retry_response, _ = execute_api_call(
+            # Filter parameters for model compatibility
+            retry_filtered_params = get_model_parameters(self.model, params)
+            
+            # Call with correct function and signature
+            retry_response = execute_api_call_with_retry(
                 model_name,
                 enhanced_messages,
-                params,  # Pass original params - execute_api_call will handle preparation
-                stream=False
+                retry_filtered_params
             )
 
             # Extract content from response

@@ -40,3 +40,7 @@ web_scraping:
   max_fetch_time: 300      # Maximum total time for all fetches in seconds (5 minutes)
   selenium_enabled: true   # Enable/disable Selenium for JavaScript sites
   selenium_timeout_multiplier: 2  # Selenium gets this * fetch_timeout
+
+jina_reader:
+  api_key: ""  # Optional: Jina Reader API key for 200 RPM (free tier: 20 RPM without key)
+               # Get free key at https://jina.ai/ for 10x higher rate limits

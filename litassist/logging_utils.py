@@ -171,7 +171,9 @@ def save_log(tag: str, payload: dict):
     try:
         with open(md_path, "w", encoding="utf-8") as f:
             # Detect log type and use appropriate formatter
-            if tag == "citation_verification_session" or "citations_found" in payload:
+            if tag == "fetch_attempt":
+                _write_fetch_log_markdown(f, tag, ts, payload)
+            elif tag == "citation_verification_session" or "citations_found" in payload:
                 _write_citation_verification_markdown(f, tag, ts, payload)
             elif tag == "citation_validation" or "validate_citation_patterns" in str(
                 payload.get("method", "")
@@ -463,6 +465,58 @@ def _format_dict_as_markdown(d: dict, indent: int = 0) -> str:
             lines.append(f"{prefix}**{key}**: {value}")
 
     return "\n".join(lines)
+
+
+def _write_fetch_log_markdown(f, tag: str, ts: str, payload: dict):
+    """Write markdown for fetch attempt logs."""
+    f.write(f"# {tag} — {ts}\n\n")
+    
+    # Summary section
+    f.write("## Fetch Summary\n\n")
+    f.write(f"- **URL**: `{payload.get('url', 'N/A')}`  \n")
+    if payload.get('original_url'):
+        f.write(f"- **Original URL**: `{payload.get('original_url')}`  \n")
+    f.write(f"- **Method**: `{payload.get('method', 'N/A')}`  \n")
+    f.write(f"- **Status**: `{payload.get('status', 'N/A')}`  \n")
+    if payload.get('reason'):
+        f.write(f"- **Reason**: {payload.get('reason')}  \n")
+    if payload.get('error'):
+        f.write(f"- **Error**: {payload.get('error')}  \n")
+    f.write(f"- **Timestamp**: {time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(payload.get('timestamp', time.time())))}  \n\n")
+    
+    # Size statistics
+    if any(k in payload for k in ['html_size', 'extracted_size', 'final_size', 'jina_response_size']):
+        f.write("## Size Statistics\n\n")
+        if payload.get('html_size'):
+            f.write(f"- **HTML Size**: {payload['html_size']:,} chars  \n")
+        if payload.get('jina_response_size'):
+            f.write(f"- **Jina Response Size**: {payload['jina_response_size']:,} chars  \n")
+        if payload.get('extracted_size'):
+            f.write(f"- **Extracted Size**: {payload['extracted_size']:,} chars  \n")
+        if payload.get('final_size'):
+            f.write(f"- **Final Size**: {payload['final_size']:,} chars  \n")
+        if payload.get('reduction_percent'):
+            f.write(f"- **Reduction**: {payload['reduction_percent']}%  \n")
+        if payload.get('pdf_pages'):
+            f.write(f"- **PDF Pages**: {payload['pdf_pages']} total  \n")
+        if payload.get('pages_extracted'):
+            f.write(f"- **Pages Extracted**: {payload['pages_extracted']}  \n")
+        f.write("\n")
+    
+    # Content section
+    content = payload.get('content', '')
+    if content:
+        f.write("## Scraped Content\n\n")
+        # Write FULL content - no truncation for legal compliance
+        f.write("```text\n")
+        f.write(content)
+        f.write("\n```\n")
+    elif payload.get('status') == 'failed':
+        f.write("## Content\n\nFetch failed - no content retrieved.\n")
+    elif payload.get('status') == 'skipped':
+        f.write("## Content\n\nFetch skipped - no content retrieved.\n")
+    
+    f.write("\n")
 
 
 def _write_generic_markdown(f, tag: str, ts: str, payload: dict):

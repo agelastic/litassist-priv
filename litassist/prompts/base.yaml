@@ -9,6 +9,16 @@ base:
   # LOCATION: llm.py:896, 910
   australian_law: "Australian law only. Use Australian English spellings and terminology. Where applicable, explicitly state if legal principles are Commonwealth, State or Territory-based, and specify which jurisdiction (e.g., New South Wales, Victoria)."
   
+  # Date handling instruction for tool-based date provision
+  # USED BY: llm/client.py - system prompt date injection
+  # LOCATION: client.py:896, 920
+  date_tool_instruction: "Before answering, you MUST call the now() tool to get the current date. Use that date for all references to 'today' or 'current date'. When citing sources, keep their original dates."
+  
+  # Date injection for models that don't support tools (fallback mode)
+  # USED BY: llm/client.py - fallback when tools aren't supported
+  # LOCATION: client.py:975-979
+  date_fallback_instruction: "Today's date is {date} (Australia/Sydney). Use this date for all references to 'today' or 'current date'. When citing sources, keep their original dates."
+  
   # Citation standards for all legal documents
   # DEPRECATED: Not used in codebase
   citation_standards: "Cite all cases and legislative materials strictly in accordance with the latest edition of the Australian Guide to Legal Citations (AGLC). For cases, include medium neutral citations where available. Always include pinpoint references (e.g., paragraph numbers or sections) when relying on a specific part of a source."

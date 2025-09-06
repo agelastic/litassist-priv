@@ -22,7 +22,9 @@ processing:
     # USED BY: digest.py - context instruction with context
     # LOCATION: digest.py:170
     summary_mode_context_instruction_with_context: |
-      Focus your summary only on aspects related to: {context}
+      **ANALYSIS GUIDANCE** (This is user guidance, NOT facts from the document):
+      The user is interested in aspects related to: {context}
+      CRITICAL: Only extract facts that are explicitly stated in the document text. Do NOT treat the guidance above as document facts.
     # USED BY: digest.py - context instruction without context
     # LOCATION: digest.py:175
     summary_mode_context_instruction_no_context: |
@@ -50,7 +52,9 @@ processing:
     # USED BY: digest.py - context instruction with context for issues
     # LOCATION: digest.py:188
     issues_mode_context_instruction_with_context: |
-      Focus your analysis only on issues related to: {context}
+      **ANALYSIS GUIDANCE** (This is user guidance, NOT facts from the document):
+      The user is interested in issues related to: {context}
+      CRITICAL: Only extract facts that are explicitly stated in the document text. Do NOT treat the guidance above as document facts.
     # USED BY: digest.py - context instruction without context for issues
     # LOCATION: digest.py:193
     issues_mode_context_instruction_no_context: |
@@ -68,7 +72,8 @@ processing:
       
       Extract key events, dates, and developments from this section that should be included in a comprehensive chronological summary.
       
-      Focus on: {context}
+      **USER GUIDANCE (NOT facts):** Look for aspects related to: {context}
+      **IMPORTANT:** Only report information explicitly found in the document below. Never treat the user guidance as facts from the document.
       
       **IMPORTANT**: This is a partial analysis that will be consolidated with other sections.
       Focus on identifying specific events and dates rather than providing a complete summary.
@@ -83,7 +88,8 @@ processing:
       
       Extract legal issues, problems, and concerns from this section that should be included in comprehensive legal issues analysis.
       
-      Focus on: {context}
+      **USER GUIDANCE (NOT facts):** Look for issues related to: {context}
+      **IMPORTANT:** Only report information explicitly found in the document below. Never treat the user guidance as facts from the document.
       
       **IMPORTANT**: This is a partial analysis that will be consolidated with other sections.
       Focus on identifying specific legal issues rather than providing complete legal analysis.
@@ -104,7 +110,8 @@ processing:
       - **[Date]**: [Event description]
       - **[Date]**: [Event description]
       
-      Focus on: {context}
+      **USER GUIDANCE (NOT facts):** The user is interested in: {context}
+      **CRITICAL:** Base your consolidation ONLY on the document analyses below. Do NOT incorporate the user guidance as factual information.
       
       Synthesize all chronological information, eliminate redundancy, and provide coherent timeline.
       
@@ -129,7 +136,8 @@ processing:
       **Issue 2: [Issue Name]**
       [Same structure...]
       
-      Focus on: {context}
+      **USER GUIDANCE (NOT facts):** The user is interested in: {context}
+      **CRITICAL:** Base your consolidation ONLY on the document analyses below. Do NOT incorporate the user guidance as factual information.
       
       Synthesize all legal issues, eliminate redundancy, and provide coherent analysis.
       

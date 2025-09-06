@@ -8,8 +8,6 @@ and serves as the entry point for the LitAssist application.
 import sys
 import click
 import logging
-import pinecone
-from openai import OpenAI
 
 from litassist.config import load_config
 from litassist.commands import register_commands
@@ -89,6 +87,8 @@ def validate_credentials(show_progress=True):
         try:
             if show_progress:
                 print("  - Testing OpenAI API... ", end="", flush=True)
+            # Lazy import OpenAI only when needed
+            from openai import OpenAI
             # Use the new OpenAI v1.0+ API
             client = OpenAI(api_key=config.oa_key)
             # List models to test the connection
@@ -108,6 +108,8 @@ def validate_credentials(show_progress=True):
         try:
             if show_progress:
                 print("  - Testing Pinecone API... ", end="", flush=True)
+            # Lazy import Pinecone only when needed
+            import pinecone
             # Initialize Pinecone before testing
             pinecone.init(api_key=config.pc_key, environment=config.pc_env)
             _ = pinecone.list_indexes()
@@ -197,11 +199,11 @@ def validate_credentials(show_progress=True):
 
 
 def test_scraping_capabilities():
-    """Test web scraping functionality for both plain HTTP and Selenium."""
+    """Test web scraping functionality."""
     print("Verifying web scraping capabilities...")
 
     # Import utilities for colored output
-    from litassist.utils.formatting import warning_message, error_message
+    from litassist.utils.formatting import error_message
 
     # Test plain HTTP scraping
     print("  - Testing plain HTTP scraping... ", end="", flush=True)
@@ -221,46 +223,55 @@ def test_scraping_capabilities():
         print("FAILED")
         print(f"    {error_message(f'HTTP scraping error: {e}')}")
 
-    # Test Selenium scraping
-    print("  - Testing Selenium scraping... ", end="", flush=True)
+    # Test Jina Reader API
+    print("  - Testing Jina Reader API... ", end="", flush=True)
     try:
-        from litassist.commands.lookup.fetchers import (
-            SELENIUM_AVAILABLE,
-            _fetch_url_content_selenium,
-        )
-
-        if not SELENIUM_AVAILABLE:
-            print("")  # New line
-            print(
-                f"    {warning_message('Selenium not installed - install with: pip install selenium')}"
-            )
-        else:
-            # Test with a page that has substantial content
-            test_url = "https://webscraper.io/test-sites/e-commerce/allinone"  # Dedicated scraping test site
-            content = _fetch_url_content_selenium(test_url, timeout=10)
-
-            # Lowered threshold for test pages after text extraction
-            if (
-                content and len(content) > 100
-            ):  # Test pages have less text after extraction
-                print(f"OK (fetched {len(content)} chars)")
+        from litassist.commands.lookup.fetchers import _fetch_via_jina
+        
+        # Test with a reliable site
+        test_url = "https://www.austlii.edu.au/au/cases/cth/HCA/2020/45.html"
+        content = _fetch_via_jina(test_url, timeout=10)
+        
+        if content and len(content) > 5000:
+            # Check for markdown formatting
+            has_markdown = '#' in content or '**' in content or '[' in content
+            if has_markdown:
+                print(f"OK (fetched {len(content)} chars with markdown)")
             else:
-                print("FAILED")
-                print(f"    {error_message('Selenium could not fetch content')}")
+                print(f"OK (fetched {len(content)} chars)")
+        else:
+            print("FAILED")
+            print(f"    {error_message('Jina Reader could not fetch content')}")
     except Exception as e:
         print("FAILED")
-        error_str = str(e)
-        # Check for common issues
-        if "chromedriver" in error_str.lower() or "chrome version" in error_str.lower():
-            print(
-                f"    {warning_message('ChromeDriver version mismatch - update with: brew upgrade chromedriver')}"
-            )
-        elif "session not created" in error_str.lower():
-            print(
-                f"    {warning_message('ChromeDriver/Chrome compatibility issue - check versions')}"
-            )
+        print(f"    {error_message(f'Jina Reader error: {str(e)[:100]}')}")
+
+    # Test PDF fetching
+    print("  - Testing PDF fetching... ", end="", flush=True)
+    try:
+        import requests
+        
+        # Test with a small PDF URL
+        test_url = "https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf"
+        
+        # Test HEAD request to detect PDF
+        head_response = requests.head(test_url, timeout=5, allow_redirects=True)
+        content_type = head_response.headers.get("content-type", "").lower()
+        
+        if "application/pdf" in content_type:
+            # Test actual PDF download
+            response = requests.get(test_url, timeout=10)
+            if response.status_code == 200 and len(response.content) > 100:
+                print(f"OK (fetched {len(response.content)} bytes)")
+            else:
+                print("FAILED")
+                print(f"    {error_message('Could not download PDF')}")
         else:
-            print(f"    {error_message(f'Selenium error: {str(e)[:100]}')}")
+            print("FAILED")
+            print(f"    {error_message('PDF detection failed')}")
+    except Exception as e:
+        print("FAILED")
+        print(f"    {error_message(f'PDF fetching error: {str(e)[:100]}')}")
 
     print("\nAll scraping tests completed.")
 
@@ -272,7 +283,7 @@ def test():
 
     This command validates credentials for OpenAI, OpenRouter, Pinecone, and Google CSE
     by making test API calls and reports success or failure. It also tests web scraping
-    functionality for both plain HTTP and Selenium-based JavaScript rendering.
+    functionality including Jina Reader and PDF fetching.
     """
     validate_credentials(show_progress=True)
     test_scraping_capabilities()

@@ -163,10 +163,6 @@ class TestCommandParameterPropagation:
             patch(
                 "litassist.commands.lookup.fetchers._fetch_url_content", return_value=""
             ),
-            patch(
-                "litassist.commands.lookup.fetchers._fetch_url_content_selenium_with_timeout",
-                return_value="",
-            ),
         ):
             mock_service = Mock()
             mock_build.return_value = mock_service
