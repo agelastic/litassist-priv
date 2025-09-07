@@ -11,6 +11,7 @@ By default (no flags), all three verifications are performed.
 
 import os
 import re
+import glob
 import click
 import logging
 
@@ -51,8 +52,13 @@ def _handle_verification_error(step_name: str, exception: Exception) -> None:
 @click.option("--reasoning", is_flag=True, help="Verify/generate reasoning trace only")
 @click.option("--cove", is_flag=True, help="Add Chain of Verification as final check")
 @click.option("--output", type=str, help="Custom output filename prefix")
+@click.option(
+    "--reference",
+    type=str,
+    help="Glob pattern for reference files to include as context (e.g., '*.txt', 'docs/*.pdf'). Supports PDF and text files."
+)
 @timed
-def verify(file, citations, soundness, reasoning, cove, output):
+def verify(file, citations, soundness, reasoning, cove, output, reference):
     """
     Verify legal text for citations, soundness, and reasoning.
 
@@ -73,6 +79,24 @@ def verify(file, citations, soundness, reasoning, cove, output):
 
     if not content.strip():
         raise click.ClickException("File is empty")
+    
+    # Process reference files if provided
+    reference_context = ""
+    reference_files = []
+    if reference:
+        matched_files = _expand_reference_pattern(reference)
+        if matched_files:
+            click.echo(verifying_message(f"Reading {len(matched_files)} reference files..."))
+            for filepath in matched_files:
+                try:
+                    # read_document handles both PDF and text files
+                    file_content = read_document(filepath)
+                    filename = os.path.basename(filepath)
+                    reference_context += f"=== {filename} ===\n\n{file_content}\n\n"
+                    reference_files.append(filename)
+                    click.echo(success_message(f"  - Read {filename} ({len(file_content):,} chars)"))
+                except Exception as e:
+                    click.echo(warning_message(f"  - Could not read {filepath}: {e}"))
 
     base_name = os.path.splitext(file)[0]
     reports_generated = 0
@@ -176,6 +200,12 @@ def verify(file, citations, soundness, reasoning, cove, output):
                     for citation, full_text in case_content.items():
                         enhanced_prompt += f"=== {citation} ===\n\n{full_text}\n\n"
                 
+                # Append reference files if available
+                if reference_context:
+                    enhanced_prompt += "\n\n## Reference Documents\n\n"
+                    enhanced_prompt += "The following reference documents provide additional context:\n\n"
+                    enhanced_prompt += reference_context
+                
                 # Also append citation report summary if available
                 if citation_report:
                     enhanced_prompt += (
@@ -217,6 +247,10 @@ def verify(file, citations, soundness, reasoning, cove, output):
                                     enhanced_prompt += "Below are the complete legal documents referenced in the text:\n\n"
                                     for citation, full_text in cases_to_include:
                                         enhanced_prompt += f"=== {citation} ===\n\n{full_text}\n\n"
+                                if reference_context:
+                                    enhanced_prompt += "\n\n## Reference Documents\n\n"
+                                    enhanced_prompt += "The following reference documents provide additional context:\n\n"
+                                    enhanced_prompt += reference_context
                                 if citation_report:
                                     enhanced_prompt += (
                                         "\n\n## Citation Verification Summary\n" + citation_report
@@ -299,6 +333,12 @@ def verify(file, citations, soundness, reasoning, cove, output):
                 full_citation_context = "## Full Legal Documents\n\n"
                 for citation, full_text in case_content.items():
                     full_citation_context += f"=== {citation} ===\n\n{full_text}\n\n"
+            
+            # Add reference files to citation context
+            if reference_context:
+                full_citation_context += "\n\n## Reference Documents\n\n"
+                full_citation_context += reference_context
+            
             if citation_report:
                 full_citation_context += "\n\n## Citation Verification Summary\n" + citation_report
             
@@ -367,6 +407,7 @@ def verify(file, citations, soundness, reasoning, cove, output):
                         "soundness": issues
                         if soundness and "issues" in locals()
                         else None,
+                        "reference_files": reference_context if reference_context else None,
                     },
                 )
 
@@ -436,7 +477,9 @@ def verify(file, citations, soundness, reasoning, cove, output):
                     "soundness": soundness,
                     "reasoning": reasoning,
                     "cove": cove,
+                    "reference": reference,
                 },
+                "reference_files": reference_files,
             },
             "outputs": extra_files,
             "reports_generated": reports_generated,
@@ -526,3 +569,17 @@ def _verify_reasoning_trace(trace: LegalReasoningTrace) -> dict:
     if not trace.sources:
         status["issues"].append("No legal sources cited")
     return status
+
+
+def _expand_reference_pattern(pattern: str) -> list:
+    """Expand glob pattern and return list of valid file paths."""
+    if not pattern:
+        return []
+    matches = glob.glob(pattern)
+    valid_files = []
+    for f in matches:
+        if os.path.isfile(f):
+            valid_files.append(f)
+        else:
+            click.echo(warning_message(f"Skipping non-file: {f}"))
+    return valid_files
