@@ -5,6 +5,9 @@ This module provides functions for reading documents, validating file sizes,
 and handling various file types used throughout LitAssist.
 """
 
+import glob
+import os
+from typing import Optional, Tuple, List
 import click
 from pypdf import PdfReader
 
@@ -108,3 +111,108 @@ def validate_file_size_limit(content: str, max_size: int, context: str):
             f"{context} file too large ({len(content):,} characters). "
             f"Please provide a file under {max_size:,} characters (~{max_size // 5:,} words)."
         )
+
+
+def expand_glob_pattern(pattern: str, warn_non_files: bool = True) -> List[str]:
+    """
+    Expand glob pattern and return list of valid file paths.
+    
+    Args:
+        pattern: Glob pattern string
+        warn_non_files: Whether to warn about non-file matches
+        
+    Returns:
+        List of valid file paths matching the pattern
+    """
+    from litassist.utils.formatting import warning_message
+    
+    if not pattern:
+        return []
+    
+    matches = glob.glob(pattern)
+    valid_files = []
+    
+    for f in matches:
+        if os.path.isfile(f):
+            valid_files.append(f)
+        elif warn_non_files:
+            click.echo(warning_message(f"Skipping non-file: {f}"))
+    
+    return valid_files
+
+
+def process_reference_files(
+    pattern: Optional[str],
+    purpose: str = "reference",
+    require_flag: Optional[str] = None,
+    flag_enabled: bool = True,
+    show_char_count: bool = False
+) -> Tuple[str, List[str]]:
+    """
+    Process reference files from glob pattern for verification context.
+    
+    Args:
+        pattern: Glob pattern for reference files
+        purpose: Purpose description for messages (e.g., "reference", "CoVe", "CoVe answers")
+        require_flag: Name of required flag (e.g., "--cove")
+        flag_enabled: Whether the required flag is set
+        show_char_count: Whether to show character count in success messages
+        
+    Returns:
+        Tuple of (reference_context, reference_files_list)
+        - reference_context: Formatted string with all file contents
+        - reference_files_list: List of processed filenames
+    """
+    from litassist.utils.formatting import warning_message, success_message, verifying_message, info_message
+    
+    if not pattern:
+        return "", []
+    
+    # Check if required flag is set
+    if require_flag and not flag_enabled:
+        click.echo(warning_message(f"--cove-reference requires {require_flag} flag; parameter ignored"))
+        return "", []
+    
+    # Expand glob pattern
+    valid_files = expand_glob_pattern(pattern)
+    
+    if not valid_files:
+        return "", []
+    
+    reference_context = ""
+    reference_files = []
+    
+    # Choose appropriate message function based on context
+    # verify.py uses verifying_message for both --reference and --cove-reference
+    if purpose in ["reference", "CoVe answers"]:
+        msg_func = verifying_message
+        message = f"Reading {len(valid_files)} reference files"
+        if purpose == "CoVe answers":
+            message += " for CoVe answer stage"
+        message += "..."
+    else:
+        msg_func = info_message
+        message = f"Reading {len(valid_files)} {purpose} reference files..."
+    
+    click.echo(msg_func(message))
+    
+    for filepath in valid_files:
+        try:
+            file_content = read_document(filepath)
+            filename = os.path.basename(filepath)
+            reference_context += f"=== {filename} ===\n\n{file_content}\n\n"
+            reference_files.append(filename)
+            
+            # Format success message based on options
+            if show_char_count:
+                msg = f"  - Read {filename} ({len(file_content):,} chars)"
+            else:
+                msg = f"  - Read {filename}"
+                if purpose != "reference":
+                    msg += f" for {purpose}"
+            
+            click.echo(success_message(msg))
+        except Exception as e:
+            click.echo(warning_message(f"  - Could not read {filepath}: {e}"))
+    
+    return reference_context, reference_files

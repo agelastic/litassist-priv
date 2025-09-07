@@ -11,7 +11,6 @@ By default (no flags), all three verifications are performed.
 
 import os
 import re
-import glob
 import click
 import logging
 
@@ -30,7 +29,7 @@ from litassist.verification_chain import run_cove_verification, format_cove_repo
 from litassist.citation_context import fetch_citation_context
 from litassist.timing import timed
 from litassist.logging_utils import save_log
-from litassist.utils.file_ops import read_document
+from litassist.utils.file_ops import read_document, process_reference_files
 from litassist.utils.legal_reasoning import (
     create_reasoning_prompt,
     extract_reasoning_trace,
@@ -86,42 +85,20 @@ def verify(file, citations, soundness, reasoning, cove, output, reference, cove_
         raise click.ClickException("File is empty")
     
     # Process reference files if provided
-    reference_context = ""
-    reference_files = []
-    if reference:
-        matched_files = _expand_reference_pattern(reference)
-        if matched_files:
-            click.echo(verifying_message(f"Reading {len(matched_files)} reference files..."))
-            for filepath in matched_files:
-                try:
-                    # read_document handles both PDF and text files
-                    file_content = read_document(filepath)
-                    filename = os.path.basename(filepath)
-                    reference_context += f"=== {filename} ===\n\n{file_content}\n\n"
-                    reference_files.append(filename)
-                    click.echo(success_message(f"  - Read {filename} ({len(file_content):,} chars)"))
-                except Exception as e:
-                    click.echo(warning_message(f"  - Could not read {filepath}: {e}"))
+    reference_context, reference_files = process_reference_files(
+        reference, 
+        purpose="reference",
+        show_char_count=True
+    )
     
     # Process CoVe reference files if provided (for answer stage, not question generation)
-    cove_reference_context = ""
-    cove_reference_files = []
-    if cove_reference:
-        if not cove:
-            click.echo(warning_message("--cove-reference requires --cove flag; parameter ignored"))
-        else:
-            matched_files = _expand_reference_pattern(cove_reference)
-            if matched_files:
-                click.echo(verifying_message(f"Reading {len(matched_files)} reference files for CoVe answer stage..."))
-                for filepath in matched_files:
-                    try:
-                        file_content = read_document(filepath)
-                        filename = os.path.basename(filepath)
-                        cove_reference_context += f"=== {filename} ===\n\n{file_content}\n\n"
-                        cove_reference_files.append(filename)
-                        click.echo(success_message(f"  - Read {filename} for CoVe answers ({len(file_content):,} chars)"))
-                    except Exception as e:
-                        click.echo(warning_message(f"  - Could not read {filepath}: {e}"))
+    cove_reference_context, cove_reference_files = process_reference_files(
+        cove_reference,
+        purpose="CoVe answers",
+        require_flag="--cove",
+        flag_enabled=cove,
+        show_char_count=True
+    )
 
     base_name = os.path.splitext(file)[0]
     reports_generated = 0
@@ -603,17 +580,3 @@ def _verify_reasoning_trace(trace: LegalReasoningTrace) -> dict:
     if not trace.sources:
         status["issues"].append("No legal sources cited")
     return status
-
-
-def _expand_reference_pattern(pattern: str) -> list:
-    """Expand glob pattern and return list of valid file paths."""
-    if not pattern:
-        return []
-    matches = glob.glob(pattern)
-    valid_files = []
-    for f in matches:
-        if os.path.isfile(f):
-            valid_files.append(f)
-        else:
-            click.echo(warning_message(f"Skipping non-file: {f}"))
-    return valid_files

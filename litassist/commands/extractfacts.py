@@ -8,12 +8,11 @@ with ten standard headings.
 
 import click
 import os
-import glob
 
 from litassist.config import get_config
 from litassist.prompts import PROMPTS
 from litassist.utils.text_processing import chunk_text
-from litassist.utils.file_ops import validate_file_size, read_document
+from litassist.utils.file_ops import validate_file_size, process_reference_files
 from litassist.utils.core import (
     timed,
     show_command_completion,
@@ -25,7 +24,6 @@ from litassist.utils.legal_reasoning import (
 from litassist.utils.formatting import (
     info_message,
     success_message,
-    warning_message,
 )
 from litassist.logging_utils import (
     save_log,
@@ -74,23 +72,12 @@ def extractfacts(file, verify, noverify, cove, output, cove_reference):
                              or with the LLM API calls.
     """
     # Process CoVe reference files if provided
-    cove_reference_context = ""
-    if cove_reference:
-        if not cove:
-            click.echo(warning_message("--cove-reference requires --cove flag; parameter ignored"))
-        else:
-            matched_files = glob.glob(cove_reference)
-            valid_files = [f for f in matched_files if os.path.isfile(f)]
-            if valid_files:
-                click.echo(info_message(f"Reading {len(valid_files)} CoVe reference files..."))
-                for filepath in valid_files:
-                    try:
-                        file_content = read_document(filepath)
-                        filename = os.path.basename(filepath)
-                        cove_reference_context += f"=== {filename} ===\n\n{file_content}\n\n"
-                        click.echo(success_message(f"  - Read {filename} for CoVe"))
-                    except Exception as e:
-                        click.echo(warning_message(f"  - Could not read {filepath}: {e}"))
+    cove_reference_context, _ = process_reference_files(
+        cove_reference,
+        purpose="CoVe",
+        require_flag="--cove",
+        flag_enabled=cove
+    )
     
     # Process all files
     all_text = ""

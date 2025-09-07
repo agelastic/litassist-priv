@@ -8,12 +8,10 @@ with GPT-4o that incorporates these citations.
 """
 
 import click
-import glob
-import os
 
 from litassist.config import get_config
 from litassist.prompts import PROMPTS
-from litassist.utils.file_ops import read_document, is_text_file
+from litassist.utils.file_ops import read_document, is_text_file, process_reference_files
 from litassist.utils.text_processing import chunk_text, create_embeddings
 from litassist.logging_utils import save_log, save_command_output
 from litassist.timing import timed
@@ -81,23 +79,12 @@ def draft(ctx, documents, query, noverify, cove, diversity, output, cove_referen
                              vector storage, retrieval, or LLM API calls.
     """
     # Process CoVe reference files if provided
-    cove_reference_context = ""
-    if cove_reference:
-        if not cove:
-            click.echo(warning_message("--cove-reference requires --cove flag; parameter ignored"))
-        else:
-            matched_files = glob.glob(cove_reference)
-            valid_files = [f for f in matched_files if os.path.isfile(f)]
-            if valid_files:
-                click.echo(info_message(f"Reading {len(valid_files)} CoVe reference files..."))
-                for filepath in valid_files:
-                    try:
-                        file_content = read_document(filepath)
-                        filename = os.path.basename(filepath)
-                        cove_reference_context += f"=== {filename} ===\n\n{file_content}\n\n"
-                        click.echo(success_message(f"  - Read {filename} for CoVe"))
-                    except Exception as e:
-                        click.echo(warning_message(f"  - Could not read {filepath}: {e}"))
+    cove_reference_context, _ = process_reference_files(
+        cove_reference,
+        purpose="CoVe",
+        require_flag="--cove",
+        flag_enabled=cove
+    )
     
     # Process all documents
     structured_content = {

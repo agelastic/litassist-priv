@@ -13,7 +13,7 @@ import os
 from typing import List, Optional, Dict, Any
 
 from litassist.prompts import PROMPTS
-from litassist.utils.file_ops import read_document
+from litassist.utils.file_ops import read_document, process_reference_files
 from litassist.utils.core import (
     timed,
     show_command_completion,
@@ -211,23 +211,12 @@ def barbrief(
         click.ClickException: If case facts are invalid or API calls fail
     """
     # Process CoVe reference files if provided
-    cove_reference_context = ""
-    if cove_reference:
-        if not cove:
-            click.echo(warning_message("--cove-reference requires --cove flag; parameter ignored"))
-        else:
-            matched_files = glob.glob(cove_reference)
-            valid_files = [f for f in matched_files if os.path.isfile(f)]
-            if valid_files:
-                click.echo(f"Reading {len(valid_files)} CoVe reference files...")
-                for filepath in valid_files:
-                    try:
-                        file_content = read_document(filepath)
-                        filename = os.path.basename(filepath)
-                        cove_reference_context += f"=== {filename} ===\n\n{file_content}\n\n"
-                        click.echo(success_message(f"  - Read {filename} for CoVe"))
-                    except Exception as e:
-                        click.echo(warning_message(f"  - Could not read {filepath}: {e}"))
+    cove_reference_context, _ = process_reference_files(
+        cove_reference,
+        purpose="CoVe",
+        require_flag="--cove",
+        flag_enabled=cove
+    )
     
     # Read and validate case facts
     click.echo("Reading case facts...")
