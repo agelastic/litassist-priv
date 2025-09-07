@@ -186,8 +186,84 @@ def fetch_citation_context(
                 save_log("cove_fetch_error", {"citation": citation, "url": url, "error": str(e)})
                 content = ""
         
-        # If no valid content yet, try direct AustLII URL construction
-        if not content_valid:
+        # If validation failed for legislation, try PDF-specific search
+        if not content_valid and is_legislation and cse_comprehensive:
+            click.echo(f"  → Searching for PDF version of {citation}")
+            try:
+                # Search with "PDF" added to query
+                pdf_query = f'{citation} PDF'
+                res = service.cse().list(q=pdf_query, cx=cse_comprehensive, num=5).execute()
+                if "items" in res:
+                    for item in res["items"]:
+                        link = item.get("link", "")
+                        # Prefer .pdf URLs from government sources
+                        if ".gov.au" in link and (".pdf" in link.lower() or "/PDF/" in link):
+                            click.echo(f"  → Found PDF: {link}")
+                            try:
+                                from litassist.commands.lookup.fetchers import _fetch_url_content
+                                content = _fetch_url_content(link, timeout=15)
+                                if content and _validate_citation_match(content, citation):
+                                    url = link
+                                    content_valid = True
+                                    click.echo("  ✓ Valid PDF found")
+                                    save_log("cove_pdf_search_success", {
+                                        "citation": citation,
+                                        "url": link,
+                                        "source": "pdf_search"
+                                    })
+                                    break
+                                else:
+                                    click.echo("  ✗ PDF doesn't match citation")
+                            except Exception as e:
+                                save_log("cove_pdf_fetch_error", {
+                                    "citation": citation,
+                                    "url": link,
+                                    "error": str(e)
+                                })
+            except Exception as e:
+                save_log("cove_pdf_search_error", {
+                    "citation": citation,
+                    "error": str(e)
+                })
+        
+        # If still no valid content and it's legislation, try AustLII
+        if not content_valid and is_legislation and cse_austlii:
+            click.echo(f"  → Trying AustLII for {citation}")
+            try:
+                res = service.cse().list(q=citation, cx=cse_austlii, num=5).execute()
+                if "items" in res:
+                    for item in res["items"]:
+                        link = item.get("link", "")
+                        if "/au/legis/" in link:
+                            click.echo(f"  → Found AustLII: {link}")
+                            try:
+                                from litassist.commands.lookup.fetchers import _fetch_url_content
+                                content = _fetch_url_content(link, timeout=15)
+                                if content and _validate_citation_match(content, citation):
+                                    url = link
+                                    content_valid = True
+                                    click.echo("  ✓ Valid AustLII content")
+                                    save_log("cove_austlii_fallback_success", {
+                                        "citation": citation,
+                                        "url": link
+                                    })
+                                    break
+                                else:
+                                    click.echo("  ✗ AustLII content doesn't match")
+                            except Exception as e:
+                                save_log("cove_austlii_fetch_error", {
+                                    "citation": citation,
+                                    "url": link,
+                                    "error": str(e)
+                                })
+            except Exception as e:
+                save_log("cove_austlii_search_error", {
+                    "citation": citation,
+                    "error": str(e)
+                })
+        
+        # If no valid content yet, try direct AustLII URL construction (case law only)
+        if not content_valid and not is_legislation:
             austlii_url = construct_austlii_url(citation)
             if austlii_url:
                 click.echo("  → Trying direct AustLII URL")
@@ -287,24 +363,48 @@ def _validate_citation_match(content: str, citation: str) -> bool:
     """
     Validate that downloaded content contains the citation we searched for.
     """
-    # Normalize both for comparison
-    normalized_citation = citation.replace(" ", "").replace("[", "").replace("]", "")
-    content_start = content[:5000].replace(" ", "").replace("[", "").replace("]", "")
+    # Skip multi-line "citations" (not real citations)
+    if '\n' in citation:
+        return False
     
-    # Check if exact citation appears
-    if normalized_citation in content_start:
-        return True
+    # Check if this is legislation
+    is_legislation = any(term in citation for term in ['Act', 'Regulation', 'Code', 'Rules', 'Ordinance'])
+    
+    if is_legislation:
+        # Strip jurisdiction suffix for matching
+        # "Freedom of Information Act 1982 (Cth)" -> "Freedom of Information Act 1982"
+        core_citation = re.sub(r'\s*\([A-Z][a-z]+\)$', '', citation).strip()
+        normalized_core = core_citation.replace(" ", "").replace("[", "").replace("]", "")
+        content_start = content[:5000].replace(" ", "").replace("[", "").replace("]", "")
         
-    # For case citations, check components separately
-    match = re.search(r'\[(\d{4})\]\s*([A-Z]+)\s*(\d+)', citation)
-    if match:
-        year, court, number = match.groups()
-        # Check if all components appear near each other
-        if year in content_start and court in content_start and number in content_start:
-            # Verify they're in reasonable proximity (case header)
-            pattern = f"{court}.*{number}"
-            if re.search(pattern, content_start[:2000]):
+        if normalized_core in content_start:
+            return True
+            
+        # Check for year and key terms (handles abbreviations like "FOI Act")
+        year_match = re.search(r'\b(19|20)\d{2}\b', citation)
+        if year_match and year_match.group() in content[:2000]:
+            # Extract significant words and check if any appear
+            words = re.findall(r'\b[A-Z][a-z]+', citation)
+            if words and any(word in content[:2000] for word in words[:3]):
                 return True
+    else:
+        # Existing case law validation (unchanged)
+        normalized_citation = citation.replace(" ", "").replace("[", "").replace("]", "")
+        content_start = content[:5000].replace(" ", "").replace("[", "").replace("]", "")
+        
+        if normalized_citation in content_start:
+            return True
+            
+        # For case citations, check components separately
+        match = re.search(r'\[(\d{4})\]\s*([A-Z]+)\s*(\d+)', citation)
+        if match:
+            year, court, number = match.groups()
+            # Check if all components appear near each other
+            if year in content_start and court in content_start and number in content_start:
+                # Verify they're in reasonable proximity (case header)
+                pattern = f"{court}.*{number}"
+                if re.search(pattern, content_start[:2000]):
+                    return True
     
     return False
 
