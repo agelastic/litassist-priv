@@ -8,12 +8,14 @@ with proper citations and Australian legal formatting.
 """
 
 import click
-import glob
-import os
 from typing import List, Optional, Dict, Any
 
 from litassist.prompts import PROMPTS
-from litassist.utils.file_ops import read_document, process_reference_files
+from litassist.utils.file_ops import (
+    read_document, 
+    process_reference_files,
+    expand_glob_patterns_callback as expand_glob_patterns
+)
 from litassist.utils.core import (
     timed,
     show_command_completion,
@@ -97,37 +99,6 @@ def prepare_brief_sections(
     }
 
     return sections
-
-
-def expand_glob_patterns(ctx, param, value):
-    """Expand glob patterns in file paths."""
-    if not value:
-        return value
-
-    expanded_paths = []
-    for pattern in value:
-        # Check if it's a glob pattern (contains *, ?, or [)
-        if any(char in pattern for char in ["*", "?", "["]):
-            # Expand the glob pattern
-            matches = glob.glob(pattern)
-            if not matches:
-                raise click.BadParameter(f"No files matching pattern: {pattern}")
-            expanded_paths.extend(matches)
-        else:
-            # Not a glob pattern, just verify the file exists
-            if not os.path.exists(pattern):
-                raise click.BadParameter(f"File not found: {pattern}")
-            expanded_paths.append(pattern)
-
-    # Remove duplicates while preserving order
-    seen = set()
-    unique_paths = []
-    for path in expanded_paths:
-        if path not in seen:
-            seen.add(path)
-            unique_paths.append(path)
-
-    return tuple(unique_paths)
 
 
 @click.command()

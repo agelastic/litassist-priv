@@ -35,7 +35,8 @@ from litassist.llm import LLMClientFactory
 from litassist.prompts import PROMPTS
 
 # Import from submodules
-from .research_handler import analyze_research_size, expand_glob_patterns
+from .research_handler import analyze_research_size
+from litassist.utils.file_ops import expand_glob_patterns_callback as expand_glob_patterns
 from .orthodox_generator import generate_orthodox_strategies
 from .unorthodox_generator import generate_unorthodox_strategies
 from .analysis_generator import generate_analysis

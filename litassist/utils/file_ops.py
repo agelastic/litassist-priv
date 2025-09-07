@@ -141,6 +141,53 @@ def expand_glob_pattern(pattern: str, warn_non_files: bool = True) -> List[str]:
     return valid_files
 
 
+def expand_glob_patterns_callback(ctx, param, value):
+    """
+    Expand glob patterns in file paths for Click multiple=True options.
+    
+    This is a Click callback function for handling glob patterns in command options
+    that accept multiple file paths. It expands glob patterns and verifies file existence.
+    
+    Args:
+        ctx: Click context (unused but required for callbacks)
+        param: Click parameter (unused but required for callbacks)
+        value: Tuple of file patterns from Click
+        
+    Returns:
+        Tuple of expanded file paths
+        
+    Raises:
+        click.BadParameter: If no files match a pattern or file doesn't exist
+    """
+    if not value:
+        return value
+    
+    expanded_paths = []
+    for pattern in value:
+        # Check if it's a glob pattern (contains *, ?, or [)
+        if any(char in pattern for char in ["*", "?", "["]):
+            # Expand the glob pattern
+            matches = glob.glob(pattern)
+            if not matches:
+                raise click.BadParameter(f"No files matching pattern: {pattern}")
+            expanded_paths.extend(matches)
+        else:
+            # Not a glob pattern, just verify the file exists
+            if not os.path.exists(pattern):
+                raise click.BadParameter(f"File not found: {pattern}")
+            expanded_paths.append(pattern)
+    
+    # Remove duplicates while preserving order
+    seen = set()
+    unique_paths = []
+    for path in expanded_paths:
+        if path not in seen:
+            seen.add(path)
+            unique_paths.append(path)
+    
+    return tuple(unique_paths)
+
+
 def process_reference_files(
     pattern: Optional[str],
     purpose: str = "reference",

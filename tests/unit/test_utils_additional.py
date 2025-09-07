@@ -11,10 +11,8 @@ from litassist.utils.core import (
     parse_strategies_file,
     validate_side_area_combination,
 )
-from litassist.commands.brainstorm import (
-    analyze_research_size,
-    expand_glob_patterns,
-)
+from litassist.commands.brainstorm import analyze_research_size
+from litassist.utils.file_ops import expand_glob_patterns_callback as expand_glob_patterns
 
 
 class DummyClient:
