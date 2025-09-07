@@ -57,8 +57,13 @@ def _handle_verification_error(step_name: str, exception: Exception) -> None:
     type=str,
     help="Glob pattern for reference files to include as context (e.g., '*.txt', 'docs/*.pdf'). Supports PDF and text files."
 )
+@click.option(
+    "--cove-reference",
+    type=str,
+    help="Glob pattern for reference files to include in CoVe answer stage (e.g., 'exhibits/*.pdf', 'affidavits/*.txt'). Requires --cove flag."
+)
 @timed
-def verify(file, citations, soundness, reasoning, cove, output, reference):
+def verify(file, citations, soundness, reasoning, cove, output, reference, cove_reference):
     """
     Verify legal text for citations, soundness, and reasoning.
 
@@ -97,6 +102,26 @@ def verify(file, citations, soundness, reasoning, cove, output, reference):
                     click.echo(success_message(f"  - Read {filename} ({len(file_content):,} chars)"))
                 except Exception as e:
                     click.echo(warning_message(f"  - Could not read {filepath}: {e}"))
+    
+    # Process CoVe reference files if provided (for answer stage, not question generation)
+    cove_reference_context = ""
+    cove_reference_files = []
+    if cove_reference:
+        if not cove:
+            click.echo(warning_message("--cove-reference requires --cove flag; parameter ignored"))
+        else:
+            matched_files = _expand_reference_pattern(cove_reference)
+            if matched_files:
+                click.echo(verifying_message(f"Reading {len(matched_files)} reference files for CoVe answer stage..."))
+                for filepath in matched_files:
+                    try:
+                        file_content = read_document(filepath)
+                        filename = os.path.basename(filepath)
+                        cove_reference_context += f"=== {filename} ===\n\n{file_content}\n\n"
+                        cove_reference_files.append(filename)
+                        click.echo(success_message(f"  - Read {filename} for CoVe answers ({len(file_content):,} chars)"))
+                    except Exception as e:
+                        click.echo(warning_message(f"  - Could not read {filepath}: {e}"))
 
     base_name = os.path.splitext(file)[0]
     reports_generated = 0
@@ -398,17 +423,24 @@ def verify(file, citations, soundness, reasoning, cove, output, reference):
                     if match:
                         final_content = match.group(1).strip()
 
+                # Build prior contexts including any CoVe reference files
+                prior_contexts_dict = {
+                    "citations": citation_report,
+                    "reasoning": reasoning_response,
+                    "soundness": issues
+                    if soundness and "issues" in locals()
+                    else None,
+                    "reference_files": reference_context if reference_context else None,
+                }
+                
+                # Add CoVe reference files if available (these go to answer stage, not question generation)
+                if cove_reference_context:
+                    prior_contexts_dict["cove_reference_files"] = cove_reference_context
+                
                 cove_content, cove_results = run_cove_verification(
                     final_content,
                     "verify",
-                    prior_contexts={
-                        "citations": citation_report,
-                        "reasoning": reasoning_response,
-                        "soundness": issues
-                        if soundness and "issues" in locals()
-                        else None,
-                        "reference_files": reference_context if reference_context else None,
-                    },
+                    prior_contexts=prior_contexts_dict,
                 )
 
                 # Update final_content if regenerated
@@ -478,8 +510,10 @@ def verify(file, citations, soundness, reasoning, cove, output, reference):
                     "reasoning": reasoning,
                     "cove": cove,
                     "reference": reference,
+                    "cove_reference": cove_reference,
                 },
                 "reference_files": reference_files,
+                "cove_reference_files": cove_reference_files,
             },
             "outputs": extra_files,
             "reports_generated": reports_generated,

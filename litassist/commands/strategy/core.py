@@ -7,12 +7,14 @@ legal strategy generation for Australian civil proceedings.
 
 import click
 import re
+import glob
+import os
 
 from litassist.utils.core import (
     timed,
     parse_strategies_file,
 )
-from litassist.utils.file_ops import validate_file_size_limit
+from litassist.utils.file_ops import validate_file_size_limit, read_document
 from litassist.utils.legal_reasoning import (
     create_reasoning_prompt,
     extract_reasoning_trace,
@@ -24,6 +26,7 @@ from litassist.utils.formatting import (
     stats_message,
     info_message,
     tip_message,
+    warning_message,
 )
 from litassist.logging_utils import save_log
 from litassist.llm import LLMClientFactory
@@ -58,8 +61,13 @@ from .file_handler import save_strategy_outputs, save_strategy_log
     help="Use Chain of Verification instead of standard verification",
 )
 @click.option("--output", type=str, help="Custom output filename prefix")
+@click.option(
+    "--cove-reference",
+    type=str,
+    help="Glob pattern for reference files to include in CoVe answer stage (e.g., 'exhibits/*.pdf', 'affidavits/*.txt'). Requires --cove flag."
+)
 @timed
-def strategy(case_facts, outcome, strategies, verify, noverify, cove, output):
+def strategy(case_facts, outcome, strategies, verify, noverify, cove, output, cove_reference):
     """
     Generate legal strategy options and draft documents for Australian civil matters.
 
@@ -78,6 +86,25 @@ def strategy(case_facts, outcome, strategies, verify, noverify, cove, output):
     Raises:
         click.ClickException: If case facts are invalid or LLM errors occur
     """
+    # Process CoVe reference files if provided
+    cove_reference_context = ""
+    if cove_reference:
+        if not cove:
+            click.echo(warning_message("--cove-reference requires --cove flag; parameter ignored"))
+        else:
+            matched_files = glob.glob(cove_reference)
+            valid_files = [f for f in matched_files if os.path.isfile(f)]
+            if valid_files:
+                click.echo(info_message(f"Reading {len(valid_files)} CoVe reference files..."))
+                for filepath in valid_files:
+                    try:
+                        file_content = read_document(filepath)
+                        filename = os.path.basename(filepath)
+                        cove_reference_context += f"=== {filename} ===\n\n{file_content}\n\n"
+                        click.echo(success_message(f"  - Read {filename} for CoVe"))
+                    except Exception as e:
+                        click.echo(warning_message(f"  - Could not read {filepath}: {e}"))
+    
     # Read and validate case facts
     click.echo(info_message("Validating case facts format..."))
     case_text = case_facts.read()
@@ -247,8 +274,16 @@ def strategy(case_facts, outcome, strategies, verify, noverify, cove, output):
         # Use CoVe INSTEAD of standard verification
         click.echo(info_message("Running Chain of Verification..."))
         original_content = strategy_content
+        
+        # Build prior contexts if we have CoVe reference files
+        prior_contexts = {}
+        if cove_reference_context:
+            prior_contexts["cove_reference_files"] = cove_reference_context
+        
         strategy_content, cove_results = run_cove_verification(
-            strategy_content, "strategy"
+            strategy_content, 
+            "strategy",
+            prior_contexts=prior_contexts if prior_contexts else None
         )
 
         if not cove_results["cove"]["passed"]:

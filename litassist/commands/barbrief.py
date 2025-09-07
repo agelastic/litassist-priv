@@ -171,6 +171,11 @@ def expand_glob_patterns(ctx, param, value):
 )
 @click.option("--cove", is_flag=True, help="Apply Chain of Verification")
 @click.option("--output", type=str, help="Custom output filename prefix")
+@click.option(
+    "--cove-reference",
+    type=str,
+    help="Glob pattern for reference files to include in CoVe answer stage (e.g., 'exhibits/*.pdf', 'affidavits/*.txt'). Requires --cove flag."
+)
 @click.pass_context
 @timed
 def barbrief(
@@ -184,6 +189,7 @@ def barbrief(
     verify,
     cove,
     output,
+    cove_reference,
 ):
     """
     Generate comprehensive barrister's brief for Australian litigation.
@@ -204,6 +210,25 @@ def barbrief(
     Raises:
         click.ClickException: If case facts are invalid or API calls fail
     """
+    # Process CoVe reference files if provided
+    cove_reference_context = ""
+    if cove_reference:
+        if not cove:
+            click.echo(warning_message("--cove-reference requires --cove flag; parameter ignored"))
+        else:
+            matched_files = glob.glob(cove_reference)
+            valid_files = [f for f in matched_files if os.path.isfile(f)]
+            if valid_files:
+                click.echo(f"Reading {len(valid_files)} CoVe reference files...")
+                for filepath in valid_files:
+                    try:
+                        file_content = read_document(filepath)
+                        filename = os.path.basename(filepath)
+                        cove_reference_context += f"=== {filename} ===\n\n{file_content}\n\n"
+                        click.echo(success_message(f"  - Read {filename} for CoVe"))
+                    except Exception as e:
+                        click.echo(warning_message(f"  - Could not read {filepath}: {e}"))
+    
     # Read and validate case facts
     click.echo("Reading case facts...")
     case_facts_content = read_document(case_facts)
@@ -345,7 +370,17 @@ def barbrief(
     # Apply Chain of Verification if requested
     if cove:
         original_content = content
-        content, cove_results = run_cove_verification(content, "barbrief")
+        
+        # Build prior contexts if we have CoVe reference files
+        prior_contexts = {}
+        if cove_reference_context:
+            prior_contexts["cove_reference_files"] = cove_reference_context
+        
+        content, cove_results = run_cove_verification(
+            content, 
+            "barbrief",
+            prior_contexts=prior_contexts if prior_contexts else None
+        )
         if not cove_results["cove"]["passed"]:
             # Content has been regenerated to fix issues
             click.echo(success_message("CoVe corrected issues - brief regenerated"))

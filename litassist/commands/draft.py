@@ -8,6 +8,8 @@ with GPT-4o that incorporates these citations.
 """
 
 import click
+import glob
+import os
 
 from litassist.config import get_config
 from litassist.prompts import PROMPTS
@@ -43,9 +45,14 @@ from litassist.verification_chain import run_cove_verification
     default=None,
 )
 @click.option("--output", type=str, help="Custom output filename prefix")
+@click.option(
+    "--cove-reference",
+    type=str,
+    help="Glob pattern for reference files to include in CoVe answer stage (e.g., 'exhibits/*.pdf', 'affidavits/*.txt'). Requires --cove flag."
+)
 @click.pass_context
 @timed
-def draft(ctx, documents, query, noverify, cove, diversity, output):
+def draft(ctx, documents, query, noverify, cove, diversity, output, cove_reference):
     """
     Citation-rich drafting via RAG & GPT-4o.
 
@@ -73,6 +80,25 @@ def draft(ctx, documents, query, noverify, cove, diversity, output):
         click.ClickException: If there are errors with file reading, embedding,
                              vector storage, retrieval, or LLM API calls.
     """
+    # Process CoVe reference files if provided
+    cove_reference_context = ""
+    if cove_reference:
+        if not cove:
+            click.echo(warning_message("--cove-reference requires --cove flag; parameter ignored"))
+        else:
+            matched_files = glob.glob(cove_reference)
+            valid_files = [f for f in matched_files if os.path.isfile(f)]
+            if valid_files:
+                click.echo(info_message(f"Reading {len(valid_files)} CoVe reference files..."))
+                for filepath in valid_files:
+                    try:
+                        file_content = read_document(filepath)
+                        filename = os.path.basename(filepath)
+                        cove_reference_context += f"=== {filename} ===\n\n{file_content}\n\n"
+                        click.echo(success_message(f"  - Read {filename} for CoVe"))
+                    except Exception as e:
+                        click.echo(warning_message(f"  - Could not read {filepath}: {e}"))
+    
     # Process all documents
     structured_content = {
         "case_facts": "",
@@ -266,7 +292,17 @@ def draft(ctx, documents, query, noverify, cove, diversity, output):
         try:
             click.echo(info_message("Running Chain of Verification..."))
             original_content = content  # Capture original BEFORE regeneration
-            content, cove_results = run_cove_verification(content, "draft")
+            
+            # Build prior contexts if we have CoVe reference files
+            prior_contexts = {}
+            if cove_reference_context:
+                prior_contexts["cove_reference_files"] = cove_reference_context
+            
+            content, cove_results = run_cove_verification(
+                content, 
+                "draft",
+                prior_contexts=prior_contexts if prior_contexts else None
+            )
 
             # Capture CoVe dialogue for critique section
             if "cove" in cove_results:
