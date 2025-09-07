@@ -160,3 +160,104 @@ def test_regenerate_bad_strategies_no_issues(monkeypatch):
     assert result.startswith("## ORTHODOX STRATEGIES")
     assert "1. Strategy One" in result
     assert "2. Strategy Two" in result
+
+
+def test_expand_glob_pattern(tmp_path, monkeypatch):
+    """Test the expand_glob_pattern utility function."""
+    from litassist.utils.file_ops import expand_glob_pattern
+    
+    # Create test files
+    file1 = tmp_path / "test1.txt"
+    file2 = tmp_path / "test2.txt" 
+    dir1 = tmp_path / "subdir"
+    dir1.mkdir()
+    file1.write_text("content1")
+    file2.write_text("content2")
+    
+    # Mock click.echo to capture warnings
+    warnings = []
+    def mock_echo(msg):
+        if "[WARNING]" in str(msg) or "Skipping" in str(msg):
+            warnings.append(msg)
+    
+    monkeypatch.setattr("click.echo", mock_echo)
+    
+    # Save current directory
+    cwd = os.getcwd()
+    try:
+        # Test glob pattern matching files
+        os.chdir(tmp_path)
+        result = expand_glob_pattern("*.txt")
+        assert len(result) == 2
+        assert str(file1.name) in result or str(file2.name) in result
+        
+        # Test empty pattern
+        result = expand_glob_pattern("")
+        assert result == []
+        
+        # Test pattern with directory (should warn)
+        result = expand_glob_pattern("*")
+        assert len(result) == 2  # Only files, not directory
+        assert len(warnings) == 1  # Should have warned about directory
+        assert "subdir" in str(warnings[0])
+    finally:
+        os.chdir(cwd)
+
+
+def test_process_reference_files(tmp_path, monkeypatch, capsys):
+    """Test the process_reference_files utility function."""
+    from litassist.utils.file_ops import process_reference_files
+    
+    # Create test files
+    ref1 = tmp_path / "reference1.txt"
+    ref1.write_text("Reference content 1")
+    
+    # Mock read_document for PDF
+    def mock_read_document(path):
+        if path.endswith(".pdf"):
+            return "PDF content from reference2"
+        return ref1.read_text()
+    
+    monkeypatch.setattr(
+        "litassist.utils.file_ops.read_document",
+        mock_read_document
+    )
+    
+    # Save current directory and change to temp directory for glob patterns
+    cwd = os.getcwd()
+    try:
+        os.chdir(tmp_path)
+        
+        # Test with glob pattern
+        context, files = process_reference_files("*.txt", purpose="reference")
+        assert "reference1.txt" in context
+        assert "Reference content 1" in context
+        assert len(files) == 1
+        assert "reference1.txt" in files
+        
+        # Test with --cove flag requirement (flag not set)
+        context, files = process_reference_files(
+            "*.txt", 
+            purpose="CoVe",
+            require_flag="--cove",
+            flag_enabled=False
+        )
+        assert context == ""
+        assert files == []
+        captured = capsys.readouterr()
+        assert "requires --cove flag" in captured.out
+        
+        # Test with flag enabled
+        context, files = process_reference_files(
+            "reference*.txt",
+            purpose="CoVe",
+            require_flag="--cove", 
+            flag_enabled=True,
+            show_char_count=True
+        )
+        assert "reference1.txt" in context
+        assert len(files) == 1
+        captured = capsys.readouterr()
+        assert "19 chars" in captured.out  # Length of "Reference content 1"
+    finally:
+        os.chdir(cwd)
