@@ -8,7 +8,7 @@ NEVER OVERENGINEER EVER
 3. Don't "improve" code while fixing something else
 4. Don't extract constants, functions, or patterns
 5. Don't update related code unless it's broken and does not run
-6. Do not insert any fallbacks
+6. Do not insert any silent fallbacks without obtanint the user's explicit approval
 7. Prefer inline fixes over architectural changes
 8. One fix = one narrowly scoped change
 9. Prefer deleting unnecessary parsing logic to adding more

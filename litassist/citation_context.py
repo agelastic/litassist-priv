@@ -9,7 +9,7 @@ It implements a fallback strategy from AustLII to comprehensive government sourc
 from typing import Dict, List, Optional
 from litassist.config import get_config
 from litassist.logging_utils import save_log
-from litassist.citation_verify import _citation_cache, _cache_lock, normalize_citation
+from litassist.citation_verify import _citation_cache, _cache_lock, normalize_citation, construct_austlii_url
 import time
 import re
 import click
@@ -62,7 +62,8 @@ def fetch_citation_context(
             normalized = normalize_citation(citation)
             if normalized in _citation_cache:
                 cached_url = _citation_cache[normalized].get("url", "")
-                if cached_url:
+                # Skip jade.io URLs from cache - they can't be fetched
+                if cached_url and 'jade.io' not in cached_url.lower():
                     url = cached_url
         
         # Determine if this is legislation or case law
@@ -162,51 +163,88 @@ def fetch_citation_context(
                         )
 
         # Fetch COMPLETE content if we found a URL
+        content_valid = False
         if url:
             try:
                 # Lazy import to avoid circular dependency
                 from litassist.commands.lookup.fetchers import _fetch_url_content
                 content = _fetch_url_content(url, timeout=15)
                 if content:
-                    # Clean up garbage at the end but keep full document
-                    cleaned_content = _clean_document(content)
-
-                    # For statutes with section references, extract relevant section with context
-                    if "section" in citation.lower() or "s " in citation.lower():
-                        section_content = _extract_section(cleaned_content, citation)
-                        if section_content:
-                            # Provide section WITH context (include surrounding sections)
-                            context[citation] = section_content
-                        else:
-                            # Provide full act if section not found
-                            context[citation] = cleaned_content
+                    # Validate we got the right document
+                    if _validate_citation_match(content, citation):
+                        content_valid = True
                     else:
-                        # Provide FULL document for cases
-                        context[citation] = cleaned_content
-
-                    # Log size for monitoring
-                    click.echo(f"  ✓ Fetched {len(context[citation])} chars")
-                    save_log(
-                        "cove_document_fetched",
-                        {
+                        click.echo(f"  ✗ Wrong content: doesn't match {citation}")
+                        save_log("citation_content_mismatch", {
                             "citation": citation,
                             "url": url,
-                            "size_chars": len(context[citation]),
-                        },
-                    )
+                            "reason": "Downloaded content doesn't contain expected citation"
+                        })
+                        content = ""
+                        url = None
             except Exception as e:
-                save_log(
-                    "cove_fetch_error",
-                    {"citation": citation, "url": url, "error": str(e)},
-                )
-        else:
-            click.echo(f"  ✗ No URL found for {citation}")
+                save_log("cove_fetch_error", {"citation": citation, "url": url, "error": str(e)})
+                content = ""
+        
+        # If no valid content yet, try direct AustLII URL construction
+        if not content_valid:
+            austlii_url = construct_austlii_url(citation)
+            if austlii_url:
+                click.echo("  → Trying direct AustLII URL")
+                try:
+                    from litassist.commands.lookup.fetchers import _fetch_url_content
+                    content = _fetch_url_content(austlii_url, timeout=15)
+                    if content and _validate_citation_match(content, citation):
+                        url = austlii_url
+                        content_valid = True
+                        click.echo("  ✓ Found via direct AustLII URL")
+                        save_log("cove_austlii_direct_success", {
+                            "citation": citation,
+                            "url": austlii_url
+                        })
+                except Exception as e:
+                    save_log("cove_austlii_direct_error", {
+                        "citation": citation,
+                        "url": austlii_url,
+                        "error": str(e)
+                    })
+        
+        # Process content if we got valid content
+        if content_valid and url:
+            # Clean up garbage at the end but keep full document
+            cleaned_content = _clean_document(content)
+
+            # For statutes with section references, extract relevant section with context
+            if "section" in citation.lower() or "s " in citation.lower():
+                section_content = _extract_section(cleaned_content, citation)
+                if section_content:
+                    # Provide section WITH context (include surrounding sections)
+                    context[citation] = section_content
+                else:
+                    # Provide full act if section not found
+                    context[citation] = cleaned_content
+            else:
+                # Provide FULL document for cases
+                context[citation] = cleaned_content
+
+            # Log size for monitoring
+            click.echo(f"  ✓ Fetched {len(context[citation])} chars")
             save_log(
-                "cove_no_url_found",
+                "cove_document_fetched",
                 {
                     "citation": citation,
-                    "austlii_cse": bool(cse_austlii),
-                    "comprehensive_cse": bool(cse_comprehensive),
+                    "url": url,
+                    "size_chars": len(context[citation]),
+                },
+            )
+        else:
+            click.echo(f"  ✗ No valid content found for {citation}")
+            save_log(
+                "cove_no_valid_content",
+                {
+                    "citation": citation,
+                    "tried_cse": bool(url),
+                    "tried_austlii": bool(austlii_url) if 'austlii_url' in locals() else False,
                 },
             )
 
@@ -243,6 +281,32 @@ def _clean_document(text: str) -> str:
     cleaned = re.sub(r"[ \t]+", " ", cleaned)
 
     return cleaned.strip()
+
+
+def _validate_citation_match(content: str, citation: str) -> bool:
+    """
+    Validate that downloaded content contains the citation we searched for.
+    """
+    # Normalize both for comparison
+    normalized_citation = citation.replace(" ", "").replace("[", "").replace("]", "")
+    content_start = content[:5000].replace(" ", "").replace("[", "").replace("]", "")
+    
+    # Check if exact citation appears
+    if normalized_citation in content_start:
+        return True
+        
+    # For case citations, check components separately
+    match = re.search(r'\[(\d{4})\]\s*([A-Z]+)\s*(\d+)', citation)
+    if match:
+        year, court, number = match.groups()
+        # Check if all components appear near each other
+        if year in content_start and court in content_start and number in content_start:
+            # Verify they're in reasonable proximity (case header)
+            pattern = f"{court}.*{number}"
+            if re.search(pattern, content_start[:2000]):
+                return True
+    
+    return False
 
 
 def _extract_section(text: str, citation: str) -> Optional[str]:
