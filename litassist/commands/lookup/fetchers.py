@@ -91,6 +91,78 @@ def _fetch_via_jina(url: str, timeout: int = 15) -> str:
         return ""
 
 
+def _fetch_from_austlii(url: str, timeout: int = 10) -> str:
+    """
+    Fetch content directly from AustLII with proper headers.
+    
+    Args:
+        url: AustLII URL
+        timeout: Request timeout
+        
+    Returns:
+        Extracted text content or empty string if failed
+    """
+    try:
+        headers = {
+            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36"
+        }
+        
+        response = requests.get(url, headers=headers, timeout=timeout)
+        
+        if response.status_code == 200:
+            # Extract text using BeautifulSoup
+            from bs4 import BeautifulSoup
+            soup = BeautifulSoup(response.text, 'html.parser')
+            
+            # Remove script and style elements
+            for script in soup(["script", "style", "meta", "link"]):
+                script.decompose()
+            
+            # Get text
+            text = soup.get_text()
+            
+            # Clean up whitespace
+            lines = (line.strip() for line in text.splitlines())
+            chunks = (phrase.strip() for line in lines for phrase in line.split("  "))
+            text = '\n'.join(chunk for chunk in chunks if chunk)
+            
+            content = f"[Source: {url}]\n\n{text}"
+            
+            save_log("fetch_attempt", {
+                "url": url,
+                "method": "austlii_direct",
+                "status": "success",
+                "content_size": len(text),
+                "content": content,
+                "timestamp": time.time()
+            })
+            
+            click.echo(f"  ✓ Direct AustLII fetch: {len(text)} chars")
+            return content
+        else:
+            click.echo(f"  ✗ AustLII returned HTTP {response.status_code}")
+            save_log("fetch_attempt", {
+                "url": url,
+                "method": "austlii_direct", 
+                "status": "failed",
+                "http_status": response.status_code,
+                "timestamp": time.time()
+            })
+            return ""
+            
+    except Exception as e:
+        click.echo(f"  ✗ AustLII error: {str(e)}")
+        logging.warning(f"AustLII direct fetch failed for {url}: {e}")
+        save_log("fetch_attempt", {
+            "url": url,
+            "method": "austlii_direct",
+            "status": "failed",
+            "error": str(e),
+            "timestamp": time.time()
+        })
+        return ""
+
+
 def _extract_pdf_text(url: str, pdf_bytes: bytes) -> str:
     """
     Extract text from PDF without OCR.
@@ -158,7 +230,7 @@ def _extract_pdf_text(url: str, pdf_bytes: bytes) -> str:
 
 def _fetch_url_content(url: str, timeout: int = 10) -> str:
     """
-    Fetch content from URL - uses Jina for HTML, direct download for PDFs.
+    Fetch content from URL - uses direct download for AustLII, Jina for other HTML, direct for PDFs.
     """
     click.echo(f"[FETCH] Checking: {url}")
     
@@ -174,6 +246,15 @@ def _fetch_url_content(url: str, timeout: int = 10) -> str:
             "timestamp": time.time()
         })
         return ""
+    
+    # Try AustLII direct download first
+    if 'austlii.edu.au' in url.lower():
+        click.echo("  → Detected AustLII URL, attempting direct download...")
+        content = _fetch_from_austlii(url, timeout)
+        if content:
+            return content
+        # Fall through to try Jina if direct download fails
+        click.echo("  → AustLII direct failed, trying Jina...")
 
     try:
         # Check if it's a PDF with HEAD request
