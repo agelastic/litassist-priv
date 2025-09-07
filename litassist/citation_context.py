@@ -62,6 +62,7 @@ def fetch_citation_context(
     global _last_austlii_completion
     
     for citation in citations:  # Fetch ALL citations - NO LIMITS
+        austlii_url = None  # Initialize to ensure variable always exists
         click.echo(f"[CITATION] Fetching: {citation}")
         # Check cache first for URL from verification
         url = None
@@ -285,7 +286,7 @@ def fetch_citation_context(
                 {
                     "citation": citation,
                     "tried_cse": bool(url),
-                    "tried_austlii": bool(austlii_url) if 'austlii_url' in locals() else False,
+                    "tried_austlii": bool(austlii_url),
                 },
             )
 
@@ -342,7 +343,7 @@ def _validate_citation_match(content: str, citation: str) -> bool:
     if is_legislation:
         # Strip jurisdiction suffix for core name
         # "Freedom of Information Act 1982 (Cth)" -> "Freedom of Information Act 1982"
-        core_citation = re.sub(r'\s*\([A-Z][a-z]+\)$', '', citation).strip()
+        core_citation = re.sub(r'\s*\([A-Za-z]+\)$', '', citation).strip()
         
         # Must appear at beginning (case-insensitive)
         if core_citation.lower() in content_beginning.lower():

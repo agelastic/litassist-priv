@@ -985,42 +985,24 @@ class LLMClient(LLMVerificationMixin):
 
             # Check if tools should be disabled for this client
             if getattr(self, '_disable_tools', False):
-                # Skip directly to fallback date injection
+                # Date has already been injected by _add_date_instruction at line 966
                 logging.info(f"Tools disabled for {self.model}, using date injection fallback")
                 
-                # Inject date directly into messages
-                today_date = self._format_date_string()
-                date_fallback = f"Today's date is {today_date}. Use this for all date references."
-                
-                # Add date to system message or first user message
-                fallback_messages = []
-                date_injected = False
-                for msg in messages:
-                    if not date_injected and msg.get("role") in ["system", "user"]:
-                        # Inject date at the beginning of the first system/user message
-                        new_content = f"{date_fallback}\n\n{msg.get('content', '')}"
-                        fallback_messages.append(
-                            {"role": msg["role"], "content": new_content}
-                        )
-                        date_injected = True
-                    else:
-                        fallback_messages.append(msg)
-                
-                # Log the messages with date injection
+                # Log the prepared messages
                 save_log(
                     f"llm_{self.model.replace('/', '_')}_messages",
                     {
                         "model": self.model,
-                        "messages_sent": fallback_messages,
+                        "messages_sent": messages,  # Use already-prepared messages
                         "params": filtered_params,
                         "timestamp": time.strftime("%Y-%m-%d %H:%M:%S"),
                         "tools_disabled": True,
                     },
                 )
                 
-                # Use the fallback messages without tools
+                # Call API without tools using prepared messages
                 response = execute_api_call_with_retry(
-                    model_name, fallback_messages, filtered_params
+                    model_name, messages, filtered_params
                 )
             else:
                 # Add tool definitions for date handling
