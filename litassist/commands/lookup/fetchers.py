@@ -356,7 +356,7 @@ def _extract_pdf_text(url: str, pdf_bytes: bytes) -> str:
                 has_foi_markers = any(marker in first_chars for marker in foi_markers)
                 
                 # Reject if ratio too low (mostly images) or has FOI markers
-                if ratio < 0.1:
+                if ratio < 0.01:
                     click.echo(f"  ✗ PDF rejected: text/PDF ratio {ratio:.4f} (likely images/redacted)")
                     save_log(
                         "pdf_rejected_ratio",
