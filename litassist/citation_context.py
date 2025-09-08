@@ -337,8 +337,8 @@ def _validate_citation_match(content: str, citation: str) -> bool:
     # First 500 chars must contain the citation/name
     content_beginning = content[:500] if len(content) > 500 else content
     
-    # Check if this is legislation
-    is_legislation = any(term in citation for term in ['Act', 'Regulation', 'Code', 'Rules', 'Ordinance'])
+    # Check if this is legislation (case-insensitive)
+    is_legislation = any(term.lower() in citation.lower() for term in ['Act', 'Regulation', 'Code', 'Rules', 'Ordinance'])
     
     if is_legislation:
         # Strip jurisdiction suffix for core name
