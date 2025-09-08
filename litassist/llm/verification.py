@@ -88,11 +88,8 @@ class LLMVerificationMixin:
                 "content": full_text + "\n\n" + self_critique,
             },
         ]
-        # Let the factory configuration handle temperature and top_p
+        # Let the factory configuration handle all parameters
         params = {}
-        config = get_config()
-        if config.use_token_limits:
-            params["max_tokens"] = 65536  # Large limit for full document verification
         verification_result, usage = self.complete(
             critique_prompt, skip_citation_verification=True, **params
         )
@@ -375,11 +372,8 @@ class LLMVerificationMixin:
         else:
             verification_client = LLMClientFactory.for_command("verification")
         
-        # No hardcoded params - let the factory config handle it
+        # Let the factory configuration handle all parameters
         params = {}
-        config = get_config()
-        if config.use_token_limits:
-            params["max_tokens"] = 32768 if level == "light" else 65536
         verification_result, usage = verification_client.complete(
             critique_prompt, skip_citation_verification=True, **params
         )

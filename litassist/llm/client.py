@@ -461,7 +461,6 @@ class LLMClientFactory:
             "top_p": 0.8,  # Focused but not overly restrictive
             "thinking_effort": "max",  # Universal parameter, translates to reasoning object
             "verbosity": "medium",  # Balanced depth in strategic analysis
-            "max_completion_tokens": 16384,  # Extended output for comprehensive strategies
             "force_verify": True,  # Always verify for strategic guidance
         },
         # Strategy sub-type for analysis
@@ -501,7 +500,6 @@ class LLMClientFactory:
             "model": "openai/o3-pro",
             "thinking_effort": "high",  # Universal parameter
             "verbosity": "high",  # Comprehensive legal drafting
-            "max_completion_tokens": 32768,  # Extended output for comprehensive drafts
         },
         # Digest - mode-dependent settings
         "digest-summary": {
@@ -579,10 +577,8 @@ class LLMClientFactory:
         "barbrief": {
             "model": "openai/o3-pro",
             # o3-pro for comprehensive analysis and superior drafting
-            # Extended token limit for detailed briefs
             "thinking_effort": "high",  # Universal parameter, translates to reasoning object
             "verbosity": "high",  # Detailed comprehensive briefs
-            "max_completion_tokens": 32768,  # 32K tokens for comprehensive output
         },
         # Caseplan - LLM-driven workflow planning
         "caseplan": {
@@ -797,7 +793,7 @@ class LLMClient(LLMVerificationMixin):
         self.model = model
         self.command_context = None  # Track which command is using this client
 
-        # Set model-specific token limits if enabled in config and not explicitly specified
+        # Set token limit from config if enabled and not explicitly specified
         config = get_config()
         if config.use_token_limits:
             # Determine if we need to transform max_tokens to another parameter
@@ -810,29 +806,8 @@ class LLMClient(LLMVerificationMixin):
             )
 
             if token_param not in default_params:
-                # These limits are carefully chosen to balance comprehensive responses with quality
-                if "google/gemini" in model.lower():
-                    default_params[token_param] = (
-                        32768  # Gemini - increased for comprehensive outputs
-                    )
-                elif "anthropic/claude" in model.lower():
-                    default_params[token_param] = (
-                        32768  # Claude - increased for comprehensive outputs
-                    )
-                elif "openai/gpt-4" in model.lower():
-                    default_params[token_param] = (
-                        32768  # GPT-4 - increased for comprehensive outputs
-                    )
-                elif get_model_family(model) == "openai_reasoning":
-                    default_params[token_param] = (
-                        32768  # o1-pro/o3-pro - increased for comprehensive outputs
-                    )
-                elif "grok" in model.lower():
-                    default_params[token_param] = (
-                        32768  # Grok - increased for comprehensive outputs
-                    )
-                else:
-                    default_params[token_param] = 32768  # Default increased limit
+                # Use token limit from config
+                default_params[token_param] = config.token_limit
 
         self.default_params = default_params
         self._client = None  # Will be created when needed

@@ -409,7 +409,6 @@ class TestLookupCommandIntegration:
             # Should use maximum precision for comprehensive IRAC
             assert call_args[1]["temperature"] == 0
             assert call_args[1]["top_p"] == 0.05
-            assert call_args[1]["max_tokens"] == 16384
 
     def test_no_engine_option_anymore(self):
         """Test that --engine option is no longer available."""

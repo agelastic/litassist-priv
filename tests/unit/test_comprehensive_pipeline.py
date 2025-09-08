@@ -690,14 +690,15 @@ Worst: Pay $100k progress payment plus costs
         # Test with use_token_limits = True
         with (
             patch.object(CONFIG, "use_token_limits", True),
+            patch.object(CONFIG, "token_limit", 16384),
             patch.object(CONFIG, "openrouter_key", "test_key"),
             patch.object(CONFIG, "openai_key", "test_key"),
         ):
             # Create an LLMClient which should apply token limits
             client = LLMClient("openai/gpt-4")
 
-            # For models without explicit overrides, should have 32768 cap
-            expected_limit = 32768
+            # Should use token_limit from config
+            expected_limit = 16384
 
             # Check that default_params includes max_tokens
             assert "max_tokens" in client.default_params
