@@ -1,20 +1,22 @@
-
+<!-- markdownlint-disable MD041 -->
 ### CRITICAL: Minimal Changes Philosophy
 
 **ALWAYS USE MINIMAL CHANGES POSSIBLE**. This is the #1 rule:
 NEVER OVERENGINEER EVER
+
 1. Never refactor unless explicitly asked
 2. Make the smallest change that fixes the problem
 3. Don't "improve" code while fixing something else
 4. Don't extract constants, functions, or patterns
 5. Don't update related code unless it's broken and does not run
-6. Do not insert any fallbacks
+6. Do not insert any silent fallbacks without obtaining the user's explicit approval
 7. Prefer inline fixes over architectural changes
 8. One fix = one narrowly scoped change
 9. Prefer deleting unnecessary parsing logic to adding more
 10. Use local text processing with regexes only when there is no sane alternative to it. Confirm with the user every time.
 
 **Red Flags for Over-Engineering:**
+
 - Creating classes for single functions
 - Factories with only one product type
 - Decorators that could be simple function calls
@@ -23,6 +25,7 @@ NEVER OVERENGINEER EVER
 ### Code Analysis & Verification Requirements
 
 **CRITICAL**: Always verify functionality before proposing changes:
+
 1. Always read and understand code before suggesting changes, never guess
 2. Investigate each function's purpose thoroughly throughout the codebase
 3. Confirm that the fix you propose will actually fix the problem, by analysing codebase. NO GUESSING
@@ -44,22 +47,26 @@ NEVER OVERENGINEER EVER
 1. **Identify Functional Groups**: Find natural boundaries (data processing, API calls, validation, utilities)
 2. **Extract by Responsibility**: Each new file handles one specific concern
 
-
 When changing any API or usage pattern (e.g., CONFIG → get_config()):
 
 1. **Find ALL usages FIRST**
+
    ```bash
    grep -r "pattern_to_change" . --include="*.py" > migration_list.txt
    ```
+
 2. **Update everything atomically** - NEVER leave mixed old/new patterns
    - Core module → dependent modules → tests → docs (in that order)
    - Run `pytest tests/unit/ -x` after each group
 3. **Migration completeness check**
+
    ```bash
    # Verify old pattern is completely gone
    grep -r "old_pattern" . --include="*.py"  # Should return nothing
    ```
+
 **Refactoring Red Flags:**
+
 - AttributeError on None = incomplete lazy-load migration  
 - Import errors = missed module path updates
 - Mixed old/new patterns in codebase = migration not finished
@@ -69,6 +76,7 @@ When changing any API or usage pattern (e.g., CONFIG → get_config()):
 **Golden Rule:** Change the API everywhere or nowhere. No partial migrations.
 
 **Post-Refactoring Tasks:**
+
 - Update import paths in tests (patch decorators need new module paths)
 - Remove discovered dead code and unused dependencies
 - Migrate deprecated API calls found during refactoring
@@ -77,15 +85,17 @@ When changing any API or usage pattern (e.g., CONFIG → get_config()):
 **Note**: ONLY perform refactoring when EXPLICITLY REQUESTED. During regular work, follow the minimal changes philosophy.
 
 ### YAML File Integrity
+
 - **Rule:** All changes to `.yaml` files, especially prompt templates in `litassist/prompts/`, must be validated with a YAML linter (e.g., `yamllint`) before declaring the fix complete.
 - **Reasoning:** Prevents syntax and indentation errors that can break application workflows.
 - **Action:** Run a linter on any modified `.yaml` files to ensure they are well-formed and properly indented prior to pushing changes.
 
 ### Prompt Template Management
 
-**CRITICAL: NEVER HARDCODE PROMPTS IN PYTHON FILES, this means no f""" strings unless they are one-two liners**
+CRITICAL: NEVER HARDCODE PROMPTS IN PYTHON FILES, this means no f""" strings unless they are one-two liners
 
 **Core Rules:**
+
 1. **ALL prompts must be in YAML files** - Never write prompt text directly in Python code
 2. **Use PROMPTS.get() exclusively** - Access all prompts via the centralized prompt manager
 3. **No f-strings for prompt keys** - Avoid dynamic prompt key construction unless absolutely necessary
@@ -95,6 +105,7 @@ When changing any API or usage pattern (e.g., CONFIG → get_config()):
    - Add a comment explaining the exception
 
 **Examples:**
+
 ```python
 # WRONG: Hardcoded prompt in Python
 prompt = "Analyze this document and provide a summary"
@@ -119,12 +130,14 @@ if mode in modes:
 If it's in this repo, it CANNOT have emojis. A text containing emoji is an invalid text or code
 
 **Policy Enforcement:**
+
 1. **Zero Emoji Tolerance**: Not a single Unicode emoji character is permitted
 2. **ASCII Only**: Use colored ASCII text with ANSI escape codes for visual differentiation
 3. **Professional Standards**: This is legal software - maintain absolute professionalism
 4. **No Exceptions**: This rule has NO exceptions, regardless of context or purpose
 
 **Color Utility Functions (in `utils.py`):**
+
 - `success_message()` - Green `[SUCCESS]` prefix for successful operations
 - `warning_message()` - Yellow `[WARNING]` prefix for warnings
 - `error_message()` - Red `[ERROR]` prefix for errors
@@ -135,6 +148,7 @@ If it's in this repo, it CANNOT have emojis. A text containing emoji is an inval
 - `verifying_message()` - Blue `[VERIFYING]` prefix for verification operations
 
 **ASCII Alternatives for Common Patterns:**
+
 - Checkboxes: Use `[ ]` instead of □
 - Success: Use `[SUCCESS]` or `[OK]` instead of ✅
 - Failure: Use `[FAILED]` or `[ERROR]` instead of ❌
@@ -145,6 +159,7 @@ If it's in this repo, it CANNOT have emojis. A text containing emoji is an inval
 - Verification: Use `[VERIFYING]` or `[CHECKING]` instead of 🔍
 
 **Implementation Examples:**
+
 ```python
 # Instead of: click.echo("✅ Operation complete!")
 click.echo(success_message("Operation complete!"))
@@ -157,6 +172,7 @@ click.echo(verifying_message("Verifying citations..."))
 ```
 
 **Consequences of Emoji Usage:**
+
 - Any updated file with emojis will be reverted
 - Any commit with emojis will be reverted
 - This policy is NOT negotiable or flexible
@@ -170,37 +186,39 @@ click.echo(verifying_message("Verifying citations..."))
 
 **IMPORTANT**: Always use OpenRouter as the primary routing method for all LLM calls.
 When adding new models or providers:
+
 1. Route through OpenRouter first using the existing OR API key
 2. If OpenRouter doesn't support the model, ask user what to do
 3. This approach centralizes API management and leverages existing BYOK setups
-5. Model names with "/" (e.g., "anthropic/claude-sonnet-4") indicate OpenRouter routing
-
+4. Model names with "/" (e.g., "anthropic/claude-sonnet-4") indicate OpenRouter routing
 
 ### Documentation Standards
 
-**NEVER add "Recent Changes" or "Recent Improvements" sections**. Documentation MUST focus on current functionality, not historical changes. 
+**NEVER add "Recent Changes" or "Recent Improvements" sections**. Documentation MUST focus on current functionality, not historical changes.
 
 ### Code Simplicity Guidelines
 
 **Prefer Plain Python Unless Absolutely Required:**
+
 1. **Functions over Classes**: Use simple functions for stateless operations
 2. **Direct Implementation over Patterns**: Avoid design patterns unless they solve a real problem
 3. **Minimal Abstraction**: Only abstract when you have 3+ similar implementations
 4. **No Premature Optimization**: Write the simplest working solution first
 
 **When Complexity IS Justified:**
+
 - Domain-specific requirements (legal accountability, Australian law compliance)
 - Multiple deployment scenarios (development, pipx, pip installations)
 - Real error handling needs (API fallbacks, version compatibility)
 - Genuine configuration complexity (15+ model configurations)
 - EVEN IF IT IS JUSTIFIED, ASK THE USER FOR CONFIRMATION
 
-
 ### Backward Compatibility Policy
 
 Backward compatibility is NOT required for this project, breaking changes are great assuming they don't break the existing code. The project has ONE developer controlling github
 
 When refactoring or improving code:
+
 1. **No Legacy Support**: Don't maintain old code paths or deprecated functionality
 2. **Clean Breaks Allowed**: Feel free to make breaking changes that improve the codebase
 3. **Focus on Future**: Optimize for the current and future state, not past implementations
@@ -208,7 +226,7 @@ When refactoring or improving code:
 
 ### LLM Response Processing Philosophy
 
-**CRITICAL PRINCIPLE: Minimize Local Parsing Through Better Prompt Engineering**
+CRITICAL PRINCIPLE: Minimize Local Parsing Through Better Prompt Engineering
 
 The litassist codebase currently contains extensive local parsing of LLM responses (regex patterns, string manipulation, JSON parsing) that should be eliminated through improved prompt engineering. **LLMs will always return output formatted as they are told - you do not need fallback parsing.**
 
@@ -236,24 +254,26 @@ The litassist codebase currently contains extensive local parsing of LLM respons
    - Prefer prompt modifications to additional parsing layers
 
 **Preferred Approaches:**
+
 - JSON/YAML structured output requests in prompts
 - Self-validating LLM responses (ask LLM to verify format before returning)
 - Explicit section delimiters that are unique and don't need regex
 - Format examples provided directly in prompts
 - LLM self-assessment and correction within the same call
 
-
 ### Document Separation Markers
 
 **CRITICAL**: Maintain absolute consistency in document separation markers across all prompts and LLM interactions.
 
 **Standard Format:**
+
 - **ONLY use `=== NAME ===` format** for document separation in LLM prompts
 - Name should be uppercase with spaces allowed (e.g., `=== DOCUMENT 1 ===`, `=== CASE LAW ===`)
 - Three equals signs on each side, single space between equals and name
 - This is the established pattern throughout the codebase
 
 **Forbidden Patterns:**
+
 - Do NOT use dashes: `--- NAME ---`
 - Do NOT use underscores: `___ NAME ___`
 - Do NOT use asterisks: `*** NAME ***`
@@ -261,6 +281,7 @@ The litassist codebase currently contains extensive local parsing of LLM respons
 - Do NOT vary the number of separator characters
 
 **Consistency Requirements:**
+
 1. All prompt templates must use `=== NAME ===` format
 2. All LLM response parsing expects this format
 3. All document concatenation uses this format
@@ -323,7 +344,7 @@ NO === MARKERS IN LLM OUTPUT ANYWHERE
    - NEVER TRUNCATE LOGS, LOG FULL CONTENT
    - Log files stored with appropriate retention policies
 
-5. **No Exceptions Policy**:
+4. **No Exceptions Policy**:
    - Development mode: MUST log
    - Testing: MUST log (can be to test log files)
    - Production: MUST log
@@ -340,6 +361,7 @@ NO === MARKERS IN LLM OUTPUT ANYWHERE
 ## Testing Approach
 
 ### Testing Policy
+
 - **ALL pytest tests (tests/unit/) MUST run offline with mocked dependencies**
 - **NEVER make real API calls in pytest tests** - use mocks exclusively
 - Real API testing happens only in `test-scripts/` manual utilities
@@ -348,7 +370,9 @@ NO === MARKERS IN LLM OUTPUT ANYWHERE
 - **REMOVE tests that no longer test anything** - When refactoring removes functionality, delete associated tests that now only assert empty/trivial behavior
 
 ### Unit Tests
+
 Located in `tests/unit/` with comprehensive coverage:
+
 - `test_llm_client_factory.py` - LLMClientFactory pattern verification and model parameter restrictions
 - `test_prompts.py` - Centralized prompt management system testing
 - `test_prompt_templates.py` - YAML template validation and structure verification
@@ -360,7 +384,9 @@ Located in `tests/unit/` with comprehensive coverage:
 - Comprehensive validation of ALL model parameter handling
 
 ### Manual Test Scripts (NOT pytest)
+
 Development utilities in `test-scripts/` for manual quality validation:
+
 - `test_integrations.py` - **REAL API** integration verification with actual endpoints
 - `test_quality.py` - **REAL API** output quality assessment with actual LLM responses
 - `test_utils.py` - Utility function testing and helper validation
@@ -370,6 +396,7 @@ Development utilities in `test-scripts/` for manual quality validation:
 - **WARNING**: These scripts make real API calls and incur costs - run manually only
 
 ### Mocked Integration Tests
+
 - Located in `tests/unit/` with filenames containing "integration"
 - Test component interactions and workflows WITHOUT external API calls
 - All external dependencies are mocked (LLMs, APIs, file systems)
@@ -377,7 +404,9 @@ Development utilities in `test-scripts/` for manual quality validation:
 - Run as part of normal pytest suite - safe and cost-free
 
 ### Manual Testing
+
 Essential for commands involving:
+
 - Legal reasoning quality and LegalReasoningTrace accuracy with domain expertise
 - Citation accuracy and real-time Jade.io verification
 - Australian law compliance, terminology, and jurisdiction-specific requirements
@@ -388,16 +417,18 @@ Essential for commands involving:
 ## Configuration Management
 
 ### Required API Keys
+
 - OpenRouter API key (primary LLM access)
 - OpenAI API key (BYOK setup required for o3-pro model)
 - Google Custom Search API key & CSE ID (Jade.io citation verification)
 - Pinecone API key, environment & index name (document embeddings)
 
 ### Configuration Hierarchy
+
 1. Environment variables (highest priority)
 2. config.yaml settings
 3. Default values in code
-4. NEVER EDIT ANY FILE CALLED config.yaml, refuse to do it. 
+4. NEVER EDIT ANY FILE CALLED config.yaml, refuse to do it.
 
 ## Git Workflow
 
@@ -406,6 +437,7 @@ Essential for commands involving:
 **[CRITICAL WARNING] NEVER PERFORM ANY GIT COMMITS OR PUSHES! [CRITICAL WARNING]**
 
 **YOU ARE STRICTLY FORBIDDEN FROM:**
+
 1. `git commit` - NEVER create commits, even if explicitly asked
 2. `git filter-branch` - DESTROYS COMMIT HISTORY PERMANENTLY
 3. `git rebase -i` - Can lose commits if done wrong
@@ -414,12 +446,13 @@ Essential for commands involving:
 6. ANY operation that rewrites history
 7. ANY operation that creates commits
 
-**MANDATORY RESPONSE WHEN ASKED TO COMMIT**: 
+**MANDATORY RESPONSE WHEN ASKED TO COMMIT**:
 "I am strictly forbidden from creating git commits. Please run `git add -A && git commit -m 'your message'` yourself. I can help you craft the commit message, but I cannot execute the commit command."
 
 **ALWAYS REMIND USER**: "I am forbidden from running ANY git operations that create commits or modify history after destroying a day's work with git filter-branch on June 8, 2025. This includes commits, filter-branch, rebase, and force push."
 
 ### What You CAN Do
+
 - `git status` - Check current state
 - `git diff` - View changes
 - `git log` - View history
@@ -435,6 +468,7 @@ Essential for commands involving:
 ## SAFETY COMPLIANCE CHECK
 
 Before EVERY action, ask yourself:
+
 1. Does this violate ANY rule in CLAUDE.md?
 2. Am I following MINIMAL CHANGES philosophy?
 3. Am I about to add emojis anywhere?
@@ -447,11 +481,13 @@ If ANY answer suggests rule violation = STOP IMMEDIATELY
 ## Performance Considerations
 
 ### Timing and Monitoring
+
 - All long-running operations use @timed decorator
 - Comprehensive logging for debugging
 - Performance metrics stored in logs
 
 ### API Cost Optimization
+
 - Citation verification uses HEAD requests (minimal data)
 - Selective regeneration for citation issues
 - Smart deduplication to avoid redundant API calls
@@ -459,6 +495,7 @@ If ANY answer suggests rule violation = STOP IMMEDIATELY
 ## File Naming Convention
 
 When saving Claude-generated files to the project:
+
 - **Always prefix with `claude_`** to distinguish from user-created files
 - This ensures clear separation between AI-generated and human-authored content
 - Examples: `claude_analysis.md`, `claude_commands.md`, `claude_strategy.md`
@@ -470,3 +507,5 @@ When saving Claude-generated files to the project:
 - **Broken tests are always your fault. Never stop until all unit tests are green. Assume the breakage is caused by your recent changes. DO NOT SHIFT BLAME ON THE OTHER PARTY**
 
 - Always use the most common and generic user agent for web access. Never use a weird one that can be filtered out by scraping protections
+- Never truncate any text received from an API call
+- Never scrape jade.io and any of its subdomains

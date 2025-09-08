@@ -405,6 +405,94 @@ def search_jade_via_google_cse(citation: str, timeout: int = 10) -> bool:
     return success
 
 
+def construct_austlii_url(citation: str) -> str:
+    """
+    Construct AustLII URL from medium neutral citation.
+    
+    Args:
+        citation: Normalized citation like "[2022] ACTSC 272"
+    
+    Returns:
+        URL string or empty string if cannot construct
+    """
+    # Parse medium neutral citation format [YYYY] COURT NUMBER
+    match = re.match(r"\[(\d{4})\]\s+([A-Z]+[A-Za-z]*)\s+(\d+)", citation)
+    if not match:
+        return ""
+    
+    year, court, number = match.groups()
+    
+    # Check if court is in our mappings
+    if court not in COURT_MAPPINGS:
+        return ""
+    
+    # COURT_MAPPINGS format is "act/ACTSC" - extract jurisdiction and court
+    court_path = COURT_MAPPINGS[court]
+    
+    # Build AustLII URL
+    return f"https://www.austlii.edu.au/cgi-bin/viewdoc/au/cases/{court_path}/{year}/{number}.html"
+
+
+def verify_via_austlii_direct(citation: str, timeout: int = 5) -> Tuple[bool, str, str]:
+    """
+    Verify citation by constructing direct AustLII URL.
+    
+    Args:
+        citation: Normalized citation
+        timeout: Request timeout in seconds
+    
+    Returns:
+        Tuple of (exists, url, reason)
+    """
+    url = construct_austlii_url(citation)
+    if not url:
+        return False, "", "Cannot construct AustLII URL for this citation format"
+    
+    start_time = time.time()
+    
+    try:
+        import requests
+        
+        # CRITICAL: Must include User-Agent header for AustLII
+        headers = {
+            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36"
+        }
+        
+        # Use GET with stream=True to avoid downloading full document
+        # AustLII blocks HEAD requests to /cgi-bin/viewdoc/ paths with 403 Forbidden
+        response = requests.get(url, headers=headers, timeout=timeout, allow_redirects=True, stream=True)
+        # Close immediately after getting status - downloads only headers (~400 bytes)
+        response.close()
+        
+        success = response.status_code == 200
+        
+        # Log the attempt
+        save_log("austlii_direct_verification", {
+            "citation": citation,
+            "url": url,
+            "success": success,
+            "http_status": response.status_code,
+            "response_time_ms": round((time.time() - start_time) * 1000, 2),
+            "timestamp": time.strftime("%Y-%m-%d %H:%M:%S")
+        })
+        
+        if success:
+            return True, url, "Verified via AustLII direct URL"
+        else:
+            return False, "", f"AustLII returned HTTP {response.status_code}"
+            
+    except Exception as e:
+        save_log("austlii_direct_verification", {
+            "citation": citation,
+            "url": url,
+            "success": False,
+            "error": str(e),
+            "response_time_ms": round((time.time() - start_time) * 1000, 2),
+            "timestamp": time.strftime("%Y-%m-%d %H:%M:%S")
+        })
+        return False, "", f"AustLII verification error: {str(e)}"
+
+
 def is_traditional_citation_format(citation: str) -> bool:
     """
     Check if citation is in traditional format that requires search-based verification.
@@ -572,6 +660,20 @@ def verify_single_citation(citation: str) -> Tuple[bool, str, str]:
                         "checked_at": time.time(),
                     }
                 return True, url_austlii, reason
+        
+        # NEW: Final fallback - try direct AustLII URL construction
+        # Only attempt for Australian medium neutral citations
+        if re.match(r"\[(\d{4})\]\s+([A-Z]+[A-Za-z]*)\s+(\d+)", normalized):
+            exists_via_austlii, url_austlii, reason_austlii = verify_via_austlii_direct(normalized, timeout=5)
+            if exists_via_austlii:
+                with _cache_lock:
+                    _citation_cache[normalized] = {
+                        "exists": True,
+                        "url": url_austlii,
+                        "reason": reason_austlii,
+                        "checked_at": time.time(),
+                    }
+                return True, url_austlii, reason_austlii
                 
     except Exception:
         pass  # Fall through to mark as unverified

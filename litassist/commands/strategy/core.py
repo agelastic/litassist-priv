@@ -12,7 +12,7 @@ from litassist.utils.core import (
     timed,
     parse_strategies_file,
 )
-from litassist.utils.file_ops import validate_file_size_limit
+from litassist.utils.file_ops import validate_file_size_limit, process_reference_files
 from litassist.utils.legal_reasoning import (
     create_reasoning_prompt,
     extract_reasoning_trace,
@@ -58,8 +58,13 @@ from .file_handler import save_strategy_outputs, save_strategy_log
     help="Use Chain of Verification instead of standard verification",
 )
 @click.option("--output", type=str, help="Custom output filename prefix")
+@click.option(
+    "--cove-reference",
+    type=str,
+    help="Glob pattern for reference files to include in CoVe answer stage (e.g., 'exhibits/*.pdf', 'affidavits/*.txt'). Requires --cove flag."
+)
 @timed
-def strategy(case_facts, outcome, strategies, verify, noverify, cove, output):
+def strategy(case_facts, outcome, strategies, verify, noverify, cove, output, cove_reference):
     """
     Generate legal strategy options and draft documents for Australian civil matters.
 
@@ -78,6 +83,14 @@ def strategy(case_facts, outcome, strategies, verify, noverify, cove, output):
     Raises:
         click.ClickException: If case facts are invalid or LLM errors occur
     """
+    # Process CoVe reference files if provided
+    cove_reference_context, _ = process_reference_files(
+        cove_reference,
+        purpose="CoVe",
+        require_flag="--cove",
+        flag_enabled=cove
+    )
+    
     # Read and validate case facts
     click.echo(info_message("Validating case facts format..."))
     case_text = case_facts.read()
@@ -247,8 +260,16 @@ def strategy(case_facts, outcome, strategies, verify, noverify, cove, output):
         # Use CoVe INSTEAD of standard verification
         click.echo(info_message("Running Chain of Verification..."))
         original_content = strategy_content
+        
+        # Build prior contexts if we have CoVe reference files
+        prior_contexts = {}
+        if cove_reference_context:
+            prior_contexts["cove_reference_files"] = cove_reference_context
+        
         strategy_content, cove_results = run_cove_verification(
-            strategy_content, "strategy"
+            strategy_content, 
+            "strategy",
+            prior_contexts=prior_contexts if prior_contexts else None
         )
 
         if not cove_results["cove"]["passed"]:

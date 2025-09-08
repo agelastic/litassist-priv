@@ -11,7 +11,7 @@ import click
 
 from litassist.config import get_config
 from litassist.prompts import PROMPTS
-from litassist.utils.file_ops import read_document, is_text_file
+from litassist.utils.file_ops import read_document, is_text_file, process_reference_files
 from litassist.utils.text_processing import chunk_text, create_embeddings
 from litassist.logging_utils import save_log, save_command_output
 from litassist.timing import timed
@@ -43,9 +43,14 @@ from litassist.verification_chain import run_cove_verification
     default=None,
 )
 @click.option("--output", type=str, help="Custom output filename prefix")
+@click.option(
+    "--cove-reference",
+    type=str,
+    help="Glob pattern for reference files to include in CoVe answer stage (e.g., 'exhibits/*.pdf', 'affidavits/*.txt'). Requires --cove flag."
+)
 @click.pass_context
 @timed
-def draft(ctx, documents, query, noverify, cove, diversity, output):
+def draft(ctx, documents, query, noverify, cove, diversity, output, cove_reference):
     """
     Citation-rich drafting via RAG & GPT-4o.
 
@@ -73,6 +78,14 @@ def draft(ctx, documents, query, noverify, cove, diversity, output):
         click.ClickException: If there are errors with file reading, embedding,
                              vector storage, retrieval, or LLM API calls.
     """
+    # Process CoVe reference files if provided
+    cove_reference_context, _ = process_reference_files(
+        cove_reference,
+        purpose="CoVe",
+        require_flag="--cove",
+        flag_enabled=cove
+    )
+    
     # Process all documents
     structured_content = {
         "case_facts": "",
@@ -266,7 +279,17 @@ def draft(ctx, documents, query, noverify, cove, diversity, output):
         try:
             click.echo(info_message("Running Chain of Verification..."))
             original_content = content  # Capture original BEFORE regeneration
-            content, cove_results = run_cove_verification(content, "draft")
+            
+            # Build prior contexts if we have CoVe reference files
+            prior_contexts = {}
+            if cove_reference_context:
+                prior_contexts["cove_reference_files"] = cove_reference_context
+            
+            content, cove_results = run_cove_verification(
+                content, 
+                "draft",
+                prior_contexts=prior_contexts if prior_contexts else None
+            )
 
             # Capture CoVe dialogue for critique section
             if "cove" in cove_results:

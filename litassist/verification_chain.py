@@ -235,15 +235,27 @@ def run_cove_verification(
             },
         )
 
-    # Step 2: Answer questions with FULL legal documents or without
-    if legal_context:
+    # Step 2: Answer questions with FULL legal documents and/or reference files
+    reference_context = ""
+    if prior_contexts and prior_contexts.get("cove_reference_files"):
+        reference_context = prior_contexts["cove_reference_files"]
+    
+    if legal_context or reference_context:
         # Build context section with COMPLETE documents
-        context_text = "\n=== LEGAL AUTHORITIES (FULL TEXT) ===\n"
-        for citation, full_text in legal_context.items():
-            context_text += f"\n=== {citation} ===\n"
-            context_text += full_text
-            context_text += f"\n=== END {citation} ===\n\n"
-        context_text += "=== END LEGAL AUTHORITIES ===\n\n"
+        context_text = ""
+        
+        if legal_context:
+            context_text += "\n=== LEGAL AUTHORITIES (FULL TEXT) ===\n"
+            for citation, full_text in legal_context.items():
+                context_text += f"\n=== {citation} ===\n"
+                context_text += full_text
+                context_text += f"\n=== END {citation} ===\n\n"
+            context_text += "=== END LEGAL AUTHORITIES ===\n\n"
+        
+        if reference_context:
+            context_text += "\n=== REFERENCE DOCUMENTS ===\n"
+            context_text += reference_context
+            context_text += "=== END REFERENCE DOCUMENTS ===\n\n"
 
         # Use enhanced prompt with context
         answers_prompt = PROMPTS.get("verification.cove.answers_with_context").format(
@@ -339,6 +351,7 @@ def run_cove_verification(
                 "had_citations": bool(prior_contexts.get("citations")),
                 "had_reasoning": bool(prior_contexts.get("reasoning")),
                 "had_soundness": bool(prior_contexts.get("soundness")),
+                "had_cove_reference": bool(prior_contexts.get("cove_reference_files")),
             },
             "result": {
                 "passed": passed,

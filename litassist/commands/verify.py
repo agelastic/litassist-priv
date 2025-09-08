@@ -29,7 +29,7 @@ from litassist.verification_chain import run_cove_verification, format_cove_repo
 from litassist.citation_context import fetch_citation_context
 from litassist.timing import timed
 from litassist.logging_utils import save_log
-from litassist.utils.file_ops import read_document
+from litassist.utils.file_ops import read_document, process_reference_files
 from litassist.utils.legal_reasoning import (
     create_reasoning_prompt,
     extract_reasoning_trace,
@@ -51,8 +51,18 @@ def _handle_verification_error(step_name: str, exception: Exception) -> None:
 @click.option("--reasoning", is_flag=True, help="Verify/generate reasoning trace only")
 @click.option("--cove", is_flag=True, help="Add Chain of Verification as final check")
 @click.option("--output", type=str, help="Custom output filename prefix")
+@click.option(
+    "--reference",
+    type=str,
+    help="Glob pattern for reference files to include as context (e.g., '*.txt', 'docs/*.pdf'). Supports PDF and text files."
+)
+@click.option(
+    "--cove-reference",
+    type=str,
+    help="Glob pattern for reference files to include in CoVe answer stage (e.g., 'exhibits/*.pdf', 'affidavits/*.txt'). Requires --cove flag."
+)
 @timed
-def verify(file, citations, soundness, reasoning, cove, output):
+def verify(file, citations, soundness, reasoning, cove, output, reference, cove_reference):
     """
     Verify legal text for citations, soundness, and reasoning.
 
@@ -73,6 +83,22 @@ def verify(file, citations, soundness, reasoning, cove, output):
 
     if not content.strip():
         raise click.ClickException("File is empty")
+    
+    # Process reference files if provided
+    reference_context, reference_files = process_reference_files(
+        reference, 
+        purpose="reference",
+        show_char_count=True
+    )
+    
+    # Process CoVe reference files if provided (for answer stage, not question generation)
+    cove_reference_context, cove_reference_files = process_reference_files(
+        cove_reference,
+        purpose="CoVe answers",
+        require_flag="--cove",
+        flag_enabled=cove,
+        show_char_count=True
+    )
 
     base_name = os.path.splitext(file)[0]
     reports_generated = 0
@@ -176,6 +202,12 @@ def verify(file, citations, soundness, reasoning, cove, output):
                     for citation, full_text in case_content.items():
                         enhanced_prompt += f"=== {citation} ===\n\n{full_text}\n\n"
                 
+                # Append reference files if available
+                if reference_context:
+                    enhanced_prompt += "\n\n## Reference Documents\n\n"
+                    enhanced_prompt += "The following reference documents provide additional context:\n\n"
+                    enhanced_prompt += reference_context
+                
                 # Also append citation report summary if available
                 if citation_report:
                     enhanced_prompt += (
@@ -217,6 +249,10 @@ def verify(file, citations, soundness, reasoning, cove, output):
                                     enhanced_prompt += "Below are the complete legal documents referenced in the text:\n\n"
                                     for citation, full_text in cases_to_include:
                                         enhanced_prompt += f"=== {citation} ===\n\n{full_text}\n\n"
+                                if reference_context:
+                                    enhanced_prompt += "\n\n## Reference Documents\n\n"
+                                    enhanced_prompt += "The following reference documents provide additional context:\n\n"
+                                    enhanced_prompt += reference_context
                                 if citation_report:
                                     enhanced_prompt += (
                                         "\n\n## Citation Verification Summary\n" + citation_report
@@ -299,6 +335,12 @@ def verify(file, citations, soundness, reasoning, cove, output):
                 full_citation_context = "## Full Legal Documents\n\n"
                 for citation, full_text in case_content.items():
                     full_citation_context += f"=== {citation} ===\n\n{full_text}\n\n"
+            
+            # Add reference files to citation context
+            if reference_context:
+                full_citation_context += "\n\n## Reference Documents\n\n"
+                full_citation_context += reference_context
+            
             if citation_report:
                 full_citation_context += "\n\n## Citation Verification Summary\n" + citation_report
             
@@ -358,16 +400,24 @@ def verify(file, citations, soundness, reasoning, cove, output):
                     if match:
                         final_content = match.group(1).strip()
 
+                # Build prior contexts including any CoVe reference files
+                prior_contexts_dict = {
+                    "citations": citation_report,
+                    "reasoning": reasoning_response,
+                    "soundness": issues
+                    if soundness and "issues" in locals()
+                    else None,
+                    "reference_files": reference_context if reference_context else None,
+                }
+                
+                # Add CoVe reference files if available (these go to answer stage, not question generation)
+                if cove_reference_context:
+                    prior_contexts_dict["cove_reference_files"] = cove_reference_context
+                
                 cove_content, cove_results = run_cove_verification(
                     final_content,
                     "verify",
-                    prior_contexts={
-                        "citations": citation_report,
-                        "reasoning": reasoning_response,
-                        "soundness": issues
-                        if soundness and "issues" in locals()
-                        else None,
-                    },
+                    prior_contexts=prior_contexts_dict,
                 )
 
                 # Update final_content if regenerated
@@ -436,7 +486,11 @@ def verify(file, citations, soundness, reasoning, cove, output):
                     "soundness": soundness,
                     "reasoning": reasoning,
                     "cove": cove,
+                    "reference": reference,
+                    "cove_reference": cove_reference,
                 },
+                "reference_files": reference_files,
+                "cove_reference_files": cove_reference_files,
             },
             "outputs": extra_files,
             "reports_generated": reports_generated,

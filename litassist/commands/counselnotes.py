@@ -11,7 +11,7 @@ import os
 
 from litassist.config import get_config
 from litassist.prompts import PROMPTS
-from litassist.utils.file_ops import read_document
+from litassist.utils.file_ops import read_document, process_reference_files
 from litassist.utils.text_processing import chunk_text
 from litassist.utils.core import (
     timed,
@@ -41,8 +41,13 @@ from litassist.verification_chain import run_cove_verification
 )
 @click.option("--cove", is_flag=True, help="Apply Chain of Verification")
 @click.option("--output", type=str, help="Custom output filename prefix")
+@click.option(
+    "--cove-reference",
+    type=str,
+    help="Glob pattern for reference files to include in CoVe answer stage (e.g., 'exhibits/*.pdf', 'affidavits/*.txt'). Requires --cove flag."
+)
 @timed
-def counselnotes(files, extract, verify, cove, output):
+def counselnotes(files, extract, verify, cove, output, cove_reference):
     """
     Strategic analysis and counsel's notes for legal documents.
 
@@ -60,6 +65,14 @@ def counselnotes(files, extract, verify, cove, output):
         click.ClickException: If there are errors with file reading, processing,
                              or LLM API calls.
     """
+    # Process CoVe reference files if provided
+    cove_reference_context, _ = process_reference_files(
+        cove_reference,
+        purpose="CoVe",
+        require_flag="--cove",
+        flag_enabled=cove
+    )
+    
     # Validate that at least one file is provided
     if not files:
         raise click.ClickException("At least one input file must be provided.")
@@ -336,8 +349,16 @@ def counselnotes(files, extract, verify, cove, output):
     # Apply Chain of Verification if requested
     if cove:
         original_content = final_content
+        
+        # Build prior contexts if we have CoVe reference files
+        prior_contexts = {}
+        if cove_reference_context:
+            prior_contexts["cove_reference_files"] = cove_reference_context
+        
         final_content, cove_results = run_cove_verification(
-            final_content, "counselnotes"
+            final_content, 
+            "counselnotes",
+            prior_contexts=prior_contexts if prior_contexts else None
         )
         if not cove_results["cove"]["passed"]:
             # Content has been regenerated to fix issues

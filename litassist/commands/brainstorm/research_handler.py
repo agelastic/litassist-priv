@@ -4,8 +4,6 @@ Research file handling utilities for brainstorm command.
 Handles research file loading, size analysis, and glob pattern expansion.
 """
 
-import os
-import glob
 import click
 
 from litassist.utils.text_processing import count_tokens_and_words
@@ -70,34 +68,3 @@ def analyze_research_size(research_contents: list, research_paths: list) -> dict
         "file_count": len(research_contents),
         "exceeds_threshold": exceeds_threshold,
     }
-
-
-def expand_glob_patterns(ctx, param, value):
-    """Expand glob patterns in file paths."""
-    if not value:
-        return value
-
-    expanded_paths = []
-    for pattern in value:
-        # Check if it's a glob pattern (contains *, ?, or [)
-        if any(char in pattern for char in ["*", "?", "["]):
-            # Expand the glob pattern
-            matches = glob.glob(pattern)
-            if not matches:
-                raise click.BadParameter(f"No files matching pattern: {pattern}")
-            expanded_paths.extend(matches)
-        else:
-            # Not a glob pattern, just verify the file exists
-            if not os.path.exists(pattern):
-                raise click.BadParameter(f"File not found: {pattern}")
-            expanded_paths.append(pattern)
-
-    # Remove duplicates while preserving order
-    seen = set()
-    unique_paths = []
-    for path in expanded_paths:
-        if path not in seen:
-            seen.add(path)
-            unique_paths.append(path)
-
-    return tuple(unique_paths)

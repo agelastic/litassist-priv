@@ -62,7 +62,7 @@ PARAMETER_PROFILES = {
         "transforms": {
             "max_tokens": "max_completion_tokens",
         },
-        "system_message_support": False,  # o1/o3 models don't support system messages
+        "system_message_support": False,  # o1/o3 models don't support system messages (but DO support tools as of 2025)
     },
     "anthropic": {
         "allowed": [
@@ -452,6 +452,7 @@ class LLMClientFactory:
             "top_p": 0.15,
             "thinking_effort": "high",  # Critical foundational command needs thorough thinking
             "force_verify": True,  # Always verify for foundational docs
+            "disable_tools": True,  # Claude Sonnet 4 has tool calling issues on OpenRouter (Sept 2025)
         },
         # Strategy - enhanced multi-step legal reasoning
         "strategy": {
@@ -508,6 +509,7 @@ class LLMClientFactory:
             "temperature": 0.2,
             "top_p": 0.3,  # Fixed: was 0, too restrictive
             "thinking_effort": "medium",  # Simple summarization task
+            "disable_tools": True,  # Claude Sonnet 4 has tool calling issues on OpenRouter (Sept 2025)
         },
         "digest-issues": {
             "model": "anthropic/claude-opus-4.1",
@@ -541,6 +543,7 @@ class LLMClientFactory:
             "top_p": 0.2,  # Focused beam for consistency
             "thinking_effort": "medium",  # Just spelling/terminology checks
             "force_verify": False,  # Avoid loops
+            "disable_tools": True,  # Claude Sonnet 4 has tool calling issues on OpenRouter (Sept 2025)
         },
         "verification-heavy": {
             "model": "openai/gpt-5",  # <1% hallucination rate for critical verification
@@ -583,17 +586,17 @@ class LLMClientFactory:
         },
         # Caseplan - LLM-driven workflow planning
         "caseplan": {
-            "model": "openai/o4-mini-high",
-            "temperature": 0.3,
-            "top_p": 0.7,
+            "model": "anthropic/claude-sonnet-4",
+            "temperature": 0.5,
             "force_verify": False,
+            "disable_tools": True,  # Claude Sonnet 4 has tool calling issues on OpenRouter (Sept 2025)
         },
         # Caseplan assessment - budget recommendation (Sonnet)
         "caseplan-assessment": {
-            "model": "openai/o4-mini-high",
-            "temperature": 0.2,
-            "top_p": 0.7,
+            "model": "anthropic/claude-sonnet-4",
+            "temperature": 0.5,
             "force_verify": False,
+            "disable_tools": True,  # Claude Sonnet 4 has tool calling issues on OpenRouter (Sept 2025)
         },
         # Chain of Verification - fast, efficient question generation
         "cove": {
@@ -602,6 +605,7 @@ class LLMClientFactory:
             "top_p": 0.8,
             "thinking_effort": "medium",  # General CoVe coordination
             "force_verify": False,  # Avoid recursive verification
+            "disable_tools": True,  # Claude Sonnet 4 has tool calling issues on OpenRouter (Sept 2025)
         },
         # CoVe sub-stages with separate model control
         "cove-questions": {
@@ -610,6 +614,7 @@ class LLMClientFactory:
             "top_p": 0.8,
             "thinking_effort": "low",  # Fast question generation, minimal thinking needed
             "force_verify": False,
+            "disable_tools": True,  # Claude Sonnet 4 has tool calling issues on OpenRouter (Sept 2025)
         },
         "cove-answers": {
             "model": "openai/gpt-5",  # GPT-5 for <1% hallucination rate
@@ -624,6 +629,7 @@ class LLMClientFactory:
             "top_p": 0.3,
             "thinking_effort": "high",  # Critical inconsistency detection needs careful analysis
             "force_verify": False,
+            "disable_tools": True,  # Claude Sonnet 4 has tool calling issues on OpenRouter (Sept 2025)
         },
         "cove-final": {
             "model": "openai/gpt-5",  # GPT-5 for <1% hallucination rate in final output
@@ -674,6 +680,7 @@ class LLMClientFactory:
                 "model": "anthropic/claude-sonnet-4",
                 "temperature": 0.3,
                 "top_p": 0.7,
+                "disable_tools": True,  # Claude Sonnet 4 has tool calling issues on OpenRouter (Sept 2025)
             }
             # Use default configuration for commands without specific config
             # This is expected behavior for many commands
@@ -682,6 +689,7 @@ class LLMClientFactory:
 
         # Extract special flags
         force_verify = config.pop("force_verify", False)
+        disable_tools = config.pop("disable_tools", False)
 
         # Remove premium_model key if present (no longer needed)
         config.pop("premium_model", None)
@@ -712,6 +720,7 @@ class LLMClientFactory:
 
         # Set force verification flag - explicitly set both True and False
         client._force_verify = force_verify
+        client._disable_tools = disable_tools
 
         return client
 
@@ -731,7 +740,7 @@ class LLMClientFactory:
         """
         config_key = f"{command_name}-{sub_type}" if sub_type else command_name
         config = cls.COMMAND_CONFIGS.get(
-            config_key, {"model": "anthropic/claude-sonnet-4"}
+            config_key, {"model": "anthropic/claude-sonnet-4", "disable_tools": True}
         )
         return config["model"]
 
@@ -838,7 +847,88 @@ class LLMClient(LLMVerificationMixin):
     # `complete` therefore no longer need their own heartbeat wrappers.
     def _format_date_string(self):
         """Get current date formatted for prompt injection."""
-        return datetime.now().strftime("%B %d, %Y")
+        import pytz
+        sydney_tz = pytz.timezone('Australia/Sydney')
+        return datetime.now(sydney_tz).strftime("%B %d, %Y")
+    
+    def _prepare_messages_for_model(self, messages: List[Dict[str, str]]) -> List[Dict[str, str]]:
+        """Prepare messages based on model's system message support."""
+        if not supports_system_messages(self.model):
+            # For o1/o3 models - merge system into first user message
+            return self._merge_system_into_user(messages)
+        else:
+            # For all other models - add Australian law to system messages
+            return self._add_australian_law_to_system(messages)
+    
+    def _merge_system_into_user(self, messages: List[Dict[str, str]]) -> List[Dict[str, str]]:
+        """Merge system messages into first user message for o1/o3 models."""
+        system_messages = [msg for msg in messages if msg.get("role") == "system"]
+        non_system_messages = [msg for msg in messages if msg.get("role") != "system"]
+        
+        if not system_messages:
+            # No system messages to merge
+            return messages
+        
+        # Combine all system content
+        system_content = "\n".join([msg.get("content", "") for msg in system_messages])
+        if "Australian English" not in system_content:
+            system_content += "\n" + PROMPTS.get("base.australian_law")
+        
+        # Find first user message and prepend system content
+        modified_messages = []
+        for i, msg in enumerate(non_system_messages):
+            if msg.get("role") == "user":
+                content = f"{system_content}\n\n{msg.get('content', '')}"
+                modified_messages.append({"role": "user", "content": content})
+                modified_messages.extend(non_system_messages[i + 1:])
+                return modified_messages
+        
+        # No user message found - just return non-system messages
+        return non_system_messages
+    
+    def _add_australian_law_to_system(self, messages: List[Dict[str, str]]) -> List[Dict[str, str]]:
+        """Add Australian law prompt to system messages."""
+        australian_law = PROMPTS.get("base.australian_law")
+        if not australian_law:
+            return messages
+            
+        modified_messages = []
+        for msg in messages:
+            if msg.get("role") == "system":
+                content = msg.get("content", "")
+                # Only add if not already present
+                if australian_law not in content:
+                    content = f"{australian_law}\n\n{content}"
+                modified_messages.append({"role": "system", "content": content})
+            else:
+                modified_messages.append(msg)
+        
+        return modified_messages
+    
+    def _add_date_instruction(self, messages: List[Dict[str, str]]) -> List[Dict[str, str]]:
+        """Add appropriate date instruction based on tool availability."""
+        if getattr(self, '_disable_tools', False):
+            # Tools disabled - inject date directly
+            today_date = self._format_date_string()
+            date_text = PROMPTS.get("base.date_fallback_instruction").format(date=today_date)
+        else:
+            # Tools enabled - use tool instruction
+            date_text = PROMPTS.get("base.date_tool_instruction")
+        
+        # Add to first system or user message
+        modified_messages = []
+        date_added = False
+        
+        for msg in messages:
+            if not date_added and msg.get("role") in ["system", "user"]:
+                content = msg.get("content", "")
+                content = f"{date_text}\n\n{content}"
+                modified_messages.append({"role": msg["role"], "content": content})
+                date_added = True
+            else:
+                modified_messages.append(msg)
+        
+        return modified_messages
 
     # The enclosing `complete` method now emits heartbeat updates, so we no
     # longer need a second heartbeat layer here. Retaining only the timing
@@ -869,59 +959,11 @@ class LLMClient(LLMVerificationMixin):
         Raises:
             Exception: If the API call fails or returns an error.
         """
-        # Check if this model supports system messages
-        if not supports_system_messages(self.model):
-            # This model doesn't support system messages - merge into first user message
-            modified_messages = []
-            system_content = PROMPTS.get("base.australian_law")
-
-            # Collect all system messages
-            system_messages = [msg for msg in messages if msg.get("role") == "system"]
-            non_system_messages = [
-                msg for msg in messages if msg.get("role") != "system"
-            ]
-
-            if system_messages:
-                # Combine all system content
-                system_content = "\n".join(
-                    [msg.get("content", "") for msg in system_messages]
-                )
-                if "Australian English" not in system_content:
-                    system_content += "\n" + PROMPTS.get("base.australian_law")
-
-            # Find first user message and prepend system content
-            for i, msg in enumerate(non_system_messages):
-                if msg.get("role") == "user":
-                    date_instruction = PROMPTS.get("base.date_tool_instruction")
-                    enhanced_content = f"{system_content}\n\n{date_instruction}\n\n{msg.get('content', '')}"
-                    modified_messages.append(
-                        {"role": "user", "content": enhanced_content}
-                    )
-                    # Add remaining messages as-is
-                    modified_messages.extend(non_system_messages[i + 1 :])
-                    break
-            else:
-                # No user message found, just use non-system messages
-                modified_messages = non_system_messages
-
-            messages = modified_messages
-        else:
-            # Regular models - handle system messages normally
-            # Prepend base.australian_law to all system messages
-            australian_law_prompt = PROMPTS.get("base.australian_law")
-            if australian_law_prompt:
-                modified_messages = []
-                for msg in messages:
-                    if msg.get("role") == "system":
-                        content = msg.get("content", "")
-                        # Only prepend if not already present
-                        if australian_law_prompt not in content:
-                            date_instruction = PROMPTS.get("base.date_tool_instruction")
-                            content = f"{australian_law_prompt}\n\n{date_instruction}\n\n{content}"
-                        modified_messages.append({"role": "system", "content": content})
-                    else:
-                        modified_messages.append(msg)
-                messages = modified_messages
+        # Step 1: Handle model-specific message formatting
+        messages = self._prepare_messages_for_model(messages)
+        
+        # Step 2: Add date instruction (tool or direct based on disable_tools)
+        messages = self._add_date_instruction(messages)
 
         # Merge default and override parameters
         params = {**self.default_params, **overrides}
@@ -940,72 +982,106 @@ class LLMClient(LLMVerificationMixin):
         try:
             # Filter parameters based on model capabilities
             filtered_params = get_model_parameters(self.model, params)
-            
-            # Add tool definitions for date handling
-            tools = get_tool_definitions()
-            
-            # Add tools to parameters (most models support this)
-            # We'll try with tools, and fall back without if it fails
-            filtered_params_with_tools = filtered_params.copy()
-            filtered_params_with_tools["tools"] = tools
-            # Force the model to call the now() tool first
-            filtered_params_with_tools["tool_choice"] = {
-                "type": "function",
-                "function": {"name": "now"}
-            }
 
-            # Log the final messages being sent to the API
-            save_log(
-                f"llm_{self.model.replace('/', '_')}_messages",
-                {
-                    "model": self.model,
-                    "messages_sent": messages,
-                    "params": filtered_params_with_tools,
-                    "timestamp": time.strftime("%Y-%m-%d %H:%M:%S"),
-                },
-            )
-
-            # Use ChatCompletion API with retry logic - try with tools first
-            try:
-                response = execute_api_call_with_retry(
-                    model_name, messages, filtered_params_with_tools
+            # Check if tools should be disabled for this client
+            if getattr(self, '_disable_tools', False):
+                # Date has already been injected by _add_date_instruction at line 966
+                logging.info(f"Tools disabled for {self.model}, using date injection fallback")
+                
+                # Log the prepared messages
+                save_log(
+                    f"llm_{self.model.replace('/', '_')}_messages",
+                    {
+                        "model": self.model,
+                        "messages_sent": messages,  # Use already-prepared messages
+                        "params": filtered_params,
+                        "timestamp": time.strftime("%Y-%m-%d %H:%M:%S"),
+                        "tools_disabled": True,
+                    },
                 )
                 
-                # Check if response is empty (some models don't support forced tool calls)
-                if (hasattr(response, 'choices') and response.choices and
-                    hasattr(response.choices[0], 'message') and
-                    not response.choices[0].message.content and
-                    not getattr(response.choices[0].message, 'tool_calls', None)):
-                    # Empty response - model doesn't support forced tools
-                    # Fall back to regular call without tools
-                    logging.info(f"Model {model_name} returned empty with forced tools, falling back")
+                # Call API without tools using prepared messages
+                response = execute_api_call_with_retry(
+                    model_name, messages, filtered_params
+                )
+            else:
+                # Add tool definitions for date handling
+                tools = get_tool_definitions()
+
+                # Add tools to parameters (most models support this)
+                # We'll try with tools, and fall back without if it fails
+                filtered_params_with_tools = filtered_params.copy()
+                filtered_params_with_tools["tools"] = tools
+                # Let the model decide when to call tools (follows "MUST" instruction in prompt)
+
+                # Log the final messages being sent to the API
+                save_log(
+                    f"llm_{self.model.replace('/', '_')}_messages",
+                    {
+                        "model": self.model,
+                        "messages_sent": messages,
+                        "params": filtered_params_with_tools,
+                        "timestamp": time.strftime("%Y-%m-%d %H:%M:%S"),
+                    },
+                )
+
+                # Use ChatCompletion API with retry logic - try with tools first
+                try:
                     response = execute_api_call_with_retry(
-                        model_name, messages, filtered_params
+                        model_name, messages, filtered_params_with_tools
                     )
-            except Exception as e:
-                # If tools aren't supported, fall back to regular call
-                if "tools" in str(e).lower() or "tool_choice" in str(e).lower():
-                    logging.info(f"Model {model_name} doesn't support tools, falling back")
-                    
-                    # Replace tool instruction with direct date injection in messages
-                    fallback_messages = []
-                    today_date = self._format_date_string()
-                    date_fallback = PROMPTS.get("base.date_fallback_instruction").format(date=today_date)
-                    tool_instruction = PROMPTS.get("base.date_tool_instruction")
-                    
-                    for msg in messages:
-                        if msg.get("role") in ["system", "user"] and tool_instruction in msg.get("content", ""):
-                            # Replace tool instruction with date fallback
-                            new_content = msg["content"].replace(tool_instruction, date_fallback)
-                            fallback_messages.append({"role": msg["role"], "content": new_content})
-                        else:
-                            fallback_messages.append(msg)
-                    
-                    response = execute_api_call_with_retry(
-                        model_name, fallback_messages, filtered_params
-                    )
-                else:
-                    raise
+
+                    # Check if response is empty (some models don't support forced tool calls)
+                    if (
+                        hasattr(response, "choices")
+                        and response.choices
+                        and hasattr(response.choices[0], "message")
+                        and not response.choices[0].message.content
+                        and not getattr(response.choices[0].message, "tool_calls", None)
+                    ):
+                        # Empty response - model doesn't support forced tools
+                        # Fall back to regular call without tools
+                        logging.info(
+                            f"Model {model_name} returned empty with forced tools, falling back"
+                        )
+                        response = execute_api_call_with_retry(
+                            model_name, messages, filtered_params
+                        )
+                except Exception as e:
+                    # If tools aren't supported, fall back to regular call
+                    if "tools" in str(e).lower() or "tool_choice" in str(e).lower():
+                        logging.info(
+                            f"Model {model_name} doesn't support tools, falling back"
+                        )
+
+                        # Replace tool instruction with direct date injection in messages
+                        fallback_messages = []
+                        today_date = self._format_date_string()
+                        date_fallback = PROMPTS.get(
+                            "base.date_fallback_instruction"
+                        ).format(date=today_date)
+                        tool_instruction = PROMPTS.get("base.date_tool_instruction")
+
+                        for msg in messages:
+                            if msg.get("role") in [
+                                "system",
+                                "user",
+                            ] and tool_instruction in msg.get("content", ""):
+                                # Replace tool instruction with date fallback
+                                new_content = msg["content"].replace(
+                                    tool_instruction, date_fallback
+                                )
+                                fallback_messages.append(
+                                    {"role": msg["role"], "content": new_content}
+                                )
+                            else:
+                                fallback_messages.append(msg)
+
+                        response = execute_api_call_with_retry(
+                            model_name, fallback_messages, filtered_params
+                        )
+                    else:
+                        raise
 
             # Check for errors in the response
             if (
@@ -1054,28 +1130,32 @@ class LLMClient(LLMVerificationMixin):
                 raise Exception(f"Invalid choice structure: {response.choices[0]}")
 
             # Check if the response contains tool calls
-            if (hasattr(response.choices[0].message, "tool_calls") and 
-                response.choices[0].message.tool_calls):
+            if (
+                hasattr(response.choices[0].message, "tool_calls")
+                and response.choices[0].message.tool_calls
+            ):
                 # Handle tool calls - wrap in try/except for test compatibility
                 try:
                     tool_calls = response.choices[0].message.tool_calls
-                    
+
                     for tool_call in tool_calls:
                         tool_name = tool_call.function.name
                         # Execute the tool (we know it's the now() function)
                         tool_result = execute_tool(tool_name)
-                        
+
                         # Format the tool response for the model
                         tool_message = format_tool_response(tool_name, tool_result)
-                        
+
                         # Add tool response to messages for follow-up
                         messages.append(response.choices[0].message.model_dump())
-                        messages.append({
-                            "role": "tool",
-                            "tool_call_id": tool_call.id,
-                            "content": tool_message
-                        })
-                    
+                        messages.append(
+                            {
+                                "role": "tool",
+                                "tool_call_id": tool_call.id,
+                                "content": tool_message,
+                            }
+                        )
+
                     # Make a follow-up call with the tool results
                     # This time without forcing tool use
                     filtered_params_followup = filtered_params.copy()
@@ -1084,7 +1164,9 @@ class LLMClient(LLMVerificationMixin):
                     )
                 except (TypeError, AttributeError):
                     # In tests or if tool_calls is not properly formed, skip tool handling
-                    logging.debug("Tool calls not available or malformed, skipping tool handling")
+                    logging.debug(
+                        "Tool calls not available or malformed, skipping tool handling"
+                    )
 
             # Extract content and usage from chat response
             content, usage = extract_content_and_usage(response)

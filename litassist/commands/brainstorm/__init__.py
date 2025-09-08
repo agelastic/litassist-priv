@@ -6,7 +6,8 @@ orthodox, unorthodox, and most-likely-to-succeed analysis.
 """
 
 from .core import brainstorm
-from .research_handler import analyze_research_size, expand_glob_patterns
+from .research_handler import analyze_research_size
+from litassist.utils.file_ops import expand_glob_patterns_callback as expand_glob_patterns
 from .citation_regenerator import regenerate_bad_strategies
 
 # Import PROMPTS to make it available at module level for tests

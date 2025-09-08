@@ -12,7 +12,7 @@ import os
 from litassist.config import get_config
 from litassist.prompts import PROMPTS
 from litassist.utils.text_processing import chunk_text
-from litassist.utils.file_ops import validate_file_size
+from litassist.utils.file_ops import validate_file_size, process_reference_files
 from litassist.utils.core import (
     timed,
     show_command_completion,
@@ -49,8 +49,13 @@ from litassist.verification_chain import run_cove_verification
     help="Use Chain of Verification instead of standard verification",
 )
 @click.option("--output", type=str, help="Custom output filename prefix")
+@click.option(
+    "--cove-reference",
+    type=str,
+    help="Glob pattern for reference files to include in CoVe answer stage (e.g., 'exhibits/*.pdf', 'affidavits/*.txt'). Requires --cove flag."
+)
 @timed
-def extractfacts(file, verify, noverify, cove, output):
+def extractfacts(file, verify, noverify, cove, output, cove_reference):
     """
     Auto-generate case_facts.txt under ten structured headings.
 
@@ -66,6 +71,14 @@ def extractfacts(file, verify, noverify, cove, output):
         click.ClickException: If there are errors reading the file, processing chunks,
                              or with the LLM API calls.
     """
+    # Process CoVe reference files if provided
+    cove_reference_context, _ = process_reference_files(
+        cove_reference,
+        purpose="CoVe",
+        require_flag="--cove",
+        flag_enabled=cove
+    )
+    
     # Process all files
     all_text = ""
     source_files = []
@@ -184,7 +197,17 @@ def extractfacts(file, verify, noverify, cove, output):
         # Use CoVe INSTEAD of standard verification
         click.echo(info_message("Running Chain of Verification..."))
         original_content = combined
-        combined, cove_results = run_cove_verification(combined, "extractfacts")
+        
+        # Build prior contexts if we have CoVe reference files
+        prior_contexts = {}
+        if cove_reference_context:
+            prior_contexts["cove_reference_files"] = cove_reference_context
+        
+        combined, cove_results = run_cove_verification(
+            combined, 
+            "extractfacts",
+            prior_contexts=prior_contexts if prior_contexts else None
+        )
 
         verification_metadata["Verification"] = "Chain of Verification (CoVe)"
         verification_metadata["CoVe Status"] = (
