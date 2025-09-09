@@ -35,7 +35,6 @@ from litassist.utils.legal_reasoning import (
     extract_reasoning_trace,
     LegalReasoningTrace,
 )
-from litassist.llm.retry_handler import execute_with_document_dropping
 
 
 def _handle_verification_error(step_name: str, exception: Exception) -> None:
@@ -222,46 +221,53 @@ def verify(file, citations, soundness, reasoning, cove, output, reference, cove_
                     {"role": "user", "content": enhanced_prompt},
                 ]
                 
-                # Build other context (non-droppable)
-                other_context = content
-                if reference_context:
-                    other_context += "\n\n## Reference Documents\n\n"
-                    other_context += "The following reference documents provide additional context:\n\n"
-                    other_context += reference_context
-                if citation_report:
-                    other_context += (
-                        "\n\n## Citation Verification Summary\n" + citation_report
-                    )
+                # Try with full context, implement backoff if prompt overload
+                response = None
+                cases_to_include = list(case_content.items()) if case_content else []
+                attempts = 0
                 
-                # Function to rebuild prompt with remaining documents
-                def rebuild_reasoning_prompt(remaining_docs, other_ctx):
-                    prompt = other_ctx
-                    if remaining_docs:
-                        # Don't replace prompt - build on other_ctx
-                        prompt += "\n\n## Full Legal Context\n\n"
-                        prompt += "Below are the complete legal documents referenced in the text:\n\n"
-                        for doc_name, doc_content in remaining_docs.items():
-                            prompt += f"=== {doc_name} ===\n\n{doc_content}\n\n"
-                        if reference_context:
-                            prompt += "\n\n## Reference Documents\n\n"
-                            prompt += "The following reference documents provide additional context:\n\n"
-                            prompt += reference_context
-                        if citation_report:
-                            prompt += (
-                                "\n\n## Citation Verification Summary\n" + citation_report
-                            )
-                    # Add reasoning instruction at the end after all content is assembled
-                    return create_reasoning_prompt(prompt, "verify")
+                while response is None and attempts < 5:
+                    try:
+                        response, _ = client.complete(messages, skip_citation_verification=True)
+                    except Exception as e:
+                        error_str = str(e).lower()
+                        # Check for token/context limit errors
+                        if any(x in error_str for x in ['token', 'context', 'length', 'too long', 'maximum']):
+                            if cases_to_include:
+                                # Find and drop the largest case
+                                largest_idx = max(range(len(cases_to_include)), 
+                                                key=lambda i: len(cases_to_include[i][1]))
+                                dropped_case = cases_to_include.pop(largest_idx)
+                                click.echo(warning_message(
+                                    f"Prompt exceeded token limit. Dropping largest case: {dropped_case[0]}"
+                                ))
+                                
+                                # Rebuild prompt without the dropped case
+                                enhanced_prompt = create_reasoning_prompt(content, "verify")
+                                if cases_to_include:
+                                    enhanced_prompt += "\n\n## Full Legal Context\n\n"
+                                    enhanced_prompt += "Below are the complete legal documents referenced in the text:\n\n"
+                                    for citation, full_text in cases_to_include:
+                                        enhanced_prompt += f"=== {citation} ===\n\n{full_text}\n\n"
+                                if reference_context:
+                                    enhanced_prompt += "\n\n## Reference Documents\n\n"
+                                    enhanced_prompt += "The following reference documents provide additional context:\n\n"
+                                    enhanced_prompt += reference_context
+                                if citation_report:
+                                    enhanced_prompt += (
+                                        "\n\n## Citation Verification Summary\n" + citation_report
+                                    )
+                                messages[1]["content"] = enhanced_prompt
+                                attempts += 1
+                            else:
+                                # No more cases to drop, re-raise the error
+                                raise
+                        else:
+                            # Not a token limit error, re-raise
+                            raise
                 
-                # Try with full context, using document dropping on token errors
-                response, _ = execute_with_document_dropping(
-                    client=client,
-                    messages=messages,
-                    documents=case_content if case_content else {},
-                    other_context=other_context,
-                    rebuild_prompt_func=rebuild_reasoning_prompt,
-                    skip_citation_verification=True
-                )
+                if response is None:
+                    raise click.ClickException("Failed to get response after dropping all case content")
                 reasoning_response = (
                     response  # Store for potential combination with soundness
                 )

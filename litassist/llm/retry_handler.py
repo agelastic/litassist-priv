@@ -5,9 +5,9 @@ This module manages retry logic when initial API calls fail citation
 verification, enhancing prompts and re-attempting with stricter instructions.
 """
 
-from typing import List, Dict, Any, Tuple, Optional, Callable
+from typing import List, Dict, Any, Tuple, Optional
 from litassist.prompts import PROMPTS
-from litassist.utils.formatting import error_message, info_message, success_message, warning_message
+from litassist.utils.formatting import error_message, info_message, success_message
 from . import api_handlers
 from .response_parser import extract_content_and_usage
 
@@ -192,104 +192,3 @@ def handle_citation_retry(
         print(success_msg)
 
     return verified_retry_content, retry_usage, retry_issues
-
-
-def execute_with_document_dropping(
-    client,
-    messages: List[Dict[str, Any]],
-    documents: Optional[Dict[str, str]] = None,
-    other_context: str = "",
-    max_attempts: int = 5,
-    rebuild_prompt_func: Optional[Callable] = None,
-    skip_citation_verification: bool = False,
-) -> Tuple[Any, Dict[str, Any]]:
-    """
-    Execute LLM call with automatic document dropping on token limit errors.
-    
-    This function attempts an LLM API call and automatically handles token/context
-    limit errors by progressively dropping the largest documents until the call succeeds
-    or all droppable documents are exhausted.
-    
-    Args:
-        client: LLM client instance with complete() method
-        messages: Initial messages list for the LLM call
-        documents: Optional dict of {"doc_name": "content"} that can be dropped
-        other_context: Non-droppable context that must always be included
-        max_attempts: Maximum retry attempts (default 5)
-        rebuild_prompt_func: Optional function to rebuild prompt with remaining docs
-                            Signature: (documents, other_context) -> str
-        skip_citation_verification: Pass through to client.complete()
-    
-    Returns:
-        Tuple of (response, usage_dict) from successful API call
-    
-    Raises:
-        Exception: If all documents are dropped and call still fails
-    """
-    # Track which documents we can drop
-    droppable_docs = list(documents.items()) if documents else []
-    attempts = 0
-    response = None
-    
-    while response is None and attempts < max_attempts:
-        try:
-            # Try the API call
-            response, usage = client.complete(
-                messages, 
-                skip_citation_verification=skip_citation_verification
-            )
-            return response, usage
-            
-        except Exception as e:
-            error_str = str(e).lower()
-            
-            # Check if this is a token/context limit error
-            if any(x in error_str for x in ['token', 'context', 'length', 'too long', 'maximum']):
-                if droppable_docs:
-                    # Find and drop the largest document
-                    largest_idx = max(
-                        range(len(droppable_docs)), 
-                        key=lambda i: len(droppable_docs[i][1])
-                    )
-                    dropped_doc = droppable_docs.pop(largest_idx)
-                    
-                    print(warning_message(
-                        f"Prompt exceeded token limit. Dropping largest document: {dropped_doc[0]}"
-                    ))
-                    
-                    # Rebuild the prompt with remaining documents
-                    if rebuild_prompt_func:
-                        # Use custom rebuilder if provided
-                        remaining_docs = dict(droppable_docs)
-                        new_content = rebuild_prompt_func(remaining_docs, other_context)
-                    else:
-                        # Default rebuilding: concatenate remaining docs with other_context
-                        doc_text = ""
-                        if droppable_docs:
-                            for doc_name, doc_content in droppable_docs:
-                                doc_text += f"=== {doc_name} ===\n\n{doc_content}\n\n"
-                        new_content = doc_text + other_context
-                    
-                    # Update the messages with new content
-                    if messages and messages[-1].get("role") == "user":
-                        # Create a new messages list instead of mutating the original
-                        messages = [
-                            *messages[:-1],  # All messages except last
-                            {"role": "user", "content": new_content}  # New last message
-                        ]
-                    
-                    attempts += 1
-                else:
-                    # No more documents to drop, re-raise the error
-                    raise Exception(
-                        f"Token limit exceeded even after dropping all documents: {e}"
-                    )
-            else:
-                # Not a token limit error, re-raise
-                raise
-    
-    # If we get here, we failed after max attempts
-    if response is None:
-        raise Exception(
-            f"Failed to get response after {attempts} attempts dropping documents"
-        )

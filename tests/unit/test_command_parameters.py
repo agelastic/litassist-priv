@@ -537,13 +537,10 @@ Test objectives""")
         from litassist.llm import LLMClientFactory
 
         # Directly test the factory behavior without mocking
-        with patch("litassist.llm.client.get_config") as mock_get_config:
-            mock_config = Mock()
+        with patch("litassist.llm.CONFIG") as mock_config:
             mock_config.openrouter_key = "test_key"
             mock_config.openai_key = "test_key"
             mock_config.use_token_limits = False  # Avoid token limit logic
-            mock_config.token_limit = 16384
-            mock_get_config.return_value = mock_config
 
             # Test strategy command (uses o3-pro)
             client = LLMClientFactory.for_command(

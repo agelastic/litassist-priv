@@ -37,7 +37,7 @@ logger = logging.getLogger(__name__)
 MODEL_PATTERNS = {
     "openai_reasoning": r"openai/o\d+",  # Matches o1, o3, o1-pro, o3-pro, o4, etc.
     "gpt5": r"openai/gpt-5",  # GPT-5 specific (August 2025)
-    "anthropic_thinking": r"anthropic/claude-(opus-4(\.\d+)?|sonnet-4|3\.7-sonnet|3-7-sonnet)",  # Claude 4 and 3.7 Sonnet thinking models
+    "claude4": r"anthropic/claude-(opus-4|sonnet-4)",  # Claude 4 models
     "anthropic": r"anthropic/claude",  # Other Claude models
     "google": r"google/(gemini|palm|bard)",
     "openai_standard": r"openai/(gpt|chatgpt)",  # GPT-4, ChatGPT, etc.
@@ -275,7 +275,7 @@ def convert_thinking_effort(effort: str, model_name: str) -> dict:
         else:
             return {"reasoning": {"effort": mapped_effort}}
 
-    elif model_family == "anthropic_thinking":
+    elif model_family in ["claude4", "anthropic"]:
         # Token-based models (Anthropic)
         token_map = {
             "minimal": 1024,
@@ -468,7 +468,6 @@ class LLMClientFactory:
             "model": "openai/o3-pro",
             # Note: o3-pro ignores temperature and top_p parameters
             "thinking_effort": "max",  # Universal parameter, translates to reasoning_effort
-            "disable_tools": True,  # o3-pro doesn't support tool calling
         },
         # Brainstorm - varied temperatures for different approaches
         "brainstorm-orthodox": {
@@ -495,14 +494,12 @@ class LLMClientFactory:
             "temperature": 0.2,
             "top_p": 0.8,
             "thinking_effort": "high",  # Universal parameter, translates to reasoning_effort
-            "disable_tools": True,  # o3-pro doesn't support tool calling
         },
         # Draft - superior technical writing (o3 model with very limited parameter support)
         "draft": {
             "model": "openai/o3-pro",
             "thinking_effort": "high",  # Universal parameter
             "verbosity": "high",  # Comprehensive legal drafting
-            "disable_tools": True,  # o3-pro doesn't support tool calling
         },
         # Digest - mode-dependent settings
         "digest-summary": {
@@ -560,7 +557,6 @@ class LLMClientFactory:
             "top_p": 0.3,
             "thinking_effort": "high",  # Universal parameter, translates to reasoning_effort
             "force_verify": False,
-            "disable_tools": True,  # o3-pro doesn't support tool calling
         },
         "verify-soundness": {
             "model": "anthropic/claude-opus-4.1",  # Opus for soundness checking
@@ -576,7 +572,6 @@ class LLMClientFactory:
             "top_p": 0.7,
             "thinking_effort": "high",  # Universal parameter, translates to reasoning_effort
             "force_verify": True,  # Strategic counsel's notes require verification
-            "disable_tools": True,  # o3-pro doesn't support tool calling
         },
         # Barrister's brief - comprehensive document generation
         "barbrief": {
@@ -584,7 +579,6 @@ class LLMClientFactory:
             # o3-pro for comprehensive analysis and superior drafting
             "thinking_effort": "high",  # Universal parameter, translates to reasoning object
             "verbosity": "high",  # Detailed comprehensive briefs
-            "disable_tools": True,  # o3-pro doesn't support tool calling
         },
         # Caseplan - LLM-driven workflow planning
         "caseplan": {
@@ -801,10 +795,7 @@ class LLMClient(LLMVerificationMixin):
 
         # Set token limit from config if enabled and not explicitly specified
         config = get_config()
-        model_family = get_model_family(model)
-        # Skip token limit logic during tests to avoid mock issues
-        import os
-        if config.use_token_limits and not os.environ.get("PYTEST_CURRENT_TEST"):
+        if config.use_token_limits:
             # Determine if we need to transform max_tokens to another parameter
             test_params = {"max_tokens": 1}
             filtered = get_model_parameters(model, test_params)
@@ -817,24 +808,6 @@ class LLMClient(LLMVerificationMixin):
             if token_param not in default_params:
                 # Use token limit from config
                 default_params[token_param] = config.token_limit
-                
-                # Special handling for Anthropic thinking models
-                # Anthropic requires: max_tokens > reasoning.max_tokens
-                if model_family == "anthropic_thinking" and "thinking_effort" in default_params:
-                    effort = default_params.get("thinking_effort", "medium")
-                    thinking_map = {
-                        "minimal": 1024,
-                        "low": 1024,
-                        "medium": 8192,
-                        "high": 16384,
-                        "max": 32000,
-                    }
-                    thinking_budget = thinking_map.get(effort, 8192)
-                    
-                    # Ensure max_tokens > thinking budget
-                    min_required = thinking_budget + 1000
-                    if default_params[token_param] <= thinking_budget:
-                        default_params[token_param] = min_required
 
         self.default_params = default_params
         self._client = None  # Will be created when needed
@@ -1149,16 +1122,14 @@ class LLMClient(LLMVerificationMixin):
                         tool_message = format_tool_response(tool_name, tool_result)
 
                         # Add tool response to messages for follow-up
-                        # Create a new messages list to avoid mutating the original
-                        messages = [
-                            *messages,
-                            response.choices[0].message.model_dump(),
+                        messages.append(response.choices[0].message.model_dump())
+                        messages.append(
                             {
                                 "role": "tool",
                                 "tool_call_id": tool_call.id,
                                 "content": tool_message,
                             }
-                        ]
+                        )
 
                     # Make a follow-up call with the tool results
                     # This time without forcing tool use

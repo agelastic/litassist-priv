@@ -28,17 +28,15 @@ class TestGetModelFamily:
 
     def test_claude_models(self):
         """Test identification of Claude models."""
-        # Claude 4 and 3.7 Sonnet models get special family
-        assert get_model_family("anthropic/claude-opus-4") == "anthropic_thinking"
-        assert get_model_family("anthropic/claude-opus-4.1") == "anthropic_thinking"
-        assert get_model_family("anthropic/claude-sonnet-4") == "anthropic_thinking"
-        assert get_model_family("anthropic/claude-3.7-sonnet") == "anthropic_thinking"
-        assert get_model_family("anthropic/claude-3-7-sonnet") == "anthropic_thinking"
+        # Claude 4 models get special family
+        assert get_model_family("anthropic/claude-opus-4") == "claude4"
+        assert get_model_family("anthropic/claude-opus-4.1") == "claude4"
+        assert get_model_family("anthropic/claude-sonnet-4") == "claude4"
 
-        # Claude 3 and other models are standard anthropic (except 3.7 Sonnet)
+        # Claude 3 and other models are standard anthropic
         assert get_model_family("anthropic/claude-3-opus") == "anthropic"
         assert get_model_family("anthropic/claude-3-sonnet") == "anthropic"
-        assert get_model_family("anthropic/claude-3.5-sonnet") == "anthropic"
+        assert get_model_family("anthropic/claude-3.7-sonnet") == "anthropic"
 
         # Without provider prefix, won't match
         assert get_model_family("claude-3-opus") == "default"

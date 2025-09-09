@@ -4,22 +4,18 @@ Simplified tests for command-specific parameter propagation.
 Tests the LLMClientFactory directly to verify correct model configuration.
 """
 
-from unittest.mock import patch, Mock
+from unittest.mock import patch
 from litassist.llm import LLMClientFactory
 
 
 class TestCommandParameterConfiguration:
     """Test that commands are configured with correct models and parameters."""
 
-    @patch("litassist.llm.client.get_config")
-    def test_extractfacts_configuration(self, mock_get_config):
+    @patch("litassist.llm.CONFIG")
+    def test_extractfacts_configuration(self, mock_config):
         """Test extractfacts command configuration."""
-        mock_config = Mock()
         mock_config.openrouter_key = "test_key"
         mock_config.openai_key = "test_key"
-        mock_config.use_token_limits = False
-        mock_config.token_limit = 16384
-        mock_get_config.return_value = mock_config
 
         # Check the configuration
         assert "extractfacts" in LLMClientFactory.COMMAND_CONFIGS
@@ -30,15 +26,11 @@ class TestCommandParameterConfiguration:
         client = LLMClientFactory.for_command("extractfacts")
         assert client.model == "anthropic/claude-sonnet-4"
 
-    @patch("litassist.llm.client.get_config")
-    def test_lookup_configuration(self, mock_get_config):
+    @patch("litassist.llm.CONFIG")
+    def test_lookup_configuration(self, mock_config):
         """Test lookup command configuration."""
-        mock_config = Mock()
         mock_config.openrouter_key = "test_key"
         mock_config.openai_key = "test_key"
-        mock_config.use_token_limits = False
-        mock_config.token_limit = 16384
-        mock_get_config.return_value = mock_config
 
         assert "lookup" in LLMClientFactory.COMMAND_CONFIGS
         config = LLMClientFactory.COMMAND_CONFIGS["lookup"]
@@ -49,15 +41,11 @@ class TestCommandParameterConfiguration:
         assert client.model == "google/gemini-2.5-pro"
         assert client._force_verify is False
 
-    @patch("litassist.llm.client.get_config")
-    def test_strategy_configuration(self, mock_get_config):
+    @patch("litassist.llm.CONFIG")
+    def test_strategy_configuration(self, mock_config):
         """Test strategy command configuration."""
-        mock_config = Mock()
         mock_config.openrouter_key = "test_key"
         mock_config.openai_key = "test_key"
-        mock_config.use_token_limits = False
-        mock_config.token_limit = 16384
-        mock_get_config.return_value = mock_config
 
         assert "strategy" in LLMClientFactory.COMMAND_CONFIGS
         config = LLMClientFactory.COMMAND_CONFIGS["strategy"]
@@ -70,15 +58,11 @@ class TestCommandParameterConfiguration:
         assert client._force_verify is True
         assert client.default_params.get("thinking_effort") == "max"
 
-    @patch("litassist.llm.client.get_config")
-    def test_draft_configuration(self, mock_get_config):
+    @patch("litassist.llm.CONFIG")
+    def test_draft_configuration(self, mock_config):
         """Test draft command configuration."""
-        mock_config = Mock()
         mock_config.openrouter_key = "test_key"
         mock_config.openai_key = "test_key"
-        mock_config.use_token_limits = False
-        mock_config.token_limit = 16384
-        mock_get_config.return_value = mock_config
 
         assert "draft" in LLMClientFactory.COMMAND_CONFIGS
         config = LLMClientFactory.COMMAND_CONFIGS["draft"]
@@ -87,19 +71,14 @@ class TestCommandParameterConfiguration:
 
         client = LLMClientFactory.for_command("draft")
         assert client.model == "openai/o3-pro"
-        # max_completion_tokens is only set when use_token_limits is True
-        # Since we have use_token_limits=False in this test, it won't be set
-        assert client.default_params.get("thinking_effort") == "high"
+        # max_completion_tokens might be set by default for o3-pro models
+        assert "max_completion_tokens" in client.default_params
 
-    @patch("litassist.llm.client.get_config")
-    def test_parameter_filtering_for_o3_pro(self, mock_get_config):
+    @patch("litassist.llm.CONFIG")
+    def test_parameter_filtering_for_o3_pro(self, mock_config):
         """Test that o3-pro models filter out unsupported parameters during API call."""
-        mock_config = Mock()
         mock_config.openrouter_key = "test_key"
         mock_config.openai_key = "test_key"
-        mock_config.use_token_limits = False
-        mock_config.token_limit = 16384
-        mock_get_config.return_value = mock_config
 
         # Use draft command which actually uses o3-pro model
         client = LLMClientFactory.for_command("draft", temperature=0.9, top_p=0.95)
@@ -126,29 +105,21 @@ class TestCommandParameterConfiguration:
             "effort": "high"
         }  # Converted from thinking_effort (max maps to high)
 
-    @patch("litassist.llm.client.get_config")
-    def test_default_command_configuration(self, mock_get_config):
+    @patch("litassist.llm.CONFIG")
+    def test_default_command_configuration(self, mock_config):
         """Test commands without specific config use defaults."""
-        mock_config = Mock()
         mock_config.openrouter_key = "test_key"
         mock_config.openai_key = "test_key"
-        mock_config.use_token_limits = False
-        mock_config.token_limit = 16384
-        mock_get_config.return_value = mock_config
 
         # Command not in COMMAND_CONFIGS should use default
         client = LLMClientFactory.for_command("unknown_command")
         assert client.model == "anthropic/claude-sonnet-4"  # Default model
 
-    @patch("litassist.llm.client.get_config")
-    def test_digest_uses_default_config(self, mock_get_config):
+    @patch("litassist.llm.CONFIG")
+    def test_digest_uses_default_config(self, mock_config):
         """Test digest command uses default configuration."""
-        mock_config = Mock()
         mock_config.openrouter_key = "test_key"
         mock_config.openai_key = "test_key"
-        mock_config.use_token_limits = False
-        mock_config.token_limit = 16384
-        mock_get_config.return_value = mock_config
 
         # digest is not in COMMAND_CONFIGS, should use default
         client = LLMClientFactory.for_command("digest")

@@ -49,20 +49,13 @@ class TestLLMClientVerification:
 
     @patch("litassist.logging_utils.save_log")
     @patch("litassist.llm.api_handlers.get_openai_client")
-    @patch("litassist.llm.client.get_config")
-    @patch("litassist.config.get_config")
-    def test_verify_with_level_light(self, mock_get_config, mock_client_get_config, mock_get_client, mock_save_log):
+    @patch("litassist.config.CONFIG")
+    def test_verify_with_level_light(self, mock_config, mock_get_client, mock_save_log):
         """Test light verification level."""
         # Setup proper CONFIG values
-        mock_config = Mock()
         mock_config.or_base = "https://openrouter.ai/api/v1"
         mock_config.or_key = "test-key"
         mock_config.openai_key = "test-key"
-        mock_config.openrouter_key = "test-key"
-        mock_config.use_token_limits = False
-        mock_config.token_limit = 16384
-        mock_get_config.return_value = mock_config
-        mock_client_get_config.return_value = mock_config
 
         # Mock the OpenAI client
         mock_client = MagicMock()
@@ -96,20 +89,13 @@ class TestLLMClientVerification:
 
     @patch("litassist.logging_utils.save_log")
     @patch("litassist.llm.api_handlers.get_openai_client")
-    @patch("litassist.llm.client.get_config")
-    @patch("litassist.config.get_config")
-    def test_verify_with_level_heavy(self, mock_get_config, mock_client_get_config, mock_get_client, mock_save_log):
+    @patch("litassist.config.CONFIG")
+    def test_verify_with_level_heavy(self, mock_config, mock_get_client, mock_save_log):
         """Test heavy verification level."""
         # Setup proper CONFIG values
-        mock_config = Mock()
         mock_config.or_base = "https://openrouter.ai/api/v1"
         mock_config.or_key = "test-key"
         mock_config.openai_key = "test-key"
-        mock_config.openrouter_key = "test-key"
-        mock_config.use_token_limits = False
-        mock_config.token_limit = 16384
-        mock_get_config.return_value = mock_config
-        mock_client_get_config.return_value = mock_config
 
         # Mock the OpenAI client
         mock_client = MagicMock()
