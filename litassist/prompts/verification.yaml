@@ -6,13 +6,6 @@ verification:
   # USED BY: llm.py LLMClient.verify() method - default verification for all commands
   # LOCATION: llm.py:528-539
   self_critique: |
-    CRITICAL ANTI-HALLUCINATION INSTRUCTIONS:
-    - NEVER fabricate case citations, legal references, or specific facts
-    - If unsure about any information, explicitly state "Cannot verify" or "Uncertain"
-    - For each correction, indicate confidence: HIGH (certain), MEDIUM (probable), LOW (uncertain)
-    - If information is outside your knowledge, clearly state this limitation
-    - Do not invent plausible-sounding details when you cannot recall exact information
-
     CRITICAL INSTRUCTION: You MUST return the COMPLETE document with ALL original text.
     DO NOT use ANY placeholders, summaries, or abbreviations like:
     - "[Section reproduced in full...]"
