@@ -7,6 +7,7 @@ from litassist.citation_patterns import validate_citation_patterns, extract_cita
 from litassist.citation_verify import verify_all_citations
 from litassist.citation_context import fetch_citation_context
 from litassist.llm import LLMClientFactory
+from litassist.llm.retry_handler import execute_with_document_dropping
 from litassist.prompts import PROMPTS
 from litassist.logging_utils import save_log
 
@@ -269,9 +270,54 @@ def run_cove_verification(
 
     # Set stage context for logging
     client_answers.command_context = f"cove_stage2_answers_{command}"
-    answers, usage2 = client_answers.complete(
-        [{"role": "user", "content": answers_prompt}]
-    )
+    
+    # Use document dropping for answer stage which may have large legal context
+    if legal_context:
+        # Build other context (questions + reference documents)
+        other_context = f"QUESTIONS:\n{questions}\n\n"
+        if reference_context:
+            other_context += "\n=== REFERENCE DOCUMENTS ===\n"
+            other_context += reference_context
+            other_context += "=== END REFERENCE DOCUMENTS ===\n\n"
+        
+        # Rebuild function for answers with context
+        def rebuild_answers_prompt(remaining_docs, other_ctx):
+            context_text = ""
+            if remaining_docs:
+                context_text += "\n=== LEGAL AUTHORITIES (FULL TEXT) ===\n"
+                for citation, full_text in remaining_docs.items():
+                    context_text += f"\n=== {citation} ===\n"
+                    context_text += full_text
+                    context_text += f"\n=== END {citation} ===\n\n"
+                context_text += "=== END LEGAL AUTHORITIES ===\n\n"
+            
+            if reference_context and context_text:
+                # Both legal and reference context
+                full_context = context_text + other_ctx
+            elif context_text:
+                # Just legal context
+                full_context = context_text + f"QUESTIONS:\n{questions}\n\n"
+            else:
+                # Just reference context or nothing
+                full_context = other_ctx
+                
+            return PROMPTS.get("verification.cove.answers_with_context").format(
+                questions=questions, legal_context=full_context
+            )
+        
+        answers, usage2 = execute_with_document_dropping(
+            client=client_answers,
+            messages=[{"role": "user", "content": answers_prompt}],
+            documents=legal_context,
+            other_context=other_context,
+            rebuild_prompt_func=rebuild_answers_prompt,
+            skip_citation_verification=False
+        )
+    else:
+        # No large context, use regular complete
+        answers, usage2 = client_answers.complete(
+            [{"role": "user", "content": answers_prompt}]
+        )
 
     cove_stages["answers"] = {
         "prompt": answers_prompt,  # Full prompt for legal accountability

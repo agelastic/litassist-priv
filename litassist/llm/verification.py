@@ -6,7 +6,7 @@ ensuring legal accuracy and citation integrity in Australian legal contexts.
 """
 
 import re
-from typing import List, Tuple
+from typing import List, Tuple, Dict
 
 from litassist.timing import timed
 from litassist.utils.core import heartbeat
@@ -18,6 +18,7 @@ from litassist.citation_verify import (
     remove_citation_from_text,
     CitationVerificationError,
 )
+from .retry_handler import execute_with_document_dropping
 
 
 class LLMVerificationMixin:
@@ -68,31 +69,60 @@ class LLMVerificationMixin:
             # Standard verification
             self_critique = PROMPTS.get("verification.self_critique")
 
-        # Build the full text with optional verification contexts using === separators
-        full_text = primary_text
-        if citation_context:
-            full_text += "\n\n# Previous Verification: Citations\n\n" + citation_context
+        # Parse citation_context into individual documents if present
+        documents = {}
+        if citation_context and "===" in citation_context:
+            # Split by document markers
+            parts = re.split(r'=== (.*?) ===', citation_context)
+            # parts[0] is text before first marker, then alternating titles and content
+            for i in range(1, len(parts), 2):
+                if i + 1 < len(parts):
+                    doc_title = parts[i].strip()
+                    doc_content = parts[i + 1].strip()
+                    if doc_title and doc_content:
+                        documents[doc_title] = doc_content
+        
+        # Build the base context (primary text + reasoning)
+        base_text = primary_text
         if reasoning_context:
-            full_text += (
+            base_text += (
                 "\n\n# Previous Verification: Reasoning Analysis\n\n"
                 + reasoning_context
             )
-
-        critique_prompt = [
+        
+        # Function to rebuild prompt with remaining documents
+        def rebuild_prompt(remaining_docs: Dict[str, str], other_context: str) -> str:
+            full_text = other_context
+            if remaining_docs:
+                full_text += "\n\n# Previous Verification: Citations\n\n"
+                for doc_name, doc_content in remaining_docs.items():
+                    full_text += f"=== {doc_name} ===\n\n{doc_content}\n\n"
+            full_text += "\n\n" + self_critique
+            return full_text
+        
+        # Build initial messages
+        initial_content = rebuild_prompt(documents, base_text)
+        messages = [
             {
                 "role": "system",
                 "content": base_prompt,
             },
             {
                 "role": "user",
-                "content": full_text + "\n\n" + self_critique,
+                "content": initial_content,
             },
         ]
-        # Let the factory configuration handle all parameters
-        params = {}
-        verification_result, usage = self.complete(
-            critique_prompt, skip_citation_verification=True, **params
+        
+        # Execute with document dropping on token limit errors
+        verification_result, usage = execute_with_document_dropping(
+            client=self,
+            messages=messages,
+            documents=documents,
+            other_context=base_text + "\n\n" + self_critique,
+            rebuild_prompt_func=rebuild_prompt,
+            skip_citation_verification=True
         )
+        
         return verification_result, self.model
 
     def validate_and_verify_citations(

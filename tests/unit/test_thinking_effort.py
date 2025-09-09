@@ -51,22 +51,22 @@ class TestThinkingEffortConversion:
     def test_anthropic_thinking_conversion(self):
         """Test Anthropic Claude reasoning object conversion for OpenRouter."""
         # Test none returns empty
-        assert convert_thinking_effort("none", "anthropic/claude-4") == {}
+        assert convert_thinking_effort("none", "anthropic/claude-opus-4") == {}
 
         # Test token-based allocation for OpenRouter
-        assert convert_thinking_effort("low", "anthropic/claude-4") == {
+        assert convert_thinking_effort("low", "anthropic/claude-opus-4") == {
             "reasoning": {"max_tokens": 1024}
         }
 
-        assert convert_thinking_effort("medium", "anthropic/claude-4") == {
+        assert convert_thinking_effort("medium", "anthropic/claude-opus-4") == {
             "reasoning": {"max_tokens": 8192}
         }
 
-        assert convert_thinking_effort("high", "anthropic/claude-4") == {
+        assert convert_thinking_effort("high", "anthropic/claude-opus-4") == {
             "reasoning": {"max_tokens": 16384}
         }
 
-        assert convert_thinking_effort("max", "anthropic/claude-4") == {
+        assert convert_thinking_effort("max", "anthropic/claude-opus-4") == {
             "reasoning": {"max_tokens": 32000}
         }
 

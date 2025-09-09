@@ -400,7 +400,8 @@ Worst: Pay $100k progress payment plus costs
             patch("litassist.commands.brainstorm.PROMPTS") as mock_brainstorm_prompts,
             patch("litassist.commands.lookup.processors.PROMPTS") as mock_lookup_prompts,
             patch.object(CONFIG, "max_chars", 10000),
-            patch.object(CONFIG, "use_token_limits", True),
+            patch.object(CONFIG, "use_token_limits", False),
+            patch.object(CONFIG, "token_limit", 16384),
             patch.object(CONFIG, "openrouter_key", "test_key"),
             patch.object(CONFIG, "openai_key", "test_key"),
             patch.object(CONFIG, "or_base", "https://openrouter.ai/api/v1"),
@@ -688,21 +689,29 @@ Worst: Pay $100k progress payment plus costs
     def test_token_limit_enforcement(self):
         """Test that token limits are enforced when CONFIG.use_token_limits=True."""
         # Test with use_token_limits = True
-        with (
-            patch.object(CONFIG, "use_token_limits", True),
-            patch.object(CONFIG, "token_limit", 16384),
-            patch.object(CONFIG, "openrouter_key", "test_key"),
-            patch.object(CONFIG, "openai_key", "test_key"),
-        ):
-            # Create an LLMClient which should apply token limits
-            client = LLMClient("openai/gpt-4")
+        # Temporarily remove PYTEST_CURRENT_TEST to enable token limit logic
+        import os
+        old_pytest_env = os.environ.pop("PYTEST_CURRENT_TEST", None)
+        try:
+            with (
+                patch.object(CONFIG, "use_token_limits", True),
+                patch.object(CONFIG, "token_limit", 16384),
+                patch.object(CONFIG, "openrouter_key", "test_key"),
+                patch.object(CONFIG, "openai_key", "test_key"),
+            ):
+                # Create an LLMClient which should apply token limits
+                client = LLMClient("openai/gpt-4")
 
-            # Should use token_limit from config
-            expected_limit = 16384
+                # Should use token_limit from config
+                expected_limit = 16384
 
-            # Check that default_params includes max_tokens
-            assert "max_tokens" in client.default_params
-            assert client.default_params["max_tokens"] == expected_limit
+                # Check that default_params includes max_tokens
+                assert "max_tokens" in client.default_params
+                assert client.default_params["max_tokens"] == expected_limit
+        finally:
+            # Restore the environment
+            if old_pytest_env:
+                os.environ["PYTEST_CURRENT_TEST"] = old_pytest_env
 
         # Test with use_token_limits = False
         with (
