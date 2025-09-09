@@ -329,27 +329,58 @@ def verify(file, citations, soundness, reasoning, cove, output, reference, cove_
         try:
             client = LLMClientFactory.for_command("verify-soundness")
             
-            # Build citation context with FULL case content if available
-            full_citation_context = ""
-            if case_content:
-                full_citation_context = "## Full Legal Documents\n\n"
-                for citation, full_text in case_content.items():
-                    full_citation_context += f"=== {citation} ===\n\n{full_text}\n\n"
+            # Try with full context, implement backoff if prompt overload
+            soundness_result = None
+            soundness_model = None
+            cases_to_include = list(case_content.items()) if case_content else []
+            attempts = 0
             
-            # Add reference files to citation context
-            if reference_context:
-                full_citation_context += "\n\n## Reference Documents\n\n"
-                full_citation_context += reference_context
+            while soundness_result is None and attempts < 5:
+                try:
+                    # Build citation context with case content for this attempt
+                    full_citation_context = ""
+                    if cases_to_include:
+                        full_citation_context = "## Full Legal Documents\n\n"
+                        for citation, full_text in cases_to_include:
+                            full_citation_context += f"=== {citation} ===\n\n{full_text}\n\n"
+                    
+                    # Add reference files to citation context
+                    if reference_context:
+                        full_citation_context += "\n\n## Reference Documents\n\n"
+                        full_citation_context += reference_context
+                    
+                    if citation_report:
+                        full_citation_context += "\n\n## Citation Verification Summary\n" + citation_report
+                    
+                    # Pass both citation and reasoning contexts if available
+                    soundness_result, soundness_model = client.verify(
+                        content,
+                        citation_context=full_citation_context if full_citation_context else None,
+                        reasoning_context=reasoning_response,
+                    )
+                except Exception as e:
+                    error_str = str(e).lower()
+                    # Check for token/context limit errors
+                    if any(x in error_str for x in ['token', 'context', 'length', 'too long', 'maximum']):
+                        if cases_to_include:
+                            # Find and drop the largest case
+                            largest_idx = max(range(len(cases_to_include)), 
+                                            key=lambda i: len(cases_to_include[i][1]))
+                            dropped_case = cases_to_include.pop(largest_idx)
+                            click.echo(warning_message(
+                                f"Prompt exceeded token limit. Dropping largest case: {dropped_case[0]}"
+                            ))
+                            attempts += 1
+                        else:
+                            # No more cases to drop, re-raise the error
+                            raise
+                    else:
+                        # Not a token limit error, re-raise
+                        raise
             
-            if citation_report:
-                full_citation_context += "\n\n## Citation Verification Summary\n" + citation_report
+            if soundness_result is None:
+                raise click.ClickException("Failed to get soundness verification after dropping all case content")
             
-            # Pass both citation and reasoning contexts if available
-            soundness_result, soundness_model = client.verify(
-                content,
-                citation_context=full_citation_context if full_citation_context else None,
-                reasoning_context=reasoning_response,
-            )
             issues = _parse_soundness_issues(soundness_result)
             soundness_report = _format_soundness_report(issues, soundness_result)
             soundness_file = save_command_output(
