@@ -9,14 +9,15 @@
 - **Grok**: Creative strategy generation  
 - **Pinecone**: Managed vector store for retrieval-augmented generation (RAG)  
 - **Google CSE (Jade.io)**: Citation verification and lookup integration  
-- **PyPDF2**: PDF parsing and text extraction  
-- **YAML**: Prompt templates and configuration (PyYAML)  
-- **Requests**: HTTP interactions for citation verification  
-- **ReportLab**: PDF report generation  
+- **PyPDF2 & pdfplumber**: PDF parsing and text extraction
+- **YAML**: Prompt templates and configuration (PyYAML)
+- **Requests**: HTTP interactions for citation verification
+- **ReportLab**: PDF report generation
+- **Selenium**: Browser automation for JavaScript-rendered content (e.g., Jade.io)
 - **tiktoken**: Token counting for GPT models (cl100k_base encoding, added July 2025)
 - **pytest**: Unit testing framework with tmp_path fixtures
 - **GitHub Actions**: CI/CD pipeline for automated testing
-- **pre-commit**: Git hooks for code quality checks  
+- **pre-commit**: Git hooks for code quality checks
 
 ## Development Setup
 
@@ -27,8 +28,8 @@
 
 ## Tooling & Conventions
 
-- **Testing**: `pytest` for unit and integration tests (see pytest.ini)  
-- **Linting**: `ruff` for code style and static analysis  
+- **Testing**: A two-tiered testing strategy is in place, as documented in `test-scripts/TESTS_STATUS.md`. This includes a suite of fully-mocked, offline `pytest` unit tests (`tests/unit/`) and a collection of manual integration scripts (`test-scripts/`) that perform real API calls for validation.
+- **Linting**: `ruff` for code style and static analysis
 - **CI/CD**: GitHub Actions workflow running tests on Python 3.11 and 3.12
 - **Pre-commit**: Automated pytest runs with fast-fail on every commit
 - **Prompt Templates**: YAML files under `litassist/prompts/` for centralized prompt management  

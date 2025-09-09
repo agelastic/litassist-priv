@@ -32,33 +32,44 @@ Each stage:
 4. Writes timestamped outputs in `outputs/`
 5. Logs metadata and performance in `logs/`
 
-## Verification Patterns
+## Verification Architecture
 
-- **Two‑Phase Citation Control**:
-  1. **Offline Validation**: Pattern‑based checks for generic names, future dates, malformed citations.
-  2. **Online Verification**: HEAD requests to Jade.io/AustLII for real‑time existence checks.
-- **Selective Regeneration ("Option B")**:
-  - Strategy commands regenerate or discard only the specific items with citation issues.
-  - Preserves verified content and avoids manual filtering.
+LitAssist employs a multi-layered verification strategy, orchestrated by `litassist/verification_chain.py`. This consists of a standard, three-stage chain for baseline validation and an advanced Chain of Verification (CoVe) for deep-contextual analysis.
 
-- **Comprehensive Post-Hoc Verification (verify command, June 2025)**:
-  - `verify` command performs three checks: citation accuracy, legal soundness, and reasoning transparency.
-  - Citation check reuses existing citation verification system.
-  - Legal soundness check uses LLM with heavy verification prompt for Australian law compliance.
-  - Reasoning transparency check extracts or generates an IRAC-structured reasoning trace (using LegalReasoningTrace if possible).
-  - If no reasoning trace exists in the file, one is generated and output.
-  - Each check writes a separate timestamped report to outputs/.
-  - All steps use the existing logging infrastructure and minimal console output.
+### Standard Verification Chain
 
-- **Verification System Improvements (July 2025):**
-  - **Token Limits**: Increased from 800-1536 to 8192-16384 tokens to handle full documents.
-  - **Chunk-Based Processing**: Digest and strategy commands split large documents into 50k token chunks for LLM processing.
-  - **No Local Parsing**: Removed ~25 lines of content parsing in brainstorm.py - trust LLM output.
-  - **Prompt Clarity**: Updated prompts to preserve ALL sections and prevent system instruction bleeding.
-  - **API Simplification**: verify_with_level now only uses "heavy" for strategy/draft commands.
-  - **Full Document Preservation**: Fixed issue where "MOST LIKELY TO SUCCEED" section was being lost.
-  - **Verification Model**: Switched to Claude 4 Opus for verification (July 2025).
-  - **Broadened Citation Search**: Expanded citation search scope and increased file size limits for extractfacts and lookup.
+The `run_verification_chain` function executes a sequential, fail-fast process:
+
+1.  **Stage 1: Pattern Validation (Offline)**: Performs fast, offline checks using `validate_citation_patterns` to catch malformed citations, generic names, and future dates. High-risk commands (`extractfacts`, `strategy`) may exit early if issues are found.
+2.  **Stage 2: Database Verification (Online)**: If patterns are valid, it uses `verify_all_citations` to check citation existence against authoritative databases (Jade.io). Strict commands may exit early if unverified citations are found.
+3.  **Stage 3: LLM Correction (Online)**: For commands requiring the highest accuracy (`extractfacts`, `strategy`, `draft`), an LLM (`verification` client) reviews the content and a report of the previous stages to make final corrections.
+
+### Chain of Verification (CoVe)
+
+For the most critical workflows, `run_cove_verification` implements the Chain of Verification method to minimize factual hallucinations. This is a self-consistency check driven entirely by LLMs, without local parsing.
+
+```mermaid
+graph TD
+    A[Start: Original Content] --> B{1. Generate Questions};
+    B --> C{2. Answer Questions};
+    C --> D{3. Detect Inconsistencies};
+    D --> E{4. Final Verification};
+
+    subgraph " "
+    B; C; D; E;
+    end
+
+    A -- "Content to Verify" --> B;
+    B -- "Generated Questions" --> C;
+    C -- "Original Content vs Answers" --> D;
+    D -- "Identified Issues" --> E;
+    E -- "Verified & Corrected Content" --> F[End: Final Content];
+```
+
+1.  **Question Generation**: An LLM (`cove-questions` client) generates a series of critical questions based on the input document to identify ambiguous or unsubstantiated claims.
+2.  **Contextual Answering**: A separate LLM (`cove-answers` client) answers these questions. Crucially, it retrieves the full text of any legal citations mentioned, providing deep context for its answers.
+3.  **Inconsistency Detection**: A third LLM (`cove-verify` client) compares the original document against the independent answers, identifying any discrepancies or hallucinations.
+4.  **Regeneration**: If inconsistencies are found, a final LLM call (`cove-final` client) regenerates the content, correcting it based on the verified information. If no issues are found, the original content is passed through unchanged.
 
 ## Structured Output Patterns
 
@@ -84,6 +95,8 @@ Each stage:
 - **Repository Pattern**: Pinecone wrapper for semantic search in a vector store.
 
 ## LLMClientFactory Configuration Pattern
+
+The selection of LLMs for specific commands is a strategic decision guided by the `COMPREHENSIVE_MODEL_OPTIMIZATION_PLAN.md`. This plan ensures that each command uses the most appropriate model to balance speed, accuracy, and creative depth.
 
 Strategic analysis commands follow consistent configuration patterns:
 

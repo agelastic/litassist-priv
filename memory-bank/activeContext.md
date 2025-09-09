@@ -2,6 +2,11 @@
 
 ## Current Work Focus
 
+- **Verification System Overhaul (September 9, 2025):**
+  - Refactored the verification system into a multi-layered architecture featuring a standard three-stage chain (pattern, database, LLM) and an advanced Chain of Verification (CoVe) workflow.
+  - The CoVe implementation uses a sequence of LLM clients to generate questions, retrieve full-text legal context for answers, detect inconsistencies, and regenerate content for self-correction.
+  - Updated `systemPatterns.md` with a new "Verification Architecture" section, including a Mermaid diagram explaining the CoVe process.
+
 - **Infrastructure & Architecture Improvements (July 18, 2025):**
   - Added comprehensive architectural documentation (`ARCHITECTURE Codex.md` and `ARCHITECTURE Gemini.md`) detailing system design, component relationships, and data flow.
   - Implemented GitHub Actions CI/CD pipeline for automated testing on PRs (Python 3.11 and 3.12).
