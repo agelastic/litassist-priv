@@ -269,7 +269,7 @@ verification:
       === END ISSUES IDENTIFIED ===
       
       Using these verification results, regenerate a corrected version of the document that fixes all identified issues.
-      Remove or correct any inaccurate information based on the verification.
+      Remove or correct any inaccurate information in the provided original document based on the verification.
       
       === VERIFICATION Q&A FOR REFERENCE ===
       {prompt}
@@ -285,8 +285,6 @@ verification:
   # USED BY: llm.py LLMClient.verify() method - base prompt
   # LOCATION: llm.py:1302 (previously fallback, now required)
   base_prompt: |
-    Australian law only. Use Australian English spellings and terminology (e.g., 'judgement' not 'judgment', 'defence' not 'defense').
-    
     CRITICAL ANTI-HALLUCINATION INSTRUCTIONS:
     - NEVER fabricate case citations, legal references, or specific facts
     - If you are unsure about any information, explicitly state "Not given" or "Cannot determine with certainty"
