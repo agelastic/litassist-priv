@@ -468,6 +468,7 @@ class LLMClientFactory:
             "model": "openai/o3-pro",
             # Note: o3-pro ignores temperature and top_p parameters
             "thinking_effort": "max",  # Universal parameter, translates to reasoning_effort
+            "disable_tools": True,  # o3-pro doesn't support tool calling
         },
         # Brainstorm - varied temperatures for different approaches
         "brainstorm-orthodox": {
@@ -494,12 +495,14 @@ class LLMClientFactory:
             "temperature": 0.2,
             "top_p": 0.8,
             "thinking_effort": "high",  # Universal parameter, translates to reasoning_effort
+            "disable_tools": True,  # o3-pro doesn't support tool calling
         },
         # Draft - superior technical writing (o3 model with very limited parameter support)
         "draft": {
             "model": "openai/o3-pro",
             "thinking_effort": "high",  # Universal parameter
             "verbosity": "high",  # Comprehensive legal drafting
+            "disable_tools": True,  # o3-pro doesn't support tool calling
         },
         # Digest - mode-dependent settings
         "digest-summary": {
@@ -557,6 +560,7 @@ class LLMClientFactory:
             "top_p": 0.3,
             "thinking_effort": "high",  # Universal parameter, translates to reasoning_effort
             "force_verify": False,
+            "disable_tools": True,  # o3-pro doesn't support tool calling
         },
         "verify-soundness": {
             "model": "anthropic/claude-opus-4.1",  # Opus for soundness checking
@@ -572,6 +576,7 @@ class LLMClientFactory:
             "top_p": 0.7,
             "thinking_effort": "high",  # Universal parameter, translates to reasoning_effort
             "force_verify": True,  # Strategic counsel's notes require verification
+            "disable_tools": True,  # o3-pro doesn't support tool calling
         },
         # Barrister's brief - comprehensive document generation
         "barbrief": {
@@ -579,6 +584,7 @@ class LLMClientFactory:
             # o3-pro for comprehensive analysis and superior drafting
             "thinking_effort": "high",  # Universal parameter, translates to reasoning object
             "verbosity": "high",  # Detailed comprehensive briefs
+            "disable_tools": True,  # o3-pro doesn't support tool calling
         },
         # Caseplan - LLM-driven workflow planning
         "caseplan": {
