@@ -223,7 +223,7 @@ def verify(file, citations, soundness, reasoning, cove, output, reference, cove_
                 ]
                 
                 # Build other context (non-droppable)
-                other_context = create_reasoning_prompt(content, "verify")
+                other_context = content
                 if reference_context:
                     other_context += "\n\n## Reference Documents\n\n"
                     other_context += "The following reference documents provide additional context:\n\n"
@@ -237,7 +237,7 @@ def verify(file, citations, soundness, reasoning, cove, output, reference, cove_
                 def rebuild_reasoning_prompt(remaining_docs, other_ctx):
                     prompt = other_ctx
                     if remaining_docs:
-                        prompt = create_reasoning_prompt(content, "verify")
+                        # Don't replace prompt - build on other_ctx
                         prompt += "\n\n## Full Legal Context\n\n"
                         prompt += "Below are the complete legal documents referenced in the text:\n\n"
                         for doc_name, doc_content in remaining_docs.items():
@@ -250,7 +250,8 @@ def verify(file, citations, soundness, reasoning, cove, output, reference, cove_
                             prompt += (
                                 "\n\n## Citation Verification Summary\n" + citation_report
                             )
-                    return prompt
+                    # Add reasoning instruction at the end after all content is assembled
+                    return create_reasoning_prompt(prompt, "verify")
                 
                 # Try with full context, using document dropping on token errors
                 response, _ = execute_with_document_dropping(
