@@ -1143,14 +1143,16 @@ class LLMClient(LLMVerificationMixin):
                         tool_message = format_tool_response(tool_name, tool_result)
 
                         # Add tool response to messages for follow-up
-                        messages.append(response.choices[0].message.model_dump())
-                        messages.append(
+                        # Create a new messages list to avoid mutating the original
+                        messages = [
+                            *messages,
+                            response.choices[0].message.model_dump(),
                             {
                                 "role": "tool",
                                 "tool_call_id": tool_call.id,
                                 "content": tool_message,
                             }
-                        )
+                        ]
 
                     # Make a follow-up call with the tool results
                     # This time without forcing tool use

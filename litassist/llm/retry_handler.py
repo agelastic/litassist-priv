@@ -272,7 +272,11 @@ def execute_with_document_dropping(
                     
                     # Update the messages with new content
                     if messages and messages[-1].get("role") == "user":
-                        messages[-1]["content"] = new_content
+                        # Create a new messages list instead of mutating the original
+                        messages = [
+                            *messages[:-1],  # All messages except last
+                            {"role": "user", "content": new_content}  # New last message
+                        ]
                     
                     attempts += 1
                 else:
