@@ -129,23 +129,15 @@ class PromptManager:
             command: The command name (e.g., 'extractfacts', 'lookup')
 
         Returns:
-            The complete system prompt including Australian law requirements
+            The command-specific system prompt (Australian law is added by LLM client)
         """
         try:
-            # Get base Australian law requirement
-            base_prompt = self.get("base.australian_law")
-
-            # Get command-specific system prompt
+            # Get command-specific system prompt only
+            # Australian law requirements are automatically added by the LLM client
             command_prompt = self.get(f"commands.{command}.system")
-
-            # Combine them
-            return f"{base_prompt} {command_prompt}"
+            return command_prompt
         except KeyError:
-            # Fallback to just the command prompt if available
-            try:
-                return self.get(f"commands.{command}.system")
-            except KeyError:
-                raise KeyError(f"No system prompt found for command '{command}'")
+            raise KeyError(f"No system prompt found for command '{command}'")
 
     def get_format_template(self, format_name: str) -> str:
         """
