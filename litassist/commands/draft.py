@@ -15,7 +15,7 @@ from litassist.utils.file_ops import read_document, is_text_file
 from litassist.utils.text_processing import chunk_text, create_embeddings
 from litassist.logging_utils import save_log, save_command_output
 from litassist.timing import timed
-from litassist.utils.formatting import info_message, warning_message, success_message
+from litassist.utils.formatting import info_message
 from litassist.utils.legal_reasoning import (
     create_reasoning_prompt,
     detect_factual_hallucinations,

@@ -621,7 +621,6 @@ def test_refactored_utils_imports(test_config_file):
     from litassist.utils.formatting import success_message, error_message  # noqa: F401
     from litassist.utils.text_processing import (
         chunk_text,
-        create_embeddings,
     )  # noqa: F401
     from litassist.utils.file_ops import read_document, validate_file_size  # noqa: F401
     from litassist.utils.legal_reasoning import create_reasoning_prompt  # noqa: F401

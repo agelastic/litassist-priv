@@ -23,7 +23,6 @@ from litassist.utils.legal_reasoning import (
 )
 from litassist.utils.formatting import (
     info_message,
-    success_message,
 )
 from litassist.logging_utils import (
     save_log,

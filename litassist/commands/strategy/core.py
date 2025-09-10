@@ -25,7 +25,6 @@ from litassist.utils.formatting import (
     info_message,
     tip_message,
 )
-from litassist.logging_utils import save_log
 from litassist.llm import LLMClientFactory
 from litassist.prompts import PROMPTS
 

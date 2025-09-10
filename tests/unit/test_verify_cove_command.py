@@ -7,8 +7,7 @@ Covers:
 - Basic invocation flow and interactions (read, run_cove_verification, save outputs)
 """
 
-import pytest
-from unittest.mock import Mock, patch
+from unittest.mock import patch
 from click.testing import CliRunner
 
 
@@ -46,7 +45,7 @@ class TestVerifyCoveCommand:
             patch("litassist.commands.verify_cove.read_document") as mock_read,
             patch("litassist.commands.verify_cove.run_cove_verification") as mock_cove,
             patch("litassist.commands.verify_cove.save_command_output") as mock_save,
-            patch("litassist.commands.verify_cove.save_log") as mock_log,
+            patch("litassist.commands.verify_cove.save_log") as _mock_log,
         ):
             mock_read.return_value = "Original content to verify"
 
@@ -93,7 +92,7 @@ class TestVerifyCoveCommand:
             ) as mock_refs,
             patch("litassist.commands.verify_cove.run_cove_verification") as mock_cove,
             patch("litassist.commands.verify_cove.save_command_output") as mock_save,
-            patch("litassist.commands.verify_cove.save_log") as mock_log,
+            patch("litassist.commands.verify_cove.save_log") as _mock_log,
         ):
             mock_read.return_value = "Original content"
             mock_refs.return_value = ("=== ref.txt ===\n\nRef content\n\n", ["ref.txt"])
@@ -110,9 +109,9 @@ class TestVerifyCoveCommand:
                 ["verify-cove", str(file_path), "--reference", "refs/*.txt"],
             )
 
-        assert (
-            result.exit_code == 0
-        ), f"verify-cove with --reference failed: {result.output}"
+        assert result.exit_code == 0, (
+            f"verify-cove with --reference failed: {result.output}"
+        )
         mock_refs.assert_called_once()
         mock_cove.assert_called_once()
         assert mock_save.call_count >= 1
