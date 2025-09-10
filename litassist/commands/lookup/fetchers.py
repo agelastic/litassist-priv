@@ -336,14 +336,22 @@ def _extract_pdf_text(url: str, pdf_bytes: bytes) -> str:
 
             if text_parts:
                 extracted_text = "\n".join(text_parts)
-                
+
                 # Check text/PDF size ratio to detect image-heavy documents
                 pdf_size = len(pdf_bytes)
                 text_size = len(extracted_text)
                 ratio = text_size / pdf_size if pdf_size > 0 else 0
-                
+
                 # Check for FOI document markers in first 1000 chars
-                first_chars = extracted_text[:1000] if len(extracted_text) > 1000 else extracted_text
+                first_chars = (
+                    extracted_text[:1000]
+                    if len(extracted_text) > 1000
+                    else extracted_text
+                )
+
+                # Whitelist official FOI Act documents
+                is_official_foi_act = "legislation.gov.au/C2004A02562" in url
+
                 foi_markers = [
                     "Documents released",
                     "s. 47F",
@@ -351,13 +359,15 @@ def _extract_pdf_text(url: str, pdf_bytes: bytes) -> str:
                     "released under the FOI Act",
                     "released under the Freedom of Information Act",
                     "FOI disclosure log",
-                    "This document has been redacted"
+                    "This document has been redacted",
                 ]
                 has_foi_markers = any(marker in first_chars for marker in foi_markers)
-                
-                # Reject if ratio too low (mostly images) or has FOI markers
+
+                # Reject if ratio too low (mostly images) or has FOI markers (unless it's the official FOI Act)
                 if ratio < 0.01:
-                    click.echo(f"  ✗ PDF rejected: text/PDF ratio {ratio:.4f} (likely images/redacted)")
+                    click.echo(
+                        f"  ✗ PDF rejected: text/PDF ratio {ratio:.4f} (likely images/redacted)"
+                    )
                     save_log(
                         "pdf_rejected_ratio",
                         {
@@ -370,8 +380,8 @@ def _extract_pdf_text(url: str, pdf_bytes: bytes) -> str:
                         },
                     )
                     return ""
-                
-                if has_foi_markers:
+
+                if has_foi_markers and not is_official_foi_act:
                     click.echo("  ✗ PDF rejected: FOI document markers detected")
                     save_log(
                         "pdf_rejected_foi",
@@ -383,7 +393,7 @@ def _extract_pdf_text(url: str, pdf_bytes: bytes) -> str:
                         },
                     )
                     return ""
-                
+
                 # Add clear markers for LLM
                 header = f"[PDF DOCUMENT EXTRACTED - {num_pages} pages total, {pages_to_extract} pages processed]\n"
                 header += f"[Source: {url}]\n"

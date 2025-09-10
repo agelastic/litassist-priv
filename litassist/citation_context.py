@@ -9,7 +9,12 @@ It implements a fallback strategy from AustLII to comprehensive government sourc
 from typing import Dict, List, Optional
 from litassist.config import get_config
 from litassist.logging_utils import save_log
-from litassist.citation_verify import _citation_cache, _cache_lock, normalize_citation, construct_austlii_url
+from litassist.citation_verify import (
+    _citation_cache,
+    _cache_lock,
+    normalize_citation,
+    construct_austlii_url,
+)
 import time
 import re
 import random
@@ -18,10 +23,18 @@ import click
 # Track last AustLII request completion time for rate limiting
 _last_austlii_completion = 0
 
+# Hardcoded URLs for specific legislation that Google searches often miss
+HARDCODED_LEGISLATION_URLS = {
+    # Freedom of Information Act 1982 (Cth) - often confused with FOI disclosure documents
+    "Freedom of Information Act 1982": "https://www.legislation.gov.au/C2004A02562/2025-02-21/2025-02-21/text/original/pdf",
+    "Freedom of Information Act 1982 (Cth)": "https://www.legislation.gov.au/C2004A02562/2025-02-21/2025-02-21/text/original/pdf",
+    "FOI Act 1982": "https://www.legislation.gov.au/C2004A02562/2025-02-21/2025-02-21/text/original/pdf",
+    "FOI Act 1982 (Cth)": "https://www.legislation.gov.au/C2004A02562/2025-02-21/2025-02-21/text/original/pdf",
+    "Freedom of Information Act 1982 (Commonwealth)": "https://www.legislation.gov.au/C2004A02562/2025-02-21/2025-02-21/text/original/pdf",
+}
 
-def fetch_citation_context(
-    citations: List[str]
-) -> Dict[str, str]:
+
+def fetch_citation_context(citations: List[str]) -> Dict[str, str]:
     """
     Fetch COMPLETE legal documents for citations with smart source prioritization.
 
@@ -46,6 +59,7 @@ def fetch_citation_context(
     try:
         # Lazy import to avoid loading googleapiclient when not needed
         from googleapiclient.discovery import build
+
         service = build(
             "customsearch", "v1", developerKey=get_config().g_key, cache_discovery=False
         )
@@ -60,7 +74,7 @@ def fetch_citation_context(
 
     # Declare global at function level, not in loops
     global _last_austlii_completion
-    
+
     for citation in citations:  # Fetch ALL citations - NO LIMITS
         austlii_url = None  # Initialize to ensure variable always exists
         click.echo(f"[CITATION] Fetching: {citation}")
@@ -71,41 +85,85 @@ def fetch_citation_context(
             if normalized in _citation_cache:
                 cached_url = _citation_cache[normalized].get("url", "")
                 # Skip jade.io URLs from cache - they can't be fetched
-                if cached_url and 'jade.io' not in cached_url.lower():
+                if cached_url and "jade.io" not in cached_url.lower():
                     url = cached_url
-        
+
+        # Check for hardcoded URLs for specific legislation
+        if not url:
+            # Clean citation for matching
+            clean_citation = citation.strip()
+            if clean_citation in HARDCODED_LEGISLATION_URLS:
+                url = HARDCODED_LEGISLATION_URLS[clean_citation]
+                click.echo(f"  → Using hardcoded URL for {citation}")
+                save_log(
+                    "citation_hardcoded_url",
+                    {
+                        "citation": citation,
+                        "url": url,
+                        "reason": "Hardcoded URL for legislation that Google searches often miss",
+                    },
+                )
+
         # Determine if this is legislation or case law
         citation_lower = citation.lower()
-        is_legislation = any(term in citation_lower for term in [
-            'act', 'regulation', 'regulations', 'code', 'rules', 
-            'ordinance', 'statute', '(cth)', '(qld)', '(nsw)', '(vic)',
-            '(sa)', '(wa)', '(tas)', '(act)', '(nt)'
-        ])
-        
+        is_legislation = any(
+            term in citation_lower
+            for term in [
+                "act",
+                "regulation",
+                "regulations",
+                "code",
+                "rules",
+                "ordinance",
+                "statute",
+                "(cth)",
+                "(qld)",
+                "(nsw)",
+                "(vic)",
+                "(sa)",
+                "(wa)",
+                "(tas)",
+                "(act)",
+                "(nt)",
+            ]
+        )
+
         # STRATEGY: Legislation -> PDF first, AustLII second, plain CSE last. Case law -> AustLII first
         if not url:
             if is_legislation:
                 # STEP 1: Try PDF search FIRST (most likely to have complete document)
                 if cse_comprehensive:
                     try:
-                        pdf_query = f'{citation} PDF'
-                        res = service.cse().list(q=pdf_query, cx=cse_comprehensive, num=5).execute()
+                        pdf_query = f"{citation} PDF"
+                        res = (
+                            service.cse()
+                            .list(q=pdf_query, cx=cse_comprehensive, num=5)
+                            .execute()
+                        )
                         if "items" in res:
                             for item in res["items"]:
                                 link = item.get("link", "")
                                 # Look for PDF URLs from government sources
-                                if ".gov.au" in link and (".pdf" in link.lower() or "/PDF/" in link):
+                                if ".gov.au" in link and (
+                                    ".pdf" in link.lower() or "/PDF/" in link
+                                ):
                                     url = link
                                     click.echo(f"  → Found PDF: {url}")
-                                    save_log("citation_pdf_primary", {
-                                        "citation": citation,
-                                        "url": url,
-                                        "source": "pdf_search_primary"
-                                    })
+                                    save_log(
+                                        "citation_pdf_primary",
+                                        {
+                                            "citation": citation,
+                                            "url": url,
+                                            "source": "pdf_search_primary",
+                                        },
+                                    )
                                     break
                     except Exception as e:
-                        save_log("citation_pdf_search_error", {"citation": citation, "error": str(e)})
-                
+                        save_log(
+                            "citation_pdf_search_error",
+                            {"citation": citation, "error": str(e)},
+                        )
+
                 # STEP 2: Try AustLII if no PDF found
                 if not url and cse_austlii:
                     # Rate limit AustLII searches
@@ -115,43 +173,65 @@ def fetch_citation_context(
                         delay = random.uniform(2.0, 3.0)
                         if elapsed < delay:
                             time.sleep(delay - elapsed)
-                    
+
                     try:
-                        res = service.cse().list(q=citation, cx=cse_austlii, num=5).execute()
-                        _last_austlii_completion = time.time()  # Update AFTER completion
+                        res = (
+                            service.cse()
+                            .list(q=citation, cx=cse_austlii, num=5)
+                            .execute()
+                        )
+                        _last_austlii_completion = (
+                            time.time()
+                        )  # Update AFTER completion
                         if "items" in res:
                             for item in res["items"]:
                                 link = item.get("link", "")
                                 if "/au/legis/" in link:
                                     url = link
                                     click.echo(f"  → Found AustLII: {url}")
-                                    save_log("citation_austlii_secondary", {
-                                        "citation": citation,
-                                        "url": url,
-                                        "source": "austlii_secondary"
-                                    })
+                                    save_log(
+                                        "citation_austlii_secondary",
+                                        {
+                                            "citation": citation,
+                                            "url": url,
+                                            "source": "austlii_secondary",
+                                        },
+                                    )
                                     break
                     except Exception as e:
-                        save_log("citation_austlii_search_error", {"citation": citation, "error": str(e)})
-                
+                        save_log(
+                            "citation_austlii_search_error",
+                            {"citation": citation, "error": str(e)},
+                        )
+
                 # STEP 3: Try plain comprehensive CSE as final fallback
                 if not url and cse_comprehensive:
                     try:
-                        res = service.cse().list(q=citation, cx=cse_comprehensive, num=5).execute()
+                        res = (
+                            service.cse()
+                            .list(q=citation, cx=cse_comprehensive, num=5)
+                            .execute()
+                        )
                         if "items" in res:
                             for item in res["items"]:
                                 link = item.get("link", "")
                                 if ".gov.au" in link:
                                     url = link
                                     click.echo(f"  → Found gov source: {url}")
-                                    save_log("citation_comprehensive_fallback", {
-                                        "citation": citation,
-                                        "url": url,
-                                        "source": "comprehensive_fallback"
-                                    })
+                                    save_log(
+                                        "citation_comprehensive_fallback",
+                                        {
+                                            "citation": citation,
+                                            "url": url,
+                                            "source": "comprehensive_fallback",
+                                        },
+                                    )
                                     break
                     except Exception as e:
-                        save_log("citation_comprehensive_search_error", {"citation": citation, "error": str(e)})
+                        save_log(
+                            "citation_comprehensive_search_error",
+                            {"citation": citation, "error": str(e)},
+                        )
             else:
                 # Case law - try AustLII FIRST
                 if cse_austlii:
@@ -162,30 +242,41 @@ def fetch_citation_context(
                         delay = random.uniform(2.0, 3.0)
                         if elapsed < delay:
                             time.sleep(delay - elapsed)
-                    
+
                     try:
-                        res = service.cse().list(q=citation, cx=cse_austlii, num=5).execute()
-                        _last_austlii_completion = time.time()  # Update AFTER completion
+                        res = (
+                            service.cse()
+                            .list(q=citation, cx=cse_austlii, num=5)
+                            .execute()
+                        )
+                        _last_austlii_completion = (
+                            time.time()
+                        )  # Update AFTER completion
                         if "items" in res:
                             for item in res["items"]:
                                 link = item.get("link", "")
                                 if "/au/cases/" in link:
                                     url = link
                                     click.echo(f"  → Found AustLII case: {url}")
-                                    save_log("citation_found_austlii_case", {
-                                        "citation": citation,
-                                        "url": url
-                                    })
+                                    save_log(
+                                        "citation_found_austlii_case",
+                                        {"citation": citation, "url": url},
+                                    )
                                     break
                     except Exception as e:
                         save_log(
-                            "citation_austlii_search_error", {"citation": citation, "error": str(e)}
+                            "citation_austlii_search_error",
+                            {"citation": citation, "error": str(e)},
                         )
-                
+
                 # Fallback to comprehensive for case law
                 if not url and cse_comprehensive:
                     try:
-                        res = service.cse().list(q=citation, cx=cse_comprehensive, num=5).execute()
+                        res = (
+                            service.cse()
+                            .list(q=citation, cx=cse_comprehensive, num=5)
+                            .execute()
+                        )
                         if "items" in res:
                             for item in res["items"]:
                                 link = item.get("link", "")
@@ -193,10 +284,10 @@ def fetch_citation_context(
                                 if ".gov.au" in link or "austlii.edu.au" in link:
                                     url = link
                                     click.echo(f"  → Fallback comprehensive: {url}")
-                                    save_log("citation_fallback_comprehensive_case", {
-                                        "citation": citation,
-                                        "url": url
-                                    })
+                                    save_log(
+                                        "citation_fallback_comprehensive_case",
+                                        {"citation": citation, "url": url},
+                                    )
                                     break
                     except Exception as e:
                         save_log(
@@ -210,6 +301,7 @@ def fetch_citation_context(
             try:
                 # Lazy import to avoid circular dependency
                 from litassist.commands.lookup.fetchers import _fetch_url_content
+
                 content = _fetch_url_content(url, timeout=15)
                 if content:
                     # Validate we got the right document
@@ -217,17 +309,23 @@ def fetch_citation_context(
                         content_valid = True
                     else:
                         click.echo(f"  ✗ Wrong content: doesn't match {citation}")
-                        save_log("citation_content_mismatch", {
-                            "citation": citation,
-                            "url": url,
-                            "reason": "Downloaded content doesn't contain expected citation"
-                        })
+                        save_log(
+                            "citation_content_mismatch",
+                            {
+                                "citation": citation,
+                                "url": url,
+                                "reason": "Downloaded content doesn't contain expected citation",
+                            },
+                        )
                         content = ""
                         url = None
             except Exception as e:
-                save_log("citation_fetch_error", {"citation": citation, "url": url, "error": str(e)})
+                save_log(
+                    "citation_fetch_error",
+                    {"citation": citation, "url": url, "error": str(e)},
+                )
                 content = ""
-        
+
         # If no valid content yet, try direct AustLII URL construction (case law only)
         if not content_valid and not is_legislation:
             austlii_url = construct_austlii_url(citation)
@@ -235,22 +333,22 @@ def fetch_citation_context(
                 click.echo("  → Trying direct AustLII URL")
                 try:
                     from litassist.commands.lookup.fetchers import _fetch_url_content
+
                     content = _fetch_url_content(austlii_url, timeout=15)
                     if content and _validate_citation_match(content, citation):
                         url = austlii_url
                         content_valid = True
                         click.echo("  ✓ Found via direct AustLII URL")
-                        save_log("citation_austlii_direct_success", {
-                            "citation": citation,
-                            "url": austlii_url
-                        })
+                        save_log(
+                            "citation_austlii_direct_success",
+                            {"citation": citation, "url": austlii_url},
+                        )
                 except Exception as e:
-                    save_log("citation_austlii_direct_error", {
-                        "citation": citation,
-                        "url": austlii_url,
-                        "error": str(e)
-                    })
-        
+                    save_log(
+                        "citation_austlii_direct_error",
+                        {"citation": citation, "url": austlii_url, "error": str(e)},
+                    )
+
         # Process content if we got valid content
         if content_valid and url:
             # Clean up garbage at the end but keep full document
@@ -331,49 +429,58 @@ def _validate_citation_match(content: str, citation: str) -> bool:
     For both legislation and case law, the citation/name must appear in the first ~500 chars.
     """
     # Skip multi-line "citations" (not real citations)
-    if '\n' in citation:
+    if "\n" in citation:
         return False
-    
+
     # First 500 chars must contain the citation/name
     content_beginning = content[:500] if len(content) > 500 else content
-    
+
     # Check if this is legislation (case-insensitive)
-    is_legislation = any(term.lower() in citation.lower() for term in ['Act', 'Regulation', 'Code', 'Rules', 'Ordinance'])
-    
+    is_legislation = any(
+        term.lower() in citation.lower()
+        for term in ["Act", "Regulation", "Code", "Rules", "Ordinance"]
+    )
+
     if is_legislation:
         # Strip jurisdiction suffix for core name
         # "Freedom of Information Act 1982 (Cth)" -> "Freedom of Information Act 1982"
-        core_citation = re.sub(r'\s*\([A-Za-z]+\)$', '', citation).strip()
-        
+        core_citation = re.sub(r"\s*\([A-Za-z]+\)$", "", citation).strip()
+
         # Must appear at beginning (case-insensitive)
         if core_citation.lower() in content_beginning.lower():
             return True
-            
+
         # Handle abbreviated citations (e.g., "FOI Act 1982")
-        year_match = re.search(r'\b(19|20)\d{2}\b', citation)
+        year_match = re.search(r"\b(19|20)\d{2}\b", citation)
         if year_match and year_match.group() in content_beginning:
             # Get first significant words
-            words = re.findall(r'\b[A-Z][A-Za-z]*', citation)
-            if words and any(word.lower() in content_beginning.lower() for word in words[:2]):
+            words = re.findall(r"\b[A-Z][A-Za-z]*", citation)
+            if words and any(
+                word.lower() in content_beginning.lower() for word in words[:2]
+            ):
                 return True
-        
+
         return False
     else:
         # Case law - check normalized citation
-        normalized_citation = citation.replace(" ", "").replace("[", "").replace("]", "")
-        normalized_beginning = content_beginning.replace(" ", "").replace("[", "").replace("]", "")
-        
+        normalized_citation = (
+            citation.replace(" ", "").replace("[", "").replace("]", "")
+        )
+        normalized_beginning = (
+            content_beginning.replace(" ", "").replace("[", "").replace("]", "")
+        )
+
         if normalized_citation in normalized_beginning:
             return True
-        
+
         # Check components for medium neutral citations
-        match = re.search(r'\[(\d{4})\]\s*([A-Z]+)\s*(\d+)', citation)
+        match = re.search(r"\[(\d{4})\]\s*([A-Z]+)\s*(\d+)", citation)
         if match:
             year, court, number = match.groups()
             # All components must appear in the beginning
             if all(part in content_beginning for part in [year, court, number]):
                 return True
-        
+
         return False
 
 
