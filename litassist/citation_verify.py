@@ -23,6 +23,15 @@ from litassist.citation_patterns import extract_citations
 _citation_cache: Dict[str, Dict] = {}
 _cache_lock = threading.Lock()
 
+# Hardcoded mapping for FOIA citations to local file
+HARDCODED_FOIA_FILES = {
+    "Freedom of Information Act 1982": "docs/legislation/FOIA.md",
+    "Freedom of Information Act 1982 (Cth)": "docs/legislation/FOIA.md",
+    "FOI Act 1982": "docs/legislation/FOIA.md",
+    "FOI Act 1982 (Cth)": "docs/legislation/FOIA.md",
+    "Freedom of Information Act 1982 (Commonwealth)": "docs/legislation/FOIA.md",
+}
+
 # Australian court abbreviations and their traditional paths (for URL building compatibility)
 COURT_MAPPINGS = {
     "HCA": "cth/HCA",
@@ -188,23 +197,23 @@ def normalize_citation(citation: str) -> str:
 def is_legislation_reference(citation: str) -> bool:
     """
     Check if a citation is legislation (Act or Regulation) rather than case law.
-    
+
     Legislation doesn't need case law database verification.
-    
+
     Args:
         citation: Citation text to check
-        
+
     Returns:
         True if this is legislation, False if it's case law
     """
     # Check for Acts with year (e.g., "Migration Act 1958", "Family Violence Act 2016 (ACT)")
-    if re.search(r'\bAct\s+\d{4}(?:\s+\([A-Za-z]+\))?', citation):
+    if re.search(r"\bAct\s+\d{4}(?:\s+\([A-Za-z]+\))?", citation):
         return True
-        
+
     # Check for Regulations with year (e.g., "Fair Work Regulations 2009")
-    if re.search(r'\bRegulations?\s+\d{4}(?:\s+\([A-Za-z]+\))?', citation):
+    if re.search(r"\bRegulations?\s+\d{4}(?:\s+\([A-Za-z]+\))?", citation):
         return True
-        
+
     return False
 
 
@@ -269,7 +278,9 @@ def check_international_citation(citation: str) -> str:
     return ""  # Not international
 
 
-def search_legal_database_via_cse(citation: str, cse_id: str = None, cse_name: str = "Jade.io", timeout: int = 10) -> bool:
+def search_legal_database_via_cse(
+    citation: str, cse_id: str = None, cse_name: str = "Jade.io", timeout: int = 10
+) -> bool:
     """
     Search legal databases for a citation using Google Custom Search Engine.
 
@@ -288,11 +299,11 @@ def search_legal_database_via_cse(citation: str, cse_id: str = None, cse_name: s
         from googleapiclient.discovery import build
 
         config = get_config()
-        
+
         # Use specified CSE or default to Jade CSE
         if cse_id is None:
             cse_id = config.cse_id
-        
+
         # Use Google Custom Search to search legal databases
         service = build(
             "customsearch", "v1", developerKey=config.g_key, cache_discovery=False
@@ -393,25 +404,27 @@ def search_legal_database_via_cse(citation: str, cse_id: str = None, cse_name: s
 def search_jade_via_google_cse(citation: str, timeout: int = 10) -> bool:
     """
     Backward compatibility wrapper for search_legal_database_via_cse.
-    
+
     Args:
         citation: The citation to search for
         timeout: Request timeout in seconds
-    
+
     Returns:
         True if citation is found in Jade search results via Google CSE
     """
-    success, url = search_legal_database_via_cse(citation, cse_id=None, cse_name="Jade.io", timeout=timeout)
+    success, url = search_legal_database_via_cse(
+        citation, cse_id=None, cse_name="Jade.io", timeout=timeout
+    )
     return success
 
 
 def construct_austlii_url(citation: str) -> str:
     """
     Construct AustLII URL from medium neutral citation.
-    
+
     Args:
         citation: Normalized citation like "[2022] ACTSC 272"
-    
+
     Returns:
         URL string or empty string if cannot construct
     """
@@ -419,16 +432,16 @@ def construct_austlii_url(citation: str) -> str:
     match = re.match(r"\[(\d{4})\]\s+([A-Z]+[A-Za-z]*)\s+(\d+)", citation)
     if not match:
         return ""
-    
+
     year, court, number = match.groups()
-    
+
     # Check if court is in our mappings
     if court not in COURT_MAPPINGS:
         return ""
-    
+
     # COURT_MAPPINGS format is "act/ACTSC" - extract jurisdiction and court
     court_path = COURT_MAPPINGS[court]
-    
+
     # Build AustLII URL
     return f"https://www.austlii.edu.au/cgi-bin/viewdoc/au/cases/{court_path}/{year}/{number}.html"
 
@@ -436,60 +449,68 @@ def construct_austlii_url(citation: str) -> str:
 def verify_via_austlii_direct(citation: str, timeout: int = 5) -> Tuple[bool, str, str]:
     """
     Verify citation by constructing direct AustLII URL.
-    
+
     Args:
         citation: Normalized citation
         timeout: Request timeout in seconds
-    
+
     Returns:
         Tuple of (exists, url, reason)
     """
     url = construct_austlii_url(citation)
     if not url:
         return False, "", "Cannot construct AustLII URL for this citation format"
-    
+
     start_time = time.time()
-    
+
     try:
         import requests
-        
+
         # CRITICAL: Must include User-Agent header for AustLII
         headers = {
             "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36"
         }
-        
+
         # Use GET with stream=True to avoid downloading full document
         # AustLII blocks HEAD requests to /cgi-bin/viewdoc/ paths with 403 Forbidden
-        response = requests.get(url, headers=headers, timeout=timeout, allow_redirects=True, stream=True)
+        response = requests.get(
+            url, headers=headers, timeout=timeout, allow_redirects=True, stream=True
+        )
         # Close immediately after getting status - downloads only headers (~400 bytes)
         response.close()
-        
+
         success = response.status_code == 200
-        
+
         # Log the attempt
-        save_log("austlii_direct_verification", {
-            "citation": citation,
-            "url": url,
-            "success": success,
-            "http_status": response.status_code,
-            "response_time_ms": round((time.time() - start_time) * 1000, 2),
-            "timestamp": time.strftime("%Y-%m-%d %H:%M:%S")
-        })
-        
+        save_log(
+            "austlii_direct_verification",
+            {
+                "citation": citation,
+                "url": url,
+                "success": success,
+                "http_status": response.status_code,
+                "response_time_ms": round((time.time() - start_time) * 1000, 2),
+                "timestamp": time.strftime("%Y-%m-%d %H:%M:%S"),
+            },
+        )
+
         if success:
             return True, url, "Verified via AustLII direct URL"
         else:
             return False, "", f"AustLII returned HTTP {response.status_code}"
-            
+
     except Exception as e:
-        save_log("austlii_direct_verification", {
-            "citation": citation,
-            "url": url,
-            "success": False,
-            "error": str(e),
-            "response_time_ms": round((time.time() - start_time) * 1000, 2),
-            "timestamp": time.strftime("%Y-%m-%d %H:%M:%S")
-        })
+        save_log(
+            "austlii_direct_verification",
+            {
+                "citation": citation,
+                "url": url,
+                "success": False,
+                "error": str(e),
+                "response_time_ms": round((time.time() - start_time) * 1000, 2),
+                "timestamp": time.strftime("%Y-%m-%d %H:%M:%S"),
+            },
+        )
         return False, "", f"AustLII verification error: {str(e)}"
 
 
@@ -565,6 +586,18 @@ def verify_single_citation(citation: str) -> Tuple[bool, str, str]:
             cached = _citation_cache[normalized]
             return cached["exists"], cached.get("url", ""), cached.get("reason", "")
 
+    # Check for hardcoded FOIA citations first
+    if normalized in HARDCODED_FOIA_FILES:
+        file_path = HARDCODED_FOIA_FILES[normalized]
+        with _cache_lock:
+            _citation_cache[normalized] = {
+                "exists": True,
+                "url": file_path,
+                "reason": "FOIA citation - using pre-downloaded local file",
+                "checked_at": time.time(),
+            }
+        return True, file_path, "FOIA citation - using pre-downloaded local file"
+
     # Check for UK/International citations first (these are valid but not Australian)
     international_reason = check_international_citation(normalized)
     if international_reason:
@@ -576,7 +609,7 @@ def verify_single_citation(citation: str) -> Tuple[bool, str, str]:
                 "checked_at": time.time(),
             }
         return True, "", international_reason
-    
+
     # Skip verification for legislation - Acts and Regulations aren't in case law databases
     if is_legislation_reference(normalized):
         with _cache_lock:
@@ -605,10 +638,12 @@ def verify_single_citation(citation: str) -> Tuple[bool, str, str]:
 
     # Primary verification: Use Jade.io via Google CSE for ALL citations
     config = get_config()
-    
+
     try:
         # Try Jade.io CSE first (primary source)
-        exists_in_jade, url_jade = search_legal_database_via_cse(normalized, cse_id=config.cse_id, cse_name="Jade.io", timeout=5)
+        exists_in_jade, url_jade = search_legal_database_via_cse(
+            normalized, cse_id=config.cse_id, cse_name="Jade.io", timeout=5
+        )
         if exists_in_jade:
             reason = "Verified via Jade.io CSE"
 
@@ -620,18 +655,18 @@ def verify_single_citation(citation: str) -> Tuple[bool, str, str]:
                     "checked_at": time.time(),
                 }
             return True, url_jade, reason
-            
+
         # Fallback to comprehensive CSE if configured and Jade didn't find it
-        if hasattr(config, 'cse_id_comprehensive') and config.cse_id_comprehensive:
+        if hasattr(config, "cse_id_comprehensive") and config.cse_id_comprehensive:
             exists_in_comprehensive, url_comp = search_legal_database_via_cse(
-                normalized, 
-                cse_id=config.cse_id_comprehensive, 
-                cse_name="Comprehensive legal sources", 
-                timeout=5
+                normalized,
+                cse_id=config.cse_id_comprehensive,
+                cse_name="Comprehensive legal sources",
+                timeout=5,
             )
             if exists_in_comprehensive:
                 reason = "Verified via comprehensive legal sources CSE"
-                
+
                 with _cache_lock:
                     _citation_cache[normalized] = {
                         "exists": True,
@@ -640,18 +675,15 @@ def verify_single_citation(citation: str) -> Tuple[bool, str, str]:
                         "checked_at": time.time(),
                     }
                 return True, url_comp, reason
-                
+
         # Final fallback to AustLII CSE if configured
-        if hasattr(config, 'cse_id_austlii') and config.cse_id_austlii:
+        if hasattr(config, "cse_id_austlii") and config.cse_id_austlii:
             exists_in_austlii, url_austlii = search_legal_database_via_cse(
-                normalized,
-                cse_id=config.cse_id_austlii,
-                cse_name="AustLII",
-                timeout=5
+                normalized, cse_id=config.cse_id_austlii, cse_name="AustLII", timeout=5
             )
             if exists_in_austlii:
                 reason = "Verified via AustLII CSE"
-                
+
                 with _cache_lock:
                     _citation_cache[normalized] = {
                         "exists": True,
@@ -660,11 +692,13 @@ def verify_single_citation(citation: str) -> Tuple[bool, str, str]:
                         "checked_at": time.time(),
                     }
                 return True, url_austlii, reason
-        
+
         # NEW: Final fallback - try direct AustLII URL construction
         # Only attempt for Australian medium neutral citations
         if re.match(r"\[(\d{4})\]\s+([A-Z]+[A-Za-z]*)\s+(\d+)", normalized):
-            exists_via_austlii, url_austlii, reason_austlii = verify_via_austlii_direct(normalized, timeout=5)
+            exists_via_austlii, url_austlii, reason_austlii = verify_via_austlii_direct(
+                normalized, timeout=5
+            )
             if exists_via_austlii:
                 with _cache_lock:
                     _citation_cache[normalized] = {
@@ -674,7 +708,7 @@ def verify_single_citation(citation: str) -> Tuple[bool, str, str]:
                         "checked_at": time.time(),
                     }
                 return True, url_austlii, reason_austlii
-                
+
     except Exception:
         pass  # Fall through to mark as unverified
 

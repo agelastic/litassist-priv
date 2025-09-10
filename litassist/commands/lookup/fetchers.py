@@ -453,9 +453,30 @@ def _fetch_url_content(url: str, timeout: int = 10) -> str:
     - AustLII: Direct download with rate limiting
     - Government sites: Direct HTTP first, Jina as fallback
     - PDFs: Direct download
+    - Local files: Direct file reading
     - Others: Jina Reader
     """
     click.echo(f"[FETCH] Checking: {url}")
+
+    # Check if this is a local file path (not a URL)
+    import os
+
+    if not url.startswith(("http://", "https://", "ftp://")) and os.path.isfile(url):
+        click.echo("  → Reading local file...")
+        try:
+            from litassist.utils.file_ops import read_document
+
+            content = read_document(url)
+            if content:
+                result = f"[Source: {url}]\n\n{content}"
+                click.echo(f"  ✓ Local file read: {len(content)} chars")
+                return result
+            else:
+                click.echo("  ✗ Local file is empty")
+                return ""
+        except Exception as e:
+            click.echo(f"  ✗ Local file read error: {str(e)}")
+            return ""
 
     # Skip jade.io entirely (blocked by scrapers)
     if "jade.io" in url.lower():
