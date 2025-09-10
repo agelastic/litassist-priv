@@ -8,7 +8,7 @@ from litassist.citation_verify import verify_all_citations
 from litassist.citation_context import fetch_citation_context
 from litassist.llm import LLMClientFactory
 from litassist.prompts import PROMPTS
-from litassist.logging_utils import save_log
+from litassist.logging_utils import save_log, log_task_event
 
 
 def run_verification_chain(
@@ -142,10 +142,33 @@ def run_cove_verification(
         context=context_summary, content=content
     )
 
+    # Announce stage start and LLM call
+    log_task_event(
+        command, "cove-questions", "start", "Generating verification questions"
+    )
+    log_task_event(
+        command,
+        "cove-questions",
+        "llm_call",
+        "Sending questions prompt to LLM",
+        {"model": client_questions.model, "prompt_length": len(questions_prompt)},
+    )
+
     # Set stage context for logging
     client_questions.command_context = f"cove_stage1_questions_{command}"
     questions, usage1 = client_questions.complete(
         [{"role": "user", "content": questions_prompt}]
+    )
+    log_task_event(
+        command,
+        "cove-questions",
+        "llm_response",
+        "Received questions from LLM",
+        {
+            "model": client_questions.model,
+            "response_length": len(questions),
+            "usage": usage1,
+        },
     )
 
     # Store full information for debugging
@@ -239,11 +262,11 @@ def run_cove_verification(
     reference_context = ""
     if prior_contexts and prior_contexts.get("cove_reference_files"):
         reference_context = prior_contexts["cove_reference_files"]
-    
+
     if legal_context or reference_context:
         # Build context section with COMPLETE documents
         context_text = ""
-        
+
         if legal_context:
             context_text += "\n=== LEGAL AUTHORITIES (FULL TEXT) ===\n"
             for citation, full_text in legal_context.items():
@@ -251,7 +274,7 @@ def run_cove_verification(
                 context_text += full_text
                 context_text += f"\n=== END {citation} ===\n\n"
             context_text += "=== END LEGAL AUTHORITIES ===\n\n"
-        
+
         if reference_context:
             context_text += "\n=== REFERENCE DOCUMENTS ===\n"
             context_text += reference_context
@@ -267,10 +290,31 @@ def run_cove_verification(
             content=questions
         )
 
+    # Announce stage start and LLM call
+    log_task_event(command, "cove-answers", "start", "Answering verification questions")
+    log_task_event(
+        command,
+        "cove-answers",
+        "llm_call",
+        "Sending answers prompt to LLM",
+        {"model": client_answers.model, "prompt_length": len(answers_prompt)},
+    )
+
     # Set stage context for logging
     client_answers.command_context = f"cove_stage2_answers_{command}"
     answers, usage2 = client_answers.complete(
         [{"role": "user", "content": answers_prompt}]
+    )
+    log_task_event(
+        command,
+        "cove-answers",
+        "llm_response",
+        "Received independent answers from LLM",
+        {
+            "model": client_answers.model,
+            "response_length": len(answers),
+            "usage": usage2,
+        },
     )
 
     cove_stages["answers"] = {
@@ -288,10 +332,32 @@ def run_cove_verification(
         context=answers, content=content
     )
 
+    # Announce stage start and LLM call
+    log_task_event(
+        command,
+        "cove-verify",
+        "start",
+        "Detecting inconsistencies against the original",
+    )
+    log_task_event(
+        command,
+        "cove-verify",
+        "llm_call",
+        "Sending verification (inconsistency detection) prompt to LLM",
+        {"model": client_verify.model, "prompt_length": len(verify_prompt)},
+    )
+
     # Set stage context for logging
     client_verify.command_context = f"cove_stage3_verify_{command}"
     issues, usage3 = client_verify.complete(
         [{"role": "user", "content": verify_prompt}]
+    )
+    log_task_event(
+        command,
+        "cove-verify",
+        "llm_response",
+        "Received inconsistency report from LLM",
+        {"model": client_verify.model, "response_length": len(issues), "usage": usage3},
     )
 
     cove_stages["verification"] = {
@@ -318,10 +384,33 @@ def run_cove_verification(
             context=issues, prompt=answers, content=content
         )
 
+        # Announce stage start and LLM call
+        log_task_event(
+            command, "cove-regenerate", "start", "Regenerating corrected document"
+        )
+        log_task_event(
+            command,
+            "cove-regenerate",
+            "llm_call",
+            "Sending regeneration prompt to LLM",
+            {"model": client_final.model, "prompt_length": len(regenerate_prompt)},
+        )
+
         # Set stage context for logging
         client_final.command_context = f"cove_stage4_regenerate_{command}"
         final_content, usage4 = client_final.complete(
             [{"role": "user", "content": regenerate_prompt}]
+        )
+        log_task_event(
+            command,
+            "cove-regenerate",
+            "llm_response",
+            "Received regenerated document from LLM",
+            {
+                "model": client_final.model,
+                "response_length": len(final_content),
+                "usage": usage4,
+            },
         )
 
         cove_stages["regeneration"] = {

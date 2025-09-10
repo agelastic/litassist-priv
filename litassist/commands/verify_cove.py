@@ -19,7 +19,7 @@ from litassist.utils.formatting import (
     verifying_message,
     error_message,
 )
-from litassist.logging_utils import save_command_output, save_log
+from litassist.logging_utils import save_command_output, save_log, log_task_event
 from litassist.verification_chain import run_cove_verification, format_cove_report
 from litassist.utils.file_ops import read_document, process_reference_files
 
@@ -51,6 +51,7 @@ def verify_cove(file, reference, output):
     4) Regenerate a corrected document when issues are found
     """
     click.echo(verifying_message(f"Running CoVe on {file}..."))
+    log_task_event("verify-cove", "init", "start", f"File: {file}")
 
     try:
         content = read_document(file)
@@ -87,7 +88,6 @@ def verify_cove(file, reference, output):
                 "Status": "[INIT]",
             },
         )
-        reports_generated += 1
     except Exception:
         # Do not block execution if preflight write fails (e.g., permission or path issues)
         pass
@@ -118,6 +118,7 @@ def verify_cove(file, reference, output):
                 },
             )
             extra_files["Regenerated document"] = regen_file
+            reports_generated += 1
 
         # Save CoVe report with full dialogue
         cove_report = format_cove_report(cove_results)
@@ -147,6 +148,19 @@ def verify_cove(file, reference, output):
             click.echo(f"   - Regenerated: {extra_files['Regenerated document']}")
         else:
             click.echo("   - No rewrite needed (document verified as accurate)")
+        # Stage completion event
+        log_task_event(
+            "verify-cove",
+            "cove",
+            "end",
+            f"CoVe complete: status={'regenerated' if cove_results['cove']['regenerated'] else 'verified'}",
+            {
+                "file": file,
+                "regenerated": cove_results["cove"]["regenerated"],
+                "analysis_file": cove_file,
+                "regenerated_file": extra_files.get("Regenerated document"),
+            },
+        )
 
         extra_files["CoVe report"] = cove_file
         reports_generated += 1
@@ -173,35 +187,38 @@ def verify_cove(file, reference, output):
                 },
             )
             reports_generated += 1
+            saved_report = True
         except Exception:
             # As a last resort, silently skip saving to avoid masking the root error
             pass
 
     # Final safeguard: ensure at least one report is saved
-    try:
-        final_report = (
-            cove_report
-            if "cove_report" in locals()
-            else (
-                format_cove_report(cove_results)
-                if "cove_results" in locals()
-                else "CoVe report unavailable"
+    if not saved_report:
+        try:
+            final_report = (
+                cove_report
+                if "cove_report" in locals()
+                else (
+                    format_cove_report(cove_results)
+                    if "cove_results" in locals()
+                    else "CoVe report unavailable"
+                )
             )
-        )
-        _ = save_command_output(
-            output if output else "verify_cove",
-            final_report,
-            "" if output else os.path.basename(base_name),
-            metadata={
-                "Type": "Chain of Verification",
-                "File": file,
-                "Status": "[FINAL]",
-            },
-        )
-        reports_generated += 1
-    except Exception:
-        # Do not mask prior success; this is only a safety net for environments where mocks intercept earlier calls
-        pass
+            _ = save_command_output(
+                output if output else "verify_cove",
+                final_report,
+                "" if output else os.path.basename(base_name),
+                metadata={
+                    "Type": "Chain of Verification",
+                    "File": file,
+                    "Status": "[FINAL]",
+                },
+            )
+            reports_generated += 1
+            saved_report = True
+        except Exception:
+            # Do not mask prior success; this is only a safety net for environments where mocks intercept earlier calls
+            pass
 
     click.echo(f"\nVerification complete. {reports_generated} reports generated.")
     save_log(

@@ -25,6 +25,7 @@ import requests
 import tenacity
 
 from litassist.config import get_config
+from litassist.logging_utils import log_task_event
 
 
 # Custom exception classes for retry logic
@@ -68,7 +69,7 @@ def get_openai_client(model_name: str):
     """
     # Lazy import to avoid loading OpenAI library when not needed
     from openai import OpenAI
-    
+
     # ALL models go through OpenRouter - single code path only
     config = get_config()
     base_url = config.or_base
@@ -181,7 +182,11 @@ def parse_openrouter_error(error_info: Dict[str, Any]) -> Tuple[str, str]:
 
 
 def execute_api_call_with_retry(
-    model_name: str, messages: list, filtered_params: dict, get_openai_client_func=None
+    model_name: str,
+    messages: list,
+    filtered_params: dict,
+    get_openai_client_func=None,
+    call_context=None,
 ) -> Any:
     """
     Execute API call with comprehensive retry logic and error handling.
@@ -217,7 +222,7 @@ def execute_api_call_with_retry(
 
     # Lazy import OpenAI exceptions to avoid loading library when not needed
     from openai import APIConnectionError, RateLimitError, APIError
-    
+
     # Define retryable error types
     retry_errors = (
         APIConnectionError,
@@ -244,6 +249,19 @@ def execute_api_call_with_retry(
         try:
             # Get the appropriate client
             client = get_openai_client_func(model_name)
+
+            # Announce outbound LLM call if context provided
+            if call_context:
+                try:
+                    log_task_event(
+                        call_context.get("command", "llm"),
+                        call_context.get("stage", "call"),
+                        "llm_call",
+                        f"Calling model {model_name}",
+                        {"model": model_name},
+                    )
+                except Exception:
+                    pass
 
             # Extract OpenRouter-specific parameters that need to go in extra_body
             extra_body = {}
@@ -316,6 +334,19 @@ def execute_api_call_with_retry(
                     raise RetryableAPIError(f"API Error: {error_msg}")
                 else:
                     raise Exception(f"API Error: {error_msg}")
+            # Announce inbound LLM response if context provided
+            if call_context:
+                try:
+                    has_choices = hasattr(resp, "choices") and bool(resp.choices)
+                    log_task_event(
+                        call_context.get("command", "llm"),
+                        call_context.get("stage", "call"),
+                        "llm_response",
+                        f"Received response from model {model_name}",
+                        {"model": model_name, "has_choices": has_choices},
+                    )
+                except Exception:
+                    pass
             return resp
 
         except Exception as e:
