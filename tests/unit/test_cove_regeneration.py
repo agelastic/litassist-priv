@@ -94,26 +94,32 @@ class TestCoVeRegeneration:
 
             # Mock save_log and fetch_citation_context to avoid file operations and PDF processing
             with patch("litassist.verification_chain.save_log"):
-                with patch("litassist.verification_chain.fetch_citation_context") as mock_fetch:
-                    mock_fetch.return_value = {}  # Return empty dict, no citations to fetch
+                with patch(
+                    "litassist.verification_chain.fetch_citation_context"
+                ) as mock_fetch:
+                    mock_fetch.return_value = (
+                        {}
+                    )  # Return empty dict, no citations to fetch
                     # Run CoVe verification
-                    final_content, results = run_cove_verification(original_content, "test")
+                    final_content, results = run_cove_verification(
+                        original_content, "test"
+                    )
 
             # Assertions
             assert final_content != original_content, "Content should be regenerated"
-            assert final_content == regenerated_content, (
-                "Should return regenerated content"
-            )
+            assert (
+                final_content == regenerated_content
+            ), "Should return regenerated content"
             assert not results["cove"]["passed"], "Should indicate issues were found"
-            assert results["cove"]["regenerated"], (
-                "Should indicate regeneration occurred"
-            )
-            assert "[citation to be verified]" in final_content, (
-                "Should have placeholder for bad citation"
-            )
-            assert "[date to be confirmed]" in final_content, (
-                "Should have placeholder for bad date"
-            )
+            assert results["cove"][
+                "regenerated"
+            ], "Should indicate regeneration occurred"
+            assert (
+                "[citation to be verified]" in final_content
+            ), "Should have placeholder for bad citation"
+            assert (
+                "[date to be confirmed]" in final_content
+            ), "Should have placeholder for bad date"
 
             # Verify all 4 stages were called
             assert mock_factory.for_command.call_count == 4
@@ -185,15 +191,21 @@ class TestCoVeRegeneration:
 
             # Mock save_log and fetch_citation_context to avoid file operations and PDF processing
             with patch("litassist.verification_chain.save_log"):
-                with patch("litassist.verification_chain.fetch_citation_context") as mock_fetch:
-                    mock_fetch.return_value = {}  # Return empty dict, no citations to fetch
+                with patch(
+                    "litassist.verification_chain.fetch_citation_context"
+                ) as mock_fetch:
+                    mock_fetch.return_value = (
+                        {}
+                    )  # Return empty dict, no citations to fetch
                     # Run CoVe verification
-                    final_content, results = run_cove_verification(original_content, "test")
+                    final_content, results = run_cove_verification(
+                        original_content, "test"
+                    )
 
             # Assertions
-            assert final_content == original_content, (
-                "Content should not change when no issues"
-            )
+            assert (
+                final_content == original_content
+            ), "Content should not change when no issues"
             assert results["cove"]["passed"], "Should indicate no issues found"
             assert not results["cove"]["regenerated"], "Should indicate no regeneration"
 
@@ -238,22 +250,26 @@ class TestCoVeRegeneration:
             )
 
             # Assertions - CoVe is no longer automatic in verification_chain
-            assert final_content == original_content, (
-                "Should keep original content (no CoVe in verification_chain)"
-            )
-            assert "cove" not in results, (
-                "CoVe should not be in results (removed from verification_chain)"
-            )
+            assert (
+                final_content == original_content
+            ), "Should keep original content (no CoVe in verification_chain)"
+            assert (
+                "cove" not in results
+            ), "CoVe should not be in results (removed from verification_chain)"
 
             # Verify LLM verification was called
             mock_factory.for_command.assert_called_with("verification")
 
 
+import pytest
+
+
 class TestCommandCoVeIntegration:
     """Test that commands properly handle regenerated content from CoVe."""
 
+    @pytest.mark.skip(reason="CoVe flags removed; use standalone 'verify-cove' command")
     def test_draft_command_handles_regeneration(self):
-        """Test draft command properly handles CoVe regeneration."""
+        """Deprecated: CoVe moved to standalone 'verify-cove' command."""
 
         from litassist.commands.draft import draft
         from click.testing import CliRunner
@@ -341,8 +357,9 @@ class TestCommandCoVeIntegration:
             # Check that success message was shown (not warning)
             # This would be in the click.echo calls but mocked
 
+    @pytest.mark.skip(reason="CoVe flags removed; use standalone 'verify-cove' command")
     def test_extractfacts_cove_replaces_standard_verification(self):
-        """Test that --cove flag prevents standard verification in extractfacts."""
+        """Deprecated: CoVe moved to standalone 'verify-cove' command."""
         from litassist.commands.extractfacts import extractfacts
         from click.testing import CliRunner
         from unittest.mock import patch, Mock
@@ -417,8 +434,9 @@ class TestCommandCoVeIntegration:
                 mock_verify.assert_called_once()
                 mock_cove.assert_not_called()
 
+    @pytest.mark.skip(reason="CoVe flags removed; use standalone 'verify-cove' command")
     def test_strategy_cove_replaces_standard_verification(self):
-        """Test that --cove flag prevents standard verification in strategy."""
+        """Deprecated: CoVe moved to standalone 'verify-cove' command."""
         from litassist.commands.strategy import strategy
         from click.testing import CliRunner
         from unittest.mock import patch, Mock
@@ -428,7 +446,8 @@ class TestCommandCoVeIntegration:
         with runner.isolated_filesystem():
             # Create test case facts file
             with open("case_facts.txt", "w") as f:
-                f.write("""Parties:
+                f.write(
+                    """Parties:
 Test v Test
 Background:
 Test background
@@ -436,7 +455,8 @@ Legal Issues:
 Test issue
 Jurisdiction:
 Federal Court
-""")
+"""
+                )
 
             with (
                 patch(
@@ -495,12 +515,13 @@ Federal Court
                 # Should attempt CoVe, NOT standard verification
                 if mock_cove.called or mock_verify.called:
                     assert mock_cove.called, "CoVe should be called with --cove flag"
-                    assert not mock_verify.called, (
-                        "Standard verify should NOT be called with --cove flag"
-                    )
+                    assert (
+                        not mock_verify.called
+                    ), "Standard verify should NOT be called with --cove flag"
 
+    @pytest.mark.skip(reason="CoVe flags removed; use standalone 'verify-cove' command")
     def test_verify_command_with_cove_flag(self):
-        """Test that verify command properly applies CoVe when --cove flag is used."""
+        """Deprecated: CoVe moved to standalone 'verify-cove' command."""
         from litassist.commands.verify import verify
         from click.testing import CliRunner
 
@@ -509,14 +530,16 @@ Federal Court
         with runner.isolated_filesystem():
             # Create test document
             with open("document.txt", "w") as f:
-                f.write("""# Legal Strategy Document
+                f.write(
+                    """# Legal Strategy Document
                 
 This document cites Smith v Jones [2020] FCA 123 for the proposition 
 that contracts must be interpreted objectively.
 
 It also references Brown v Green (2019) 265 CLR 456 regarding
 the principles of statutory interpretation.
-""")
+"""
+                )
 
             with (
                 patch("litassist.config.CONFIG") as mock_config,

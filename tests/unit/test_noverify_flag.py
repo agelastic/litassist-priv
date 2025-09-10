@@ -1,8 +1,8 @@
 """
 Tests for the --noverify flag functionality across commands.
 
-This module tests that the --noverify flag properly skips standard verification
-while maintaining CoVe independence.
+This module tests that the --noverify flag properly skips standard verification.
+Note: CoVe has moved to standalone command 'verify-cove', so CoVe-related tests are skipped.
 """
 
 import tempfile
@@ -105,9 +105,11 @@ class TestNoVerifyFlag:
             assert (
                 mock_verify.call_args.kwargs.get(
                     "verify_flag",
-                    mock_verify.call_args.args[3]
-                    if len(mock_verify.call_args.args) > 3
-                    else None,
+                    (
+                        mock_verify.call_args.args[3]
+                        if len(mock_verify.call_args.args) > 3
+                        else None
+                    ),
                 )
                 is True
             )
@@ -134,7 +136,8 @@ class TestNoVerifyFlag:
 
         # Create test case facts file with proper format
         with tempfile.NamedTemporaryFile(mode="w", suffix=".txt", delete=False) as f:
-            f.write("""
+            f.write(
+                """
 Parties:
 Test parties
 
@@ -164,7 +167,8 @@ Test law
 
 Client Objectives:
 Test objectives
-            """)
+            """
+            )
             facts_file = f.name
 
         try:
@@ -220,6 +224,7 @@ Test objectives
         finally:
             Path(test_file).unlink()
 
+    @pytest.mark.skip(reason="CoVe flags removed; use standalone 'verify-cove' command")
     @patch("litassist.commands.extractfacts.get_config")
     @patch("litassist.commands.extractfacts.LLMClientFactory.for_command")
     @patch("litassist.commands.extractfacts.run_cove_verification")
@@ -229,7 +234,7 @@ Test objectives
     def test_noverify_does_not_affect_cove(
         self, mock_prompts, mock_save, mock_verify, mock_cove, mock_factory, mock_config
     ):
-        """Test that --noverify does not affect --cove verification."""
+        """Deprecated: CoVe moved to standalone 'verify-cove' command."""
         # Setup mocks
         mock_config_obj = Mock()
         mock_config_obj.max_chars = 10000
@@ -279,6 +284,7 @@ Test objectives
         finally:
             Path(test_file).unlink()
 
+    @pytest.mark.skip(reason="CoVe flags removed; use standalone 'verify-cove' command")
     @patch("litassist.commands.strategy.core.LLMClientFactory.for_command")
     @patch("litassist.commands.strategy.core.run_cove_verification")
     @patch("litassist.commands.strategy.core.verify_content_if_needed")
@@ -287,7 +293,7 @@ Test objectives
     def test_strategy_noverify_and_cove_together(
         self, mock_prompts, mock_save, mock_verify, mock_cove, mock_factory
     ):
-        """Test strategy with both --noverify and --cove flags."""
+        """Deprecated: CoVe moved to standalone 'verify-cove' command."""
         # Setup mocks
         mock_factory.return_value = self.mock_client
         mock_prompts.get.return_value = "Test prompt"
@@ -309,7 +315,8 @@ Test objectives
 
         # Create test case facts file
         with tempfile.NamedTemporaryFile(mode="w", suffix=".txt", delete=False) as f:
-            f.write("""
+            f.write(
+                """
 Parties:
 Test parties
 
@@ -339,7 +346,8 @@ Test law
 
 Client Objectives:
 Test objectives
-            """)
+            """
+            )
             facts_file = f.name
 
         try:
@@ -361,6 +369,7 @@ Test objectives
         finally:
             Path(facts_file).unlink()
 
+    @pytest.mark.skip(reason="CoVe flags removed; use standalone 'verify-cove' command")
     @patch("litassist.commands.draft.LLMClientFactory.for_command")
     @patch("litassist.commands.draft.run_cove_verification")
     @patch("litassist.commands.draft.verify_content_if_needed")
@@ -369,7 +378,7 @@ Test objectives
     def test_draft_noverify_with_cove_independence(
         self, mock_prompts, mock_save, mock_verify, mock_cove, mock_factory
     ):
-        """Test that draft --noverify doesn't affect --cove."""
+        """Deprecated: CoVe moved to standalone 'verify-cove' command."""
         # Setup mocks
         mock_factory.return_value = self.mock_client
         mock_prompts.get.return_value = "Test prompt"
@@ -451,9 +460,11 @@ class TestVerificationDefaults:
             assert (
                 mock_verify.call_args.kwargs.get(
                     "verify_flag",
-                    mock_verify.call_args.args[3]
-                    if len(mock_verify.call_args.args) > 3
-                    else None,
+                    (
+                        mock_verify.call_args.args[3]
+                        if len(mock_verify.call_args.args) > 3
+                        else None
+                    ),
                 )
                 is True
             )

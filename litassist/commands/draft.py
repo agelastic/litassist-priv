@@ -11,7 +11,7 @@ import click
 
 from litassist.config import get_config
 from litassist.prompts import PROMPTS
-from litassist.utils.file_ops import read_document, is_text_file, process_reference_files
+from litassist.utils.file_ops import read_document, is_text_file
 from litassist.utils.text_processing import chunk_text, create_embeddings
 from litassist.logging_utils import save_log, save_command_output
 from litassist.timing import timed
@@ -24,7 +24,6 @@ from litassist.utils.legal_reasoning import (
 from litassist.utils.core import show_command_completion
 from litassist.llm import LLMClientFactory
 from litassist.helpers.retriever import Retriever, get_pinecone_client
-from litassist.verification_chain import run_cove_verification
 
 
 @click.command()
@@ -33,9 +32,8 @@ from litassist.verification_chain import run_cove_verification
 @click.option(
     "--noverify",
     is_flag=True,
-    help="Skip standard verification (does not affect --cove)",
+    help="Skip standard verification",
 )
-@click.option("--cove", is_flag=True, help="Use Chain of Verification (experimental)")
 @click.option(
     "--diversity",
     type=float,
@@ -43,14 +41,9 @@ from litassist.verification_chain import run_cove_verification
     default=None,
 )
 @click.option("--output", type=str, help="Custom output filename prefix")
-@click.option(
-    "--cove-reference",
-    type=str,
-    help="Glob pattern for reference files to include in CoVe answer stage (e.g., 'exhibits/*.pdf', 'affidavits/*.txt'). Requires --cove flag."
-)
 @click.pass_context
 @timed
-def draft(ctx, documents, query, noverify, cove, diversity, output, cove_reference):
+def draft(ctx, documents, query, noverify, diversity, output):
     """
     Citation-rich drafting via RAG & GPT-4o.
 
@@ -78,14 +71,7 @@ def draft(ctx, documents, query, noverify, cove, diversity, output, cove_referen
         click.ClickException: If there are errors with file reading, embedding,
                              vector storage, retrieval, or LLM API calls.
     """
-    # Process CoVe reference files if provided
-    cove_reference_context, _ = process_reference_files(
-        cove_reference,
-        purpose="CoVe",
-        require_flag="--cove",
-        flag_enabled=cove
-    )
-    
+
     # Process all documents
     structured_content = {
         "case_facts": "",
@@ -274,68 +260,6 @@ def draft(ctx, documents, query, noverify, cove, diversity, output, cove_referen
     # Track critiques for appending to output
     critiques = []
 
-    # Optional CoVe verification
-    if cove:
-        try:
-            click.echo(info_message("Running Chain of Verification..."))
-            original_content = content  # Capture original BEFORE regeneration
-            
-            # Build prior contexts if we have CoVe reference files
-            prior_contexts = {}
-            if cove_reference_context:
-                prior_contexts["cove_reference_files"] = cove_reference_context
-            
-            content, cove_results = run_cove_verification(
-                content, 
-                "draft",
-                prior_contexts=prior_contexts if prior_contexts else None
-            )
-
-            # Capture CoVe dialogue for critique section
-            if "cove" in cove_results:
-                critiques.append(
-                    (
-                        "CoVe Stage 1: Questions Generated",
-                        cove_results["cove"]["questions"],
-                    )
-                )
-                critiques.append(
-                    (
-                        "CoVe Stage 2: Independent Answers",
-                        cove_results["cove"]["answers"],
-                    )
-                )
-                if cove_results["cove"]["issues"]:
-                    critiques.append(
-                        (
-                            "CoVe Stage 3: Issues Identified",
-                            cove_results["cove"]["issues"],
-                        )
-                    )
-
-            if not cove_results["cove"]["passed"]:
-                # Content has been regenerated to fix issues
-                click.echo(
-                    success_message("CoVe corrected issues - document regenerated")
-                )
-                # Log regeneration details for audit trail
-                save_log(
-                    "draft_cove_regeneration",
-                    {
-                        "original_length": len(original_content),
-                        "regenerated_length": len(content),
-                        "issues_fixed": cove_results["cove"]["issues"],
-                        "model": "See cove_draft_summary.json for model details",
-                    },
-                )
-            else:
-                click.echo(
-                    success_message("CoVe verification passed - no issues found")
-                )
-        except Exception as e:
-            click.echo(warning_message(f"CoVe verification failed: {e}"))
-            # Continue without CoVe if it fails
-
     # Check for potential hallucinations
     hallucination_warnings = detect_factual_hallucinations(content, context)
     if hallucination_warnings:
@@ -390,7 +314,7 @@ def draft(ctx, documents, query, noverify, cove, diversity, output, cove_referen
             },
             # Response content removed - already logged by LLMClient separately
             "usage": usage,
-            "verification": "cove_applied" if cove else "disabled",
+            "verification": "standard" if not noverify else "disabled",
             "output_file": output_file,
         },
     )
@@ -399,7 +323,7 @@ def draft(ctx, documents, query, noverify, cove, diversity, output, cove_referen
     stats = {
         "Query": query,
         "Documents": len(documents),
-        "Verification": "CoVe Applied" if cove else "Not Applied",
+        "Verification": "Standard verification" if not noverify else "Disabled",
     }
 
     show_command_completion("draft", output_file, extra_files, stats)

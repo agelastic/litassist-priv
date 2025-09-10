@@ -12,7 +12,7 @@ import os
 from litassist.config import get_config
 from litassist.prompts import PROMPTS
 from litassist.utils.text_processing import chunk_text
-from litassist.utils.file_ops import validate_file_size, process_reference_files
+from litassist.utils.file_ops import validate_file_size
 from litassist.utils.core import (
     timed,
     show_command_completion,
@@ -30,7 +30,6 @@ from litassist.logging_utils import (
     save_command_output,
 )
 from litassist.llm import LLMClientFactory
-from litassist.verification_chain import run_cove_verification
 
 
 @click.command()
@@ -41,21 +40,11 @@ from litassist.verification_chain import run_cove_verification
 @click.option(
     "--noverify",
     is_flag=True,
-    help="Skip standard verification (does not affect --cove)",
-)
-@click.option(
-    "--cove",
-    is_flag=True,
-    help="Use Chain of Verification instead of standard verification",
+    help="Skip standard verification",
 )
 @click.option("--output", type=str, help="Custom output filename prefix")
-@click.option(
-    "--cove-reference",
-    type=str,
-    help="Glob pattern for reference files to include in CoVe answer stage (e.g., 'exhibits/*.pdf', 'affidavits/*.txt'). Requires --cove flag."
-)
 @timed
-def extractfacts(file, verify, noverify, cove, output, cove_reference):
+def extractfacts(file, verify, noverify, output):
     """
     Auto-generate case_facts.txt under ten structured headings.
 
@@ -71,14 +60,7 @@ def extractfacts(file, verify, noverify, cove, output, cove_reference):
         click.ClickException: If there are errors reading the file, processing chunks,
                              or with the LLM API calls.
     """
-    # Process CoVe reference files if provided
-    cove_reference_context, _ = process_reference_files(
-        cove_reference,
-        purpose="CoVe",
-        require_flag="--cove",
-        flag_enabled=cove
-    )
-    
+
     # Process all files
     all_text = ""
     source_files = []
@@ -191,44 +173,9 @@ def extractfacts(file, verify, noverify, cove, output, cove_reference):
 
     # Note: Citation verification now handled automatically in LLMClient.complete()
 
-    # Apply verification - either CoVe or standard
+    # Apply standard verification (CoVe moved to standalone 'verify-cove' command)
     verification_metadata = {"Source Files": ", ".join(source_files)}
-    if cove:
-        # Use CoVe INSTEAD of standard verification
-        click.echo(info_message("Running Chain of Verification..."))
-        original_content = combined
-        
-        # Build prior contexts if we have CoVe reference files
-        prior_contexts = {}
-        if cove_reference_context:
-            prior_contexts["cove_reference_files"] = cove_reference_context
-        
-        combined, cove_results = run_cove_verification(
-            combined, 
-            "extractfacts",
-            prior_contexts=prior_contexts if prior_contexts else None
-        )
-
-        verification_metadata["Verification"] = "Chain of Verification (CoVe)"
-        verification_metadata["CoVe Status"] = (
-            "REGENERATED" if not cove_results["cove"]["passed"] else "PASSED"
-        )
-
-        if not cove_results["cove"]["passed"]:
-            click.echo(success_message("CoVe corrected issues - facts regenerated"))
-            save_log(
-                "extractfacts_cove_regeneration",
-                {
-                    "original_length": len(original_content),
-                    "regenerated_length": len(combined),
-                    "issues_fixed": cove_results["cove"]["issues"],
-                    "model": "See cove_extractfacts_summary.json for model details",
-                },
-            )
-        else:
-            click.echo(success_message("CoVe verification passed - no issues found"))
-    elif not noverify:
-        # Use standard verification (current behavior)
+    if not noverify:
         combined, _ = verify_content_if_needed(
             client, combined, "extractfacts", verify_flag=True
         )
