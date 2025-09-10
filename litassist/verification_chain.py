@@ -263,13 +263,26 @@ def run_cove_verification(
     if prior_contexts and prior_contexts.get("cove_reference_files"):
         reference_context = prior_contexts["cove_reference_files"]
 
-    if legal_context or reference_context:
-        # Build context section with COMPLETE documents
+    # Announce stage start
+    log_task_event(command, "cove-answers", "start", "Answering verification questions")
+
+    # Prepare scalable inclusion of legal documents (drop-largest backoff on token errors)
+    cases_to_include = list(legal_context.items()) if legal_context else []
+    attempts = 0
+    answers = None
+    usage2 = {}
+
+    # Set stage context for logging
+    client_answers.command_context = f"cove_stage2_answers_{command}"
+
+    while answers is None and attempts < 5:
+        # Build context section based on current cases_to_include and any reference files
+        has_any_context = bool(cases_to_include) or bool(reference_context)
         context_text = ""
 
-        if legal_context:
+        if cases_to_include:
             context_text += "\n=== LEGAL AUTHORITIES (FULL TEXT) ===\n"
-            for citation, full_text in legal_context.items():
+            for citation, full_text in cases_to_include:
                 context_text += f"\n=== {citation} ===\n"
                 context_text += full_text
                 context_text += f"\n=== END {citation} ===\n\n"
@@ -280,31 +293,76 @@ def run_cove_verification(
             context_text += reference_context
             context_text += "=== END REFERENCE DOCUMENTS ===\n\n"
 
-        # Use enhanced prompt with context
-        answers_prompt = PROMPTS.get("verification.cove.answers_with_context").format(
-            questions=questions, legal_context=context_text
-        )
-    else:
-        # Existing prompt without context
-        answers_prompt = PROMPTS.get("verification.cove.answers_verification").format(
-            content=questions
+        # Choose appropriate prompt template
+        if has_any_context:
+            answers_prompt = PROMPTS.get(
+                "verification.cove.answers_with_context"
+            ).format(questions=questions, legal_context=context_text)
+        else:
+            answers_prompt = PROMPTS.get(
+                "verification.cove.answers_verification"
+            ).format(content=questions)
+
+        # Log the outgoing call for this attempt
+        log_task_event(
+            command,
+            "cove-answers",
+            "llm_call",
+            "Sending answers prompt to LLM",
+            {
+                "model": client_answers.model,
+                "prompt_length": len(answers_prompt),
+                "attempt": attempts + 1,
+            },
         )
 
-    # Announce stage start and LLM call
-    log_task_event(command, "cove-answers", "start", "Answering verification questions")
-    log_task_event(
-        command,
-        "cove-answers",
-        "llm_call",
-        "Sending answers prompt to LLM",
-        {"model": client_answers.model, "prompt_length": len(answers_prompt)},
-    )
+        try:
+            # Make the LLM call
+            answers, usage2 = client_answers.complete(
+                [{"role": "user", "content": answers_prompt}]
+            )
+        except Exception as e:
+            error_str = str(e).lower()
+            # Detect token/context limit errors and drop the largest document if available
+            if any(
+                x in error_str
+                for x in ["token", "context", "length", "too long", "maximum"]
+            ):
+                if cases_to_include:
+                    # Identify and drop the largest included case/document
+                    largest_idx = max(
+                        range(len(cases_to_include)),
+                        key=lambda i: len(cases_to_include[i][1]),
+                    )
+                    dropped_case = cases_to_include.pop(largest_idx)
 
-    # Set stage context for logging
-    client_answers.command_context = f"cove_stage2_answers_{command}"
-    answers, usage2 = client_answers.complete(
-        [{"role": "user", "content": answers_prompt}]
-    )
+                    # Log the drop event for auditability
+                    save_log(
+                        "cove_answers_scaling_drop",
+                        {
+                            "command": command,
+                            "dropped_case": dropped_case[0],
+                            "dropped_length": len(dropped_case[1]),
+                            "remaining_cases": [c for c, _ in cases_to_include],
+                            "attempt": attempts + 1,
+                            "error": str(e),
+                        },
+                    )
+
+                    attempts += 1
+                    continue  # retry with reduced context
+                else:
+                    # Nothing left to drop - re-raise
+                    raise
+            else:
+                # Not a token/context limit error - re-raise
+                raise
+
+    if answers is None:
+        # Exhausted retries without success
+        raise Exception("Failed to get CoVe answers after dropping all legal context")
+
+    # Log the successful response
     log_task_event(
         command,
         "cove-answers",
