@@ -450,7 +450,7 @@ class LLMClientFactory:
             "model": "anthropic/claude-sonnet-4",
             "temperature": 0,
             "top_p": 0.15,
-            "thinking_effort": "high",  # Critical foundational command needs thorough thinking
+            "thinking_effort": "medium",  # Critical foundational command needs thorough thinking
             "force_verify": True,  # Always verify for foundational docs
             "disable_tools": True,  # Claude Sonnet 4 has tool calling issues on OpenRouter (Sept 2025)
         },
@@ -459,7 +459,7 @@ class LLMClientFactory:
             "model": "anthropic/claude-opus-4.1",
             "temperature": 0.2,  # Controlled creativity for strategic thinking
             "top_p": 0.8,  # Focused but not overly restrictive
-            "thinking_effort": "max",  # Universal parameter, translates to reasoning object
+            "thinking_effort": "medium",  # Universal parameter, translates to reasoning object
             "verbosity": "medium",  # Balanced depth in strategic analysis
             "force_verify": True,  # Always verify for strategic guidance
         },
@@ -467,7 +467,7 @@ class LLMClientFactory:
         "strategy-analysis": {
             "model": "openai/o3-pro",
             # Note: o3-pro ignores temperature and top_p parameters
-            "thinking_effort": "max",  # Universal parameter, translates to reasoning_effort
+            "thinking_effort": "medium",  # Universal parameter, translates to reasoning_effort
             "disable_tools": True,  # o3-pro doesn't support tool calling
         },
         # Brainstorm - varied temperatures for different approaches
@@ -476,7 +476,7 @@ class LLMClientFactory:
             "temperature": 0.3,
             "top_p": 0.7,
             "thinking_effort": "medium",  # Moderate thinking for balanced analysis
-            "force_verify": True,  # Conservative analysis requires verification
+            "force_verify": False,  # Conservative analysis requires verification
         },
         "brainstorm-unorthodox": {
             "model": "x-ai/grok-4",
@@ -500,7 +500,7 @@ class LLMClientFactory:
         # Draft - superior technical writing (o3 model with very limited parameter support)
         "draft": {
             "model": "openai/o3-pro",
-            "thinking_effort": "high",  # Universal parameter
+            "thinking_effort": "medium",  # Universal parameter
             "verbosity": "high",  # Comprehensive legal drafting
             "disable_tools": True,  # o3-pro doesn't support tool calling
         },
@@ -509,14 +509,14 @@ class LLMClientFactory:
             "model": "anthropic/claude-sonnet-4",
             "temperature": 0.2,
             "top_p": 0.3,  # Fixed: was 0, too restrictive
-            "thinking_effort": "medium",  # Simple summarization task
+            "thinking_effort": "low",  # Simple summarization task
             "disable_tools": True,  # Claude Sonnet 4 has tool calling issues on OpenRouter (Sept 2025)
         },
         "digest-issues": {
             "model": "anthropic/claude-opus-4.1",
             "temperature": 0.2,
             "top_p": 0.5,
-            "thinking_effort": "high",  # Deep analysis for issue spotting
+            "thinking_effort": "medium",  # Deep analysis for issue spotting
         },
         # Lookup - uses Gemini for rapid processing with verification
         # IMPORTANT: When changing models, adjust max_content_tokens in lookup.py
@@ -535,14 +535,14 @@ class LLMClientFactory:
             "model": "anthropic/claude-opus-4.1",
             "temperature": 0.2,
             "top_p": 0.3,
-            "thinking_effort": "high",
+            "thinking_effort": "medium",
             "force_verify": False,  # Don't double-verify since this IS verification
         },
         "verification-light": {
             "model": "anthropic/claude-sonnet-4",  # Cost-effective for spelling/terminology
             "temperature": 0.2,  # Optimal for factual tasks per hallucination report
             "top_p": 0.2,  # Focused beam for consistency
-            "thinking_effort": "medium",  # Just spelling/terminology checks
+            "thinking_effort": "low",  # Just spelling/terminology checks
             "force_verify": False,  # Avoid loops
             "disable_tools": True,  # Claude Sonnet 4 has tool calling issues on OpenRouter (Sept 2025)
         },
@@ -829,10 +829,13 @@ class LLMClient(LLMVerificationMixin):
     def _format_date_string(self):
         """Get current date formatted for prompt injection."""
         import pytz
-        sydney_tz = pytz.timezone('Australia/Sydney')
+
+        sydney_tz = pytz.timezone("Australia/Sydney")
         return datetime.now(sydney_tz).strftime("%B %d, %Y")
-    
-    def _prepare_messages_for_model(self, messages: List[Dict[str, str]]) -> List[Dict[str, str]]:
+
+    def _prepare_messages_for_model(
+        self, messages: List[Dict[str, str]]
+    ) -> List[Dict[str, str]]:
         """Prepare messages based on model's system message support."""
         if not supports_system_messages(self.model):
             # For o1/o3 models - merge system into first user message
@@ -840,39 +843,43 @@ class LLMClient(LLMVerificationMixin):
         else:
             # For all other models - add Australian law to system messages
             return self._add_australian_law_to_system(messages)
-    
-    def _merge_system_into_user(self, messages: List[Dict[str, str]]) -> List[Dict[str, str]]:
+
+    def _merge_system_into_user(
+        self, messages: List[Dict[str, str]]
+    ) -> List[Dict[str, str]]:
         """Merge system messages into first user message for o1/o3 models."""
         system_messages = [msg for msg in messages if msg.get("role") == "system"]
         non_system_messages = [msg for msg in messages if msg.get("role") != "system"]
-        
+
         if not system_messages:
             # No system messages to merge
             return messages
-        
+
         # Combine all system content
         system_content = "\n".join([msg.get("content", "") for msg in system_messages])
         if "Australian English" not in system_content:
             system_content += "\n" + PROMPTS.get("base.australian_law")
-        
+
         # Find first user message and prepend system content
         modified_messages = []
         for i, msg in enumerate(non_system_messages):
             if msg.get("role") == "user":
                 content = f"{system_content}\n\n{msg.get('content', '')}"
                 modified_messages.append({"role": "user", "content": content})
-                modified_messages.extend(non_system_messages[i + 1:])
+                modified_messages.extend(non_system_messages[i + 1 :])
                 return modified_messages
-        
+
         # No user message found - just return non-system messages
         return non_system_messages
-    
-    def _add_australian_law_to_system(self, messages: List[Dict[str, str]]) -> List[Dict[str, str]]:
+
+    def _add_australian_law_to_system(
+        self, messages: List[Dict[str, str]]
+    ) -> List[Dict[str, str]]:
         """Add Australian law prompt to system messages."""
         australian_law = PROMPTS.get("base.australian_law")
         if not australian_law:
             return messages
-            
+
         modified_messages = []
         for msg in messages:
             if msg.get("role") == "system":
@@ -883,23 +890,27 @@ class LLMClient(LLMVerificationMixin):
                 modified_messages.append({"role": "system", "content": content})
             else:
                 modified_messages.append(msg)
-        
+
         return modified_messages
-    
-    def _add_date_instruction(self, messages: List[Dict[str, str]]) -> List[Dict[str, str]]:
+
+    def _add_date_instruction(
+        self, messages: List[Dict[str, str]]
+    ) -> List[Dict[str, str]]:
         """Add appropriate date instruction based on tool availability."""
-        if getattr(self, '_disable_tools', False):
+        if getattr(self, "_disable_tools", False):
             # Tools disabled - inject date directly
             today_date = self._format_date_string()
-            date_text = PROMPTS.get("base.date_fallback_instruction").format(date=today_date)
+            date_text = PROMPTS.get("base.date_fallback_instruction").format(
+                date=today_date
+            )
         else:
             # Tools enabled - use tool instruction
             date_text = PROMPTS.get("base.date_tool_instruction")
-        
+
         # Add to first system or user message
         modified_messages = []
         date_added = False
-        
+
         for msg in messages:
             if not date_added and msg.get("role") in ["system", "user"]:
                 content = msg.get("content", "")
@@ -908,7 +919,7 @@ class LLMClient(LLMVerificationMixin):
                 date_added = True
             else:
                 modified_messages.append(msg)
-        
+
         return modified_messages
 
     # The enclosing `complete` method now emits heartbeat updates, so we no
@@ -942,7 +953,7 @@ class LLMClient(LLMVerificationMixin):
         """
         # Step 1: Handle model-specific message formatting
         messages = self._prepare_messages_for_model(messages)
-        
+
         # Step 2: Add date instruction (tool or direct based on disable_tools)
         messages = self._add_date_instruction(messages)
 
@@ -965,10 +976,12 @@ class LLMClient(LLMVerificationMixin):
             filtered_params = get_model_parameters(self.model, params)
 
             # Check if tools should be disabled for this client
-            if getattr(self, '_disable_tools', False):
+            if getattr(self, "_disable_tools", False):
                 # Date has already been injected by _add_date_instruction at line 966
-                logging.info(f"Tools disabled for {self.model}, using date injection fallback")
-                
+                logging.info(
+                    f"Tools disabled for {self.model}, using date injection fallback"
+                )
+
                 # Log the prepared messages
                 save_log(
                     f"llm_{self.model.replace('/', '_')}_messages",
@@ -980,7 +993,7 @@ class LLMClient(LLMVerificationMixin):
                         "tools_disabled": True,
                     },
                 )
-                
+
                 # Call API without tools using prepared messages
                 response = execute_api_call_with_retry(
                     model_name, messages, filtered_params

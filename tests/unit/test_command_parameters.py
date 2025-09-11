@@ -27,7 +27,9 @@ class TestCommandParameterPropagation:
         )
         self.mock_client.model = "anthropic/claude-sonnet-4"  # Add model attribute
         self.mock_client.verify.return_value = ""  # Add verify method
-        self.mock_client.validate_citations.return_value = []  # Add validate_citations method
+        self.mock_client.validate_citations.return_value = (
+            []
+        )  # Add validate_citations method
 
     @patch("litassist.llm.LLMClientFactory.for_command")
     @patch("litassist.utils.file_ops.read_document")
@@ -181,9 +183,7 @@ class TestCommandParameterPropagation:
         assert result.exit_code == 0
 
         # Verify factory was called with correct command (lookup sets temperature/top_p based on mode)
-        mock_factory.assert_called_once_with(
-            "lookup", temperature=0, top_p=0.1
-        )
+        mock_factory.assert_called_once_with("lookup", temperature=0, top_p=0.1)
 
         # Check configuration
         from litassist.llm import LLMClientFactory
@@ -310,7 +310,8 @@ Federal Court
 
         with self.runner.isolated_filesystem():
             with open("facts.txt", "w") as f:
-                f.write("""Parties:
+                f.write(
+                    """Parties:
 Test parties
 
 Background:
@@ -338,7 +339,8 @@ Applicable Law:
 Test law
 
 Client Objectives:
-Test objectives""")
+Test objectives"""
+                )
 
             with patch("litassist.commands.strategy.core.PROMPTS") as mock_prompts:
                 mock_prompts.get_prompt.return_value = "Test prompt"
@@ -393,7 +395,9 @@ Test objectives""")
             LLMClientFactory.COMMAND_CONFIGS["strategy"]["model"]
             == "anthropic/claude-opus-4.1"
         )
-        assert LLMClientFactory.COMMAND_CONFIGS["strategy"]["thinking_effort"] == "max"
+        assert (
+            LLMClientFactory.COMMAND_CONFIGS["strategy"]["thinking_effort"] == "medium"
+        )
         assert LLMClientFactory.COMMAND_CONFIGS["strategy"]["force_verify"] is True
 
     @patch("litassist.llm.LLMClientFactory.for_command")
@@ -467,7 +471,7 @@ Test objectives""")
         from litassist.llm import LLMClientFactory
 
         assert LLMClientFactory.COMMAND_CONFIGS["draft"]["model"] == "openai/o3-pro"
-        assert LLMClientFactory.COMMAND_CONFIGS["draft"]["thinking_effort"] == "high"
+        assert LLMClientFactory.COMMAND_CONFIGS["draft"]["thinking_effort"] == "medium"
 
     @patch("litassist.llm.LLMClientFactory.for_command")
     @patch("litassist.commands.barbrief.validate_case_facts")

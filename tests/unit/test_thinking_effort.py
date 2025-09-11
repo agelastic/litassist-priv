@@ -204,7 +204,7 @@ class TestLLMClientFactoryThinkingEffort:
         # Check that thinking_effort is in default params
         assert "thinking_effort" in client.default_params
         assert (
-            client.default_params["thinking_effort"] == "max"
+            client.default_params["thinking_effort"] == "medium"
         )  # Updated to match config
 
     @patch("litassist.llm.CONFIG")

@@ -50,13 +50,13 @@ class TestCommandParameterConfiguration:
         assert "strategy" in LLMClientFactory.COMMAND_CONFIGS
         config = LLMClientFactory.COMMAND_CONFIGS["strategy"]
         assert config["model"] == "anthropic/claude-opus-4.1"
-        assert config["thinking_effort"] == "max"
+        assert config["thinking_effort"] == "medium"
         assert config["force_verify"] is True
 
         client = LLMClientFactory.for_command("strategy")
         assert client.model == "anthropic/claude-opus-4.1"
         assert client._force_verify is True
-        assert client.default_params.get("thinking_effort") == "max"
+        assert client.default_params.get("thinking_effort") == "medium"
 
     @patch("litassist.llm.CONFIG")
     def test_draft_configuration(self, mock_config):
@@ -67,7 +67,7 @@ class TestCommandParameterConfiguration:
         assert "draft" in LLMClientFactory.COMMAND_CONFIGS
         config = LLMClientFactory.COMMAND_CONFIGS["draft"]
         assert config["model"] == "openai/o3-pro"
-        assert config["thinking_effort"] == "high"
+        assert config["thinking_effort"] == "medium"
 
         client = LLMClientFactory.for_command("draft")
         assert client.model == "openai/o3-pro"
@@ -89,7 +89,9 @@ class TestCommandParameterConfiguration:
             client.default_params.get("temperature") == 0.9
         )  # Stored but will be filtered
         assert client.default_params.get("top_p") == 0.95  # Stored but will be filtered
-        assert client.default_params.get("thinking_effort") == "high"  # Draft uses high
+        assert (
+            client.default_params.get("thinking_effort") == "medium"
+        )  # Draft uses medium
 
         # Verify the model is correct
         assert client.model == "openai/o3-pro"
@@ -102,8 +104,8 @@ class TestCommandParameterConfiguration:
         assert "top_p" not in filtered
         assert "reasoning" in filtered  # Should have reasoning object
         assert filtered["reasoning"] == {
-            "effort": "high"
-        }  # Converted from thinking_effort (max maps to high)
+            "effort": "medium"
+        }  # Converted from thinking_effort (medium maps to medium)
 
     @patch("litassist.llm.CONFIG")
     def test_default_command_configuration(self, mock_config):
