@@ -166,8 +166,6 @@ lookup:
 ### Environment Variables
 ```bash
 export LITASSIST_LOOKUP_MODE="dual"
-export LITASSIST_LOOKUP_RETRIEVAL_MODEL="google/gemini-2.5-pro-preview"
-export LITASSIST_LOOKUP_VERIFICATION_MODEL="openai/o4-mini-high"
 ```
 
 ## Dependencies
