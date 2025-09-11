@@ -109,18 +109,18 @@ class TestLLMClientFactory:
             for command in strict_commands:
                 client = LLMClientFactory.for_command(command)
                 assert hasattr(client, "_force_verify")
-                assert (
-                    client._force_verify is True
-                ), f"{command} should force verification"
+                assert client._force_verify is True, (
+                    f"{command} should force verification"
+                )
 
             # Commands that should not force verification
             lenient_commands = ["lookup"]
             for command in lenient_commands:
                 client = LLMClientFactory.for_command(command)
                 assert hasattr(client, "_force_verify")
-                assert (
-                    client._force_verify is False
-                ), f"{command} should not force verification"
+                assert client._force_verify is False, (
+                    f"{command} should not force verification"
+                )
 
     def test_model_parameter_restrictions(self):
         """Test that o1/o3 models have correct parameter restrictions."""
@@ -145,6 +145,20 @@ class TestLLMClientFactory:
 
             # o3-pro should have thinking_effort for draft as well
             assert "thinking_effort" in draft_params
+
+    def test_environment_variable_override(self):
+        """Test that environment variables can override model selection."""
+        with patch("litassist.llm.CONFIG") as mock_config:
+            mock_config.openrouter_key = "test_key"
+            mock_config.openai_key = "test_openai_key"
+
+            with patch.dict(
+                "os.environ",
+                {"LITASSIST_LOOKUP_MODEL": "anthropic/claude-3-5-sonnet-20241022"},
+            ):
+                client = LLMClientFactory.for_command("lookup")
+                # Environment variable should override the model
+                assert client.model == "anthropic/claude-3-5-sonnet-20241022"
 
 
 class TestLLMClientFactoryIntegration:

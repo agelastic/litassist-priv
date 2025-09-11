@@ -96,7 +96,7 @@ def mock_llm_client():
             return "Test response content", {"total_tokens": 100}
 
         def verify(self, content):
-            return "Verified content", "mock-model"
+            return []
 
     with patch("litassist.llm.LLMClient", MockLLMClient):
         yield MockLLMClient
