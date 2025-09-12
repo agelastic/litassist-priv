@@ -657,11 +657,12 @@ def log_task_event(
     save_log(tag, payload)
 
     # Also log to console for immediate visibility during development/debugging
+    # Show model suffix on ALL event types when available
     if event in ["start", "end"]:
-        click.echo(f"[{event.upper()}] {command}.{stage}: {message}")
+        click.echo(f"[{event.upper()}] {command}.{stage}: {message}{model_suffix}")
     elif event == "llm_call":
         click.echo(f"[LLM CALL] {command}.{stage}: {message}{model_suffix}")
     elif event == "llm_response":
         click.echo(f"[LLM RESPONSE] {command}.{stage}: {message}{model_suffix}")
     elif event == "progress":
-        click.echo(f"[PROGRESS] {command}.{stage}: {message}")
+        click.echo(f"[PROGRESS] {command}.{stage}: {message}{model_suffix}")

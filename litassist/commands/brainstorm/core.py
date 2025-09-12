@@ -36,7 +36,9 @@ from litassist.prompts import PROMPTS
 
 # Import from submodules
 from .research_handler import analyze_research_size
-from litassist.utils.file_ops import expand_glob_patterns_callback as expand_glob_patterns
+from litassist.utils.file_ops import (
+    expand_glob_patterns_callback as expand_glob_patterns,
+)
 from .orthodox_generator import generate_orthodox_strategies
 from .unorthodox_generator import generate_unorthodox_strategies
 from .analysis_generator import generate_analysis
@@ -115,6 +117,16 @@ def brainstorm(facts, side, area, research, verify, output):
     # Check for potentially incompatible side/area combinations
     validate_side_area_combination(side, area)
 
+    # Command-level start log
+    try:
+        from litassist.logging_utils import (
+            log_task_event,
+        )  # safe re-import in case of test contexts
+
+        log_task_event("brainstorm", "init", "start", "Starting brainstorm")
+    except Exception:
+        pass
+
     # Handle facts files - use default case_facts.txt if no facts provided
     if not facts:
         default_facts = "case_facts.txt"
@@ -183,9 +195,19 @@ def brainstorm(facts, side, area, research, verify, output):
         }
 
     # Generate Orthodox Strategies
+    try:
+        log_task_event(
+            "brainstorm", "orthodox", "start", "Generating orthodox strategies"
+        )
+    except Exception:
+        pass
     orthodox_content, orthodox_usage, orthodox_citation_issues = (
         generate_orthodox_strategies(facts, side, area, research_context)
     )
+    try:
+        log_task_event("brainstorm", "orthodox", "end", "Orthodox strategies generated")
+    except Exception:
+        pass
 
     # Selectively regenerate orthodox strategies with citation issues
     if orthodox_citation_issues:
@@ -205,14 +227,41 @@ def brainstorm(facts, side, area, research, verify, output):
         orthodox_base_prompt = PROMPTS.get(
             "strategies.brainstorm.orthodox_output_format"
         ).format(content=orthodox_base_content)
+        try:
+            log_task_event(
+                "brainstorm",
+                "orthodox-repair",
+                "start",
+                "Fixing citation issues in orthodox strategies",
+            )
+        except Exception:
+            pass
         orthodox_content = regenerate_bad_strategies(
             orthodox_client, orthodox_content, orthodox_base_prompt, "orthodox"
         )
+        try:
+            log_task_event(
+                "brainstorm", "orthodox-repair", "end", "Orthodox citation issues fixed"
+            )
+        except Exception:
+            pass
 
     # Generate Unorthodox Strategies
+    try:
+        log_task_event(
+            "brainstorm", "unorthodox", "start", "Generating unorthodox strategies"
+        )
+    except Exception:
+        pass
     unorthodox_content, unorthodox_usage, unorthodox_citation_issues = (
         generate_unorthodox_strategies(facts, side, area)
     )
+    try:
+        log_task_event(
+            "brainstorm", "unorthodox", "end", "Unorthodox strategies generated"
+        )
+    except Exception:
+        pass
 
     # Selectively regenerate unorthodox strategies with citation issues
     if unorthodox_citation_issues:
@@ -230,14 +279,42 @@ def brainstorm(facts, side, area, research, verify, output):
         unorthodox_base_prompt = PROMPTS.get(
             "strategies.brainstorm.unorthodox_output_format"
         ).format(content=unorthodox_base_content)
+        try:
+            log_task_event(
+                "brainstorm",
+                "unorthodox-repair",
+                "start",
+                "Fixing citation issues in unorthodox strategies",
+            )
+        except Exception:
+            pass
         unorthodox_content = regenerate_bad_strategies(
             unorthodox_client, unorthodox_content, unorthodox_base_prompt, "unorthodox"
         )
+        try:
+            log_task_event(
+                "brainstorm",
+                "unorthodox-repair",
+                "end",
+                "Unorthodox citation issues fixed",
+            )
+        except Exception:
+            pass
 
     # Generate Most Likely to Succeed analysis
+    try:
+        log_task_event(
+            "brainstorm", "analysis", "start", "Analyzing most promising strategies"
+        )
+    except Exception:
+        pass
     analysis_content, analysis_usage = generate_analysis(
         facts, side, area, orthodox_content, unorthodox_content
     )
+    try:
+        log_task_event("brainstorm", "analysis", "end", "Analysis completed")
+    except Exception:
+        pass
 
     # Note: Citation issues now handled automatically in LLMClient.complete()
     # Combine all sections - headers already included in LLM output
@@ -289,6 +366,15 @@ def brainstorm(facts, side, area, research, verify, output):
         click.echo(verifying_message("Verifying complete brainstorm output..."))
 
         try:
+            try:
+                log_task_event(
+                    "brainstorm",
+                    "final-verify",
+                    "start",
+                    "Verifying complete brainstorm output",
+                )
+            except Exception:
+                pass
             # Use verification config for full document
             verify_client = LLMClientFactory.for_command("verification")
             correction, _ = verify_client.verify(combined_content)
@@ -322,6 +408,15 @@ def brainstorm(facts, side, area, research, verify, output):
                 click.echo(
                     warning_message(f"{len(citation_issues)} citation warnings found")
                 )
+            try:
+                log_task_event(
+                    "brainstorm",
+                    "final-verify",
+                    "end",
+                    "Full brainstorm output verified",
+                )
+            except Exception:
+                pass
 
         except Exception as e:
             raise click.ClickException(f"Verification error during brainstorming: {e}")
@@ -332,6 +427,15 @@ def brainstorm(facts, side, area, research, verify, output):
                 "Skipping full document verification (unorthodox was verified independently)"
             )
         )
+        try:
+            log_task_event(
+                "brainstorm",
+                "final-verify",
+                "progress",
+                "Skipping full document verification (unorthodox was verified independently)",
+            )
+        except Exception:
+            pass
         try:
             # Quick citation check using the analysis client
             analysis_client = LLMClientFactory.for_command("brainstorm", "analysis")
@@ -427,3 +531,9 @@ def brainstorm(facts, side, area, research, verify, output):
         "To use with strategy command, manually copy to strategies.txt"
     )
     click.echo(f"\n{info_msg}")
+
+    # Command-level end log
+    try:
+        log_task_event("brainstorm", "init", "end", "Brainstorm complete")
+    except Exception:
+        pass

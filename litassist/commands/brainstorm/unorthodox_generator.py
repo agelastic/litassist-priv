@@ -16,6 +16,7 @@ from litassist.utils.formatting import (
     warning_message,
 )
 from litassist.prompts import PROMPTS
+from litassist.logging_utils import log_task_event
 
 
 def generate_unorthodox_strategies(facts: str, side: str, area: str):
@@ -69,6 +70,15 @@ def generate_unorthodox_strategies(facts: str, side: str, area: str):
         raise click.ClickException(f"Error generating unorthodox strategies: {str(e)}")
 
     # Verify the unorthodox strategies for legal accuracy
+    try:
+        log_task_event(
+            "brainstorm",
+            "unorthodox-verify",
+            "start",
+            "Verifying unorthodox strategies",
+        )
+    except Exception:
+        pass
     click.echo(verifying_message("Verifying unorthodox strategies..."))
     verify_client = LLMClientFactory.for_command("verification")
     verification_result, _ = verify_client.verify(unorthodox_content)
@@ -93,10 +103,39 @@ def generate_unorthodox_strategies(facts: str, side: str, area: str):
         click.echo(
             warning_message("Verification format unexpected - using complete output")
         )
+    try:
+        log_task_event(
+            "brainstorm", "unorthodox-verify", "end", "Unorthodox verification complete"
+        )
+    except Exception:
+        pass
 
     # Validate citations
+    try:
+        log_task_event(
+            "brainstorm",
+            "unorthodox-citations",
+            "start",
+            "Validating citations in unorthodox strategies",
+        )
+    except Exception:
+        pass
     unorthodox_citation_issues = unorthodox_client.validate_citations(
         unorthodox_content
     )
+    try:
+        log_task_event(
+            "brainstorm",
+            "unorthodox-citations",
+            "end",
+            "Unorthodox citation validation complete",
+            {
+                "issues": (
+                    len(unorthodox_citation_issues) if unorthodox_citation_issues else 0
+                )
+            },
+        )
+    except Exception:
+        pass
 
     return unorthodox_content, unorthodox_usage, unorthodox_citation_issues
