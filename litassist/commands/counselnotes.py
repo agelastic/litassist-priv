@@ -119,6 +119,16 @@ def counselnotes(files, extract, verify, output):
 
     # Create client using factory
     client = LLMClientFactory.for_command("counselnotes")
+    
+    try:
+        log_task_event(
+            "counselnotes",
+            "reading",
+            "end",
+            f"Read {len(files)} document(s)"
+        )
+    except Exception:
+        pass
 
     # Collect all output content and comprehensive log data
     all_output = []
@@ -147,6 +157,17 @@ def counselnotes(files, extract, verify, output):
                 )
 
                 try:
+                    log_task_event(
+                        "counselnotes",
+                        "extraction",
+                        "llm_call",
+                        f"Extracting {extract} from chunk {idx}/{len(chunks)}",
+                        {"model": client.model}
+                    )
+                except Exception:
+                    pass
+                
+                try:
                     content, usage = client.complete(
                         [
                             {
@@ -158,6 +179,18 @@ def counselnotes(files, extract, verify, output):
                             {"role": "user", "content": extraction_prompt},
                         ]
                     )
+                    
+                    try:
+                        log_task_event(
+                            "counselnotes",
+                            "extraction",
+                            "llm_response",
+                            f"Chunk {idx}/{len(chunks)} extraction complete",
+                            {"model": client.model}
+                        )
+                    except Exception:
+                        pass
+                    
                 except Exception as e:
                     raise click.ClickException(
                         f"LLM error in extraction chunk {idx}: {e}"
@@ -213,6 +246,17 @@ def counselnotes(files, extract, verify, output):
             )
 
             try:
+                log_task_event(
+                    "counselnotes",
+                    "analysis",
+                    "llm_call",
+                    "Analyzing single document",
+                    {"model": client.model}
+                )
+            except Exception:
+                pass
+            
+            try:
                 content, usage = client.complete(
                     [
                         {
@@ -224,6 +268,18 @@ def counselnotes(files, extract, verify, output):
                         {"role": "user", "content": strategic_prompt},
                     ]
                 )
+                
+                try:
+                    log_task_event(
+                        "counselnotes",
+                        "analysis",
+                        "llm_response",
+                        "Single document analysis complete",
+                        {"model": client.model}
+                    )
+                except Exception:
+                    pass
+                
             except Exception as e:
                 raise click.ClickException(f"LLM error in analysis: {e}")
 
@@ -264,6 +320,17 @@ def counselnotes(files, extract, verify, output):
                     )
 
                     try:
+                        log_task_event(
+                            "counselnotes",
+                            "chunk_analysis",
+                            "llm_call",
+                            f"Analyzing chunk {idx}/{len(chunks)}",
+                            {"model": client.model}
+                        )
+                    except Exception:
+                        pass
+                    
+                    try:
                         content, usage = client.complete(
                             [
                                 {
@@ -275,6 +342,18 @@ def counselnotes(files, extract, verify, output):
                                 {"role": "user", "content": chunk_prompt},
                             ]
                         )
+                        
+                        try:
+                            log_task_event(
+                                "counselnotes",
+                                "chunk_analysis",
+                                "llm_response",
+                                f"Chunk {idx}/{len(chunks)} analysis complete",
+                                {"model": client.model}
+                            )
+                        except Exception:
+                            pass
+                        
                     except Exception as e:
                         raise click.ClickException(
                             f"LLM error in analysis chunk {idx}: {e}"
@@ -312,6 +391,17 @@ def counselnotes(files, extract, verify, output):
             )
 
             try:
+                log_task_event(
+                    "counselnotes",
+                    "consolidation",
+                    "llm_call",
+                    "Consolidating chunk analyses",
+                    {"model": client.model}
+                )
+            except Exception:
+                pass
+            
+            try:
                 final_content, final_usage = client.complete(
                     [
                         {
@@ -323,6 +413,18 @@ def counselnotes(files, extract, verify, output):
                         {"role": "user", "content": consolidation_prompt},
                     ]
                 )
+                
+                try:
+                    log_task_event(
+                        "counselnotes",
+                        "consolidation",
+                        "llm_response",
+                        "Consolidation complete",
+                        {"model": client.model}
+                    )
+                except Exception:
+                    pass
+                
             except Exception as e:
                 raise click.ClickException(f"LLM error in consolidation: {e}")
 
@@ -408,3 +510,14 @@ def counselnotes(files, extract, verify, output):
         stats["Extraction"] = extract
 
     show_command_completion("counselnotes", output_file, None, stats)
+    
+    # Command end log
+    try:
+        log_task_event(
+            "counselnotes",
+            "init",
+            "end",
+            "Counsel notes generation complete"
+        )
+    except Exception:
+        pass
