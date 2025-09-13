@@ -23,6 +23,7 @@ from litassist.utils.formatting import (
 from litassist.logging_utils import (
     save_log,
     save_command_output,
+    log_task_event,
 )
 from litassist.llm import LLMClientFactory
 
@@ -57,11 +58,33 @@ def counselnotes(files, extract, verify, output):
         click.ClickException: If there are errors with file reading, processing,
                              or LLM API calls.
     """
+    # Command start log
+    try:
+        log_task_event(
+            "counselnotes",
+            "init",
+            "start",
+            "Starting counsel notes generation",
+            {"model": LLMClientFactory.get_model_for_command("counselnotes")},
+        )
+    except Exception:
+        pass
+    
     # Validate that at least one file is provided
     if not files:
         raise click.ClickException("At least one input file must be provided.")
 
     # Read and consolidate all documents
+    try:
+        log_task_event(
+            "counselnotes",
+            "reading",
+            "start",
+            "Reading input documents"
+        )
+    except Exception:
+        pass
+    
     all_content = []
     file_info = []
 

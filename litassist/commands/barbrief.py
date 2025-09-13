@@ -26,6 +26,7 @@ from litassist.utils.formatting import (
 from litassist.utils.text_processing import count_tokens_and_words
 from litassist.logging_utils import (
     save_command_output,
+    log_task_event,
 )
 from litassist.llm import LLMClientFactory
 from litassist.citation_verify import verify_all_citations
@@ -169,6 +170,18 @@ def barbrief(
     Raises:
         click.ClickException: If case facts are invalid or API calls fail
     """
+    # Command start log
+    try:
+        log_task_event(
+            "barbrief",
+            "init",
+            "start",
+            "Starting barrister's brief generation",
+            {"model": LLMClientFactory.get_model_for_command("barbrief")},
+        )
+    except Exception:
+        pass
+    
     # Read and validate case facts
     click.echo("Reading case facts...")
     case_facts_content = read_document(case_facts)
@@ -205,6 +218,16 @@ def barbrief(
         supporting_docs.append(read_document(doc_file))
 
     # Prepare sections
+    try:
+        log_task_event(
+            "barbrief",
+            "preparation",
+            "start",
+            "Preparing brief sections"
+        )
+    except Exception:
+        pass
+    
     sections = prepare_brief_sections(
         case_facts_content,
         strategies_content,
@@ -250,6 +273,17 @@ def barbrief(
 
     # Generate the brief
     click.echo("\nGenerating barrister's brief...")
+    
+    try:
+        log_task_event(
+            "barbrief",
+            "generation",
+            "start",
+            "Starting brief generation",
+            {"model": client.model}
+        )
+    except Exception:
+        pass
 
     messages = [
         {"role": "system", "content": PROMPTS.get("barbrief.system")},
@@ -257,7 +291,31 @@ def barbrief(
     ]
 
     try:
+        # Log LLM call
+        try:
+            log_task_event(
+                "barbrief",
+                "generation",
+                "llm_call",
+                "Sending brief generation prompt to LLM",
+                {"model": client.model}
+            )
+        except Exception:
+            pass
+        
         content, usage = client.complete(messages)
+        
+        # Log LLM response
+        try:
+            log_task_event(
+                "barbrief",
+                "generation",
+                "llm_response",
+                "Brief LLM response received",
+                {"model": client.model}
+            )
+        except Exception:
+            pass
     except Exception as e:
         # Provide helpful error message for common issues
         if "timeout" in str(e).lower():
@@ -282,11 +340,32 @@ def barbrief(
             raise click.ClickException(f"LLM API error: {e}")
 
     click.echo(f"\nGenerated brief ({usage.get('total_tokens', 'N/A')} tokens used)")
+    
+    try:
+        log_task_event(
+            "barbrief",
+            "generation",
+            "end",
+            "Brief generation complete",
+            {"model": client.model}
+        )
+    except Exception:
+        pass
 
     # Run manual citation verification if requested
     # Note: Automatic verification already happens during generation via client.complete()
     # This provides additional detailed reporting when --verify flag is used
     if verify:
+        try:
+            log_task_event(
+                "barbrief",
+                "verification",
+                "start",
+                "Starting citation verification"
+            )
+        except Exception:
+            pass
+        
         click.echo("\nVerifying citations...")
         verified, unverified = verify_all_citations(content)
 
@@ -306,6 +385,16 @@ def barbrief(
                 "barbrief", verification_content, "citation_verification"
             )
             click.echo(f"Verification report saved: {verify_file}")
+        
+        try:
+            log_task_event(
+                "barbrief",
+                "verification",
+                "end",
+                "Citation verification complete"
+            )
+        except Exception:
+            pass
 
     # Save the brief with comprehensive metadata
     metadata = {
@@ -336,3 +425,14 @@ def barbrief(
         output_file,
         stats={"Tokens used": usage.get("total_tokens")},
     )
+    
+    # Command end log
+    try:
+        log_task_event(
+            "barbrief",
+            "init",
+            "end",
+            "Barrister's brief generation complete"
+        )
+    except Exception:
+        pass

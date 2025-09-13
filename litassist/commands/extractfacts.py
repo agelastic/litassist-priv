@@ -27,6 +27,7 @@ from litassist.utils.formatting import (
 from litassist.logging_utils import (
     save_log,
     save_command_output,
+    log_task_event,
 )
 from litassist.llm import LLMClientFactory
 
@@ -59,8 +60,29 @@ def extractfacts(file, verify, noverify, output):
         click.ClickException: If there are errors reading the file, processing chunks,
                              or with the LLM API calls.
     """
+    # Command start log
+    try:
+        log_task_event(
+            "extractfacts",
+            "init",
+            "start",
+            "Starting fact extraction",
+            {"model": LLMClientFactory.get_model_for_command("extractfacts")},
+        )
+    except Exception:
+        pass
 
     # Process all files
+    try:
+        log_task_event(
+            "extractfacts",
+            "reading",
+            "start",
+            "Reading input documents"
+        )
+    except Exception:
+        pass
+    
     all_text = ""
     source_files = []
     for f in file:
@@ -73,6 +95,16 @@ def extractfacts(file, verify, noverify, output):
 
     # Initialize the LLM client using factory
     client = LLMClientFactory.for_command("extractfacts")
+    
+    try:
+        log_task_event(
+            "extractfacts",
+            "reading",
+            "end",
+            f"Read {len(file)} document(s)"
+        )
+    except Exception:
+        pass
 
     # Process content based on chunking needs (now most documents will be single chunk)
     if len(chunks) == 1:
@@ -85,6 +117,18 @@ def extractfacts(file, verify, noverify, output):
 
         # Add reasoning trace to prompt
         prompt = create_reasoning_prompt(base_prompt, "extractfacts")
+        
+        try:
+            log_task_event(
+                "extractfacts",
+                "extraction",
+                "llm_call",
+                "Sending single-file extraction prompt to LLM",
+                {"model": client.model}
+            )
+        except Exception:
+            pass
+        
         try:
             combined, usage = client.complete(
                 [
@@ -95,6 +139,18 @@ def extractfacts(file, verify, noverify, output):
                     {"role": "user", "content": prompt},
                 ]
             )
+            
+            try:
+                log_task_event(
+                    "extractfacts",
+                    "extraction",
+                    "llm_response",
+                    "Single-file extraction LLM response received",
+                    {"model": client.model}
+                )
+            except Exception:
+                pass
+            
         except Exception as e:
             raise click.ClickException(f"Error extracting facts: {e}")
 
@@ -119,6 +175,17 @@ def extractfacts(file, verify, noverify, output):
                 )
 
                 try:
+                    log_task_event(
+                        "extractfacts",
+                        "extraction",
+                        "llm_call",
+                        f"Extracting facts from section {idx}/{len(chunks)}",
+                        {"model": client.model}
+                    )
+                except Exception:
+                    pass
+                
+                try:
                     content, usage = client.complete(
                         [
                             {
@@ -130,6 +197,18 @@ def extractfacts(file, verify, noverify, output):
                             {"role": "user", "content": prompt},
                         ]
                     )
+                    
+                    try:
+                        log_task_event(
+                            "extractfacts",
+                            "extraction",
+                            "llm_response",
+                            f"Section {idx}/{len(chunks)} extraction complete",
+                            {"model": client.model}
+                        )
+                    except Exception:
+                        pass
+                    
                 except Exception as e:
                     raise click.ClickException(f"Error processing chunk {idx}: {e}")
                 accumulated_facts.append(content.strip())
@@ -158,6 +237,17 @@ def extractfacts(file, verify, noverify, output):
         organize_prompt = create_reasoning_prompt(base_organize_prompt, "extractfacts")
 
         try:
+            log_task_event(
+                "extractfacts",
+                "consolidation",
+                "llm_call",
+                "Sending consolidation prompt to LLM",
+                {"model": client.model}
+            )
+        except Exception:
+            pass
+        
+        try:
             combined, usage = client.complete(
                 [
                     {
@@ -167,6 +257,18 @@ def extractfacts(file, verify, noverify, output):
                     {"role": "user", "content": organize_prompt},
                 ]
             )
+            
+            try:
+                log_task_event(
+                    "extractfacts",
+                    "consolidation",
+                    "llm_response",
+                    "Consolidation LLM response received",
+                    {"model": client.model}
+                )
+            except Exception:
+                pass
+            
         except Exception as e:
             raise click.ClickException(f"Error organizing facts: {e}")
 
@@ -175,12 +277,32 @@ def extractfacts(file, verify, noverify, output):
     # Apply standard verification (CoVe moved to standalone 'verify-cove' command)
     verification_metadata = {"Source Files": ", ".join(source_files)}
     if not noverify:
+        try:
+            log_task_event(
+                "extractfacts",
+                "verification",
+                "start",
+                "Starting verification"
+            )
+        except Exception:
+            pass
+        
         combined, _ = verify_content_if_needed(
             client, combined, "extractfacts", verify_flag=True
         )
         verification_metadata["Verification"] = "Standard verification"
         verification_metadata["Model"] = client.model
         click.echo(info_message("Standard verification applied"))
+        
+        try:
+            log_task_event(
+                "extractfacts",
+                "verification",
+                "end",
+                "Verification complete"
+            )
+        except Exception:
+            pass
     else:
         verification_metadata["Verification"] = "Disabled"
         verification_metadata["Model"] = "N/A"
@@ -226,3 +348,14 @@ def extractfacts(file, verify, noverify, output):
     click.echo(
         info_message("To use with other commands, manually copy to case_facts.txt")
     )
+    
+    # Command end log
+    try:
+        log_task_event(
+            "extractfacts",
+            "init",
+            "end",
+            "Fact extraction complete"
+        )
+    except Exception:
+        pass
