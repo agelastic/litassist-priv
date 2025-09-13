@@ -133,6 +133,9 @@ verification:
     - Identify compound issues (e.g., weak reasoning + unverified citations)
     - Provide actionable recommendations for strengthening the document
     
+    CRITICAL: Do NOT include the "Previous Verification" sections in your output.
+    These are provided for your analysis only. Never echo them back.
+    
     Output exactly in this order:
     
     ## Issues Found during Verification
@@ -143,6 +146,7 @@ verification:
     ## Verified and Corrected Document
     Return the COMPLETE full text with corrections made inline. All unchanged lines MUST be
     reproduced verbatim exactly as they appear. Never use placeholders.
+    NEVER include any "Previous Verification" sections - only return the Issues Found and Verified Document.
 
   # Reasoning verification with citation context
   # NOT USED - Template not referenced in codebase
