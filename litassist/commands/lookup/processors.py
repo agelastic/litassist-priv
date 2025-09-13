@@ -87,13 +87,17 @@ class LookupProcessor:
                 )
                 break
 
-            # Skip jade.io main domain URLs - use snippets instead
-            if "://jade.io/" in link.lower():
-                click.echo(
-                    "  [→ Jade.io: Using search snippet only (site restrictions)]"
-                )
-                skipped_count += 1
-                continue
+            # Skip jade.io URLs except ndfv.jade.io which we'll transform
+            if "jade.io" in link.lower():
+                # Allow ndfv.jade.io URLs (will be transformed to download URLs)
+                if "ndfv.jade.io" in link.lower():
+                    pass  # Continue to fetch this URL
+                else:
+                    click.echo(
+                        "  [→ Jade.io: Using search snippet only (site restrictions)]"
+                    )
+                    skipped_count += 1
+                    continue
 
             # Domain-based rate limiting (0.5s between requests to same domain)
             domain = link.split("/")[2]

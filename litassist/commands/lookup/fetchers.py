@@ -485,21 +485,32 @@ def _fetch_url_content(url: str, timeout: int = 10) -> str:
             click.echo(f"  ✗ Local file read error: {str(e)}")
             return ""
 
-    # Skip jade.io entirely (blocked by scrapers)
+    # Handle jade.io URLs - special case for ndfv.jade.io
     if "jade.io" in url.lower():
-        logging.info(f"Skipping Jade.io URL (blocked by scrapers): {url}")
-        save_log(
-            "fetch_attempt",
-            {
-                "url": url,
-                "method": "skipped",
-                "status": "blocked",
-                "reason": "Jade.io blocked by scrapers",
-                "content": "",
-                "timestamp": time.time(),
-            },
-        )
-        return ""
+        # Special handling for ndfv.jade.io subdomain
+        if "ndfv.jade.io" in url.lower():
+            if "/download" not in url.lower():
+                # Transform to download URL
+                url = url.rstrip('/') + '/download'
+                click.echo(f"  → Transforming to ndfv.jade.io download URL: {url}")
+            # Use Jina for ndfv.jade.io URLs
+            click.echo("  → Fetching ndfv.jade.io via Jina Reader...")
+            return _fetch_via_jina(url, timeout)
+        else:
+            # Skip all other jade.io domains (main domain and other subdomains)
+            logging.info(f"Skipping Jade.io URL (blocked from scrapers): {url}")
+            save_log(
+                "fetch_attempt",
+                {
+                    "url": url,
+                    "method": "skipped",
+                    "status": "blocked",
+                    "reason": "Jade.io blocked from scrapers",
+                    "content": "",
+                    "timestamp": time.time(),
+                },
+            )
+            return ""
 
     # AustLII - use direct download with rate limiting
     if "austlii.edu.au" in url.lower():
