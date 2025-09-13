@@ -323,6 +323,9 @@ class LookupProcessor:
             estimated_tokens = total_chars / 4
             # Warn if using large content with non-Gemini models
             warn_large_content_non_gemini(client, estimated_tokens)
+            
+            # Show processing stage
+            click.echo(info_message(f"Processing {len(documents)} documents for analysis..."))
         
         def build_prompt_fn(current_documents):
             """Build prompt with current set of documents."""
@@ -392,6 +395,9 @@ class LookupProcessor:
         
         # Execute with truncation management
         try:
+            if documents and len(documents) > 1:
+                click.echo(verifying_message("Adjusting content to fit model limits..."))
+            
             return execute_with_truncation(
                 client=client,
                 build_prompt_fn=build_prompt_fn,

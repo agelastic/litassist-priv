@@ -106,10 +106,38 @@ def lookup(
     system_content = processor.build_system_prompt(extract, comprehensive)
 
     # Execute LLM request with retry logic and drop-largest truncation
-    content, usage = processor.execute_llm_request(
-        client, system_content, question, mode, extract, comprehensive,
-        context, links, contents
-    )
+    try:
+        content, usage = processor.execute_llm_request(
+            client, system_content, question, mode, extract, comprehensive,
+            context, links, contents
+        )
+    except Exception as e:
+        import traceback
+        from litassist.utils.formatting import error_message, tip_message
+        
+        error_msg = str(e)
+        
+        # Log full error for debugging
+        save_log("lookup_error", {
+            "error": error_msg,
+            "traceback": traceback.format_exc(),
+            "question": question,
+            "links_count": len(links),
+            "documents_count": len(contents)
+        })
+        
+        # Show clean error to user
+        if "after dropping all documents" in error_msg:
+            click.echo(error_message("Query too complex: Unable to process even without fetched content"))
+            click.echo(tip_message("Try: 1) A more specific query, 2) --no-fetch flag, or 3) Fewer search terms"))
+        elif "attempts" in error_msg and "remaining" in error_msg:
+            click.echo(error_message(f"Processing failed: {error_msg}"))
+            click.echo(tip_message("The query may be too complex for the model's context window"))
+        else:
+            click.echo(error_message(f"Lookup failed: {error_msg}"))
+        
+        # Exit cleanly without traceback
+        raise click.ClickException("")
 
     # Save the output
     output_file = processor.save_output(

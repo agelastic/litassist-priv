@@ -10,13 +10,13 @@ import click
 class TruncationManager:
     """Manages document truncation for LLM token limits using drop-largest strategy."""
     
-    def __init__(self, documents: List[Tuple[str, str]], max_attempts: int = 5):
+    def __init__(self, documents: List[Tuple[str, str]], max_attempts: Optional[int] = None):
         """
         Initialize truncation manager with documents to manage.
         
         Args:
             documents: List of (name, content) tuples
-            max_attempts: Maximum retry attempts (default: 5)
+            max_attempts: Maximum retry attempts (default: None for unlimited)
         """
         self.documents = list(documents)  # Make a copy to avoid modifying original
         self.dropped = []
@@ -57,6 +57,8 @@ class TruncationManager:
         Returns:
             True if retry is possible, False otherwise
         """
+        if self.max_attempts is None:
+            return bool(self.documents)
         return self.attempt < self.max_attempts and bool(self.documents)
     
     @staticmethod
@@ -110,7 +112,7 @@ def execute_with_truncation(
         Exception: If all documents are dropped and call still fails,
                    or if a non-token-limit error occurs
     """
-    from litassist.utils.formatting import warning_message
+    from litassist.utils.formatting import warning_message, info_message
     
     manager = TruncationManager(documents)
     
@@ -147,6 +149,17 @@ def execute_with_truncation(
                     else:
                         click.echo(warning_msg)
                     
+                    # Show progress if documents remain
+                    if manager.documents:
+                        # Calculate estimated tokens for remaining documents
+                        remaining_chars = sum(len(content) for _, content in manager.documents)
+                        estimated_tokens = remaining_chars / 4
+                        
+                        click.echo(info_message(
+                            f"Retrying with {len(manager.documents)} documents remaining "
+                            f"(~{int(estimated_tokens):,} tokens)..."
+                        ))
+                    
                     # Log the drop if logging function provided
                     if log_fn:
                         log_fn(
@@ -161,4 +174,10 @@ def execute_with_truncation(
                 raise
     
     # Exhausted all retries
-    raise Exception("Failed to get LLM response after dropping all documents")
+    if not manager.documents:
+        raise Exception("Failed to get LLM response after dropping all documents")
+    else:
+        raise Exception(
+            f"Failed after {manager.attempt} attempts. "
+            f"Dropped {len(manager.dropped)} documents, {len(manager.documents)} remaining"
+        )
