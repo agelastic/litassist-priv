@@ -459,17 +459,24 @@ def brainstorm(facts, side, area, research, verify, output):
         )
 
     # Save to timestamped file with critiques appended
+    # Build metadata with all input files
+    metadata = {
+        "Side": side.capitalize(),
+        "Area": area.capitalize(),
+        "Source": (
+            ", ".join(facts_sources) if len(facts_sources) > 1 else facts_sources[0]
+        ),
+    }
+    
+    # Add research files if provided
+    if research:
+        metadata["Research Files"] = ", ".join(list(research))
+    
     output_file = save_command_output(
         output if output else f"brainstorm_{area}_{side}",
         combined_content,
         "" if output else f"{side} in {area} law",
-        metadata={
-            "Side": side.capitalize(),
-            "Area": area.capitalize(),
-            "Source": (
-                ", ".join(facts_sources) if len(facts_sources) > 1 else facts_sources[0]
-            ),
-        },
+        metadata=metadata,
         critique_sections=critiques if critiques else None,
     )
 

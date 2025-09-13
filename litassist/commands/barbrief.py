@@ -307,9 +307,27 @@ def barbrief(
             )
             click.echo(f"Verification report saved: {verify_file}")
 
-    # Save the brief
+    # Save the brief with comprehensive metadata
+    metadata = {
+        "Case Facts": case_facts,
+        "Hearing Type": hearing_type.title(),
+    }
+    
+    # Add optional file inputs if provided
+    if strategies:
+        metadata["Strategies"] = ", ".join(strategies)
+    if research:
+        metadata["Research"] = ", ".join(research)
+    if documents:
+        metadata["Documents"] = ", ".join(documents)
+    if context:
+        metadata["Context"] = context
+    
     output_file = save_command_output(
-        output if output else "barbrief", content, "" if output else hearing_type
+        output if output else "barbrief", 
+        content, 
+        "" if output else hearing_type,
+        metadata=metadata
     )
 
     # Show completion message
