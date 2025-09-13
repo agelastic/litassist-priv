@@ -9,7 +9,7 @@ import click
 import logging
 import time
 import os
-from litassist.logging_utils import save_command_output
+from litassist.logging_utils import save_command_output, log_task_event
 from litassist.utils.formatting import (
     success_message,
     saved_message,
@@ -341,10 +341,34 @@ class LookupProcessor:
         def execute_fn(prompt):
             """Execute the LLM call - API handler manages retries."""
             try:
-                return client.complete([
+                try:
+                    log_task_event(
+                        "lookup",
+                        "generation",
+                        "llm_call",
+                        "Sending lookup prompt to LLM",
+                        {"model": client.model}
+                    )
+                except Exception:
+                    pass
+                
+                result = client.complete([
                     {"role": "system", "content": system_content},
                     {"role": "user", "content": prompt},
                 ])
+                
+                try:
+                    log_task_event(
+                        "lookup",
+                        "generation",
+                        "llm_response",
+                        "Lookup LLM response received",
+                        {"model": client.model}
+                    )
+                except Exception:
+                    pass
+                
+                return result
             except Exception as e:
                 error_str = str(e)
                 logging.error(f"Lookup error details: {error_str}")
@@ -368,6 +392,17 @@ class LookupProcessor:
                     "attempt": attempt,
                 },
             )
+            
+            try:
+                log_task_event(
+                    "lookup",
+                    "truncation",
+                    "drop",
+                    f"Dropped document: {dropped_name}",
+                    {"remaining_docs": len(remaining_docs), "attempt": attempt}
+                )
+            except Exception:
+                pass
         
         # If no documents, just execute directly without truncation
         if not documents:

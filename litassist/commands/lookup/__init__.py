@@ -8,8 +8,9 @@ to produce a structured legal answer citing relevant cases.
 
 import click
 from litassist.config import get_config
-from litassist.logging_utils import save_log
+from litassist.logging_utils import save_log, log_task_event
 from litassist.timing import timed
+from litassist.llm import LLMClientFactory
 from .search import perform_cse_searches
 from .processors import LookupProcessor
 
@@ -71,6 +72,18 @@ def lookup(
     Raises:
         click.ClickException: If there are errors with the search or LLM API calls.
     """
+    # Command start log
+    try:
+        log_task_event(
+            "lookup",
+            "init",
+            "start",
+            "Starting lookup command",
+            {"model": LLMClientFactory.get_model_for_command("lookup")}
+        )
+    except Exception:
+        pass
+    
     # Handle unsupported verification flags
     if verify:
         from litassist.utils.formatting import warning_message
@@ -90,7 +103,27 @@ def lookup(
         )
 
     # Initialize search service and perform searches
+    try:
+        log_task_event(
+            "lookup",
+            "search",
+            "start",
+            "Starting CSE searches"
+        )
+    except Exception:
+        pass
+    
     links, all_snippets = perform_cse_searches(question, comprehensive, context)
+    
+    try:
+        log_task_event(
+            "lookup",
+            "search",
+            "end",
+            f"CSE searches complete - found {len(links)} links"
+        )
+    except Exception:
+        pass
 
     # Display found links
     click.echo("Found links:")
@@ -99,7 +132,28 @@ def lookup(
 
     # Initialize processor and fetch content
     processor = LookupProcessor(get_config())
+    
+    try:
+        log_task_event(
+            "lookup",
+            "fetching",
+            "start",
+            f"Starting content fetching from {len(links)} sources"
+        )
+    except Exception:
+        pass
+    
     contents = processor.fetch_content(links, all_snippets, no_fetch)
+    
+    try:
+        log_task_event(
+            "lookup",
+            "fetching",
+            "end",
+            f"Content fetching complete - {len(contents)} documents"
+        )
+    except Exception:
+        pass
 
     # Get LLM client with appropriate parameters
     client = processor.get_llm_client(mode, comprehensive)
@@ -170,3 +224,14 @@ def lookup(
     processor.display_completion_summary(
         output_file, question, extract, comprehensive, context, links
     )
+    
+    # Command end log
+    try:
+        log_task_event(
+            "lookup",
+            "init",
+            "end",
+            "Lookup command complete"
+        )
+    except Exception:
+        pass

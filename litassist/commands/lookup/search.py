@@ -12,7 +12,7 @@ import logging
 import time
 from litassist.config import get_config
 from litassist.utils.formatting import info_message
-from litassist.logging_utils import LOG_DIR
+from litassist.logging_utils import LOG_DIR, log_task_event
 
 # Suppress Google API cache warning
 os.environ["GOOGLE_API_USE_CLIENT_CERTIFICATE"] = "false"
@@ -68,6 +68,16 @@ def perform_cse_searches(question, comprehensive, context):
         )
     except Exception as e:
         raise click.ClickException(f"Search initialization error: {e}")
+    
+    try:
+        log_task_event(
+            "lookup",
+            "cse",
+            "start",
+            "Starting Custom Search Engine searches"
+        )
+    except Exception:
+        pass
 
     # Collect links and snippets from configured Custom Search Engines
     links = []
@@ -85,6 +95,16 @@ def perform_cse_searches(question, comprehensive, context):
     )
     links.extend(jade_links)
     all_snippets.extend(jade_snippets)
+    
+    try:
+        log_task_event(
+            "lookup",
+            "cse",
+            "jade_complete",
+            f"Jade CSE search complete - {len(jade_links)} results"
+        )
+    except Exception:
+        pass
 
     # Rate limit delay between CSE calls
     cse_delay = float(os.environ.get("CSE_RATE_LIMIT_DELAY", "1.5"))
@@ -98,6 +118,16 @@ def perform_cse_searches(question, comprehensive, context):
     )
     links.extend(austlii_links)
     all_snippets.extend(austlii_snippets)
+    
+    try:
+        log_task_event(
+            "lookup",
+            "cse",
+            "austlii_complete",
+            f"AustLII CSE search complete - {len(austlii_links)} results"
+        )
+    except Exception:
+        pass
 
     # Rate limit delay before comprehensive search
     if cse_delay > 0 and comprehensive:
@@ -121,6 +151,16 @@ def perform_cse_searches(question, comprehensive, context):
         )
         links.extend(comp_links)
         all_snippets.extend(comp_snippets)
+        
+        try:
+            log_task_event(
+                "lookup",
+                "cse",
+                "comprehensive_complete",
+                f"Comprehensive CSE search complete - {len(comp_links)} results"
+            )
+        except Exception:
+            pass
 
     # Remove duplicate and empty links while preserving order
     links = list(dict.fromkeys(filter(None, links)))
