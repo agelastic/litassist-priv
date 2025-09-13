@@ -21,11 +21,13 @@ import logging
 import os
 from typing import Dict, Any, Tuple
 
+import click
 import requests
 import tenacity
 
 from litassist.config import get_config
 from litassist.logging_utils import log_task_event
+from litassist.utils.formatting import warning_message
 
 
 # Custom exception classes for retry logic
@@ -382,6 +384,33 @@ def execute_api_call_with_retry(
                 raise StreamingAPIError(error_str)
             raise
 
+    def before_retry_callback(retry_state):
+        """Show retry attempts to user for better visibility."""
+        if retry_state.attempt_number > 1:
+            try:
+                error = retry_state.outcome.exception()
+                error_str = str(error)
+                
+                # Show user-friendly retry messages for common errors
+                if "500" in error_str or "InternalServerError" in str(type(error).__name__):
+                    click.echo(warning_message(
+                        f"Server error (attempt {retry_state.attempt_number}/5), retrying..."
+                    ))
+                elif "rate" in error_str.lower() or "429" in error_str:
+                    click.echo(warning_message(
+                        f"Rate limit hit (attempt {retry_state.attempt_number}/5), waiting..."
+                    ))
+                elif "timeout" in error_str.lower() or "connection" in error_str.lower():
+                    click.echo(warning_message(
+                        f"Connection issue (attempt {retry_state.attempt_number}/5), retrying..."
+                    ))
+            except Exception:
+                # If we can't get error details, just show generic retry message
+                if retry_state.attempt_number > 1:
+                    click.echo(warning_message(
+                        f"API error (attempt {retry_state.attempt_number}/5), retrying..."
+                    ))
+
     @tenacity.retry(
         stop=tenacity.stop_after_attempt(5),
         wait=wait_config,
@@ -389,6 +418,7 @@ def execute_api_call_with_retry(
             tenacity.retry_if_exception_type(retry_errors)
             | tenacity.retry_if_exception_type(StreamingAPIError)
         ),
+        before=before_retry_callback,
         before_sleep=tenacity.before_sleep_log(logger, logging.WARNING),
         reraise=True,
     )
