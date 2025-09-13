@@ -147,6 +147,11 @@ def _fetch_from_austlii(url: str, timeout: int = 10) -> str:
         _last_austlii_completion = time.time()
 
         if response.status_code == 200:
+            # Check if content is actually a PDF
+            if response.content.startswith(b'%PDF'):
+                click.echo("  → AustLII returned PDF, extracting text...")
+                return _extract_pdf_text(url, response.content)
+            
             # Extract text using BeautifulSoup
             from bs4 import BeautifulSoup
 
@@ -508,31 +513,32 @@ def _fetch_url_content(url: str, timeout: int = 10) -> str:
 
     # Government legislation sites - use direct HTTP first
     if any(gov in url.lower() for gov in [".gov.au", "legislation."]):
-        # Check if it's a PDF
-        if url.lower().endswith(".pdf") or "/pdf/" in url.lower():
-            click.echo("  → Downloading PDF...")
-            try:
-                response = requests.get(
-                    url,
-                    timeout=timeout,
-                    headers={
-                        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
-                    },
-                )
-                if response.status_code == 200:
+        click.echo("  → Fetching government content...")
+        try:
+            response = requests.get(
+                url,
+                timeout=timeout,
+                headers={
+                    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
+                },
+            )
+            if response.status_code == 200:
+                # Check if content is actually a PDF
+                if response.content.startswith(b'%PDF'):
+                    click.echo("  → Government site returned PDF, extracting text...")
                     return _extract_pdf_text(url, response.content)
                 else:
-                    logging.warning(
-                        f"Failed to download PDF from {url}: HTTP {response.status_code}"
-                    )
-                    return ""
-            except Exception as e:
-                logging.warning(f"Failed to download PDF from {url}: {e}")
+                    # HTML legislation - parse with government fetcher
+                    click.echo("  → Parsing government HTML content...")
+                    return _fetch_gov_legislation(url, timeout)
+            else:
+                logging.warning(
+                    f"Failed to fetch from {url}: HTTP {response.status_code}"
+                )
                 return ""
-        else:
-            # HTML legislation - use new government fetcher
-            click.echo("  → Fetching government legislation directly...")
-            return _fetch_gov_legislation(url, timeout)
+        except Exception as e:
+            logging.warning(f"Failed to fetch from {url}: {e}")
+            return ""
 
     # Everything else - check if PDF first, otherwise use Jina
     try:
@@ -559,7 +565,13 @@ def _fetch_url_content(url: str, timeout: int = 10) -> str:
                 },
             )
             if response.status_code == 200:
-                return _extract_pdf_text(url, response.content)
+                # Verify it's actually a PDF
+                if response.content.startswith(b'%PDF'):
+                    return _extract_pdf_text(url, response.content)
+                else:
+                    # Not actually a PDF, try Jina instead
+                    click.echo("  → Content not PDF despite headers, trying Jina...")
+                    return _fetch_via_jina(url, timeout)
             else:
                 logging.warning(
                     f"Failed to download PDF from {url}: HTTP {response.status_code}"
