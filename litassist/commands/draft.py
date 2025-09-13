@@ -179,6 +179,16 @@ def draft(ctx, documents, query, noverify, diversity, output):
     # Process PDFs with embedding/retrieval if any
     retrieved_context = ""
     if structured_content["pdf_documents"]:
+        try:
+            log_task_event(
+                "draft",
+                "indexing",
+                "start",
+                "Starting document indexing for RAG pipeline"
+            )
+        except Exception:
+            pass
+        
         # Get Pinecone client
         pc_index = get_pinecone_client()
 
@@ -195,7 +205,27 @@ def draft(ctx, documents, query, noverify, diversity, output):
 
         # Embed all chunks
         try:
+            log_task_event(
+                "draft",
+                "embedding",
+                "start",
+                f"Creating embeddings for {len(all_chunks)} chunks"
+            )
+        except Exception:
+            pass
+        
+        try:
             embeddings = create_embeddings([chunk[1] for chunk in all_chunks])
+            
+            try:
+                log_task_event(
+                    "draft",
+                    "embedding",
+                    "end",
+                    f"Created {len(embeddings)} embeddings"
+                )
+            except Exception:
+                pass
         except Exception as e:
             raise click.ClickException(f"Embedding error: {e}")
 
@@ -212,7 +242,28 @@ def draft(ctx, documents, query, noverify, diversity, output):
 
         # Upsert to Pinecone
         try:
+            log_task_event(
+                "draft",
+                "pinecone",
+                "start",
+                f"Upserting {len(vectors)} vectors to Pinecone"
+            )
+        except Exception:
+            pass
+        
+        try:
             pc_index.upsert(vectors=vectors)
+            
+            try:
+                log_task_event(
+                    "draft",
+                    "pinecone",
+                    "end",
+                    "Vectors uploaded to Pinecone"
+                )
+            except Exception:
+                pass
+                
         except Exception as e:
             raise click.ClickException(f"Pinecone upsert error: {e}")
 
@@ -223,8 +274,29 @@ def draft(ctx, documents, query, noverify, diversity, output):
             raise click.ClickException(f"Embedding error for query: {e}")
 
         retriever = Retriever(pc_index, use_mmr=True)
+        
+        try:
+            log_task_event(
+                "draft",
+                "retrieval",
+                "start",
+                "Retrieving relevant context with MMR"
+            )
+        except Exception:
+            pass
+        
         try:
             context_list = retriever.retrieve(qemb, top_k=7, diversity_level=diversity)
+            
+            try:
+                log_task_event(
+                    "draft",
+                    "retrieval",
+                    "end",
+                    f"Retrieved {len(context_list)} relevant chunks"
+                )
+            except Exception:
+                pass
         except Exception as e:
             raise click.ClickException(f"Pinecone retrieval error: {e}")
 
@@ -233,6 +305,16 @@ def draft(ctx, documents, query, noverify, diversity, output):
             + "\n\n".join(context_list)
             + "\n=== END RETRIEVED CONTEXT ==="
         )
+        
+        try:
+            log_task_event(
+                "draft",
+                "indexing",
+                "end",
+                "RAG pipeline complete"
+            )
+        except Exception:
+            pass
 
     # Combine all context with proper === separation
     context = combined_text_context
@@ -272,8 +354,31 @@ def draft(ctx, documents, query, noverify, diversity, output):
         {"role": "system", "content": system_prompt},
         {"role": "user", "content": user_prompt},
     ]
+    
+    try:
+        log_task_event(
+            "draft",
+            "generation",
+            "llm_call",
+            "Sending draft generation prompt to LLM",
+            {"model": client.model}
+        )
+    except Exception:
+        pass
+    
     try:
         content, usage = client.complete(messages)
+        
+        try:
+            log_task_event(
+                "draft",
+                "generation",
+                "llm_response",
+                "Draft LLM response received",
+                {"model": client.model}
+            )
+        except Exception:
+            pass
     except Exception as e:
         raise click.ClickException(f"LLM draft error: {e}")
 
@@ -281,10 +386,30 @@ def draft(ctx, documents, query, noverify, diversity, output):
 
     # Apply standard verification (uses verification chain like extractfacts/strategy)
     if not noverify:
+        try:
+            log_task_event(
+                "draft",
+                "verification",
+                "start",
+                "Starting draft verification"
+            )
+        except Exception:
+            pass
+        
         content, _ = verify_content_if_needed(
             client, content, "draft", verify_flag=True
         )
         click.echo(info_message("Standard verification applied"))
+        
+        try:
+            log_task_event(
+                "draft",
+                "verification",
+                "end",
+                "Verification complete"
+            )
+        except Exception:
+            pass
     else:
         click.echo(info_message("Standard verification skipped by --noverify flag"))
 
@@ -292,7 +417,27 @@ def draft(ctx, documents, query, noverify, diversity, output):
     critiques = []
 
     # Check for potential hallucinations
+    try:
+        log_task_event(
+            "draft",
+            "hallucination",
+            "start",
+            "Checking for potential hallucinations"
+        )
+    except Exception:
+        pass
+    
     hallucination_warnings = detect_factual_hallucinations(content, context)
+    
+    try:
+        log_task_event(
+            "draft",
+            "hallucination",
+            "end",
+            f"Hallucination check complete - {len(hallucination_warnings) if hallucination_warnings else 0} warnings"
+        )
+    except Exception:
+        pass
     if hallucination_warnings:
         # Capture hallucination warnings for critique section
         warning_text = "The following potentially hallucinated facts were detected:\n"
@@ -358,6 +503,17 @@ def draft(ctx, documents, query, noverify, diversity, output):
     }
 
     show_command_completion("draft", output_file, extra_files, stats)
+    
+    # Command end log
+    try:
+        log_task_event(
+            "draft",
+            "init",
+            "end",
+            "Draft generation complete"
+        )
+    except Exception:
+        pass
 
     # Show brief preview
     lines = content.split("\n")
