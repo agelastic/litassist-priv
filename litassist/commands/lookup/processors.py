@@ -335,43 +335,23 @@ class LookupProcessor:
             )
         
         def execute_fn(prompt):
-            """Execute the LLM call with retry for transient errors."""
-            max_retries = 2
-            retry_delay = 5
-            
-            for attempt in range(max_retries + 1):
-                try:
-                    return client.complete([
-                        {"role": "system", "content": system_content},
-                        {"role": "user", "content": prompt},
-                    ])
-                except Exception as e:
-                    error_str = str(e)
-                    logging.error(f"Lookup error details: {error_str}")
-                    
-                    # Check if this is a token error (will be handled by truncation manager)
-                    if any(x in error_str.lower() for x in ['token', 'context', 'length', 'too long', 'maximum']):
-                        raise  # Let truncation manager handle it
-                    
-                    # Check if this is a retryable transient error
-                    if attempt < max_retries and any(
-                        x in error_str.lower()
-                        for x in ["choices", "timeout", "rate", "retry"]
-                    ):
-                        click.echo(
-                            warning_message(
-                                f"API error on attempt {attempt + 1}/{max_retries + 1}, retrying in {retry_delay}s..."
-                            )
-                        )
-                        time.sleep(retry_delay)
-                        retry_delay *= 2  # Exponential backoff
-                        continue
-                    
-                    # Final attempt failed or non-retryable error
-                    handle_llm_error(error_str, documents)
-                    raise click.ClickException("Lookup failed - see error details above")
-            
-            raise click.ClickException("Failed to get response from LLM after retries")
+            """Execute the LLM call - API handler manages retries."""
+            try:
+                return client.complete([
+                    {"role": "system", "content": system_content},
+                    {"role": "user", "content": prompt},
+                ])
+            except Exception as e:
+                error_str = str(e)
+                logging.error(f"Lookup error details: {error_str}")
+                
+                # Let truncation manager handle token/length errors
+                if any(x in error_str.lower() for x in ['token', 'context', 'length', 'too long', 'maximum']):
+                    raise
+                
+                # For all other errors, show user-friendly message and fail
+                handle_llm_error(error_str, documents)
+                raise click.ClickException("Lookup failed - see error details above")
         
         def log_drop(dropped_name, remaining_docs, attempt):
             """Log when a document is dropped."""
