@@ -54,6 +54,16 @@ def verify_cove(file, reference, output):
     log_task_event("verify-cove", "init", "start", f"File: {file}")
 
     try:
+        log_task_event(
+            "verify-cove",
+            "reading",
+            "start",
+            "Reading input document"
+        )
+    except Exception:
+        pass
+    
+    try:
         content = read_document(file)
     except click.ClickException as e:
         raise e
@@ -62,13 +72,45 @@ def verify_cove(file, reference, output):
 
     if not content.strip():
         raise click.ClickException("File is empty")
+    
+    try:
+        log_task_event(
+            "verify-cove",
+            "reading",
+            "end",
+            f"Read document: {len(content)} characters"
+        )
+    except Exception:
+        pass
 
     # Process reference files if provided (used only for CoVe answer stage)
+    if reference:
+        try:
+            log_task_event(
+                "verify-cove",
+                "reference",
+                "start",
+                f"Processing reference files: {reference}"
+            )
+        except Exception:
+            pass
+    
     reference_context, reference_files = process_reference_files(
         reference,
         purpose="CoVe answers",
         show_char_count=True,
     )
+    
+    if reference:
+        try:
+            log_task_event(
+                "verify-cove",
+                "reference",
+                "end",
+                f"Processed {len(reference_files)} reference files"
+            )
+        except Exception:
+            pass
 
     base_name = os.path.splitext(file)[0]
     extra_files = {}
@@ -98,6 +140,16 @@ def verify_cove(file, reference, output):
             # CoVe answers stage reads this key (see verification_chain.run_cove_verification)
             prior_contexts["cove_reference_files"] = reference_context
 
+        try:
+            log_task_event(
+                "verify-cove",
+                "cove",
+                "start",
+                "Starting Chain of Verification pipeline"
+            )
+        except Exception:
+            pass
+        
         cove_content, cove_results = run_cove_verification(
             content,
             "verify-cove",
@@ -166,6 +218,16 @@ def verify_cove(file, reference, output):
         reports_generated += 1
 
     except Exception as e:
+        try:
+            log_task_event(
+                "verify-cove",
+                "error",
+                "error",
+                f"CoVe failed: {str(e)}"
+            )
+        except Exception:
+            pass
+        
         _handle_cove_error(e)
 
     # Ensure at least one analysis file is saved for auditability
@@ -235,3 +297,14 @@ def verify_cove(file, reference, output):
             "reports_generated": reports_generated,
         },
     )
+    
+    # Command end log
+    try:
+        log_task_event(
+            "verify-cove",
+            "init",
+            "end",
+            "Chain of Verification complete"
+        )
+    except Exception:
+        pass
