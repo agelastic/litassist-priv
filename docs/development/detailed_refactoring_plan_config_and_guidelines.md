@@ -20,12 +20,12 @@ This document provides a detailed plan for refactoring the configuration managem
         model: "anthropic/claude-sonnet-4"
         temperature: 0
         top_p: 0.15
-        force_verify: True
+        enforce_citations: True
 
     strategy:
         model: "openai/o3-pro"
         reasoning_effort: "high"
-        force_verify: True
+        enforce_citations: True
 
     # ... and so on for all other commands
     ```

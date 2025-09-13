@@ -178,9 +178,9 @@ class TestLLMClientComplete:
 
         mock_execute.return_value = mock_response
 
-        # Create client with force_verify
+        # Create client with enforce_citations
         client = LLMClient(model="gpt-4", temperature=0.7)
-        client._force_verify = True
+        client._enforce_citations = True
 
         with patch.object(client, "validate_and_verify_citations") as mock_verify:
             # Return tuple of (cleaned_content, issues_list, verified_bool)

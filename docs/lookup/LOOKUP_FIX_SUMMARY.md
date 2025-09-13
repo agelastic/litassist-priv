@@ -13,7 +13,7 @@ The lookup command was failing with citation verification errors, incorrectly fl
 ## Root Causes
 1. The lookup command was using strict citation verification by default
 2. Not using the LLMClientFactory pattern like other commands
-3. The LLMClient was ignoring the `force_verify: False` configuration
+3. The LLMClient was ignoring the `enforce_citations: False` configuration
 4. Incorrect model name for Gemini
 
 ## Solutions Implemented
@@ -31,22 +31,22 @@ Added to `llm.py` COMMAND_CONFIGS:
     "model": "google/gemini-2.5-pro-preview",
     "temperature": 0.1,
     "top_p": 0.2,
-    "force_verify": False,  # Don't force strict verification
+    "enforce_citations": False,  # Don't force strict verification
 },
 ```
 
 ### 3. Fixed Citation Verification Logic
-Modified `LLMClient.complete()` to respect the force_verify setting:
+Modified `LLMClient.complete()` to respect the enforce_citations setting:
 ```python
-# Citation verification - respect force_verify setting
-strict_mode = getattr(self, "_force_verify", True)  # Default to strict unless explicitly disabled
+# Citation verification - respect enforce_citations setting
+strict_mode = getattr(self, "_enforce_citations", True)  # Default to strict unless explicitly disabled
 ```
 
 ### 4. Fixed Force Verify Flag Setting
 Changed in `LLMClientFactory.for_command()`:
 ```python
 # Set force verification flag - explicitly set both True and False
-client._force_verify = force_verify
+client._enforce_citations = enforce_citations
 ```
 
 ## Test Results

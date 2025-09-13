@@ -100,9 +100,9 @@ The selection of LLMs for specific commands is a strategic decision guided by th
 
 Strategic analysis commands follow consistent configuration patterns:
 
-- **CounselNotes**: `anthropic/claude-opus-4`, temp=0.3, top_p=0.7, force_verify=True
-- **Brainstorm-Orthodox**: `anthropic/claude-sonnet-4`, temp=0.3, top_p=0.7, force_verify=True
-- **Brainstorm-Unorthodox**: `x-ai/grok-3`, temp=0.9, top_p=0.95, force_verify=True
+- **CounselNotes**: `anthropic/claude-opus-4`, temp=0.3, top_p=0.7, enforce_citations=True
+- **Brainstorm-Orthodox**: `anthropic/claude-sonnet-4`, temp=0.3, top_p=0.7, enforce_citations=True
+- **Brainstorm-Unorthodox**: `x-ai/grok-3`, temp=0.9, top_p=0.95, enforce_citations=True
 - **Brainstorm-Analysis**: `openai/o3-pro`, temp=0.2, top_p=0.8, reasoning_effort=high
 - **Strategy-Analysis**: `anthropic/claude-sonnet-4`, temp=0.2, top_p=0.8
 - **Barbrief**: `openai/o3-pro`, reasoning_effort=high, max_completion_tokens=32768
@@ -117,7 +117,7 @@ Strategic analysis commands follow consistent configuration patterns:
 **Brainstorm Verification Behavior (Updated January 2025):**
 - Verification is ALWAYS performed on all brainstorm outputs automatically
 - No --verify flag needed or available - verification is mandatory
-- All three sub-types (orthodox, unorthodox, analysis) have force_verify=True
+- All three sub-types (orthodox, unorthodox, analysis) have enforce_citations=True
 - Clean single message: "[VERIFYING] Verifying brainstorm strategies..."
 - Maintains zero-tolerance citation policy across all strategies
 

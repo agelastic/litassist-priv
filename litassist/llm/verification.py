@@ -265,7 +265,7 @@ class LLMVerificationMixin:
             True if auto-verification should be triggered
         """
         # Check if factory has set force verification
-        if hasattr(self, "_force_verify") and self._force_verify:
+        if hasattr(self, "_enforce_citations") and self._enforce_citations:
             return True
 
         # Always verify critical foundation commands
