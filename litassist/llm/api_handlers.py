@@ -391,6 +391,21 @@ def execute_api_call_with_retry(
                 error = retry_state.outcome.exception()
                 error_str = str(error)
                 
+                # Log retry attempt (CLAUDE.md requirement: log all retries)
+                from litassist.logging_utils import save_log
+                import time
+                save_log("llm_retry_attempt", {
+                    "attempt": retry_state.attempt_number,
+                    "total_attempts": 5,
+                    "model": model_name,
+                    "error_type": type(error).__name__,
+                    "error_message": error_str[:1000],  # Truncate for summary
+                    "full_error": error_str,  # Full error for debugging
+                    "messages": messages,  # Full request being retried
+                    "params": filtered_params,
+                    "timestamp": time.strftime("%Y-%m-%d %H:%M:%S"),
+                })
+                
                 # Show user-friendly retry messages for common errors
                 if "500" in error_str or "InternalServerError" in str(type(error).__name__):
                     click.echo(warning_message(
@@ -426,4 +441,19 @@ def execute_api_call_with_retry(
         """Decorated retry wrapper function."""
         return _call_with_streaming_wrap()
 
-    return _call()
+    try:
+        return _call()
+    except Exception as e:
+        # Log final failure after all retries exhausted
+        from litassist.logging_utils import save_log
+        import time
+        save_log("llm_final_failure", {
+            "model": model_name,
+            "error_type": type(e).__name__,
+            "error_message": str(e),
+            "messages": messages,
+            "params": filtered_params,
+            "total_attempts": 5,
+            "timestamp": time.strftime("%Y-%m-%d %H:%M:%S"),
+        })
+        raise
