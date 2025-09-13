@@ -13,7 +13,7 @@ from litassist.config import get_config
 from litassist.prompts import PROMPTS
 from litassist.utils.file_ops import read_document, is_text_file
 from litassist.utils.text_processing import chunk_text, create_embeddings
-from litassist.logging_utils import save_log, save_command_output
+from litassist.logging_utils import save_log, save_command_output, log_task_event
 from litassist.timing import timed
 from litassist.utils.formatting import info_message
 from litassist.utils.legal_reasoning import (
@@ -71,8 +71,29 @@ def draft(ctx, documents, query, noverify, diversity, output):
         click.ClickException: If there are errors with file reading, embedding,
                              vector storage, retrieval, or LLM API calls.
     """
+    # Command start log
+    try:
+        log_task_event(
+            "draft",
+            "init",
+            "start",
+            "Starting draft generation",
+            {"model": LLMClientFactory.get_model_for_command("draft")},
+        )
+    except Exception:
+        pass
 
     # Process all documents
+    try:
+        log_task_event(
+            "draft",
+            "reading",
+            "start",
+            "Reading input documents"
+        )
+    except Exception:
+        pass
+    
     structured_content = {
         "case_facts": "",
         "strategies": "",
@@ -121,6 +142,16 @@ def draft(ctx, documents, query, noverify, diversity, output):
             structured_content["pdf_documents"].append((doc_path, text))
             click.echo(f"Will use embedding/retrieval for {doc_path}")
 
+    try:
+        log_task_event(
+            "draft",
+            "reading",
+            "end",
+            f"Read {len(documents)} document(s)"
+        )
+    except Exception:
+        pass
+    
     # Build structured context for the LLM
     context_parts = []
 
