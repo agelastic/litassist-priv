@@ -12,6 +12,7 @@ import time
 import os
 from typing import List, Tuple, Dict
 import threading
+from pathlib import Path
 
 # Import logging utility and config
 from litassist.logging_utils import save_log
@@ -23,13 +24,16 @@ from litassist.citation_patterns import extract_citations
 _citation_cache: Dict[str, Dict] = {}
 _cache_lock = threading.Lock()
 
+# Get absolute path to project root
+PROJECT_ROOT = Path(__file__).parent.parent
+
 # Hardcoded mapping for FOIA citations to local file
 HARDCODED_FOIA_FILES = {
-    "Freedom of Information Act 1982": "docs/legislation/FOIA.md",
-    "Freedom of Information Act 1982 (Cth)": "docs/legislation/FOIA.md",
-    "FOI Act 1982": "docs/legislation/FOIA.md",
-    "FOI Act 1982 (Cth)": "docs/legislation/FOIA.md",
-    "Freedom of Information Act 1982 (Commonwealth)": "docs/legislation/FOIA.md",
+    "Freedom of Information Act 1982": str(PROJECT_ROOT / "docs" / "legislation" / "FOIA.md"),
+    "Freedom of Information Act 1982 (Cth)": str(PROJECT_ROOT / "docs" / "legislation" / "FOIA.md"),
+    "FOI Act 1982": str(PROJECT_ROOT / "docs" / "legislation" / "FOIA.md"),
+    "FOI Act 1982 (Cth)": str(PROJECT_ROOT / "docs" / "legislation" / "FOIA.md"),
+    "Freedom of Information Act 1982 (Commonwealth)": str(PROJECT_ROOT / "docs" / "legislation" / "FOIA.md"),
 }
 
 # Australian court abbreviations and their traditional paths (for URL building compatibility)
