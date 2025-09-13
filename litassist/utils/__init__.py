@@ -47,4 +47,7 @@ __all__ = [
     "OUTPUT_DIR",
     "save_log",
     "save_command_output",
+    # Truncation utilities
+    "TruncationManager",
+    "execute_with_truncation",
 ]

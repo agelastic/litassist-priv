@@ -101,19 +101,14 @@ def lookup(
     processor = LookupProcessor(get_config())
     contents = processor.fetch_content(links, all_snippets, no_fetch)
 
-    # Build prompt and get LLM response
-    content_text, estimated_tokens = processor.prepare_content(contents)
-    prompt = processor.build_prompt(
-        question, mode, extract, comprehensive, context, links, contents, content_text
-    )
-
     # Get LLM client with appropriate parameters
     client = processor.get_llm_client(mode, comprehensive)
     system_content = processor.build_system_prompt(extract, comprehensive)
 
-    # Execute LLM request with retry logic
+    # Execute LLM request with retry logic and drop-largest truncation
     content, usage = processor.execute_llm_request(
-        client, system_content, prompt, estimated_tokens, contents
+        client, system_content, question, mode, extract, comprehensive,
+        context, links, contents
     )
 
     # Save the output
@@ -136,7 +131,6 @@ def lookup(
                 "question": question,
                 "links": "\n".join(links),
                 "context": context,
-                "prompt": prompt,
             },
             "response": content,
             "usage": usage,
