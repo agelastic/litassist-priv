@@ -9,6 +9,7 @@ from typing import List, Dict, Any, Tuple, Optional
 import click
 from litassist.prompts import PROMPTS
 from litassist.llm import NonRetryableAPIError
+from litassist.logging_utils import log_task_event
 
 
 def process_single_chunk(
@@ -71,7 +72,31 @@ def process_single_chunk(
         {"role": "user", "content": base_prompt},
     ]
 
-    return llm_client.complete(messages)
+    try:
+        log_task_event(
+            "digest",
+            "processing",
+            "llm_call",
+            "Sending single chunk to LLM",
+            {"model": llm_client.model, "mode": mode}
+        )
+    except Exception:
+        pass
+    
+    result = llm_client.complete(messages)
+    
+    try:
+        log_task_event(
+            "digest",
+            "processing",
+            "llm_response",
+            "Single chunk LLM response received",
+            {"model": llm_client.model}
+        )
+    except Exception:
+        pass
+    
+    return result
 
 
 def process_multiple_chunks(
@@ -129,7 +154,29 @@ def process_multiple_chunks(
                 {"role": "user", "content": chunk_prompt},
             ]
 
+            try:
+                log_task_event(
+                    "digest",
+                    "chunk_processing",
+                    "llm_call",
+                    f"Processing chunk {i}/{len(chunks)}",
+                    {"model": llm_client.model, "chunk": i, "total": len(chunks)}
+                )
+            except Exception:
+                pass
+            
             chunk_response, chunk_usage = llm_client.complete(messages)
+            
+            try:
+                log_task_event(
+                    "digest",
+                    "chunk_processing",
+                    "llm_response",
+                    f"Chunk {i}/{len(chunks)} complete",
+                    {"model": llm_client.model}
+                )
+            except Exception:
+                pass
 
             # Format chunk output
             formatted_output = format_chunk_output(i, len(chunks), chunk_response, mode)
@@ -212,7 +259,31 @@ def consolidate_chunk_outputs(
         {"role": "user", "content": consolidation_prompt},
     ]
 
-    return llm_client.complete(messages)
+    try:
+        log_task_event(
+            "digest",
+            "consolidation",
+            "llm_call",
+            "Sending consolidation prompt to LLM",
+            {"model": llm_client.model, "mode": mode}
+        )
+    except Exception:
+        pass
+    
+    result = llm_client.complete(messages)
+    
+    try:
+        log_task_event(
+            "digest",
+            "consolidation",
+            "llm_response",
+            "Consolidation LLM response received",
+            {"model": llm_client.model}
+        )
+    except Exception:
+        pass
+    
+    return result
 
 
 def validate_citations_if_needed(
@@ -231,10 +302,31 @@ def validate_citations_if_needed(
     """
     if mode == "issues":  # Legal issues mode is more likely to contain citations
         try:
+            try:
+                log_task_event(
+                    "digest",
+                    "citation_validation",
+                    "start",
+                    "Starting citation validation"
+                )
+            except Exception:
+                pass
+            
             validated_content, issues = llm_client.validate_and_verify_citations(
                 content,
                 strict_mode=False,  # Lenient for digest
             )
+            
+            try:
+                log_task_event(
+                    "digest",
+                    "citation_validation",
+                    "end",
+                    f"Citation validation complete - {len(issues) if issues else 0} issues found"
+                )
+            except Exception:
+                pass
+            
             return validated_content, issues
         except Exception as e:
             # Don't fail digest for citation issues
