@@ -10,15 +10,15 @@ The `litassist/llm.py` file defines a sophisticated framework for interacting wi
 
 **Key Commands and Configurations:**
 
-*   **`extractfacts`**: Uses `anthropic/claude-sonnet-4` with low temperature (0) and top_p (0.15) for high precision. `force_verify` is `True`.
-*   **`strategy`**: Employs `openai/o3-pro` with `reasoning_effort` set to high. System messages are merged into the user prompt. `force_verify` is `True`.
+*   **`extractfacts`**: Uses `anthropic/claude-sonnet-4` with low temperature (0) and top_p (0.15) for high precision. `enforce_citations` is `True`.
+*   **`strategy`**: Employs `openai/o3-pro` with `reasoning_effort` set to high. System messages are merged into the user prompt. `enforce_citations` is `True`.
 *   **`strategy-analysis`**: Uses `openai/o3-pro` with `reasoning_effort` set to high.
-*   **`brainstorm-orthodox`**: Uses `anthropic/claude-opus-4` (temp=0.3, top_p=0.7). `force_verify` is `True`.
-*   **`brainstorm-unorthodox`**: Leverages `x-ai/grok-3` with high temperature (0.9) and top_p (0.95) for creativity. `force_verify` is `True` (auto-verify Grok).
+*   **`brainstorm-orthodox`**: Uses `anthropic/claude-opus-4` (temp=0.3, top_p=0.7). `enforce_citations` is `True`.
+*   **`brainstorm-unorthodox`**: Leverages `x-ai/grok-3` with high temperature (0.9) and top_p (0.95) for creativity. `enforce_citations` is `True` (auto-verify Grok).
 *   **`draft`**: Utilizes `openai/o3-pro` (fixed parameters, similar to `strategy`).
 *   **`digest-summary` / `digest-issues`**: Use `anthropic/claude-sonnet-4` (temp=0.1, top_p=0) for summary and `anthropic/claude-opus-4` (temp=0.2, top_p=0.5) for issues.
-*   **`lookup`**: Uses `google/gemini-2.5-pro` (temp=0.1, top_p=0.2). `force_verify` is `False`.
-*   **`verify` (command)**: Uses `openai/o3-pro` (temp=0, top_p=0.2, reasoning_effort=high) for post-hoc verification. `force_verify` is `False`.
+*   **`lookup`**: Uses `google/gemini-2.5-pro` (temp=0.1, top_p=0.2). `enforce_citations` is `False`.
+*   **`verify` (command)**: Uses `openai/o3-pro` (temp=0, top_p=0.2, reasoning_effort=high) for post-hoc verification. `enforce_citations` is `False`.
 
 **Infrastructure and Philosophy:**
 
@@ -28,7 +28,7 @@ The `litassist/llm.py` file defines a sophisticated framework for interacting wi
     *   Low temperature/top_p for factual, deterministic tasks (e.g., `extractfacts`, `digest-summary`).
     *   Higher temperature/top_p for creative or brainstorming tasks (e.g., `brainstorm-unorthodox`).
     *   `openai/o3-pro` is reserved for tasks requiring advanced reasoning or drafting, understanding its fixed parameter limitations.
-*   **Citation Verification**: A critical component is the built-in citation verification system (`validate_and_verify_citations` method within `LLMClient`). This system checks citations against the AustLII database in real-time. The `force_verify` flag in command configurations dictates whether strict verification is mandatory. Failed verifications can trigger retries with enhanced prompting or removal of unverified citations.
+*   **Citation Verification**: A critical component is the built-in citation verification system (`validate_and_verify_citations` method within `LLMClient`). This system checks citations against the AustLII database in real-time. The `enforce_citations` flag in command configurations dictates whether strict verification is mandatory. Failed verifications can trigger retries with enhanced prompting or removal of unverified citations.
 *   **Token Limits**: The system implements model-specific token limits (e.g., for Gemini, Claude, GPT-4, o3-pro, Grok) if `CONFIG.use_token_limits` is enabled. These limits are applied both for general completions and more constrained for verification tasks.
 *   **Prompting**: A base prompt (`base.australian_law`) ensuring Australian legal context and English conventions is systematically added to messages.
 
@@ -45,7 +45,7 @@ The current LLM setup in LitAssist is robust and well-structured, demonstrating 
     *   Use of `openai/o3-pro` for `strategy` and `draft` likely aims for high-quality, precise outputs despite its fixed higher temperature, relying on the model's inherent capabilities.
 *   **Areas for Improvement**:
     *   While `o3-pro` is powerful, its fixed high temperature might occasionally introduce variability where extreme precision is needed. The control is limited to prompting and `reasoning_effort`.
-    *   The effectiveness of `force_verify` depends on the thoroughness of the `verify_all_citations` logic and the underlying database.
+    *   The effectiveness of `enforce_citations` depends on the thoroughness of the `verify_all_citations` logic and the underlying database.
 
 **Creativity:**
 
@@ -62,7 +62,7 @@ The current LLM setup in LitAssist is robust and well-structured, demonstrating 
     *   The mandatory inclusion of the `PROMPTS.get("base.australian_law")` system message ensures a baseline legal and regional context.
     *   The citation verification system (`validate_and_verify_citations`, `verify_all_citations`) is crucial for legal accuracy.
     *   The `verify` command and its variants (`verify_with_level`) provide dedicated workflows for reviewing and correcting legal text.
-    *   `force_verify = True` for critical commands like `extractfacts` and `strategy` underscores a commitment to accuracy.
+    *   `enforce_citations = True` for critical commands like `extractfacts` and `strategy` underscores a commitment to accuracy.
     *   Retry mechanisms for failed citation verification enhance the robustness of generated content.
 *   **Areas for Improvement**:
     *   Legal accuracy is highly dependent on the LLM's training data and the comprehensiveness of the citation database. Continuous monitoring of model performance on legal tasks is essential.
@@ -98,9 +98,9 @@ The following recommendations aim to build upon the existing strong foundation o
 2.  **Feedback Loop for Citation Verification**:
     *   **Action**: Implement a mechanism to log and review frequently failing or problematic citations. This data could be used to refine citation parsing logic or identify gaps in the verification database.
     *   **Rationale**: Improves the long-term reliability of the citation verification system.
-3.  **Enhanced `force_verify` Strictness**:
-    *   **Action**: For commands with `force_verify = True`, ensure that if citation retry fails, the operation either halts with a clear error or the problematic section is explicitly marked/removed with user notification, rather than just silently removing citations in lenient mode (current behavior suggests strict mode failure leads to retry, then potential error).
-    *   **Rationale**: Increases the guarantee that outputs from `force_verify` commands are either fully compliant or clearly flag issues.
+3.  **Enhanced `enforce_citations` Strictness**:
+    *   **Action**: For commands with `enforce_citations = True`, ensure that if citation retry fails, the operation either halts with a clear error or the problematic section is explicitly marked/removed with user notification, rather than just silently removing citations in lenient mode (current behavior suggests strict mode failure leads to retry, then potential error).
+    *   **Rationale**: Increases the guarantee that outputs from `enforce_citations` commands are either fully compliant or clearly flag issues.
 
 **D. General Recommendations:**
 

@@ -63,8 +63,7 @@ class TestVerifyModes:
 
         # Check that parameters were passed correctly
         kwargs = mock_instance.complete.call_args[1]
-        # No hardcoded temperature/top_p anymore - let factory handle it
-        assert kwargs.get("max_tokens") == 32768  # light mode uses smaller limit
+        # No hardcoded max_tokens anymore - token limits come from config
         assert kwargs.get("skip_citation_verification") is True
 
     @patch("litassist.llm.LLMClientFactory.for_command")
@@ -118,8 +117,8 @@ class TestVerifyModes:
 
         # Check parameters
         kwargs = mock_instance.complete.call_args[1]
-        # No hardcoded temperature/top_p anymore - let factory handle it
-        assert kwargs.get("max_tokens") == 65536  # heavy mode uses larger limit
+        # No hardcoded max_tokens anymore - token limits come from config
+        assert kwargs.get("skip_citation_verification") is True
 
     @patch("litassist.llm.LLMClient.verify")
     def test_default_verification_mode(self, mock_verify):

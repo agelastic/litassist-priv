@@ -11,7 +11,7 @@ import os
 
 from litassist.config import get_config
 from litassist.prompts import PROMPTS
-from litassist.utils.file_ops import read_document, process_reference_files
+from litassist.utils.file_ops import read_document
 from litassist.utils.text_processing import chunk_text
 from litassist.utils.core import (
     timed,
@@ -19,14 +19,13 @@ from litassist.utils.core import (
 )
 from litassist.utils.formatting import (
     info_message,
-    success_message,
 )
 from litassist.logging_utils import (
     save_log,
     save_command_output,
+    log_task_event,
 )
 from litassist.llm import LLMClientFactory
-from litassist.verification_chain import run_cove_verification
 
 
 @click.command()
@@ -39,15 +38,9 @@ from litassist.verification_chain import run_cove_verification
 @click.option(
     "--verify", is_flag=True, help="Enable citation verification for extracted content"
 )
-@click.option("--cove", is_flag=True, help="Apply Chain of Verification")
 @click.option("--output", type=str, help="Custom output filename prefix")
-@click.option(
-    "--cove-reference",
-    type=str,
-    help="Glob pattern for reference files to include in CoVe answer stage (e.g., 'exhibits/*.pdf', 'affidavits/*.txt'). Requires --cove flag."
-)
 @timed
-def counselnotes(files, extract, verify, cove, output, cove_reference):
+def counselnotes(files, extract, verify, output):
     """
     Strategic analysis and counsel's notes for legal documents.
 
@@ -65,19 +58,33 @@ def counselnotes(files, extract, verify, cove, output, cove_reference):
         click.ClickException: If there are errors with file reading, processing,
                              or LLM API calls.
     """
-    # Process CoVe reference files if provided
-    cove_reference_context, _ = process_reference_files(
-        cove_reference,
-        purpose="CoVe",
-        require_flag="--cove",
-        flag_enabled=cove
-    )
+    # Command start log
+    try:
+        log_task_event(
+            "counselnotes",
+            "init",
+            "start",
+            "Starting counsel notes generation",
+            {"model": LLMClientFactory.get_model_for_command("counselnotes")},
+        )
+    except Exception:
+        pass
     
     # Validate that at least one file is provided
     if not files:
         raise click.ClickException("At least one input file must be provided.")
 
     # Read and consolidate all documents
+    try:
+        log_task_event(
+            "counselnotes",
+            "reading",
+            "start",
+            "Reading input documents"
+        )
+    except Exception:
+        pass
+    
     all_content = []
     file_info = []
 
@@ -112,6 +119,16 @@ def counselnotes(files, extract, verify, cove, output, cove_reference):
 
     # Create client using factory
     client = LLMClientFactory.for_command("counselnotes")
+    
+    try:
+        log_task_event(
+            "counselnotes",
+            "reading",
+            "end",
+            f"Read {len(files)} document(s)"
+        )
+    except Exception:
+        pass
 
     # Collect all output content and comprehensive log data
     all_output = []
@@ -140,6 +157,17 @@ def counselnotes(files, extract, verify, cove, output, cove_reference):
                 )
 
                 try:
+                    log_task_event(
+                        "counselnotes",
+                        "extraction",
+                        "llm_call",
+                        f"Extracting {extract} from chunk {idx}/{len(chunks)}",
+                        {"model": client.model}
+                    )
+                except Exception:
+                    pass
+                
+                try:
                     content, usage = client.complete(
                         [
                             {
@@ -151,6 +179,18 @@ def counselnotes(files, extract, verify, cove, output, cove_reference):
                             {"role": "user", "content": extraction_prompt},
                         ]
                     )
+                    
+                    try:
+                        log_task_event(
+                            "counselnotes",
+                            "extraction",
+                            "llm_response",
+                            f"Chunk {idx}/{len(chunks)} extraction complete",
+                            {"model": client.model}
+                        )
+                    except Exception:
+                        pass
+                    
                 except Exception as e:
                     raise click.ClickException(
                         f"LLM error in extraction chunk {idx}: {e}"
@@ -206,6 +246,17 @@ def counselnotes(files, extract, verify, cove, output, cove_reference):
             )
 
             try:
+                log_task_event(
+                    "counselnotes",
+                    "analysis",
+                    "llm_call",
+                    "Analyzing single document",
+                    {"model": client.model}
+                )
+            except Exception:
+                pass
+            
+            try:
                 content, usage = client.complete(
                     [
                         {
@@ -217,6 +268,18 @@ def counselnotes(files, extract, verify, cove, output, cove_reference):
                         {"role": "user", "content": strategic_prompt},
                     ]
                 )
+                
+                try:
+                    log_task_event(
+                        "counselnotes",
+                        "analysis",
+                        "llm_response",
+                        "Single document analysis complete",
+                        {"model": client.model}
+                    )
+                except Exception:
+                    pass
+                
             except Exception as e:
                 raise click.ClickException(f"LLM error in analysis: {e}")
 
@@ -257,6 +320,17 @@ def counselnotes(files, extract, verify, cove, output, cove_reference):
                     )
 
                     try:
+                        log_task_event(
+                            "counselnotes",
+                            "chunk_analysis",
+                            "llm_call",
+                            f"Analyzing chunk {idx}/{len(chunks)}",
+                            {"model": client.model}
+                        )
+                    except Exception:
+                        pass
+                    
+                    try:
                         content, usage = client.complete(
                             [
                                 {
@@ -268,6 +342,18 @@ def counselnotes(files, extract, verify, cove, output, cove_reference):
                                 {"role": "user", "content": chunk_prompt},
                             ]
                         )
+                        
+                        try:
+                            log_task_event(
+                                "counselnotes",
+                                "chunk_analysis",
+                                "llm_response",
+                                f"Chunk {idx}/{len(chunks)} analysis complete",
+                                {"model": client.model}
+                            )
+                        except Exception:
+                            pass
+                        
                     except Exception as e:
                         raise click.ClickException(
                             f"LLM error in analysis chunk {idx}: {e}"
@@ -305,6 +391,17 @@ def counselnotes(files, extract, verify, cove, output, cove_reference):
             )
 
             try:
+                log_task_event(
+                    "counselnotes",
+                    "consolidation",
+                    "llm_call",
+                    "Consolidating chunk analyses",
+                    {"model": client.model}
+                )
+            except Exception:
+                pass
+            
+            try:
                 final_content, final_usage = client.complete(
                     [
                         {
@@ -316,6 +413,18 @@ def counselnotes(files, extract, verify, cove, output, cove_reference):
                         {"role": "user", "content": consolidation_prompt},
                     ]
                 )
+                
+                try:
+                    log_task_event(
+                        "counselnotes",
+                        "consolidation",
+                        "llm_response",
+                        "Consolidation complete",
+                        {"model": client.model}
+                    )
+                except Exception:
+                    pass
+                
             except Exception as e:
                 raise click.ClickException(f"LLM error in consolidation: {e}")
 
@@ -345,31 +454,6 @@ def counselnotes(files, extract, verify, cove, output, cove_reference):
 
     # Prepare final output
     final_content = "\n\n".join(all_output)
-
-    # Apply Chain of Verification if requested
-    if cove:
-        original_content = final_content
-        
-        # Build prior contexts if we have CoVe reference files
-        prior_contexts = {}
-        if cove_reference_context:
-            prior_contexts["cove_reference_files"] = cove_reference_context
-        
-        final_content, cove_results = run_cove_verification(
-            final_content, 
-            "counselnotes",
-            prior_contexts=prior_contexts if prior_contexts else None
-        )
-        if not cove_results["cove"]["passed"]:
-            # Content has been regenerated to fix issues
-            click.echo(success_message("CoVe corrected issues - notes regenerated"))
-            comprehensive_log["cove_regeneration"] = {
-                "original_length": len(original_content),
-                "regenerated_length": len(final_content),
-                "issues_fixed": cove_results["cove"]["issues"],
-            }
-        else:
-            click.echo(success_message("CoVe verification passed - no issues found"))
 
     # Prepare metadata for save_command_output
     files_summary = ", ".join([info["name"] for info in file_info])
@@ -426,3 +510,14 @@ def counselnotes(files, extract, verify, cove, output, cove_reference):
         stats["Extraction"] = extract
 
     show_command_completion("counselnotes", output_file, None, stats)
+    
+    # Command end log
+    try:
+        log_task_event(
+            "counselnotes",
+            "init",
+            "end",
+            "Counsel notes generation complete"
+        )
+    except Exception:
+        pass

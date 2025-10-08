@@ -11,11 +11,11 @@ import click
 
 from litassist.config import get_config
 from litassist.prompts import PROMPTS
-from litassist.utils.file_ops import read_document, is_text_file, process_reference_files
+from litassist.utils.file_ops import read_document, is_text_file
 from litassist.utils.text_processing import chunk_text, create_embeddings
-from litassist.logging_utils import save_log, save_command_output
+from litassist.logging_utils import save_log, save_command_output, log_task_event
 from litassist.timing import timed
-from litassist.utils.formatting import info_message, warning_message, success_message
+from litassist.utils.formatting import info_message
 from litassist.utils.legal_reasoning import (
     create_reasoning_prompt,
     detect_factual_hallucinations,
@@ -24,7 +24,6 @@ from litassist.utils.legal_reasoning import (
 from litassist.utils.core import show_command_completion
 from litassist.llm import LLMClientFactory
 from litassist.helpers.retriever import Retriever, get_pinecone_client
-from litassist.verification_chain import run_cove_verification
 
 
 @click.command()
@@ -33,9 +32,8 @@ from litassist.verification_chain import run_cove_verification
 @click.option(
     "--noverify",
     is_flag=True,
-    help="Skip standard verification (does not affect --cove)",
+    help="Skip standard verification",
 )
-@click.option("--cove", is_flag=True, help="Use Chain of Verification (experimental)")
 @click.option(
     "--diversity",
     type=float,
@@ -43,14 +41,9 @@ from litassist.verification_chain import run_cove_verification
     default=None,
 )
 @click.option("--output", type=str, help="Custom output filename prefix")
-@click.option(
-    "--cove-reference",
-    type=str,
-    help="Glob pattern for reference files to include in CoVe answer stage (e.g., 'exhibits/*.pdf', 'affidavits/*.txt'). Requires --cove flag."
-)
 @click.pass_context
 @timed
-def draft(ctx, documents, query, noverify, cove, diversity, output, cove_reference):
+def draft(ctx, documents, query, noverify, diversity, output):
     """
     Citation-rich drafting via RAG & GPT-4o.
 
@@ -78,15 +71,29 @@ def draft(ctx, documents, query, noverify, cove, diversity, output, cove_referen
         click.ClickException: If there are errors with file reading, embedding,
                              vector storage, retrieval, or LLM API calls.
     """
-    # Process CoVe reference files if provided
-    cove_reference_context, _ = process_reference_files(
-        cove_reference,
-        purpose="CoVe",
-        require_flag="--cove",
-        flag_enabled=cove
-    )
-    
+    # Command start log
+    try:
+        log_task_event(
+            "draft",
+            "init",
+            "start",
+            "Starting draft generation",
+            {"model": LLMClientFactory.get_model_for_command("draft")},
+        )
+    except Exception:
+        pass
+
     # Process all documents
+    try:
+        log_task_event(
+            "draft",
+            "reading",
+            "start",
+            "Reading input documents"
+        )
+    except Exception:
+        pass
+    
     structured_content = {
         "case_facts": "",
         "strategies": "",
@@ -135,6 +142,16 @@ def draft(ctx, documents, query, noverify, cove, diversity, output, cove_referen
             structured_content["pdf_documents"].append((doc_path, text))
             click.echo(f"Will use embedding/retrieval for {doc_path}")
 
+    try:
+        log_task_event(
+            "draft",
+            "reading",
+            "end",
+            f"Read {len(documents)} document(s)"
+        )
+    except Exception:
+        pass
+    
     # Build structured context for the LLM
     context_parts = []
 
@@ -162,6 +179,16 @@ def draft(ctx, documents, query, noverify, cove, diversity, output, cove_referen
     # Process PDFs with embedding/retrieval if any
     retrieved_context = ""
     if structured_content["pdf_documents"]:
+        try:
+            log_task_event(
+                "draft",
+                "indexing",
+                "start",
+                "Starting document indexing for RAG pipeline"
+            )
+        except Exception:
+            pass
+        
         # Get Pinecone client
         pc_index = get_pinecone_client()
 
@@ -178,7 +205,27 @@ def draft(ctx, documents, query, noverify, cove, diversity, output, cove_referen
 
         # Embed all chunks
         try:
+            log_task_event(
+                "draft",
+                "embedding",
+                "start",
+                f"Creating embeddings for {len(all_chunks)} chunks"
+            )
+        except Exception:
+            pass
+        
+        try:
             embeddings = create_embeddings([chunk[1] for chunk in all_chunks])
+            
+            try:
+                log_task_event(
+                    "draft",
+                    "embedding",
+                    "end",
+                    f"Created {len(embeddings)} embeddings"
+                )
+            except Exception:
+                pass
         except Exception as e:
             raise click.ClickException(f"Embedding error: {e}")
 
@@ -195,7 +242,28 @@ def draft(ctx, documents, query, noverify, cove, diversity, output, cove_referen
 
         # Upsert to Pinecone
         try:
+            log_task_event(
+                "draft",
+                "pinecone",
+                "start",
+                f"Upserting {len(vectors)} vectors to Pinecone"
+            )
+        except Exception:
+            pass
+        
+        try:
             pc_index.upsert(vectors=vectors)
+            
+            try:
+                log_task_event(
+                    "draft",
+                    "pinecone",
+                    "end",
+                    "Vectors uploaded to Pinecone"
+                )
+            except Exception:
+                pass
+                
         except Exception as e:
             raise click.ClickException(f"Pinecone upsert error: {e}")
 
@@ -206,8 +274,29 @@ def draft(ctx, documents, query, noverify, cove, diversity, output, cove_referen
             raise click.ClickException(f"Embedding error for query: {e}")
 
         retriever = Retriever(pc_index, use_mmr=True)
+        
+        try:
+            log_task_event(
+                "draft",
+                "retrieval",
+                "start",
+                "Retrieving relevant context with MMR"
+            )
+        except Exception:
+            pass
+        
         try:
             context_list = retriever.retrieve(qemb, top_k=7, diversity_level=diversity)
+            
+            try:
+                log_task_event(
+                    "draft",
+                    "retrieval",
+                    "end",
+                    f"Retrieved {len(context_list)} relevant chunks"
+                )
+            except Exception:
+                pass
         except Exception as e:
             raise click.ClickException(f"Pinecone retrieval error: {e}")
 
@@ -216,6 +305,16 @@ def draft(ctx, documents, query, noverify, cove, diversity, output, cove_referen
             + "\n\n".join(context_list)
             + "\n=== END RETRIEVED CONTEXT ==="
         )
+        
+        try:
+            log_task_event(
+                "draft",
+                "indexing",
+                "end",
+                "RAG pipeline complete"
+            )
+        except Exception:
+            pass
 
     # Combine all context with proper === separation
     context = combined_text_context
@@ -255,8 +354,31 @@ def draft(ctx, documents, query, noverify, cove, diversity, output, cove_referen
         {"role": "system", "content": system_prompt},
         {"role": "user", "content": user_prompt},
     ]
+    
+    try:
+        log_task_event(
+            "draft",
+            "generation",
+            "llm_call",
+            "Sending draft generation prompt to LLM",
+            {"model": client.model}
+        )
+    except Exception:
+        pass
+    
     try:
         content, usage = client.complete(messages)
+        
+        try:
+            log_task_event(
+                "draft",
+                "generation",
+                "llm_response",
+                "Draft LLM response received",
+                {"model": client.model}
+            )
+        except Exception:
+            pass
     except Exception as e:
         raise click.ClickException(f"LLM draft error: {e}")
 
@@ -264,80 +386,58 @@ def draft(ctx, documents, query, noverify, cove, diversity, output, cove_referen
 
     # Apply standard verification (uses verification chain like extractfacts/strategy)
     if not noverify:
+        try:
+            log_task_event(
+                "draft",
+                "verification",
+                "start",
+                "Starting draft verification"
+            )
+        except Exception:
+            pass
+        
         content, _ = verify_content_if_needed(
             client, content, "draft", verify_flag=True
         )
         click.echo(info_message("Standard verification applied"))
+        
+        try:
+            log_task_event(
+                "draft",
+                "verification",
+                "end",
+                "Verification complete"
+            )
+        except Exception:
+            pass
     else:
         click.echo(info_message("Standard verification skipped by --noverify flag"))
 
     # Track critiques for appending to output
     critiques = []
 
-    # Optional CoVe verification
-    if cove:
-        try:
-            click.echo(info_message("Running Chain of Verification..."))
-            original_content = content  # Capture original BEFORE regeneration
-            
-            # Build prior contexts if we have CoVe reference files
-            prior_contexts = {}
-            if cove_reference_context:
-                prior_contexts["cove_reference_files"] = cove_reference_context
-            
-            content, cove_results = run_cove_verification(
-                content, 
-                "draft",
-                prior_contexts=prior_contexts if prior_contexts else None
-            )
-
-            # Capture CoVe dialogue for critique section
-            if "cove" in cove_results:
-                critiques.append(
-                    (
-                        "CoVe Stage 1: Questions Generated",
-                        cove_results["cove"]["questions"],
-                    )
-                )
-                critiques.append(
-                    (
-                        "CoVe Stage 2: Independent Answers",
-                        cove_results["cove"]["answers"],
-                    )
-                )
-                if cove_results["cove"]["issues"]:
-                    critiques.append(
-                        (
-                            "CoVe Stage 3: Issues Identified",
-                            cove_results["cove"]["issues"],
-                        )
-                    )
-
-            if not cove_results["cove"]["passed"]:
-                # Content has been regenerated to fix issues
-                click.echo(
-                    success_message("CoVe corrected issues - document regenerated")
-                )
-                # Log regeneration details for audit trail
-                save_log(
-                    "draft_cove_regeneration",
-                    {
-                        "original_length": len(original_content),
-                        "regenerated_length": len(content),
-                        "issues_fixed": cove_results["cove"]["issues"],
-                        "model": "See cove_draft_summary.json for model details",
-                    },
-                )
-            else:
-                click.echo(
-                    success_message("CoVe verification passed - no issues found")
-                )
-        except Exception as e:
-            click.echo(warning_message(f"CoVe verification failed: {e}"))
-            # Continue without CoVe if it fails
-
     # Check for potential hallucinations
+    try:
+        log_task_event(
+            "draft",
+            "hallucination",
+            "start",
+            "Checking for potential hallucinations"
+        )
+    except Exception:
+        pass
+    
     hallucination_warnings = detect_factual_hallucinations(content, context)
+    
+    try:
+        log_task_event(
+            "draft",
+            "hallucination",
+            "end",
+            f"Hallucination check complete - {len(hallucination_warnings) if hallucination_warnings else 0} warnings"
+        )
+    except Exception:
+        pass
     if hallucination_warnings:
         # Capture hallucination warnings for critique section
         warning_text = "The following potentially hallucinated facts were detected:\n"
@@ -390,7 +490,7 @@ def draft(ctx, documents, query, noverify, cove, diversity, output, cove_referen
             },
             # Response content removed - already logged by LLMClient separately
             "usage": usage,
-            "verification": "cove_applied" if cove else "disabled",
+            "verification": "standard" if not noverify else "disabled",
             "output_file": output_file,
         },
     )
@@ -399,10 +499,21 @@ def draft(ctx, documents, query, noverify, cove, diversity, output, cove_referen
     stats = {
         "Query": query,
         "Documents": len(documents),
-        "Verification": "CoVe Applied" if cove else "Not Applied",
+        "Verification": "Standard verification" if not noverify else "Disabled",
     }
 
     show_command_completion("draft", output_file, extra_files, stats)
+    
+    # Command end log
+    try:
+        log_task_event(
+            "draft",
+            "init",
+            "end",
+            "Draft generation complete"
+        )
+    except Exception:
+        pass
 
     # Show brief preview
     lines = content.split("\n")

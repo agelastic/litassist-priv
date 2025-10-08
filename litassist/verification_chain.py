@@ -8,7 +8,7 @@ from litassist.citation_verify import verify_all_citations
 from litassist.citation_context import fetch_citation_context
 from litassist.llm import LLMClientFactory
 from litassist.prompts import PROMPTS
-from litassist.logging_utils import save_log
+from litassist.logging_utils import save_log, log_task_event
 
 
 def run_verification_chain(
@@ -142,10 +142,33 @@ def run_cove_verification(
         context=context_summary, content=content
     )
 
+    # Announce stage start and LLM call
+    log_task_event(
+        command, "cove-questions", "start", "Generating verification questions"
+    )
+    log_task_event(
+        command,
+        "cove-questions",
+        "llm_call",
+        "Sending questions prompt to LLM",
+        {"model": client_questions.model, "prompt_length": len(questions_prompt)},
+    )
+
     # Set stage context for logging
     client_questions.command_context = f"cove_stage1_questions_{command}"
     questions, usage1 = client_questions.complete(
         [{"role": "user", "content": questions_prompt}]
+    )
+    log_task_event(
+        command,
+        "cove-questions",
+        "llm_response",
+        "Received questions from LLM",
+        {
+            "model": client_questions.model,
+            "response_length": len(questions),
+            "usage": usage1,
+        },
     )
 
     # Store full information for debugging
@@ -239,38 +262,117 @@ def run_cove_verification(
     reference_context = ""
     if prior_contexts and prior_contexts.get("cove_reference_files"):
         reference_context = prior_contexts["cove_reference_files"]
-    
-    if legal_context or reference_context:
-        # Build context section with COMPLETE documents
+
+    # Announce stage start
+    log_task_event(command, "cove-answers", "start", "Answering verification questions")
+
+    # Prepare scalable inclusion of legal documents (drop-largest backoff on token errors)
+    cases_to_include = list(legal_context.items()) if legal_context else []
+    attempts = 0
+    answers = None
+    usage2 = {}
+
+    # Set stage context for logging
+    client_answers.command_context = f"cove_stage2_answers_{command}"
+
+    while answers is None and attempts < 5:
+        # Build context section based on current cases_to_include and any reference files
+        has_any_context = bool(cases_to_include) or bool(reference_context)
         context_text = ""
-        
-        if legal_context:
+
+        if cases_to_include:
             context_text += "\n=== LEGAL AUTHORITIES (FULL TEXT) ===\n"
-            for citation, full_text in legal_context.items():
+            for citation, full_text in cases_to_include:
                 context_text += f"\n=== {citation} ===\n"
                 context_text += full_text
                 context_text += f"\n=== END {citation} ===\n\n"
             context_text += "=== END LEGAL AUTHORITIES ===\n\n"
-        
+
         if reference_context:
             context_text += "\n=== REFERENCE DOCUMENTS ===\n"
             context_text += reference_context
             context_text += "=== END REFERENCE DOCUMENTS ===\n\n"
 
-        # Use enhanced prompt with context
-        answers_prompt = PROMPTS.get("verification.cove.answers_with_context").format(
-            questions=questions, legal_context=context_text
-        )
-    else:
-        # Existing prompt without context
-        answers_prompt = PROMPTS.get("verification.cove.answers_verification").format(
-            content=questions
+        # Choose appropriate prompt template
+        if has_any_context:
+            answers_prompt = PROMPTS.get(
+                "verification.cove.answers_with_context"
+            ).format(questions=questions, legal_context=context_text)
+        else:
+            answers_prompt = PROMPTS.get(
+                "verification.cove.answers_verification"
+            ).format(content=questions)
+
+        # Log the outgoing call for this attempt
+        log_task_event(
+            command,
+            "cove-answers",
+            "llm_call",
+            "Sending answers prompt to LLM",
+            {
+                "model": client_answers.model,
+                "prompt_length": len(answers_prompt),
+                "attempt": attempts + 1,
+            },
         )
 
-    # Set stage context for logging
-    client_answers.command_context = f"cove_stage2_answers_{command}"
-    answers, usage2 = client_answers.complete(
-        [{"role": "user", "content": answers_prompt}]
+        try:
+            # Make the LLM call
+            answers, usage2 = client_answers.complete(
+                [{"role": "user", "content": answers_prompt}]
+            )
+        except Exception as e:
+            error_str = str(e).lower()
+            # Detect token/context limit errors and drop the largest document if available
+            if any(
+                x in error_str
+                for x in ["token", "context", "length", "too long", "maximum"]
+            ):
+                if cases_to_include:
+                    # Identify and drop the largest included case/document
+                    largest_idx = max(
+                        range(len(cases_to_include)),
+                        key=lambda i: len(cases_to_include[i][1]),
+                    )
+                    dropped_case = cases_to_include.pop(largest_idx)
+
+                    # Log the drop event for auditability
+                    save_log(
+                        "cove_answers_scaling_drop",
+                        {
+                            "command": command,
+                            "dropped_case": dropped_case[0],
+                            "dropped_length": len(dropped_case[1]),
+                            "remaining_cases": [c for c, _ in cases_to_include],
+                            "attempt": attempts + 1,
+                            "error": str(e),
+                        },
+                    )
+
+                    attempts += 1
+                    continue  # retry with reduced context
+                else:
+                    # Nothing left to drop - re-raise
+                    raise
+            else:
+                # Not a token/context limit error - re-raise
+                raise
+
+    if answers is None:
+        # Exhausted retries without success
+        raise Exception("Failed to get CoVe answers after dropping all legal context")
+
+    # Log the successful response
+    log_task_event(
+        command,
+        "cove-answers",
+        "llm_response",
+        "Received independent answers from LLM",
+        {
+            "model": client_answers.model,
+            "response_length": len(answers),
+            "usage": usage2,
+        },
     )
 
     cove_stages["answers"] = {
@@ -288,10 +390,32 @@ def run_cove_verification(
         context=answers, content=content
     )
 
+    # Announce stage start and LLM call
+    log_task_event(
+        command,
+        "cove-verify",
+        "start",
+        "Detecting inconsistencies against the original",
+    )
+    log_task_event(
+        command,
+        "cove-verify",
+        "llm_call",
+        "Sending verification (inconsistency detection) prompt to LLM",
+        {"model": client_verify.model, "prompt_length": len(verify_prompt)},
+    )
+
     # Set stage context for logging
     client_verify.command_context = f"cove_stage3_verify_{command}"
     issues, usage3 = client_verify.complete(
         [{"role": "user", "content": verify_prompt}]
+    )
+    log_task_event(
+        command,
+        "cove-verify",
+        "llm_response",
+        "Received inconsistency report from LLM",
+        {"model": client_verify.model, "response_length": len(issues), "usage": usage3},
     )
 
     cove_stages["verification"] = {
@@ -318,10 +442,33 @@ def run_cove_verification(
             context=issues, prompt=answers, content=content
         )
 
+        # Announce stage start and LLM call
+        log_task_event(
+            command, "cove-regenerate", "start", "Regenerating corrected document"
+        )
+        log_task_event(
+            command,
+            "cove-regenerate",
+            "llm_call",
+            "Sending regeneration prompt to LLM",
+            {"model": client_final.model, "prompt_length": len(regenerate_prompt)},
+        )
+
         # Set stage context for logging
         client_final.command_context = f"cove_stage4_regenerate_{command}"
         final_content, usage4 = client_final.complete(
             [{"role": "user", "content": regenerate_prompt}]
+        )
+        log_task_event(
+            command,
+            "cove-regenerate",
+            "llm_response",
+            "Received regenerated document from LLM",
+            {
+                "model": client_final.model,
+                "response_length": len(final_content),
+                "usage": usage4,
+            },
         )
 
         cove_stages["regeneration"] = {

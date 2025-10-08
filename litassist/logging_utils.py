@@ -10,7 +10,7 @@ import time
 import json
 import logging
 import re
-from typing import Dict, Optional, List, Tuple
+from typing import Dict, Optional, List, Tuple, Any
 from unittest.mock import Mock
 
 import click
@@ -470,52 +470,59 @@ def _format_dict_as_markdown(d: dict, indent: int = 0) -> str:
 def _write_fetch_log_markdown(f, tag: str, ts: str, payload: dict):
     """Write markdown for fetch attempt logs."""
     f.write(f"# {tag} — {ts}\n\n")
-    
+
     # Summary section
     f.write("## Fetch Summary\n\n")
     f.write(f"- **URL**: `{payload.get('url', 'N/A')}`  \n")
-    if payload.get('original_url'):
+    if payload.get("original_url"):
         f.write(f"- **Original URL**: `{payload.get('original_url')}`  \n")
     f.write(f"- **Method**: `{payload.get('method', 'N/A')}`  \n")
     f.write(f"- **Status**: `{payload.get('status', 'N/A')}`  \n")
-    if payload.get('reason'):
+    if payload.get("reason"):
         f.write(f"- **Reason**: {payload.get('reason')}  \n")
-    if payload.get('error'):
+    if payload.get("error"):
         f.write(f"- **Error**: {payload.get('error')}  \n")
-    f.write(f"- **Timestamp**: {time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(payload.get('timestamp', time.time())))}  \n\n")
-    
+    f.write(
+        f"- **Timestamp**: {time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(payload.get('timestamp', time.time())))}  \n\n"
+    )
+
     # Size statistics
-    if any(k in payload for k in ['html_size', 'extracted_size', 'final_size', 'jina_response_size']):
+    if any(
+        k in payload
+        for k in ["html_size", "extracted_size", "final_size", "jina_response_size"]
+    ):
         f.write("## Size Statistics\n\n")
-        if payload.get('html_size'):
+        if payload.get("html_size"):
             f.write(f"- **HTML Size**: {payload['html_size']:,} chars  \n")
-        if payload.get('jina_response_size'):
-            f.write(f"- **Jina Response Size**: {payload['jina_response_size']:,} chars  \n")
-        if payload.get('extracted_size'):
+        if payload.get("jina_response_size"):
+            f.write(
+                f"- **Jina Response Size**: {payload['jina_response_size']:,} chars  \n"
+            )
+        if payload.get("extracted_size"):
             f.write(f"- **Extracted Size**: {payload['extracted_size']:,} chars  \n")
-        if payload.get('final_size'):
+        if payload.get("final_size"):
             f.write(f"- **Final Size**: {payload['final_size']:,} chars  \n")
-        if payload.get('reduction_percent'):
+        if payload.get("reduction_percent"):
             f.write(f"- **Reduction**: {payload['reduction_percent']}%  \n")
-        if payload.get('pdf_pages'):
+        if payload.get("pdf_pages"):
             f.write(f"- **PDF Pages**: {payload['pdf_pages']} total  \n")
-        if payload.get('pages_extracted'):
+        if payload.get("pages_extracted"):
             f.write(f"- **Pages Extracted**: {payload['pages_extracted']}  \n")
         f.write("\n")
-    
+
     # Content section
-    content = payload.get('content', '')
+    content = payload.get("content", "")
     if content:
         f.write("## Scraped Content\n\n")
         # Write FULL content - no truncation for legal compliance
         f.write("```text\n")
         f.write(content)
         f.write("\n```\n")
-    elif payload.get('status') == 'failed':
+    elif payload.get("status") == "failed":
         f.write("## Content\n\nFetch failed - no content retrieved.\n")
-    elif payload.get('status') == 'skipped':
+    elif payload.get("status") == "skipped":
         f.write("## Content\n\nFetch skipped - no content retrieved.\n")
-    
+
     f.write("\n")
 
 
@@ -593,3 +600,69 @@ def save_command_output(
                 f.write("\n\n")
 
     return output_file
+
+
+# ── Task Event Logging ────────────────────────────────────────
+def log_task_event(
+    command: str,
+    stage: str,
+    event: str,
+    message: str = "",
+    details: Optional[Dict[str, Any]] = None,
+):
+    """
+    Log structured events for multistage commands.
+
+    This function provides consistent logging for command execution stages,
+    making it easier to track progress and debug issues in complex workflows.
+
+    Args:
+        command: Command name (e.g., 'verify', 'verify-cove')
+        stage: Stage name (e.g., 'citations', 'reasoning', 'soundness', 'cove-questions')
+        event: Event type ('start', 'end', 'progress', 'llm_call', 'llm_response')
+        message: Human-readable message describing the event
+        details: Optional dictionary with additional structured data
+
+    Examples:
+        log_task_event('verify', 'citations', 'start', 'Beginning citation verification')
+        log_task_event('verify-cove', 'cove-questions', 'llm_call', 'Sending questions to LLM')
+        log_task_event('verify', 'soundness', 'end', 'Soundness check completed', {'issues_found': 2})
+    """
+    # Create structured log payload
+    payload = {
+        "command": command,
+        "stage": stage,
+        "event": event,
+        "message": message,
+        "timestamp": time.strftime("%Y-%m-%d %H:%M:%S"),
+    }
+
+    # Add details if provided
+    if details:
+        payload["details"] = details
+
+    # Prepare model suffix for console messages when available
+    model_suffix = ""
+    try:
+        if details and details.get("model"):
+            model_suffix = f" [model: {details.get('model')}]"
+    except Exception:
+        # Be resilient to unexpected 'details' types
+        model_suffix = ""
+
+    # Use consistent tag format for easy filtering
+    tag = f"task_event_{command}_{stage}_{event}"
+
+    # Log using the existing save_log function
+    save_log(tag, payload)
+
+    # Also log to console for immediate visibility during development/debugging
+    # Show model suffix on ALL event types when available
+    if event in ["start", "end"]:
+        click.echo(f"[{event.upper()}] {command}.{stage}: {message}{model_suffix}")
+    elif event == "llm_call":
+        click.echo(f"[LLM CALL] {command}.{stage}: {message}{model_suffix}")
+    elif event == "llm_response":
+        click.echo(f"[LLM RESPONSE] {command}.{stage}: {message}{model_suffix}")
+    elif event == "progress":
+        click.echo(f"[PROGRESS] {command}.{stage}: {message}{model_suffix}")

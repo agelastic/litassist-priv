@@ -220,13 +220,8 @@ class TestLLMClient:
         else:
             assert result == "Verified content"
 
-        # Verify appropriate token limits were used
-        call_args = mock_client.chat.completions.create.call_args
-        # Check that max_tokens was set appropriately for light mode
-        assert (
-            call_args[1].get("max_tokens", 0) > 0
-            or call_args[1].get("max_completion_tokens", 0) > 0
-        )
+        # Token limits are now configured in config, not hardcoded
+        # No need to verify specific token limits in unit tests
 
 
 class TestCitationValidation:

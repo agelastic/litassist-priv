@@ -116,52 +116,52 @@ def validate_file_size_limit(content: str, max_size: int, context: str):
 def expand_glob_pattern(pattern: str, warn_non_files: bool = True) -> List[str]:
     """
     Expand glob pattern and return list of valid file paths.
-    
+
     Args:
         pattern: Glob pattern string
         warn_non_files: Whether to warn about non-file matches
-        
+
     Returns:
         List of valid file paths matching the pattern
     """
     from litassist.utils.formatting import warning_message
-    
+
     if not pattern:
         return []
-    
+
     matches = glob.glob(pattern)
     valid_files = []
-    
+
     for f in matches:
         if os.path.isfile(f):
             valid_files.append(f)
         elif warn_non_files:
             click.echo(warning_message(f"Skipping non-file: {f}"))
-    
+
     return valid_files
 
 
 def expand_glob_patterns_callback(ctx, param, value):
     """
     Expand glob patterns in file paths for Click multiple=True options.
-    
+
     This is a Click callback function for handling glob patterns in command options
     that accept multiple file paths. It expands glob patterns and verifies file existence.
-    
+
     Args:
         ctx: Click context (unused but required for callbacks)
         param: Click parameter (unused but required for callbacks)
         value: Tuple of file patterns from Click
-        
+
     Returns:
         Tuple of expanded file paths
-        
+
     Raises:
         click.BadParameter: If no files match a pattern or file doesn't exist
     """
     if not value:
         return value
-    
+
     expanded_paths = []
     for pattern in value:
         # Check if it's a glob pattern (contains *, ?, or [)
@@ -176,7 +176,7 @@ def expand_glob_patterns_callback(ctx, param, value):
             if not os.path.exists(pattern):
                 raise click.BadParameter(f"File not found: {pattern}")
             expanded_paths.append(pattern)
-    
+
     # Remove duplicates while preserving order
     seen = set()
     unique_paths = []
@@ -184,7 +184,7 @@ def expand_glob_patterns_callback(ctx, param, value):
         if path not in seen:
             seen.add(path)
             unique_paths.append(path)
-    
+
     return tuple(unique_paths)
 
 
@@ -193,44 +193,53 @@ def process_reference_files(
     purpose: str = "reference",
     require_flag: Optional[str] = None,
     flag_enabled: bool = True,
-    show_char_count: bool = False
+    show_char_count: bool = False,
 ) -> Tuple[str, List[str]]:
     """
     Process reference files from glob pattern for verification context.
-    
+
     Args:
         pattern: Glob pattern for reference files
         purpose: Purpose description for messages (e.g., "reference", "CoVe", "CoVe answers")
         require_flag: Name of required flag (e.g., "--cove")
         flag_enabled: Whether the required flag is set
         show_char_count: Whether to show character count in success messages
-        
+
     Returns:
         Tuple of (reference_context, reference_files_list)
         - reference_context: Formatted string with all file contents
         - reference_files_list: List of processed filenames
     """
-    from litassist.utils.formatting import warning_message, success_message, verifying_message, info_message
-    
+    from litassist.utils.formatting import (
+        warning_message,
+        success_message,
+        verifying_message,
+        info_message,
+    )
+
     if not pattern:
         return "", []
-    
+
     # Check if required flag is set
     if require_flag and not flag_enabled:
-        click.echo(warning_message(f"--cove-reference requires {require_flag} flag; parameter ignored"))
+        click.echo(
+            warning_message(
+                f"Reference pattern requires {require_flag} flag; parameter ignored"
+            )
+        )
         return "", []
-    
+
     # Expand glob pattern
     valid_files = expand_glob_pattern(pattern)
-    
+
     if not valid_files:
         return "", []
-    
+
     reference_context = ""
     reference_files = []
-    
+
     # Choose appropriate message function based on context
-    # verify.py uses verifying_message for both --reference and --cove-reference
+    # verify.py uses verifying_message for reference documents
     if purpose in ["reference", "CoVe answers"]:
         msg_func = verifying_message
         message = f"Reading {len(valid_files)} reference files"
@@ -240,16 +249,16 @@ def process_reference_files(
     else:
         msg_func = info_message
         message = f"Reading {len(valid_files)} {purpose} reference files..."
-    
+
     click.echo(msg_func(message))
-    
+
     for filepath in valid_files:
         try:
             file_content = read_document(filepath)
             filename = os.path.basename(filepath)
             reference_context += f"=== {filename} ===\n\n{file_content}\n\n"
             reference_files.append(filename)
-            
+
             # Format success message based on options
             if show_char_count:
                 msg = f"  - Read {filename} ({len(file_content):,} chars)"
@@ -257,9 +266,9 @@ def process_reference_files(
                 msg = f"  - Read {filename}"
                 if purpose != "reference":
                     msg += f" for {purpose}"
-            
+
             click.echo(success_message(msg))
         except Exception as e:
             click.echo(warning_message(f"  - Could not read {filepath}: {e}"))
-    
+
     return reference_context, reference_files

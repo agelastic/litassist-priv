@@ -12,9 +12,8 @@ from typing import List, Optional, Dict, Any
 
 from litassist.prompts import PROMPTS
 from litassist.utils.file_ops import (
-    read_document, 
-    process_reference_files,
-    expand_glob_patterns_callback as expand_glob_patterns
+    read_document,
+    expand_glob_patterns_callback as expand_glob_patterns,
 )
 from litassist.utils.core import (
     timed,
@@ -23,16 +22,14 @@ from litassist.utils.core import (
 from litassist.utils.legal_reasoning import create_reasoning_prompt
 from litassist.utils.formatting import (
     warning_message,
-    success_message,
 )
 from litassist.utils.text_processing import count_tokens_and_words
 from litassist.logging_utils import (
-    save_log,
     save_command_output,
+    log_task_event,
 )
 from litassist.llm import LLMClientFactory
 from litassist.citation_verify import verify_all_citations
-from litassist.verification_chain import run_cove_verification
 
 
 @timed
@@ -140,13 +137,7 @@ def prepare_brief_sections(
     is_flag=True,
     help="Enable citation verification",
 )
-@click.option("--cove", is_flag=True, help="Apply Chain of Verification")
 @click.option("--output", type=str, help="Custom output filename prefix")
-@click.option(
-    "--cove-reference",
-    type=str,
-    help="Glob pattern for reference files to include in CoVe answer stage (e.g., 'exhibits/*.pdf', 'affidavits/*.txt'). Requires --cove flag."
-)
 @click.pass_context
 @timed
 def barbrief(
@@ -158,9 +149,7 @@ def barbrief(
     context,
     hearing_type,
     verify,
-    cove,
     output,
-    cove_reference,
 ):
     """
     Generate comprehensive barrister's brief for Australian litigation.
@@ -181,13 +170,17 @@ def barbrief(
     Raises:
         click.ClickException: If case facts are invalid or API calls fail
     """
-    # Process CoVe reference files if provided
-    cove_reference_context, _ = process_reference_files(
-        cove_reference,
-        purpose="CoVe",
-        require_flag="--cove",
-        flag_enabled=cove
-    )
+    # Command start log
+    try:
+        log_task_event(
+            "barbrief",
+            "init",
+            "start",
+            "Starting barrister's brief generation",
+            {"model": LLMClientFactory.get_model_for_command("barbrief")},
+        )
+    except Exception:
+        pass
     
     # Read and validate case facts
     click.echo("Reading case facts...")
@@ -225,6 +218,16 @@ def barbrief(
         supporting_docs.append(read_document(doc_file))
 
     # Prepare sections
+    try:
+        log_task_event(
+            "barbrief",
+            "preparation",
+            "start",
+            "Preparing brief sections"
+        )
+    except Exception:
+        pass
+    
     sections = prepare_brief_sections(
         case_facts_content,
         strategies_content,
@@ -270,6 +273,17 @@ def barbrief(
 
     # Generate the brief
     click.echo("\nGenerating barrister's brief...")
+    
+    try:
+        log_task_event(
+            "barbrief",
+            "generation",
+            "start",
+            "Starting brief generation",
+            {"model": client.model}
+        )
+    except Exception:
+        pass
 
     messages = [
         {"role": "system", "content": PROMPTS.get("barbrief.system")},
@@ -277,7 +291,31 @@ def barbrief(
     ]
 
     try:
+        # Log LLM call
+        try:
+            log_task_event(
+                "barbrief",
+                "generation",
+                "llm_call",
+                "Sending brief generation prompt to LLM",
+                {"model": client.model}
+            )
+        except Exception:
+            pass
+        
         content, usage = client.complete(messages)
+        
+        # Log LLM response
+        try:
+            log_task_event(
+                "barbrief",
+                "generation",
+                "llm_response",
+                "Brief LLM response received",
+                {"model": client.model}
+            )
+        except Exception:
+            pass
     except Exception as e:
         # Provide helpful error message for common issues
         if "timeout" in str(e).lower():
@@ -302,11 +340,32 @@ def barbrief(
             raise click.ClickException(f"LLM API error: {e}")
 
     click.echo(f"\nGenerated brief ({usage.get('total_tokens', 'N/A')} tokens used)")
+    
+    try:
+        log_task_event(
+            "barbrief",
+            "generation",
+            "end",
+            "Brief generation complete",
+            {"model": client.model}
+        )
+    except Exception:
+        pass
 
     # Run manual citation verification if requested
     # Note: Automatic verification already happens during generation via client.complete()
     # This provides additional detailed reporting when --verify flag is used
     if verify:
+        try:
+            log_task_event(
+                "barbrief",
+                "verification",
+                "start",
+                "Starting citation verification"
+            )
+        except Exception:
+            pass
+        
         click.echo("\nVerifying citations...")
         verified, unverified = verify_all_citations(content)
 
@@ -326,40 +385,38 @@ def barbrief(
                 "barbrief", verification_content, "citation_verification"
             )
             click.echo(f"Verification report saved: {verify_file}")
-
-    # Apply Chain of Verification if requested
-    if cove:
-        original_content = content
         
-        # Build prior contexts if we have CoVe reference files
-        prior_contexts = {}
-        if cove_reference_context:
-            prior_contexts["cove_reference_files"] = cove_reference_context
-        
-        content, cove_results = run_cove_verification(
-            content, 
-            "barbrief",
-            prior_contexts=prior_contexts if prior_contexts else None
-        )
-        if not cove_results["cove"]["passed"]:
-            # Content has been regenerated to fix issues
-            click.echo(success_message("CoVe corrected issues - brief regenerated"))
-            # Log that regeneration occurred
-            save_log(
-                "barbrief_cove_regeneration",
-                {
-                    "original_length": len(original_content),
-                    "regenerated_length": len(content),
-                    "issues_fixed": cove_results["cove"]["issues"],
-                    "model": "See cove_barbrief_summary.json for model details",
-                },
+        try:
+            log_task_event(
+                "barbrief",
+                "verification",
+                "end",
+                "Citation verification complete"
             )
-        else:
-            click.echo(success_message("CoVe verification passed - no issues found"))
+        except Exception:
+            pass
 
-    # Save the brief
+    # Save the brief with comprehensive metadata
+    metadata = {
+        "Case Facts": case_facts,
+        "Hearing Type": hearing_type.title(),
+    }
+    
+    # Add optional file inputs if provided
+    if strategies:
+        metadata["Strategies"] = ", ".join(strategies)
+    if research:
+        metadata["Research"] = ", ".join(research)
+    if documents:
+        metadata["Documents"] = ", ".join(documents)
+    if context:
+        metadata["Context"] = context
+    
     output_file = save_command_output(
-        output if output else "barbrief", content, "" if output else hearing_type
+        output if output else "barbrief", 
+        content, 
+        "" if output else hearing_type,
+        metadata=metadata
     )
 
     # Show completion message
@@ -368,3 +425,14 @@ def barbrief(
         output_file,
         stats={"Tokens used": usage.get("total_tokens")},
     )
+    
+    # Command end log
+    try:
+        log_task_event(
+            "barbrief",
+            "init",
+            "end",
+            "Barrister's brief generation complete"
+        )
+    except Exception:
+        pass

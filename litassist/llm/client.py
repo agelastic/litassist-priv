@@ -451,7 +451,7 @@ class LLMClientFactory:
             "temperature": 0,
             "top_p": 0.15,
             "thinking_effort": "high",  # Critical foundational command needs thorough thinking
-            "force_verify": True,  # Always verify for foundational docs
+            "enforce_citations": True,  # Retry on citation errors for foundational docs
             "disable_tools": True,  # Claude Sonnet 4 has tool calling issues on OpenRouter (Sept 2025)
         },
         # Strategy - enhanced multi-step legal reasoning
@@ -461,14 +461,14 @@ class LLMClientFactory:
             "top_p": 0.8,  # Focused but not overly restrictive
             "thinking_effort": "max",  # Universal parameter, translates to reasoning object
             "verbosity": "medium",  # Balanced depth in strategic analysis
-            "max_completion_tokens": 16384,  # Extended output for comprehensive strategies
-            "force_verify": True,  # Always verify for strategic guidance
+            "enforce_citations": False,  # Don't retry on citation errors for strategy
         },
         # Strategy sub-type for analysis
         "strategy-analysis": {
             "model": "openai/o3-pro",
             # Note: o3-pro ignores temperature and top_p parameters
             "thinking_effort": "max",  # Universal parameter, translates to reasoning_effort
+            "disable_tools": True,  # o3-pro doesn't support tool calling
         },
         # Brainstorm - varied temperatures for different approaches
         "brainstorm-orthodox": {
@@ -476,7 +476,7 @@ class LLMClientFactory:
             "temperature": 0.3,
             "top_p": 0.7,
             "thinking_effort": "medium",  # Moderate thinking for balanced analysis
-            "force_verify": True,  # Conservative analysis requires verification
+            "enforce_citations": False,  # Don't retry on citation errors for brainstorm
         },
         "brainstorm-unorthodox": {
             "model": "x-ai/grok-4",
@@ -488,20 +488,21 @@ class LLMClientFactory:
             # excessively high `max_tokens` causes "Error processing stream".
             # Explicitly cap it so the request succeeds.
             # "max_tokens": 4096,
-            "force_verify": True,  # Auto-verify creative outputs
+            "enforce_citations": False,  # Don't retry on citation errors for creative outputs
         },
         "brainstorm-analysis": {
             "model": "openai/o3-pro",
             "temperature": 0.2,
             "top_p": 0.8,
             "thinking_effort": "high",  # Universal parameter, translates to reasoning_effort
+            "disable_tools": True,  # o3-pro doesn't support tool calling
         },
         # Draft - superior technical writing (o3 model with very limited parameter support)
         "draft": {
             "model": "openai/o3-pro",
             "thinking_effort": "high",  # Universal parameter
             "verbosity": "high",  # Comprehensive legal drafting
-            "max_completion_tokens": 32768,  # Extended output for comprehensive drafts
+            "disable_tools": True,  # o3-pro doesn't support tool calling
         },
         # Digest - mode-dependent settings
         "digest-summary": {
@@ -527,7 +528,7 @@ class LLMClientFactory:
             "top_p": 0.4,
             "thinking_effort": "low",  # Fast thinking for rapid search results
             "verbosity": "low",  # Concise search summaries
-            "force_verify": False,  # Don't force strict verification
+            "enforce_citations": False,  # Don't enforce strict citation retries
         },
         # Verification - automatic verification for high-risk commands
         "verification": {
@@ -535,14 +536,14 @@ class LLMClientFactory:
             "temperature": 0.2,
             "top_p": 0.3,
             "thinking_effort": "high",
-            "force_verify": False,  # Don't double-verify since this IS verification
+            "enforce_citations": False,  # Don't double-enforce since this IS verification
         },
         "verification-light": {
             "model": "anthropic/claude-sonnet-4",  # Cost-effective for spelling/terminology
             "temperature": 0.2,  # Optimal for factual tasks per hallucination report
             "top_p": 0.2,  # Focused beam for consistency
             "thinking_effort": "medium",  # Just spelling/terminology checks
-            "force_verify": False,  # Avoid loops
+            "enforce_citations": False,  # Avoid loops
             "disable_tools": True,  # Claude Sonnet 4 has tool calling issues on OpenRouter (Sept 2025)
         },
         "verification-heavy": {
@@ -550,7 +551,7 @@ class LLMClientFactory:
             "temperature": 0.2,  # Optimal per hallucination report
             "top_p": 0.3,  # Slightly wider beam for comprehensive checking
             "thinking_effort": "max",  # max for critical tasks (maps to high for GPT-5)
-            "force_verify": False,  # Avoid loops
+            "enforce_citations": False,  # Avoid loops
         },
         # Verify sub-commands with specific model assignments
         "verify-reasoning": {
@@ -558,14 +559,15 @@ class LLMClientFactory:
             "temperature": 0.2,  # o3-pro ignores temperature but set for consistency
             "top_p": 0.3,
             "thinking_effort": "high",  # Universal parameter, translates to reasoning_effort
-            "force_verify": False,
+            "enforce_citations": False,
+            "disable_tools": True,  # o3-pro doesn't support tool calling
         },
         "verify-soundness": {
             "model": "anthropic/claude-opus-4.1",  # Opus for soundness checking
             "temperature": 0.2,
             "top_p": 0.3,
             "thinking_effort": "max",  # max gives 32K thinking tokens vs 16K for high
-            "force_verify": False,
+            "enforce_citations": False,
         },
         # Counsel's Notes - strategic analysis from advocate's perspective
         "counselnotes": {
@@ -573,29 +575,29 @@ class LLMClientFactory:
             "temperature": 0.3,
             "top_p": 0.7,
             "thinking_effort": "high",  # Universal parameter, translates to reasoning_effort
-            "force_verify": True,  # Strategic counsel's notes require verification
+            "enforce_citations": False,  # Don't retry on citation errors for counsel's notes
+            "disable_tools": True,  # o3-pro doesn't support tool calling
         },
         # Barrister's brief - comprehensive document generation
         "barbrief": {
             "model": "openai/o3-pro",
             # o3-pro for comprehensive analysis and superior drafting
-            # Extended token limit for detailed briefs
             "thinking_effort": "high",  # Universal parameter, translates to reasoning object
             "verbosity": "high",  # Detailed comprehensive briefs
-            "max_completion_tokens": 32768,  # 32K tokens for comprehensive output
+            "disable_tools": True,  # o3-pro doesn't support tool calling
         },
         # Caseplan - LLM-driven workflow planning
         "caseplan": {
             "model": "anthropic/claude-sonnet-4",
             "temperature": 0.5,
-            "force_verify": False,
+            "enforce_citations": False,
             "disable_tools": True,  # Claude Sonnet 4 has tool calling issues on OpenRouter (Sept 2025)
         },
         # Caseplan assessment - budget recommendation (Sonnet)
         "caseplan-assessment": {
             "model": "anthropic/claude-sonnet-4",
             "temperature": 0.5,
-            "force_verify": False,
+            "enforce_citations": False,
             "disable_tools": True,  # Claude Sonnet 4 has tool calling issues on OpenRouter (Sept 2025)
         },
         # Chain of Verification - fast, efficient question generation
@@ -604,7 +606,7 @@ class LLMClientFactory:
             "temperature": 0.2,
             "top_p": 0.8,
             "thinking_effort": "medium",  # General CoVe coordination
-            "force_verify": False,  # Avoid recursive verification
+            "enforce_citations": False,  # Avoid recursive verification
             "disable_tools": True,  # Claude Sonnet 4 has tool calling issues on OpenRouter (Sept 2025)
         },
         # CoVe sub-stages with separate model control
@@ -613,7 +615,7 @@ class LLMClientFactory:
             "temperature": 0.2,
             "top_p": 0.8,
             "thinking_effort": "low",  # Fast question generation, minimal thinking needed
-            "force_verify": False,
+            "enforce_citations": False,
             "disable_tools": True,  # Claude Sonnet 4 has tool calling issues on OpenRouter (Sept 2025)
         },
         "cove-answers": {
@@ -621,14 +623,14 @@ class LLMClientFactory:
             "temperature": 0.2,
             "top_p": 0.3,
             "thinking_effort": "max",  # max for consistency (maps to high for GPT-5)
-            "force_verify": False,
+            "enforce_citations": False,
         },
         "cove-verify": {
             "model": "anthropic/claude-sonnet-4",  # Inconsistency detection
             "temperature": 0.2,
             "top_p": 0.3,
             "thinking_effort": "high",  # Critical inconsistency detection needs careful analysis
-            "force_verify": False,
+            "enforce_citations": False,
             "disable_tools": True,  # Claude Sonnet 4 has tool calling issues on OpenRouter (Sept 2025)
         },
         "cove-final": {
@@ -636,7 +638,7 @@ class LLMClientFactory:
             "temperature": 0.2,
             "top_p": 0.4,
             "thinking_effort": "max",  # max for consistency (maps to high for GPT-5)
-            "force_verify": False,
+            "enforce_citations": False,
         },
     }
 
@@ -688,7 +690,7 @@ class LLMClientFactory:
             config = cls.COMMAND_CONFIGS[config_key].copy()
 
         # Extract special flags
-        force_verify = config.pop("force_verify", False)
+        enforce_citations = config.pop("enforce_citations", False)
         disable_tools = config.pop("disable_tools", False)
 
         # Remove premium_model key if present (no longer needed)
@@ -718,8 +720,8 @@ class LLMClientFactory:
         # Set the command context
         client.command_context = config_key
 
-        # Set force verification flag - explicitly set both True and False
-        client._force_verify = force_verify
+        # Set citation enforcement flag - explicitly set both True and False
+        client._enforce_citations = enforce_citations
         client._disable_tools = disable_tools
 
         return client
@@ -797,7 +799,7 @@ class LLMClient(LLMVerificationMixin):
         self.model = model
         self.command_context = None  # Track which command is using this client
 
-        # Set model-specific token limits if enabled in config and not explicitly specified
+        # Set token limit from config if enabled and not explicitly specified
         config = get_config()
         if config.use_token_limits:
             # Determine if we need to transform max_tokens to another parameter
@@ -810,29 +812,8 @@ class LLMClient(LLMVerificationMixin):
             )
 
             if token_param not in default_params:
-                # These limits are carefully chosen to balance comprehensive responses with quality
-                if "google/gemini" in model.lower():
-                    default_params[token_param] = (
-                        32768  # Gemini - increased for comprehensive outputs
-                    )
-                elif "anthropic/claude" in model.lower():
-                    default_params[token_param] = (
-                        32768  # Claude - increased for comprehensive outputs
-                    )
-                elif "openai/gpt-4" in model.lower():
-                    default_params[token_param] = (
-                        32768  # GPT-4 - increased for comprehensive outputs
-                    )
-                elif get_model_family(model) == "openai_reasoning":
-                    default_params[token_param] = (
-                        32768  # o1-pro/o3-pro - increased for comprehensive outputs
-                    )
-                elif "grok" in model.lower():
-                    default_params[token_param] = (
-                        32768  # Grok - increased for comprehensive outputs
-                    )
-                else:
-                    default_params[token_param] = 32768  # Default increased limit
+                # Use token limit from config
+                default_params[token_param] = config.token_limit
 
         self.default_params = default_params
         self._client = None  # Will be created when needed
@@ -848,10 +829,13 @@ class LLMClient(LLMVerificationMixin):
     def _format_date_string(self):
         """Get current date formatted for prompt injection."""
         import pytz
-        sydney_tz = pytz.timezone('Australia/Sydney')
+
+        sydney_tz = pytz.timezone("Australia/Sydney")
         return datetime.now(sydney_tz).strftime("%B %d, %Y")
-    
-    def _prepare_messages_for_model(self, messages: List[Dict[str, str]]) -> List[Dict[str, str]]:
+
+    def _prepare_messages_for_model(
+        self, messages: List[Dict[str, str]]
+    ) -> List[Dict[str, str]]:
         """Prepare messages based on model's system message support."""
         if not supports_system_messages(self.model):
             # For o1/o3 models - merge system into first user message
@@ -859,39 +843,43 @@ class LLMClient(LLMVerificationMixin):
         else:
             # For all other models - add Australian law to system messages
             return self._add_australian_law_to_system(messages)
-    
-    def _merge_system_into_user(self, messages: List[Dict[str, str]]) -> List[Dict[str, str]]:
+
+    def _merge_system_into_user(
+        self, messages: List[Dict[str, str]]
+    ) -> List[Dict[str, str]]:
         """Merge system messages into first user message for o1/o3 models."""
         system_messages = [msg for msg in messages if msg.get("role") == "system"]
         non_system_messages = [msg for msg in messages if msg.get("role") != "system"]
-        
+
         if not system_messages:
             # No system messages to merge
             return messages
-        
+
         # Combine all system content
         system_content = "\n".join([msg.get("content", "") for msg in system_messages])
         if "Australian English" not in system_content:
             system_content += "\n" + PROMPTS.get("base.australian_law")
-        
+
         # Find first user message and prepend system content
         modified_messages = []
         for i, msg in enumerate(non_system_messages):
             if msg.get("role") == "user":
                 content = f"{system_content}\n\n{msg.get('content', '')}"
                 modified_messages.append({"role": "user", "content": content})
-                modified_messages.extend(non_system_messages[i + 1:])
+                modified_messages.extend(non_system_messages[i + 1 :])
                 return modified_messages
-        
+
         # No user message found - just return non-system messages
         return non_system_messages
-    
-    def _add_australian_law_to_system(self, messages: List[Dict[str, str]]) -> List[Dict[str, str]]:
+
+    def _add_australian_law_to_system(
+        self, messages: List[Dict[str, str]]
+    ) -> List[Dict[str, str]]:
         """Add Australian law prompt to system messages."""
         australian_law = PROMPTS.get("base.australian_law")
         if not australian_law:
             return messages
-            
+
         modified_messages = []
         for msg in messages:
             if msg.get("role") == "system":
@@ -902,23 +890,27 @@ class LLMClient(LLMVerificationMixin):
                 modified_messages.append({"role": "system", "content": content})
             else:
                 modified_messages.append(msg)
-        
+
         return modified_messages
-    
-    def _add_date_instruction(self, messages: List[Dict[str, str]]) -> List[Dict[str, str]]:
+
+    def _add_date_instruction(
+        self, messages: List[Dict[str, str]]
+    ) -> List[Dict[str, str]]:
         """Add appropriate date instruction based on tool availability."""
-        if getattr(self, '_disable_tools', False):
+        if getattr(self, "_disable_tools", False):
             # Tools disabled - inject date directly
             today_date = self._format_date_string()
-            date_text = PROMPTS.get("base.date_fallback_instruction").format(date=today_date)
+            date_text = PROMPTS.get("base.date_fallback_instruction").format(
+                date=today_date
+            )
         else:
             # Tools enabled - use tool instruction
             date_text = PROMPTS.get("base.date_tool_instruction")
-        
+
         # Add to first system or user message
         modified_messages = []
         date_added = False
-        
+
         for msg in messages:
             if not date_added and msg.get("role") in ["system", "user"]:
                 content = msg.get("content", "")
@@ -927,7 +919,7 @@ class LLMClient(LLMVerificationMixin):
                 date_added = True
             else:
                 modified_messages.append(msg)
-        
+
         return modified_messages
 
     # The enclosing `complete` method now emits heartbeat updates, so we no
@@ -961,7 +953,7 @@ class LLMClient(LLMVerificationMixin):
         """
         # Step 1: Handle model-specific message formatting
         messages = self._prepare_messages_for_model(messages)
-        
+
         # Step 2: Add date instruction (tool or direct based on disable_tools)
         messages = self._add_date_instruction(messages)
 
@@ -984,10 +976,12 @@ class LLMClient(LLMVerificationMixin):
             filtered_params = get_model_parameters(self.model, params)
 
             # Check if tools should be disabled for this client
-            if getattr(self, '_disable_tools', False):
+            if getattr(self, "_disable_tools", False):
                 # Date has already been injected by _add_date_instruction at line 966
-                logging.info(f"Tools disabled for {self.model}, using date injection fallback")
-                
+                logging.info(
+                    f"Tools disabled for {self.model}, using date injection fallback"
+                )
+
                 # Log the prepared messages
                 save_log(
                     f"llm_{self.model.replace('/', '_')}_messages",
@@ -999,7 +993,7 @@ class LLMClient(LLMVerificationMixin):
                         "tools_disabled": True,
                     },
                 )
-                
+
                 # Call API without tools using prepared messages
                 response = execute_api_call_with_retry(
                     model_name, messages, filtered_params

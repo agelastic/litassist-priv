@@ -8,8 +8,9 @@ to produce a structured legal answer citing relevant cases.
 
 import click
 from litassist.config import get_config
-from litassist.logging_utils import save_log
+from litassist.logging_utils import save_log, log_task_event
 from litassist.timing import timed
+from litassist.llm import LLMClientFactory
 from .search import perform_cse_searches
 from .processors import LookupProcessor
 
@@ -71,6 +72,18 @@ def lookup(
     Raises:
         click.ClickException: If there are errors with the search or LLM API calls.
     """
+    # Command start log
+    try:
+        log_task_event(
+            "lookup",
+            "init",
+            "start",
+            "Starting lookup command",
+            {"model": LLMClientFactory.get_model_for_command("lookup")}
+        )
+    except Exception:
+        pass
+    
     # Handle unsupported verification flags
     if verify:
         from litassist.utils.formatting import warning_message
@@ -90,7 +103,27 @@ def lookup(
         )
 
     # Initialize search service and perform searches
+    try:
+        log_task_event(
+            "lookup",
+            "search",
+            "start",
+            "Starting CSE searches"
+        )
+    except Exception:
+        pass
+    
     links, all_snippets = perform_cse_searches(question, comprehensive, context)
+    
+    try:
+        log_task_event(
+            "lookup",
+            "search",
+            "end",
+            f"CSE searches complete - found {len(links)} links"
+        )
+    except Exception:
+        pass
 
     # Display found links
     click.echo("Found links:")
@@ -99,22 +132,66 @@ def lookup(
 
     # Initialize processor and fetch content
     processor = LookupProcessor(get_config())
+    
+    try:
+        log_task_event(
+            "lookup",
+            "fetching",
+            "start",
+            f"Starting content fetching from {len(links)} sources"
+        )
+    except Exception:
+        pass
+    
     contents = processor.fetch_content(links, all_snippets, no_fetch)
-
-    # Build prompt and get LLM response
-    content_text, estimated_tokens = processor.prepare_content(contents)
-    prompt = processor.build_prompt(
-        question, mode, extract, comprehensive, context, links, contents, content_text
-    )
+    
+    try:
+        log_task_event(
+            "lookup",
+            "fetching",
+            "end",
+            f"Content fetching complete - {len(contents)} documents"
+        )
+    except Exception:
+        pass
 
     # Get LLM client with appropriate parameters
     client = processor.get_llm_client(mode, comprehensive)
     system_content = processor.build_system_prompt(extract, comprehensive)
 
-    # Execute LLM request with retry logic
-    content, usage = processor.execute_llm_request(
-        client, system_content, prompt, estimated_tokens, contents
-    )
+    # Execute LLM request with retry logic and drop-largest truncation
+    try:
+        content, usage = processor.execute_llm_request(
+            client, system_content, question, mode, extract, comprehensive,
+            context, links, contents
+        )
+    except Exception as e:
+        import traceback
+        from litassist.utils.formatting import error_message, tip_message
+        
+        error_msg = str(e)
+        
+        # Log full error for debugging
+        save_log("lookup_error", {
+            "error": error_msg,
+            "traceback": traceback.format_exc(),
+            "question": question,
+            "links_count": len(links),
+            "documents_count": len(contents)
+        })
+        
+        # Show clean error to user
+        if "after dropping all documents" in error_msg:
+            click.echo(error_message("Query too complex: Unable to process even without fetched content"))
+            click.echo(tip_message("Try: 1) A more specific query, 2) --no-fetch flag, or 3) Fewer search terms"))
+        elif "attempts" in error_msg and "remaining" in error_msg:
+            click.echo(error_message(f"Processing failed: {error_msg}"))
+            click.echo(tip_message("The query may be too complex for the model's context window"))
+        else:
+            click.echo(error_message(f"Lookup failed: {error_msg}"))
+        
+        # Exit cleanly without traceback
+        raise click.ClickException("")
 
     # Save the output
     output_file = processor.save_output(
@@ -136,7 +213,6 @@ def lookup(
                 "question": question,
                 "links": "\n".join(links),
                 "context": context,
-                "prompt": prompt,
             },
             "response": content,
             "usage": usage,
@@ -148,3 +224,14 @@ def lookup(
     processor.display_completion_summary(
         output_file, question, extract, comprehensive, context, links
     )
+    
+    # Command end log
+    try:
+        log_task_event(
+            "lookup",
+            "init",
+            "end",
+            "Lookup command complete"
+        )
+    except Exception:
+        pass

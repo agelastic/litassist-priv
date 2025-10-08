@@ -127,7 +127,7 @@ def verify_citations(text, verify_flag):
 def generate_strategic_analysis(documents_content):
     # LLMClientFactory provides configured client
     client = LLMClientFactory.for_command("counselnotes")
-    # Uses anthropic/claude-sonnet-4, temp=0.3, top_p=0.7, force_verify=True
+    # Uses anthropic/claude-sonnet-4, temp=0.3, top_p=0.7, enforce_citations=True
     
     # Multi-document synthesis
     if len(documents_content) > 1:

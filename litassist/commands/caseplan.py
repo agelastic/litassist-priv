@@ -6,7 +6,7 @@ and generates a customized, efficient litigation workflow plan.
 """
 
 import click
-from litassist.logging_utils import save_log, save_command_output
+from litassist.logging_utils import save_log, save_command_output, log_task_event
 from litassist.timing import timed
 from litassist.utils.file_ops import validate_file_size_limit
 from litassist.llm import LLMClientFactory
@@ -162,12 +162,55 @@ def caseplan(case_facts, context, budget, output, verify, noverify):
             )
         )
 
+    # Command start log
+    try:
+        log_task_event(
+            "caseplan",
+            "init",
+            "start",
+            f"Starting caseplan - mode: {'assessment' if budget is None else 'full plan'}",
+            {"budget": budget, "context": context}
+        )
+    except Exception:
+        pass
+    
+    # Read case facts
+    try:
+        log_task_event(
+            "caseplan",
+            "reading",
+            "start",
+            "Reading case facts file"
+        )
+    except Exception:
+        pass
+    
     facts_content = case_facts.read()
     validate_file_size_limit(facts_content, 50000, "Case facts")
+    
+    try:
+        log_task_event(
+            "caseplan",
+            "reading",
+            "end",
+            f"Case facts read: {len(facts_content)} characters"
+        )
+    except Exception:
+        pass
 
     if budget is None:
         # Budget assessment mode (Sonnet)
         click.echo("Analyzing case to recommend appropriate budget level...")
+
+        try:
+            log_task_event(
+                "caseplan",
+                "assessment",
+                "start",
+                "Starting budget assessment"
+            )
+        except Exception:
+            pass
 
         llm_client = LLMClientFactory.for_command("caseplan", "assessment")
 
@@ -183,12 +226,36 @@ def caseplan(case_facts, context, budget, output, verify, noverify):
 
         @timed
         def assess_budget():
-            return llm_client.complete(
+            try:
+                log_task_event(
+                    "caseplan",
+                    "assessment",
+                    "llm_call",
+                    "Sending budget assessment prompt to LLM",
+                    {"model": llm_client.model}
+                )
+            except Exception:
+                pass
+            
+            result = llm_client.complete(
                 [
                     {"role": "system", "content": system_prompt},
                     {"role": "user", "content": user_prompt},
                 ]
             )
+            
+            try:
+                log_task_event(
+                    "caseplan",
+                    "assessment",
+                    "llm_response",
+                    "Budget assessment LLM response received",
+                    {"model": llm_client.model}
+                )
+            except Exception:
+                pass
+            
+            return result
 
         try:
             assessment, usage = assess_budget()
@@ -224,10 +291,30 @@ def caseplan(case_facts, context, budget, output, verify, noverify):
             f"\n{tip_message('To generate full plan, run again with recommended budget:')}"
         )
         click.echo("   e.g., litassist caseplan case_facts.txt --budget standard")
+        
+        try:
+            log_task_event(
+                "caseplan",
+                "assessment",
+                "end",
+                "Budget assessment complete"
+            )
+        except Exception:
+            pass
 
     else:
         # Full plan mode (Opus)
         click.echo("Analyzing case and generating litigation plan...")
+
+        try:
+            log_task_event(
+                "caseplan",
+                "plan",
+                "start",
+                f"Starting full plan generation - budget: {budget}"
+            )
+        except Exception:
+            pass
 
         llm_client = LLMClientFactory.for_command("caseplan")
 
@@ -260,12 +347,36 @@ def caseplan(case_facts, context, budget, output, verify, noverify):
 
         @timed
         def generate_plan():
-            return llm_client.complete(
+            try:
+                log_task_event(
+                    "caseplan",
+                    "plan",
+                    "llm_call",
+                    "Sending plan generation prompt to LLM",
+                    {"model": llm_client.model, "budget": budget}
+                )
+            except Exception:
+                pass
+            
+            result = llm_client.complete(
                 [
                     {"role": "system", "content": system_prompt},
                     {"role": "user", "content": user_prompt},
                 ]
             )
+            
+            try:
+                log_task_event(
+                    "caseplan",
+                    "plan",
+                    "llm_response",
+                    "Plan generation LLM response received",
+                    {"model": llm_client.model}
+                )
+            except Exception:
+                pass
+            
+            return result
 
         try:
             plan_content, usage = generate_plan()
@@ -285,6 +396,19 @@ def caseplan(case_facts, context, budget, output, verify, noverify):
 
         # Extract and save CLI commands
         extracted_commands = extract_cli_commands(plan_content)
+        
+        # Count the number of litassist commands extracted
+        command_count = extracted_commands.count("litassist")
+        try:
+            log_task_event(
+                "caseplan",
+                "plan",
+                "commands_extracted",
+                f"Extracted {command_count} CLI commands from plan"
+            )
+        except Exception:
+            pass
+        
         commands_file = save_command_output(
             f"{output}_commands" if output else f"caseplan_commands_{budget}",
             extracted_commands,
@@ -313,3 +437,24 @@ def caseplan(case_facts, context, budget, output, verify, noverify):
         click.echo(saved_message(f'Executable commands saved to: "{commands_file}"'))
         msg = tip_message(f'Execute commands: bash "{commands_file}"')
         click.echo(f"\n{msg}")
+        
+        try:
+            log_task_event(
+                "caseplan",
+                "plan",
+                "end",
+                f"Full plan generation complete - budget: {budget}"
+            )
+        except Exception:
+            pass
+    
+    # Command end log
+    try:
+        log_task_event(
+            "caseplan",
+            "init",
+            "end",
+            f"Caseplan command complete - mode: {'assessment' if budget is None else 'full plan'}"
+        )
+    except Exception:
+        pass

@@ -9,9 +9,8 @@ import click
 import logging
 import time
 import os
-from litassist.logging_utils import save_command_output
+from litassist.logging_utils import save_command_output, log_task_event
 from litassist.utils.formatting import (
-    warning_message,
     success_message,
     saved_message,
     stats_message,
@@ -25,7 +24,6 @@ from litassist.prompts import PROMPTS
 from .fetchers import _fetch_url_content
 from .error_handlers import (
     handle_llm_error,
-    check_model_token_limits,
     warn_large_content_non_gemini,
 )
 
@@ -40,6 +38,9 @@ class LookupProcessor:
         """
         Fetch content from all provided links with appropriate handling
         for different site types and JavaScript rendering.
+        
+        Returns:
+            List of (source_name, content) tuples
         """
         contents = []
         fetched_count = 0
@@ -53,7 +54,7 @@ class LookupProcessor:
             click.echo("  [Info: Content fetching disabled by --no-fetch flag]")
             # Add search snippets to content even if not fetching URLs
             if all_snippets:
-                contents.append(self._build_snippet_content(all_snippets))
+                contents.append(("Search Snippets", self._build_snippet_content(all_snippets)))
             return contents
 
         max_time = self.config.max_fetch_time
@@ -86,13 +87,17 @@ class LookupProcessor:
                 )
                 break
 
-            # Skip jade.io main domain URLs - use snippets instead
-            if "://jade.io/" in link.lower():
-                click.echo(
-                    "  [→ Jade.io: Using search snippet only (site restrictions)]"
-                )
-                skipped_count += 1
-                continue
+            # Skip jade.io URLs except ndfv.jade.io which we'll transform
+            if "jade.io" in link.lower():
+                # Allow ndfv.jade.io URLs (will be transformed to download URLs)
+                if "ndfv.jade.io" in link.lower():
+                    pass  # Continue to fetch this URL
+                else:
+                    click.echo(
+                        "  [→ Jade.io: Using search snippet only (site restrictions)]"
+                    )
+                    skipped_count += 1
+                    continue
 
             # Domain-based rate limiting (0.5s between requests to same domain)
             domain = link.split("/")[2]
@@ -111,9 +116,8 @@ class LookupProcessor:
             if content:
                 # Save fetched page to logs
                 self._save_fetched_content(content, link)
-                contents.append(
-                    f"=== ACTUAL CONTENT FROM: {link} ===\n{content}\n=== END OF CONTENT FROM: {link} ===\n"
-                )
+                # Store as tuple of (link, content) for truncation manager
+                contents.append((link, content))
 
                 # Check if it's PDF content for appropriate user message
                 if content.startswith("[PDF DOCUMENT EXTRACTED"):
@@ -142,7 +146,7 @@ class LookupProcessor:
 
         # Add search snippets to the beginning of content if available
         if all_snippets:
-            contents.insert(0, self._build_snippet_content(all_snippets))
+            contents.insert(0, ("Search Snippets", self._build_snippet_content(all_snippets)))
 
         return contents
 
@@ -189,42 +193,6 @@ class LookupProcessor:
         snippet_text += "\n=== END OF SEARCH SNIPPETS ===\n"
         return snippet_text
 
-    def prepare_content(self, contents):
-        """Prepare content for LLM processing with intelligent truncation."""
-        if not contents:
-            return "", 0
-
-        # Calculate token estimate
-        total_chars = sum(len(c) for c in contents)
-        estimated_tokens = total_chars / 4  # Rough estimate: 4 chars per token
-
-        # Model-specific token limits (adjust when changing models)
-        # Gemini 2.5 Pro: 1M context window - using 90% (900k) for content
-        # Reserve 100k for response generation, prompts, and safety margin
-        max_content_tokens = 900000  # 90% of Gemini 2.5 Pro's 1M limit
-
-        if estimated_tokens > max_content_tokens:
-            # Smart truncation: keep as much as possible
-            click.echo(
-                f"  [Note: Content exceeds {max_content_tokens:,} token limit ({int(estimated_tokens):,} tokens estimated), intelligently truncating]"
-            )
-
-            # Calculate how many documents we can include
-            chars_per_doc = total_chars / len(contents)
-            docs_to_include = int(max_content_tokens * 4 / chars_per_doc)
-            content_text = "\n".join(contents[:docs_to_include])
-
-            click.echo(
-                f"  [Including {docs_to_include} of {len(contents)} fetched documents]"
-            )
-        else:
-            # Use ALL fetched content - no artificial limits!
-            content_text = "\n".join(contents)
-            click.echo(
-                f"  [Using all {len(contents)} fetched documents (~{int(estimated_tokens):,} tokens)]"
-            )
-
-        return content_text, estimated_tokens
 
     def build_prompt(
         self,
@@ -234,15 +202,31 @@ class LookupProcessor:
         comprehensive,
         context,
         links,
-        contents,
-        content_text,
+        documents,
     ):
-        """Build the appropriate prompt based on available content and options."""
-        if contents:
+        """Build the appropriate prompt based on available content and options.
+        
+        Args:
+            documents: List of (source, content) tuples
+        """
+        if documents:
+            # Build content text from documents
+            content_sections = []
+            for source, content in documents:
+                if source == "Search Snippets":
+                    # Snippets are already formatted
+                    content_sections.append(content)
+                else:
+                    # Add document separators for fetched content
+                    content_sections.append(
+                        f"=== ACTUAL CONTENT FROM: {source} ===\n{content}\n=== END OF CONTENT FROM: {source} ==="
+                    )
+            content_text = "\n\n".join(content_sections)
+            
             # Create a rich prompt with actual content
             prompt = PROMPTS.get("lookup.content_qa").format(
                 question=question,
-                count=len(contents),
+                count=len(documents),
                 links=chr(10).join(links),
                 content=content_text,
             )
@@ -282,20 +266,18 @@ class LookupProcessor:
                 overrides = {
                     "temperature": 0,
                     "top_p": 0.05,
-                    "max_tokens": 16384,
                 }  # Maximum precision
             else:  # broad
                 overrides = {
                     "temperature": 0.3,
                     "top_p": 0.7,
-                    "max_tokens": 16384,
                 }  # Controlled creativity
         else:
             # Standard parameters
             if mode == "irac":
-                overrides = {"temperature": 0, "top_p": 0.1, "max_tokens": 16384}
+                overrides = {"temperature": 0, "top_p": 0.1}
             else:
-                overrides = {"temperature": 0.5, "top_p": 0.9, "max_tokens": 16384}
+                overrides = {"temperature": 0.5, "top_p": 0.9}
 
         return LLMClientFactory.for_command("lookup", **overrides)
 
@@ -327,69 +309,131 @@ class LookupProcessor:
             return f"{base_system}\n\n{standard_instructions}"
 
     def execute_llm_request(
-        self, client, system_content, prompt, estimated_tokens, contents
+        self, client, system_content, question, mode, extract, comprehensive, 
+        context, links, documents
     ):
-        """Execute LLM request with retry logic and error handling."""
-        # Token pre-flight check
-        system_tokens = len(system_content) / 4
-        user_tokens = len(prompt) / 4
-        total_request_tokens = system_tokens + user_tokens
-
-        # Warn if using large content with non-Gemini models
-        warn_large_content_non_gemini(client, estimated_tokens)
-
-        # Check token limits and truncate if needed
-        should_truncate, max_tokens = check_model_token_limits(
-            client, total_request_tokens
-        )
-        if should_truncate:
-            # Truncate the prompt to fit
-            max_prompt_chars = int(
-                max_tokens * 0.8 * 4
-            )  # 80% for prompt, convert to chars
-            prompt = (
-                prompt[:max_prompt_chars] + "\n[Content truncated due to token limits]"
+        """Execute LLM request with retry logic and drop-largest truncation.
+        
+        Args:
+            documents: List of (source, content) tuples that will be managed for truncation
+        """
+        from litassist.utils.truncation import execute_with_truncation
+        from litassist.utils.formatting import warning_message
+        from litassist.logging_utils import save_log
+        
+        # Estimate tokens for warning purposes
+        if documents:
+            total_chars = sum(len(content) for _, content in documents)
+            estimated_tokens = total_chars / 4
+            # Warn if using large content with non-Gemini models
+            warn_large_content_non_gemini(client, estimated_tokens)
+            
+            # Show processing stage
+            click.echo(info_message(f"Processing {len(documents)} documents for analysis..."))
+        
+        def build_prompt_fn(current_documents):
+            """Build prompt with current set of documents."""
+            return self.build_prompt(
+                question, mode, extract, comprehensive, 
+                context, links, current_documents
             )
-
-        # Retry logic for transient errors
-        max_retries = 2
-        retry_delay = 5
-        content = None
-        usage = None
-
-        for attempt in range(max_retries + 1):
+        
+        def execute_fn(prompt):
+            """Execute the LLM call - API handler manages retries."""
             try:
-                content, usage = client.complete(
-                    [
-                        {"role": "system", "content": system_content},
-                        {"role": "user", "content": prompt},
-                    ]
-                )
-                break  # Success, exit retry loop
-
+                try:
+                    log_task_event(
+                        "lookup",
+                        "generation",
+                        "llm_call",
+                        "Sending lookup prompt to LLM",
+                        {"model": client.model}
+                    )
+                except Exception:
+                    pass
+                
+                result = client.complete([
+                    {"role": "system", "content": system_content},
+                    {"role": "user", "content": prompt},
+                ])
+                
+                try:
+                    log_task_event(
+                        "lookup",
+                        "generation",
+                        "llm_response",
+                        "Lookup LLM response received",
+                        {"model": client.model}
+                    )
+                except Exception:
+                    pass
+                
+                return result
             except Exception as e:
                 error_str = str(e)
                 logging.error(f"Lookup error details: {error_str}")
-
-                # Check if this is a retryable error
-                if attempt < max_retries and any(
-                    x in error_str.lower()
-                    for x in ["choices", "timeout", "rate", "retry"]
-                ):
-                    click.echo(
-                        warning_message(
-                            f"API error on attempt {attempt + 1}/{max_retries + 1}, retrying in {retry_delay}s..."
-                        )
-                    )
-                    time.sleep(retry_delay)
-                    retry_delay *= 2  # Exponential backoff
-                    continue
-
-                # Final attempt failed or non-retryable error
-                handle_llm_error(error_str, contents)
+                
+                # Let truncation manager handle token/length errors
+                if any(x in error_str.lower() for x in ['token', 'context', 'length', 'too long', 'maximum']):
+                    raise
+                
+                # For all other errors, show user-friendly message and fail
+                handle_llm_error(error_str, documents)
                 raise click.ClickException("Lookup failed - see error details above")
-
-        return content, usage
+        
+        def log_drop(dropped_name, remaining_docs, attempt):
+            """Log when a document is dropped."""
+            save_log(
+                "lookup_truncation_drop",
+                {
+                    "command": "lookup",
+                    "dropped_source": dropped_name,
+                    "remaining_sources": remaining_docs,
+                    "attempt": attempt,
+                },
+            )
+            
+            try:
+                log_task_event(
+                    "lookup",
+                    "truncation",
+                    "drop",
+                    f"Dropped document: {dropped_name}",
+                    {"remaining_docs": len(remaining_docs), "attempt": attempt}
+                )
+            except Exception:
+                pass
+        
+        # If no documents, just execute directly without truncation
+        if not documents:
+            prompt = self.build_prompt(
+                question, mode, extract, comprehensive, 
+                context, links, documents
+            )
+            return execute_fn(prompt)
+        
+        # Execute with truncation management
+        try:
+            if documents and len(documents) > 1:
+                click.echo(verifying_message("Adjusting content to fit model limits..."))
+            
+            return execute_with_truncation(
+                client=client,
+                build_prompt_fn=build_prompt_fn,
+                documents=documents,
+                execute_fn=execute_fn,
+                log_fn=log_drop,
+                system_content=system_content
+            )
+        except Exception as e:
+            if "Failed to get LLM response after dropping all documents" in str(e):
+                click.echo(
+                    warning_message(
+                        "Failed to get response even after dropping all documents. "
+                        "The query may be too complex or the model may be unavailable."
+                    )
+                )
+            raise
 
     def save_output(
         self, content, question, mode, extract, comprehensive, context, output

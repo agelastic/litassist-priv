@@ -217,16 +217,27 @@ def extract_citations(text: str) -> List[str]:
 
     # Pattern 9: Australian statutes with year and optional jurisdiction
     # Build regex in parts for clarity
-    connecting_words = r'(?:of|and|for|the|on|in|to|with|by|at|from)'
-    sentence_starters = r'(?:Does|Do|Did|Can|Could|Should|Would|Will|Is|Are|Was|Were|Has|Have|Had|What|Where|When|Why|Who|Which|How)'
-    
-    # Act pattern components
-    act_name_part = r'[A-Z][a-zA-Z]+(?:\s+' + connecting_words + r')*(?:\s+[A-Z][a-zA-Z]+)*'
-    act_year_part = r'\s+Act\s+\d{4}'
-    jurisdiction_part = r'(?:\s+\([A-Z][a-zA-Z]+\))?'
-    
+    connecting_words = r"(?:of|and|for|the|on|in|to|with|by|at|from)"
+    sentence_starters = r"(?:Does|Do|Did|Can|Could|Should|Would|Will|Is|Are|Was|Were|Has|Have|Had|What|Where|When|Why|Who|Which|How)"
+
+    # Act pattern components (restrict to single-line, Title-Case start)
+    # Prevent crossing newlines by using spaces/tabs only; avoid swallowing ALL-CAPS headers
+    act_name_part = (
+        r"[A-Z][a-z]+(?:[ \t]+" + connecting_words + r")*(?:[ \t]+[A-Z][a-zA-Z]+)*"
+    )
+    act_year_part = r"[ \t]+Act[ \t]+\d{4}"
+    jurisdiction_part = r"(?:[ \t]+\([A-Z][a-zA-Z]+\))?"
+
     # Complete pattern: skip sentence starters, then capture Act name
-    act_pattern = r'(?<!\w)(?!' + sentence_starters + r'\s+)(' + act_name_part + act_year_part + jurisdiction_part + r')'
+    act_pattern = (
+        r"(?<!\w)(?!"
+        + sentence_starters
+        + r"[ \t]+)("
+        + act_name_part
+        + act_year_part
+        + jurisdiction_part
+        + r")"
+    )
     for match in re.finditer(act_pattern, text):
         citations.add(match.group(1))
 
@@ -576,9 +587,7 @@ def validate_citation_patterns(content: str, enable_online: bool = True) -> List
         severity = (
             "high"
             if len(unique_issues) > 5
-            else "medium"
-            if len(unique_issues) > 2
-            else "low"
+            else "medium" if len(unique_issues) > 2 else "low"
         )
 
         # Create detailed action message

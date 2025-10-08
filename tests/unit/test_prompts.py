@@ -45,8 +45,8 @@ class TestPromptManager:
 
         assert isinstance(system_prompt, str)
         assert len(system_prompt) > 0
-        # Should contain both Australian law base and command-specific content
-        assert "Australian" in system_prompt
+        # Should contain command-specific content (Australian law is added by LLM client)
+        assert "Extract factual information" in system_prompt or "heading" in system_prompt
 
     def test_get_format_template(self):
         """Test format template retrieval."""

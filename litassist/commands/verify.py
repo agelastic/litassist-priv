@@ -24,7 +24,7 @@ from litassist.utils.formatting import (
     error_message,
     warning_message,
 )
-from litassist.logging_utils import save_command_output
+from litassist.logging_utils import save_command_output, log_task_event
 from litassist.verification_chain import run_cove_verification, format_cove_report
 from litassist.citation_context import fetch_citation_context
 from litassist.timing import timed
@@ -72,7 +72,29 @@ def verify(file, citations, soundness, reasoning, cove, output, reference, cove_
     if not any([citations, soundness, reasoning]):
         citations = soundness = reasoning = True
 
+    # Command start log
+    try:
+        log_task_event(
+            "verify",
+            "init",
+            "start",
+            "Starting verification command",
+            {"stages": f"citations={citations}, soundness={soundness}, reasoning={reasoning}, cove={cove}"}
+        )
+    except Exception:
+        pass
+
     click.echo(verifying_message(f"Verifying {file}..."))
+
+    try:
+        log_task_event(
+            "verify",
+            "reading",
+            "start",
+            "Reading input document"
+        )
+    except Exception:
+        pass
 
     try:
         content = read_document(file)
@@ -84,12 +106,33 @@ def verify(file, citations, soundness, reasoning, cove, output, reference, cove_
     if not content.strip():
         raise click.ClickException("File is empty")
     
+    try:
+        log_task_event(
+            "verify",
+            "reading",
+            "end",
+            f"Document read: {len(content)} characters"
+        )
+    except Exception:
+        pass
+    
     # Process reference files if provided
     reference_context, reference_files = process_reference_files(
         reference, 
         purpose="reference",
         show_char_count=True
     )
+    
+    if reference_files:
+        try:
+            log_task_event(
+                "verify",
+                "reference",
+                "processed",
+                f"Processed {len(reference_files)} reference files"
+            )
+        except Exception:
+            pass
     
     # Process CoVe reference files if provided (for answer stage, not question generation)
     cove_reference_context, cove_reference_files = process_reference_files(
@@ -99,6 +142,17 @@ def verify(file, citations, soundness, reasoning, cove, output, reference, cove_
         flag_enabled=cove,
         show_char_count=True
     )
+    
+    if cove_reference_files:
+        try:
+            log_task_event(
+                "verify",
+                "cove_reference",
+                "processed",
+                f"Processed {len(cove_reference_files)} CoVe reference files"
+            )
+        except Exception:
+            pass
 
     base_name = os.path.splitext(file)[0]
     reports_generated = 0
@@ -110,6 +164,17 @@ def verify(file, citations, soundness, reasoning, cove, output, reference, cove_
     # 1. Citation Verification
     if citations:
         click.echo(verifying_message("Starting citation verification..."))
+        
+        try:
+            log_task_event(
+                "verify",
+                "citations",
+                "start",
+                "Starting citation verification"
+            )
+        except Exception:
+            pass
+        
         try:
             verified, unverified = verify_all_citations(content)
             citation_report = _format_citation_report(
@@ -120,9 +185,31 @@ def verify(file, citations, soundness, reasoning, cove, output, reference, cove_
             case_content = {}
             if verified:
                 click.echo(verifying_message(f"Fetching full content for {len(verified)} verified cases..."))
+                
+                try:
+                    log_task_event(
+                        "verify",
+                        "citations",
+                        "fetching_start",
+                        f"Fetching content for {len(verified)} verified cases"
+                    )
+                except Exception:
+                    pass
+                
                 case_content = fetch_citation_context(verified)  # Pass ALL verified citations
+                
                 if case_content:
                     click.echo(success_message(f"Fetched content for {len(case_content)} cases"))
+                    
+                    try:
+                        log_task_event(
+                            "verify",
+                            "citations",
+                            "fetching_end",
+                            f"Fetched content for {len(case_content)} cases"
+                        )
+                    except Exception:
+                        pass
             citation_file = save_command_output(
                 f"{output}_citations" if output else "verify_citations",
                 citation_report,
@@ -144,12 +231,32 @@ def verify(file, citations, soundness, reasoning, cove, output, reference, cove_
             click.echo(f"   - Details: {citation_file}")
             extra_files["Citation report"] = citation_file
             reports_generated += 1
+            
+            try:
+                log_task_event(
+                    "verify",
+                    "citations",
+                    "end",
+                    f"Citation verification complete - {len(verified)} verified, {len(unverified)} unverified"
+                )
+            except Exception:
+                pass
         except Exception as e:
             _handle_verification_error("Citation verification", e)
 
     # 2. Reasoning Trace Verification/Generation (run BEFORE soundness to allow combination)
     if reasoning:
         click.echo(verifying_message("Starting reasoning trace verification..."))
+        
+        try:
+            log_task_event(
+                "verify",
+                "reasoning",
+                "start",
+                "Starting reasoning trace verification"
+            )
+        except Exception:
+            pass
         
         # If citations weren't verified but we're doing reasoning, still fetch case content
         if not case_content:
@@ -228,7 +335,30 @@ def verify(file, citations, soundness, reasoning, cove, output, reference, cove_
                 
                 while response is None and attempts < 5:
                     try:
+                        try:
+                            log_task_event(
+                                "verify",
+                                "reasoning",
+                                "llm_call",
+                                "Sending reasoning verification prompt to LLM",
+                                {"model": client.model}
+                            )
+                        except Exception:
+                            pass
+                        
                         response, _ = client.complete(messages, skip_citation_verification=True)
+                        
+                        if response:
+                            try:
+                                log_task_event(
+                                    "verify",
+                                    "reasoning",
+                                    "llm_response",
+                                    "Reasoning LLM response received",
+                                    {"model": client.model}
+                                )
+                            except Exception:
+                                pass
                     except Exception as e:
                         error_str = str(e).lower()
                         # Check for token/context limit errors
@@ -310,12 +440,32 @@ def verify(file, citations, soundness, reasoning, cove, output, reference, cove_
                 click.echo(f"   - Details: {reasoning_file}")
                 extra_files["Reasoning analysis"] = reasoning_file
                 reports_generated += 1
+                
+            try:
+                log_task_event(
+                    "verify",
+                    "reasoning",
+                    "end",
+                    f"Reasoning trace {action} - confidence {existing_trace.confidence}%" if existing_trace else "Reasoning trace complete"
+                )
+            except Exception:
+                pass
         except Exception as e:
             _handle_verification_error("Reasoning trace verification", e)
 
     # 3. Legal Soundness Verification
     if soundness:
         click.echo(verifying_message("Starting legal soundness check..."))
+        
+        try:
+            log_task_event(
+                "verify",
+                "soundness",
+                "start",
+                "Starting legal soundness verification"
+            )
+        except Exception:
+            pass
         
         # If citations weren't fetched yet but we're doing soundness, still fetch case content
         if not case_content:
@@ -329,27 +479,81 @@ def verify(file, citations, soundness, reasoning, cove, output, reference, cove_
         try:
             client = LLMClientFactory.for_command("verify-soundness")
             
-            # Build citation context with FULL case content if available
-            full_citation_context = ""
-            if case_content:
-                full_citation_context = "## Full Legal Documents\n\n"
-                for citation, full_text in case_content.items():
-                    full_citation_context += f"=== {citation} ===\n\n{full_text}\n\n"
+            # Try with full context, implement backoff if prompt overload
+            soundness_result = None
+            soundness_model = None
+            cases_to_include = list(case_content.items()) if case_content else []
+            attempts = 0
             
-            # Add reference files to citation context
-            if reference_context:
-                full_citation_context += "\n\n## Reference Documents\n\n"
-                full_citation_context += reference_context
+            while soundness_result is None and attempts < 5:
+                try:
+                    # Build citation context with case content for this attempt
+                    full_citation_context = ""
+                    if cases_to_include:
+                        full_citation_context = "## Full Legal Documents\n\n"
+                        for citation, full_text in cases_to_include:
+                            full_citation_context += f"=== {citation} ===\n\n{full_text}\n\n"
+                    
+                    # Add reference files to citation context
+                    if reference_context:
+                        full_citation_context += "\n\n## Reference Documents\n\n"
+                        full_citation_context += reference_context
+                    
+                    if citation_report:
+                        full_citation_context += "\n\n## Citation Verification Summary\n" + citation_report
+                    
+                    # Pass both citation and reasoning contexts if available
+                    try:
+                        log_task_event(
+                            "verify",
+                            "soundness",
+                            "llm_call",
+                            "Sending soundness verification prompt to LLM",
+                            {"model": client.model}
+                        )
+                    except Exception:
+                        pass
+                    
+                    soundness_result, soundness_model = client.verify(
+                        content,
+                        citation_context=full_citation_context if full_citation_context else None,
+                        reasoning_context=reasoning_response,
+                    )
+                    
+                    if soundness_result:
+                        try:
+                            log_task_event(
+                                "verify",
+                                "soundness",
+                                "llm_response",
+                                "Soundness LLM response received",
+                                {"model": soundness_model}
+                            )
+                        except Exception:
+                            pass
+                except Exception as e:
+                    error_str = str(e).lower()
+                    # Check for token/context limit errors
+                    if any(x in error_str for x in ['token', 'context', 'length', 'too long', 'maximum']):
+                        if cases_to_include:
+                            # Find and drop the largest case
+                            largest_idx = max(range(len(cases_to_include)), 
+                                            key=lambda i: len(cases_to_include[i][1]))
+                            dropped_case = cases_to_include.pop(largest_idx)
+                            click.echo(warning_message(
+                                f"Prompt exceeded token limit. Dropping largest case: {dropped_case[0]}"
+                            ))
+                            attempts += 1
+                        else:
+                            # No more cases to drop, re-raise the error
+                            raise
+                    else:
+                        # Not a token limit error, re-raise
+                        raise
             
-            if citation_report:
-                full_citation_context += "\n\n## Citation Verification Summary\n" + citation_report
+            if soundness_result is None:
+                raise click.ClickException("Failed to get soundness verification after dropping all case content")
             
-            # Pass both citation and reasoning contexts if available
-            soundness_result, soundness_model = client.verify(
-                content,
-                citation_context=full_citation_context if full_citation_context else None,
-                reasoning_context=reasoning_response,
-            )
             issues = _parse_soundness_issues(soundness_result)
             soundness_report = _format_soundness_report(issues, soundness_result)
             soundness_file = save_command_output(
@@ -373,6 +577,16 @@ def verify(file, citations, soundness, reasoning, cove, output, reference, cove_
             click.echo(f"   - Details: {soundness_file}")
             extra_files["Soundness report"] = soundness_file
             reports_generated += 1
+            
+            try:
+                log_task_event(
+                    "verify",
+                    "soundness",
+                    "end",
+                    f"Legal soundness check complete - {len(issues)} issues found"
+                )
+            except Exception:
+                pass
         except Exception as e:
             _handle_verification_error("Legal soundness check", e)
 
@@ -387,6 +601,17 @@ def verify(file, citations, soundness, reasoning, cove, output, reference, cove_
             )
         else:
             click.echo(verifying_message("Starting Chain of Verification..."))
+            
+            try:
+                log_task_event(
+                    "verify",
+                    "cove",
+                    "start",
+                    "Starting Chain of Verification"
+                )
+            except Exception:
+                pass
+            
             try:
                 # Use the most refined version of content available
                 final_content = content
@@ -472,10 +697,32 @@ def verify(file, citations, soundness, reasoning, cove, output, reference, cove_
                     click.echo("   - No rewrite needed (document verified as accurate)")
                 extra_files["CoVe report"] = cove_file
                 reports_generated += 1
+                
+                try:
+                    log_task_event(
+                        "verify",
+                        "cove",
+                        "end",
+                        f"Chain of Verification complete - {'regenerated' if cove_results['cove']['regenerated'] else 'verified'}"
+                    )
+                except Exception:
+                    pass
             except Exception as e:
                 _handle_verification_error("Chain of Verification", e)
 
     click.echo(f"\nVerification complete. {reports_generated} reports generated.")
+    
+    # Command end log
+    try:
+        log_task_event(
+            "verify",
+            "init",
+            "end",
+            f"Verification command complete - {reports_generated} reports generated"
+        )
+    except Exception:
+        pass
+    
     save_log(
         "verify",
         {

@@ -105,8 +105,8 @@ def determine_strict_mode(client_instance: Any) -> bool:
     Returns:
         True for strict mode, False for lenient mode
     """
-    # For commands like lookup that have force_verify=False, use lenient mode
-    return getattr(client_instance, "_force_verify", True)
+    # For commands like lookup that have enforce_citations=False, use lenient mode
+    return getattr(client_instance, "_enforce_citations", True)
 
 
 def process_citation_verification(

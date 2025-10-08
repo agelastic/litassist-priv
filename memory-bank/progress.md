@@ -48,7 +48,9 @@
 - **Verification**: Now uses Claude 4 Opus, with broadened citation search and increased file size limits.
 - **Prompt System**: YAML-based, updated for clarity, compliance, and new features.
 - **Zero-Emoji Policy**: Enforced across codebase and documentation.
-- **Testing**: Expanded and refactored test suite with pytest tmp_path fixtures and new unit tests.
+- **Testing**: The project utilizes a two-tiered testing strategy.
+  - **Automated Unit Tests**: A comprehensive suite of offline, mocked tests located in `tests/unit/` run via `pytest`. These are fast, cost-free, and integrated into the pre-commit hooks and CI/CD pipeline.
+  - **Manual Validation Scripts**: A collection of scripts in `test-scripts/` designed for manual execution. These scripts make **real API calls** to validate end-to-end integration and output quality, and therefore incur costs.
 - **Documentation**: Comprehensive architectural docs, LaTeX article, and organized development planning docs.
 
 ## What’s left to build

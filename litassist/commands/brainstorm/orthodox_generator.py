@@ -9,6 +9,7 @@ import click
 from litassist.llm import LLMClientFactory
 from litassist.utils.legal_reasoning import create_reasoning_prompt
 from litassist.prompts import PROMPTS
+from litassist.logging_utils import log_task_event
 
 
 def generate_orthodox_strategies(
@@ -61,6 +62,29 @@ def generate_orthodox_strategies(
         raise click.ClickException(f"Error generating orthodox strategies: {str(e)}")
 
     # Validate citations
+    try:
+        log_task_event(
+            "brainstorm",
+            "orthodox-citations",
+            "start",
+            "Validating citations in orthodox strategies",
+        )
+    except Exception:
+        pass
     orthodox_citation_issues = orthodox_client.validate_citations(orthodox_content)
+    try:
+        log_task_event(
+            "brainstorm",
+            "orthodox-citations",
+            "end",
+            "Orthodox citation validation complete",
+            {
+                "issues": (
+                    len(orthodox_citation_issues) if orthodox_citation_issues else 0
+                )
+            },
+        )
+    except Exception:
+        pass
 
     return orthodox_content, orthodox_usage, orthodox_citation_issues

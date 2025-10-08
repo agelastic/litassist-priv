@@ -12,7 +12,7 @@ from litassist.utils.core import (
     timed,
     parse_strategies_file,
 )
-from litassist.utils.file_ops import validate_file_size_limit, process_reference_files
+from litassist.utils.file_ops import validate_file_size_limit
 from litassist.utils.legal_reasoning import (
     create_reasoning_prompt,
     extract_reasoning_trace,
@@ -25,10 +25,9 @@ from litassist.utils.formatting import (
     info_message,
     tip_message,
 )
-from litassist.logging_utils import save_log
 from litassist.llm import LLMClientFactory
 from litassist.prompts import PROMPTS
-from litassist.verification_chain import run_cove_verification
+from litassist.logging_utils import log_task_event
 
 from .validators import validate_case_facts_format, extract_legal_issues
 from .ranker import create_consolidated_reasoning_trace
@@ -50,21 +49,11 @@ from .file_handler import save_strategy_outputs, save_strategy_log
 @click.option(
     "--noverify",
     is_flag=True,
-    help="Skip standard verification (does not affect --cove)",
-)
-@click.option(
-    "--cove",
-    is_flag=True,
-    help="Use Chain of Verification instead of standard verification",
+    help="Skip standard verification",
 )
 @click.option("--output", type=str, help="Custom output filename prefix")
-@click.option(
-    "--cove-reference",
-    type=str,
-    help="Glob pattern for reference files to include in CoVe answer stage (e.g., 'exhibits/*.pdf', 'affidavits/*.txt'). Requires --cove flag."
-)
 @timed
-def strategy(case_facts, outcome, strategies, verify, noverify, cove, output, cove_reference):
+def strategy(case_facts, outcome, strategies, verify, noverify, output):
     """
     Generate legal strategy options and draft documents for Australian civil matters.
 
@@ -83,14 +72,19 @@ def strategy(case_facts, outcome, strategies, verify, noverify, cove, output, co
     Raises:
         click.ClickException: If case facts are invalid or LLM errors occur
     """
-    # Process CoVe reference files if provided
-    cove_reference_context, _ = process_reference_files(
-        cove_reference,
-        purpose="CoVe",
-        require_flag="--cove",
-        flag_enabled=cove
-    )
-    
+
+    # Command start log
+    try:
+        log_task_event(
+            "strategy",
+            "init",
+            "start",
+            "Starting strategy generation",
+            {"model": LLMClientFactory.get_model_for_command("strategy")},
+        )
+    except Exception:
+        pass
+
     # Read and validate case facts
     click.echo(info_message("Validating case facts format..."))
     case_text = case_facts.read()
@@ -146,6 +140,16 @@ def strategy(case_facts, outcome, strategies, verify, noverify, cove, output, co
             )
 
     # Generate strategic options
+    try:
+        log_task_event(
+            "strategy",
+            "options",
+            "start",
+            "Generating strategic options",
+            {"model": LLMClientFactory.get_model_for_command("strategy")},
+        )
+    except Exception:
+        pass
     click.echo(info_message("Generating strategic options..."))
     system_prompt = PROMPTS.get("commands.strategy.system")
 
@@ -186,12 +190,47 @@ def strategy(case_facts, outcome, strategies, verify, noverify, cove, output, co
 
     # Generate strategic options with reasoning
     try:
+        # Explicit on-screen LLM call event with model name
+        try:
+            log_task_event(
+                "strategy",
+                "options",
+                "llm_call",
+                "Sending options prompt to LLM",
+                {"model": llm_client.model},
+            )
+        except Exception:
+            pass
+
         strategy_content, strategy_usage = llm_client.complete(
             [
                 {"role": "system", "content": system_prompt},
                 {"role": "user", "content": user_prompt},
             ]
         )
+
+        # Explicit on-screen LLM response event with model name
+        try:
+            log_task_event(
+                "strategy",
+                "options",
+                "llm_response",
+                "Options LLM response received",
+                {"model": llm_client.model},
+            )
+        except Exception:
+            pass
+
+        try:
+            log_task_event(
+                "strategy",
+                "options",
+                "end",
+                "Strategic options generated",
+                {"model": llm_client.model},
+            )
+        except Exception:
+            pass
     except Exception as e:
         raise click.ClickException(f"LLM strategy generation error: {e}")
 
@@ -221,10 +260,32 @@ def strategy(case_facts, outcome, strategies, verify, noverify, cove, output, co
     )
 
     # Generate recommended next steps
+    try:
+        log_task_event(
+            "strategy",
+            "next-steps",
+            "start",
+            "Generating recommended next steps",
+            {"model": LLMClientFactory.get_model_for_command("strategy")},
+        )
+    except Exception:
+        pass
     click.echo(info_message("Generating recommended next steps..."))
     next_steps_prompt = PROMPTS.get("strategies.strategy.next_steps_prompt")
 
     try:
+        # Explicit on-screen LLM call event with model name
+        try:
+            log_task_event(
+                "strategy",
+                "next-steps",
+                "llm_call",
+                "Sending next-steps prompt to LLM",
+                {"model": llm_client.model},
+            )
+        except Exception:
+            pass
+
         next_steps_content, _ = llm_client.complete(
             [
                 {"role": "system", "content": system_prompt},
@@ -233,18 +294,71 @@ def strategy(case_facts, outcome, strategies, verify, noverify, cove, output, co
                 {"role": "user", "content": next_steps_prompt},
             ]
         )
+
+        # Explicit on-screen LLM response event with model name
+        try:
+            log_task_event(
+                "strategy",
+                "next-steps",
+                "llm_response",
+                "Next-steps LLM response received",
+                {"model": llm_client.model},
+            )
+        except Exception:
+            pass
+
+        try:
+            log_task_event(
+                "strategy",
+                "next-steps",
+                "end",
+                "Next steps generated",
+                {"model": llm_client.model},
+            )
+        except Exception:
+            pass
     except Exception as e:
         raise click.ClickException(f"LLM next steps generation error: {e}")
 
     # Determine document type and generate draft
     click.echo(info_message("Determining document type..."))
     doc_type = determine_document_type(outcome)
+    try:
+        log_task_event(
+            "strategy",
+            "draft",
+            "start",
+            f"Generating draft {doc_type}",
+            {"model": LLMClientFactory.get_model_for_command("strategy")},
+        )
+    except Exception:
+        pass
     click.echo(info_message(f"Generating draft {doc_type}..."))
     document_content = generate_draft_document(
         llm_client, system_prompt, user_prompt, strategy_content, outcome, doc_type
     )
+    try:
+        log_task_event(
+            "strategy",
+            "draft",
+            "end",
+            f"Draft {doc_type} generated",
+            {"model": llm_client.model},
+        )
+    except Exception:
+        pass
 
     # Validate and verify strategy content (most important)
+    try:
+        log_task_event(
+            "strategy",
+            "citations",
+            "start",
+            "Validating citations",
+            {"model": LLMClientFactory.get_model_for_command("strategy")},
+        )
+    except Exception:
+        pass
     click.echo(info_message("Validating citations..."))
     citation_issues = llm_client.validate_citations(strategy_content)
     if citation_issues:
@@ -253,42 +367,23 @@ def strategy(case_facts, outcome, strategies, verify, noverify, cove, output, co
         citation_warning += "\n".join(citation_issues)
         citation_warning += "\n" + "-" * 40 + "\n\n"
         strategy_content = citation_warning + strategy_content
-
-    # Apply verification - either CoVe or standard
-    cove_results = None
-    if cove:
-        # Use CoVe INSTEAD of standard verification
-        click.echo(info_message("Running Chain of Verification..."))
-        original_content = strategy_content
-        
-        # Build prior contexts if we have CoVe reference files
-        prior_contexts = {}
-        if cove_reference_context:
-            prior_contexts["cove_reference_files"] = cove_reference_context
-        
-        strategy_content, cove_results = run_cove_verification(
-            strategy_content, 
+    try:
+        log_task_event(
             "strategy",
-            prior_contexts=prior_contexts if prior_contexts else None
+            "citations",
+            "end",
+            "Citation validation complete",
+            {
+                "issues": len(citation_issues) if citation_issues else 0,
+                "model": llm_client.model,
+            },
         )
+    except Exception:
+        pass
 
-        if not cove_results["cove"]["passed"]:
-            click.echo(
-                success_message("CoVe corrected issues - strategies regenerated")
-            )
-            save_log(
-                "strategy_cove_regeneration",
-                {
-                    "original_length": len(original_content),
-                    "regenerated_length": len(strategy_content),
-                    "issues_fixed": cove_results["cove"]["issues"],
-                    "model": "See cove_strategy_summary.json for model details",
-                },
-            )
-        else:
-            click.echo(success_message("CoVe verification passed - no issues found"))
-    elif not noverify:
-        # Use standard verification (current behavior)
+    # Apply standard verification (CoVe moved to standalone 'verify-cove' command)
+    cove_results = None
+    if not noverify:
         strategy_content, _ = verify_content_if_needed(
             llm_client, strategy_content, "strategy", verify_flag=True
         )
@@ -309,8 +404,6 @@ def strategy(case_facts, outcome, strategies, verify, noverify, cove, output, co
         output_prefix=output,
         strategies_name=strategies.name if strategies else None,
         citation_issues=citation_issues,
-        cove_results=cove_results,
-        cove=cove,
         llm_model=llm_client.model,
     )
 
@@ -319,6 +412,10 @@ def strategy(case_facts, outcome, strategies, verify, noverify, cove, output, co
 
     # Show completion message
     click.echo()
+    try:
+        log_task_event("strategy", "init", "end", "Strategy generation complete")
+    except Exception:
+        pass
     click.echo(success_message("Strategy generation complete!"))
     click.echo(saved_message(f"Strategic options: {strategy_file}"))
     click.echo(saved_message(f"Next steps: {steps_file}"))

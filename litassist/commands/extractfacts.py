@@ -12,7 +12,7 @@ import os
 from litassist.config import get_config
 from litassist.prompts import PROMPTS
 from litassist.utils.text_processing import chunk_text
-from litassist.utils.file_ops import validate_file_size, process_reference_files
+from litassist.utils.file_ops import validate_file_size
 from litassist.utils.core import (
     timed,
     show_command_completion,
@@ -23,14 +23,13 @@ from litassist.utils.legal_reasoning import (
 )
 from litassist.utils.formatting import (
     info_message,
-    success_message,
 )
 from litassist.logging_utils import (
     save_log,
     save_command_output,
+    log_task_event,
 )
 from litassist.llm import LLMClientFactory
-from litassist.verification_chain import run_cove_verification
 
 
 @click.command()
@@ -41,21 +40,11 @@ from litassist.verification_chain import run_cove_verification
 @click.option(
     "--noverify",
     is_flag=True,
-    help="Skip standard verification (does not affect --cove)",
-)
-@click.option(
-    "--cove",
-    is_flag=True,
-    help="Use Chain of Verification instead of standard verification",
+    help="Skip standard verification",
 )
 @click.option("--output", type=str, help="Custom output filename prefix")
-@click.option(
-    "--cove-reference",
-    type=str,
-    help="Glob pattern for reference files to include in CoVe answer stage (e.g., 'exhibits/*.pdf', 'affidavits/*.txt'). Requires --cove flag."
-)
 @timed
-def extractfacts(file, verify, noverify, cove, output, cove_reference):
+def extractfacts(file, verify, noverify, output):
     """
     Auto-generate case_facts.txt under ten structured headings.
 
@@ -71,15 +60,29 @@ def extractfacts(file, verify, noverify, cove, output, cove_reference):
         click.ClickException: If there are errors reading the file, processing chunks,
                              or with the LLM API calls.
     """
-    # Process CoVe reference files if provided
-    cove_reference_context, _ = process_reference_files(
-        cove_reference,
-        purpose="CoVe",
-        require_flag="--cove",
-        flag_enabled=cove
-    )
-    
+    # Command start log
+    try:
+        log_task_event(
+            "extractfacts",
+            "init",
+            "start",
+            "Starting fact extraction",
+            {"model": LLMClientFactory.get_model_for_command("extractfacts")},
+        )
+    except Exception:
+        pass
+
     # Process all files
+    try:
+        log_task_event(
+            "extractfacts",
+            "reading",
+            "start",
+            "Reading input documents"
+        )
+    except Exception:
+        pass
+    
     all_text = ""
     source_files = []
     for f in file:
@@ -92,6 +95,16 @@ def extractfacts(file, verify, noverify, cove, output, cove_reference):
 
     # Initialize the LLM client using factory
     client = LLMClientFactory.for_command("extractfacts")
+    
+    try:
+        log_task_event(
+            "extractfacts",
+            "reading",
+            "end",
+            f"Read {len(file)} document(s)"
+        )
+    except Exception:
+        pass
 
     # Process content based on chunking needs (now most documents will be single chunk)
     if len(chunks) == 1:
@@ -104,6 +117,18 @@ def extractfacts(file, verify, noverify, cove, output, cove_reference):
 
         # Add reasoning trace to prompt
         prompt = create_reasoning_prompt(base_prompt, "extractfacts")
+        
+        try:
+            log_task_event(
+                "extractfacts",
+                "extraction",
+                "llm_call",
+                "Sending single-file extraction prompt to LLM",
+                {"model": client.model}
+            )
+        except Exception:
+            pass
+        
         try:
             combined, usage = client.complete(
                 [
@@ -114,6 +139,18 @@ def extractfacts(file, verify, noverify, cove, output, cove_reference):
                     {"role": "user", "content": prompt},
                 ]
             )
+            
+            try:
+                log_task_event(
+                    "extractfacts",
+                    "extraction",
+                    "llm_response",
+                    "Single-file extraction LLM response received",
+                    {"model": client.model}
+                )
+            except Exception:
+                pass
+            
         except Exception as e:
             raise click.ClickException(f"Error extracting facts: {e}")
 
@@ -138,6 +175,17 @@ def extractfacts(file, verify, noverify, cove, output, cove_reference):
                 )
 
                 try:
+                    log_task_event(
+                        "extractfacts",
+                        "extraction",
+                        "llm_call",
+                        f"Extracting facts from section {idx}/{len(chunks)}",
+                        {"model": client.model}
+                    )
+                except Exception:
+                    pass
+                
+                try:
                     content, usage = client.complete(
                         [
                             {
@@ -149,6 +197,18 @@ def extractfacts(file, verify, noverify, cove, output, cove_reference):
                             {"role": "user", "content": prompt},
                         ]
                     )
+                    
+                    try:
+                        log_task_event(
+                            "extractfacts",
+                            "extraction",
+                            "llm_response",
+                            f"Section {idx}/{len(chunks)} extraction complete",
+                            {"model": client.model}
+                        )
+                    except Exception:
+                        pass
+                    
                 except Exception as e:
                     raise click.ClickException(f"Error processing chunk {idx}: {e}")
                 accumulated_facts.append(content.strip())
@@ -177,6 +237,17 @@ def extractfacts(file, verify, noverify, cove, output, cove_reference):
         organize_prompt = create_reasoning_prompt(base_organize_prompt, "extractfacts")
 
         try:
+            log_task_event(
+                "extractfacts",
+                "consolidation",
+                "llm_call",
+                "Sending consolidation prompt to LLM",
+                {"model": client.model}
+            )
+        except Exception:
+            pass
+        
+        try:
             combined, usage = client.complete(
                 [
                     {
@@ -186,55 +257,52 @@ def extractfacts(file, verify, noverify, cove, output, cove_reference):
                     {"role": "user", "content": organize_prompt},
                 ]
             )
+            
+            try:
+                log_task_event(
+                    "extractfacts",
+                    "consolidation",
+                    "llm_response",
+                    "Consolidation LLM response received",
+                    {"model": client.model}
+                )
+            except Exception:
+                pass
+            
         except Exception as e:
             raise click.ClickException(f"Error organizing facts: {e}")
 
     # Note: Citation verification now handled automatically in LLMClient.complete()
 
-    # Apply verification - either CoVe or standard
+    # Apply standard verification (CoVe moved to standalone 'verify-cove' command)
     verification_metadata = {"Source Files": ", ".join(source_files)}
-    if cove:
-        # Use CoVe INSTEAD of standard verification
-        click.echo(info_message("Running Chain of Verification..."))
-        original_content = combined
-        
-        # Build prior contexts if we have CoVe reference files
-        prior_contexts = {}
-        if cove_reference_context:
-            prior_contexts["cove_reference_files"] = cove_reference_context
-        
-        combined, cove_results = run_cove_verification(
-            combined, 
-            "extractfacts",
-            prior_contexts=prior_contexts if prior_contexts else None
-        )
-
-        verification_metadata["Verification"] = "Chain of Verification (CoVe)"
-        verification_metadata["CoVe Status"] = (
-            "REGENERATED" if not cove_results["cove"]["passed"] else "PASSED"
-        )
-
-        if not cove_results["cove"]["passed"]:
-            click.echo(success_message("CoVe corrected issues - facts regenerated"))
-            save_log(
-                "extractfacts_cove_regeneration",
-                {
-                    "original_length": len(original_content),
-                    "regenerated_length": len(combined),
-                    "issues_fixed": cove_results["cove"]["issues"],
-                    "model": "See cove_extractfacts_summary.json for model details",
-                },
+    if not noverify:
+        try:
+            log_task_event(
+                "extractfacts",
+                "verification",
+                "start",
+                "Starting verification"
             )
-        else:
-            click.echo(success_message("CoVe verification passed - no issues found"))
-    elif not noverify:
-        # Use standard verification (current behavior)
+        except Exception:
+            pass
+        
         combined, _ = verify_content_if_needed(
             client, combined, "extractfacts", verify_flag=True
         )
         verification_metadata["Verification"] = "Standard verification"
         verification_metadata["Model"] = client.model
         click.echo(info_message("Standard verification applied"))
+        
+        try:
+            log_task_event(
+                "extractfacts",
+                "verification",
+                "end",
+                "Verification complete"
+            )
+        except Exception:
+            pass
     else:
         verification_metadata["Verification"] = "Disabled"
         verification_metadata["Model"] = "N/A"
@@ -280,3 +348,14 @@ def extractfacts(file, verify, noverify, cove, output, cove_reference):
     click.echo(
         info_message("To use with other commands, manually copy to case_facts.txt")
     )
+    
+    # Command end log
+    try:
+        log_task_event(
+            "extractfacts",
+            "init",
+            "end",
+            "Fact extraction complete"
+        )
+    except Exception:
+        pass

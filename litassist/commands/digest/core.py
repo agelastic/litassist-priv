@@ -6,7 +6,7 @@ document processing using the chunker, processors, and emergency handler.
 """
 
 import click
-from litassist.logging_utils import save_log, save_command_output
+from litassist.logging_utils import save_log, save_command_output, log_task_event
 from litassist.timing import timed
 from litassist.utils.core import show_command_completion
 from litassist.utils.formatting import info_message, warning_message
@@ -97,6 +97,18 @@ def digest(ctx, file, mode, context, output, verify, noverify):
 
     # Create client using factory with mode-specific configuration
     llm_client = LLMClientFactory.for_command("digest", mode=mode)
+    
+    # Command start log
+    try:
+        log_task_event(
+            "digest",
+            "init",
+            "start",
+            "Starting digest command",
+            {"mode": mode, "files": len(file), "model": llm_client.model}
+        )
+    except Exception:
+        pass
 
     # Determine chunk size based on model
     model_family = (
@@ -124,6 +136,16 @@ def digest(ctx, file, mode, context, output, verify, noverify):
     # Process each file
     for file_path in file:
         click.echo(f"\nProcessing: {file_path}")
+        
+        try:
+            log_task_event(
+                "digest",
+                "file_processing",
+                "start",
+                f"Processing file: {file_path}"
+            )
+        except Exception:
+            pass
 
         # Update metadata for emergency save
         emergency_handler.update_metadata("current_file", file_path)
@@ -133,6 +155,16 @@ def digest(ctx, file, mode, context, output, verify, noverify):
             content, chunks, chunk_count = prepare_chunks_for_processing(
                 file_path, model_chunk_limit, mode
             )
+            
+            try:
+                log_task_event(
+                    "digest",
+                    "file_processing",
+                    "chunked",
+                    f"Document chunked: {len(chunks)} chunks"
+                )
+            except Exception:
+                pass
         except Exception as e:
             error_msg = f"Failed to read {file_path}: {str(e)}"
             click.echo(click.style(error_msg, fg="red"))
@@ -146,6 +178,16 @@ def digest(ctx, file, mode, context, output, verify, noverify):
         if len(chunks) == 1:
             # Single chunk - process normally with unified analysis
             click.echo("  Processing as single document...")
+
+            try:
+                log_task_event(
+                    "digest",
+                    "single_chunk",
+                    "start",
+                    "Processing single chunk"
+                )
+            except Exception:
+                pass
 
             try:
                 response, usage = process_single_chunk(
@@ -165,6 +207,16 @@ def digest(ctx, file, mode, context, output, verify, noverify):
                 all_usage["completion_tokens"] += usage.get("completion_tokens", 0)
                 all_usage["total_tokens"] += usage.get("total_tokens", 0)
                 all_usage["chunks_processed"] += 1
+                
+                try:
+                    log_task_event(
+                        "digest",
+                        "single_chunk",
+                        "end",
+                        "Single chunk processing complete"
+                    )
+                except Exception:
+                    pass
 
             except NonRetryableAPIError as e:
                 error_msg = f"[ERROR] Failed to process {file_path}: {str(e)}"
@@ -174,6 +226,16 @@ def digest(ctx, file, mode, context, output, verify, noverify):
 
         else:
             # Multiple chunks - process each chunk
+            try:
+                log_task_event(
+                    "digest",
+                    "multi_chunk",
+                    "start",
+                    f"Processing {len(chunks)} chunks"
+                )
+            except Exception:
+                pass
+            
             chunk_outputs, prompt_tokens, completion_tokens, chunk_errors = (
                 process_multiple_chunks(chunks, mode, context, llm_client, file_path)
             )
@@ -186,11 +248,32 @@ def digest(ctx, file, mode, context, output, verify, noverify):
             all_usage["completion_tokens"] += completion_tokens
             all_usage["total_tokens"] += prompt_tokens + completion_tokens
             all_usage["chunks_processed"] += len(chunks)
+            
+            try:
+                log_task_event(
+                    "digest",
+                    "multi_chunk",
+                    "end",
+                    f"Multi-chunk processing complete - {len(chunks)} chunks"
+                )
+            except Exception:
+                pass
 
             # Consolidate chunks if possible
             if chunk_outputs and len(chunk_errors) < len(chunks):
                 try:
                     click.echo("  Consolidating chunk results...")
+                    
+                    try:
+                        log_task_event(
+                            "digest",
+                            "consolidation",
+                            "start",
+                            f"Consolidating {len(chunk_outputs)} chunk outputs"
+                        )
+                    except Exception:
+                        pass
+                    
                     consolidated, consolidation_usage = consolidate_chunk_outputs(
                         chunk_outputs, mode, llm_client, context
                     )
@@ -213,6 +296,16 @@ def digest(ctx, file, mode, context, output, verify, noverify):
                     all_usage["total_tokens"] += consolidation_usage.get(
                         "total_tokens", 0
                     )
+                    
+                    try:
+                        log_task_event(
+                            "digest",
+                            "consolidation",
+                            "end",
+                            "Consolidation complete"
+                        )
+                    except Exception:
+                        pass
 
                 except Exception as e:
                     # Fall back to raw chunks if consolidation fails
@@ -233,6 +326,16 @@ def digest(ctx, file, mode, context, output, verify, noverify):
 
         # Update emergency save with current progress
         emergency_handler.update_output(file_output)
+        
+        try:
+            log_task_event(
+                "digest",
+                "file_processing",
+                "end",
+                f"File processing complete: {file_path}"
+            )
+        except Exception:
+            pass
 
     # Combine all file outputs
     final_output = "\n".join(all_documents_output)
@@ -240,6 +343,17 @@ def digest(ctx, file, mode, context, output, verify, noverify):
     # Add cross-file consolidation if multiple files
     if len(file) > 1:
         click.echo(info_message("Consolidating across all files..."))
+        
+        try:
+            log_task_event(
+                "digest",
+                "cross_file",
+                "start",
+                f"Starting cross-file consolidation for {len(file)} files"
+            )
+        except Exception:
+            pass
+        
         try:
             # Build consolidation prompt using mode-specific template
             # Comment: Using f-string to avoid if/elif blocks for mode selection
@@ -267,6 +381,16 @@ def digest(ctx, file, mode, context, output, verify, noverify):
             all_usage["prompt_tokens"] += usage.get("prompt_tokens", 0)
             all_usage["completion_tokens"] += usage.get("completion_tokens", 0)
             all_usage["total_tokens"] += usage.get("total_tokens", 0)
+            
+            try:
+                log_task_event(
+                    "digest",
+                    "cross_file",
+                    "end",
+                    "Cross-file consolidation complete"
+                )
+            except Exception:
+                pass
         except Exception as e:
             click.echo(warning_message(f"Cross-file consolidation skipped: {str(e)}"))
 
@@ -320,4 +444,15 @@ def digest(ctx, file, mode, context, output, verify, noverify):
         ctx=ctx,
     )
 
+    # Command end log
+    try:
+        log_task_event(
+            "digest",
+            "init",
+            "end",
+            f"Digest command complete - {all_usage['files_processed']} files, {all_usage['chunks_processed']} chunks"
+        )
+    except Exception:
+        pass
+    
     return final_output, all_usage

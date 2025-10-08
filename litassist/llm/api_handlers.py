@@ -21,10 +21,13 @@ import logging
 import os
 from typing import Dict, Any, Tuple
 
+import click
 import requests
 import tenacity
 
 from litassist.config import get_config
+from litassist.logging_utils import log_task_event
+from litassist.utils.formatting import warning_message
 
 
 # Custom exception classes for retry logic
@@ -68,7 +71,7 @@ def get_openai_client(model_name: str):
     """
     # Lazy import to avoid loading OpenAI library when not needed
     from openai import OpenAI
-    
+
     # ALL models go through OpenRouter - single code path only
     config = get_config()
     base_url = config.or_base
@@ -181,7 +184,11 @@ def parse_openrouter_error(error_info: Dict[str, Any]) -> Tuple[str, str]:
 
 
 def execute_api_call_with_retry(
-    model_name: str, messages: list, filtered_params: dict, get_openai_client_func=None
+    model_name: str,
+    messages: list,
+    filtered_params: dict,
+    get_openai_client_func=None,
+    call_context=None,
 ) -> Any:
     """
     Execute API call with comprehensive retry logic and error handling.
@@ -217,7 +224,7 @@ def execute_api_call_with_retry(
 
     # Lazy import OpenAI exceptions to avoid loading library when not needed
     from openai import APIConnectionError, RateLimitError, APIError
-    
+
     # Define retryable error types
     retry_errors = (
         APIConnectionError,
@@ -244,6 +251,19 @@ def execute_api_call_with_retry(
         try:
             # Get the appropriate client
             client = get_openai_client_func(model_name)
+
+            # Announce outbound LLM call if context provided
+            if call_context:
+                try:
+                    log_task_event(
+                        call_context.get("command", "llm"),
+                        call_context.get("stage", "call"),
+                        "llm_call",
+                        f"Calling model {model_name}",
+                        {"model": model_name},
+                    )
+                except Exception:
+                    pass
 
             # Extract OpenRouter-specific parameters that need to go in extra_body
             extra_body = {}
@@ -316,6 +336,19 @@ def execute_api_call_with_retry(
                     raise RetryableAPIError(f"API Error: {error_msg}")
                 else:
                     raise Exception(f"API Error: {error_msg}")
+            # Announce inbound LLM response if context provided
+            if call_context:
+                try:
+                    has_choices = hasattr(resp, "choices") and bool(resp.choices)
+                    log_task_event(
+                        call_context.get("command", "llm"),
+                        call_context.get("stage", "call"),
+                        "llm_response",
+                        f"Received response from model {model_name}",
+                        {"model": model_name, "has_choices": has_choices},
+                    )
+                except Exception:
+                    pass
             return resp
 
         except Exception as e:
@@ -351,6 +384,48 @@ def execute_api_call_with_retry(
                 raise StreamingAPIError(error_str)
             raise
 
+    def before_retry_callback(retry_state):
+        """Show retry attempts to user for better visibility."""
+        if retry_state.attempt_number > 1:
+            try:
+                error = retry_state.outcome.exception()
+                error_str = str(error)
+                
+                # Log retry attempt (CLAUDE.md requirement: log all retries)
+                from litassist.logging_utils import save_log
+                import time
+                save_log("llm_retry_attempt", {
+                    "attempt": retry_state.attempt_number,
+                    "total_attempts": 5,
+                    "model": model_name,
+                    "error_type": type(error).__name__,
+                    "error_message": error_str[:1000],  # Truncate for summary
+                    "full_error": error_str,  # Full error for debugging
+                    "messages": messages,  # Full request being retried
+                    "params": filtered_params,
+                    "timestamp": time.strftime("%Y-%m-%d %H:%M:%S"),
+                })
+                
+                # Show user-friendly retry messages for common errors
+                if "500" in error_str or "InternalServerError" in str(type(error).__name__):
+                    click.echo(warning_message(
+                        f"Server error (attempt {retry_state.attempt_number}/5), retrying..."
+                    ))
+                elif "rate" in error_str.lower() or "429" in error_str:
+                    click.echo(warning_message(
+                        f"Rate limit hit (attempt {retry_state.attempt_number}/5), waiting..."
+                    ))
+                elif "timeout" in error_str.lower() or "connection" in error_str.lower():
+                    click.echo(warning_message(
+                        f"Connection issue (attempt {retry_state.attempt_number}/5), retrying..."
+                    ))
+            except Exception:
+                # If we can't get error details, just show generic retry message
+                if retry_state.attempt_number > 1:
+                    click.echo(warning_message(
+                        f"API error (attempt {retry_state.attempt_number}/5), retrying..."
+                    ))
+
     @tenacity.retry(
         stop=tenacity.stop_after_attempt(5),
         wait=wait_config,
@@ -358,6 +433,7 @@ def execute_api_call_with_retry(
             tenacity.retry_if_exception_type(retry_errors)
             | tenacity.retry_if_exception_type(StreamingAPIError)
         ),
+        before=before_retry_callback,
         before_sleep=tenacity.before_sleep_log(logger, logging.WARNING),
         reraise=True,
     )
@@ -365,4 +441,19 @@ def execute_api_call_with_retry(
         """Decorated retry wrapper function."""
         return _call_with_streaming_wrap()
 
-    return _call()
+    try:
+        return _call()
+    except Exception as e:
+        # Log final failure after all retries exhausted
+        from litassist.logging_utils import save_log
+        import time
+        save_log("llm_final_failure", {
+            "model": model_name,
+            "error_type": type(e).__name__,
+            "error_message": str(e),
+            "messages": messages,
+            "params": filtered_params,
+            "total_attempts": 5,
+            "timestamp": time.strftime("%Y-%m-%d %H:%M:%S"),
+        })
+        raise
