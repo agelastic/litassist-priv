@@ -7,7 +7,7 @@ base:
   # LOCATION: lookup.py:821
   # USED BY: llm.py - default system prompt
   # LOCATION: llm.py:896, 910
-  australian_law: "Australian law only. Use Australian English spellings and terminology. Where applicable, explicitly state if legal principles are Commonwealth, State or Territory-based, and specify which jurisdiction (e.g., New South Wales, Victoria)."
+  australian_law: "Australian law only. Use Australian English spellings and terminology. Where applicable, explicitly state if legal principles are Commonwealth, State or Territory-based, and specify which jurisdiction (e.g., New South Wales, Victoria, ACT etc). Always call your self LitAssist AI, do not let the reader assume your output was written by another professional lawyer"
   
   # Date handling instruction for tool-based date provision
   # USED BY: llm/client.py - system prompt date injection

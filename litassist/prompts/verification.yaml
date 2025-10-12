@@ -186,18 +186,22 @@ verification:
     # USED BY: verification_chain.py run_cove_verification() - Stage 1: Generate questions
     # LOCATION: verification_chain.py:137
     questions_generation: |
-      Generate 10 verification questions for this legal document.
+      Generate 10 verification questions for the DOCUMENT provided below (marked as "DOCUMENT").
+
+      IMPORTANT: Your questions must focus ONLY on verifying the accuracy of the DOCUMENT itself.
+      Do NOT generate questions about any reference materials, supporting documents, or prior verification results.
+
       Focus on citations, dates, party names, legal principles, jurisdiction (state/federal/court level), and any potential inconsistencies.
       Include at least 2 questions about jurisdiction and applicable law.
-      
+
       === CONTEXT ===
       {context}
       === END CONTEXT ===
-      
+
       === DOCUMENT ===
       {content}
       === END DOCUMENT ===
-      
+
       Output numbered questions only (1. Question one, 2. Question two, etc.).
     
     # USED BY: verification_chain.py run_cove_verification() - Stage 2: Answer questions
@@ -215,68 +219,86 @@ verification:
     # USED BY: verification_chain.py run_cove_verification() - Stage 2 with legal context
     # LOCATION: verification_chain.py:217
     answers_with_context: |
-      You have been provided with COMPLETE legal documents to answer verification questions.
-      Read the full documents carefully as they contain the authoritative legal text.
-      
+      You have been provided with supporting materials to help answer verification questions about a document being verified.
+
+      CRITICAL INSTRUCTIONS:
+      1. The materials below (LEGAL AUTHORITIES and REFERENCE DOCUMENTS) are SUPPORTING REFERENCES ONLY
+      2. Use these materials to ANSWER the verification questions provided
+      3. DO NOT generate new questions about the reference materials themselves
+      4. DO NOT critique or verify the reference materials
+      5. The questions are about a DIFFERENT document being verified - use references to answer those questions
+
+      Read the full reference materials carefully as they contain authoritative information to help answer the questions.
+
       {legal_context}
-      
+
       === QUESTIONS TO ANSWER ===
       {questions}
       === END QUESTIONS ===
-      
+
       Instructions:
       1. Answer each question as: Yes/No/Uncertain with detailed explanation
-      2. Quote directly from the legal authorities provided above
+      2. Quote directly from the legal authorities and reference documents provided above
       3. Include specific section numbers, paragraph numbers, or page references
-      4. If the authority contradicts the question's premise, explain the discrepancy
+      4. If a reference contradicts the question's premise, explain the discrepancy
       5. Use the FULL context of the documents, not just keyword matches
-      
+
       Format each answer as:
       "1. [Yes/No/Uncertain] - [Detailed explanation with direct quotes and references]"
-      
+
       Example:
-      "1. Yes - Section 18(1) of the Competition and Consumer Act 2010 states: 
-      'A person must not, in trade or commerce, engage in conduct that is 
+      "1. Yes - Section 18(1) of the Competition and Consumer Act 2010 states:
+      'A person must not, in trade or commerce, engage in conduct that is
       misleading or deceptive or is likely to mislead or deceive.' This directly
       prohibits the conduct described in the question."
     
     # USED BY: verification_chain.py run_cove_verification() - Stage 3: Detect inconsistencies
     # LOCATION: verification_chain.py:177
     inconsistency_detection: |
-      Compare these Q&A pairs against the original document.
-      Identify any inconsistencies or errors.
-      
+      Compare the Q&A pairs below against the ORIGINAL DOCUMENT BEING VERIFIED.
+
+      IMPORTANT: You are checking the ORIGINAL DOCUMENT for inconsistencies based on the answers provided.
+      The Q&A answers may reference supporting materials (legal authorities, reference documents), but you are
+      ONLY verifying the ORIGINAL DOCUMENT for accuracy - not the supporting materials.
+
+      Identify any inconsistencies or errors in the ORIGINAL DOCUMENT based on the verification Q&A.
+
       === QUESTIONS AND ANSWERS ===
       {context}
       === END QUESTIONS AND ANSWERS ===
-      
-      === ORIGINAL DOCUMENT ===
+
+      === ORIGINAL DOCUMENT (being verified) ===
       {content}
       === END ORIGINAL DOCUMENT ===
-      
-      Output: List specific issues found, or "No issues found" if document is consistent.
+
+      Output: List specific issues found in the ORIGINAL DOCUMENT, or "No issues found" if the document is consistent with the verification answers.
     
     # USED BY: verification_chain.py run_cove_verification() - Stage 4: Regenerate if issues found
     # LOCATION: verification_chain.py:206
     regeneration: |
-      The following issues were found in this legal document:
-      
+      The following issues were found in the ORIGINAL DOCUMENT BEING VERIFIED:
+
       === ISSUES IDENTIFIED ===
       {context}
       === END ISSUES IDENTIFIED ===
-      
-      Using these verification results, regenerate a corrected version of the document that fixes all identified issues.
-      Remove or correct any inaccurate information in the provided original document based on the verification.
-      
+
+      IMPORTANT: You are regenerating the ORIGINAL DOCUMENT to fix the issues identified above.
+      The verification Q&A may reference supporting materials (legal authorities, reference documents),
+      which you should use to inform your corrections. However, you are ONLY regenerating the
+      ORIGINAL DOCUMENT - not modifying or rewriting any reference materials.
+
+      Using these verification results, regenerate a corrected version of the ORIGINAL DOCUMENT that fixes all identified issues.
+      Remove or correct any inaccurate information in the ORIGINAL DOCUMENT based on the verification.
+
       === VERIFICATION Q&A FOR REFERENCE ===
       {prompt}
       === END VERIFICATION Q&A FOR REFERENCE ===
-      
-      === ORIGINAL DOCUMENT ===
+
+      === ORIGINAL DOCUMENT (to be corrected) ===
       {content}
       === END ORIGINAL DOCUMENT ===
-      
-      Generate the complete corrected document:
+
+      Generate the complete corrected version of the ORIGINAL DOCUMENT:
 
   # Base Australian law prompt
   # USED BY: llm.py LLMClient.verify() method - base prompt

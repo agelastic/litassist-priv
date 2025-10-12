@@ -36,8 +36,8 @@ logger = logging.getLogger(__name__)
 # Model family patterns for dynamic parameter handling
 MODEL_PATTERNS = {
     "openai_reasoning": r"openai/o\d+",  # Matches o1, o3, o1-pro, o3-pro, o4, etc.
-    "gpt5": r"openai/gpt-5",  # GPT-5 specific (August 2025)
-    "claude4": r"anthropic/claude-(opus-4|sonnet-4)",  # Claude 4 models
+    "gpt5": r"openai/gpt-5(-pro)?",  # GPT-5 and GPT-5 Pro (August/October 2025)
+    "claude4": r"anthropic/claude-(opus-4|sonnet-4)(\.\d+)?",  # Claude 4 models (includes 4.1, 4.5, etc.)
     "anthropic": r"anthropic/claude",  # Other Claude models
     "google": r"google/(gemini|palm|bard)",
     "openai_standard": r"openai/(gpt|chatgpt)",  # GPT-4, ChatGPT, etc.
@@ -446,17 +446,21 @@ class LLMClientFactory:
     # Command configurations registry
     COMMAND_CONFIGS = {
         # Extract facts - deterministic, focused on accuracy
+        # UPGRADED: Oct 2025 - Sonnet 4 -> Sonnet 4.5 for better legal domain knowledge
         "extractfacts": {
-            "model": "anthropic/claude-sonnet-4",
+            "model": "anthropic/claude-sonnet-4.5",
+            # OLD: "model": "anthropic/claude-sonnet-4",
             "temperature": 0,
             "top_p": 0.15,
             "thinking_effort": "high",  # Critical foundational command needs thorough thinking
             "enforce_citations": True,  # Retry on citation errors for foundational docs
-            "disable_tools": True,  # Claude Sonnet 4 has tool calling issues on OpenRouter (Sept 2025)
+            "disable_tools": True,  # Check if Sonnet 4.5 still has tool calling issues
         },
         # Strategy - enhanced multi-step legal reasoning
+        # UPGRADED: Oct 2025 - Opus 4.1 -> Sonnet 4.5 (state-of-the-art for litigation, 80% cost reduction)
         "strategy": {
-            "model": "anthropic/claude-opus-4.1",
+            "model": "anthropic/claude-sonnet-4.5",
+            # OLD: "model": "anthropic/claude-opus-4.1",
             "temperature": 0.2,  # Controlled creativity for strategic thinking
             "top_p": 0.8,  # Focused but not overly restrictive
             "thinking_effort": "max",  # Universal parameter, translates to reasoning object
@@ -471,8 +475,10 @@ class LLMClientFactory:
             "disable_tools": True,  # o3-pro doesn't support tool calling
         },
         # Brainstorm - varied temperatures for different approaches
+        # UPGRADED: Oct 2025 - Opus 4.1 -> Sonnet 4.5 (better legal domain knowledge, cost-effective)
         "brainstorm-orthodox": {
-            "model": "anthropic/claude-opus-4.1",
+            "model": "anthropic/claude-sonnet-4.5",
+            # OLD: "model": "anthropic/claude-opus-4.1",
             "temperature": 0.3,
             "top_p": 0.7,
             "thinking_effort": "medium",  # Moderate thinking for balanced analysis
@@ -505,15 +511,19 @@ class LLMClientFactory:
             "disable_tools": True,  # o3-pro doesn't support tool calling
         },
         # Digest - mode-dependent settings
+        # UPGRADED: Oct 2025 - Sonnet 4 -> Sonnet 4.5 for better reasoning
         "digest-summary": {
-            "model": "anthropic/claude-sonnet-4",
+            "model": "anthropic/claude-sonnet-4.5",
+            # OLD: "model": "anthropic/claude-sonnet-4",
             "temperature": 0.2,
             "top_p": 0.3,  # Fixed: was 0, too restrictive
             "thinking_effort": "medium",  # Simple summarization task
-            "disable_tools": True,  # Claude Sonnet 4 has tool calling issues on OpenRouter (Sept 2025)
+            "disable_tools": True,  # Check if Sonnet 4.5 still has tool calling issues
         },
+        # UPGRADED: Oct 2025 - Opus 4.1 -> Sonnet 4.5 (state-of-the-art for legal analysis)
         "digest-issues": {
-            "model": "anthropic/claude-opus-4.1",
+            "model": "anthropic/claude-sonnet-4.5",
+            # OLD: "model": "anthropic/claude-opus-4.1",
             "temperature": 0.2,
             "top_p": 0.5,
             "thinking_effort": "high",  # Deep analysis for issue spotting
@@ -531,42 +541,53 @@ class LLMClientFactory:
             "enforce_citations": False,  # Don't enforce strict citation retries
         },
         # Verification - automatic verification for high-risk commands
+        # UPGRADED: Oct 2025 - Opus 4.1 -> GPT-5 base (1.4% hallucination, fast verification)
         "verification": {
-            "model": "anthropic/claude-opus-4.1",
+            "model": "openai/gpt-5",
+            # OLD: "model": "anthropic/claude-opus-4.1",
             "temperature": 0.2,
             "top_p": 0.3,
             "thinking_effort": "high",
             "enforce_citations": False,  # Don't double-enforce since this IS verification
         },
+        # UPGRADED: Oct 2025 - Sonnet 4 -> Sonnet 4.5 for better legal domain knowledge
         "verification-light": {
-            "model": "anthropic/claude-sonnet-4",  # Cost-effective for spelling/terminology
+            "model": "anthropic/claude-sonnet-4.5",
+            # OLD: "model": "anthropic/claude-sonnet-4",
             "temperature": 0.2,  # Optimal for factual tasks per hallucination report
             "top_p": 0.2,  # Focused beam for consistency
             "thinking_effort": "medium",  # Just spelling/terminology checks
             "enforce_citations": False,  # Avoid loops
-            "disable_tools": True,  # Claude Sonnet 4 has tool calling issues on OpenRouter (Sept 2025)
+            "disable_tools": True,  # Check if Sonnet 4.5 still has tool calling issues
         },
+        # UPGRADED: Oct 2025 - GPT-5 -> GPT-5 Pro (<1% hallucination, 400K context, mandatory reasoning)
         "verification-heavy": {
-            "model": "openai/gpt-5",  # <1% hallucination rate for critical verification
+            "model": "openai/gpt-5-pro",
+            # OLD: "model": "openai/gpt-5",
             "temperature": 0.2,  # Optimal per hallucination report
             "top_p": 0.3,  # Slightly wider beam for comprehensive checking
-            "thinking_effort": "max",  # max for critical tasks (maps to high for GPT-5)
+            "thinking_effort": "max",  # Mandatory deep reasoning for critical verification
             "enforce_citations": False,  # Avoid loops
         },
         # Verify sub-commands with specific model assignments
+        # UPGRADED: Oct 2025 - o3-pro -> Sonnet 4.5 (state-of-the-art for legal reasoning extraction)
         "verify-reasoning": {
-            "model": "openai/o3-pro",  # o3-pro for complex reasoning trace extraction
-            "temperature": 0.2,  # o3-pro ignores temperature but set for consistency
-            "top_p": 0.3,
-            "thinking_effort": "high",  # Universal parameter, translates to reasoning_effort
-            "enforce_citations": False,
-            "disable_tools": True,  # o3-pro doesn't support tool calling
-        },
-        "verify-soundness": {
-            "model": "anthropic/claude-opus-4.1",  # Opus for soundness checking
+            "model": "anthropic/claude-sonnet-4.5",
+            # OLD: "model": "openai/o3-pro",
             "temperature": 0.2,
             "top_p": 0.3,
-            "thinking_effort": "max",  # max gives 32K thinking tokens vs 16K for high
+            "thinking_effort": "high",  # Extended thinking for complex reasoning trace extraction
+            "enforce_citations": False,
+            "disable_tools": True,  # Check if Sonnet 4.5 still has tool calling issues
+        },
+        # UPGRADED: Oct 2025 - Opus 4.1 -> GPT-5 Pro (<1% hallucination for critical soundness checking)
+        "verify-soundness": {
+            "model": "openai/gpt-5-pro",
+            # OLD: "model": "anthropic/claude-opus-4.1",
+            "temperature": 0.2,
+            "top_p": 0.3,
+            "thinking_effort": "max",  # Mandatory deep reasoning for soundness analysis
+            "verbosity": "high",  # Detailed soundness explanations
             "enforce_citations": False,
         },
         # Counsel's Notes - strategic analysis from advocate's perspective
@@ -587,57 +608,70 @@ class LLMClientFactory:
             "disable_tools": True,  # o3-pro doesn't support tool calling
         },
         # Caseplan - LLM-driven workflow planning
+        # UPGRADED: Oct 2025 - Sonnet 4 -> Sonnet 4.5 for better reasoning
         "caseplan": {
-            "model": "anthropic/claude-sonnet-4",
+            "model": "anthropic/claude-sonnet-4.5",
+            # OLD: "model": "anthropic/claude-sonnet-4",
             "temperature": 0.5,
             "enforce_citations": False,
-            "disable_tools": True,  # Claude Sonnet 4 has tool calling issues on OpenRouter (Sept 2025)
+            "disable_tools": True,  # Check if Sonnet 4.5 still has tool calling issues
         },
         # Caseplan assessment - budget recommendation (Sonnet)
+        # UPGRADED: Oct 2025 - Sonnet 4 -> Sonnet 4.5 for better reasoning
         "caseplan-assessment": {
-            "model": "anthropic/claude-sonnet-4",
+            "model": "anthropic/claude-sonnet-4.5",
+            # OLD: "model": "anthropic/claude-sonnet-4",
             "temperature": 0.5,
             "enforce_citations": False,
-            "disable_tools": True,  # Claude Sonnet 4 has tool calling issues on OpenRouter (Sept 2025)
+            "disable_tools": True,  # Check if Sonnet 4.5 still has tool calling issues
         },
         # Chain of Verification - fast, efficient question generation
+        # UPGRADED: Oct 2025 - Sonnet 4 -> Sonnet 4.5 for better reasoning
         "cove": {
-            "model": "anthropic/claude-sonnet-4",
+            "model": "anthropic/claude-sonnet-4.5",
+            # OLD: "model": "anthropic/claude-sonnet-4",
             "temperature": 0.2,
             "top_p": 0.8,
             "thinking_effort": "medium",  # General CoVe coordination
             "enforce_citations": False,  # Avoid recursive verification
-            "disable_tools": True,  # Claude Sonnet 4 has tool calling issues on OpenRouter (Sept 2025)
+            "disable_tools": True,  # Check if Sonnet 4.5 still has tool calling issues
         },
         # CoVe sub-stages with separate model control
+        # UPGRADED: Oct 2025 - Sonnet 4 -> Sonnet 4.5 for better question generation
         "cove-questions": {
-            "model": "anthropic/claude-sonnet-4",  # Fast question generation
+            "model": "anthropic/claude-sonnet-4.5",
+            # OLD: "model": "anthropic/claude-sonnet-4",
             "temperature": 0.2,
             "top_p": 0.8,
             "thinking_effort": "low",  # Fast question generation, minimal thinking needed
             "enforce_citations": False,
-            "disable_tools": True,  # Claude Sonnet 4 has tool calling issues on OpenRouter (Sept 2025)
+            "disable_tools": True,  # Check if Sonnet 4.5 still has tool calling issues
         },
+        # KEPT: Oct 2025 - GPT-5 base is optimal for fast, accurate answers (1.4% hallucination)
         "cove-answers": {
-            "model": "openai/gpt-5",  # GPT-5 for <1% hallucination rate
+            "model": "openai/gpt-5",  # GPT-5 base for <1.4% hallucination rate
             "temperature": 0.2,
             "top_p": 0.3,
-            "thinking_effort": "max",  # max for consistency (maps to high for GPT-5)
+            "thinking_effort": "high",  # Not max - save Pro for final verification
             "enforce_citations": False,
         },
+        # UPGRADED: Oct 2025 - Sonnet 4 -> Sonnet 4.5 for better inconsistency detection
         "cove-verify": {
-            "model": "anthropic/claude-sonnet-4",  # Inconsistency detection
+            "model": "anthropic/claude-sonnet-4.5",
+            # OLD: "model": "anthropic/claude-sonnet-4",
             "temperature": 0.2,
             "top_p": 0.3,
             "thinking_effort": "high",  # Critical inconsistency detection needs careful analysis
             "enforce_citations": False,
-            "disable_tools": True,  # Claude Sonnet 4 has tool calling issues on OpenRouter (Sept 2025)
+            "disable_tools": True,  # Check if Sonnet 4.5 still has tool calling issues
         },
+        # UPGRADED: Oct 2025 - GPT-5 -> GPT-5 Pro for critical final output (<1% hallucination)
         "cove-final": {
-            "model": "openai/gpt-5",  # GPT-5 for <1% hallucination rate in final output
+            "model": "openai/gpt-5-pro",
+            # OLD: "model": "openai/gpt-5",
             "temperature": 0.2,
             "top_p": 0.4,
-            "thinking_effort": "max",  # max for consistency (maps to high for GPT-5)
+            "thinking_effort": "max",  # Mandatory deep reasoning for final verification
             "enforce_citations": False,
         },
     }
@@ -678,11 +712,13 @@ class LLMClientFactory:
         # Get the configuration or fall back to a default
         if config_key not in cls.COMMAND_CONFIGS:
             # Default configuration for unknown commands
+            # UPGRADED: Oct 2025 - Default to Sonnet 4.5
             config = {
-                "model": "anthropic/claude-sonnet-4",
+                "model": "anthropic/claude-sonnet-4.5",
+                # OLD: "model": "anthropic/claude-sonnet-4",
                 "temperature": 0.3,
                 "top_p": 0.7,
-                "disable_tools": True,  # Claude Sonnet 4 has tool calling issues on OpenRouter (Sept 2025)
+                "disable_tools": True,  # Check if Sonnet 4.5 still has tool calling issues
             }
             # Use default configuration for commands without specific config
             # This is expected behavior for many commands
@@ -742,7 +778,7 @@ class LLMClientFactory:
         """
         config_key = f"{command_name}-{sub_type}" if sub_type else command_name
         config = cls.COMMAND_CONFIGS.get(
-            config_key, {"model": "anthropic/claude-sonnet-4", "disable_tools": True}
+            config_key, {"model": "anthropic/claude-sonnet-4.5", "disable_tools": True}
         )
         return config["model"]
 

@@ -43,7 +43,8 @@ class TestLLMClientFactory:
             client = LLMClientFactory.for_command("strategy")
 
             assert isinstance(client, LLMClient)
-            assert client.model == "anthropic/claude-opus-4.1"  # Updated model
+            # UPDATED: Oct 2025 - Model upgraded to Sonnet 4.5
+            assert client.model == "anthropic/claude-sonnet-4.5"
             # Just verify the attribute exists, don't assert specific value
             assert hasattr(client, "_enforce_citations")
 
@@ -119,11 +120,11 @@ class TestLLMClientFactory:
             mock_config.openrouter_key = "test_key"
             mock_config.openai_key = "test_openai_key"
 
-            # Test claude-opus-4.1 model (strategy)
+            # UPDATED: Oct 2025 - Test claude-sonnet-4.5 model (strategy)
             strategy_client = LLMClientFactory.for_command("strategy")
             strategy_params = strategy_client.default_params
 
-            # claude-opus-4.1 should have thinking_effort and standard params
+            # claude-sonnet-4.5 should have thinking_effort and standard params
             assert "thinking_effort" in strategy_params
             assert "temperature" in strategy_params  # Claude supports temperature
             assert "top_p" in strategy_params  # Claude supports top_p
@@ -216,10 +217,12 @@ class TestLLMClientFactoryIntegration:
 
             # Specific model assertions based on current configuration
             assert "gemini" in models["lookup"].lower()  # Uses Gemini for search
+            # UPDATED: Oct 2025 - Strategy now uses Sonnet 4.5
             assert (
-                "claude-opus" in models["strategy"].lower()
-            )  # Uses Claude Opus for strategy
+                "claude-sonnet" in models["strategy"].lower()
+            )  # Uses Claude Sonnet 4.5 for strategy
             assert "o3-pro" in models["draft"].lower()  # Uses o3-pro for drafting
+            # UPDATED: Oct 2025 - Extractfacts upgraded to Sonnet 4.5
             assert (
                 "anthropic/claude-sonnet-4" in models["extractfacts"].lower()
-            )  # Uses Claude for extraction
+            )  # Uses Claude Sonnet 4.5 for extraction

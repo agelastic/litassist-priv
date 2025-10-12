@@ -80,9 +80,10 @@ class TestCommandParameterPropagation:
         # Check that LLMClientFactory would create correct model
         from litassist.llm import LLMClientFactory
 
+        # UPDATED: Oct 2025 - Model upgraded to Sonnet 4.5
         assert (
             LLMClientFactory.COMMAND_CONFIGS["extractfacts"]["model"]
-            == "anthropic/claude-sonnet-4"
+            == "anthropic/claude-sonnet-4.5"
         )
 
     @patch("litassist.llm.LLMClientFactory.for_command")
@@ -390,9 +391,10 @@ Test objectives""")
         # Check configuration
         from litassist.llm import LLMClientFactory
 
+        # UPDATED: Oct 2025 - Model upgraded to Sonnet 4.5
         assert (
             LLMClientFactory.COMMAND_CONFIGS["strategy"]["model"]
-            == "anthropic/claude-opus-4.1"
+            == "anthropic/claude-sonnet-4.5"
         )
         assert LLMClientFactory.COMMAND_CONFIGS["strategy"]["thinking_effort"] == "max"
         # Just verify the key exists, don't assert specific value

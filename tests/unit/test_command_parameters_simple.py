@@ -20,11 +20,12 @@ class TestCommandParameterConfiguration:
         # Check the configuration
         assert "extractfacts" in LLMClientFactory.COMMAND_CONFIGS
         config = LLMClientFactory.COMMAND_CONFIGS["extractfacts"]
-        assert config["model"] == "anthropic/claude-sonnet-4"
+        # UPDATED: Oct 2025 - Model upgraded to Sonnet 4.5
+        assert config["model"] == "anthropic/claude-sonnet-4.5"
 
         # Create client and verify model
         client = LLMClientFactory.for_command("extractfacts")
-        assert client.model == "anthropic/claude-sonnet-4"
+        assert client.model == "anthropic/claude-sonnet-4.5"
 
     @patch("litassist.llm.CONFIG")
     def test_lookup_configuration(self, mock_config):
@@ -51,13 +52,14 @@ class TestCommandParameterConfiguration:
 
         assert "strategy" in LLMClientFactory.COMMAND_CONFIGS
         config = LLMClientFactory.COMMAND_CONFIGS["strategy"]
-        assert config["model"] == "anthropic/claude-opus-4.1"
+        # UPDATED: Oct 2025 - Model upgraded to Sonnet 4.5
+        assert config["model"] == "anthropic/claude-sonnet-4.5"
         assert config["thinking_effort"] == "max"
         # Just verify the key exists, don't assert specific value
         assert "enforce_citations" in config
 
         client = LLMClientFactory.for_command("strategy")
-        assert client.model == "anthropic/claude-opus-4.1"
+        assert client.model == "anthropic/claude-sonnet-4.5"
         # Just verify the attribute exists, don't assert specific value
         assert hasattr(client, "_enforce_citations")
         assert client.default_params.get("thinking_effort") == "max"
@@ -117,7 +119,8 @@ class TestCommandParameterConfiguration:
 
         # Command not in COMMAND_CONFIGS should use default
         client = LLMClientFactory.for_command("unknown_command")
-        assert client.model == "anthropic/claude-sonnet-4"  # Default model
+        # UPDATED: Oct 2025 - Default upgraded to Sonnet 4.5
+        assert client.model == "anthropic/claude-sonnet-4.5"  # Default model
 
     @patch("litassist.llm.CONFIG")
     def test_digest_uses_default_config(self, mock_config):
@@ -127,4 +130,5 @@ class TestCommandParameterConfiguration:
 
         # digest is not in COMMAND_CONFIGS, should use default
         client = LLMClientFactory.for_command("digest")
-        assert client.model == "anthropic/claude-sonnet-4"  # Default model
+        # UPDATED: Oct 2025 - Default upgraded to Sonnet 4.5
+        assert client.model == "anthropic/claude-sonnet-4.5"  # Default model
