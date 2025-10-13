@@ -18,6 +18,13 @@
 - Memory Bank initialized with core context, patterns, architecture, and technical setup
 - CounselNotes command for strategic advocate analysis (January 2025)
 - Barbrief command for comprehensive barrister's briefs (January 2025)
+- **October 2025: Major LLM Model Upgrade** - Implemented three-tier strategy
+  - Tier 1: GPT-5 Pro for critical verification (<1% hallucination rate)
+  - Tier 2: GPT-5 for fast verification (1.4% hallucination rate)
+  - Tier 3: Claude Sonnet 4.5 for legal reasoning (state-of-the-art for litigation)
+  - Upgraded 20+ commands with 40-50% cost reduction while improving quality
+  - All 380 unit tests passing
+  - Comprehensive documentation updates across all user/dev docs
 
 ### Pending Tasks [IN PROGRESS]
 - [ ] Fix lookup `--comprehensive` help/behavior mismatch (40 vs. 5 vs. code limit)

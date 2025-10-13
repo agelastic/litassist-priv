@@ -1,6 +1,6 @@
 # LitAssist
 
-**Last Updated**: July 31, 2025
+**Last Updated**: October 12, 2025
 
 **LitAssist** is a comprehensive legal workflow automation tool designed for Australian legal practice. It provides a structured end-to-end pipeline for litigation support:
 
@@ -58,15 +58,15 @@ graph TD
   - Adapts to case complexity: minimal, standard, or comprehensive workflows
 
 ### Primary Workflow Commands
-- **Lookup**: Rapid case-law research (Jade.io database via Google Custom Search + Google Gemini)  
-- **Digest**: Mass document processing (chronological summaries or issue-spotting via Claude)  
-- **ExtractFacts**: Automatic extraction of case facts into a structured file  
-- **Brainstorm**: Creative legal strategy generation (unorthodox strategies via Grok)  
-- **Strategy**: Targeted legal options with probability assessments and draft documents (enhanced reasoning via o3-pro)
+- **Lookup**: Rapid case-law research (Jade.io database via Google Custom Search + Gemini 2.5 Pro)
+- **Digest**: Mass document processing (chronological summaries or issue-spotting via Claude Sonnet 4.5)
+- **ExtractFacts**: Automatic extraction of case facts into a structured file (Claude Sonnet 4.5)
+- **Brainstorm**: Creative legal strategy generation (unorthodox strategies via Grok 4, analysis via o3-pro)
+- **Strategy**: Targeted legal options with probability assessments (state-of-the-art litigation reasoning via Claude Sonnet 4.5)
 - **Draft**: Citation-rich document creation (superior technical writing via o3-pro)
 
 ### Specialized Commands
-- **CounselNotes**: Strategic advocate analysis with structured extractions (Claude)  
+- **CounselNotes**: Strategic advocate analysis with structured extractions (o3-pro)
 - **Barbrief**: Comprehensive barrister's briefs for litigation (extended output via o3-pro)
 
 For detailed usage guidance, see the [LitAssist User Guide](docs/user/LitAssist_User_Guide.md).
@@ -118,7 +118,7 @@ openrouter:
   api_base:   "https://openrouter.ai/api/v1"   # optional
 
 openai:
-  api_key:          "YOUR_OPENAI_KEY"  # For embeddings only - o3-pro requires BYOK via OpenRouter
+  api_key:          "YOUR_OPENAI_KEY"  # For embeddings and o3-pro/GPT-5 BYOK via OpenRouter
   embedding_model:  "text-embedding-3-small"
 
 google_cse:
@@ -146,36 +146,61 @@ general:
 OpenRouter is the primary API gateway for all LLM calls. Some models require BYOK (Bring Your Own Key) setup:
 
 **Models requiring BYOK:**
-- OpenAI o3-pro (strategy, draft, barbrief commands)
-- Some Claude Opus models (check availability)
-- Certain Gemini models in specific regions
+- OpenAI o3-pro (draft, barbrief, counselnotes commands)
+- OpenAI GPT-5 and GPT-5 Pro (critical verification commands)
+- Claude Sonnet 4.5 available without BYOK
 
 **Quick BYOK Setup:**
 1. Go to [OpenRouter Settings](https://openrouter.ai/settings/integrations)
 2. Add your API keys under integrations:
-   - **OpenAI**: Requires Tier 4+ API key with o3-pro access (standard keys won't work)
-   - **Anthropic**: Any valid API key
+   - **OpenAI**: Requires Tier 4+ API key with o3-pro and GPT-5 access (standard keys won't work)
+   - **Anthropic**: Any valid API key (Claude models available without BYOK on OpenRouter)
 3. Save and verify model availability on your dashboard
 
 ### Model Configuration & BYOK Requirements
 
-LitAssist uses cutting-edge AI models specifically optimized for legal work:
+LitAssist uses a three-tier strategy with cutting-edge AI models optimized for legal work:
+
+**Three-Tier Model Strategy (October 2025):**
+- **Tier 1: Critical Verification** - GPT-5 Pro (<1% hallucination rate) for soundness checking
+- **Tier 2: Fast Verification** - GPT-5 (1.4% hallucination rate) for standard verification
+- **Tier 3: Legal Reasoning** - Claude Sonnet 4.5 (state-of-the-art for complex litigation tasks)
 
 | Command | Model | BYOK Required | Purpose |
 |---------|-------|--------------|---------|
-| **caseplan** | Claude 4 Sonnet/Opus | No | Workflow planning - START HERE! |
-| **lookup** | Google Gemini 2.5 Pro | No | Rapid case-law research |
-| **digest** | Claude 4 Sonnet | No | Document analysis and summarization |
-| **extractfacts** | Claude 4 Sonnet | No | Structured fact extraction |
-| **brainstorm** | Claude 4 Sonnet / Grok 3 | No | Conservative vs creative strategies |
-| **strategy** | OpenAI o3-pro | **Yes** | Enhanced multi-step legal reasoning |
+| **caseplan** | Claude Sonnet 4.5 | No | Workflow planning - START HERE! |
+| **lookup** | Google Gemini 2.5 Pro | No | Rapid case-law research with 1M context |
+| **digest** | Claude Sonnet 4.5 | No | Document analysis and issue identification |
+| **extractfacts** | Claude Sonnet 4.5 | No | Structured fact extraction with citations |
+| **brainstorm** | Claude Sonnet 4.5 / Grok 4 | No | Legal strategies + creative ideation |
+| **strategy** | Claude Sonnet 4.5 | No | State-of-the-art legal reasoning |
 | **draft** | OpenAI o3-pro | **Yes** | Superior technical legal writing |
-| **counselnotes** | Claude 4 Opus | No | Strategic advocate analysis |
+| **counselnotes** | OpenAI o3-pro | **Yes** | Strategic advocate analysis |
 | **barbrief** | OpenAI o3-pro | **Yes** | Comprehensive barrister's briefs |
+| **verify (critical)** | GPT-5 Pro | **Yes** | Critical soundness verification |
+| **verify (standard)** | GPT-5 | **Yes** | Fast verification with high accuracy |
+
+#### Why These Models?
+
+**Claude Sonnet 4.5** (September 2025):
+- Explicitly "state of the art on complex litigation tasks"
+- Superior legal domain knowledge and reasoning
+- 80% cost reduction vs previous models
+- Extended thinking mode for multi-step analysis
+
+**GPT-5 and GPT-5 Pro** (August 2025):
+- Industry-leading accuracy: <1.6% hallucination rate
+- 6x fewer factual errors than previous models
+- Critical for legal verification where accuracy is paramount
+
+**OpenAI o3-pro**:
+- Advanced reasoning for technical drafting
+- Extended output capacity (32K tokens) for briefs
+- Specialized for structured legal documents
 
 #### Required BYOK Setup
 
-Commands using restricted models (`strategy`, `draft`, `barbrief`) require BYOK setup on OpenRouter. Without BYOK, these commands will fail with authentication errors.
+Commands using restricted models (`draft`, `barbrief`, `counselnotes`, verification) require BYOK setup on OpenRouter. Without BYOK, these commands will fail with authentication errors.
 
 **Note:** Check the [OpenRouter Models page](https://openrouter.ai/models) to verify which models are available with your API key vs. requiring BYOK.
 
