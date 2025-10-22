@@ -434,22 +434,14 @@ Essential for commands involving:
 
 ### ABSOLUTELY FORBIDDEN GIT OPERATIONS
 
-**[CRITICAL WARNING] NEVER PERFORM ANY GIT COMMITS OR PUSHES! [CRITICAL WARNING]**
-
 **YOU ARE STRICTLY FORBIDDEN FROM:**
 
-1. `git commit` - NEVER create commits, even if explicitly asked
-2. `git filter-branch` - DESTROYS COMMIT HISTORY PERMANENTLY
-3. `git rebase -i` - Can lose commits if done wrong
-4. `git reset --hard` without checking uncommitted work
-5. `git push --force` without explicit safety checks
-6. ANY operation that rewrites history
-7. ANY operation that creates commits
+1. `git filter-branch` - DESTROYS COMMIT HISTORY PERMANENTLY
+2. `git rebase -i` - Can lose commits if done wrong
+3. `git reset --hard` without checking uncommitted work
+4. `git push --force` without explicit safety checks
+5. ANY operation that rewrites history
 
-**MANDATORY RESPONSE WHEN ASKED TO COMMIT**:
-"I am strictly forbidden from creating git commits. Please run `git add -A && git commit -m 'your message'` yourself. I can help you craft the commit message, but I cannot execute the commit command."
-
-**ALWAYS REMIND USER**: "I am forbidden from running ANY git operations that create commits or modify history after destroying a day's work with git filter-branch on June 8, 2025. This includes commits, filter-branch, rebase, and force push."
 
 ### What You CAN Do
 
@@ -462,7 +454,6 @@ Essential for commands involving:
 - Explain git workflows and best practices
 - use gh CLI for github access
 
-- NEVER create commits
 - NEVER modify git history
 
 ## SAFETY COMPLIANCE CHECK
