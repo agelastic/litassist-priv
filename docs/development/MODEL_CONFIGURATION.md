@@ -211,6 +211,18 @@ COMMAND_CONFIGS = {
         "temperature": 0.9,
         "top_p": 0.95,
     },
+    "brainstorm-analysis": {
+        "model": "openai/o3-pro",
+        "temperature": 0.2,
+        "top_p": 0.8,
+        "thinking_effort": "high",
+        "disable_tools": True,
+    },
+    "strategy-analysis": {
+        "model": "openai/o3-pro",
+        "thinking_effort": "max",
+        "disable_tools": True,
+    },
 }
 ```
 

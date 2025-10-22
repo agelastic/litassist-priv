@@ -224,5 +224,5 @@ class TestLLMClientFactoryIntegration:
             assert "o3-pro" in models["draft"].lower()  # Uses o3-pro for drafting
             # UPDATED: Oct 2025 - Extractfacts upgraded to Sonnet 4.5
             assert (
-                "anthropic/claude-sonnet-4" in models["extractfacts"].lower()
+                "anthropic/claude-sonnet-4.5" in models["extractfacts"].lower()
             )  # Uses Claude Sonnet 4.5 for extraction
