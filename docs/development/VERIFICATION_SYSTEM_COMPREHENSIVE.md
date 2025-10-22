@@ -76,8 +76,8 @@ client = LLMClientFactory.for_command("verification")
 corrected_content, _ = client.verify(content, citation_context, reasoning_context)
 ```
 - **Purpose**: Semantic verification and correction
-- **Model**: Typically Claude Sonnet 4 or GPT-4
-- **Parameters**: Temperature=0, top_p=0.2 (deterministic)
+- **Model**: GPT-5 for standard verification, GPT-5 Pro for critical verification (October 2025)
+- **Parameters**: Temperature=0.2, top_p=0.3 (near-deterministic with minimal creativity)
 - **Context**: Can include citation and reasoning reports
 - **Output**: Corrected document with issues fixed
 
@@ -296,33 +296,44 @@ def verify(file, citations, soundness, reasoning, cove):
 
 ## Model Configuration and Parameters
 
-### Verification Model Selection
+### Verification Model Selection (October 2025)
 
 ```yaml
 # config.yaml
 commands:
   verification:
-    model: anthropic/claude-sonnet-4
+    model: openai/gpt-5  # Fast verification (1.4% hallucination rate)
+    temperature: 0.2
+    top_p: 0.3
+
+  verification-heavy:
+    model: openai/gpt-5-pro  # Critical verification (<1% hallucination rate)
+    temperature: 0.2
+    top_p: 0.3
+    thinking_effort: max
+
+  verification-light:
+    model: anthropic/claude-sonnet-4.5  # Spelling/terminology only
     temperature: 0.0
     top_p: 0.2
-    max_tokens: 65536
-    
+
   cove-questions:
-    model: anthropic/claude-sonnet-4
+    model: anthropic/claude-sonnet-4.5
     temperature: 0.3  # Some creativity for questions
-    
+
   cove-answers:
-    model: openai/gpt-4-turbo
-    temperature: 0.0  # Factual answers
-    
+    model: openai/gpt-5  # Fast accurate answers
+    temperature: 0.2
+
   cove-verify:
-    model: anthropic/claude-sonnet-4
+    model: anthropic/claude-sonnet-4.5
     temperature: 0.0  # Deterministic comparison
-    
+
   cove-final:
-    model: openai/o3-pro  # Premium regeneration
-    max_completion_tokens: 65536
-    reasoning_effort: medium
+    model: openai/gpt-5-pro  # Premium regeneration with <1% hallucination
+    temperature: 0.2
+    top_p: 0.3
+    thinking_effort: max
 ```
 
 ### Model-Specific Parameter Restrictions
@@ -425,7 +436,7 @@ Skip Verification
         "prompt": "[FULL PROMPT]",
         "prompt_truncated": "[FIRST 500 CHARS]",
         "response": "[QUESTIONS]",
-        "model": "claude-sonnet-4",
+        "model": "anthropic/claude-sonnet-4.5",
         "usage": {"total_tokens": 2500}
       },
       "answers": {...},

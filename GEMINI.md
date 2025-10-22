@@ -175,11 +175,13 @@ click.echo(verifying_message("Verifying citations..."))
 
 ### Model Name Protection
 
-**CRITICAL**: Never change model identifiers in the code. These are exact API endpoints:
-- `x-ai/grok-3` (NOT grok-beta or any variation)
-- `anthropic/claude-sonnet-4` (current Claude 4 Sonnet)
-- `openai/o3-pro` (strategic reasoning and advanced technical writing model, requires BYOK)
-- `google/gemini-2.5-pro-preview` (lookup research)
+**CRITICAL**: Never change model identifiers in the code unless specifically asked. These are exact API endpoints:
+- `x-ai/grok-4` (creative strategy generation, October 2025 upgrade)
+- `anthropic/claude-sonnet-4.5` (primary legal reasoning, state-of-the-art for litigation, October 2025)
+- `openai/gpt-5-pro` (critical verification <1% hallucination rate, requires BYOK, October 2025)
+- `openai/gpt-5` (fast verification 1.4% hallucination rate, requires BYOK, October 2025)
+- `openai/o3-pro` (strategic drafting and comprehensive analysis, requires BYOK)
+- `google/gemini-2.5-pro` (lookup research with 1M context window)
 - Model names with `/` are routed through OpenRouter
 
 ### OpenRouter Usage Policy

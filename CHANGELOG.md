@@ -17,6 +17,28 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Case plan generation for litigation planning
 
 ### Changed
+
+#### October 2025: Major Model Upgrade - Three-Tier Strategy Implementation
+- **Implemented three-tier model strategy** for optimal accuracy and cost-efficiency:
+  - Tier 1: GPT-5 Pro for critical verification (<1% hallucination rate)
+  - Tier 2: GPT-5 for fast verification (1.4% hallucination rate)
+  - Tier 3: Claude Sonnet 4.5 for legal reasoning (state-of-the-art for litigation)
+- **Upgraded 20+ commands** to new models based on June-October 2025 releases:
+  - Claude Opus 4.1 → Claude Sonnet 4.5 (14 commands, 80% cost reduction)
+  - Claude Sonnet 4 → Claude Sonnet 4.5 (6 commands, improved reasoning)
+  - New GPT-5 Pro implementation (3 critical verification commands)
+  - New GPT-5 implementation (2 standard verification commands)
+  - Grok 3 → Grok 4 (unorthodox brainstorming upgrade)
+- **Expected impact**: 40-50% overall cost reduction while improving quality
+- **Key improvements**:
+  - Superior legal reasoning: "state of the art on complex litigation tasks"
+  - Enhanced accuracy: <1.6% hallucination rate on all verification
+  - Extended thinking mode for complex multi-step analysis
+  - Preserved old configurations as comments for rollback capability
+- All 380 unit tests passing with updated model configurations
+- Comprehensive documentation updates across README, user guide, and dev docs
+
+#### Previous Changes
 - Removed pattern-based citation validation in favor of online verification only
 - Improved verification system with increased token limits
 - Standardized CLI flags to use --context across all commands

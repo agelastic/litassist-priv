@@ -1,5 +1,5 @@
 # LitAssist Verification System - Executive Summary
-*Last Updated: 2025-01-25 - Added Critique Capture System*
+*Last Updated: 2025-10-14 - October 2025 Model Upgrade*
 
 ## Quick Reference
 
@@ -56,15 +56,17 @@
 2. **Database Check**: Real-time Jade.io verification
 3. **Selective Regeneration**: Remove bad, regenerate affected sections
 
-### Model Configuration
+### Model Configuration (October 2025)
 
 ```yaml
-# Typical setup
-verification: claude-sonnet-4, temp=0.0
-cove-questions: claude-sonnet-4, temp=0.3
-cove-answers: gpt-4-turbo, temp=0.0
-cove-verify: claude-sonnet-4, temp=0.0
-cove-final: o3-pro (premium regeneration)
+# Three-tier strategy for optimal accuracy
+verification: openai/gpt-5, temp=0.2 (1.4% hallucination rate)
+verification-heavy: openai/gpt-5-pro, temp=0.2, thinking_effort=max (<1% hallucination)
+verification-light: anthropic/claude-sonnet-4.5, temp=0.0 (spelling/terminology)
+cove-questions: anthropic/claude-sonnet-4.5, temp=0.3
+cove-answers: openai/gpt-5, temp=0.2
+cove-verify: anthropic/claude-sonnet-4.5, temp=0.0
+cove-final: openai/gpt-5-pro, temp=0.2, thinking_effort=max (premium regeneration)
 ```
 
 ### Important Architecture Decisions

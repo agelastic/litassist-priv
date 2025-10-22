@@ -1,6 +1,6 @@
 # Counsel's Notes Command Guide
 
-**Last Updated**: July 15, 2025
+**Last Updated**: October 12, 2025
 
 The `counselnotes` command provides strategic analysis and tactical insights for legal documents from an advocate's perspective, complementing the neutral analysis provided by the `digest` command.
 
@@ -372,11 +372,12 @@ Advanced users can:
 
 ### Model Configuration
 The `counselnotes` command uses a preconfigured LLM setup optimized for strategic legal analysis:
-- **Model**: `anthropic/claude-sonnet-4` for balanced analysis capability
-- **Temperature**: `0.3` for strategic thinking with controlled creativity  
+- **Model**: `openai/o3-pro` for advanced reasoning and strategic analysis
+- **Reasoning Effort**: `high` for comprehensive strategic insights
+- **Max Completion Tokens**: `8192` for detailed multi-section output
 - **Verification**: Enabled for automatic citation verification and legal accountability
 
-This configuration aligns with other strategic analysis commands to ensure consistent behavior across LitAssist workflows.
+**October 2025 Update**: Upgraded to o3-pro for superior strategic reasoning capabilities, enabling deeper tactical analysis and more sophisticated case assessments. This configuration requires BYOK (Bring Your Own Key) setup through OpenRouter.
 
 ## Support and Resources
 

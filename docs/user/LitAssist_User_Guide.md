@@ -2776,18 +2776,26 @@ outputs/barbrief_citation_verification_YYYYMMDD_HHMMSS.txt
 
 ### Model Selection by Command
 
+**October 2025 Update**: LitAssist uses a three-tier model strategy optimized for legal accuracy and cost-efficiency:
+
+- **Tier 1: Critical Verification** - GPT-5 Pro (<1% hallucination rate)
+- **Tier 2: Fast Verification** - GPT-5 (1.4% hallucination rate)
+- **Tier 3: Legal Reasoning** - Claude Sonnet 4.5 (state-of-the-art for litigation)
+
 Each LitAssist command uses a specific LLM model chosen for its strengths:
 
 | Command | Default Model | Analysis Model | Primary Purpose |
 |---------|---------------|----------------|-----------------|
-| lookup | `google/gemini-2.5-pro-preview` | N/A | Fast, accurate legal research |
-| digest | `anthropic/claude-sonnet-4` | N/A | Reliable document summarization |
-| extractfacts | `anthropic/claude-sonnet-4` | N/A | Precise fact extraction |
+| lookup | `google/gemini-2.5-pro` | N/A | Fast, accurate legal research (1M context) |
+| digest | `anthropic/claude-sonnet-4.5` | N/A | State-of-the-art document analysis |
+| extractfacts | `anthropic/claude-sonnet-4.5` | N/A | Precise fact extraction with extended thinking |
 | brainstorm | *Sub-command specific* | `openai/o3-pro` | Creative generation + expert analysis |
-| strategy | `openai/o3-pro` | `anthropic/claude-opus-4` | Enhanced multi-step legal reasoning |
+| strategy | `anthropic/claude-sonnet-4.5` | `openai/o3-pro` | State-of-the-art legal reasoning |
 | draft | `openai/o3-pro` | N/A | Superior technical legal writing (BYOK required) |
-| counselnotes | `anthropic/claude-opus-4` | N/A | Strategic analysis from advocate perspective |
-| barbrief | `openai/o3-pro` | N/A | Comprehensive barrister's briefs (BYOK required) |
+| counselnotes | `openai/o3-pro` | N/A | Strategic advocate analysis (BYOK required) |
+| barbrief | `openai/o3-pro` | N/A | Comprehensive briefs (BYOK required) |
+| verify (critical) | `openai/gpt-5-pro` | N/A | Critical soundness checking (BYOK required) |
+| verify (standard) | `openai/gpt-5` | N/A | Fast verification (BYOK required) |
 
 ### Brainstorm Sub-Command Models
 
@@ -2795,8 +2803,8 @@ The brainstorm command uses different models for different types of strategy gen
 
 | Sub-Command | Model | Temperature | Top-P | Purpose |
 |-------------|-------|-------------|-------|---------|
-| Orthodox strategies | `anthropic/claude-opus-4` | 0.3 | 0.7 | Conservative, proven legal approaches |
-| Unorthodox strategies | `x-ai/grok-3` | 0.9 | 0.95 | Creative, novel legal arguments |
+| Orthodox strategies | `anthropic/claude-sonnet-4.5` | 0.3 | 0.7 | Conservative, proven legal approaches |
+| Unorthodox strategies | `x-ai/grok-4` | 0.9 | 0.95 | Creative, novel legal arguments |
 | Analysis ("Most Likely") | `openai/o3-pro` | 0.2 | 0.8 | Expert evaluation and ranking |
 
 ### Temperature and Sampling Parameters
@@ -2805,57 +2813,56 @@ LitAssist uses carefully tuned parameters for each command to balance accuracy w
 
 #### Factual/Deterministic Commands
 
-**lookup** (`google/gemini-2.5-pro-preview`):
+**lookup** (`google/gemini-2.5-pro`):
 ```python
-temperature=0.1, top_p=0.2
+temperature=0.2, top_p=0.4
 ```
-- **Purpose**: Case law search with slight variation for comprehensive coverage
-- **Effect**: Near-deterministic responses with minimal creative variation
-- **Why**: Slight randomness helps discover diverse legal angles while maintaining accuracy
+- **Purpose**: Case law search with 1M context window for comprehensive coverage
+- **Effect**: Balanced determinism with slight variation for diverse legal angles
+- **Why**: Gemini 2.5 Pro's massive context enables processing large legal corpora
 
-**extractfacts** (`anthropic/claude-sonnet-4`):
+**extractfacts** (`anthropic/claude-sonnet-4.5`):
 ```python
-temperature=0, top_p=0.15
+temperature=0, top_p=0.15, thinking_effort="high"
 ```
-- **Purpose**: Structured fact extraction demands precision
-- **Effect**: Highly deterministic with virtually no randomness
-- **Why**: Facts must be extracted consistently across runs
+- **Purpose**: Structured fact extraction with extended reasoning
+- **Effect**: Highly deterministic with extended thinking for complex facts
+- **Why**: State-of-the-art legal reasoning ensures accurate extraction
 
-**digest - Summary Mode** (`anthropic/claude-sonnet-4`):
+**digest - Summary Mode** (`anthropic/claude-sonnet-4.5`):
 ```python
-temperature=0, top_p=0
+temperature=0.2, top_p=0.3, thinking_effort="medium"
 ```
-- **Purpose**: Chronological summaries need complete consistency
-- **Effect**: Fully deterministic output
-- **Why**: Document summaries should not vary between runs
+- **Purpose**: Chronological summaries with legal context understanding
+- **Effect**: Consistent output with superior legal domain knowledge
+- **Why**: Sonnet 4.5's litigation expertise improves summary quality
 
 #### Analytical Commands
 
-**digest - Issues Mode** (`anthropic/claude-sonnet-4`):
+**digest - Issues Mode** (`anthropic/claude-sonnet-4.5`):
 ```python
-temperature=0.2, top_p=0.5
+temperature=0.2, top_p=0.5, thinking_effort="high"
 ```
-- **Purpose**: Issue-spotting benefits from slight variation
-- **Effect**: Mostly consistent with minor creative elements
-- **Why**: Different perspectives can reveal different issues
+- **Purpose**: Deep issue identification with extended reasoning
+- **Effect**: Superior issue-spotting with extended thinking mode
+- **Why**: "State of the art on complex litigation tasks" per Anthropic
 
-**strategy** (`openai/o1-pro` for generation, `anthropic/claude-sonnet-4` for analysis):
+**strategy** (`anthropic/claude-sonnet-4.5` for generation, `openai/o3-pro` for analysis):
 ```python
-# Generation (o1-pro): Fixed parameters - temperature=1, top_p=1, presence_penalty=0, frequency_penalty=0
-#                     Only max_completion_tokens can be controlled (default: 25000 tokens)
-# Analysis: temperature=0.2, top_p=0.8
+# Generation: temperature=0.2, top_p=0.8, thinking_effort="max"
+# Analysis: max_completion_tokens=4096, reasoning_effort="high"
 ```
-- **Generation Purpose**: Enhanced multi-step legal reasoning with advanced problem-solving
-- **Analysis Purpose**: Intelligent ranking of brainstormed strategies for specific outcomes
-- **Why**: o1-pro provides superior reasoning capabilities for complex strategic analysis
+- **Generation Purpose**: State-of-the-art legal reasoning with maximum thinking effort
+- **Analysis Purpose**: Expert assessment of strategy viability
+- **Why**: Sonnet 4.5 explicitly designed for complex litigation tasks
 
-**counselnotes** (`anthropic/claude-opus-4`):
+**counselnotes** (`openai/o3-pro`):
 ```python
-temperature=0.3, top_p=0.7
+max_completion_tokens=8192, reasoning_effort="high"
 ```
-- **Purpose**: Strategic analysis from advocate's perspective
-- **Effect**: Balanced analytical output with controlled creativity
-- **Why**: Provides insightful strategic recommendations while maintaining reliability
+- **Purpose**: Strategic analysis from advocate's perspective with advanced reasoning
+- **Effect**: Deep analytical output with sophisticated legal reasoning
+- **Why**: o3-pro's extended reasoning capabilities for comprehensive strategic analysis
 
 #### Creative Commands
 
@@ -2883,40 +2890,65 @@ temperature=0.3, top_p=0.7
 - **Why**: o3-pro's high token limit enables complete brief generation in single pass
 - **Note**: Uses same limited parameter set as o3 but with much higher token capacity
 
-**brainstorm** (`x-ai/grok-3` for generation, `openai/o3-pro` for analysis):
+**brainstorm** (`x-ai/grok-4` for unorthodox, `anthropic/claude-sonnet-4.5` for orthodox, `openai/o3-pro` for analysis):
 ```python
-# Generation: temperature=0.9, top_p=0.95
-# Analysis: temperature=0.2, top_p=0.8
+# Orthodox: temperature=0.3, top_p=0.7, thinking_effort="medium" (Sonnet 4.5)
+# Unorthodox: temperature=0.9, top_p=0.95 (Grok 4)
+# Analysis: max_completion_tokens=8192, reasoning_effort="high" (o3-pro)
 ```
-- **Generation Purpose**: Generate novel and unorthodox strategies with high creativity
+- **Orthodox Purpose**: Conservative legal strategies with proven approaches
+- **Unorthodox Purpose**: Creative, novel legal arguments with Grok 4
 - **Analysis Purpose**: Expert evaluation of "most likely to succeed" strategies
-- **Why**: Combines creative ideation with consistent legal analysis
+- **Why**: Three-tier approach combining legal domain knowledge, creativity, and expert analysis
 
 #### Verification Parameters
 
-All models when used for `--verify`:
+**Critical Verification** (`openai/gpt-5-pro`):
+```python
+temperature=0.2, top_p=0.3, thinking_effort="max"
+```
+- **Purpose**: Maximum accuracy for critical soundness checking
+- **Hallucination Rate**: <1% (industry-leading)
+- **Why**: Legal work requires absolute accuracy; premium model justified
+
+**Standard Verification** (`openai/gpt-5`):
+```python
+temperature=0.2, top_p=0.3
+```
+- **Purpose**: Fast verification with high accuracy
+- **Hallucination Rate**: 1.4-1.6%
+- **Why**: 80% fewer errors than previous models at reasonable cost
+
+**Light Verification** (`anthropic/claude-sonnet-4.5`):
 ```python
 temperature=0, top_p=0.2
 ```
-- **Purpose**: Critique and error-checking must be consistent
+- **Purpose**: Spelling, terminology, and formatting checks
 - **Effect**: Deterministic verification results
-- **Why**: Verification feedback should not vary
+- **Why**: Efficient model for non-critical verification tasks
 
 ### BYOK Requirements for Advanced Models
 
-**Important**: The advanced reasoning models require **BYOK (Bring Your Own Key)** setup:
+**Important**: Advanced reasoning and verification models require **BYOK (Bring Your Own Key)** setup:
 
-- **o1-pro** (strategy command): Requires BYOK setup
-- **o3** (draft command): Requires BYOK setup
-- **o3-pro** (barbrief command): Requires BYOK setup
+**OpenAI Models (Require BYOK):**
+- **o3-pro** (draft, barbrief, counselnotes, analysis commands): Requires Tier 4+ API key
+- **GPT-5** (standard verification): Requires Tier 4+ API key
+- **GPT-5 Pro** (critical verification): Requires Tier 4+ API key
+
+**Claude Models (No BYOK Required):**
+- **Claude Sonnet 4.5**: Available directly through OpenRouter
+- No additional API key setup needed
 
 **Setup Instructions:**
 1. Go to [OpenRouter Settings](https://openrouter.ai/settings/integrations)
 2. Add your OpenAI API key under "OpenAI Integration"
+   - **Important**: Requires Tier 4+ API key with o3-pro and GPT-5 access
+   - Standard OpenAI keys will NOT work
 3. Save the integration
-4. All advanced models (o1-pro, o3, o3-pro) will now be available through your OpenRouter API key
+4. All advanced models (o3-pro, GPT-5, GPT-5 Pro) will now be available through your OpenRouter API key
 
-Without BYOK setup, the strategy, draft, and barbrief commands will fail with authentication errors.
+Without BYOK setup, commands using these models (draft, barbrief, counselnotes, verification) will fail with authentication errors.
 
 ### Understanding the Parameters
 

@@ -1,5 +1,7 @@
 # LitAssist LLM Usage Analysis and Enhancement Report
 
+**Note**: This is a historical analysis document. Model references reflect pre-October 2025 configurations. Current models (October 2025) implement a three-tier strategy: GPT-5 Pro for critical verification (<1% hallucination), GPT-5 for fast verification (1.4% hallucination), Claude Sonnet 4.5 for legal reasoning (state-of-the-art), Grok 4 for creative strategies, and o3-pro for technical drafting.
+
 ## 1. Introduction
 
 The purpose of this review is to analyze the current Large Language Model (LLM) usage within the LitAssist application. This report details findings from an examination of `litassist/llm.py`, assesses the existing configuration against goals of precision, creativity, and legal accuracy, and proposes recommendations for modifications to further enhance these qualities.

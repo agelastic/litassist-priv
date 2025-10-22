@@ -1,6 +1,7 @@
 # Comprehensive LLM Prompt Analysis Report
 
 **Last Updated**: July 20, 2025
+**Note**: This is a historical analysis document. Model references reflect pre-October 2025 configurations. Current models (October 2025): GPT-5 Pro/GPT-5 for verification, Claude Sonnet 4.5 for legal reasoning, Grok 4 for creative strategies, o3-pro for technical drafting.
 
 ## I. Introduction
 This report provides a comprehensive analysis of the LLM prompts used in the LitAssist tool. It covers identified prompts, their associated commands, purposes, effectiveness, suggested improvements, and an evaluation of the LLM models used for each.
@@ -1619,7 +1620,7 @@ This report provides a comprehensive analysis of the LLM prompts used in the Lit
 ## V. Evaluation of LLM Model Appropriateness
 ### base.australian_law
 - **Associated Command(s)**: all
-- **Current LLM Model**: Varies by command (lookup: google/gemini-2.5-pro-preview, digest/extractfacts: anthropic/claude-sonnet-4, brainstorm: x-ai/grok-3 & anthropic/claude-sonnet-4, strategy: openai/o1-pro & anthropic/claude-sonnet-4, draft: openai/o3)
+- **Current LLM Model** (October 2025): Varies by command (lookup: google/gemini-2.5-pro, digest/extractfacts: anthropic/claude-sonnet-4.5, brainstorm: x-ai/grok-4 & anthropic/claude-sonnet-4.5, strategy: anthropic/claude-sonnet-4.5, draft: openai/o3-pro)
 - **Appropriateness Evaluation**: Generally appropriate as this is a foundational instruction. All listed models are capable of understanding and applying such a general constraint. The suggested improvement for jurisdictional specificity is also within their capabilities.
 - **Alternative Model Suggestions**: None.
 

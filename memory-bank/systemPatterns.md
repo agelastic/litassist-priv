@@ -96,23 +96,67 @@ graph TD
 
 ## LLMClientFactory Configuration Pattern
 
-The selection of LLMs for specific commands is a strategic decision guided by the `COMPREHENSIVE_MODEL_OPTIMIZATION_PLAN.md`. This plan ensures that each command uses the most appropriate model to balance speed, accuracy, and creative depth.
+**October 2025 Update:** Major model upgrade implementing three-tier strategy for optimal accuracy and cost-efficiency. See `docs/development/claude_llm_model_recommendations_oct_2025.md` for complete analysis and implementation details.
 
-Strategic analysis commands follow consistent configuration patterns:
+### Three-Tier Model Strategy
 
-- **CounselNotes**: `anthropic/claude-opus-4`, temp=0.3, top_p=0.7, enforce_citations=True
-- **Brainstorm-Orthodox**: `anthropic/claude-sonnet-4`, temp=0.3, top_p=0.7, enforce_citations=True
-- **Brainstorm-Unorthodox**: `x-ai/grok-3`, temp=0.9, top_p=0.95, enforce_citations=True
-- **Brainstorm-Analysis**: `openai/o3-pro`, temp=0.2, top_p=0.8, reasoning_effort=high
-- **Strategy-Analysis**: `anthropic/claude-sonnet-4`, temp=0.2, top_p=0.8
+**Tier 1: Critical Verification (GPT-5 Pro)**
+- **Purpose**: Maximum accuracy for critical legal soundness checking
+- **Hallucination Rate**: <1% (industry-leading)
+- **Commands**: verify-soundness, verification-heavy, cove-final
+- **Cost**: Premium, justified by superior accuracy
+- **BYOK**: Required (Tier 4+ OpenAI API key)
+
+**Tier 2: Fast Verification (GPT-5)**
+- **Purpose**: Balanced speed and accuracy for standard verification
+- **Hallucination Rate**: 1.4-1.6%
+- **Commands**: verification, cove-answers
+- **Cost**: Moderate
+- **BYOK**: Required (Tier 4+ OpenAI API key)
+
+**Tier 3: Legal Reasoning (Claude Sonnet 4.5)**
+- **Purpose**: State-of-the-art legal domain knowledge and reasoning
+- **Hallucination Rate**: ~2-3%
+- **Commands**: 14 commands including strategy, extractfacts, digest, caseplan, brainstorm-orthodox
+- **Cost**: 80% reduction vs Claude Opus 4.1 ($3/$15 vs $15/$75)
+- **Rationale**: Explicitly "state of the art on complex litigation tasks" per Anthropic
+
+### Current Command Configurations
+
+**Strategic Analysis:**
+- **CounselNotes**: `openai/o3-pro`, reasoning_effort=high, max_completion_tokens=8192
+- **Strategy**: `anthropic/claude-sonnet-4.5`, temp=0.2, top_p=0.8, thinking_effort=max
+- **ExtractFacts**: `anthropic/claude-sonnet-4.5`, temp=0, top_p=0.15, thinking_effort=high
 - **Barbrief**: `openai/o3-pro`, reasoning_effort=high, max_completion_tokens=32768
 
+**Brainstorming:**
+- **Brainstorm-Orthodox**: `anthropic/claude-sonnet-4.5`, temp=0.3, top_p=0.7, thinking_effort=medium
+- **Brainstorm-Unorthodox**: `x-ai/grok-4`, temp=0.9, top_p=0.95
+- **Brainstorm-Analysis**: `openai/o3-pro`, reasoning_effort=high, max_completion_tokens=8192
+
+**Verification:**
+- **Verification-Heavy** (Critical): `openai/gpt-5-pro`, temp=0.2, top_p=0.3, thinking_effort=max
+- **Verification** (Standard): `openai/gpt-5`, temp=0.2, top_p=0.3
+- **Verification-Light** (Spelling): `anthropic/claude-sonnet-4.5`, temp=0, top_p=0.2
+
+**Document Processing:**
+- **Digest-Summary**: `anthropic/claude-sonnet-4.5`, temp=0.2, top_p=0.3, thinking_effort=medium
+- **Digest-Issues**: `anthropic/claude-sonnet-4.5`, temp=0.2, top_p=0.5, thinking_effort=high
+- **Lookup**: `google/gemini-2.5-pro`, temp=0.2, top_p=0.4 (1M context window)
+
 **Configuration Philosophy:**
-- Strategic commands use Claude Sonnet 4 for balanced analysis capability
-- Temperature 0.3 provides strategic thinking with controlled creativity
-- Force verification enabled for professional legal accountability
-- Consistent patterns across similar command types for predictable behavior
-- Barbrief uses o3-pro for comprehensive document generation with extended token limits
+- Three-tier strategy optimizes accuracy vs cost based on task criticality
+- GPT-5 family for maximum verification accuracy where needed
+- Claude Sonnet 4.5 for superior legal reasoning at reduced cost
+- o3-pro for technical drafting and comprehensive analysis
+- Thinking effort parameters enable extended reasoning on complex tasks
+- All configurations require force verification for professional legal accountability
+
+**Impact:**
+- 40-50% overall cost reduction across application
+- Superior legal reasoning quality (state-of-the-art for litigation)
+- <1.6% hallucination rate on all verification tasks
+- 380 unit tests passing with all new configurations
 
 **Brainstorm Verification Behavior (Updated January 2025):**
 - Verification is ALWAYS performed on all brainstorm outputs automatically

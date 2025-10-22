@@ -32,7 +32,7 @@ litassist/commands/counselnotes.py
 ```python
 def counselnotes():
     client = LLMClientFactory.for_command("counselnotes")
-    # Uses anthropic/claude-sonnet-4 for balanced analysis
+    # Uses openai/o3-pro for advanced strategic reasoning (October 2025)
 ```
 
 **Benefits:**
@@ -127,16 +127,16 @@ def verify_citations(text, verify_flag):
 def generate_strategic_analysis(documents_content):
     # LLMClientFactory provides configured client
     client = LLMClientFactory.for_command("counselnotes")
-    # Uses anthropic/claude-sonnet-4, temp=0.3, top_p=0.7, enforce_citations=True
-    
+    # Uses openai/o3-pro, reasoning_effort=high, max_completion_tokens=8192 (October 2025)
+
     # Multi-document synthesis
     if len(documents_content) > 1:
         synthesis_prompt = PROMPTS.get("processing.counselnotes.synthesis")
         # Cross-document analysis for consistent themes
-    
+
     # Strategic analysis with advocate perspective
     analysis_prompt = PROMPTS.get("processing.counselnotes.strategic_analysis")
-    
+
     return client.complete(
         prompt=analysis_prompt,
         context=documents_content
@@ -445,19 +445,19 @@ litassist counselnotes doc1.pdf doc2.pdf doc3.pdf
 
 ## Configuration and Customization
 
-### Model Configuration
+### Model Configuration (October 2025)
 
 ```yaml
 # config.yaml
 llm:
   models:
-    counselnotes: "anthropic/claude-opus-4"
-    
+    counselnotes: "openai/o3-pro"
+
   parameters:
     counselnotes:
-      temperature: 0.3
-      max_tokens: 4096
-      top_p: 0.8
+      reasoning_effort: high
+      max_completion_tokens: 8192
+      enforce_citations: true
 ```
 
 ### Prompt Customization

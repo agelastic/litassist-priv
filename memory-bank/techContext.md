@@ -3,12 +3,18 @@
 ## Technologies Used
 
 - **Python** ≥ 3.11: Core implementation language (updated from 3.8 in July 2025)
-- **Click**: CLI framework for command definitions  
-- **OpenAI API**: LLM completions and embeddings via OpenRouter or direct  
-- **Anthropic Claude**: Document summarization, fact extraction, analysis, and now verification (Claude 4 Opus as of July 2025)  
-- **Grok**: Creative strategy generation  
-- **Pinecone**: Managed vector store for retrieval-augmented generation (RAG)  
-- **Google CSE (Jade.io)**: Citation verification and lookup integration  
+- **Click**: CLI framework for command definitions
+- **OpenAI API**: LLM completions and embeddings via OpenRouter
+  - **GPT-5 Pro**: Critical verification (<1% hallucination rate, October 2025)
+  - **GPT-5**: Fast verification (1.4% hallucination rate, October 2025)
+  - **o3-pro**: Technical drafting and comprehensive analysis
+- **Anthropic Claude**: Primary legal reasoning and analysis
+  - **Claude Sonnet 4.5**: State-of-the-art for complex litigation tasks (October 2025)
+  - **Previous**: Claude 4 Opus verification (July 2025), now replaced by GPT-5 family
+- **Grok 4**: Creative strategy generation (October 2025, upgraded from Grok 3)
+- **Pinecone**: Managed vector store for retrieval-augmented generation (RAG)
+- **Google CSE (Jade.io)**: Citation verification and lookup integration
+- **Google Gemini 2.5 Pro**: Case law research with 1M context window
 - **PyPDF2 & pdfplumber**: PDF parsing and text extraction
 - **YAML**: Prompt templates and configuration (PyYAML)
 - **Requests**: HTTP interactions for citation verification
@@ -40,12 +46,15 @@
 
 ## Dependencies & Constraints
 
-- **LLM Models**: BYOK required for o3 and o1-pro models (OpenRouter integration)  
+- **LLM Models**:
+  - **BYOK Required (October 2025)**: o3-pro, GPT-5, GPT-5 Pro (Tier 4+ OpenAI key via OpenRouter)
+  - **No BYOK**: Claude Sonnet 4.5, Gemini 2.5 Pro (available directly through OpenRouter)
 - **Token & Chunk Limits**: Configurable in `general.max_chars`, `general.rag_max_chars`, and `llm.use_token_limits`
   - **Verification Token Limits (July 2025)**: Increased to 8192-16384 tokens for full document verification
   - **Chunk-Based Processing (July 2025)**: Large documents split into 50k token chunks for digest/strategy commands
-- **Citation Verification**: Jade.io primary with offline pattern fallback (`citation_validation.offline_validation`)  
-- **Strict Structure**: `extractfacts` and `strategy` enforce fixed heading formats  
+- **Citation Verification**: Jade.io primary with offline pattern fallback (`citation_validation.offline_validation`)
+- **Strict Structure**: `extractfacts` and `strategy` enforce fixed heading formats
+- **Three-Tier Strategy (October 2025)**: Model selection optimizes accuracy vs cost based on task criticality  
 
 ## Tool Usage Patterns
 

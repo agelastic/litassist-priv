@@ -535,18 +535,22 @@ def format_cove_report(cove_results: Dict) -> str:
     """Format CoVe results into a readable report."""
     cove_data = cove_results.get("cove", {})
 
+    # Helper to ensure string values (handles None gracefully)
+    def safe_str(value, default):
+        return value if value is not None else default
+
     lines = [
         "## Chain of Verification Report\n",
         f"**Status**: {'PASSED' if cove_data.get('passed') else 'ISSUES FOUND'}",
         "",
         "### Verification Questions",
-        cove_data.get("questions", "No questions generated"),
+        safe_str(cove_data.get("questions"), "No questions generated"),
         "",
         "### Independent Answers",
-        cove_data.get("answers", "No answers generated"),
+        safe_str(cove_data.get("answers"), "No answers generated"),
         "",
         "### Verification Results",
-        cove_data.get("issues", "No issues checked"),
+        safe_str(cove_data.get("issues"), "No issues checked"),
     ]
 
     return "\n".join(lines)
