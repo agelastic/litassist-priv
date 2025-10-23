@@ -126,7 +126,7 @@ class LLMVerificationMixin:
                 )
 
         # Always do real-time online database verification
-        verified_citations, unverified_citations = verify_all_citations(content)
+        _, unverified_citations = verify_all_citations(content)
 
         if unverified_citations and strict_mode:
             # Categorize issues for better error messages

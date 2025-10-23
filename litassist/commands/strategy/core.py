@@ -65,12 +65,14 @@ def strategy(case_facts, outcome, strategies, verify, noverify, output):
         outcome: Desired legal outcome (single sentence description)
         strategies: Optional strategies file from brainstorm command
         verify: Enable self-critique pass (always on by default)
-        noverify: Skip standard verification (does not affect --cove)
-        cove: Use Chain of Verification instead of standard verification
+        noverify: Skip standard verification
         output: Custom output filename prefix
 
     Raises:
         click.ClickException: If case facts are invalid or LLM errors occur
+
+    Note:
+        For Chain of Verification (CoVe), run `litassist verify-cove` on the output file.
     """
 
     # Command start log

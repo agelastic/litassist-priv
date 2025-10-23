@@ -208,12 +208,6 @@ class PromptManager:
 PROMPTS = PromptManager()
 
 
-# Convenience functions for backward compatibility
-def get_prompt(key: str, **kwargs) -> str:
-    """Get a prompt template by key."""
-    return PROMPTS.get(key, **kwargs)
-
-
 def get_system_prompt(command: str) -> str:
     """Get the system prompt for a command."""
     return PROMPTS.get_system_prompt(command)
