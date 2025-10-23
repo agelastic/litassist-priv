@@ -72,8 +72,8 @@ pip install tiktoken
 # exact versions avoids AttributeError problems with
 # newer OpenAI releases.
 
-# 4. Make executable
-chmod +x litassist.py
+# 4. Install in editable mode
+pip install -e .
 
 # 5. Use locally
 litassist --help
@@ -301,8 +301,8 @@ brew install pipx --force
 # For pip installation issues
 pip3 install --user -e . --break-system-packages
 
-# For file permission issues
-chmod +x litassist.py
+# For file permission issues (if running from source)
+chmod +x litassist/cli.py
 ```
 
 ### Virtual Environment Issues
