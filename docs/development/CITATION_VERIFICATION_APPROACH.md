@@ -1,5 +1,8 @@
 # Citation Verification Implementation for LitAssist
 
+**Last Updated**: October 2025
+**Status**: Implementation complete and operational
+
 ## Problem Statement
 
 AI models are notoriously unreliable when it comes to legal precedent, often hallucinating case names, citations, or misrepresenting the holdings of real cases. This poses a critical reliability issue for legal AI tools.
@@ -205,32 +208,23 @@ if unorthodox_citation_issues:
 - [FAIL] **EXCLUDES BAD STRATEGIES**: Strategies that can't be fixed are excluded entirely
 - [STATS] **RENUMBERING**: Remaining strategies are renumbered sequentially for clean output
 
-#### strategy Command (Individual Generation - OPTION B)
+#### strategy Command (Warning Approach)
 ```python
-# Generate strategic options individually for better quality control
-for attempt in range(1, max_attempts + 1):
-    if len(valid_options) >= target_options:
-        break
-        
-    # Generate individual option
-    option_content, option_usage = llm_client.complete([...])
-    
-    # Validate citations immediately
-    citation_issues = llm_client.validate_citations(option_content)
-    if citation_issues:
-        click.echo(f"    [FAIL] Option {attempt}: Found {len(citation_issues)-1} citation issues - discarding")
-        continue
-    else:
-        click.echo(f"    [DONE] Option {attempt}: Citations verified - keeping")
-        valid_options.append(option_content.strip())
+# Validate citations in generated strategy content
+citation_issues = llm_client.validate_citations(strategy_content)
+if citation_issues:
+    # Prepend warnings to strategy content
+    citation_warning = "--- CITATION VALIDATION WARNINGS ---\n"
+    citation_warning += "\n".join(citation_issues)
+    citation_warning += "\n" + "-" * 40 + "\n\n"
+    strategy_content = citation_warning + strategy_content
 ```
-**Behavior when bad citations found (NEW - OPTION B):**
-- [RETRY] **INDIVIDUAL GENERATION**: Each strategic option generated and validated separately
-- [FAIL] **IMMEDIATE DISCARD**: Options with citation issues discarded immediately, no warnings
-- [TARGET] **QUALITY OVER QUANTITY**: Targets 4 options but ensures all are citation-clean
-- [STATS] **ADAPTIVE ATTEMPTS**: Up to 7 generation attempts to achieve target of verified options
-- [DONE] **CLEAN OUTPUT**: Only presents options with verified citations to users
-- [RETRY] **NO FALSE CHOICES**: Users never see strategic options known to have bad citations
+**Behavior when bad citations found:**
+- [WARNING] **PROMINENT WARNINGS**: Citation issues prepended to top of strategy output
+- [LIST] **CONTENT PRESERVATION**: Original strategy content maintained unchanged
+- [DONE] **TRANSPARENT FLAGGING**: Warnings clearly separated with dashed lines
+- [SEARCH] **USER JUDGMENT**: Users can assess strategy value despite citation concerns
+- [TARGET] **BUILDS ON BRAINSTORM**: Strategy leverages already-verified brainstormed content
 
 #### draft Command
 ```python
@@ -290,18 +284,28 @@ FUTURE CITATION: [2027] HCA 999
   → ACTION: Excluding impossible future case
 ```
 
-#### Option B Implementation Philosophy (NEW)
+#### Citation Handling Philosophy by Command Type
 
-**CORE PRINCIPLE: Generate as much CORRECT information as possible, not a fixed number of items where some are wrong.**
+**CORE PRINCIPLE: Balance quality control with transparency based on command purpose.**
 
-##### Strategy-Generating Commands (brainstorm, strategy)
-These commands now implement **"Quality over Quantity with Surgical Correction"**:
+##### Strategy-Generating Commands with Selective Regeneration (brainstorm only)
+The **brainstorm** command implements **"Quality over Quantity with Surgical Correction"**:
 
-1. **[TARGET] SELECTIVE REGENERATION**: Only regenerate/discard individual items with citation issues
-2. **[DONE] PRESERVE GOOD CONTENT**: Keep all strategies/options that pass validation unchanged  
-3. **[FAIL] EXCLUDE BAD OPTIONS**: Remove options with unfixable citation issues entirely
-4. **[STATS] ADAPTIVE OUTPUT**: Better to have 2 verified strategies than 5 with warnings
-5. **[RETRY] CONTROLLED ATTEMPTS**: Limited retries prevent infinite loops while maximizing success
+1. **[TARGET] SELECTIVE REGENERATION**: Only regenerate individual strategies with citation issues
+2. **[DONE] PRESERVE GOOD CONTENT**: Keep strategies that pass validation unchanged
+3. **[FAIL] EXCLUDE BAD STRATEGIES**: Strategies that can't be fixed are excluded entirely
+4. **[STATS] ADAPTIVE OUTPUT**: Better to have fewer verified strategies than more with warnings
+5. **[RETRY] CONTROLLED ATTEMPTS**: Limited retries (max 2) prevent infinite loops
+
+##### Strategy Development Commands with Warnings (strategy)
+The **strategy** command uses **"Transparent with Warnings"** approach:
+
+1. **[WARNING] PROMINENT FLAGGING**: Citation warnings prepended to top of output
+2. **[LIST] CONTENT PRESERVATION**: Original strategy content maintained unchanged
+3. **[TARGET] BUILDS ON VERIFIED**: Leverages brainstormed strategies that passed validation
+4. **[SEARCH] USER JUDGMENT**: Users assess strategy value despite citation concerns
+
+**Rationale**: Strategy command builds on already-verified brainstorm output, so citation issues are less common. When they occur, transparency helps users make informed decisions about the strategic analysis.
 
 ##### Research/Analysis Commands (lookup, digest, draft, extractfacts)
 These commands maintain **"Transparent with Warnings"** approach:
@@ -311,19 +315,7 @@ These commands maintain **"Transparent with Warnings"** approach:
 3. **[TARGET] CONTEXT-APPROPRIATE**: Warning placement varies by command purpose
 4. **[SEARCH] DETAILED DIAGNOSTICS**: Specific failure reasons and actions explained
 
-##### Rationale for Different Approaches
-
-**Why Strategy Commands Use Option B:**
-- Users expect high-quality strategic advice, not warnings to manually filter
-- False strategic options with known bad citations create professional liability risks
-- Better UX: clean verified options vs. mixed output requiring manual review
-- Lawyers need reliable foundation documents for case planning
-
-**Why Research Commands Keep Warnings:**
-- Research inherently involves evaluating source quality
-- Users may want to see what the AI generated even if citations are questionable  
-- Content may be valuable even with citation issues (concepts, analysis frameworks)
-- Transparency allows lawyers to make informed judgments about content reliability
+**Rationale**: Research inherently involves evaluating source quality. Content may be valuable even with citation issues (concepts, analysis frameworks). Transparency allows lawyers to make informed judgments.
 
 ### 5. Verification Status Messaging (NEW)
 
@@ -370,24 +362,23 @@ These commands maintain **"Transparent with Warnings"** approach:
 
 ### 6. Strategic Command Enhancements (NEW)
 
-**[DONE] IMPLEMENTED**: Strategy-generating commands now use "Option B" approach:
+**[DONE] IMPLEMENTED**: Strategy-generating commands use different quality control approaches:
 
-#### Individual Generation with Quality Control
+#### Quality Control by Command
 
-**brainstorm Command**:
+**brainstorm Command** - Selective Regeneration:
 - **[TARGET] SELECTIVE REGENERATION**: Only regenerates individual strategies with citation issues
-- **[DONE] PRESERVES GOOD CONTENT**: Keeps strategies that pass validation unchanged  
+- **[DONE] PRESERVES GOOD CONTENT**: Keeps strategies that pass validation unchanged
 - **[FAIL] EXCLUDES BAD STRATEGIES**: Strategies that can't be fixed are excluded entirely
 - **[STATS] ADAPTIVE OUTPUT**: Better to have fewer verified strategies than more with warnings
 - **[RETRY] CONTROLLED ATTEMPTS**: Limited retries (max 2) prevent infinite loops
 
-**strategy Command**:
+**strategy Command** - Warning with Context:
 - **[SMART] INTELLIGENT STRATEGY PRIORITIZATION**: Uses Claude 3.5 Sonnet to rank all available brainstormed strategies for the specific outcome
 - **[LIST] BUILDS ON BRAINSTORMED WORK**: Transforms "most likely to succeed" strategies into detailed strategic options
 - **[TARGET] OUTCOME-SPECIFIC ANALYSIS**: Evaluates strategies specifically for achieving the desired result
-- **[RETRY] INDIVIDUAL GENERATION**: Each strategic option generated and validated separately
-- **[FAIL] IMMEDIATE DISCARD**: Options with citation issues discarded immediately
-- **[DONE] CLEAN OUTPUT**: Only presents options with verified citations
+- **[WARNING] TRANSPARENT WARNINGS**: Citation issues prepended to output for user review
+- **[DONE] PRESERVES ANALYSIS**: Strategy analysis maintained even if citations need review
 - **[LIST] SEPARATE REASONING**: Reasoning traces saved to separate `*_reasoning.txt` files
 
 #### Intelligent Strategy Prioritization Process
@@ -515,13 +506,16 @@ verify_content_if_needed(client, content, "barbrief", verify,
 ```
 litassist/
 ├── citation_verify.py          # Core verification engine
-├── llm.py                      # Integrated strict verification
+├── citation_patterns.py        # Pattern validation
+├── citation_context.py         # Citation content fetching
+├── llm/
+│   └── verification.py        # Integrated verification logic
 └── commands/
-    ├── lookup.py              # Updated: no manual validation
-    ├── brainstorm.py          # Updated: auto-verification
-    ├── strategy.py            # Updated: mandatory verification
-    ├── draft.py               # Updated: smart verification
-    └── extractfacts.py        # Updated: always verified
+    ├── lookup.py              # Warning approach
+    ├── brainstorm/            # Selective regeneration (package)
+    ├── strategy/              # Warning approach (package)
+    ├── draft.py               # Warning approach
+    └── extractfacts.py        # Warning approach
 ```
 
 ### Error Handling Strategy

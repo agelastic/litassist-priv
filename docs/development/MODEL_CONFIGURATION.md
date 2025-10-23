@@ -1,8 +1,11 @@
 # LitAssist Model Configuration Guide
 
-**Last Updated**: October 12, 2025
+**Last Updated**: October 23, 2025
+**Status**: Technical Reference - See `LLM_MODEL_STRATEGY.md` for strategy overview
 
 ## Overview
+
+This document provides **detailed technical configuration** for LitAssist's LLM models. For strategy overview, see `LLM_MODEL_STRATEGY.md`.
 
 LitAssist uses a three-tier model strategy optimized for legal work (October 2025 upgrade):
 
@@ -12,6 +15,11 @@ LitAssist uses a three-tier model strategy optimized for legal work (October 202
 - **Tier 3: Legal Reasoning** - Claude Sonnet 4.5 (state-of-the-art for complex litigation tasks)
 
 All models are accessed through OpenRouter as the primary routing service, with BYOK (Bring Your Own Key) configurations for premium models (o3-pro, GPT-5, GPT-5 Pro).
+
+**Related Documentation:**
+- **LLM_MODEL_STRATEGY.md** - Strategic overview, improvements, future opportunities
+- **ARCHITECTURE_ANALYSIS_2025.md** - Overall architecture including LLM patterns
+- **CLAUDE.md** - Development guidelines including model configuration policy
 
 ## Current Model Configuration
 
@@ -489,8 +497,22 @@ Commands implementing verification optimization:
 
 ## Future Considerations
 
+See `LLM_MODEL_STRATEGY.md` → "Future Model Opportunities" for:
+- OpenAI o4 family considerations
+- Claude 4.2 family upgrade paths
+- GPT-5.1 structured output opportunities
+- Gemini 2.5 Flash Thinking cost optimization
+- Runtime configuration recommendations
+
+**Additional Technical Considerations:**
 - Regular model version updates as providers release new versions
 - Cost optimization through intelligent model selection
 - Fallback strategies for model unavailability
 - Performance monitoring and adaptive selection
 - Extension of verification optimization to other commands with dual verification paths
+
+---
+
+**Document Purpose**: Technical reference for model configuration and parameters
+**Strategic Guidance**: See `LLM_MODEL_STRATEGY.md`
+**Last Updated**: October 23, 2025
