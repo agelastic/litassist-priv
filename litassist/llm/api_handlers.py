@@ -246,7 +246,7 @@ def execute_api_call_with_retry(
     def _call_with_streaming_wrap():
         """Internal wrapper for API call with comprehensive error handling."""
         # Avoid circular import by importing locally
-        from .client import get_openrouter_params
+        from .parameter_handler import get_openrouter_params
 
         try:
             # Get the appropriate client
