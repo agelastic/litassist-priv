@@ -14,7 +14,7 @@ from litassist.utils.formatting import (
     info_message,
     tip_message,
 )
-from litassist.logging_utils import LOG_DIR
+from litassist.logging import LOG_DIR
 
 
 def handle_llm_error(error_str, contents=None):

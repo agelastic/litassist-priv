@@ -6,7 +6,7 @@ and generates a customized, efficient litigation workflow plan.
 """
 
 import click
-from litassist.logging_utils import save_log, save_command_output, log_task_event
+from litassist.logging import save_log, save_command_output, log_task_event
 from litassist.timing import timed
 from litassist.utils.file_ops import validate_file_size_limit
 from litassist.llm import LLMClientFactory

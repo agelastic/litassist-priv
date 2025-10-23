@@ -8,7 +8,7 @@ from litassist.citation import verify_all_citations
 from litassist.citation_context import fetch_citation_context
 from litassist.llm import LLMClientFactory
 from litassist.prompts import PROMPTS
-from litassist.logging_utils import save_log, log_task_event
+from litassist.logging import save_log, log_task_event
 
 
 def run_verification_chain(

@@ -10,7 +10,7 @@ import re
 import time
 from typing import Tuple
 
-from litassist.logging_utils import save_log
+from litassist.logging import save_log
 from .constants import COURT_MAPPINGS
 
 

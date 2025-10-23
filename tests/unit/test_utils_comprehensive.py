@@ -18,7 +18,7 @@ from litassist.utils.legal_reasoning import (
     verify_content_if_needed,
 )
 from litassist.utils.file_ops import validate_file_size_limit
-from litassist.logging_utils import save_log, save_command_output
+from litassist.logging import save_log, save_command_output
 
 
 class TestFileOperations:
@@ -52,7 +52,7 @@ class TestFileOperations:
         except Exception:
             pytest.fail("validate_file_size_limit raised exception at exact limit")
 
-    @patch("litassist.logging_utils.open", new_callable=mock_open)
+    @patch("litassist.logging.output_saver.open", new_callable=mock_open)
     def test_save_command_output_success(self, mock_file):
         """Test successful command output saving."""
         content = "Test command output content"
@@ -61,7 +61,7 @@ class TestFileOperations:
         metadata = {"key": "value"}
 
         with patch(
-            "litassist.logging_utils.time.strftime", return_value="20240101_120000"
+            "litassist.logging.output_saver.time.strftime", return_value="20240101_120000"
         ):
             result = save_command_output(command, content, outcome, metadata)
 
@@ -74,7 +74,7 @@ class TestFileOperations:
         # Verify file written
         mock_file.assert_called_once()
 
-    @patch("litassist.logging_utils.open", new_callable=mock_open)
+    @patch("litassist.logging.output_saver.open", new_callable=mock_open)
     def test_save_command_output_sanitized_outcome(self, mock_file):
         """Test command output saving with sanitized outcome in filename."""
         content = "Test content"
@@ -82,7 +82,7 @@ class TestFileOperations:
         outcome = "Test/Invalid\\Filename:Characters"
 
         with patch(
-            "litassist.logging_utils.time.strftime", return_value="20240101_120000"
+            "litassist.logging.output_saver.time.strftime", return_value="20240101_120000"
         ):
             result = save_command_output(command, content, outcome)
 
@@ -97,10 +97,10 @@ class TestFileOperations:
 
     def test_save_command_output_empty_content(self):
         """Test command output saving with empty content."""
-        with patch("litassist.logging_utils.open", new_callable=mock_open) as mock_file:
-            with patch("litassist.logging_utils.os.makedirs"):
+        with patch("litassist.logging.output_saver.open", new_callable=mock_open) as mock_file:
+            with patch("litassist.logging.output_saver.os.makedirs"):
                 with patch(
-                    "litassist.logging_utils.time.strftime",
+                    "litassist.logging.output_saver.time.strftime",
                     return_value="20240101_120000",
                 ):
                     result = save_command_output("test", "", "empty")
@@ -113,8 +113,8 @@ class TestLogging:
     """Test logging functionality."""
 
     @patch("litassist.config.get_config")
-    @patch("litassist.logging_utils.json.dump")
-    @patch("litassist.logging_utils.open", new_callable=mock_open)
+    @patch("litassist.logging.json.dump")
+    @patch("litassist.logging.open", new_callable=mock_open)
     def test_save_log_success(self, mock_file, mock_json_dump, mock_get_config):
         """Test successful log saving."""
         # Mock config to return json format
@@ -131,7 +131,7 @@ class TestLogging:
         }
 
         with patch(
-            "litassist.logging_utils.time.strftime", return_value="20240101_120000"
+            "litassist.logging.output_saver.time.strftime", return_value="20240101_120000"
         ):
             save_log(command, log_data)
 
@@ -142,9 +142,9 @@ class TestLogging:
         mock_json_dump.assert_called_once()
 
     @patch("litassist.config.get_config")
-    @patch("litassist.logging_utils.json.dump")
-    @patch("litassist.logging_utils.os.makedirs")
-    @patch("litassist.logging_utils.open", new_callable=mock_open)
+    @patch("litassist.logging.json.dump")
+    @patch("litassist.logging.os.makedirs")
+    @patch("litassist.logging.open", new_callable=mock_open)
     def test_save_log_with_metadata(self, mock_file, mock_makedirs, mock_json_dump, mock_get_config):
         """Test log saving with additional metadata."""
         # Mock config to return json format
@@ -173,9 +173,9 @@ class TestLogging:
         assert saved_data["metadata"]["outcome"] == "test outcome"
 
     @patch(
-        "litassist.logging_utils.open", side_effect=PermissionError("Permission denied")
+        "builtins.open", side_effect=PermissionError("Permission denied")
     )
-    @patch("litassist.logging_utils.os.makedirs")
+    @patch("litassist.logging.os.makedirs")
     def test_save_log_permission_error(self, mock_makedirs, mock_file):
         """Test log saving handles permission errors gracefully."""
         command = "test_command"
@@ -614,8 +614,8 @@ class TestErrorHandling:
 
         log_data = {"invalid": NonSerializable()}
 
-        with patch("litassist.logging_utils.open", new_callable=mock_open):
-            with patch("litassist.logging_utils.os.makedirs"):
+        with patch("litassist.logging.open", new_callable=mock_open):
+            with patch("litassist.logging.os.makedirs"):
                 # Should handle serialization errors gracefully
                 try:
                     save_log("test", log_data)
@@ -626,7 +626,7 @@ class TestErrorHandling:
     def test_file_operations_disk_full(self):
         """Test file operations when disk is full."""
         with patch(
-            "litassist.logging_utils.open",
+            "litassist.logging.output_saver.open",
             side_effect=OSError("No space left on device"),
         ):
             with pytest.raises(OSError):
@@ -647,8 +647,8 @@ class TestPerformanceEdgeCases:
         large_content = "x" * 100000  # 100KB content
 
         # Should handle large content without memory issues
-        with patch("litassist.logging_utils.open", new_callable=mock_open):
-            with patch("litassist.logging_utils.os.makedirs"):
+        with patch("litassist.logging.open", new_callable=mock_open):
+            with patch("litassist.logging.os.makedirs"):
                 try:
                     save_command_output("test", large_content, "large_test")
                 except MemoryError:
@@ -657,8 +657,8 @@ class TestPerformanceEdgeCases:
     def test_many_small_operations(self):
         """Test performance with many small operations."""
         # Test multiple small file operations
-        with patch("litassist.logging_utils.open", new_callable=mock_open):
-            with patch("litassist.logging_utils.os.makedirs"):
+        with patch("litassist.logging.open", new_callable=mock_open):
+            with patch("litassist.logging.os.makedirs"):
                 for i in range(100):
                     save_command_output(f"test_{i}", f"content_{i}", f"outcome_{i}")
 

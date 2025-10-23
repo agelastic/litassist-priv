@@ -11,7 +11,7 @@ from datetime import datetime
 from typing import List, Dict, Any, Tuple
 
 from litassist.timing import timed
-from litassist.logging_utils import save_log
+from litassist.logging import save_log
 from litassist.utils.core import heartbeat
 from litassist.utils.formatting import success_message
 from litassist.config import get_config

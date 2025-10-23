@@ -15,7 +15,7 @@ from litassist.utils.formatting import (
     error_message,
     warning_message,
 )
-from litassist.logging_utils import save_command_output, save_log, log_task_event
+from litassist.logging import save_command_output, save_log, log_task_event
 from litassist.verification_chain import run_cove_verification, format_cove_report
 from .citation_verifier import verify_citations
 from .reasoning_handler import verify_reasoning

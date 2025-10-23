@@ -12,7 +12,7 @@ import logging
 import time
 from litassist.config import get_config
 from litassist.utils.formatting import info_message
-from litassist.logging_utils import LOG_DIR, log_task_event
+from litassist.logging import LOG_DIR, log_task_event
 
 # Suppress Google API cache warning
 os.environ["GOOGLE_API_USE_CLIENT_CERTIFICATE"] = "false"

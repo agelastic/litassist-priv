@@ -10,7 +10,7 @@ import click
 from litassist.citation import verify_all_citations
 from litassist.citation_patterns import extract_citations
 from litassist.citation_context import fetch_citation_context
-from litassist.logging_utils import save_command_output, log_task_event
+from litassist.logging import save_command_output, log_task_event
 from litassist.utils.formatting import verifying_message, success_message
 from .formatters import format_citation_report
 

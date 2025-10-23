@@ -8,7 +8,7 @@ to produce a structured legal answer citing relevant cases.
 
 import click
 from litassist.config import get_config
-from litassist.logging_utils import save_log, log_task_event
+from litassist.logging import save_log, log_task_event
 from litassist.timing import timed
 from litassist.llm import LLMClientFactory
 from .search import perform_cse_searches

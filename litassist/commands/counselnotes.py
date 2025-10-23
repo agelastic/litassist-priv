@@ -20,7 +20,7 @@ from litassist.utils.core import (
 from litassist.utils.formatting import (
     info_message,
 )
-from litassist.logging_utils import (
+from litassist.logging import (
     save_log,
     save_command_output,
     log_task_event,

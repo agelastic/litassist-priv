@@ -42,7 +42,7 @@ def cli(ctx, log_format, verbose):
     --verbose       Enable debug logging and detailed output.
     """
     # Set up logging first
-    from litassist.logging_utils import setup_logging
+    from litassist.logging import setup_logging
 
     log_file = setup_logging(verbose=verbose)
 

@@ -8,7 +8,7 @@ Engine to search legal databases like Jade.io and AustLII.
 import re
 import time
 
-from litassist.logging_utils import save_log
+from litassist.logging import save_log
 from litassist.config import get_config
 
 

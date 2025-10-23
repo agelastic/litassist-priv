@@ -151,7 +151,7 @@ class TestLLMClientComplete:
         assert called_messages[1]["content"] == "Hello"
 
     @patch("litassist.config.CONFIG")
-    @patch("litassist.logging_utils.save_log")
+    @patch("litassist.logging.save_log")
     @patch("litassist.llm.client.execute_api_call_with_retry")
     def test_complete_with_verification_enabled(
         self, mock_execute, mock_save_log, mock_config

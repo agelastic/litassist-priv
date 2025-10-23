@@ -47,7 +47,7 @@ class TestLLMClientVerification:
         content = "This is a simple summary of events"
         assert self.client.should_auto_verify(content, "digest") is False
 
-    @patch("litassist.logging_utils.save_log")
+    @patch("litassist.logging.save_log")
     @patch("litassist.llm.api_handlers.get_openai_client")
     @patch("litassist.config.CONFIG")
     def test_verify_with_level_light(self, mock_config, mock_get_client, mock_save_log):
@@ -87,7 +87,7 @@ class TestLLMClientVerification:
         call_args = mock_client.chat.completions.create.call_args[1]["messages"]
         assert "legal" in call_args[0]["content"].lower()
 
-    @patch("litassist.logging_utils.save_log")
+    @patch("litassist.logging.save_log")
     @patch("litassist.llm.api_handlers.get_openai_client")
     @patch("litassist.config.CONFIG")
     def test_verify_with_level_heavy(self, mock_config, mock_get_client, mock_save_log):

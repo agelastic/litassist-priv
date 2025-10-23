@@ -7,7 +7,7 @@ the real-time verification in citation_verify.py.
 
 import re
 from typing import List
-from litassist.logging_utils import save_log
+from litassist.logging import save_log
 from litassist.timing import timed
 import time
 

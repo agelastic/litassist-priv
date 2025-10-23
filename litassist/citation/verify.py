@@ -11,7 +11,7 @@ import time
 from typing import List, Tuple
 
 from litassist.timing import timed
-from litassist.logging_utils import save_log
+from litassist.logging import save_log
 from litassist.config import get_config
 from litassist.citation_patterns import extract_citations, validate_citation_patterns
 

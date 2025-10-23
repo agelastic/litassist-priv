@@ -27,7 +27,7 @@ from litassist.utils.formatting import (
 )
 from litassist.llm import LLMClientFactory
 from litassist.prompts import PROMPTS
-from litassist.logging_utils import log_task_event
+from litassist.logging import log_task_event
 
 from .validators import validate_case_facts_format, extract_legal_issues
 from .ranker import create_consolidated_reasoning_trace

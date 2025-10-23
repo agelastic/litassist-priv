@@ -16,7 +16,7 @@ from litassist.utils.formatting import (
     warning_message,
 )
 from litassist.prompts import PROMPTS
-from litassist.logging_utils import log_task_event
+from litassist.logging import log_task_event
 
 
 def generate_unorthodox_strategies(facts: str, side: str, area: str):
