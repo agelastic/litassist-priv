@@ -31,7 +31,9 @@ class TestPromptValidation:
         "litassist/commands/strategy/core.py",
         "litassist/commands/strategy/document_generator.py",
         "litassist/commands/strategy/ranker.py",
-        "litassist/commands/verify.py",
+        # Verify module files (refactored from verify.py)
+        "litassist/commands/verify/__init__.py",
+        "litassist/commands/verify/reasoning_handler.py",
     ]
 
     @pytest.mark.parametrize("command_file", COMMAND_FILES)
