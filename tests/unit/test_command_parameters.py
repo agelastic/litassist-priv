@@ -254,8 +254,7 @@ class TestCommandParameterPropagation:
                 f.write("case facts")
 
             with patch("litassist.commands.brainstorm.PROMPTS") as mock_prompts:
-                mock_prompts.get_prompt.return_value = "Test prompt"
-                mock_prompts.compose_prompt.return_value = "Test prompt"
+                mock_prompts.get.return_value = "Test prompt"
 
                 result = self.runner.invoke(
                     cli,
@@ -444,8 +443,7 @@ Test objectives""")
                 f.write("draft instructions")
 
             with patch("litassist.commands.draft.PROMPTS") as mock_prompts:
-                mock_prompts.get_prompt.return_value = "Test prompt"
-                mock_prompts.compose_prompt.return_value = "Test prompt"
+                mock_prompts.get.return_value = "Test prompt"
 
                 result = self.runner.invoke(
                     cli, ["draft", "instructions.txt", "Draft a witness statement"]

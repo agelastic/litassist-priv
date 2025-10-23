@@ -151,58 +151,6 @@ class PromptManager:
         """
         return self.get(f"formats.{format_name}")
 
-    def get_document_template(self, document_type: str, **kwargs) -> str:
-        """
-        Get a legal document template.
-
-        Args:
-            document_type: The document type (e.g., 'statement_of_claim')
-            **kwargs: Parameters to substitute in the template
-
-        Returns:
-            The formatted document template
-        """
-        return self.get(f"documents.{document_type}", **kwargs)
-
-    def compose_prompt(
-        self, *template_keys: str, include_glob_help: bool = False
-    ) -> str:
-        """
-        Compose multiple templates into a single prompt.
-
-        Args:
-            *template_keys: Variable number of template keys to combine
-            include_glob_help: If True, append the glob help addon (if present)
-
-        Returns:
-            The combined prompt string
-        """
-        parts = []
-        for key in template_keys:
-            try:
-                parts.append(self.get(key))
-            except KeyError:
-                print(f"[WARNING] Template '{key}' not found, skipping")
-
-        # Add glob help section if requested and available
-        if include_glob_help:
-            try:
-                parts.append(self.get("glob_help_section"))
-            except KeyError:
-                pass
-
-        return "\n\n".join(parts)
-
-    def list_templates(self) -> Dict[str, Any]:
-        """
-        List all available templates.
-
-        Returns:
-            Dictionary of all loaded templates
-        """
-        self._ensure_loaded()
-        return self.templates.copy() if self.templates else {}
-
 
 # Global instance for easy import
 PROMPTS = PromptManager()
