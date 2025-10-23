@@ -32,8 +32,6 @@ The LitAssist codebase is fundamentally well-architected with strong adherence t
 
 ## PRIORITY 0: VERIFIED BUGS (After Code Analysis)
 
-**Status:** Verified against actual codebase. See `claude_bug_verification_report.md` for full analysis.
-
 ### Real Bugs Requiring Fixes
 
 #### 0.1 Missing API Timeouts - HIGH PRIORITY (REAL BUG)
@@ -85,38 +83,6 @@ class CircuitBreaker:
 **Estimated Effort:** 2-3 hours
 **Risk:** Medium
 **Priority:** LOW - nice-to-have optimization
-
----
-
-### Verified False Alarms (No Action Needed)
-
-The following items from TODO.md were verified and found to be **already implemented** or **false alarms**:
-
-#### ✅ Rate Limiting (Claimed as Missing)
-**Reality:** Fully implemented with `tenacity` library
-- Exponential backoff: `wait_exponential(multiplier=0.5, max=10)`
-- Retry limits: `stop_after_attempt(5)`
-- Rate limit handling: `retry_if_exception_type(RateLimitError)`
-
-#### ✅ Bare Exception Handlers (Claimed as Bug)
-**Reality:** All exceptions properly typed and logged
-- `citation_verify.py:506`: `except Exception as e:` with full logging
-- `prompts.py:191`: `except KeyError: pass` for optional feature (acceptable)
-
-#### ✅ o3-pro Parameter Validation (Claimed as Missing)
-**Reality:** Validation exists via effort mapping
-- Invalid values mapped to safe default (`"medium"`)
-- Tests exist: `test_reasoning_effort_validation()`
-
-#### ✅ Large File Handling (Claimed as Bug)
-**Reality:** MemoryError caught and handled gracefully
-- Converts to user-friendly `ValueError` with clear message
-- This is proper error handling, not a bug
-
-#### ✅ Input Validation (Claimed as Missing)
-**Reality:** Click framework validates automatically
-- All commands use `type=click.Path(exists=True)`
-- Framework raises `FileError` if file doesn't exist
 
 ---
 
