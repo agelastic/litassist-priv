@@ -15,7 +15,7 @@ import click
 import logging
 
 from litassist.prompts import PROMPTS
-from litassist.citation_verify import verify_all_citations
+from litassist.citation import verify_all_citations
 from litassist.citation_patterns import extract_citations
 from litassist.llm import LLMClientFactory
 from litassist.utils.formatting import (

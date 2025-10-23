@@ -9,7 +9,7 @@ It implements a fallback strategy from AustLII to comprehensive government sourc
 from typing import Dict, List, Optional
 from litassist.config import get_config
 from litassist.logging_utils import save_log
-from litassist.citation_verify import (
+from litassist.citation import (
     _citation_cache,
     _cache_lock,
     normalize_citation,

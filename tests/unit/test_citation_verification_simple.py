@@ -4,7 +4,7 @@ Simple tests for citation verification functionality.
 
 from unittest.mock import Mock, patch
 from litassist.citation_patterns import extract_citations
-from litassist.citation_verify import search_jade_via_google_cse
+from litassist.citation import search_jade_via_google_cse
 
 
 class TestCitationVerificationBasic:
@@ -26,7 +26,7 @@ class TestCitationVerificationBasic:
         citations = extract_citations("")
         assert isinstance(citations, list)
 
-    @patch("litassist.citation_verify.get_config")
+    @patch("litassist.citation.google_cse.get_config")
     @patch("googleapiclient.discovery.build")
     def test_search_jade_via_google_cse_not_found(self, mock_build, mock_get_config):
         """Test Jade search when nothing found."""

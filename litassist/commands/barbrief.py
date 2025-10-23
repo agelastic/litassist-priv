@@ -29,7 +29,7 @@ from litassist.logging_utils import (
     log_task_event,
 )
 from litassist.llm import LLMClientFactory
-from litassist.citation_verify import verify_all_citations
+from litassist.citation import verify_all_citations
 
 
 @timed

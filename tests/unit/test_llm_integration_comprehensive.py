@@ -227,12 +227,12 @@ class TestLLMClient:
 class TestCitationValidation:
     """Test citation validation with mocked Jade API."""
 
-    @patch("litassist.citation_verify.verify_single_citation")
+    @patch("litassist.citation.verify_single_citation")
     def test_citation_validation_mock(self, mock_verify):
         """Test citation validation with mocked Jade responses."""
         mock_verify.return_value = (True, "Citation is valid", "[2022] FCA 123")
 
-        from litassist.citation_verify import verify_single_citation
+        from litassist.citation import verify_single_citation
 
         valid, msg, normalized = verify_single_citation("[2022] FCA 123")
         assert valid is True

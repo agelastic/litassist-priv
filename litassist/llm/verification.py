@@ -13,7 +13,7 @@ from litassist.utils.core import heartbeat
 from litassist.utils.formatting import warning_message
 from litassist.config import get_config
 from litassist.prompts import PROMPTS
-from litassist.citation_verify import (
+from litassist.citation import (
     verify_all_citations,
     remove_citation_from_text,
     CitationVerificationError,

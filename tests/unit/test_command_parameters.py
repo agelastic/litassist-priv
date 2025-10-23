@@ -198,7 +198,7 @@ class TestCommandParameterPropagation:
 
     @patch("litassist.llm.LLMClientFactory.for_command")
     @patch("litassist.utils.file_ops.read_document")
-    @patch("litassist.citation_verify.verify_all_citations")
+    @patch("litassist.citation.verify_all_citations")
     @patch("litassist.citation_patterns.extract_citations")
     def test_verify_command_parameters(
         self, mock_extract, mock_verify_all, mock_read, mock_factory

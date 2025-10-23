@@ -16,7 +16,7 @@ from litassist.utils.core import heartbeat
 from litassist.utils.formatting import success_message
 from litassist.config import get_config
 from litassist.prompts import PROMPTS
-from litassist.citation_verify import CitationVerificationError
+from litassist.citation import CitationVerificationError
 
 from .api_handlers import execute_api_call_with_retry
 from .verification import LLMVerificationMixin

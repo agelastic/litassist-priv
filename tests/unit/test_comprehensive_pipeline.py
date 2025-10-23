@@ -375,9 +375,9 @@ Worst: Pay $100k progress payment plus costs
         """Test complete litassist pipeline with all external calls mocked."""
         # Use context managers to patch everything
         # Setup citation mocks first to prevent ANY real API calls
-        with patch("litassist.citation_verify.verify_all_citations") as mock_verify_citations:
+        with patch("litassist.citation.verify_all_citations") as mock_verify_citations:
             with patch("litassist.citation_context.fetch_citation_context") as mock_fetch_context:
-                with patch("litassist.citation_verify.search_legal_database_via_cse") as mock_search_cse:
+                with patch("litassist.citation.search_legal_database_via_cse") as mock_search_cse:
                     # Configure citation mocks to prevent real API calls
                     verified_citations = ["[2016] VSC 23", "[2018] VSC 432", "Security of Payment Act"]
                     mock_verify_citations.return_value = (verified_citations, [])
