@@ -6,7 +6,7 @@ Tests different verification modes: light (spelling only) vs heavy (full verific
 
 from unittest.mock import Mock, patch
 
-from litassist.llm import LLMClient
+from litassist.llm.client import LLMClient
 
 
 class TestVerifyModes:
@@ -15,12 +15,12 @@ class TestVerifyModes:
     def setup_method(self):
         """Set up test fixtures."""
         # Create client with minimal setup
-        with patch("litassist.llm.CONFIG") as mock_config:
+        with patch("litassist.config.CONFIG") as mock_config:
             mock_config.openrouter_key = "test_key"
             mock_config.openai_key = "test_key"
             self.client = LLMClient("anthropic/claude-sonnet-4")
 
-    @patch("litassist.llm.LLMClientFactory.for_command")
+    @patch("litassist.llm.factory.LLMClientFactory.for_command")
     def test_light_verification_mode(self, mock_for_command):
         """Test that light mode only uses spelling verification prompt."""
         # Create a mock instance that will be returned by the factory
@@ -66,7 +66,7 @@ class TestVerifyModes:
         # No hardcoded max_tokens anymore - token limits come from config
         assert kwargs.get("skip_citation_verification") is True
 
-    @patch("litassist.llm.LLMClientFactory.for_command")
+    @patch("litassist.llm.factory.LLMClientFactory.for_command")
     def test_heavy_verification_mode(self, mock_for_command):
         """Test that heavy mode uses full legal verification prompt."""
         # Create a mock instance
@@ -120,7 +120,7 @@ class TestVerifyModes:
         # No hardcoded max_tokens anymore - token limits come from config
         assert kwargs.get("skip_citation_verification") is True
 
-    @patch("litassist.llm.LLMClient.verify")
+    @patch("litassist.llm.client.LLMClient.verify")
     def test_default_verification_mode(self, mock_verify):
         """Test that unrecognized level defaults to standard verification."""
         # Mock the verify method
@@ -141,7 +141,7 @@ class TestVerifyModes:
         # Verify that the standard verify method was called
         mock_verify.assert_called_once_with("Test text")
 
-    @patch("litassist.llm.LLMClientFactory.for_command")
+    @patch("litassist.llm.factory.LLMClientFactory.for_command")
     def test_prompts_fallback(self, mock_for_command):
         """Test that prompts have proper fallbacks when PROMPTS.get fails."""
         # Create a mock instance
@@ -167,7 +167,7 @@ class TestVerifyModes:
                 "Check only for Australian English spelling" in messages[0]["content"]
             )
 
-    @patch("litassist.llm.LLMClientFactory.for_command")
+    @patch("litassist.llm.factory.LLMClientFactory.for_command")
     @patch("litassist.llm.verification.get_config")
     def test_token_limits_disabled(self, mock_get_config, mock_for_command):
         """Test behavior when token limits are disabled."""
@@ -192,7 +192,7 @@ class TestVerifyModes:
             assert "max_tokens" not in kwargs
             # No hardcoded temperature/top_p anymore - let factory handle it
 
-    @patch("litassist.llm.LLMClient.verify")
+    @patch("litassist.llm.client.LLMClient.verify")
     def test_unknown_level_calls_standard_verify(self, mock_verify):
         """Test that unknown levels call the standard verify method."""
         mock_verify.return_value = (

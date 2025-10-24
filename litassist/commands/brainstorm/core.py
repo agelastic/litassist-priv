@@ -31,7 +31,7 @@ from litassist.logging import (
     save_log,
     save_command_output,
 )
-from litassist.llm import LLMClientFactory
+from litassist.llm.factory import LLMClientFactory
 from litassist.prompts import PROMPTS
 
 # Import from submodules

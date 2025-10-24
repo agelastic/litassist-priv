@@ -7,7 +7,7 @@ and fetching full case content for verified citations.
 
 import os
 import click
-from litassist.citation import verify_all_citations
+from litassist.citation.verify import verify_all_citations
 from litassist.citation_patterns import extract_citations
 from litassist.citation_context import fetch_citation_context
 from litassist.logging import save_command_output, log_task_event

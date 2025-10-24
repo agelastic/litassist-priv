@@ -22,7 +22,7 @@ from litassist.utils.legal_reasoning import (
     verify_content_if_needed,
 )
 from litassist.utils.core import show_command_completion
-from litassist.llm import LLMClientFactory
+from litassist.llm.factory import LLMClientFactory
 from litassist.helpers.retriever import Retriever, get_pinecone_client
 
 

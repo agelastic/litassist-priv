@@ -7,7 +7,7 @@ Tests cover:
 - Parameter restrictions for different model families
 """
 
-from litassist.llm import get_model_family, get_model_parameters
+from litassist.llm.parameter_handler import get_model_family, get_model_parameters
 
 
 class TestGetModelFamily:

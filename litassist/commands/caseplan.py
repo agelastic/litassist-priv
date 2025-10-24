@@ -9,7 +9,7 @@ import click
 from litassist.logging import save_log, save_command_output, log_task_event
 from litassist.timing import timed
 from litassist.utils.file_ops import validate_file_size_limit
-from litassist.llm import LLMClientFactory
+from litassist.llm.factory import LLMClientFactory
 from litassist.utils.formatting import saved_message, tip_message, success_message, warning_message
 from litassist.prompts import PROMPTS
 

@@ -5,13 +5,13 @@ Tests the LLMClientFactory directly to verify correct model configuration.
 """
 
 from unittest.mock import patch
-from litassist.llm import LLMClientFactory
+from litassist.llm.factory import LLMClientFactory
 
 
 class TestCommandParameterConfiguration:
     """Test that commands are configured with correct models and parameters."""
 
-    @patch("litassist.llm.CONFIG")
+    @patch("litassist.config.CONFIG")
     def test_extractfacts_configuration(self, mock_config):
         """Test extractfacts command configuration."""
         mock_config.openrouter_key = "test_key"
@@ -27,7 +27,7 @@ class TestCommandParameterConfiguration:
         client = LLMClientFactory.for_command("extractfacts")
         assert client.model == "anthropic/claude-sonnet-4.5"
 
-    @patch("litassist.llm.CONFIG")
+    @patch("litassist.config.CONFIG")
     def test_lookup_configuration(self, mock_config):
         """Test lookup command configuration."""
         mock_config.openrouter_key = "test_key"
@@ -44,7 +44,7 @@ class TestCommandParameterConfiguration:
         # Just verify the attribute exists, don't assert specific value
         assert hasattr(client, "_enforce_citations")
 
-    @patch("litassist.llm.CONFIG")
+    @patch("litassist.config.CONFIG")
     def test_strategy_configuration(self, mock_config):
         """Test strategy command configuration."""
         mock_config.openrouter_key = "test_key"
@@ -64,7 +64,7 @@ class TestCommandParameterConfiguration:
         assert hasattr(client, "_enforce_citations")
         assert client.default_params.get("thinking_effort") == "max"
 
-    @patch("litassist.llm.CONFIG")
+    @patch("litassist.config.CONFIG")
     def test_draft_configuration(self, mock_config):
         """Test draft command configuration."""
         mock_config.openrouter_key = "test_key"
@@ -80,7 +80,7 @@ class TestCommandParameterConfiguration:
         # max_completion_tokens might be set by default for o3-pro models
         assert "max_completion_tokens" in client.default_params
 
-    @patch("litassist.llm.CONFIG")
+    @patch("litassist.config.CONFIG")
     def test_parameter_filtering_for_o3_pro(self, mock_config):
         """Test that o3-pro models filter out unsupported parameters during API call."""
         mock_config.openrouter_key = "test_key"
@@ -101,7 +101,7 @@ class TestCommandParameterConfiguration:
         assert client.model == "openai/o3-pro"
 
         # Test that get_model_parameters would filter these out
-        from litassist.llm import get_model_parameters
+        from litassist.llm.parameter_handler import get_model_parameters
 
         filtered = get_model_parameters("openai/o3-pro", client.default_params)
         assert "temperature" not in filtered
@@ -111,7 +111,7 @@ class TestCommandParameterConfiguration:
             "effort": "high"
         }  # Converted from thinking_effort (max maps to high)
 
-    @patch("litassist.llm.CONFIG")
+    @patch("litassist.config.CONFIG")
     def test_default_command_configuration(self, mock_config):
         """Test commands without specific config use defaults."""
         mock_config.openrouter_key = "test_key"
@@ -122,7 +122,7 @@ class TestCommandParameterConfiguration:
         # UPDATED: Oct 2025 - Default upgraded to Sonnet 4.5
         assert client.model == "anthropic/claude-sonnet-4.5"  # Default model
 
-    @patch("litassist.llm.CONFIG")
+    @patch("litassist.config.CONFIG")
     def test_digest_uses_default_config(self, mock_config):
         """Test digest command uses default configuration."""
         mock_config.openrouter_key = "test_key"

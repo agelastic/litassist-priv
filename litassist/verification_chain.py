@@ -4,9 +4,9 @@ import time
 import traceback
 from typing import Dict, Optional, Tuple
 from litassist.citation_patterns import validate_citation_patterns, extract_citations
-from litassist.citation import verify_all_citations
+from litassist.citation.verify import verify_all_citations
 from litassist.citation_context import fetch_citation_context
-from litassist.llm import LLMClientFactory
+from litassist.llm.factory import LLMClientFactory
 from litassist.prompts import PROMPTS
 from litassist.logging import save_log, log_task_event
 

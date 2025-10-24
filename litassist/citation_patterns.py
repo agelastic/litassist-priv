@@ -290,7 +290,7 @@ def validate_citation_patterns(content: str, enable_online: bool = True) -> List
     # ── Online Database Verification ────────────────
     # Perform online verification for ALL citations
     try:
-        from litassist.citation import verify_all_citations
+        from litassist.citation.verify import verify_all_citations
 
         _, unverified_citations = verify_all_citations(content)
 

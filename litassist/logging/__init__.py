@@ -12,9 +12,9 @@ import logging
 import click
 from typing import Dict
 
-from .config import setup_logging
+from .config import setup_logging as setup_logging
 from .json_utils import sanitize_for_json
-from .output_saver import save_command_output
+from .output_saver import save_command_output as save_command_output
 from .task_events import log_task_event as _log_task_event_impl
 from .markdown_writers import (
     write_citation_verification_markdown,
@@ -25,11 +25,11 @@ from .markdown_writers import (
     write_llm_messages_markdown,
     write_fetch_log_markdown,
     write_generic_markdown,
-    format_dict_as_markdown,
+    format_dict_as_markdown as format_dict_as_markdown,
 )
 
 
-#    Directory Setup                                          
+#    Directory Setup
 # Use current working directory for logs and outputs when running as global command
 WORKING_DIR = os.getcwd()
 LOG_DIR = os.path.join(WORKING_DIR, "logs")
@@ -38,7 +38,7 @@ os.makedirs(LOG_DIR, exist_ok=True)
 os.makedirs(OUTPUT_DIR, exist_ok=True)
 
 
-#    Main Logging Function                                    
+#    Main Logging Function
 def save_log(tag: str, payload: dict):
     """
     Save an audit log under logs/ in either JSON or Markdown format.
@@ -129,7 +129,7 @@ def save_log(tag: str, payload: dict):
         raise click.ClickException(f"Failed to save Markdown log {md_path}: {e}")
 
 
-#    Wrapper for log_task_event with save_log injection        
+#    Wrapper for log_task_event with save_log injection
 def log_task_event(
     command: str, stage: str, event: str, message: str = "", details: Dict = None
 ):
@@ -144,38 +144,3 @@ def log_task_event(
         details: Optional additional details
     """
     _log_task_event_impl(command, stage, event, message, details, save_log_fn=save_log)
-
-
-#    Backward Compatibility Re-exports                        
-__all__ = [
-    "save_log",
-    "setup_logging",
-    "save_command_output",
-    "log_task_event",
-    "sanitize_for_json",
-    "LOG_DIR",
-    "OUTPUT_DIR",
-    # Private function re-exports for internal use
-    "_sanitize_for_json",  # Deprecated alias
-    "_write_citation_verification_markdown",  # Deprecated alias
-    "_write_citation_validation_markdown",  # Deprecated alias
-    "_write_http_validation_markdown",  # Deprecated alias
-    "_write_search_validation_markdown",  # Deprecated alias
-    "_write_command_output_markdown",  # Deprecated alias
-    "_write_llm_messages_markdown",  # Deprecated alias
-    "_write_fetch_log_markdown",  # Deprecated alias
-    "_write_generic_markdown",  # Deprecated alias
-    "_format_dict_as_markdown",  # Deprecated alias
-]
-
-# Deprecated private function aliases for backward compatibility
-_sanitize_for_json = sanitize_for_json
-_write_citation_verification_markdown = write_citation_verification_markdown
-_write_citation_validation_markdown = write_citation_validation_markdown
-_write_http_validation_markdown = write_http_validation_markdown
-_write_search_validation_markdown = write_search_validation_markdown
-_write_command_output_markdown = write_command_output_markdown
-_write_llm_messages_markdown = write_llm_messages_markdown
-_write_fetch_log_markdown = write_fetch_log_markdown
-_write_generic_markdown = write_generic_markdown
-_format_dict_as_markdown = format_dict_as_markdown

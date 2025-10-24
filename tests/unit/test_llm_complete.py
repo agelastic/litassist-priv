@@ -9,7 +9,7 @@ Tests cover:
 """
 
 from unittest.mock import Mock, patch
-from litassist.llm import LLMClient
+from litassist.llm.client import LLMClient
 
 
 class TestLLMClientComplete:
@@ -400,7 +400,7 @@ class TestLLMClientComplete:
                 mock_timed.side_effect = lambda f: f
 
                 # Import after patching to get decorated version
-                from litassist.llm import LLMClient as DecoratedClient
+                from litassist.llm.client import LLMClient as DecoratedClient
 
                 client = DecoratedClient(model="gpt-4")
                 response, stats = client.complete([{"role": "user", "content": "Test"}])

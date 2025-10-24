@@ -8,7 +8,7 @@ import click
 import logging
 import re
 
-from litassist.llm import LLMClientFactory
+from litassist.llm.factory import LLMClientFactory
 from litassist.utils.legal_reasoning import create_reasoning_prompt
 from litassist.utils.formatting import (
     verifying_message,

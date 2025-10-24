@@ -14,11 +14,11 @@ from click.testing import CliRunner
 # Mock pypdf to avoid import errors in test environment
 sys.modules["pypdf"] = Mock()
 
-from litassist.commands.verify import (  # noqa: E402
-    verify,
-    _format_citation_report,
-    _parse_soundness_issues,
-    _verify_reasoning_trace,
+from litassist.commands.verify import verify  # noqa: E402
+from litassist.commands.verify.formatters import (  # noqa: E402
+    format_citation_report,
+    parse_soundness_issues,
+    verify_reasoning_trace,
 )
 from litassist.utils.legal_reasoning import LegalReasoningTrace  # noqa: E402
 
@@ -234,11 +234,11 @@ class TestVerifyCommand:
         result = runner.invoke(verify, ["nonexistent.txt"])
         assert result.exit_code != 0
 
-    def test_format_citation_report(self):
+    def testformat_citation_report(self):
         """Test citation report formatting."""
         verified = ["Case1 [2020] HCA 1", "Case2 [2021] FCA 2"]
         unverified = [("Case3 [2025] VSC 999", "Future date")]
-        report = _format_citation_report(verified, unverified, total_found=3)
+        report = format_citation_report(verified, unverified, total_found=3)
         # No longer has the header since save_command_output handles it
         assert "# Citation Verification Report" not in report
         assert "**Total citations found**: 3" in report
@@ -248,7 +248,7 @@ class TestVerifyCommand:
         assert "[UNVERIFIED] Case3 [2025] VSC 999" in report
         assert "Future date" in report
 
-    def test_parse_soundness_issues(self):
+    def testparse_soundness_issues(self):
         """Test parsing of soundness issues from LLM response."""
         response_with_issues = """
         ## Issues Found
@@ -256,7 +256,7 @@ class TestVerifyCommand:
         2. The date should be 1993, not 1992.
         3. The principle stated needs to be clarified.
         """
-        issues = _parse_soundness_issues(response_with_issues)
+        issues = parse_soundness_issues(response_with_issues)
         assert len(issues) == 3
         assert (
             "The document contains an incorrect citation format for the Queensland case."
@@ -264,10 +264,10 @@ class TestVerifyCommand:
         )
 
         response_no_issues = "The document is legally sound with no issues found."
-        issues = _parse_soundness_issues(response_no_issues)
+        issues = parse_soundness_issues(response_no_issues)
         assert len(issues) == 0
 
-    def test_verify_reasoning_trace_complete(self):
+    def testverify_reasoning_trace_complete(self):
         """Test verification of complete reasoning trace."""
         trace = LegalReasoningTrace(
             issue="Whether contract was breached",
@@ -278,11 +278,11 @@ class TestVerifyCommand:
             sources=["Contract Act", "Case Law"],
             command="verify",
         )
-        status = _verify_reasoning_trace(trace)
+        status = verify_reasoning_trace(trace)
         assert status["complete"]
         assert len(status["issues"]) == 0
 
-    def test_verify_reasoning_trace_incomplete(self):
+    def testverify_reasoning_trace_incomplete(self):
         """Test verification of incomplete reasoning trace."""
         trace = LegalReasoningTrace(
             issue="Issue?",  # Too short
@@ -293,7 +293,7 @@ class TestVerifyCommand:
             sources=[],  # Empty
             command="verify",
         )
-        status = _verify_reasoning_trace(trace)
+        status = verify_reasoning_trace(trace)
         assert not status["complete"]
         assert len(status["issues"]) >= 5
         assert any("Issue statement" in issue for issue in status["issues"])

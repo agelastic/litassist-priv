@@ -7,7 +7,7 @@ using LLM-based analysis with automatic token limit backoff.
 
 import os
 import click
-from litassist.llm import LLMClientFactory
+from litassist.llm.factory import LLMClientFactory
 from litassist.logging import save_command_output, log_task_event
 from litassist.utils.formatting import verifying_message, success_message, warning_message
 from litassist.citation_patterns import extract_citations

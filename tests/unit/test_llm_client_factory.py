@@ -3,7 +3,7 @@ Tests for the LLMClientFactory functionality.
 """
 
 from unittest.mock import patch
-from litassist.llm import LLMClientFactory, LLMClient
+from litassist.llm.factory import LLMClientFactory, LLMClient
 
 
 class TestLLMClientFactory:
@@ -11,7 +11,7 @@ class TestLLMClientFactory:
 
     def test_for_command_lookup(self):
         """Test factory creates lookup client with correct configuration."""
-        with patch("litassist.llm.CONFIG") as mock_config:
+        with patch("litassist.config.CONFIG") as mock_config:
             mock_config.openrouter_key = "test_key"
             mock_config.openai_key = "test_openai_key"
 
@@ -24,7 +24,7 @@ class TestLLMClientFactory:
 
     def test_for_command_brainstorm(self):
         """Test factory creates brainstorm client with default configuration."""
-        with patch("litassist.llm.CONFIG") as mock_config:
+        with patch("litassist.config.CONFIG") as mock_config:
             mock_config.openrouter_key = "test_key"
             mock_config.openai_key = "test_openai_key"
 
@@ -36,7 +36,7 @@ class TestLLMClientFactory:
 
     def test_for_command_strategy(self):
         """Test factory creates strategy client with correct configuration."""
-        with patch("litassist.llm.CONFIG") as mock_config:
+        with patch("litassist.config.CONFIG") as mock_config:
             mock_config.openrouter_key = "test_key"
             mock_config.openai_key = "test_openai_key"
 
@@ -50,7 +50,7 @@ class TestLLMClientFactory:
 
     def test_for_command_draft(self):
         """Test factory creates draft client with correct configuration."""
-        with patch("litassist.llm.CONFIG") as mock_config:
+        with patch("litassist.config.CONFIG") as mock_config:
             mock_config.openrouter_key = "test_key"
             mock_config.openai_key = "test_openai_key"
 
@@ -62,7 +62,7 @@ class TestLLMClientFactory:
 
     def test_for_command_with_overrides(self):
         """Test factory applies parameter overrides correctly."""
-        with patch("litassist.llm.CONFIG") as mock_config:
+        with patch("litassist.config.CONFIG") as mock_config:
             mock_config.openrouter_key = "test_key"
             mock_config.openai_key = "test_openai_key"
 
@@ -75,7 +75,7 @@ class TestLLMClientFactory:
 
     def test_for_command_unknown_command(self):
         """Test factory handles unknown commands gracefully."""
-        with patch("litassist.llm.CONFIG") as mock_config:
+        with patch("litassist.config.CONFIG") as mock_config:
             mock_config.openrouter_key = "test_key"
             mock_config.openai_key = "test_openai_key"
 
@@ -88,7 +88,7 @@ class TestLLMClientFactory:
 
     def test_command_configs_exist(self):
         """Test that all expected command configurations exist."""
-        from litassist.llm import LLMClientFactory
+        from litassist.llm.factory import LLMClientFactory
 
         configs = LLMClientFactory.COMMAND_CONFIGS
 
@@ -101,7 +101,7 @@ class TestLLMClientFactory:
 
     def test_verification_flags_set_correctly(self):
         """Test that enforce_citations flags are set correctly for different commands."""
-        with patch("litassist.llm.CONFIG") as mock_config:
+        with patch("litassist.config.CONFIG") as mock_config:
             mock_config.openrouter_key = "test_key"
             mock_config.openai_key = "test_openai_key"
 
@@ -116,7 +116,7 @@ class TestLLMClientFactory:
 
     def test_model_parameter_restrictions(self):
         """Test that o1/o3 models have correct parameter restrictions."""
-        with patch("litassist.llm.CONFIG") as mock_config:
+        with patch("litassist.config.CONFIG") as mock_config:
             mock_config.openrouter_key = "test_key"
             mock_config.openai_key = "test_openai_key"
 
@@ -140,7 +140,7 @@ class TestLLMClientFactory:
 
     def test_environment_variable_override(self):
         """Test that environment variables can override model selection."""
-        with patch("litassist.llm.CONFIG") as mock_config:
+        with patch("litassist.config.CONFIG") as mock_config:
             mock_config.openrouter_key = "test_key"
             mock_config.openai_key = "test_openai_key"
 
@@ -158,7 +158,7 @@ class TestLLMClientFactoryIntegration:
 
     def test_factory_creates_working_clients(self):
         """Test that factory creates clients that can be used."""
-        with patch("litassist.llm.CONFIG") as mock_config:
+        with patch("litassist.config.CONFIG") as mock_config:
             mock_config.openrouter_key = "test_key"
             mock_config.openai_key = "test_openai_key"
 
@@ -186,7 +186,7 @@ class TestLLMClientFactoryIntegration:
 
     def test_parameter_inheritance_and_override(self):
         """Test that parameters are inherited from config and can be overridden."""
-        with patch("litassist.llm.CONFIG") as mock_config:
+        with patch("litassist.config.CONFIG") as mock_config:
             mock_config.openrouter_key = "test_key"
             mock_config.openai_key = "test_openai_key"
 
@@ -203,7 +203,7 @@ class TestLLMClientFactoryIntegration:
 
     def test_configured_commands_have_specific_models(self):
         """Test that configured commands use specific models."""
-        with patch("litassist.llm.CONFIG") as mock_config:
+        with patch("litassist.config.CONFIG") as mock_config:
             mock_config.openrouter_key = "test_key"
             mock_config.openai_key = "test_openai_key"
 

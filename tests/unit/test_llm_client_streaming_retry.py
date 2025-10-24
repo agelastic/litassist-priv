@@ -2,7 +2,7 @@
 
 import pytest
 from unittest.mock import patch, MagicMock
-from litassist.llm import LLMClient
+from litassist.llm.client import LLMClient
 
 
 class MockResponse:
@@ -37,7 +37,7 @@ class MockResponse:
 def test_streaming_error_retry(monkeypatch):
     """Test that streaming errors are retried and eventually succeed."""
     # Mock CONFIG with proper string values for OpenAI v1.x
-    with patch("litassist.llm.CONFIG") as mock_config:
+    with patch("litassist.config.CONFIG") as mock_config:
         mock_config.or_base = "https://openrouter.ai/api/v1"
         mock_config.or_key = "test_key"
         mock_config.openai_key = "test_key"
@@ -68,7 +68,7 @@ def test_streaming_error_retry(monkeypatch):
 def test_streaming_error_max_retries(monkeypatch):
     """Test that streaming errors eventually fail after max retries."""
     # Mock CONFIG with proper string values for OpenAI v1.x
-    with patch("litassist.llm.CONFIG") as mock_config:
+    with patch("litassist.config.CONFIG") as mock_config:
         mock_config.or_base = "https://openrouter.ai/api/v1"
         mock_config.or_key = "test_key"
         mock_config.openai_key = "test_key"

@@ -107,7 +107,7 @@ def mock_external_apis():
     ) as mock_pinecone_init, patch(
         "pinecone.Index"
     ) as mock_pinecone_index, patch(
-        "litassist.llm.LLMClientFactory.for_command"
+        "litassist.llm.factory.LLMClientFactory.for_command"
     ) as mock_llm_factory:
 
         # Setup mock LLM client

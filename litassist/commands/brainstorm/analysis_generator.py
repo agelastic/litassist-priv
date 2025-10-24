@@ -6,7 +6,7 @@ Analyzes both orthodox and unorthodox strategies to identify most likely to succ
 
 import click
 
-from litassist.llm import LLMClientFactory
+from litassist.llm.factory import LLMClientFactory
 from litassist.utils.legal_reasoning import create_reasoning_prompt
 from litassist.prompts import PROMPTS
 

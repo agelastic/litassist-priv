@@ -12,7 +12,7 @@ from click.testing import CliRunner
 
 from litassist.cli import cli
 from litassist.commands import register_commands
-from litassist.llm import LLMClientFactory, LLMClient
+from litassist.llm.factory import LLMClientFactory, LLMClient
 from litassist.config import get_config
 CONFIG = get_config()
 
@@ -375,9 +375,9 @@ Worst: Pay $100k progress payment plus costs
         """Test complete litassist pipeline with all external calls mocked."""
         # Use context managers to patch everything
         # Setup citation mocks first to prevent ANY real API calls
-        with patch("litassist.citation.verify_all_citations") as mock_verify_citations:
+        with patch("litassist.citation.verify.verify_all_citations") as mock_verify_citations:
             with patch("litassist.citation_context.fetch_citation_context") as mock_fetch_context:
-                with patch("litassist.citation.search_legal_database_via_cse") as mock_search_cse:
+                with patch("litassist.citation.google_cse.search_legal_database_via_cse") as mock_search_cse:
                     # Configure citation mocks to prevent real API calls
                     verified_citations = ["[2016] VSC 23", "[2018] VSC 432", "Security of Payment Act"]
                     mock_verify_citations.return_value = (verified_citations, [])
@@ -670,7 +670,7 @@ Worst: Pay $100k progress payment plus costs
                 assert os.environ.get("XGROK_MODEL") == "grok-2-beta"
 
                 # Test that LLMClientFactory would use these when creating clients
-                with patch("litassist.llm.CONFIG") as mock_config:
+                with patch("litassist.config.CONFIG") as mock_config:
                     mock_config.openrouter_key = "test_key"
                     mock_config.openai_key = "test_key"
 

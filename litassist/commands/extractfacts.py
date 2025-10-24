@@ -29,7 +29,7 @@ from litassist.logging import (
     save_command_output,
     log_task_event,
 )
-from litassist.llm import LLMClientFactory
+from litassist.llm.factory import LLMClientFactory
 
 
 @click.command()

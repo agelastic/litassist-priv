@@ -1,7 +1,7 @@
 """Tests for the enhanced verification system."""
 
 from unittest.mock import Mock, patch, MagicMock
-from litassist.llm import LLMClient
+from litassist.llm.client import LLMClient
 
 
 class TestLLMClientVerification:
@@ -138,7 +138,7 @@ class TestCommandVerificationIntegration:
 
     def test_extractfacts_command_sets_auto_verify(self):
         """Test that extractfacts command forces verification to True."""
-        from litassist.llm import LLMClient
+        from litassist.llm.client import LLMClient
 
         # Create a client like extractfacts does
         client = LLMClient("anthropic/claude-3-sonnet", temperature=0, top_p=0.15)
@@ -150,7 +150,7 @@ class TestCommandVerificationIntegration:
 
     def test_brainstorm_grok_client_auto_verifies(self):
         """Test that Grok models in brainstorm always auto-verify."""
-        from litassist.llm import LLMClient
+        from litassist.llm.client import LLMClient
 
         # Create a Grok client like brainstorm does
         client = LLMClient("x-ai/grok-3", temperature=0.9, max_tokens=4000)
@@ -161,7 +161,7 @@ class TestCommandVerificationIntegration:
 
     def test_strategy_command_auto_verifies(self):
         """Test that strategy command always auto-verifies."""
-        from litassist.llm import LLMClient
+        from litassist.llm.client import LLMClient
 
         # Create client like strategy command does
         client = LLMClient("openai/o3-pro", temperature=0.3)
@@ -172,7 +172,7 @@ class TestCommandVerificationIntegration:
 
     def test_lookup_command_no_auto_verify(self):
         """Test that lookup command doesn't auto-verify basic content."""
-        from litassist.llm import LLMClient
+        from litassist.llm.client import LLMClient
 
         # Create client like lookup command does
         client = LLMClient("google/gemini-2.5-pro", temperature=0.3)
@@ -192,7 +192,7 @@ class TestHighRiskContentDetection:
 
     def test_detect_high_percentage_claims(self):
         """Test detection of high percentage claims."""
-        from litassist.llm import LLMClient
+        from litassist.llm.client import LLMClient
 
         client = LLMClient("test/model")
         high_risk_content = [
@@ -206,7 +206,7 @@ class TestHighRiskContentDetection:
 
     def test_detect_strong_legal_language(self):
         """Test detection of strong legal language."""
-        from litassist.llm import LLMClient
+        from litassist.llm.client import LLMClient
 
         client = LLMClient("test/model")
         strong_language = [
@@ -221,7 +221,7 @@ class TestHighRiskContentDetection:
 
     def test_detect_citations(self):
         """Test detection of legal citations."""
-        from litassist.llm import LLMClient
+        from litassist.llm.client import LLMClient
 
         client = LLMClient("test/model")
         citations = [
@@ -236,7 +236,7 @@ class TestHighRiskContentDetection:
 
     def test_safe_content_no_verification(self):
         """Test that safe content doesn't trigger verification."""
-        from litassist.llm import LLMClient
+        from litassist.llm.client import LLMClient
 
         client = LLMClient("test/model")
         safe_content = [

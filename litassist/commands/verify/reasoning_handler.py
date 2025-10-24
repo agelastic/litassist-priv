@@ -8,7 +8,7 @@ and generation of new traces using LLM when none exist.
 import os
 import click
 from litassist.prompts import PROMPTS
-from litassist.llm import LLMClientFactory
+from litassist.llm.factory import LLMClientFactory
 from litassist.logging import save_command_output, log_task_event
 from litassist.utils.formatting import verifying_message, success_message, warning_message
 from litassist.utils.legal_reasoning import (

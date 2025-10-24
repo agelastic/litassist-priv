@@ -7,11 +7,11 @@ model-specific thinking/reasoning parameters.
 
 import pytest
 from unittest.mock import patch
-from litassist.llm import (
+from litassist.llm.parameter_handler import (
     convert_thinking_effort,
     get_model_parameters,
-    LLMClientFactory,
 )
+from litassist.llm.factory import LLMClientFactory
 
 
 class TestThinkingEffortConversion:
@@ -194,7 +194,7 @@ class TestModelParameterFiltering:
 class TestLLMClientFactoryThinkingEffort:
     """Test that LLMClientFactory properly handles thinking_effort in configs."""
 
-    @patch("litassist.llm.CONFIG")
+    @patch("litassist.config.CONFIG")
     def test_strategy_command_thinking_effort(self, mock_config):
         """Test strategy command uses thinking_effort."""
         mock_config.use_token_limits = False
@@ -207,7 +207,7 @@ class TestLLMClientFactoryThinkingEffort:
             client.default_params["thinking_effort"] == "max"
         )  # Updated to match config
 
-    @patch("litassist.llm.CONFIG")
+    @patch("litassist.config.CONFIG")
     def test_lookup_command_thinking_effort(self, mock_config):
         """Test lookup command uses thinking_effort for Gemini."""
         mock_config.use_token_limits = False
@@ -218,7 +218,7 @@ class TestLLMClientFactoryThinkingEffort:
         assert "thinking_effort" in client.default_params
         assert client.default_params["thinking_effort"] == "low"
 
-    @patch("litassist.llm.CONFIG")
+    @patch("litassist.config.CONFIG")
     def test_brainstorm_orthodox_thinking_effort(self, mock_config):
         """Test brainstorm-orthodox uses thinking_effort for Claude."""
         mock_config.use_token_limits = False
@@ -229,7 +229,7 @@ class TestLLMClientFactoryThinkingEffort:
         assert "thinking_effort" in client.default_params
         assert client.default_params["thinking_effort"] == "medium"
 
-    @patch("litassist.llm.CONFIG")
+    @patch("litassist.config.CONFIG")
     def test_override_thinking_effort(self, mock_config):
         """Test that thinking_effort can be overridden."""
         mock_config.use_token_limits = False
@@ -280,7 +280,7 @@ class TestVerbosityParameter:
 
     def test_verbosity_parameter(self):
         """Test that verbosity parameter is properly handled."""
-        from litassist.llm import convert_verbosity
+        from litassist.llm.parameter_handler import convert_verbosity
 
         # Valid levels
         assert convert_verbosity("low") == {"verbosity": "low"}

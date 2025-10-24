@@ -28,8 +28,8 @@ from litassist.logging import (
     save_command_output,
     log_task_event,
 )
-from litassist.llm import LLMClientFactory
-from litassist.citation import verify_all_citations
+from litassist.llm.factory import LLMClientFactory
+from litassist.citation.verify import verify_all_citations
 
 
 @timed

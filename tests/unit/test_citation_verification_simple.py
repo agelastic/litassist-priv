@@ -4,7 +4,7 @@ Simple tests for citation verification functionality.
 
 from unittest.mock import Mock, patch
 from litassist.citation_patterns import extract_citations
-from litassist.citation import search_jade_via_google_cse
+from litassist.citation.google_cse import search_jade_via_google_cse
 
 
 class TestCitationVerificationBasic:

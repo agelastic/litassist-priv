@@ -55,12 +55,3 @@ def verify(file, citations, soundness, reasoning, cove, output, reference, cove_
         reference=reference,
         cove_reference=cove_reference
     )
-
-
-# Re-export helper functions for backward compatibility with tests
-from .formatters import (  # noqa: E402, F401
-    format_citation_report as _format_citation_report,
-    parse_soundness_issues as _parse_soundness_issues,
-    format_soundness_report as _format_soundness_report,
-    verify_reasoning_trace as _verify_reasoning_trace,
-)

@@ -10,7 +10,7 @@ import click
 from litassist.config import get_config
 from litassist.logging import save_log, log_task_event
 from litassist.timing import timed
-from litassist.llm import LLMClientFactory
+from litassist.llm.factory import LLMClientFactory
 from .search import perform_cse_searches
 from .processors import LookupProcessor
 

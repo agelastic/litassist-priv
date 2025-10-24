@@ -19,7 +19,7 @@ from litassist.utils.formatting import (
     tip_message,
 )
 from litassist.logging import LOG_DIR
-from litassist.llm import LLMClientFactory
+from litassist.llm.factory import LLMClientFactory
 from litassist.prompts import PROMPTS
 from .fetchers import _fetch_url_content
 from .error_handlers import (

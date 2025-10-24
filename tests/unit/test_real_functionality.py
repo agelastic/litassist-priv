@@ -91,7 +91,7 @@ class TestCLICommandsWithRealFiles:
                 f.write("Test case facts")
 
             # Mock the actual command logic
-            with patch("litassist.llm.LLMClientFactory.for_command") as mock_factory:
+            with patch("litassist.llm.factory.LLMClientFactory.for_command") as mock_factory:
                 mock_instance = Mock()
                 mock_instance.complete.return_value = (
                     "Strategy",

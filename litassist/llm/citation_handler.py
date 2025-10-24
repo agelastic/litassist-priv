@@ -8,7 +8,7 @@ retry logic coordination, and issue reporting.
 from typing import Tuple, List, Optional, Any
 from litassist.prompts import PROMPTS
 from litassist.utils.formatting import warning_message
-from litassist.citation import CitationVerificationError
+from litassist.citation.exceptions import CitationVerificationError
 
 
 def handle_citation_verification(

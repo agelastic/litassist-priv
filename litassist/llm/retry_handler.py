@@ -21,7 +21,7 @@ def should_retry_for_citations(error: Exception) -> bool:
     Returns:
         True if retry should be attempted, False otherwise
     """
-    from litassist.citation import CitationVerificationError
+    from litassist.citation.exceptions import CitationVerificationError
 
     # Only retry for citation verification errors
     return isinstance(error, CitationVerificationError)
