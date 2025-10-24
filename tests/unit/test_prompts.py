@@ -159,8 +159,8 @@ class TestIntegrationWithCommands:
 
     def test_extractfacts_command_requires_prompts(self):
         """Test that extractfacts command requires centralized prompts."""
-        # Mock empty PROMPTS
-        with patch("litassist.commands.extractfacts.PROMPTS") as mock_prompts:
+        # Mock empty PROMPTS in the single_extractor module
+        with patch("litassist.commands.extractfacts.single_extractor.PROMPTS") as mock_prompts:
             mock_prompts.get_format_template.side_effect = KeyError(
                 "Template not found"
             )

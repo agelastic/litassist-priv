@@ -31,7 +31,7 @@ class TestCommandParameterPropagation:
 
     @patch("litassist.llm.factory.LLMClientFactory.for_command")
     @patch("litassist.utils.file_ops.read_document")
-    @patch("litassist.commands.extractfacts.get_config")
+    @patch("litassist.commands.extractfacts.document_reader.get_config")
     def test_extractfacts_command_parameters(
         self, mock_config, mock_read, mock_factory
     ):
@@ -47,14 +47,14 @@ class TestCommandParameterPropagation:
                 f.write("dummy")
 
             # Mock additional dependencies
-            with patch("litassist.commands.extractfacts.PROMPTS") as mock_prompts:
+            with patch("litassist.commands.extractfacts.single_extractor.PROMPTS") as mock_prompts:
                 mock_prompts.get_prompt.return_value = "Test prompt"
 
                 # Mock save functions to avoid file operations
-                with patch("litassist.commands.extractfacts.save_command_output"):
-                    with patch("litassist.commands.extractfacts.save_log"):
+                with patch("litassist.commands.extractfacts.core.save_command_output"):
+                    with patch("litassist.commands.extractfacts.core.save_log"):
                         with patch(
-                            "litassist.commands.extractfacts.verify_content_if_needed"
+                            "litassist.commands.extractfacts.core.verify_content_if_needed"
                         ) as mock_verify:
                             mock_verify.return_value = ("Test response", {})
                             result = self.runner.invoke(

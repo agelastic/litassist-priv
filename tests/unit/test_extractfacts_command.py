@@ -22,16 +22,16 @@ class TestExtractFactsBasic:
             "total_tokens": 15,
         }
 
-    @patch("litassist.commands.extractfacts.get_config")
-    @patch("litassist.commands.extractfacts.PROMPTS")
-    @patch("litassist.commands.extractfacts.show_command_completion")
-    @patch("litassist.commands.extractfacts.save_log")
-    @patch("litassist.commands.extractfacts.save_command_output")
-    @patch("litassist.commands.extractfacts.LLMClientFactory")
-    @patch("litassist.commands.extractfacts.create_reasoning_prompt")
-    @patch("litassist.commands.extractfacts.chunk_text")
-    @patch("litassist.commands.extractfacts.validate_file_size")
-    @patch("litassist.commands.extractfacts.verify_content_if_needed")
+    @patch("litassist.commands.extractfacts.document_reader.get_config")
+    @patch("litassist.commands.extractfacts.single_extractor.PROMPTS")
+    @patch("litassist.commands.extractfacts.core.show_command_completion")
+    @patch("litassist.commands.extractfacts.core.save_log")
+    @patch("litassist.commands.extractfacts.core.save_command_output")
+    @patch("litassist.commands.extractfacts.core.LLMClientFactory")
+    @patch("litassist.commands.extractfacts.single_extractor.create_reasoning_prompt")
+    @patch("litassist.commands.extractfacts.document_reader.chunk_text")
+    @patch("litassist.commands.extractfacts.document_reader.validate_file_size")
+    @patch("litassist.commands.extractfacts.core.verify_content_if_needed")
     def test_basic_extractfacts(
         self,
         mock_verify_content,

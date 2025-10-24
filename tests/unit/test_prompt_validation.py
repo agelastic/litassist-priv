@@ -33,7 +33,9 @@ class TestPromptValidation:
         # Draft module files (refactored from draft.py)
         "litassist/commands/draft/core.py",
         "litassist/commands/draft/prompt_builder.py",
-        "litassist/commands/extractfacts.py",
+        # Extractfacts module files (refactored from extractfacts.py)
+        "litassist/commands/extractfacts/single_extractor.py",
+        "litassist/commands/extractfacts/multi_extractor.py",
         "litassist/commands/lookup/processors.py",
         # Strategy module files (refactored from strategy.py)
         "litassist/commands/strategy/core.py",
