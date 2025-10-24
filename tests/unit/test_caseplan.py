@@ -9,9 +9,9 @@ from litassist.commands.caseplan import caseplan
 class TestCaseplanCommand:
     """Test cases for caseplan command functionality."""
 
-    @patch("litassist.commands.caseplan.LLMClientFactory")
-    @patch("litassist.commands.caseplan.save_command_output")
-    @patch("litassist.commands.caseplan.save_log")
+    @patch("litassist.commands.caseplan.budget_assessor.LLMClientFactory")
+    @patch("litassist.commands.caseplan.budget_assessor.save_command_output")
+    @patch("litassist.commands.caseplan.budget_assessor.save_log")
     def test_budget_assessment_mode(
         self, mock_save_log, mock_save_output, mock_factory, tmp_path
     ):
@@ -37,9 +37,9 @@ class TestCaseplanCommand:
         mock_save_output.assert_called_once()
         mock_save_log.assert_called_once()
 
-    @patch("litassist.commands.caseplan.LLMClientFactory")
-    @patch("litassist.commands.caseplan.save_command_output")
-    @patch("litassist.commands.caseplan.save_log")
+    @patch("litassist.commands.caseplan.plan_generator.LLMClientFactory")
+    @patch("litassist.commands.caseplan.plan_generator.save_command_output")
+    @patch("litassist.commands.caseplan.plan_generator.save_log")
     def test_full_plan_mode(
         self, mock_save_log, mock_save_output, mock_factory, tmp_path
     ):
@@ -65,9 +65,9 @@ class TestCaseplanCommand:
         assert mock_save_output.call_count == 2
         mock_save_log.assert_called_once()
 
-    @patch("litassist.commands.caseplan.LLMClientFactory")
-    @patch("litassist.commands.caseplan.save_command_output")
-    @patch("litassist.commands.caseplan.save_log")
+    @patch("litassist.commands.caseplan.plan_generator.LLMClientFactory")
+    @patch("litassist.commands.caseplan.plan_generator.save_command_output")
+    @patch("litassist.commands.caseplan.plan_generator.save_log")
     def test_context_option(
         self, mock_save_log, mock_save_output, mock_factory, tmp_path
     ):
@@ -107,9 +107,9 @@ class TestCaseplanCommand:
         assert result.exit_code == 1
         assert "Case facts" in result.output and "too large" in result.output
 
-    @patch("litassist.commands.caseplan.LLMClientFactory")
-    @patch("litassist.commands.caseplan.save_command_output")
-    @patch("litassist.commands.caseplan.save_log")
+    @patch("litassist.commands.caseplan.budget_assessor.LLMClientFactory")
+    @patch("litassist.commands.caseplan.budget_assessor.save_command_output")
+    @patch("litassist.commands.caseplan.budget_assessor.save_log")
     def test_llm_error_handling(
         self, mock_save_log, mock_save_output, mock_factory, tmp_path
     ):
@@ -148,7 +148,7 @@ class TestCaseplanCommand:
         assert result.exit_code == 2
         assert "Invalid value for '--budget'" in result.output
 
-    @patch("litassist.commands.caseplan.LLMClientFactory")
+    @patch("litassist.commands.caseplan.budget_assessor.LLMClientFactory")
     def test_verify_flag_not_supported(self, mock_factory, tmp_path):
         """Test that --verify flag shows appropriate warning."""
         case_facts = tmp_path / "case_facts.txt"
@@ -167,7 +167,7 @@ class TestCaseplanCommand:
         assert "--verify not supported" in result.output
         assert "Use 'litassist verify'" in result.output
 
-    @patch("litassist.commands.caseplan.LLMClientFactory")
+    @patch("litassist.commands.caseplan.budget_assessor.LLMClientFactory")
     def test_noverify_flag_not_supported(self, mock_factory, tmp_path):
         """Test that --noverify flag shows appropriate warning."""
         case_facts = tmp_path / "case_facts.txt"
