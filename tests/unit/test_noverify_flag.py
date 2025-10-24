@@ -12,7 +12,7 @@ from unittest.mock import Mock, patch
 import pytest
 from click.testing import CliRunner
 
-from litassist.commands.draft import draft
+from litassist.commands.draft.core import draft
 from litassist.commands.extractfacts import extractfacts
 from litassist.commands.strategy import strategy
 
@@ -186,10 +186,10 @@ Test objectives
         finally:
             Path(facts_file).unlink()
 
-    @patch("litassist.commands.draft.LLMClientFactory.for_command")
-    @patch("litassist.commands.draft.verify_content_if_needed")
-    @patch("litassist.commands.draft.save_command_output")
-    @patch("litassist.commands.draft.PROMPTS")
+    @patch("litassist.commands.draft.core.LLMClientFactory.for_command")
+    @patch("litassist.commands.draft.core.verify_content_if_needed")
+    @patch("litassist.commands.draft.core.save_command_output")
+    @patch("litassist.commands.draft.prompt_builder.PROMPTS")
     def test_draft_with_noverify_skips_verification(
         self, mock_prompts, mock_save, mock_verify, mock_factory
     ):

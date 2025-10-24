@@ -11,17 +11,17 @@ from pathlib import Path
 from unittest.mock import patch, MagicMock
 from click.testing import CliRunner
 
-from litassist.commands.draft import draft
+from litassist.commands.draft.core import draft
 from litassist.commands.strategy.validators import validate_case_facts_format
 
 
 class TestDraftCommand:
     """Test draft command functionality."""
 
-    @patch("litassist.commands.draft.LLMClientFactory.for_command")
-    @patch("litassist.commands.draft.save_command_output")
-    @patch("litassist.commands.draft.save_log")
-    @patch("litassist.commands.draft.PROMPTS")
+    @patch("litassist.commands.draft.core.LLMClientFactory.for_command")
+    @patch("litassist.commands.draft.core.save_command_output")
+    @patch("litassist.commands.draft.core.save_log")
+    @patch("litassist.commands.draft.prompt_builder.PROMPTS")
     def test_draft_statement_of_claim_success(
         self,
         mock_prompts,
@@ -101,10 +101,10 @@ class TestDraftCommand:
         finally:
             Path(facts_file).unlink()
 
-    @patch("litassist.commands.draft.LLMClientFactory.for_command")
-    @patch("litassist.commands.draft.save_command_output")
-    @patch("litassist.commands.draft.save_log")
-    @patch("litassist.commands.draft.PROMPTS")
+    @patch("litassist.commands.draft.core.LLMClientFactory.for_command")
+    @patch("litassist.commands.draft.core.save_command_output")
+    @patch("litassist.commands.draft.core.save_log")
+    @patch("litassist.commands.draft.prompt_builder.PROMPTS")
     def test_draft_affidavit_success(
         self,
         mock_prompts,
@@ -200,7 +200,7 @@ class TestDraftCommand:
         finally:
             Path(facts_file).unlink()
 
-    @patch("litassist.commands.draft.LLMClientFactory.for_command")
+    @patch("litassist.commands.draft.core.LLMClientFactory.for_command")
     def test_draft_invalid_case_facts(self, mock_llm_factory):
         """Test error handling for invalid case facts."""
         with tempfile.NamedTemporaryFile(mode="w", suffix=".txt", delete=False) as f:
@@ -348,7 +348,7 @@ class TestDraftValidation:
 class TestDraftErrorHandling:
     """Test error handling scenarios for draft command."""
 
-    @patch("litassist.commands.draft.LLMClientFactory.for_command")
+    @patch("litassist.commands.draft.core.LLMClientFactory.for_command")
     def test_llm_failure_handling(self, mock_llm_factory):
         """Test handling of LLM generation failures."""
         # Mock LLM client that raises exception
@@ -387,7 +387,7 @@ class TestDraftErrorHandling:
         finally:
             Path(facts_file).unlink()
 
-    @patch("litassist.commands.draft.read_document")
+    @patch("litassist.commands.draft.document_processor.read_document")
     def test_file_size_limit_handling(self, mock_read_document):
         """Test handling of file reading errors."""
         import click
@@ -416,10 +416,10 @@ class TestDraftErrorHandling:
 class TestDraftIntegration:
     """Test integration scenarios for draft command."""
 
-    @patch("litassist.commands.draft.LLMClientFactory.for_command")
-    @patch("litassist.commands.draft.save_command_output")
-    @patch("litassist.commands.draft.save_log")
-    @patch("litassist.commands.draft.PROMPTS")
+    @patch("litassist.commands.draft.core.LLMClientFactory.for_command")
+    @patch("litassist.commands.draft.core.save_command_output")
+    @patch("litassist.commands.draft.core.save_log")
+    @patch("litassist.commands.draft.prompt_builder.PROMPTS")
     def test_draft_with_verification_warnings(
         self,
         mock_prompts,
@@ -479,10 +479,10 @@ class TestDraftIntegration:
         finally:
             Path(facts_file).unlink()
 
-    @patch("litassist.commands.draft.LLMClientFactory.for_command")
-    @patch("litassist.commands.draft.save_command_output")
-    @patch("litassist.commands.draft.save_log")
-    @patch("litassist.commands.draft.PROMPTS")
+    @patch("litassist.commands.draft.core.LLMClientFactory.for_command")
+    @patch("litassist.commands.draft.core.save_command_output")
+    @patch("litassist.commands.draft.core.save_log")
+    @patch("litassist.commands.draft.prompt_builder.PROMPTS")
     def test_draft_premium_mode(
         self,
         mock_prompts,

@@ -396,7 +396,7 @@ Test objectives""")
     @patch("litassist.llm.factory.LLMClientFactory.for_command")
     @patch("litassist.utils.file_ops.read_document")
     @patch("litassist.helpers.retriever.get_pinecone_client")
-    @patch("litassist.commands.draft.get_config")
+    @patch("litassist.commands.draft.rag_pipeline.get_config")
     def test_draft_command_parameters(
         self, mock_config, mock_pinecone, mock_read, mock_factory
     ):
@@ -436,7 +436,7 @@ Test objectives""")
             with open("instructions.txt", "w") as f:
                 f.write("draft instructions")
 
-            with patch("litassist.commands.draft.PROMPTS") as mock_prompts:
+            with patch("litassist.commands.draft.prompt_builder.PROMPTS") as mock_prompts:
                 mock_prompts.get.return_value = "Test prompt"
 
                 result = self.runner.invoke(
