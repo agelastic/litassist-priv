@@ -3,11 +3,9 @@
 from unittest.mock import patch, MagicMock
 from click.testing import CliRunner
 
-from litassist.commands.barbrief import (
-    barbrief,
-    validate_case_facts,
-    prepare_brief_sections,
-)
+from litassist.commands.barbrief import barbrief
+from litassist.commands.barbrief.validator import validate_case_facts
+from litassist.commands.barbrief.section_builder import prepare_brief_sections
 
 
 class TestValidateCaseFacts:
@@ -134,9 +132,9 @@ class TestPrepareBriefSections:
 class TestBarbriefCommand:
     """Test the barbrief CLI command."""
 
-    @patch("litassist.commands.barbrief.read_document")
-    @patch("litassist.commands.barbrief.LLMClientFactory")
-    @patch("litassist.commands.barbrief.save_command_output")
+    @patch("litassist.commands.barbrief.document_reader.read_document")
+    @patch("litassist.commands.barbrief.core.LLMClientFactory")
+    @patch("litassist.commands.barbrief.core.save_command_output")
     def test_barbrief_minimal(
         self,
         mock_save,
@@ -196,7 +194,7 @@ class TestBarbriefCommand:
             mock_save.assert_called_once()
             assert "Barristers Brief Generated complete!" in result.output
 
-    @patch("litassist.commands.barbrief.read_document")
+    @patch("litassist.commands.barbrief.document_reader.read_document")
     def test_barbrief_invalid_case_facts(self, mock_read):
         """Test barbrief with invalid case facts format."""
         mock_read.return_value = "Invalid format content"
@@ -214,9 +212,9 @@ class TestBarbriefCommand:
             assert result.exit_code == 1
             assert "Case facts must be in 10-heading format" in result.output
 
-    @patch("litassist.commands.barbrief.read_document")
-    @patch("litassist.commands.barbrief.LLMClientFactory")
-    @patch("litassist.commands.barbrief.save_command_output")
+    @patch("litassist.commands.barbrief.document_reader.read_document")
+    @patch("litassist.commands.barbrief.core.LLMClientFactory")
+    @patch("litassist.commands.barbrief.core.save_command_output")
     def test_barbrief_with_all_options(
         self,
         mock_save,
@@ -293,14 +291,16 @@ class TestBarbriefCommand:
             mock_factory.for_command.assert_called_once_with("barbrief")
             mock_save.assert_called()
 
-    @patch("litassist.commands.barbrief.read_document")
-    @patch("litassist.commands.barbrief.LLMClientFactory")
-    @patch("litassist.commands.barbrief.save_command_output")
-    @patch("litassist.commands.barbrief.verify_all_citations")
+    @patch("litassist.commands.barbrief.document_reader.read_document")
+    @patch("litassist.commands.barbrief.core.LLMClientFactory")
+    @patch("litassist.commands.barbrief.brief_generator.save_command_output")
+    @patch("litassist.commands.barbrief.core.save_command_output")
+    @patch("litassist.commands.barbrief.brief_generator.verify_all_citations")
     def test_barbrief_with_citation_verification(
         self,
         mock_citation_verify,
-        mock_save,
+        mock_save_core,
+        mock_save_brief_gen,
         mock_factory,
         mock_read,
     ):
@@ -332,10 +332,8 @@ class TestBarbriefCommand:
             [("[2024] FAKE 99", "Citation not found in database")],  # unverified
         )
 
-        mock_save.side_effect = [
-            "outputs/barbrief_verify_report.txt",
-            "outputs/barbrief_interlocutory_123.txt",
-        ]
+        mock_save_brief_gen.return_value = "outputs/barbrief_verify_report.txt"
+        mock_save_core.return_value = "outputs/barbrief_interlocutory_123.txt"
 
         # Run command
         runner = CliRunner()
@@ -351,7 +349,8 @@ class TestBarbriefCommand:
             # Assertions
             assert result.exit_code == 0
             mock_citation_verify.assert_called_once()
-            assert mock_save.call_count == 2  # verification report + main output
+            mock_save_brief_gen.assert_called_once()  # verification report
+            mock_save_core.assert_called_once()  # main output
             assert "Warning: 1 citations could not be verified" in result.output
             assert "Verification report saved" in result.output
 

@@ -467,26 +467,22 @@ Test objectives""")
         assert configs["draft"]["thinking_effort"] == "high"
 
     @patch("litassist.llm.factory.LLMClientFactory.for_command")
-    @patch("litassist.commands.barbrief.validate_case_facts")
-    def test_barbrief_command_parameters(self, mock_validate, mock_factory):
+    @patch("litassist.commands.barbrief.core.save_command_output")
+    @patch("litassist.commands.barbrief.core.validate_case_facts")
+    @patch("litassist.commands.barbrief.document_reader.read_document")
+    def test_barbrief_command_parameters(self, mock_read, mock_validate, mock_save, mock_factory):
         """Test barbrief command parameters."""
         mock_factory.return_value = self.mock_client
-        mock_validate.return_value = {
-            "parties": {"applicant": "Test", "respondent": "Test2"},
-            "background": "Background",
-            "jurisdiction": "Federal Court",
-            "key_events": [],
-            "issues": [],
-            "evidence": [],
-            "relief_sought": "",
-        }
+        mock_validate.return_value = True
+        mock_read.return_value = "Valid case facts with all 10 headings"
+        mock_save.return_value = "outputs/barbrief_trial.txt"
 
         with self.runner.isolated_filesystem():
             with open("facts.txt", "w") as f:
                 f.write("case facts")
 
-            with patch("litassist.commands.barbrief.PROMPTS") as mock_prompts:
-                mock_prompts.get_prompt.return_value = "Test prompt"
+            with patch("litassist.commands.barbrief.brief_generator.PROMPTS") as mock_prompts:
+                mock_prompts.get.return_value = "Test prompt"
 
                 result = self.runner.invoke(
                     cli, ["barbrief", "facts.txt", "--hearing-type", "trial"]
