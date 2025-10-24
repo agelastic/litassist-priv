@@ -23,14 +23,20 @@ class TestLLMClientFactory:
             assert hasattr(client, "_enforce_citations")
 
     def test_for_command_brainstorm(self):
-        """Test factory creates brainstorm client with default configuration."""
+        """Test factory requires sub-type for brainstorm - NO FALLBACK."""
         with patch("litassist.config.CONFIG") as mock_config:
             mock_config.openrouter_key = "test_key"
             mock_config.openai_key = "test_openai_key"
 
-            # Default brainstorm falls back to default config (not in COMMAND_CONFIGS)
-            client = LLMClientFactory.for_command("brainstorm")
+            # brainstorm without sub-type should raise KeyError - NO FALLBACKS
+            import pytest
 
+            with pytest.raises(KeyError) as exc_info:
+                LLMClientFactory.for_command("brainstorm")
+            assert "No model configuration found" in str(exc_info.value)
+
+            # brainstorm-orthodox should work
+            client = LLMClientFactory.for_command("brainstorm", "orthodox")
             assert isinstance(client, LLMClient)
             assert hasattr(client, "_enforce_citations")
 
@@ -74,23 +80,24 @@ class TestLLMClientFactory:
             assert client.default_params["max_tokens"] == 4096
 
     def test_for_command_unknown_command(self):
-        """Test factory handles unknown commands gracefully."""
+        """Test factory fails fast on unknown commands - NO FALLBACK."""
         with patch("litassist.config.CONFIG") as mock_config:
             mock_config.openrouter_key = "test_key"
             mock_config.openai_key = "test_openai_key"
 
-            # Should fall back to default model configuration
-            client = LLMClientFactory.for_command("unknown_command")
+            # Should raise KeyError for unknown commands - NO FALLBACKS
+            import pytest
 
-            assert isinstance(client, LLMClient)
-            # Should use default model from fallback config
-            assert client.model is not None
+            with pytest.raises(KeyError) as exc_info:
+                LLMClientFactory.for_command("unknown_command")
+            assert "No model configuration found" in str(exc_info.value)
+            assert "unknown_command" in str(exc_info.value)
 
     def test_command_configs_exist(self):
         """Test that all expected command configurations exist."""
         from litassist.llm.factory import LLMClientFactory
 
-        configs = LLMClientFactory.COMMAND_CONFIGS
+        configs = LLMClientFactory.list_configurations()
 
         expected_configs = ["lookup", "extractfacts", "strategy", "draft"]
 
@@ -162,12 +169,11 @@ class TestLLMClientFactoryIntegration:
             mock_config.openrouter_key = "test_key"
             mock_config.openai_key = "test_openai_key"
 
+            # Test simple commands (no sub-type required)
             commands = [
                 "lookup",
-                "brainstorm",
                 "strategy",
                 "draft",
-                "digest",
                 "extractfacts",
             ]
 

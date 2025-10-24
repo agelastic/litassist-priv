@@ -1,0 +1,176 @@
+---
+# LLM Model Configurations for Commands
+# Last updated: 2025-10-24
+# NO FALLBACKS - Missing keys will raise KeyError
+
+extractfacts:
+  model: "anthropic/claude-sonnet-4.5"
+  temperature: 0
+  top_p: 0.15
+  thinking_effort: "high"
+  enforce_citations: true
+  disable_tools: true
+
+strategy:
+  model: "anthropic/claude-sonnet-4.5"
+  temperature: 0.2
+  top_p: 0.8
+  thinking_effort: "max"
+  verbosity: "medium"
+  enforce_citations: false
+
+strategy-analysis:
+  model: "openai/o3-pro"
+  thinking_effort: "max"
+  disable_tools: true
+
+brainstorm-orthodox:
+  model: "anthropic/claude-sonnet-4.5"
+  temperature: 0.3
+  top_p: 0.7
+  thinking_effort: "medium"
+  enforce_citations: false
+
+brainstorm-unorthodox:
+  model: "x-ai/grok-4"
+  temperature: 0.8
+  top_p: 0.95
+  min_p: 0.05
+  repetition_penalty: 1.2
+  enforce_citations: false
+
+brainstorm-analysis:
+  model: "openai/o3-pro"
+  temperature: 0.2
+  top_p: 0.8
+  thinking_effort: "high"
+  disable_tools: true
+
+draft:
+  model: "openai/o3-pro"
+  thinking_effort: "high"
+  verbosity: "high"
+  disable_tools: true
+
+digest-summary:
+  model: "anthropic/claude-sonnet-4.5"
+  temperature: 0.2
+  top_p: 0.3
+  thinking_effort: "medium"
+  disable_tools: true
+
+digest-issues:
+  model: "anthropic/claude-sonnet-4.5"
+  temperature: 0.2
+  top_p: 0.5
+  thinking_effort: "high"
+
+lookup:
+  model: "google/gemini-2.5-pro"
+  temperature: 0.2
+  top_p: 0.4
+  thinking_effort: "low"
+  verbosity: "low"
+  enforce_citations: false
+
+verification:
+  model: "openai/gpt-5"
+  temperature: 0.2
+  top_p: 0.3
+  thinking_effort: "high"
+  enforce_citations: false
+
+verification-light:
+  model: "anthropic/claude-sonnet-4.5"
+  temperature: 0.2
+  top_p: 0.2
+  thinking_effort: "medium"
+  enforce_citations: false
+  disable_tools: true
+
+verification-heavy:
+  model: "openai/gpt-5-pro"
+  temperature: 0.2
+  top_p: 0.3
+  thinking_effort: "max"
+  enforce_citations: false
+
+verify-reasoning:
+  model: "anthropic/claude-sonnet-4.5"
+  temperature: 0.2
+  top_p: 0.3
+  thinking_effort: "high"
+  enforce_citations: false
+  disable_tools: true
+
+verify-soundness:
+  model: "openai/gpt-5-pro"
+  temperature: 0.2
+  top_p: 0.3
+  thinking_effort: "max"
+  verbosity: "high"
+  enforce_citations: false
+
+counselnotes:
+  model: "openai/o3-pro"
+  temperature: 0.3
+  top_p: 0.7
+  thinking_effort: "high"
+  enforce_citations: false
+  disable_tools: true
+
+barbrief:
+  model: "openai/o3-pro"
+  thinking_effort: "high"
+  verbosity: "high"
+  disable_tools: true
+
+caseplan:
+  model: "anthropic/claude-sonnet-4.5"
+  temperature: 0.5
+  enforce_citations: false
+  disable_tools: true
+
+caseplan-assessment:
+  model: "anthropic/claude-sonnet-4.5"
+  temperature: 0.5
+  enforce_citations: false
+  disable_tools: true
+
+cove:
+  model: "anthropic/claude-sonnet-4.5"
+  temperature: 0.2
+  top_p: 0.8
+  thinking_effort: "medium"
+  enforce_citations: false
+  disable_tools: true
+
+cove-questions:
+  model: "anthropic/claude-sonnet-4.5"
+  temperature: 0.2
+  top_p: 0.8
+  thinking_effort: "low"
+  enforce_citations: false
+  disable_tools: true
+
+cove-answers:
+  model: "openai/gpt-5"
+  temperature: 0.2
+  top_p: 0.3
+  thinking_effort: "high"
+  enforce_citations: false
+
+cove-verify:
+  model: "anthropic/claude-sonnet-4.5"
+  temperature: 0.2
+  top_p: 0.3
+  thinking_effort: "high"
+  enforce_citations: false
+  disable_tools: true
+
+cove-final:
+  model: "openai/gpt-5-pro"
+  temperature: 0.2
+  top_p: 0.4
+  thinking_effort: "max"
+  enforce_citations: false

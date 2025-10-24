@@ -18,8 +18,9 @@ class TestCommandParameterConfiguration:
         mock_config.openai_key = "test_key"
 
         # Check the configuration
-        assert "extractfacts" in LLMClientFactory.COMMAND_CONFIGS
-        config = LLMClientFactory.COMMAND_CONFIGS["extractfacts"]
+        configs = LLMClientFactory.list_configurations()
+        assert "extractfacts" in configs
+        config = configs["extractfacts"]
         # UPDATED: Oct 2025 - Model upgraded to Sonnet 4.5
         assert config["model"] == "anthropic/claude-sonnet-4.5"
 
@@ -33,8 +34,9 @@ class TestCommandParameterConfiguration:
         mock_config.openrouter_key = "test_key"
         mock_config.openai_key = "test_key"
 
-        assert "lookup" in LLMClientFactory.COMMAND_CONFIGS
-        config = LLMClientFactory.COMMAND_CONFIGS["lookup"]
+        configs = LLMClientFactory.list_configurations()
+        assert "lookup" in configs
+        config = configs["lookup"]
         assert config["model"] == "google/gemini-2.5-pro"
         # Just verify the key exists, don't assert specific value
         assert "enforce_citations" in config
@@ -50,8 +52,9 @@ class TestCommandParameterConfiguration:
         mock_config.openrouter_key = "test_key"
         mock_config.openai_key = "test_key"
 
-        assert "strategy" in LLMClientFactory.COMMAND_CONFIGS
-        config = LLMClientFactory.COMMAND_CONFIGS["strategy"]
+        configs = LLMClientFactory.list_configurations()
+        assert "strategy" in configs
+        config = configs["strategy"]
         # UPDATED: Oct 2025 - Model upgraded to Sonnet 4.5
         assert config["model"] == "anthropic/claude-sonnet-4.5"
         assert config["thinking_effort"] == "max"
@@ -70,8 +73,9 @@ class TestCommandParameterConfiguration:
         mock_config.openrouter_key = "test_key"
         mock_config.openai_key = "test_key"
 
-        assert "draft" in LLMClientFactory.COMMAND_CONFIGS
-        config = LLMClientFactory.COMMAND_CONFIGS["draft"]
+        configs = LLMClientFactory.list_configurations()
+        assert "draft" in configs
+        config = configs["draft"]
         assert config["model"] == "openai/o3-pro"
         assert config["thinking_effort"] == "high"
 
@@ -113,22 +117,35 @@ class TestCommandParameterConfiguration:
 
     @patch("litassist.config.CONFIG")
     def test_default_command_configuration(self, mock_config):
-        """Test commands without specific config use defaults."""
+        """Test commands without specific config raise KeyError (fail-fast)."""
         mock_config.openrouter_key = "test_key"
         mock_config.openai_key = "test_key"
 
-        # Command not in COMMAND_CONFIGS should use default
-        client = LLMClientFactory.for_command("unknown_command")
-        # UPDATED: Oct 2025 - Default upgraded to Sonnet 4.5
-        assert client.model == "anthropic/claude-sonnet-4.5"  # Default model
+        # Command not in configs should raise KeyError - NO FALLBACKS
+        import pytest
+
+        with pytest.raises(KeyError) as exc_info:
+            LLMClientFactory.for_command("unknown_command")
+        assert "No model configuration found" in str(exc_info.value)
+        assert "unknown_command" in str(exc_info.value)
 
     @patch("litassist.config.CONFIG")
-    def test_digest_uses_default_config(self, mock_config):
-        """Test digest command uses default configuration."""
+    def test_digest_requires_subtype(self, mock_config):
+        """Test digest command requires sub-type (summary/issues) - NO FALLBACK."""
         mock_config.openrouter_key = "test_key"
         mock_config.openai_key = "test_key"
 
-        # digest is not in COMMAND_CONFIGS, should use default
-        client = LLMClientFactory.for_command("digest")
-        # UPDATED: Oct 2025 - Default upgraded to Sonnet 4.5
-        assert client.model == "anthropic/claude-sonnet-4.5"  # Default model
+        # digest without sub-type should raise KeyError - NO FALLBACKS
+        import pytest
+
+        with pytest.raises(KeyError) as exc_info:
+            LLMClientFactory.for_command("digest")
+        assert "No model configuration found" in str(exc_info.value)
+        assert "digest" in str(exc_info.value)
+
+        # digest-summary and digest-issues should work
+        client_summary = LLMClientFactory.for_command("digest", "summary")
+        assert client_summary.model == "anthropic/claude-sonnet-4.5"
+
+        client_issues = LLMClientFactory.for_command("digest", "issues")
+        assert client_issues.model == "anthropic/claude-sonnet-4.5"

@@ -81,10 +81,8 @@ class TestCommandParameterPropagation:
         from litassist.llm.factory import LLMClientFactory
 
         # UPDATED: Oct 2025 - Model upgraded to Sonnet 4.5
-        assert (
-            LLMClientFactory.COMMAND_CONFIGS["extractfacts"]["model"]
-            == "anthropic/claude-sonnet-4.5"
-        )
+        configs = LLMClientFactory.list_configurations()
+        assert configs["extractfacts"]["model"] == "anthropic/claude-sonnet-4.5"
 
     @patch("litassist.llm.factory.LLMClientFactory.for_command")
     @patch("litassist.utils.file_ops.read_document")
@@ -114,8 +112,8 @@ class TestCommandParameterPropagation:
 
                 traceback.print_tb(result.exc_info[2])
 
-        # Verify factory was called with mode as keyword argument
-        mock_factory.assert_called_once_with("digest", mode="summary")
+        # Verify factory was called with mode as positional sub_type argument
+        mock_factory.assert_called_once_with("digest", "summary")
         assert self.mock_client.complete.called
 
     @patch("litassist.llm.factory.LLMClientFactory.for_command")
@@ -140,8 +138,8 @@ class TestCommandParameterPropagation:
         # The important thing is that the factory was called correctly
         assert result.exit_code in [0, 1]
 
-        # Verify factory was called with mode as keyword argument
-        mock_factory.assert_called_once_with("digest", mode="issues")
+        # Verify factory was called with mode as positional sub_type argument
+        mock_factory.assert_called_once_with("digest", "issues")
         assert self.mock_client.complete.called
 
     @patch("litassist.commands.lookup.search.time.sleep")
@@ -189,12 +187,10 @@ class TestCommandParameterPropagation:
         # Check configuration
         from litassist.llm.factory import LLMClientFactory
 
-        assert (
-            LLMClientFactory.COMMAND_CONFIGS["lookup"]["model"]
-            == "google/gemini-2.5-pro"
-        )
+        configs = LLMClientFactory.list_configurations()
+        assert configs["lookup"]["model"] == "google/gemini-2.5-pro"
         # Just verify the key exists, don't assert specific value
-        assert "enforce_citations" in LLMClientFactory.COMMAND_CONFIGS["lookup"]
+        assert "enforce_citations" in configs["lookup"]
 
     @patch("litassist.llm.factory.LLMClientFactory.for_command")
     @patch("litassist.utils.file_ops.read_document")
@@ -391,13 +387,11 @@ Test objectives""")
         from litassist.llm.factory import LLMClientFactory
 
         # UPDATED: Oct 2025 - Model upgraded to Sonnet 4.5
-        assert (
-            LLMClientFactory.COMMAND_CONFIGS["strategy"]["model"]
-            == "anthropic/claude-sonnet-4.5"
-        )
-        assert LLMClientFactory.COMMAND_CONFIGS["strategy"]["thinking_effort"] == "max"
+        configs = LLMClientFactory.list_configurations()
+        assert configs["strategy"]["model"] == "anthropic/claude-sonnet-4.5"
+        assert configs["strategy"]["thinking_effort"] == "max"
         # Just verify the key exists, don't assert specific value
-        assert "enforce_citations" in LLMClientFactory.COMMAND_CONFIGS["strategy"]
+        assert "enforce_citations" in configs["strategy"]
 
     @patch("litassist.llm.factory.LLMClientFactory.for_command")
     @patch("litassist.utils.file_ops.read_document")
@@ -468,8 +462,9 @@ Test objectives""")
         # Check configuration
         from litassist.llm.factory import LLMClientFactory
 
-        assert LLMClientFactory.COMMAND_CONFIGS["draft"]["model"] == "openai/o3-pro"
-        assert LLMClientFactory.COMMAND_CONFIGS["draft"]["thinking_effort"] == "high"
+        configs = LLMClientFactory.list_configurations()
+        assert configs["draft"]["model"] == "openai/o3-pro"
+        assert configs["draft"]["thinking_effort"] == "high"
 
     @patch("litassist.llm.factory.LLMClientFactory.for_command")
     @patch("litassist.commands.barbrief.validate_case_facts")

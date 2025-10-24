@@ -97,7 +97,7 @@ def digest(ctx, file, mode, context, output, verify, noverify):
     )
 
     # Create client using factory with mode-specific configuration
-    llm_client = LLMClientFactory.for_command("digest", mode=mode)
+    llm_client = LLMClientFactory.for_command("digest", mode)
     
     # Command start log
     try:
