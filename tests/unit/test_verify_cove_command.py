@@ -42,10 +42,10 @@ class TestVerifyCoveCommand:
 
         # Mock dependencies inside command module
         with (
-            patch("litassist.commands.verify_cove.read_document") as mock_read,
-            patch("litassist.commands.verify_cove.run_cove_verification") as mock_cove,
-            patch("litassist.commands.verify_cove.save_command_output") as mock_save,
-            patch("litassist.commands.verify_cove.save_log") as _mock_log,
+            patch("litassist.commands.verify_cove.document_reader.read_document") as mock_read,
+            patch("litassist.commands.verify_cove.cove_runner.run_cove_verification") as mock_cove,
+            patch("litassist.commands.verify_cove.cove_runner.save_command_output") as mock_save,
+            patch("litassist.commands.verify_cove.core.save_log") as _mock_log,
         ):
             mock_read.return_value = "Original content to verify"
 
@@ -86,13 +86,13 @@ class TestVerifyCoveCommand:
         register_commands(cli)
 
         with (
-            patch("litassist.commands.verify_cove.read_document") as mock_read,
+            patch("litassist.commands.verify_cove.document_reader.read_document") as mock_read,
             patch(
-                "litassist.commands.verify_cove.process_reference_files"
+                "litassist.commands.verify_cove.document_reader.process_reference_files"
             ) as mock_refs,
-            patch("litassist.commands.verify_cove.run_cove_verification") as mock_cove,
-            patch("litassist.commands.verify_cove.save_command_output") as mock_save,
-            patch("litassist.commands.verify_cove.save_log") as _mock_log,
+            patch("litassist.commands.verify_cove.cove_runner.run_cove_verification") as mock_cove,
+            patch("litassist.commands.verify_cove.cove_runner.save_command_output") as mock_save,
+            patch("litassist.commands.verify_cove.core.save_log") as _mock_log,
         ):
             mock_read.return_value = "Original content"
             mock_refs.return_value = ("=== ref.txt ===\n\nRef content\n\n", ["ref.txt"])

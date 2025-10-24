@@ -12,7 +12,7 @@ from unittest.mock import Mock, patch
 import pytest
 from click.testing import CliRunner
 
-from litassist.commands.draft import draft
+from litassist.commands.draft.core import draft
 from litassist.commands.extractfacts import extractfacts
 from litassist.commands.strategy import strategy
 
@@ -29,11 +29,11 @@ class TestNoVerifyFlag:
         self.mock_client.validate_citations.return_value = []
         self.mock_client.model = "test-model"
 
-    @patch("litassist.commands.extractfacts.get_config")
-    @patch("litassist.commands.extractfacts.LLMClientFactory.for_command")
-    @patch("litassist.commands.extractfacts.verify_content_if_needed")
-    @patch("litassist.commands.extractfacts.save_command_output")
-    @patch("litassist.commands.extractfacts.PROMPTS")
+    @patch("litassist.commands.extractfacts.document_reader.get_config")
+    @patch("litassist.commands.extractfacts.core.LLMClientFactory.for_command")
+    @patch("litassist.commands.extractfacts.core.verify_content_if_needed")
+    @patch("litassist.commands.extractfacts.core.save_command_output")
+    @patch("litassist.commands.extractfacts.single_extractor.PROMPTS")
     def test_extractfacts_with_noverify_skips_verification(
         self, mock_prompts, mock_save, mock_verify, mock_factory, mock_config
     ):
@@ -67,11 +67,11 @@ class TestNoVerifyFlag:
         finally:
             Path(test_file).unlink()
 
-    @patch("litassist.commands.extractfacts.get_config")
-    @patch("litassist.commands.extractfacts.LLMClientFactory.for_command")
-    @patch("litassist.commands.extractfacts.verify_content_if_needed")
-    @patch("litassist.commands.extractfacts.save_command_output")
-    @patch("litassist.commands.extractfacts.PROMPTS")
+    @patch("litassist.commands.extractfacts.document_reader.get_config")
+    @patch("litassist.commands.extractfacts.core.LLMClientFactory.for_command")
+    @patch("litassist.commands.extractfacts.core.verify_content_if_needed")
+    @patch("litassist.commands.extractfacts.core.save_command_output")
+    @patch("litassist.commands.extractfacts.single_extractor.PROMPTS")
     def test_extractfacts_without_noverify_uses_verification(
         self, mock_prompts, mock_save, mock_verify, mock_factory, mock_config
     ):
@@ -186,10 +186,10 @@ Test objectives
         finally:
             Path(facts_file).unlink()
 
-    @patch("litassist.commands.draft.LLMClientFactory.for_command")
-    @patch("litassist.commands.draft.verify_content_if_needed")
-    @patch("litassist.commands.draft.save_command_output")
-    @patch("litassist.commands.draft.PROMPTS")
+    @patch("litassist.commands.draft.core.LLMClientFactory.for_command")
+    @patch("litassist.commands.draft.core.verify_content_if_needed")
+    @patch("litassist.commands.draft.core.save_command_output")
+    @patch("litassist.commands.draft.prompt_builder.PROMPTS")
     def test_draft_with_noverify_skips_verification(
         self, mock_prompts, mock_save, mock_verify, mock_factory
     ):
@@ -236,11 +236,11 @@ class TestVerificationDefaults:
         self.mock_client.verify.return_value = ("Content", "model")
         self.mock_client.validate_citations.return_value = []
 
-    @patch("litassist.commands.extractfacts.get_config")
-    @patch("litassist.commands.extractfacts.LLMClientFactory.for_command")
-    @patch("litassist.commands.extractfacts.verify_content_if_needed")
-    @patch("litassist.commands.extractfacts.save_command_output")
-    @patch("litassist.commands.extractfacts.PROMPTS")
+    @patch("litassist.commands.extractfacts.document_reader.get_config")
+    @patch("litassist.commands.extractfacts.core.LLMClientFactory.for_command")
+    @patch("litassist.commands.extractfacts.core.verify_content_if_needed")
+    @patch("litassist.commands.extractfacts.core.save_command_output")
+    @patch("litassist.commands.extractfacts.single_extractor.PROMPTS")
     def test_extractfacts_default_enables_verification(
         self, mock_prompts, mock_save, mock_verify, mock_factory, mock_config
     ):

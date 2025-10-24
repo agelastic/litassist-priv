@@ -24,13 +24,13 @@ class TestCounselNotesBasic:
             "total_tokens": 1500,
         }
 
-    @patch("litassist.commands.counselnotes.read_document")
-    @patch("litassist.commands.counselnotes.LLMClientFactory")
-    @patch("litassist.commands.counselnotes.save_command_output")
-    @patch("litassist.commands.counselnotes.save_log")
-    @patch("litassist.commands.counselnotes.show_command_completion")
-    @patch("litassist.commands.counselnotes.PROMPTS")
-    @patch("litassist.commands.counselnotes.get_config")
+    @patch("litassist.commands.counselnotes.document_processor.read_document")
+    @patch("litassist.commands.counselnotes.core.LLMClientFactory")
+    @patch("litassist.commands.counselnotes.core.save_command_output")
+    @patch("litassist.commands.counselnotes.core.save_log")
+    @patch("litassist.commands.counselnotes.core.show_command_completion")
+    @patch("litassist.commands.counselnotes.analysis_processor.PROMPTS")
+    @patch("litassist.commands.counselnotes.document_processor.get_config")
     @patch("click.DateTime.convert")
     def test_basic_strategic_analysis(
         self,
@@ -75,13 +75,13 @@ class TestCounselNotesBasic:
         finally:
             os.unlink(temp_file)
 
-    @patch("litassist.commands.counselnotes.read_document")
-    @patch("litassist.commands.counselnotes.LLMClientFactory")
-    @patch("litassist.commands.counselnotes.save_command_output")
-    @patch("litassist.commands.counselnotes.save_log")
-    @patch("litassist.commands.counselnotes.show_command_completion")
-    @patch("litassist.commands.counselnotes.PROMPTS")
-    @patch("litassist.commands.counselnotes.get_config")
+    @patch("litassist.commands.counselnotes.document_processor.read_document")
+    @patch("litassist.commands.counselnotes.core.LLMClientFactory")
+    @patch("litassist.commands.counselnotes.core.save_command_output")
+    @patch("litassist.commands.counselnotes.core.save_log")
+    @patch("litassist.commands.counselnotes.core.show_command_completion")
+    @patch("litassist.commands.counselnotes.analysis_processor.PROMPTS")
+    @patch("litassist.commands.counselnotes.document_processor.get_config")
     @patch("click.DateTime.convert")
     def test_extraction_mode(
         self,
