@@ -29,7 +29,7 @@ class TestCommandParameterPropagation:
         self.mock_client.verify.return_value = ""  # Add verify method
         self.mock_client.validate_citations.return_value = []  # Add validate_citations method
 
-    @patch("litassist.llm.LLMClientFactory.for_command")
+    @patch("litassist.llm.factory.LLMClientFactory.for_command")
     @patch("litassist.utils.file_ops.read_document")
     @patch("litassist.commands.extractfacts.get_config")
     def test_extractfacts_command_parameters(
@@ -78,15 +78,13 @@ class TestCommandParameterPropagation:
         assert self.mock_client.complete.called
 
         # Check that LLMClientFactory would create correct model
-        from litassist.llm import LLMClientFactory
+        from litassist.llm.factory import LLMClientFactory
 
         # UPDATED: Oct 2025 - Model upgraded to Sonnet 4.5
-        assert (
-            LLMClientFactory.COMMAND_CONFIGS["extractfacts"]["model"]
-            == "anthropic/claude-sonnet-4.5"
-        )
+        configs = LLMClientFactory.list_configurations()
+        assert configs["extractfacts"]["model"] == "anthropic/claude-sonnet-4.5"
 
-    @patch("litassist.llm.LLMClientFactory.for_command")
+    @patch("litassist.llm.factory.LLMClientFactory.for_command")
     @patch("litassist.utils.file_ops.read_document")
     def test_digest_summary_command_parameters(self, mock_read, mock_factory):
         """Test digest-summary command uses correct parameters."""
@@ -114,11 +112,11 @@ class TestCommandParameterPropagation:
 
                 traceback.print_tb(result.exc_info[2])
 
-        # Verify factory was called with mode as keyword argument
-        mock_factory.assert_called_once_with("digest", mode="summary")
+        # Verify factory was called with mode as positional sub_type argument
+        mock_factory.assert_called_once_with("digest", "summary")
         assert self.mock_client.complete.called
 
-    @patch("litassist.llm.LLMClientFactory.for_command")
+    @patch("litassist.llm.factory.LLMClientFactory.for_command")
     @patch("litassist.utils.file_ops.read_document")
     def test_digest_issues_command_parameters(self, mock_read, mock_factory):
         """Test digest-issues command uses correct parameters."""
@@ -140,12 +138,12 @@ class TestCommandParameterPropagation:
         # The important thing is that the factory was called correctly
         assert result.exit_code in [0, 1]
 
-        # Verify factory was called with mode as keyword argument
-        mock_factory.assert_called_once_with("digest", mode="issues")
+        # Verify factory was called with mode as positional sub_type argument
+        mock_factory.assert_called_once_with("digest", "issues")
         assert self.mock_client.complete.called
 
     @patch("litassist.commands.lookup.search.time.sleep")
-    @patch("litassist.llm.LLMClientFactory.for_command")
+    @patch("litassist.llm.factory.LLMClientFactory.for_command")
     @patch("litassist.commands.lookup.search.get_config")
     def test_lookup_command_parameters(self, mock_get_config, mock_factory, mock_sleep):
         """Test lookup command uses correct model (gemini-2.5-pro)."""
@@ -187,18 +185,16 @@ class TestCommandParameterPropagation:
         )
 
         # Check configuration
-        from litassist.llm import LLMClientFactory
+        from litassist.llm.factory import LLMClientFactory
 
-        assert (
-            LLMClientFactory.COMMAND_CONFIGS["lookup"]["model"]
-            == "google/gemini-2.5-pro"
-        )
+        configs = LLMClientFactory.list_configurations()
+        assert configs["lookup"]["model"] == "google/gemini-2.5-pro"
         # Just verify the key exists, don't assert specific value
-        assert "enforce_citations" in LLMClientFactory.COMMAND_CONFIGS["lookup"]
+        assert "enforce_citations" in configs["lookup"]
 
-    @patch("litassist.llm.LLMClientFactory.for_command")
+    @patch("litassist.llm.factory.LLMClientFactory.for_command")
     @patch("litassist.utils.file_ops.read_document")
-    @patch("litassist.citation_verify.verify_all_citations")
+    @patch("litassist.citation.verify.verify_all_citations")
     @patch("litassist.citation_patterns.extract_citations")
     def test_verify_command_parameters(
         self, mock_extract, mock_verify_all, mock_read, mock_factory
@@ -224,7 +220,7 @@ class TestCommandParameterPropagation:
         # Verify factory was called
         assert mock_factory.called
 
-    @patch("litassist.llm.LLMClientFactory.for_command")
+    @patch("litassist.llm.factory.LLMClientFactory.for_command")
     @patch("litassist.utils.file_ops.read_document")
     def test_brainstorm_command_parameters(self, mock_read, mock_factory):
         """Test brainstorm command uses correct parameters."""
@@ -254,8 +250,7 @@ class TestCommandParameterPropagation:
                 f.write("case facts")
 
             with patch("litassist.commands.brainstorm.PROMPTS") as mock_prompts:
-                mock_prompts.get_prompt.return_value = "Test prompt"
-                mock_prompts.compose_prompt.return_value = "Test prompt"
+                mock_prompts.get.return_value = "Test prompt"
 
                 result = self.runner.invoke(
                     cli,
@@ -290,7 +285,7 @@ class TestCommandParameterPropagation:
         assert calls[2][0][0] == "verification"  # verification of unorthodox
         assert calls[3][0][0] == "brainstorm"  # analysis
 
-    @patch("litassist.llm.LLMClientFactory.for_command")
+    @patch("litassist.llm.factory.LLMClientFactory.for_command")
     @patch("litassist.utils.file_ops.read_document")
     def test_strategy_command_parameters(self, mock_read, mock_factory):
         """Test strategy command uses o3-pro model."""
@@ -389,18 +384,16 @@ Test objectives""")
         assert len(strategy_calls) > 0, "Factory should be called with 'strategy'"
 
         # Check configuration
-        from litassist.llm import LLMClientFactory
+        from litassist.llm.factory import LLMClientFactory
 
         # UPDATED: Oct 2025 - Model upgraded to Sonnet 4.5
-        assert (
-            LLMClientFactory.COMMAND_CONFIGS["strategy"]["model"]
-            == "anthropic/claude-sonnet-4.5"
-        )
-        assert LLMClientFactory.COMMAND_CONFIGS["strategy"]["thinking_effort"] == "max"
+        configs = LLMClientFactory.list_configurations()
+        assert configs["strategy"]["model"] == "anthropic/claude-sonnet-4.5"
+        assert configs["strategy"]["thinking_effort"] == "max"
         # Just verify the key exists, don't assert specific value
-        assert "enforce_citations" in LLMClientFactory.COMMAND_CONFIGS["strategy"]
+        assert "enforce_citations" in configs["strategy"]
 
-    @patch("litassist.llm.LLMClientFactory.for_command")
+    @patch("litassist.llm.factory.LLMClientFactory.for_command")
     @patch("litassist.utils.file_ops.read_document")
     @patch("litassist.helpers.retriever.get_pinecone_client")
     @patch("litassist.commands.draft.get_config")
@@ -444,8 +437,7 @@ Test objectives""")
                 f.write("draft instructions")
 
             with patch("litassist.commands.draft.PROMPTS") as mock_prompts:
-                mock_prompts.get_prompt.return_value = "Test prompt"
-                mock_prompts.compose_prompt.return_value = "Test prompt"
+                mock_prompts.get.return_value = "Test prompt"
 
                 result = self.runner.invoke(
                     cli, ["draft", "instructions.txt", "Draft a witness statement"]
@@ -468,12 +460,13 @@ Test objectives""")
         assert calls[1][0][0] == "verification"
 
         # Check configuration
-        from litassist.llm import LLMClientFactory
+        from litassist.llm.factory import LLMClientFactory
 
-        assert LLMClientFactory.COMMAND_CONFIGS["draft"]["model"] == "openai/o3-pro"
-        assert LLMClientFactory.COMMAND_CONFIGS["draft"]["thinking_effort"] == "high"
+        configs = LLMClientFactory.list_configurations()
+        assert configs["draft"]["model"] == "openai/o3-pro"
+        assert configs["draft"]["thinking_effort"] == "high"
 
-    @patch("litassist.llm.LLMClientFactory.for_command")
+    @patch("litassist.llm.factory.LLMClientFactory.for_command")
     @patch("litassist.commands.barbrief.validate_case_facts")
     def test_barbrief_command_parameters(self, mock_validate, mock_factory):
         """Test barbrief command parameters."""
@@ -538,10 +531,10 @@ Test objectives""")
     def test_model_parameter_filtering(self):
         """Test that model-specific parameter filtering is applied."""
         # Test a command that uses o3-pro (should filter temperature/top_p)
-        from litassist.llm import LLMClientFactory
+        from litassist.llm.factory import LLMClientFactory
 
         # Directly test the factory behavior without mocking
-        with patch("litassist.llm.CONFIG") as mock_config:
+        with patch("litassist.config.CONFIG") as mock_config:
             mock_config.openrouter_key = "test_key"
             mock_config.openai_key = "test_key"
             mock_config.use_token_limits = False  # Avoid token limit logic

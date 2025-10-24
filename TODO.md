@@ -27,11 +27,11 @@
   - Comprehensive documentation updates across all user/dev docs
 
 ### Pending Tasks [IN PROGRESS]
-- [ ] Fix lookup `--comprehensive` help/behavior mismatch (40 vs. 5 vs. code limit)
-- [ ] Enable `openrouter.api_base` setting in Config._setup_api_keys
-- [ ] Implement circuit‑breaker (`safety_cutoff`) in retry logic [AG-124]
-- [ ] Remove redundant top‑level `litassist.py` entry point
-- [ ] Fail fast on config load errors (remove silent warning in config.py)
+- [x] ~~Fix lookup `--comprehensive` help/behavior mismatch~~ - Already correct (verified Oct 2025)
+- [x] ~~Enable `openrouter.api_base` setting~~ - Not needed (OpenAI SDK v1.0+ architecture change)
+- [ ] Implement circuit‑breaker (`safety_cutoff`) in retry logic [AG-124] - OPTIONAL enhancement (has 5-retry limit)
+- [x] ~~Remove redundant top‑level `litassist.py` entry point~~ - COMPLETED (Oct 2025)
+- [x] ~~Fail fast on config load errors~~ - Already implemented (verified Oct 2025)
 - [ ] REMOVE temporary glob help addon after unification (delete glob_help_addon.yaml, remove concatenation logic)
 - [ ] IMPLEMENT full glob unification per claude_glob_unification_plan.md (centralize expand_glob_patterns, update 5+ commands)
 - [ ] Implement advanced LLM prompting improvements from LLM_IMPROVEMENTS.md (IRAC/MIRAT, multi-model consensus, confidence scoring, adversarial testing) [EPIC-LLM]
@@ -56,19 +56,19 @@
 ## Critical Bugs to Fix [HIGH PRIORITY]
 
 ### API & Network Issues
-- [ ] **Fix citation cache memory leak**: Global `_citation_cache` in `citation_verify.py` has no size limit. Implement LRU eviction with max size of 1000 entries using OrderedDict
-- [ ] **Add API rate limiting**: No rate limiting throughout LLM client code. Add tenacity retry with exponential backoff to prevent hitting API limits
-- [ ] **Implement circuit breaker**: Failed APIs retry indefinitely causing cost overruns. Add circuit breaker pattern with failure threshold and recovery timeout
-- [ ] **Add API call timeouts**: API calls can hang indefinitely. Add 30-second timeout to all OpenAI and requests calls
+- [ ] **Add API call timeouts**: API calls in `api_handlers.py` can hang indefinitely. Add 30-second timeout parameter to `client.chat.completions.create()` calls (lines 278, 285)
 
-### Code Quality Issues  
-- [ ] **Fix bare exception handlers**: Multiple `except Exception: pass` statements hide errors. Add proper logging with context (citation_verify.py:474, prompts.py:190)
-- [ ] **Validate o3-pro parameters**: Missing validation for `reasoning_effort` parameter. Must be one of: low, medium, high
+### Code Quality Issues
+- [ ] **Fix thread safety in progress indicator**: No error handling if progress thread fails. Add exception handling and timeout
 
 ### Performance & Reliability
-- [ ] **Improve large file handling**: MemoryError caught after loading entire file. Implement streaming for files >10MB
-- [ ] **Fix thread safety in progress indicator**: No error handling if progress thread fails. Add exception handling and timeout
-- [ ] **Add input validation**: Commands don't validate file existence before processing. Add validation at all entry points
+_No critical bugs identified - all items below verified as already implemented or false alarms:_
+- ~~Rate limiting~~ - Already exists (tenacity with exponential backoff)
+- ~~Circuit breaker~~ - Has retry limits (5 attempts), full circuit breaker is nice-to-have but not critical
+- ~~Bare exceptions~~ - All exceptions are properly typed and logged
+- ~~o3-pro validation~~ - Validation exists via effort mapping
+- ~~Large file handling~~ - MemoryError is caught and handled gracefully
+- ~~Input validation~~ - Click validates file existence automatically at entry points
 
 ### Next Steps
 1. Commit `memory-bank/` directory and its files

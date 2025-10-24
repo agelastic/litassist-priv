@@ -8,13 +8,13 @@ It implements a fallback strategy from AustLII to comprehensive government sourc
 
 from typing import Dict, List, Optional
 from litassist.config import get_config
-from litassist.logging_utils import save_log
-from litassist.citation_verify import (
+from litassist.logging import save_log
+from litassist.citation.cache import (
     _citation_cache,
     _cache_lock,
-    normalize_citation,
-    construct_austlii_url,
 )
+from litassist.citation.legislation import normalize_citation
+from litassist.citation.austlii import construct_austlii_url
 import time
 import re
 import random

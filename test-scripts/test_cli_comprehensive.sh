@@ -56,7 +56,7 @@ run_test() {
             IFS='|' read -a patterns <<< "$expected_patterns"
             
             for pattern in "${patterns[@]}"; do
-                if echo "$output" | grep -q "$pattern"; then
+                if echo "$output" | grep -q -- "$pattern"; then
                     echo -e "${GREEN}  [OK] Found expected pattern: '$pattern'${NC}"
                 else
                     echo -e "${RED}  [N] Missing expected pattern: '$pattern'${NC}"
@@ -471,7 +471,7 @@ test_lookup_command() {
     
     # Comprehensive test with multiple flags to minimize LLM calls, including new --context flag
     run_test "Lookup - Comprehensive with all options including context" \
-        "python litassist.py lookup 'contract formation requirements' --comprehensive --mode broad --extract citations --context 'mock context for commercial contract dispute'" \
+        "litassist lookup 'contract formation requirements' --comprehensive --mode broad --extract citations --context 'mock context for commercial contract dispute'" \
         "Exhaustive search|sources analyzed|complete|saved to|citations|Context"
 }
 
@@ -480,7 +480,7 @@ test_extractfacts_command() {
     
     # Single test with verification to cover both extraction and verification
     run_test "ExtractFacts - With verification" \
-        "python litassist.py extractfacts test_inputs/mock_case_facts.txt --verify" \
+        "litassist extractfacts test_inputs/mock_case_facts.txt --verify" \
         "complete|saved to|case_facts|verification"
 }
 
@@ -489,7 +489,7 @@ test_strategy_command() {
     
     # Comprehensive test with all options to minimize LLM calls
     run_test "Strategy - Comprehensive with all options" \
-        "python litassist.py strategy test_inputs/mock_case_facts.txt --outcome 'Win breach of contract case' --strategies test_inputs/mock_strategy_headers.txt --verify" \
+        "litassist strategy test_inputs/mock_case_facts.txt --outcome 'Win breach of contract case' --strategies test_inputs/mock_strategy_headers.txt --verify" \
         "complete|saved to|strategy|verification"
 }
 
@@ -498,7 +498,7 @@ test_brainstorm_command() {
     
     # Single test covering core functionality (verification is automatic)
     run_test "Brainstorm - Civil" \
-        "python litassist.py brainstorm --facts test_inputs/mock_case_facts.txt --side plaintiff --area civil" \
+        "litassist brainstorm --facts test_inputs/mock_case_facts.txt --side plaintiff --area civil" \
         "complete|saved to|strategies|Verifying"
 }
 
@@ -507,7 +507,7 @@ test_digest_command() {
     
     # Single test with issues mode (more comprehensive than summary)
     run_test "Digest - Issues mode" \
-        "python litassist.py digest test_inputs/mock_case_facts.txt --mode issues" \
+        "litassist digest test_inputs/mock_case_facts.txt --mode issues" \
         "complete|saved to|digest"
 }
 
@@ -516,7 +516,7 @@ test_draft_command() {
     
     # Comprehensive test with multiple documents and verification
     run_test "Draft - Multiple documents with verification" \
-        "python litassist.py draft test_inputs/mock_case_facts.txt test_inputs/mock_strategy_headers.txt 'Draft Statement of Claim for breach of contract' --verify" \
+        "litassist draft test_inputs/mock_case_facts.txt test_inputs/mock_strategy_headers.txt 'Draft Statement of Claim for breach of contract' --verify" \
         "complete|saved to|draft|verification"
 }
 
@@ -525,7 +525,7 @@ test_verify_command() {
     
     # Single comprehensive test covering all three verification types
     run_test "Verify - Comprehensive verification" \
-        "python litassist.py verify test_inputs/mock_case_facts.txt" \
+        "litassist verify test_inputs/mock_case_facts.txt" \
         "Citation verification complete|Legal soundness check complete|Reasoning trace|3 reports generated"
 }
 
@@ -534,17 +534,17 @@ test_counselnotes_command() {
     
     # Test basic counselnotes command
     run_test "Counselnotes - Basic analysis" \
-        "python litassist.py counselnotes test_inputs/mock_case_facts.txt" \
+        "litassist counselnotes test_inputs/mock_case_facts.txt" \
         "Counselnotes complete|complete|saved to"
     
     # Test counselnotes with extraction mode
     run_test "Counselnotes - With extraction mode" \
-        "python litassist.py counselnotes test_inputs/mock_case_facts.txt --extract citations" \
+        "litassist counselnotes test_inputs/mock_case_facts.txt --extract citations" \
         "Counselnotes complete|complete|saved to"
     
     # Test counselnotes with output option
     run_test "Counselnotes - With custom output" \
-        "python litassist.py counselnotes test_inputs/mock_case_facts.txt --output test_output" \
+        "litassist counselnotes test_inputs/mock_case_facts.txt --output test_output" \
         "Counselnotes complete|complete|saved to"
 }
 
@@ -553,27 +553,27 @@ test_barbrief_command() {
     
     # Test basic barbrief command for trial
     run_test "Barbrief - Basic trial brief" \
-        "python litassist.py barbrief test_inputs/mock_10heading_case_facts.txt --hearing-type trial" \
+        "litassist barbrief test_inputs/mock_10heading_case_facts.txt --hearing-type trial" \
         "Barristers Brief Generated complete|saved to"
     
     # Test barbrief with strategies
     run_test "Barbrief - With strategies" \
-        "python litassist.py barbrief test_inputs/mock_10heading_case_facts.txt --hearing-type directions --strategies test_inputs/mock_strategies.txt" \
+        "litassist barbrief test_inputs/mock_10heading_case_facts.txt --hearing-type directions --strategies test_inputs/mock_strategies.txt" \
         "Barristers Brief Generated complete|saved to"
     
     # Test barbrief with research
     run_test "Barbrief - With research" \
-        "python litassist.py barbrief test_inputs/mock_10heading_case_facts.txt --hearing-type interlocutory --research test_inputs/mock_research_output.txt" \
+        "litassist barbrief test_inputs/mock_10heading_case_facts.txt --hearing-type interlocutory --research test_inputs/mock_research_output.txt" \
         "Barristers Brief Generated complete|saved to"
     
     # Test barbrief with documents
     run_test "Barbrief - With supporting documents" \
-        "python litassist.py barbrief test_inputs/mock_10heading_case_facts.txt --hearing-type appeal --documents test_inputs/mock_affidavit.txt --documents test_inputs/mock_evidence.txt" \
+        "litassist barbrief test_inputs/mock_10heading_case_facts.txt --hearing-type appeal --documents test_inputs/mock_affidavit.txt --documents test_inputs/mock_evidence.txt" \
         "Barristers Brief Generated complete|saved to"
     
     # Test barbrief with all options
     run_test "Barbrief - Comprehensive with all options" \
-        "python litassist.py barbrief test_inputs/mock_10heading_case_facts.txt --hearing-type trial --strategies test_inputs/mock_strategies.txt --research test_inputs/mock_research_output.txt --documents test_inputs/mock_affidavit.txt --context 'Focus on jurisdiction issues' --verify" \
+        "litassist barbrief test_inputs/mock_10heading_case_facts.txt --hearing-type trial --strategies test_inputs/mock_strategies.txt --research test_inputs/mock_research_output.txt --documents test_inputs/mock_affidavit.txt --context 'Focus on jurisdiction issues' --verify" \
         "Barristers Brief Generated complete|saved to"
 }
 
@@ -582,7 +582,7 @@ test_error_conditions() {
     
     # Single error test to verify error handling
     run_test "Error - Non-existent file" \
-        "python litassist.py extractfacts non_existent_file.txt 2>&1 || echo 'Expected error occurred'" \
+        "litassist extractfacts non_existent_file.txt 2>&1 || echo 'Expected error occurred'" \
         "error|does not exist|Expected error occurred"
 }
 
@@ -591,37 +591,37 @@ test_help_and_info() {
     
     # Test 1: Main help
     run_test "Help - Main command help" \
-        "python litassist.py --help" \
+        "litassist --help" \
         "Usage|Commands|Options"
     
     # Test 2: Lookup help
     run_test "Help - Lookup command help" \
-        "python litassist.py lookup --help" \
+        "litassist lookup --help" \
         "Usage|mode|comprehensive|extract"
     
     # Test 3: Strategy help
     run_test "Help - Strategy command help" \
-        "python litassist.py strategy --help" \
+        "litassist strategy --help" \
         "Usage|CASE_FACTS|outcome"
     
     # Test 4: Extractfacts help
     run_test "Help - ExtractFacts command help" \
-        "python litassist.py extractfacts --help" \
+        "litassist extractfacts --help" \
         "Usage|FILE|verify"
     
     # Test 5: Brainstorm help
     run_test "Help - Brainstorm command help" \
-        "python litassist.py brainstorm --help" \
+        "litassist brainstorm --help" \
         "Usage|--facts|side|area"
     
     # Test 6: Digest help
     run_test "Help - Digest command help" \
-        "python litassist.py digest --help" \
+        "litassist digest --help" \
         "Usage|FILE|mode"
     
     # Test 7: Draft help  
     run_test "Help - Draft command help" \
-        "python litassist.py draft --help" \
+        "litassist draft --help" \
         "Usage|DOCUMENTS|QUERY"
 }
 
@@ -630,32 +630,32 @@ test_connectivity() {
     
     # Test 1: Built-in connectivity test command
     run_test "Connectivity - LitAssist test command" \
-        "python litassist.py --help 2>&1 | head -3" \
+        "litassist --help 2>&1 | head -3" \
         "Usage|LitAssist"
     
     # Test 2: OpenAI API (used for direct OpenAI model calls)
     run_test "Connectivity - OpenAI API Direct" \
-        "python -c 'from openai import OpenAI; from litassist.config import CONFIG; client = OpenAI(api_key=CONFIG.oa_key); response = client.chat.completions.create(model=\"gpt-3.5-turbo\", messages=[{\"role\": \"user\", \"content\": \"test\"}], max_tokens=5); print(\"OpenAI Direct API: OK\")' 2>&1" \
+        "python -c 'from openai import OpenAI; from litassist.config import get_config; cfg = get_config(); client = OpenAI(api_key=cfg.oa_key); response = client.chat.completions.create(model=\"gpt-3.5-turbo\", messages=[{\"role\": \"user\", \"content\": \"test\"}], max_tokens=5); print(\"OpenAI Direct API: OK\")' 2>&1" \
         "OpenAI Direct API: OK"
     
     # Test 3: OpenRouter API (used for non-OpenAI models)
     run_test "Connectivity - OpenRouter API" \
-        "python -c 'from openai import OpenAI; from litassist.config import CONFIG; client = OpenAI(api_key=CONFIG.or_key, base_url=CONFIG.or_base); response = client.models.list(); print(\"OpenRouter API: OK\")' 2>&1" \
+        "python -c 'from openai import OpenAI; from litassist.config import get_config; cfg = get_config(); client = OpenAI(api_key=cfg.or_key, base_url=cfg.or_base); response = client.models.list(); print(\"OpenRouter API: OK\")' 2>&1" \
         "OpenRouter API: OK"
     
     # Test 4: Google CSE API for Jade.io search
     run_test "Connectivity - Google CSE (Jade.io search)" \
-        "python -c 'from googleapiclient.discovery import build; from litassist.config import CONFIG; service = build(\"customsearch\", \"v1\", developerKey=CONFIG.g_key, cache_discovery=False); result = service.cse().list(q=\"[2020] HCA 1\", cx=CONFIG.cse_id, num=1, siteSearch=\"jade.io\").execute(); print(\"Google CSE (Jade): OK - Found\", len(result.get(\"items\", [])), \"results\")' 2>&1" \
+        "python -c 'from googleapiclient.discovery import build; from litassist.config import get_config; cfg = get_config(); service = build(\"customsearch\", \"v1\", developerKey=cfg.g_key, cache_discovery=False); result = service.cse().list(q=\"[2020] HCA 1\", cx=cfg.cse_id, num=1, siteSearch=\"jade.io\").execute(); print(\"Google CSE (Jade): OK - Found\", len(result.get(\"items\", [])), \"results\")' 2>&1" \
         "Google CSE (Jade): OK"
     
     # Test 5: Pinecone Vector DB (used by draft command)
     run_test "Connectivity - Pinecone Vector DB" \
-        "python -c 'from litassist.helpers.pinecone_config import PineconeWrapper; from litassist.config import CONFIG; wrapper = PineconeWrapper(CONFIG.pc_key, CONFIG.pc_index); stats = wrapper.describe_index_stats(); print(\"Pinecone API: OK - Dimension:\", stats.dimension)' 2>&1" \
+        "python -c 'from litassist.helpers.pinecone_config import PineconeWrapper; from litassist.config import get_config; cfg = get_config(); wrapper = PineconeWrapper(cfg.pc_key, cfg.pc_index); stats = wrapper.describe_index_stats(); print(\"Pinecone API: OK - Dimension:\", stats.dimension)' 2>&1" \
         "Pinecone API: OK"
     
     # Test 6: Verify all required API keys are present
     run_test "Connectivity - API Keys Configuration" \
-        "python -c 'from litassist.config import CONFIG; missing = []; apis = {\"OpenAI\": CONFIG.oa_key, \"OpenRouter\": CONFIG.or_key, \"Google\": CONFIG.g_key, \"Pinecone\": CONFIG.pc_key}; missing = [k for k,v in apis.items() if not v or v == \"YOUR_KEY_HERE\"]; print(\"API Keys:\", \"All configured\" if not missing else f\"Missing: {missing}\")' 2>&1" \
+        "python -c 'from litassist.config import get_config; cfg = get_config(); missing = []; apis = {\"OpenAI\": cfg.oa_key, \"OpenRouter\": cfg.or_key, \"Google\": cfg.g_key, \"Pinecone\": cfg.pc_key}; missing = [k for k,v in apis.items() if not v or v == \"YOUR_KEY_HERE\"]; print(\"API Keys:\", \"All configured\" if not missing else f\"Missing: {missing}\")' 2>&1" \
         "API Keys: All configured"
 }
 
@@ -797,8 +797,10 @@ main() {
     fi
     
     # Check if we're in the right directory
-    if [[ ! -f "litassist.py" ]]; then
-        echo -e "${RED}Error: litassist.py not found. Please run this script from the project root directory.${NC}"
+    # Check if litassist is available (either installed or in development mode)
+    if ! command -v litassist &> /dev/null && [[ ! -d "litassist" ]]; then
+        echo -e "${RED}Error: litassist not found. Please install it or run from project root.${NC}"
+        echo -e "${YELLOW}Try: pip install -e . (from project root)${NC}"
         exit 1
     fi
     

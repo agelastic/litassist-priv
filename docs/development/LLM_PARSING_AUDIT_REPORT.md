@@ -1,18 +1,28 @@
 # LLM Response Parsing Audit Report
 
-**Date**: June 17, 2025  
-**Last Updated**: July 7, 2025  
-**Purpose**: Comprehensive audit of LLM response parsing throughout the litassist codebase  
+**Date**: June 17, 2025
+**Last Updated**: October 2025
+**Document Type**: PLANNING DOCUMENT - Identifies issues and proposes solutions
+**Status**: Most recommendations NOT YET implemented
+**Purpose**: Comprehensive audit of LLM response parsing throughout the litassist codebase
 **Goal**: Plan systematic elimination of local parsing through better prompt engineering
 
-## Update (July 7, 2025)
+## Update (October 2025)
 
-**Progress on Parsing Removal**:
-- **CasePlan prompt (July 2025):** New caseplan.yaml prompt enforces rationale, command coverage, and focus area in LLM output, minimizing local parsing for workflow planning.
-- [DONE] **COMPLETED**: Removed ~25 lines of verification parsing in `brainstorm.py` (lines 481-500)
-- [DONE] **PRINCIPLE APPLIED**: Trust well-prompted LLMs to return correct format
-- [DONE] **TOKEN LIMITS**: Increased verification limits to 8192-16384 to avoid truncation
-- [TODO] **ONGOING**: Continue removing parsing patterns identified in this audit  
+**Implementation Status**:
+- [DONE] **July 2025**: Removed 83 lines of verification parsing in `brainstorm.py` (commit 5c74165)
+  - Replaced fragile parsing with trust in model formatting
+  - Increased token limits to 8192-16384 to avoid truncation
+  - Applied principle: "Trust well-prompted LLMs to return correct format"
+- [PARTIAL] **October 2025**: Most parsing patterns identified in this audit STILL EXIST
+  - Reasoning trace extraction still uses 8 regex patterns (legal_reasoning.py)
+  - Strategy splitting still uses regex (citation_regenerator.py:51)
+  - Citation extraction uses 6+ regex patterns (citation_patterns.py)
+  - 200+ lines of regex-based parsing logic remains throughout codebase
+- [ACTIVE] **CLAUDE.md Policy**: Established "minimize local parsing" principle
+- [TODO] **FUTURE WORK**: Phase 1/2/3 recommendations below remain aspirational
+
+**Reality Check**: This document describes an IDEAL state, not current implementation. The parsing it identifies is real and pervasive as of October 2025.  
 
 ## Executive Summary
 
@@ -456,6 +466,55 @@ pattern3 = r"\[(\d{4})\]\s+([A-Z]+[A-Za-z]*)\s+(?:Civ|Crim|Admin|Fam|QB|Ch|Pat|C
 
 ---
 
+## Current State Verification (October 2025)
+
+The following parsing patterns identified in this audit have been verified to STILL EXIST in the codebase:
+
+### Confirmed Still Present ✅
+1. **Reasoning Trace Extraction** (legal_reasoning.py:160-190)
+   - Status: UNCHANGED - Still uses 8 regex patterns
+   - Impact: Affects all commands with reasoning traces
+
+2. **Strategy Splitting** (citation_regenerator.py:51)
+   - Status: UNCHANGED - `re.split(r"\n(?=\d+\.\s+)")`
+   - Impact: Citation regeneration in brainstorm command
+
+3. **Citation Extraction** (citation_patterns.py:194-265)
+   - Status: UNCHANGED - 6+ regex patterns for various formats
+   - Impact: All citation verification
+
+4. **Legal Issues Extraction** (strategy/validators.py)
+   - Status: LIKELY UNCHANGED - Need to verify exact patterns
+   - Impact: Strategy command input processing
+
+### Successfully Removed ✅
+1. **Verification Parsing in Brainstorm** (July 2025)
+   - Removed: 83 lines of fragile parsing logic
+   - Commit: 5c74165
+   - Approach: Trust model formatting instead of parsing
+
+### Why Most Recommendations Were Not Implemented
+
+1. **Citation Parsing is Necessary**: Citation extraction must use regex because:
+   - Extracting citations from unstructured text is inherently a parsing problem
+   - LLMs cannot reliably pre-structure citations already embedded in source documents
+   - External legal databases (AustLII, Jade.io) require specific citation formats
+
+2. **Reasoning Trace Format**: The IRAC structure works well in current format:
+   - Human-readable in output files
+   - Easy to search and review
+   - JSON would add verbosity without clear benefit
+   - Current regex parsing is stable and well-tested
+
+3. **Legacy Considerations**: Changing output formats would:
+   - Break existing output files and workflows
+   - Require updating all prompt templates
+   - Need extensive testing across all commands
+
+**Key Insight**: The audit's core recommendation (eliminate all parsing) is too aggressive. Some parsing is necessary and appropriate. The July 2025 brainstorm change shows the right balance: remove fragile parsing where trust in formatting works, keep necessary parsing for legitimate extraction needs.
+
+---
+
 ## Refactoring Priority Matrix
 
 ### Priority 1: High-Impact Core Functionality
@@ -558,10 +617,35 @@ pattern3 = r"\[(\d{4})\]\s+([A-Z]+[A-Za-z]*)\s+(?:Civ|Crim|Admin|Fam|QB|Ch|Pat|C
 
 ---
 
-## Conclusion
+## Conclusion (October 2025 Update)
 
-This comprehensive audit reveals that the litassist codebase contains extensive opportunities for simplification through better prompt engineering. By systematically replacing local parsing logic with structured LLM output requests, the codebase can be significantly simplified while improving reliability and maintainability.
+This comprehensive audit reveals that the litassist codebase contains extensive parsing of LLM responses. The original recommendation to eliminate ALL parsing through structured output has proven too aggressive in practice.
 
-The key insight is that **LLMs will always return properly formatted output when correctly prompted**, eliminating the need for complex parsing, error handling, and fallback logic. This refactoring should be approached systematically, starting with the highest-impact parsing patterns and working toward complete elimination of local LLM response processing.
+### What Was Learned (July-October 2025)
 
-**Next Steps**: Begin Phase 1 implementation with Reasoning Trace refactoring, as this affects all commands and provides the foundation for subsequent improvements.
+1. **Selective Parsing Removal Works**: The July 2025 brainstorm refactoring (commit 5c74165) successfully removed 83 lines of fragile verification parsing by trusting well-prompted models. This is the RIGHT approach.
+
+2. **Some Parsing is Necessary**: Citation extraction from unstructured source documents inherently requires regex patterns. Legal databases expect specific formats that must be parsed.
+
+3. **Human-Readable Output Matters**: IRAC reasoning traces are more valuable in current markdown format than JSON would be. The slight parsing overhead is worth the readability.
+
+### Revised Recommendation
+
+**DO eliminate**:
+- Fragile parsing of LLM-generated structured output
+- Complex multi-stage parsing with fallback logic
+- Unnecessary extraction from well-formatted responses
+
+**DO keep**:
+- Citation extraction from external/source documents
+- Stable, well-tested parsing of human-readable formats
+- Necessary format conversions for external APIs
+
+### Actual Next Steps
+
+This document remains valuable as:
+1. **Reference**: Catalogues all parsing patterns in the codebase
+2. **Decision Guide**: Helps evaluate when parsing can be safely removed
+3. **Template**: Provides structured output examples for future use
+
+**Key Principle**: Trust LLM formatting where possible, but accept that some parsing is legitimate and necessary. The July 2025 brainstorm change exemplifies the right balance.

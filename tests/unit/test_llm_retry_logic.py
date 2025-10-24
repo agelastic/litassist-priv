@@ -9,7 +9,8 @@ from unittest.mock import Mock, patch, MagicMock
 import pytest
 from openai import RateLimitError, APIConnectionError, BadRequestError
 
-from litassist.llm import LLMClient, NonRetryableAPIError, execute_api_call_with_retry
+from litassist.llm.client import LLMClient
+from litassist.llm.api_handlers import NonRetryableAPIError, execute_api_call_with_retry
 
 
 class TestLLMRetryLogic:
@@ -21,7 +22,7 @@ class TestLLMRetryLogic:
         os.environ["PYTEST_CURRENT_TEST"] = "test"
 
         # Create client with minimal setup
-        with patch("litassist.llm.CONFIG") as mock_config:
+        with patch("litassist.config.CONFIG") as mock_config:
             mock_config.openrouter_key = "test_key"
             mock_config.openai_key = "test_key"
             mock_config.or_base = "https://openrouter.ai/api/v1"

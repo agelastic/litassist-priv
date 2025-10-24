@@ -26,7 +26,7 @@ import requests
 import tenacity
 
 from litassist.config import get_config
-from litassist.logging_utils import log_task_event
+from litassist.logging import log_task_event
 from litassist.utils.formatting import warning_message
 
 
@@ -246,7 +246,7 @@ def execute_api_call_with_retry(
     def _call_with_streaming_wrap():
         """Internal wrapper for API call with comprehensive error handling."""
         # Avoid circular import by importing locally
-        from .client import get_openrouter_params
+        from .parameter_handler import get_openrouter_params
 
         try:
             # Get the appropriate client
@@ -392,7 +392,7 @@ def execute_api_call_with_retry(
                 error_str = str(error)
                 
                 # Log retry attempt (CLAUDE.md requirement: log all retries)
-                from litassist.logging_utils import save_log
+                from litassist.logging import save_log
                 import time
                 save_log("llm_retry_attempt", {
                     "attempt": retry_state.attempt_number,
@@ -445,7 +445,7 @@ def execute_api_call_with_retry(
         return _call()
     except Exception as e:
         # Log final failure after all retries exhausted
-        from litassist.logging_utils import save_log
+        from litassist.logging import save_log
         import time
         save_log("llm_final_failure", {
             "model": model_name,

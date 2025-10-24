@@ -13,11 +13,11 @@ from litassist.utils.core import heartbeat
 from litassist.utils.formatting import warning_message
 from litassist.config import get_config
 from litassist.prompts import PROMPTS
-from litassist.citation_verify import (
+from litassist.citation.verify import (
     verify_all_citations,
     remove_citation_from_text,
-    CitationVerificationError,
 )
+from litassist.citation.exceptions import CitationVerificationError
 
 
 class LLMVerificationMixin:
@@ -126,7 +126,7 @@ class LLMVerificationMixin:
                 )
 
         # Always do real-time online database verification
-        verified_citations, unverified_citations = verify_all_citations(content)
+        _, unverified_citations = verify_all_citations(content)
 
         if unverified_citations and strict_mode:
             # Categorize issues for better error messages
@@ -363,7 +363,7 @@ class LLMVerificationMixin:
             return self.verify(primary_text)
 
         # Use the appropriate verification model based on level
-        from litassist.llm import LLMClientFactory
+        from litassist.llm.factory import LLMClientFactory
 
         if level == "light":
             verification_client = LLMClientFactory.for_command("verification-light")

@@ -8,8 +8,8 @@ for both summary and issues modes.
 from typing import List, Dict, Any, Tuple, Optional
 import click
 from litassist.prompts import PROMPTS
-from litassist.llm import NonRetryableAPIError
-from litassist.logging_utils import log_task_event
+from litassist.llm.api_handlers import NonRetryableAPIError
+from litassist.logging import log_task_event
 
 
 def process_single_chunk(

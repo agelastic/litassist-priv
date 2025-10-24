@@ -24,12 +24,12 @@ from litassist.utils.legal_reasoning import (
 from litassist.utils.formatting import (
     info_message,
 )
-from litassist.logging_utils import (
+from litassist.logging import (
     save_log,
     save_command_output,
     log_task_event,
 )
-from litassist.llm import LLMClientFactory
+from litassist.llm.factory import LLMClientFactory
 
 
 @click.command()

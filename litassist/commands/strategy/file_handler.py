@@ -5,7 +5,7 @@ This module handles saving strategy outputs and related files.
 """
 
 from typing import Dict, List, Tuple, Optional
-from litassist.logging_utils import save_command_output, save_log
+from litassist.logging import save_command_output, save_log
 
 
 def save_strategy_outputs(
@@ -19,8 +19,6 @@ def save_strategy_outputs(
     output_prefix: Optional[str] = None,
     strategies_name: Optional[str] = None,
     citation_issues: Optional[List[str]] = None,
-    cove_results: Optional[Dict] = None,
-    cove: bool = False,
     llm_model: str = None,
 ) -> Tuple[str, str, str, str]:
     """
@@ -37,12 +35,14 @@ def save_strategy_outputs(
         output_prefix: Optional custom output prefix
         strategies_name: Optional strategies file name
         citation_issues: Optional list of citation validation issues
-        cove_results: Optional CoVe verification results
-        cove: Whether CoVe was used
         llm_model: LLM model used
 
     Returns:
         Tuple of (strategy_file, steps_file, draft_file, trace_file) paths
+
+    Note:
+        CoVe was removed from strategy command in Sep 2025. Use `litassist verify-cove`
+        on output files for Chain of Verification.
     """
     # Collect all critiques
     critiques = []
@@ -51,28 +51,15 @@ def save_strategy_outputs(
     if citation_issues:
         critiques.append(("Citation Validation Issues", "\n".join(citation_issues)))
 
-    # Add CoVe dialogue if used
-    if cove and cove_results:
-        critiques.append(("CoVe Questions", cove_results["cove"]["questions"]))
-        critiques.append(("CoVe Answers", cove_results["cove"]["answers"]))
-        critiques.append(("CoVe Analysis", cove_results["cove"]["issues"]))
-
     # Build metadata
     metadata = {"Desired Outcome": outcome, "Case Facts File": case_facts_name}
     if strategies_name:
         metadata["Strategies File"] = strategies_name
 
     # Add verification metadata
-    if cove:
-        metadata["Verification"] = "Chain of Verification (CoVe)"
-        if cove_results:
-            metadata["CoVe Status"] = (
-                "REGENERATED" if not cove_results["cove"]["passed"] else "PASSED"
-            )
-    else:
-        metadata["Verification"] = "Standard verification"
-        if llm_model:
-            metadata["Model"] = llm_model
+    metadata["Verification"] = "Standard verification"
+    if llm_model:
+        metadata["Model"] = llm_model
 
     # 1. Save main strategic options with critiques
     strategy_file = save_command_output(

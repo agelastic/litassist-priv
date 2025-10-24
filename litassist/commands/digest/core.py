@@ -6,11 +6,12 @@ document processing using the chunker, processors, and emergency handler.
 """
 
 import click
-from litassist.logging_utils import save_log, save_command_output, log_task_event
+from litassist.logging import save_log, save_command_output, log_task_event
 from litassist.timing import timed
 from litassist.utils.core import show_command_completion
 from litassist.utils.formatting import info_message, warning_message
-from litassist.llm import LLMClientFactory, NonRetryableAPIError
+from litassist.llm.factory import LLMClientFactory
+from litassist.llm.api_handlers import NonRetryableAPIError
 from litassist.prompts import PROMPTS
 
 from .chunker import (
@@ -96,7 +97,7 @@ def digest(ctx, file, mode, context, output, verify, noverify):
     )
 
     # Create client using factory with mode-specific configuration
-    llm_client = LLMClientFactory.for_command("digest", mode=mode)
+    llm_client = LLMClientFactory.for_command("digest", mode)
     
     # Command start log
     try:

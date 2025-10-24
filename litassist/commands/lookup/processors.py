@@ -9,7 +9,7 @@ import click
 import logging
 import time
 import os
-from litassist.logging_utils import save_command_output, log_task_event
+from litassist.logging import save_command_output, log_task_event
 from litassist.utils.formatting import (
     success_message,
     saved_message,
@@ -18,8 +18,8 @@ from litassist.utils.formatting import (
     verifying_message,
     tip_message,
 )
-from litassist.logging_utils import LOG_DIR
-from litassist.llm import LLMClientFactory
+from litassist.logging import LOG_DIR
+from litassist.llm.factory import LLMClientFactory
 from litassist.prompts import PROMPTS
 from .fetchers import _fetch_url_content
 from .error_handlers import (
@@ -319,7 +319,7 @@ class LookupProcessor:
         """
         from litassist.utils.truncation import execute_with_truncation
         from litassist.utils.formatting import warning_message
-        from litassist.logging_utils import save_log
+        from litassist.logging import save_log
         
         # Estimate tokens for warning purposes
         if documents:

@@ -27,11 +27,11 @@ from litassist.utils.formatting import (
     verifying_message,
     tip_message,
 )
-from litassist.logging_utils import (
+from litassist.logging import (
     save_log,
     save_command_output,
 )
-from litassist.llm import LLMClientFactory
+from litassist.llm.factory import LLMClientFactory
 from litassist.prompts import PROMPTS
 
 # Import from submodules
@@ -119,7 +119,7 @@ def brainstorm(facts, side, area, research, verify, output):
 
     # Command-level start log
     try:
-        from litassist.logging_utils import (
+        from litassist.logging import (
             log_task_event,
         )  # safe re-import in case of test contexts
 

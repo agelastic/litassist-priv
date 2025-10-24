@@ -19,7 +19,7 @@ from litassist.utils.formatting import (
     verifying_message,
     error_message,
 )
-from litassist.logging_utils import save_command_output, save_log, log_task_event
+from litassist.logging import save_command_output, save_log, log_task_event
 from litassist.verification_chain import run_cove_verification, format_cove_report
 from litassist.utils.file_ops import read_document, process_reference_files
 

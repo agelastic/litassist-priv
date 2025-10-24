@@ -107,7 +107,7 @@ def mock_external_apis():
     ) as mock_pinecone_init, patch(
         "pinecone.Index"
     ) as mock_pinecone_index, patch(
-        "litassist.llm.LLMClientFactory.for_command"
+        "litassist.llm.factory.LLMClientFactory.for_command"
     ) as mock_llm_factory:
 
         # Setup mock LLM client
@@ -383,10 +383,12 @@ Federal Court of Australia
 # ============================================================================
 
 
+@patch("litassist.commands.lookup.perform_cse_searches")
 @patch("litassist.commands.lookup.fetchers._fetch_url_content")
-def test_question_based_commands(mock_fetch, test_config_file, mock_external_apis):
+def test_question_based_commands(mock_fetch, mock_cse, test_config_file, mock_external_apis):
     """Test commands that take text/question arguments: lookup, draft."""
     mock_fetch.return_value = "Test content"
+    mock_cse.return_value = ["https://test.com/result"]
 
     from litassist.cli import cli
     from litassist.commands import register_commands

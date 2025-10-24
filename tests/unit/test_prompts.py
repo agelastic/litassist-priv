@@ -19,7 +19,9 @@ class TestPromptManager:
     def test_template_loading(self):
         """Test that templates load correctly from YAML files."""
         # Use the global PROMPTS instance which should have loaded templates
-        templates = PROMPTS.list_templates()
+        # Access templates via the internal attribute after ensuring loaded
+        PROMPTS._ensure_loaded()
+        templates = PROMPTS.templates
 
         # Verify key template categories exist
         assert "base" in templates
@@ -59,23 +61,24 @@ class TestPromptManager:
         assert "Background" in format_template
 
     def test_template_composition(self):
-        """Test combining multiple templates."""
-        composed = PROMPTS.compose_prompt(
-            "base.australian_law",
-            # 'base.citation_standards'
-        )
+        """Test combining multiple templates using get()."""
+        # Test that we can get and combine templates manually
+        template1 = PROMPTS.get("base.australian_law")
+
+        # Manually compose (what compose_prompt used to do)
+        composed = "\n\n".join([template1])
 
         assert isinstance(composed, str)
         assert len(composed) > 0
-        # Should contain content from both templates
+        # Should contain content from template
         assert "Australian" in composed
 
     def test_template_with_parameters(self):
-        """Test template parameter substitution."""
+        """Test template parameter substitution using get()."""
         # This test assumes document templates support parameters
         try:
-            doc_template = PROMPTS.get_document_template(
-                "statement_of_claim",
+            doc_template = PROMPTS.get(
+                "documents.statement_of_claim",
                 court_name="Test Court",
                 file_number="123/2024",
                 plaintiff_name="John Doe",
@@ -261,7 +264,8 @@ class TestTemplateValidation:
                         f"Template at {current_path} is not a string: {type(value)}"
                     )
 
-        templates = PROMPTS.list_templates()
+        PROMPTS._ensure_loaded()
+        templates = PROMPTS.templates
         check_dict_values(templates)
 
 

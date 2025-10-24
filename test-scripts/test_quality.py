@@ -251,8 +251,13 @@ def test_openai_embedding_quality():
 
 
 # ─── OpenRouter Quality Tests ────────────────────────────────────────────────
-def test_litassist_models():
-    """Test that all models used by LitAssist commands are accessible"""
+def test_litassist_models(model_type="fast"):
+    """
+    Test that models used by LitAssist commands are accessible.
+
+    Args:
+        model_type: "fast" (default), "slow", or "all"
+    """
     result = EnhancedTestResult("OpenRouter", "LitAssist Model Availability")
 
     try:
@@ -268,16 +273,28 @@ def test_litassist_models():
 
         print("Testing availability of models used by LitAssist commands...")
 
-        # Test each command's model configuration
-        command_models = {
-            "extractfacts": "anthropic/claude-sonnet-4",
-            "strategy": "openai/o3-pro",  # Default model
-            "brainstorm-orthodox": "anthropic/claude-sonnet-4",
-            "brainstorm-unorthodox": "x-ai/grok-3",
-            "draft": "openai/o3",
-            "digest-summary": "anthropic/claude-sonnet-4",
-            "lookup": "google/gemini-2.5-pro-preview",
+        # Fast models - tested by default with --all
+        fast_models = {
+            "extractfacts": "anthropic/claude-sonnet-4.5",
+            "strategy": "anthropic/claude-sonnet-4.5",
+            "brainstorm-orthodox": "anthropic/claude-sonnet-4.5",
+            "brainstorm-unorthodox": "x-ai/grok-4",
+            "digest-summary": "anthropic/claude-sonnet-4.5",
+            "lookup": "google/gemini-2.5-pro",
         }
+
+        # Slow/expensive models - only tested with --slow or --openrouter
+        slow_models = {
+            "draft": "openai/o3-pro",
+        }
+
+        # Select models based on test type
+        if model_type == "fast":
+            command_models = fast_models
+        elif model_type == "slow":
+            command_models = slow_models
+        else:  # "all"
+            command_models = {**fast_models, **slow_models}
 
         model_results = {}
 
@@ -288,17 +305,27 @@ def test_litassist_models():
                     cmd, subtype = command.split("-", 1)
                     client = LLMClientFactory.for_command(cmd, subtype)
                 else:
-                    client = LLMClientFactory.for_command(command)
+                    # Override verbosity for o3-pro models (they only accept "medium")
+                    if command == "draft":
+                        client = LLMClientFactory.for_command(command, verbosity="medium")
+                    else:
+                        client = LLMClientFactory.for_command(command)
 
                 actual_model = client.model
 
                 # Test a minimal completion to verify model is accessible
-                test_messages = [
-                    {"role": "system", "content": "Test"},
-                    {"role": "user", "content": "Reply with 'OK'"},
-                ]
+                # For o3-pro models, avoid system messages as they don't support them
+                if "o3" in actual_model or "o1" in actual_model:
+                    test_messages = [
+                        {"role": "user", "content": "Reply with 'OK'"},
+                    ]
+                else:
+                    test_messages = [
+                        {"role": "system", "content": "Test"},
+                        {"role": "user", "content": "Reply with 'OK'"},
+                    ]
 
-                response, usage = client.complete(test_messages, max_tokens=20)
+                response, usage = client.complete(test_messages, max_tokens=40000)
 
                 model_results[command] = {
                     "expected": expected_model,
@@ -399,7 +426,7 @@ def test_openrouter_australian_judgment():
         client = OpenAI(api_key=OR_KEY, base_url=OR_BASE)
 
         # Use a model that LitAssist actually uses
-        model = "anthropic/claude-sonnet-4"
+        model = "anthropic/claude-sonnet-4.5"
         print(f"Testing Australian judgment format with {model} via OpenRouter...")
 
         # Test with a more explicit request for Australian judgment format
@@ -506,7 +533,7 @@ def test_openrouter_case_citation():
         client = OpenAI(api_key=OR_KEY, base_url=OR_BASE)
 
         # Use a model that LitAssist actually uses
-        model = "anthropic/claude-sonnet-4"
+        model = "anthropic/claude-sonnet-4.5"
         print(f"Testing Australian case citation format with {model} via OpenRouter...")
 
         # Test with a request to format citations correctly in Australian style
@@ -1287,12 +1314,21 @@ def run_tests(args):
         results.append(test_openai_embedding_quality())
 
     # OpenRouter tests
-    if args.all or args.openrouter:
+    if args.all or args.openrouter or args.slow:
         print("\nRunning OpenRouter quality tests:")
         print("-" * 40)
-        results.append(test_litassist_models())
-        results.append(test_openrouter_australian_judgment())
-        results.append(test_openrouter_case_citation())
+        # Determine which models to test
+        if args.slow:
+            results.append(test_litassist_models(model_type="slow"))
+        elif args.openrouter:
+            results.append(test_litassist_models(model_type="all"))
+        else:  # args.all
+            results.append(test_litassist_models(model_type="fast"))
+
+        # Only run these additional tests with --all or --openrouter (not --slow)
+        if not args.slow:
+            results.append(test_openrouter_australian_judgment())
+            results.append(test_openrouter_case_citation())
 
     # Jade tests
     if args.all or args.jade:
@@ -1314,8 +1350,8 @@ def run_tests(args):
         results.append(test_pinecone_vector_operations())
         results.append(test_pinecone_service_reliability())
 
-    # Verification system tests
-    if args.all or args.verification:
+    # Verification system tests - only run when explicitly requested (too slow/expensive)
+    if args.verification:
         print("\nRunning Verification System quality tests:")
         print("-" * 40)
         results.append(test_verification_system())
@@ -1366,7 +1402,7 @@ def test_verification_system():
         # Test with real LLM calls to measure actual verification effectiveness
         # Use OpenRouter to access Claude for verification testing
         print("Initializing Claude for verification effectiveness testing...")
-        test_client = LLMClient("anthropic/claude-sonnet-4", temperature=0.2)
+        test_client = LLMClient("anthropic/claude-sonnet-4.5", temperature=0.2)
 
         # Test cases with known issues that verification should catch
         test_cases = [
@@ -1516,6 +1552,9 @@ if __name__ == "__main__":
     parser.add_argument(
         "--verification", action="store_true", help="Test verification system quality"
     )
+    parser.add_argument(
+        "--slow", action="store_true", help="Test slow/expensive models (o3-pro, etc)"
+    )
 
     args = parser.parse_args()
 
@@ -1528,6 +1567,7 @@ if __name__ == "__main__":
         or args.google
         or args.pinecone
         or args.verification
+        or args.slow
     ):
         args.all = True
 

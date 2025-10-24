@@ -14,11 +14,11 @@ from click.testing import CliRunner
 # Mock pypdf to avoid import errors in test environment
 sys.modules["pypdf"] = Mock()
 
-from litassist.commands.verify import (  # noqa: E402
-    verify,
-    _format_citation_report,
-    _parse_soundness_issues,
-    _verify_reasoning_trace,
+from litassist.commands.verify import verify  # noqa: E402
+from litassist.commands.verify.formatters import (  # noqa: E402
+    format_citation_report,
+    parse_soundness_issues,
+    verify_reasoning_trace,
 )
 from litassist.utils.legal_reasoning import LegalReasoningTrace  # noqa: E402
 
@@ -73,10 +73,13 @@ class TestVerifyCommand:
             f.write(sample_legal_text)
 
         with (
-            patch("litassist.commands.verify.verify_all_citations") as mock_citations,
-            patch("litassist.commands.verify.fetch_citation_context") as mock_fetch,
-            patch("litassist.commands.verify.LLMClientFactory") as mock_llm_factory,
-            patch("litassist.commands.verify.save_log") as _mock_save_log,
+            patch("litassist.commands.verify.citation_verifier.verify_all_citations") as mock_citations,
+            patch("litassist.commands.verify.citation_verifier.fetch_citation_context") as mock_fetch,
+            patch("litassist.commands.verify.reasoning_handler.fetch_citation_context") as mock_reasoning_fetch,
+            patch("litassist.commands.verify.soundness_checker.fetch_citation_context") as mock_soundness_fetch,
+            patch("litassist.commands.verify.reasoning_handler.LLMClientFactory") as mock_reasoning_factory,
+            patch("litassist.commands.verify.soundness_checker.LLMClientFactory") as mock_soundness_factory,
+            patch("litassist.commands.verify.core.save_log") as _mock_save_log,
         ):
             mock_citations.return_value = (
                 [
@@ -86,13 +89,16 @@ class TestVerifyCommand:
                 [("Smith v Jones [2025] NSWSC 999", "Future citation")],
             )
             mock_fetch.return_value = {}  # Mock empty case content
+            mock_reasoning_fetch.return_value = {}  # Mock empty case content
+            mock_soundness_fetch.return_value = {}  # Mock empty case content
             mock_client = Mock()
             mock_client.verify.return_value = (
                 "No legal issues found.",
                 "anthropic/claude-opus-4.1",
             )
             mock_client.complete.return_value = ("Analysis with reasoning trace", {})
-            mock_llm_factory.for_command.return_value = mock_client
+            mock_reasoning_factory.for_command.return_value = mock_client
+            mock_soundness_factory.for_command.return_value = mock_client
 
             result = runner.invoke(verify, [temp_file])
             assert result.exit_code == 0
@@ -112,10 +118,10 @@ class TestVerifyCommand:
             f.write(sample_legal_text)
 
         with (
-            patch("litassist.commands.verify.verify_all_citations") as mock_citations,
-            patch("litassist.commands.verify.fetch_citation_context") as mock_fetch,
-            patch("litassist.commands.verify.extract_citations") as mock_extract,
-            patch("litassist.commands.verify.save_log") as _mock_save_log,
+            patch("litassist.commands.verify.citation_verifier.verify_all_citations") as mock_citations,
+            patch("litassist.commands.verify.citation_verifier.fetch_citation_context") as mock_fetch,
+            patch("litassist.commands.verify.citation_verifier.extract_citations") as mock_extract,
+            patch("litassist.commands.verify.core.save_log") as _mock_save_log,
         ):
             mock_extract.return_value = ["Mabo v Queensland (No 2) [1992] HCA 23"]
             mock_citations.return_value = (
@@ -137,9 +143,9 @@ class TestVerifyCommand:
             f.write(sample_legal_text)
 
         with (
-            patch("litassist.commands.verify.fetch_citation_context") as mock_fetch,
-            patch("litassist.commands.verify.LLMClientFactory") as mock_llm_factory,
-            patch("litassist.commands.verify.save_log") as _mock_save_log,
+            patch("litassist.commands.verify.soundness_checker.fetch_citation_context") as mock_fetch,
+            patch("litassist.commands.verify.soundness_checker.LLMClientFactory") as mock_llm_factory,
+            patch("litassist.commands.verify.core.save_log") as _mock_save_log,
         ):
             mock_fetch.return_value = {}  # Mock empty case content
             mock_client = Mock()
@@ -167,10 +173,12 @@ class TestVerifyCommand:
             f.write(sample_text_with_reasoning)
 
         with (
-            patch("litassist.commands.verify.fetch_citation_context") as mock_fetch,
-            patch("litassist.commands.verify.save_log") as _mock_save_log,
+            patch("litassist.commands.verify.soundness_checker.fetch_citation_context") as mock_fetch_soundness,
+            patch("litassist.commands.verify.reasoning_handler.fetch_citation_context") as mock_fetch_reasoning,
+            patch("litassist.commands.verify.core.save_log") as _mock_save_log,
         ):
-            mock_fetch.return_value = {}  # Mock empty case content
+            mock_fetch_soundness.return_value = {}  # Mock empty case content
+            mock_fetch_reasoning.return_value = {}  # Mock empty case content
             result = runner.invoke(verify, [temp_file, "--reasoning"])
             assert result.exit_code == 0
             assert "Reasoning trace verified" in result.output
@@ -185,9 +193,9 @@ class TestVerifyCommand:
             f.write(sample_legal_text)
 
         with (
-            patch("litassist.commands.verify.fetch_citation_context") as mock_fetch,
-            patch("litassist.commands.verify.LLMClientFactory") as mock_llm_factory,
-            patch("litassist.commands.verify.save_log") as _mock_save_log,
+            patch("litassist.commands.verify.reasoning_handler.fetch_citation_context") as mock_fetch,
+            patch("litassist.commands.verify.reasoning_handler.LLMClientFactory") as mock_llm_factory,
+            patch("litassist.commands.verify.core.save_log") as _mock_save_log,
         ):
             mock_fetch.return_value = {}  # Mock empty case content
             mock_client = Mock()
@@ -226,11 +234,11 @@ class TestVerifyCommand:
         result = runner.invoke(verify, ["nonexistent.txt"])
         assert result.exit_code != 0
 
-    def test_format_citation_report(self):
+    def testformat_citation_report(self):
         """Test citation report formatting."""
         verified = ["Case1 [2020] HCA 1", "Case2 [2021] FCA 2"]
         unverified = [("Case3 [2025] VSC 999", "Future date")]
-        report = _format_citation_report(verified, unverified, total_found=3)
+        report = format_citation_report(verified, unverified, total_found=3)
         # No longer has the header since save_command_output handles it
         assert "# Citation Verification Report" not in report
         assert "**Total citations found**: 3" in report
@@ -240,7 +248,7 @@ class TestVerifyCommand:
         assert "[UNVERIFIED] Case3 [2025] VSC 999" in report
         assert "Future date" in report
 
-    def test_parse_soundness_issues(self):
+    def testparse_soundness_issues(self):
         """Test parsing of soundness issues from LLM response."""
         response_with_issues = """
         ## Issues Found
@@ -248,7 +256,7 @@ class TestVerifyCommand:
         2. The date should be 1993, not 1992.
         3. The principle stated needs to be clarified.
         """
-        issues = _parse_soundness_issues(response_with_issues)
+        issues = parse_soundness_issues(response_with_issues)
         assert len(issues) == 3
         assert (
             "The document contains an incorrect citation format for the Queensland case."
@@ -256,10 +264,10 @@ class TestVerifyCommand:
         )
 
         response_no_issues = "The document is legally sound with no issues found."
-        issues = _parse_soundness_issues(response_no_issues)
+        issues = parse_soundness_issues(response_no_issues)
         assert len(issues) == 0
 
-    def test_verify_reasoning_trace_complete(self):
+    def testverify_reasoning_trace_complete(self):
         """Test verification of complete reasoning trace."""
         trace = LegalReasoningTrace(
             issue="Whether contract was breached",
@@ -270,11 +278,11 @@ class TestVerifyCommand:
             sources=["Contract Act", "Case Law"],
             command="verify",
         )
-        status = _verify_reasoning_trace(trace)
+        status = verify_reasoning_trace(trace)
         assert status["complete"]
         assert len(status["issues"]) == 0
 
-    def test_verify_reasoning_trace_incomplete(self):
+    def testverify_reasoning_trace_incomplete(self):
         """Test verification of incomplete reasoning trace."""
         trace = LegalReasoningTrace(
             issue="Issue?",  # Too short
@@ -285,7 +293,7 @@ class TestVerifyCommand:
             sources=[],  # Empty
             command="verify",
         )
-        status = _verify_reasoning_trace(trace)
+        status = verify_reasoning_trace(trace)
         assert not status["complete"]
         assert len(status["issues"]) >= 5
         assert any("Issue statement" in issue for issue in status["issues"])
@@ -297,7 +305,7 @@ class TestVerifyCommand:
         """Test handling of API failures."""
         with open(temp_file, "w") as f:
             f.write(sample_legal_text)
-        with patch("litassist.commands.verify.verify_all_citations") as mock_citations:
+        with patch("litassist.commands.verify.citation_verifier.verify_all_citations") as mock_citations:
             mock_citations.side_effect = Exception("API unavailable")
             result = runner.invoke(verify, [temp_file, "--citations"])
             assert "Citation verification failed" in result.output
@@ -308,17 +316,23 @@ class TestVerifyCommand:
         with open(temp_file, "w") as f:
             f.write(sample_legal_text)
         with (
-            patch("litassist.commands.verify.verify_all_citations") as mock_citations,
-            patch("litassist.commands.verify.fetch_citation_context") as mock_fetch,
-            patch("litassist.commands.verify.LLMClientFactory") as mock_llm_factory,
-            patch("litassist.commands.verify.save_log") as _mock_save_log,
+            patch("litassist.commands.verify.citation_verifier.verify_all_citations") as mock_citations,
+            patch("litassist.commands.verify.citation_verifier.fetch_citation_context") as mock_fetch,
+            patch("litassist.commands.verify.reasoning_handler.fetch_citation_context") as mock_reasoning_fetch,
+            patch("litassist.commands.verify.soundness_checker.fetch_citation_context") as mock_soundness_fetch,
+            patch("litassist.commands.verify.reasoning_handler.LLMClientFactory") as mock_reasoning_factory,
+            patch("litassist.commands.verify.soundness_checker.LLMClientFactory") as mock_soundness_factory,
+            patch("litassist.commands.verify.core.save_log") as _mock_save_log,
         ):
             mock_citations.return_value = (["Case1"], [])
             mock_fetch.return_value = {}  # Mock empty case content
+            mock_reasoning_fetch.return_value = {}  # Mock empty case content
+            mock_soundness_fetch.return_value = {}  # Mock empty case content
             mock_client = Mock()
             mock_client.verify.return_value = ("No issues", "anthropic/claude-opus-4.1")
             mock_client.complete.return_value = ("Analysis", {})
-            mock_llm_factory.for_command.return_value = mock_client
+            mock_reasoning_factory.for_command.return_value = mock_client
+            mock_soundness_factory.for_command.return_value = mock_client
             result = runner.invoke(verify, [temp_file])
             assert result.exit_code == 0
             assert "_citations_" in result.output

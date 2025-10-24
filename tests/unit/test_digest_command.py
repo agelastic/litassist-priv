@@ -62,7 +62,7 @@ class TestDigestBasic:
 
         # Assert: command succeeded and was invoked correctly
         assert result.exit_code == 0
-        mock_factory.for_command.assert_called_once_with("digest", mode="summary")
+        mock_factory.for_command.assert_called_once_with("digest", "summary")
         mock_client.complete.assert_called_once()
         mock_output.assert_called_once()
         mock_show.assert_called_once()
@@ -175,7 +175,7 @@ class TestDigestIssuesMode:
 
         # Assert: correct mode and citation validation occurred
         assert result.exit_code == 0
-        mock_factory.for_command.assert_called_once_with("digest", mode="issues")
+        mock_factory.for_command.assert_called_once_with("digest", "issues")
         mock_client.complete.assert_called_once()
         mock_client.validate_and_verify_citations.assert_called_once_with(
             "Issue content", strict_mode=False

@@ -14,7 +14,7 @@ class TestLookupCommand:
     @patch("litassist.commands.lookup.fetchers._fetch_url_content", return_value="")
     @patch("litassist.commands.lookup.search.time.sleep")
     @patch("googleapiclient.discovery.build")
-    @patch("litassist.llm.LLMClientFactory.for_command")
+    @patch("litassist.llm.factory.LLMClientFactory.for_command")
     def test_lookup_command_standard_mode(
         self,
         mock_factory,
@@ -81,7 +81,7 @@ class TestLookupCommand:
     @patch("litassist.commands.lookup.fetchers._fetch_url_content", return_value="")
     @patch("litassist.commands.lookup.search.time.sleep")
     @patch("googleapiclient.discovery.build")
-    @patch("litassist.llm.LLMClientFactory.for_command")
+    @patch("litassist.llm.factory.LLMClientFactory.for_command")
     def test_lookup_command_comprehensive_mode(
         self,
         mock_factory,
@@ -147,7 +147,7 @@ class TestLookupCommand:
     @patch("litassist.commands.lookup.fetchers._fetch_url_content", return_value="")
     @patch("litassist.commands.lookup.search.time.sleep")
     @patch("googleapiclient.discovery.build")
-    @patch("litassist.llm.LLMClientFactory.for_command")
+    @patch("litassist.llm.factory.LLMClientFactory.for_command")
     def test_lookup_command_with_extraction(
         self,
         mock_factory,
@@ -242,7 +242,7 @@ class TestLookupCommand:
 
         with (
             patch("googleapiclient.discovery.build") as mock_build,
-            patch("litassist.llm.LLMClientFactory.for_command") as mock_factory,
+            patch("litassist.llm.factory.LLMClientFactory.for_command") as mock_factory,
             patch("litassist.commands.lookup.processors.save_command_output"),
             patch("litassist.commands.lookup.save_log"),
         ):
@@ -291,7 +291,7 @@ class TestLookupCommand:
     @patch("litassist.commands.lookup.fetchers._fetch_url_content", return_value="")
     @patch("time.sleep")
     @patch("googleapiclient.discovery.build")
-    @patch("litassist.llm.LLMClientFactory.for_command")
+    @patch("litassist.llm.factory.LLMClientFactory.for_command")
     def test_verify_flag_not_supported(
         self,
         mock_factory,
@@ -321,7 +321,7 @@ class TestLookupCommand:
     @patch("litassist.commands.lookup.fetchers._fetch_url_content", return_value="")
     @patch("time.sleep")
     @patch("googleapiclient.discovery.build")
-    @patch("litassist.llm.LLMClientFactory.for_command")
+    @patch("litassist.llm.factory.LLMClientFactory.for_command")
     def test_noverify_flag_not_supported(
         self,
         mock_factory,
@@ -378,7 +378,7 @@ class TestLookupCommandIntegration:
 
         with (
             patch("googleapiclient.discovery.build") as mock_build,
-            patch("litassist.llm.LLMClientFactory.for_command") as mock_factory,
+            patch("litassist.llm.factory.LLMClientFactory.for_command") as mock_factory,
             patch("litassist.commands.lookup.processors.save_command_output"),
             patch("litassist.commands.lookup.save_log"),
         ):

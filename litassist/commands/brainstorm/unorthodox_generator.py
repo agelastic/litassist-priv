@@ -8,7 +8,7 @@ import click
 import logging
 import re
 
-from litassist.llm import LLMClientFactory
+from litassist.llm.factory import LLMClientFactory
 from litassist.utils.legal_reasoning import create_reasoning_prompt
 from litassist.utils.formatting import (
     verifying_message,
@@ -16,7 +16,7 @@ from litassist.utils.formatting import (
     warning_message,
 )
 from litassist.prompts import PROMPTS
-from litassist.logging_utils import log_task_event
+from litassist.logging import log_task_event
 
 
 def generate_unorthodox_strategies(facts: str, side: str, area: str):

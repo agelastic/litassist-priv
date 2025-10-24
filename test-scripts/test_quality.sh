@@ -51,11 +51,12 @@ fi
 # Display usage info if no arguments provided
 if [ $# -eq 0 ]; then
     echo -e "${BOLD}Available options:${NC}"
-    echo "  --all         Run all quality tests"
+    echo "  --all          Run all quality tests (fast models only)"
     echo "  --openai       Test OpenAI quality"
-    echo "  --openrouter   Test OpenRouter quality"
+    echo "  --openrouter   Test OpenRouter quality (all models)"
     echo "  --jade         Test Jade quality"
     echo "  --google       Test Google CSE quality"
+    echo "  --slow         Test slow/expensive models (o3-pro, etc)"
     echo "  --verification Test verification system quality"
     echo ""
     echo -e "${BOLD}Running all quality tests by default...${NC}"

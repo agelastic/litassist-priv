@@ -39,14 +39,14 @@ class TestActualFunctionality:
 
     def test_save_log_creates_file(self):
         """Test save_log creates actual files."""
-        from litassist.logging_utils import save_log
+        from litassist.logging import save_log
         import os
         import tempfile
 
         # Create a temp directory
         with tempfile.TemporaryDirectory() as temp_dir:
             # Patch LOG_DIR to use temp directory
-            with patch("litassist.logging_utils.LOG_DIR", temp_dir):
+            with patch("litassist.logging.LOG_DIR", temp_dir):
                 payload = {"input": "test", "response": "result"}
                 save_log("test", payload)
 
@@ -91,7 +91,7 @@ class TestCLICommandsWithRealFiles:
                 f.write("Test case facts")
 
             # Mock the actual command logic
-            with patch("litassist.llm.LLMClientFactory.for_command") as mock_factory:
+            with patch("litassist.llm.factory.LLMClientFactory.for_command") as mock_factory:
                 mock_instance = Mock()
                 mock_instance.complete.return_value = (
                     "Strategy",

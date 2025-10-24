@@ -9,7 +9,7 @@ import logging
 import requests
 import time
 import random
-from litassist.logging_utils import save_log
+from litassist.logging import save_log
 import click
 
 # Track last AustLII request completion time for rate limiting

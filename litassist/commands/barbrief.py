@@ -24,12 +24,12 @@ from litassist.utils.formatting import (
     warning_message,
 )
 from litassist.utils.text_processing import count_tokens_and_words
-from litassist.logging_utils import (
+from litassist.logging import (
     save_command_output,
     log_task_event,
 )
-from litassist.llm import LLMClientFactory
-from litassist.citation_verify import verify_all_citations
+from litassist.llm.factory import LLMClientFactory
+from litassist.citation.verify import verify_all_citations
 
 
 @timed

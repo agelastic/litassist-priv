@@ -13,7 +13,7 @@ from litassist.config import get_config
 from litassist.prompts import PROMPTS
 from litassist.utils.file_ops import read_document, is_text_file
 from litassist.utils.text_processing import chunk_text, create_embeddings
-from litassist.logging_utils import save_log, save_command_output, log_task_event
+from litassist.logging import save_log, save_command_output, log_task_event
 from litassist.timing import timed
 from litassist.utils.formatting import info_message
 from litassist.utils.legal_reasoning import (
@@ -22,7 +22,7 @@ from litassist.utils.legal_reasoning import (
     verify_content_if_needed,
 )
 from litassist.utils.core import show_command_completion
-from litassist.llm import LLMClientFactory
+from litassist.llm.factory import LLMClientFactory
 from litassist.helpers.retriever import Retriever, get_pinecone_client
 
 

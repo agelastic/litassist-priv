@@ -9,7 +9,7 @@ Tests cover:
 """
 
 from unittest.mock import Mock, patch
-from litassist.llm import LLMClient
+from litassist.llm.client import LLMClient
 
 
 class TestLLMClientComplete:
@@ -151,7 +151,7 @@ class TestLLMClientComplete:
         assert called_messages[1]["content"] == "Hello"
 
     @patch("litassist.config.CONFIG")
-    @patch("litassist.logging_utils.save_log")
+    @patch("litassist.logging.save_log")
     @patch("litassist.llm.client.execute_api_call_with_retry")
     def test_complete_with_verification_enabled(
         self, mock_execute, mock_save_log, mock_config
@@ -400,7 +400,7 @@ class TestLLMClientComplete:
                 mock_timed.side_effect = lambda f: f
 
                 # Import after patching to get decorated version
-                from litassist.llm import LLMClient as DecoratedClient
+                from litassist.llm.client import LLMClient as DecoratedClient
 
                 client = DecoratedClient(model="gpt-4")
                 response, stats = client.complete([{"role": "user", "content": "Test"}])
