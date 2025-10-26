@@ -107,6 +107,8 @@ nosetests.xml
 # Command outputs
 /outputs/
 /logs/
+**/outputs/
+**/logs/
 
 real_test/
 case_facts.txt
