@@ -76,7 +76,7 @@ def get_openai_client(model_name: str):
     config = get_config()
     base_url = config.or_base
     api_key = config.or_key
-    return OpenAI(api_key=api_key, base_url=base_url)
+    return OpenAI(api_key=api_key, base_url=base_url, timeout=600.0, max_retries=0)
 
 
 def parse_openrouter_error(error_info: Dict[str, Any]) -> Tuple[str, str]:
@@ -352,6 +352,13 @@ def execute_api_call_with_retry(
             return resp
 
         except Exception as e:
+            # Catch malformed JSON from truncated responses
+            # (server timeout, network interruption, connection closed early)
+            if isinstance(e, json.JSONDecodeError):
+                raise StreamingAPIError(
+                    f"Incomplete API response (truncated JSON): {str(e)}"
+                )
+
             # Check if it's a 413 or similar non-retryable error
             error_str = str(e)
             if any(
@@ -418,6 +425,10 @@ def execute_api_call_with_retry(
                 elif "timeout" in error_str.lower() or "connection" in error_str.lower():
                     click.echo(warning_message(
                         f"Connection issue (attempt {retry_state.attempt_number}/5), retrying..."
+                    ))
+                elif "JSONDecode" in str(type(error).__name__) or "Incomplete API response" in error_str or "truncated JSON" in error_str.lower():
+                    click.echo(warning_message(
+                        f"Received incomplete response (attempt {retry_state.attempt_number}/5), retrying..."
                     ))
             except Exception:
                 # If we can't get error details, just show generic retry message

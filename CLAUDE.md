@@ -500,3 +500,5 @@ When saving Claude-generated files to the project:
 - Always use the most common and generic user agent for web access. Never use a weird one that can be filtered out by scraping protections
 - Never truncate any text received from an API call
 - Never scrape jade.io and any of its subdomains
+- never blame openrouter
+- never blame the llm or connectivity. the problem is ALWAYS in your code or configuration
