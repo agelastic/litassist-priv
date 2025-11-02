@@ -351,14 +351,13 @@ def execute_api_call_with_retry(
                     pass
             return resp
 
-        except Exception as e:
+        except json.JSONDecodeError as e:
             # Catch malformed JSON from truncated responses
             # (server timeout, network interruption, connection closed early)
-            if isinstance(e, json.JSONDecodeError):
-                raise StreamingAPIError(
-                    f"Incomplete API response (truncated JSON): {str(e)}"
-                )
-
+            raise StreamingAPIError(
+                f"Incomplete API response (truncated JSON): {str(e)}"
+            )
+        except Exception as e:
             # Check if it's a 413 or similar non-retryable error
             error_str = str(e)
             if any(
@@ -426,7 +425,7 @@ def execute_api_call_with_retry(
                     click.echo(warning_message(
                         f"Connection issue (attempt {retry_state.attempt_number}/5), retrying..."
                     ))
-                elif "JSONDecode" in str(type(error).__name__) or "Incomplete API response" in error_str or "truncated JSON" in error_str.lower():
+                elif "Incomplete API response" in error_str or "truncated JSON" in error_str.lower():
                     click.echo(warning_message(
                         f"Received incomplete response (attempt {retry_state.attempt_number}/5), retrying..."
                     ))
