@@ -78,7 +78,8 @@ class TestExtractFactsBasic:
         # Verify that verify_content_if_needed was called instead of client.verify
         mock_verify_content.assert_called_once()
         # Ensure output saving and completion display are invoked
-        mock_output.assert_called_once()
+        # Now called twice: once for raw output, once for verified output
+        assert mock_output.call_count == 2
         mock_log.assert_called_once()
         mock_show.assert_called_once()
 

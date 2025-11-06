@@ -146,6 +146,19 @@ def draft(ctx, documents, query, noverify, diversity, output):
 
     # Note: Citation verification now handled automatically in LLMClient.complete()
 
+    # Save raw pre-verification output for audit trail
+    save_command_output(
+        output if output else "draft",
+        content,
+        "" if output else query,
+        metadata={
+            "Query": query,
+            "Documents": ", ".join(documents),
+            "Verification": "Not yet applied (raw output)",
+        },
+        suffix="_raw",
+    )
+
     # Apply standard verification (uses verification chain like extractfacts/strategy)
     if not noverify:
         try:

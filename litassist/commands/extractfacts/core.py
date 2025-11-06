@@ -89,6 +89,23 @@ def extractfacts(file, verify, noverify, output):
 
     # Note: Citation verification now handled automatically in LLMClient.complete()
 
+    # Save raw pre-verification output for audit trail
+    slug = "_".join(source_files[:3])  # Use first 3 files for slug
+    if len(source_files) > 3:
+        slug += f"_and_{len(source_files) - 3}_more"
+
+    raw_metadata = {
+        "Source Files": ", ".join(source_files),
+        "Verification": "Not yet applied (raw output)",
+    }
+    save_command_output(
+        output if output else "extractfacts",
+        combined,
+        "" if output else slug,
+        metadata=raw_metadata,
+        suffix="_raw",
+    )
+
     # Apply standard verification (CoVe moved to standalone 'verify-cove' command)
     verification_metadata = {"Source Files": ", ".join(source_files)}
     if not noverify:
@@ -123,10 +140,7 @@ def extractfacts(file, verify, noverify, output):
         verification_metadata["Model"] = "N/A"
         click.echo(info_message("Standard verification skipped by --noverify flag"))
 
-    # Save output using utility (reasoning trace remains inline)
-    slug = "_".join(source_files[:3])  # Use first 3 files for slug
-    if len(source_files) > 3:
-        slug += f"_and_{len(source_files) - 3}_more"
+    # Save verified output using utility (reasoning trace remains inline)
     output_file = save_command_output(
         output if output else "extractfacts",
         combined,

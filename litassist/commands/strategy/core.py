@@ -27,7 +27,7 @@ from litassist.utils.formatting import (
 )
 from litassist.llm.factory import LLMClientFactory
 from litassist.prompts import PROMPTS
-from litassist.logging import log_task_event
+from litassist.logging import log_task_event, save_command_output
 
 from .validators import validate_case_facts_format, extract_legal_issues
 from .ranker import create_consolidated_reasoning_trace
@@ -382,6 +382,22 @@ def strategy(case_facts, outcome, strategies, verify, noverify, output):
         )
     except Exception:
         pass
+
+    # Save raw pre-verification output for audit trail
+    raw_metadata = {
+        "Desired Outcome": outcome,
+        "Case Facts File": case_facts.name,
+        "Verification": "Not yet applied (raw output)",
+    }
+    if strategies:
+        raw_metadata["Strategies File"] = strategies.name
+    save_command_output(
+        output if output else "strategy",
+        strategy_content,
+        "" if output else outcome,
+        metadata=raw_metadata,
+        suffix="_raw",
+    )
 
     # Apply standard verification (CoVe moved to standalone 'verify-cove' command)
     cove_results = None

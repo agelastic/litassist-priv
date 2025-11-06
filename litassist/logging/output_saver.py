@@ -17,6 +17,7 @@ def save_command_output(
     metadata: Optional[Dict[str, str]] = None,
     critique_sections: Optional[List[Tuple[str, str]]] = None,
     output_dir: str = None,
+    suffix: str = "",
 ) -> str:
     """
     Save command output with standard format.
@@ -28,6 +29,7 @@ def save_command_output(
         metadata: Optional dict of metadata to include in header
         critique_sections: Optional list of (title, critique_content) tuples for AI critiques
         output_dir: Directory for output files (defaults to outputs/)
+        suffix: Optional suffix to add to filename (e.g., '_raw' for pre-verification output)
 
     Returns:
         Path to the saved output file
@@ -47,10 +49,10 @@ def save_command_output(
         slug = re.sub(r"[-\s]+", "_", sanitized_slug)[:40].strip("_")
 
     if slug:
-        output_file = os.path.join(output_dir, f"{command_name}_{slug}_{timestamp}.txt")
+        output_file = os.path.join(output_dir, f"{command_name}_{slug}_{timestamp}{suffix}.txt")
     else:
         # This handles both cases: empty query_or_slug, or a slug that becomes empty after sanitization.
-        output_file = os.path.join(output_dir, f"{command_name}_{timestamp}.txt")
+        output_file = os.path.join(output_dir, f"{command_name}_{timestamp}{suffix}.txt")
 
     with open(output_file, "w", encoding="utf-8") as f:
         # Standard header
