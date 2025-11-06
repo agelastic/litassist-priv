@@ -444,65 +444,171 @@ def _clean_document(text: str) -> str:
     return cleaned.strip()
 
 
+def _extract_metadata_header(content: str) -> str:
+    """
+    Extract only metadata header before judgment/catchwords begins.
+    Alternative citations appear here, NOT in judgment body.
+
+    Returns the header section (up to 1000 chars) before judgment text starts.
+    """
+    judgment_markers = [
+        r'\n\s*(?:JUDGMENT|REASONS FOR JUDGMENT|REASONS|DECISION)\s*\n',
+        r'\n\s*(?:CATCHWORDS|HEADNOTE)\s*\n',
+        r'\n\s*\[\d+\]\s+',  # Paragraph [1], [2]
+        r'\n[A-Z\s]{10,}:\s*\n',  # Headers like "JUDGE:" "FACTS:"
+    ]
+
+    earliest_pos = len(content)
+    for marker in judgment_markers:
+        match = re.search(marker, content[:2000], re.IGNORECASE | re.MULTILINE)
+        if match:
+            earliest_pos = min(earliest_pos, match.start())
+
+    return content[:min(earliest_pos, 1000)]
+
+
+def _check_alternative_citations_section(content: str, citation: str) -> bool:
+    """
+    Search for alternative citations ONLY in metadata header.
+    Generalized patterns catch: "Cite as:", "Citation:", "Reported:",
+    "Alternative citation:", "Parallel citation:", etc.
+    """
+    header = _extract_metadata_header(content)
+
+    heading_patterns = [
+        # Matches: "cite as:", "citation:", "citations:", "alternative citation:", etc.
+        r'(?:^|\n)\s*(?:\w+\s+)?cit(?:e|ation|ations?)\s*(?:\w+\s*)?:(.+?)(?:\n\n|\n\w+:)',
+        # Matches: "reported:", "reported in:", "reported as:", "also reported:", etc.
+        r'(?:^|\n)\s*(?:\w+\s+)?report(?:ed)?\s*(?:\w+\s*)?:(.+?)(?:\n\n|\n\w+:)',
+        # Matches: "parallel citations:", "alternative citations:", etc.
+        r'(?:^|\n)\s*(?:parallel|alternative)\s+(?:citation|reported).*?:(.+?)(?:\n\n|\n\w+:)',
+    ]
+
+    for pattern in heading_patterns:
+        match = re.search(pattern, header, re.IGNORECASE | re.MULTILINE | re.DOTALL)
+        if match:
+            alt_text = match.group(1).strip()
+            # Normalize and check
+            normalized_cit = citation.lower().replace(" ", "").replace("[", "").replace("]", "")
+            normalized_alt = alt_text.lower().replace(" ", "").replace("[", "").replace("]", "")
+            if normalized_cit in normalized_alt:
+                return True
+    return False
+
+
+def _check_header_parallel_citations(content: str, citation: str) -> bool:
+    """
+    Check for semicolon-separated parallel citations in header ONLY.
+    Format: "[2022] HCA 34; 234 CLR 123; (2022) 96 ALJR 567"
+    Semicolons indicate parallel cites, NOT judgment references.
+    """
+    header = _extract_metadata_header(content)
+
+    # Pattern: multiple citations separated by semicolons
+    citation_group_pattern = r'(?:[^.!?]{0,200})\[?\d{4}\]?\s+[A-Z]{2,}\s+\d+\s*(?:;[^.!?]*?\[?\d{4}\]?\s+[A-Z]{2,}\s+\d+)+'
+
+    matches = re.finditer(citation_group_pattern, header)
+    for match in matches:
+        group = match.group(0)
+        if ';' in group:
+            normalized_cit = citation.lower().replace(" ", "").replace("[", "").replace("]", "")
+            normalized_group = group.lower().replace(" ", "").replace("[", "").replace("]", "")
+            if normalized_cit in normalized_group:
+                # Safety check: not part of sentence ("held in", "following", etc.)
+                if not any(word in group.lower() for word in ['held', 'stated', 'following', 'applying', 'see']):
+                    return True
+    return False
+
+
+def _case_name_match(header: str, citation: str) -> bool:
+    """Match by case name extracted from document header."""
+    # Extract case name from header: "SMITH v JONES" or "Smith and Jones"
+    patterns = [
+        r'([A-Z][A-Za-z\s]+)\s+v\.?\s+([A-Z][A-Za-z\s]+)',
+        r'([A-Z][A-Za-z\s]+)\s+and\s+([A-Z][A-Za-z\s]+)',
+    ]
+
+    for pattern in patterns:
+        match = re.search(pattern, header[:500])
+        if match:
+            case_name = f"{match.group(1)} v {match.group(2)}"
+            # Check if case name components appear in citation
+            name_parts = [p.strip() for p in case_name.lower().split() if len(p.strip()) > 2]
+            if any(part in citation.lower() for part in name_parts):
+                return True
+    return False
+
+
+def _validate_by_components(header: str, citation: str) -> bool:
+    """Validate by matching citation components in header."""
+    match = re.match(r"\[(\d{4})\]\s+([A-Z]+)\s+(\d+)", citation)
+    if not match:
+        return False
+
+    year, court, number = match.groups()
+    header_lower = header.lower()
+
+    # All three components must appear
+    has_year = year in header_lower
+    has_court = court.lower() in header_lower
+    has_number = number in header_lower
+
+    return has_year and has_court and has_number
+
+
 def _validate_citation_match(content: str, citation: str) -> bool:
     """
-    Validate that citation/name appears prominently at document beginning.
-    For both legislation and case law, the citation/name must appear in the first ~500 chars.
+    Conservative structure-aware validation.
+    Only searches metadata header to avoid false positives from citations in judgment.
+
+    Uses progressive fallback validation strategies:
+    1. Exact match in first 500 chars (primary citation location)
+    2. Alternative citations heading in metadata header
+    3. Parallel citations (semicolon-separated) in header
+    4. Case name matching in header
+    5. Component matching (year + court + number) in header
+    6. Extended search in first 2000 chars
+
+    Returns True if citation is validated, False otherwise.
     """
     # Skip multi-line "citations" (not real citations)
     if "\n" in citation:
         return False
 
-    # First 500 chars must contain the citation/name
-    content_beginning = content[:500] if len(content) > 500 else content
+    # Extract metadata header once for efficiency
+    header = _extract_metadata_header(content)
 
-    # Check if this is legislation (case-insensitive)
-    is_legislation = any(
-        term.lower() in citation.lower()
-        for term in ["Act", "Regulation", "Code", "Rules", "Ordinance"]
-    )
+    # Define validation strategies in order of reliability
+    strategies = [
+        ("exact_primary_location", lambda: citation.lower() in content[:500].lower()),
+        ("alternative_citations_header", lambda: _check_alternative_citations_section(content, citation)),
+        ("parallel_citations_header", lambda: _check_header_parallel_citations(content, citation)),
+        ("case_name_header", lambda: _case_name_match(header, citation)),
+        ("components_header_only", lambda: _validate_by_components(header, citation)),
+        ("exact_match_extended_header", lambda: citation.lower() in content[:2000].lower()),
+    ]
 
-    if is_legislation:
-        # Strip jurisdiction suffix for core name
-        # "Freedom of Information Act 1982 (Cth)" -> "Freedom of Information Act 1982"
-        core_citation = re.sub(r"\s*\([A-Za-z]+\)$", "", citation).strip()
-
-        # Must appear at beginning (case-insensitive)
-        if core_citation.lower() in content_beginning.lower():
-            return True
-
-        # Handle abbreviated citations (e.g., "FOI Act 1982")
-        year_match = re.search(r"\b(19|20)\d{2}\b", citation)
-        if year_match and year_match.group() in content_beginning:
-            # Get first significant words
-            words = re.findall(r"\b[A-Z][A-Za-z]*", citation)
-            if words and any(
-                word.lower() in content_beginning.lower() for word in words[:2]
-            ):
+    # Try each strategy until one succeeds
+    for strategy_name, strategy_func in strategies:
+        try:
+            if strategy_func():
+                save_log("citation_validation_success", {
+                    "citation": citation,
+                    "strategy": strategy_name,
+                    "header_length": len(header)
+                })
                 return True
+        except Exception:
+            # Strategy failed, try next
+            continue
 
-        return False
-    else:
-        # Case law - check normalized citation
-        normalized_citation = (
-            citation.replace(" ", "").replace("[", "").replace("]", "")
-        )
-        normalized_beginning = (
-            content_beginning.replace(" ", "").replace("[", "").replace("]", "")
-        )
-
-        if normalized_citation in normalized_beginning:
-            return True
-
-        # Check components for medium neutral citations
-        match = re.search(r"\[(\d{4})\]\s*([A-Z]+)\s*(\d+)", citation)
-        if match:
-            year, court, number = match.groups()
-            # All components must appear in the beginning
-            if all(part in content_beginning for part in [year, court, number]):
-                return True
-
-        return False
+    # All strategies failed
+    save_log("citation_validation_failure", {
+        "citation": citation,
+        "strategies_tried": [s[0] for s in strategies],
+        "header_preview": header[:300] if header else content[:300]
+    })
+    return False
 
 
 def _extract_section(text: str, citation: str) -> Optional[str]:
