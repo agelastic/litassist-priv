@@ -242,15 +242,22 @@ verification:
       3. Include specific section numbers, paragraph numbers, or page references
       4. If a reference contradicts the question's premise, explain the discrepancy
       5. Use the FULL context of the documents, not just keyword matches
+      6. RETRIEVAL FAILURES: If a citation is listed under "=== RETRIEVAL FAILURES ===", you MUST state:
+         "Cannot verify [citation] - document retrieval failed (reason: [specific reason from failures list])"
+      7. DISTINGUISH between retrieval failures and genuine uncertainty:
+         - "Cannot verify (retrieval failure)" = document could not be fetched
+         - "Uncertain" = document was available but answer is unclear from the available authorities
 
       Format each answer as:
-      "1. [Yes/No/Uncertain] - [Detailed explanation with direct quotes and references]"
+      "1. [Yes/No/Uncertain/Cannot verify] - [Detailed explanation with direct quotes and references]"
 
       Example:
       "1. Yes - Section 18(1) of the Competition and Consumer Act 2010 states:
       'A person must not, in trade or commerce, engage in conduct that is
       misleading or deceptive or is likely to mislead or deceive.' This directly
       prohibits the conduct described in the question."
+
+      "2. Cannot verify - [2022] HCA 34 retrieval failed (Content validation failed - citation not found in document). Unable to verify this question without access to the cited authority."
     
     # USED BY: verification_chain.py run_cove_verification() - Stage 3: Detect inconsistencies
     # LOCATION: verification_chain.py:177

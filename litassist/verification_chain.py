@@ -184,6 +184,7 @@ def run_cove_verification(
 
     # NEW Step 1.5: Extract and fetch FULL citation documents
     legal_context = {}
+    failed_citations = []
     total_context_size = 0
 
     try:
@@ -203,7 +204,7 @@ def run_cove_verification(
 
         if citations:
             # Fetch FULL documents for all citations found
-            legal_context = fetch_citation_context(citations)
+            legal_context, failed_citations = fetch_citation_context(citations)
 
             if legal_context:
                 total_context_size = sum(len(v) for v in legal_context.values())
@@ -228,7 +229,19 @@ def run_cove_verification(
                             "message": "Large legal context may impact token usage",
                         },
                     )
-            else:
+
+            # Log failed citations
+            if failed_citations:
+                save_log(
+                    "cove_citation_fetch_failures",
+                    {
+                        "command": command,
+                        "failed_citations": [(cit, reason) for cit, reason in failed_citations],
+                        "count": len(failed_citations),
+                    },
+                )
+
+            if not legal_context and not failed_citations:
                 save_log(
                     "cove_citation_fetch_empty",
                     {
@@ -292,6 +305,14 @@ def run_cove_verification(
             context_text += "\n=== REFERENCE DOCUMENTS ===\n"
             context_text += reference_context
             context_text += "=== END REFERENCE DOCUMENTS ===\n\n"
+
+        # Add retrieval failures section if any citations failed to fetch
+        if failed_citations:
+            context_text += "\n=== RETRIEVAL FAILURES ===\n"
+            context_text += "The following citations could not be retrieved:\n\n"
+            for citation, reason in failed_citations:
+                context_text += f"- {citation}: {reason}\n"
+            context_text += "\n=== END RETRIEVAL FAILURES ===\n\n"
 
         # Choose appropriate prompt template
         if has_any_context:

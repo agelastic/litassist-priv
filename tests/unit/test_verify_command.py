@@ -88,9 +88,9 @@ class TestVerifyCommand:
                 ],
                 [("Smith v Jones [2025] NSWSC 999", "Future citation")],
             )
-            mock_fetch.return_value = {}  # Mock empty case content
-            mock_reasoning_fetch.return_value = {}  # Mock empty case content
-            mock_soundness_fetch.return_value = {}  # Mock empty case content
+            mock_fetch.return_value = ({}, [])  # Mock empty case content, no failures
+            mock_reasoning_fetch.return_value = ({}, [])  # Mock empty case content, no failures
+            mock_soundness_fetch.return_value = ({}, [])  # Mock empty case content, no failures
             mock_client = Mock()
             mock_client.verify.return_value = (
                 "No legal issues found.",
@@ -128,7 +128,7 @@ class TestVerifyCommand:
                 ["Mabo v Queensland (No 2) [1992] HCA 23"],
                 [],
             )
-            mock_fetch.return_value = {}  # Mock empty case content
+            mock_fetch.return_value = ({}, [])  # Mock empty case content, no failures
             result = runner.invoke(verify, [temp_file, "--citations"])
             assert result.exit_code == 0
             assert "Citation verification complete" in result.output
@@ -147,7 +147,7 @@ class TestVerifyCommand:
             patch("litassist.commands.verify.soundness_checker.LLMClientFactory") as mock_llm_factory,
             patch("litassist.commands.verify.core.save_log") as _mock_save_log,
         ):
-            mock_fetch.return_value = {}  # Mock empty case content
+            mock_fetch.return_value = ({}, [])  # Mock empty case content, no failures
             mock_client = Mock()
             mock_client.verify.return_value = (
                 """
@@ -177,8 +177,8 @@ class TestVerifyCommand:
             patch("litassist.commands.verify.reasoning_handler.fetch_citation_context") as mock_fetch_reasoning,
             patch("litassist.commands.verify.core.save_log") as _mock_save_log,
         ):
-            mock_fetch_soundness.return_value = {}  # Mock empty case content
-            mock_fetch_reasoning.return_value = {}  # Mock empty case content
+            mock_fetch_soundness.return_value = ({}, [])  # Mock empty case content, no failures
+            mock_fetch_reasoning.return_value = ({}, [])  # Mock empty case content, no failures
             result = runner.invoke(verify, [temp_file, "--reasoning"])
             assert result.exit_code == 0
             assert "Reasoning trace verified" in result.output
@@ -197,7 +197,7 @@ class TestVerifyCommand:
             patch("litassist.commands.verify.reasoning_handler.LLMClientFactory") as mock_llm_factory,
             patch("litassist.commands.verify.core.save_log") as _mock_save_log,
         ):
-            mock_fetch.return_value = {}  # Mock empty case content
+            mock_fetch.return_value = ({}, [])  # Mock empty case content, no failures
             mock_client = Mock()
             mock_client.complete.return_value = (
                 """Analysis of the legal text...
@@ -325,9 +325,9 @@ class TestVerifyCommand:
             patch("litassist.commands.verify.core.save_log") as _mock_save_log,
         ):
             mock_citations.return_value = (["Case1"], [])
-            mock_fetch.return_value = {}  # Mock empty case content
-            mock_reasoning_fetch.return_value = {}  # Mock empty case content
-            mock_soundness_fetch.return_value = {}  # Mock empty case content
+            mock_fetch.return_value = ({}, [])  # Mock empty case content, no failures
+            mock_reasoning_fetch.return_value = ({}, [])  # Mock empty case content, no failures
+            mock_soundness_fetch.return_value = ({}, [])  # Mock empty case content, no failures
             mock_client = Mock()
             mock_client.verify.return_value = ("No issues", "anthropic/claude-opus-4.1")
             mock_client.complete.return_value = ("Analysis", {})

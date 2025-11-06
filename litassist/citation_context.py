@@ -34,7 +34,7 @@ HARDCODED_LEGISLATION_URLS = {
 }
 
 
-def fetch_citation_context(citations: List[str]) -> Dict[str, str]:
+def fetch_citation_context(citations: List[str]) -> tuple[Dict[str, str], List[tuple[str, str]]]:
     """
     Fetch COMPLETE legal documents for citations with smart source prioritization.
 
@@ -48,12 +48,15 @@ def fetch_citation_context(citations: List[str]) -> Dict[str, str]:
         citations: List of citations to fetch
 
     Returns:
-        Dict mapping citations to FULL document text
+        Tuple of (successful_fetches, failed_citations):
+        - successful_fetches: Dict mapping citations to FULL document text
+        - failed_citations: List of (citation, reason) tuples for failures
     """
     context = {}
+    failures = []
 
     if not citations:
-        return context
+        return context, failures
 
     # Build service once
     try:
@@ -65,7 +68,9 @@ def fetch_citation_context(citations: List[str]) -> Dict[str, str]:
         )
     except Exception as e:
         save_log("citation_cse_init_error", {"error": str(e)})
-        return context
+        # CSE initialization failed - all citations fail
+        failures = [(cit, "CSE initialization failed") for cit in citations]
+        return context, failures
 
     # Get CSE IDs
     config = get_config()
@@ -319,12 +324,16 @@ def fetch_citation_context(citations: List[str]) -> Dict[str, str]:
                         )
                         content = ""
                         url = None
+                        # Track validation failure
+                        failures.append((citation, "Content validation failed - citation not found in document"))
             except Exception as e:
                 save_log(
                     "citation_fetch_error",
                     {"citation": citation, "url": url, "error": str(e)},
                 )
                 content = ""
+                # Track fetch error
+                failures.append((citation, f"Document fetch failed: {str(e)}"))
 
         # If no valid content yet, try direct AustLII URL construction (case law only)
         if not content_valid and not is_legislation:
@@ -379,19 +388,31 @@ def fetch_citation_context(citations: List[str]) -> Dict[str, str]:
             )
         else:
             click.echo(f"  ✗ No valid content found for {citation}")
+            # Determine more specific failure reason
+            if not url and not austlii_url:
+                reason = "URL not found - CSE returned no results"
+            elif url and not content:
+                reason = "Document fetch returned empty content"
+            else:
+                reason = "All retrieval strategies failed"
+
             save_log(
                 "citation_no_valid_content",
                 {
                     "citation": citation,
                     "tried_cse": bool(url),
                     "tried_austlii": bool(austlii_url),
+                    "reason": reason,
                 },
             )
+            # Track failure if not already tracked
+            if not any(cit == citation for cit, _ in failures):
+                failures.append((citation, reason))
 
         # Rate limiting between searches
         time.sleep(0.5)
 
-    return context
+    return context, failures
 
 
 def _clean_document(text: str) -> str:
