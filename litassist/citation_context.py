@@ -34,6 +34,34 @@ HARDCODED_LEGISLATION_URLS = {
 }
 
 
+def _try_fetch_and_validate(url: str, citation: str) -> Optional[str]:
+    """
+    Fetch URL content and validate it matches citation.
+
+    Returns content if validation succeeds, None if validation fails.
+    Handles all exceptions internally.
+
+    Args:
+        url: URL to fetch
+        citation: Citation to validate against
+
+    Returns:
+        Validated content or None
+    """
+    try:
+        from litassist.commands.lookup.fetchers import _fetch_url_content
+
+        content = _fetch_url_content(url, timeout=15)
+        if content and _validate_citation_match(content, citation):
+            return content
+        else:
+            # Validation failed
+            return None
+    except Exception:
+        # Fetch failed
+        return None
+
+
 def fetch_citation_context(citations: List[str]) -> tuple[Dict[str, str], List[tuple[str, str]]]:
     """
     Fetch COMPLETE legal documents for citations with smart source prioritization.
@@ -146,31 +174,37 @@ def fetch_citation_context(citations: List[str]) -> tuple[Dict[str, str], List[t
                             .execute()
                         )
                         if "items" in res:
-                            for item in res["items"]:
+                            # Try top 3 results with validation
+                            for item in res["items"][:3]:
                                 link = item.get("link", "")
                                 # Look for PDF URLs from government sources
                                 if ".gov.au" in link and (
                                     ".pdf" in link.lower() or "/PDF/" in link
                                 ):
-                                    url = link
-                                    click.echo(f"  → Found PDF: {url}")
-                                    save_log(
-                                        "citation_pdf_primary",
-                                        {
-                                            "citation": citation,
-                                            "url": url,
-                                            "source": "pdf_search_primary",
-                                        },
-                                    )
-                                    break
+                                    content = _try_fetch_and_validate(link, citation)
+                                    if content:
+                                        url = link
+                                        content_valid = True
+                                        result_rank = res["items"].index(item) + 1
+                                        click.echo(f"  ✓ Validated PDF (rank {result_rank}/3): {url}")
+                                        save_log(
+                                            "citation_pdf_validated",
+                                            {
+                                                "citation": citation,
+                                                "url": url,
+                                                "source": "pdf_search_primary",
+                                                "result_rank": result_rank,
+                                            },
+                                        )
+                                        break  # Success - exit loop
                     except Exception as e:
                         save_log(
                             "citation_pdf_search_error",
                             {"citation": citation, "error": str(e)},
                         )
 
-                # STEP 2: Try AustLII if no PDF found
-                if not url and cse_austlii:
+                # STEP 2: Try AustLII if no valid content found yet
+                if not content_valid and cse_austlii:
                     # Rate limit AustLII searches
                     current_time = time.time()
                     if _last_austlii_completion > 0:
@@ -180,29 +214,34 @@ def fetch_citation_context(citations: List[str]) -> tuple[Dict[str, str], List[t
                             time.sleep(delay - elapsed)
 
                     try:
+                        query = normalize_citation(citation)
                         res = (
                             service.cse()
-                            .list(q=citation, cx=cse_austlii, num=5)
+                            .list(q=query, cx=cse_austlii, num=5)
                             .execute()
                         )
-                        _last_austlii_completion = (
-                            time.time()
-                        )  # Update AFTER completion
+                        _last_austlii_completion = time.time()
+
                         if "items" in res:
-                            for item in res["items"]:
+                            # Try top 3 results with validation
+                            for item in res["items"][:3]:
                                 link = item.get("link", "")
                                 if "/au/legis/" in link:
-                                    url = link
-                                    click.echo(f"  → Found AustLII: {url}")
-                                    save_log(
-                                        "citation_austlii_secondary",
-                                        {
-                                            "citation": citation,
-                                            "url": url,
-                                            "source": "austlii_secondary",
-                                        },
-                                    )
-                                    break
+                                    content = _try_fetch_and_validate(link, citation)
+                                    if content:
+                                        url = link
+                                        content_valid = True
+                                        result_rank = res["items"].index(item) + 1
+                                        click.echo(f"  ✓ Validated AustLII legis (rank {result_rank}/3): {url}")
+                                        save_log(
+                                            "citation_austlii_legis_validated",
+                                            {
+                                                "citation": citation,
+                                                "url": url,
+                                                "result_rank": result_rank,
+                                            },
+                                        )
+                                        break
                     except Exception as e:
                         save_log(
                             "citation_austlii_search_error",
@@ -210,28 +249,34 @@ def fetch_citation_context(citations: List[str]) -> tuple[Dict[str, str], List[t
                         )
 
                 # STEP 3: Try plain comprehensive CSE as final fallback
-                if not url and cse_comprehensive:
+                if not content_valid and cse_comprehensive:
                     try:
+                        query = normalize_citation(citation)
                         res = (
                             service.cse()
-                            .list(q=citation, cx=cse_comprehensive, num=5)
+                            .list(q=query, cx=cse_comprehensive, num=5)
                             .execute()
                         )
                         if "items" in res:
-                            for item in res["items"]:
+                            # Try top 3 results with validation
+                            for item in res["items"][:3]:
                                 link = item.get("link", "")
                                 if ".gov.au" in link:
-                                    url = link
-                                    click.echo(f"  → Found gov source: {url}")
-                                    save_log(
-                                        "citation_comprehensive_fallback",
-                                        {
-                                            "citation": citation,
-                                            "url": url,
-                                            "source": "comprehensive_fallback",
-                                        },
-                                    )
-                                    break
+                                    content = _try_fetch_and_validate(link, citation)
+                                    if content:
+                                        url = link
+                                        content_valid = True
+                                        result_rank = res["items"].index(item) + 1
+                                        click.echo(f"  ✓ Validated comprehensive legis (rank {result_rank}/3): {url}")
+                                        save_log(
+                                            "citation_comprehensive_legis_validated",
+                                            {
+                                                "citation": citation,
+                                                "url": url,
+                                                "result_rank": result_rank,
+                                            },
+                                        )
+                                        break
                     except Exception as e:
                         save_log(
                             "citation_comprehensive_search_error",
@@ -249,25 +294,34 @@ def fetch_citation_context(citations: List[str]) -> tuple[Dict[str, str], List[t
                             time.sleep(delay - elapsed)
 
                     try:
+                        query = normalize_citation(citation)
                         res = (
                             service.cse()
-                            .list(q=citation, cx=cse_austlii, num=5)
+                            .list(q=query, cx=cse_austlii, num=5)
                             .execute()
                         )
-                        _last_austlii_completion = (
-                            time.time()
-                        )  # Update AFTER completion
+                        _last_austlii_completion = time.time()
+
                         if "items" in res:
-                            for item in res["items"]:
+                            # Try top 3 results with validation
+                            for item in res["items"][:3]:
                                 link = item.get("link", "")
                                 if "/au/cases/" in link:
-                                    url = link
-                                    click.echo(f"  → Found AustLII case: {url}")
-                                    save_log(
-                                        "citation_found_austlii_case",
-                                        {"citation": citation, "url": url},
-                                    )
-                                    break
+                                    content = _try_fetch_and_validate(link, citation)
+                                    if content:
+                                        url = link
+                                        content_valid = True
+                                        result_rank = res["items"].index(item) + 1
+                                        click.echo(f"  ✓ Validated AustLII case (rank {result_rank}/3): {url}")
+                                        save_log(
+                                            "citation_austlii_case_validated",
+                                            {
+                                                "citation": citation,
+                                                "url": url,
+                                                "result_rank": result_rank,
+                                            },
+                                        )
+                                        break
                     except Exception as e:
                         save_log(
                             "citation_austlii_search_error",
@@ -275,87 +329,55 @@ def fetch_citation_context(citations: List[str]) -> tuple[Dict[str, str], List[t
                         )
 
                 # Fallback to comprehensive for case law
-                if not url and cse_comprehensive:
+                if not content_valid and cse_comprehensive:
                     try:
+                        query = normalize_citation(citation)
                         res = (
                             service.cse()
-                            .list(q=citation, cx=cse_comprehensive, num=5)
+                            .list(q=query, cx=cse_comprehensive, num=5)
                             .execute()
                         )
                         if "items" in res:
-                            for item in res["items"]:
+                            # Try top 3 results with validation
+                            for item in res["items"][:3]:
                                 link = item.get("link", "")
                                 # Accept any non-jade.io source
                                 if ".gov.au" in link or "austlii.edu.au" in link:
-                                    url = link
-                                    click.echo(f"  → Fallback comprehensive: {url}")
-                                    save_log(
-                                        "citation_fallback_comprehensive_case",
-                                        {"citation": citation, "url": url},
-                                    )
-                                    break
+                                    content = _try_fetch_and_validate(link, citation)
+                                    if content:
+                                        url = link
+                                        content_valid = True
+                                        result_rank = res["items"].index(item) + 1
+                                        click.echo(f"  ✓ Validated comprehensive case (rank {result_rank}/3): {url}")
+                                        save_log(
+                                            "citation_comprehensive_case_validated",
+                                            {
+                                                "citation": citation,
+                                                "url": url,
+                                                "result_rank": result_rank,
+                                            },
+                                        )
+                                        break
                     except Exception as e:
                         save_log(
                             "citation_comprehensive_search_error",
                             {"citation": citation, "error": str(e)},
                         )
 
-        # Fetch COMPLETE content if we found a URL
-        content_valid = False
-        if url:
-            try:
-                # Lazy import to avoid circular dependency
-                from litassist.commands.lookup.fetchers import _fetch_url_content
-
-                content = _fetch_url_content(url, timeout=15)
-                if content:
-                    # Validate we got the right document
-                    if _validate_citation_match(content, citation):
-                        content_valid = True
-                    else:
-                        click.echo(f"  ✗ Wrong content: doesn't match {citation}")
-                        save_log(
-                            "citation_content_mismatch",
-                            {
-                                "citation": citation,
-                                "url": url,
-                                "reason": "Downloaded content doesn't contain expected citation",
-                            },
-                        )
-                        content = ""
-                        url = None
-                        # Track validation failure
-                        failures.append((citation, "Content validation failed - citation not found in document"))
-            except Exception as e:
-                save_log(
-                    "citation_fetch_error",
-                    {"citation": citation, "url": url, "error": str(e)},
-                )
-                content = ""
-                # Track fetch error
-                failures.append((citation, f"Document fetch failed: {str(e)}"))
-
-        # If no valid content yet, try direct AustLII URL construction (case law only)
+        # Content already fetched and validated in CSE loops above
+        # If still no valid content, try direct AustLII URL construction as final fallback (case law only)
         if not content_valid and not is_legislation:
             austlii_url = construct_austlii_url(citation)
             if austlii_url:
                 click.echo("  → Trying direct AustLII URL")
-                try:
-                    from litassist.commands.lookup.fetchers import _fetch_url_content
-
-                    content = _fetch_url_content(austlii_url, timeout=15)
-                    if content and _validate_citation_match(content, citation):
-                        url = austlii_url
-                        content_valid = True
-                        click.echo("  ✓ Found via direct AustLII URL")
-                        save_log(
-                            "citation_austlii_direct_success",
-                            {"citation": citation, "url": austlii_url},
-                        )
-                except Exception as e:
+                content = _try_fetch_and_validate(austlii_url, citation)
+                if content:
+                    url = austlii_url
+                    content_valid = True
+                    click.echo("  ✓ Validated via direct AustLII URL")
                     save_log(
-                        "citation_austlii_direct_error",
-                        {"citation": citation, "url": austlii_url, "error": str(e)},
+                        "citation_austlii_direct_success",
+                        {"citation": citation, "url": austlii_url},
                     )
 
         # Process content if we got valid content
