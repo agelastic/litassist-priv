@@ -78,7 +78,6 @@ verification:
   temperature: 0.2
   top_p: 0.3
   thinking_effort: "medium"
-  max_tokens: 16384
   enforce_citations: false
   disable_tools: true
 
@@ -87,7 +86,6 @@ verification-light:
   temperature: 0.2
   top_p: 0.2
   thinking_effort: "medium"
-  max_tokens: 8192
   enforce_citations: false
   disable_tools: true
 
@@ -96,7 +94,6 @@ verification-heavy:
   temperature: 0.2
   top_p: 0.3
   thinking_effort: "max"
-  max_tokens: 16384
   enforce_citations: false
   disable_tools: true
 
