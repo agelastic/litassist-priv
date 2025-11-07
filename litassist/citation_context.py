@@ -163,6 +163,7 @@ def fetch_citation_context(citations: List[str]) -> tuple[Dict[str, str], List[t
 
         # STRATEGY: Legislation -> PDF first, AustLII second, plain CSE last. Case law -> AustLII first
         if not url:
+            content_valid = False  # Track if we successfully validated content
             if is_legislation:
                 # STEP 1: Try PDF search FIRST (most likely to have complete document)
                 if cse_comprehensive:
