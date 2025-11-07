@@ -37,7 +37,8 @@ def run_verification_workflow(
     cove: bool,
     output: str = None,
     reference: str = None,
-    cove_reference: str = None
+    cove_reference: str = None,
+    heavy: bool = False,
 ) -> dict:
     """
     Run the complete verification workflow.
@@ -51,6 +52,7 @@ def run_verification_workflow(
         output: Optional custom output filename prefix
         reference: Optional reference file glob pattern
         cove_reference: Optional CoVe reference file glob pattern
+        heavy: Use verification-heavy mode (gpt-5-pro for reasoning and soundness)
 
     Returns:
         dict: Workflow results including files generated and reports
@@ -158,7 +160,8 @@ def run_verification_workflow(
     if reasoning:
         try:
             reasoning_response, reasoning_file, existing_trace = verify_reasoning(
-                content, file, case_content, reference_context, citation_report, output
+                content, file, case_content, reference_context, citation_report, output,
+                heavy=heavy
             )
             extra_files["Reasoning analysis"] = reasoning_file
             reports_generated += 1
@@ -170,7 +173,8 @@ def run_verification_workflow(
         try:
             soundness_result, issues, soundness_file = verify_soundness(
                 content, file, case_content, reference_context,
-                citation_report, reasoning_response, output
+                citation_report, reasoning_response, output,
+                heavy=heavy
             )
             extra_files["Soundness report"] = soundness_file
             reports_generated += 1
@@ -228,6 +232,7 @@ def run_verification_workflow(
                     final_content,
                     "verify",
                     prior_contexts=prior_contexts_dict,
+                    heavy=heavy,
                 )
 
                 # Update final_content if regenerated

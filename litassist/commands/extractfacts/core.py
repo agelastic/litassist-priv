@@ -35,9 +35,14 @@ from .multi_extractor import extract_multi_chunk
     is_flag=True,
     help="Use verification-heavy mode (gpt-5-pro instead of gpt-5)",
 )
+@click.option(
+    "--noverify",
+    is_flag=True,
+    help="Skip verification stage (not recommended for legal work)",
+)
 @click.option("--output", type=str, help="Custom output filename prefix")
 @timed
-def extractfacts(file, verify, heavy, output):
+def extractfacts(file, verify, heavy, noverify, output):
     """
     Auto-generate case_facts.txt under ten structured headings.
 
@@ -89,59 +94,72 @@ def extractfacts(file, verify, heavy, output):
 
     # Note: Citation verification now handled automatically in LLMClient.complete()
 
-    # Save raw pre-verification output for audit trail
+    # Prepare slug and warn if conflicting flags
     slug = "_".join(source_files[:3])  # Use first 3 files for slug
     if len(source_files) > 3:
         slug += f"_and_{len(source_files) - 3}_more"
 
-    raw_metadata = {
-        "Source Files": ", ".join(source_files),
-        "Verification": "Not yet applied (raw output)",
-    }
-    save_command_output(
-        output if output else "extractfacts",
-        combined,
-        "" if output else slug,
-        metadata=raw_metadata,
-        suffix="_raw",
-    )
+    # Warn if both --noverify and --heavy are specified
+    if noverify and heavy:
+        from litassist.utils.formatting import warning_message
+        click.echo(warning_message("--heavy flag ignored when --noverify is specified"))
 
-    # Apply standard verification (CoVe moved to standalone 'verify-cove' command)
-    verification_metadata = {"Source Files": ", ".join(source_files)}
-    try:
-        log_task_event(
-            "extractfacts",
-            "verification",
-            "start",
-            "Starting verification"
+    # Prepare metadata
+    final_metadata = {"Source Files": ", ".join(source_files)}
+
+    if not noverify:
+        # Save raw pre-verification output for audit trail
+        raw_metadata = {
+            "Source Files": ", ".join(source_files),
+            "Verification": "Not yet applied (raw output)",
+        }
+        save_command_output(
+            output if output else "extractfacts",
+            combined,
+            "" if output else slug,
+            metadata=raw_metadata,
+            suffix="_raw",
         )
-    except Exception:
-        pass
 
-    combined, _ = verify_content_if_needed(
-        client, combined, "extractfacts", verify_flag=True, heavy=heavy
-    )
-    verification_mode = "verification-heavy (gpt-5-pro)" if heavy else "Standard verification"
-    verification_metadata["Verification"] = verification_mode
-    verification_metadata["Model"] = client.model
-    click.echo(info_message(f"{verification_mode} applied"))
+        # Apply standard verification (CoVe moved to standalone 'verify-cove' command)
+        try:
+            log_task_event(
+                "extractfacts",
+                "verification",
+                "start",
+                "Starting verification"
+            )
+        except Exception:
+            pass
 
-    try:
-        log_task_event(
-            "extractfacts",
-            "verification",
-            "end",
-            "Verification complete"
+        combined, _ = verify_content_if_needed(
+            client, combined, "extractfacts", verify_flag=True, heavy=heavy
         )
-    except Exception:
-        pass
+        verification_mode = "verification-heavy (gpt-5-pro)" if heavy else "Standard verification"
+        final_metadata["Verification"] = verification_mode
+        final_metadata["Model"] = client.model
+        click.echo(info_message(f"{verification_mode} applied"))
 
-    # Save verified output using utility (reasoning trace remains inline)
+        try:
+            log_task_event(
+                "extractfacts",
+                "verification",
+                "end",
+                "Verification complete"
+            )
+        except Exception:
+            pass
+    else:
+        # No verification
+        final_metadata["Verification"] = "Skipped (--noverify)"
+        final_metadata["Model"] = client.model
+
+    # Save final output using utility (reasoning trace remains inline)
     output_file = save_command_output(
         output if output else "extractfacts",
         combined,
         "" if output else slug,
-        metadata=verification_metadata,
+        metadata=final_metadata,
     )
 
     # Audit log (without response content)

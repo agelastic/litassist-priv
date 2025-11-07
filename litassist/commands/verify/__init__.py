@@ -32,8 +32,13 @@ from .core import run_verification_workflow
     type=str,
     help="Glob pattern for reference files to include in CoVe answer stage (e.g., 'exhibits/*.pdf', 'affidavits/*.txt'). Requires --cove flag."
 )
+@click.option(
+    "--heavy",
+    is_flag=True,
+    help="Use verification-heavy mode (gpt-5-pro for reasoning and soundness stages)"
+)
 @timed
-def verify(file, citations, soundness, reasoning, cove, output, reference, cove_reference):
+def verify(file, citations, soundness, reasoning, cove, output, reference, cove_reference, heavy):
     """
     Verify legal text for citations, soundness, and reasoning.
 
@@ -53,5 +58,6 @@ def verify(file, citations, soundness, reasoning, cove, output, reference, cove_
         cove=cove,
         output=output,
         reference=reference,
-        cove_reference=cove_reference
+        cove_reference=cove_reference,
+        heavy=heavy,
     )

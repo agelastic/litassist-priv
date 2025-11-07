@@ -51,9 +51,14 @@ from .file_handler import save_strategy_outputs, save_strategy_log
     is_flag=True,
     help="Use verification-heavy mode (gpt-5-pro instead of gpt-5)",
 )
+@click.option(
+    "--noverify",
+    is_flag=True,
+    help="Skip verification stage (not recommended for legal work)",
+)
 @click.option("--output", type=str, help="Custom output filename prefix")
 @timed
-def strategy(case_facts, outcome, strategies, verify, heavy, output):
+def strategy(case_facts, outcome, strategies, verify, heavy, noverify, output):
     """
     Generate legal strategy options and draft documents for Australian civil matters.
 
@@ -383,29 +388,35 @@ def strategy(case_facts, outcome, strategies, verify, heavy, output):
     except Exception:
         pass
 
-    # Save raw pre-verification output for audit trail
-    raw_metadata = {
-        "Desired Outcome": outcome,
-        "Case Facts File": case_facts.name,
-        "Verification": "Not yet applied (raw output)",
-    }
-    if strategies:
-        raw_metadata["Strategies File"] = strategies.name
-    save_command_output(
-        output if output else "strategy",
-        strategy_content,
-        "" if output else outcome,
-        metadata=raw_metadata,
-        suffix="_raw",
-    )
+    # Warn if both --noverify and --heavy are specified
+    if noverify and heavy:
+        from litassist.utils.formatting import warning_message
+        click.echo(warning_message("--heavy flag ignored when --noverify is specified"))
 
-    # Apply standard verification (CoVe moved to standalone 'verify-cove' command)
     cove_results = None
-    strategy_content, _ = verify_content_if_needed(
-        llm_client, strategy_content, "strategy", verify_flag=True, heavy=heavy
-    )
-    verification_mode = "verification-heavy (gpt-5-pro)" if heavy else "Standard verification"
-    click.echo(info_message(f"{verification_mode} applied"))
+    if not noverify:
+        # Save raw pre-verification output for audit trail
+        raw_metadata = {
+            "Desired Outcome": outcome,
+            "Case Facts File": case_facts.name,
+            "Verification": "Not yet applied (raw output)",
+        }
+        if strategies:
+            raw_metadata["Strategies File"] = strategies.name
+        save_command_output(
+            output if output else "strategy",
+            strategy_content,
+            "" if output else outcome,
+            metadata=raw_metadata,
+            suffix="_raw",
+        )
+
+        # Apply standard verification (CoVe moved to standalone 'verify-cove' command)
+        strategy_content, _ = verify_content_if_needed(
+            llm_client, strategy_content, "strategy", verify_flag=True, heavy=heavy
+        )
+        verification_mode = "verification-heavy (gpt-5-pro)" if heavy else "Standard verification"
+        click.echo(info_message(f"{verification_mode} applied"))
 
     # Save all outputs
     click.echo(info_message("Saving strategy outputs..."))

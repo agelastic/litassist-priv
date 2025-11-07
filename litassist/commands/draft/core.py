@@ -33,6 +33,11 @@ from .prompt_builder import build_system_prompt, build_user_prompt
     help="Use verification-heavy mode (gpt-5-pro instead of gpt-5)",
 )
 @click.option(
+    "--noverify",
+    is_flag=True,
+    help="Skip verification stage (not recommended for legal work)",
+)
+@click.option(
     "--diversity",
     type=float,
     help="Control diversity of search results (0.0-1.0)",
@@ -41,7 +46,7 @@ from .prompt_builder import build_system_prompt, build_user_prompt
 @click.option("--output", type=str, help="Custom output filename prefix")
 @click.pass_context
 @timed
-def draft(ctx, documents, query, heavy, diversity, output):
+def draft(ctx, documents, query, heavy, noverify, diversity, output):
     """
     Citation-rich drafting via RAG & GPT-4o.
 
@@ -146,45 +151,54 @@ def draft(ctx, documents, query, heavy, diversity, output):
 
     # Note: Citation verification now handled automatically in LLMClient.complete()
 
-    # Save raw pre-verification output for audit trail
-    save_command_output(
-        output if output else "draft",
-        content,
-        "" if output else query,
-        metadata={
-            "Query": query,
-            "Documents": ", ".join(documents),
-            "Verification": "Not yet applied (raw output)",
-        },
-        suffix="_raw",
-    )
+    # Warn if both --noverify and --heavy are specified
+    if noverify and heavy:
+        from litassist.utils.formatting import warning_message
+        click.echo(warning_message("--heavy flag ignored when --noverify is specified"))
 
-    # Apply standard verification (uses verification chain like extractfacts/strategy)
-    try:
-        log_task_event(
-            "draft",
-            "verification",
-            "start",
-            "Starting draft verification"
+    # Prepare base metadata
+    base_metadata = {
+        "Query": query,
+        "Documents": ", ".join(documents),
+    }
+
+    if not noverify:
+        # Save raw pre-verification output for audit trail
+        raw_metadata = {**base_metadata, "Verification": "Not yet applied (raw output)"}
+        save_command_output(
+            output if output else "draft",
+            content,
+            "" if output else query,
+            metadata=raw_metadata,
+            suffix="_raw",
         )
-    except Exception:
-        pass
 
-    content, _ = verify_content_if_needed(
-        client, content, "draft", verify_flag=True, heavy=heavy
-    )
-    verification_mode = "verification-heavy (gpt-5-pro)" if heavy else "Standard verification"
-    click.echo(info_message(f"{verification_mode} applied"))
+        # Apply standard verification (uses verification chain like extractfacts/strategy)
+        try:
+            log_task_event(
+                "draft",
+                "verification",
+                "start",
+                "Starting draft verification"
+            )
+        except Exception:
+            pass
 
-    try:
-        log_task_event(
-            "draft",
-            "verification",
-            "end",
-            "Verification complete"
+        content, _ = verify_content_if_needed(
+            client, content, "draft", verify_flag=True, heavy=heavy
         )
-    except Exception:
-        pass
+        verification_mode = "verification-heavy (gpt-5-pro)" if heavy else "Standard verification"
+        click.echo(info_message(f"{verification_mode} applied"))
+
+        try:
+            log_task_event(
+                "draft",
+                "verification",
+                "end",
+                "Verification complete"
+            )
+        except Exception:
+            pass
 
     # Track critiques for appending to output
     critiques = []
@@ -241,11 +255,18 @@ def draft(ctx, documents, query, heavy, diversity, output):
         content = warning_header + content
 
     # Save output using utility
+    final_metadata = {"Query": query, "Documents": ", ".join(documents)}
+    if noverify:
+        final_metadata["Verification"] = "Skipped (--noverify)"
+    else:
+        verification_mode = "verification-heavy (gpt-5-pro)" if heavy else "Standard verification"
+        final_metadata["Verification"] = verification_mode
+
     output_file = save_command_output(
         output if output else "draft",
         content,
         "" if output else query,
-        metadata={"Query": query, "Documents": ", ".join(documents)},
+        metadata=final_metadata,
         critique_sections=critiques if critiques else None,
     )
 

@@ -317,8 +317,12 @@ def verify_content_if_needed(
     Returns:
         Tuple of (possibly modified content, whether verification was performed)
     """
-    # Mandatory verification chain for high-risk commands
+    # Verification chain for high-risk commands (respects verify_flag)
     if command_name in ["extractfacts", "strategy", "draft"]:
+        # Skip verification if user specified --noverify
+        if not verify_flag:
+            return content, False
+
         from litassist.verification_chain import run_verification_chain
 
         verified_content, results = run_verification_chain(content, command_name, heavy=heavy)

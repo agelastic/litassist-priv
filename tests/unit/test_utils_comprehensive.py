@@ -499,10 +499,10 @@ class TestContentVerification:
             mock_client, content, "strategy", verify_flag=False
         )
 
-        # Strategy command always uses verification chain regardless of flag
+        # With verify_flag=False, verification is skipped
         assert verified is False
         assert result_content == content
-        mock_run_verification_chain.assert_called_once_with(content, "strategy", heavy=False)
+        mock_run_verification_chain.assert_not_called()
 
     def test_verify_content_if_needed_llm_failure(self):
         """Test content verification with LLM failure."""
