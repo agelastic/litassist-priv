@@ -301,6 +301,7 @@ def verify_content_if_needed(
     command_name: str,
     verify_flag: bool = False,
     citation_already_verified: bool = False,
+    heavy: bool = False,
 ) -> tuple[str, bool]:
     """
     Handle verification and citation validation.
@@ -311,6 +312,7 @@ def verify_content_if_needed(
         command_name: Name of the command (for context)
         verify_flag: Whether user explicitly requested verification
         citation_already_verified: Whether citation verification was already performed
+        heavy: Use verification-heavy mode (gpt-5-pro instead of gpt-5)
 
     Returns:
         Tuple of (possibly modified content, whether verification was performed)
@@ -319,7 +321,7 @@ def verify_content_if_needed(
     if command_name in ["extractfacts", "strategy", "draft"]:
         from litassist.verification_chain import run_verification_chain
 
-        verified_content, results = run_verification_chain(content, command_name)
+        verified_content, results = run_verification_chain(content, command_name, heavy=heavy)
         if results.get("llm", {}).get("corrections_made"):
             return verified_content, True
         # If no corrections were made, return original content

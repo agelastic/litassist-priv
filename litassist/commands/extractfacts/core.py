@@ -31,13 +31,13 @@ from .multi_extractor import extract_multi_chunk
     "--verify", is_flag=True, help="Enable self-critique pass (default: auto-enabled)"
 )
 @click.option(
-    "--noverify",
+    "--heavy",
     is_flag=True,
-    help="Skip standard verification",
+    help="Use verification-heavy mode (gpt-5-pro instead of gpt-5)",
 )
 @click.option("--output", type=str, help="Custom output filename prefix")
 @timed
-def extractfacts(file, verify, noverify, output):
+def extractfacts(file, verify, heavy, output):
     """
     Auto-generate case_facts.txt under ten structured headings.
 
@@ -108,37 +108,33 @@ def extractfacts(file, verify, noverify, output):
 
     # Apply standard verification (CoVe moved to standalone 'verify-cove' command)
     verification_metadata = {"Source Files": ", ".join(source_files)}
-    if not noverify:
-        try:
-            log_task_event(
-                "extractfacts",
-                "verification",
-                "start",
-                "Starting verification"
-            )
-        except Exception:
-            pass
-
-        combined, _ = verify_content_if_needed(
-            client, combined, "extractfacts", verify_flag=True
+    try:
+        log_task_event(
+            "extractfacts",
+            "verification",
+            "start",
+            "Starting verification"
         )
-        verification_metadata["Verification"] = "Standard verification"
-        verification_metadata["Model"] = client.model
-        click.echo(info_message("Standard verification applied"))
+    except Exception:
+        pass
 
-        try:
-            log_task_event(
-                "extractfacts",
-                "verification",
-                "end",
-                "Verification complete"
-            )
-        except Exception:
-            pass
-    else:
-        verification_metadata["Verification"] = "Disabled"
-        verification_metadata["Model"] = "N/A"
-        click.echo(info_message("Standard verification skipped by --noverify flag"))
+    combined, _ = verify_content_if_needed(
+        client, combined, "extractfacts", verify_flag=True, heavy=heavy
+    )
+    verification_mode = "verification-heavy (gpt-5-pro)" if heavy else "Standard verification"
+    verification_metadata["Verification"] = verification_mode
+    verification_metadata["Model"] = client.model
+    click.echo(info_message(f"{verification_mode} applied"))
+
+    try:
+        log_task_event(
+            "extractfacts",
+            "verification",
+            "end",
+            "Verification complete"
+        )
+    except Exception:
+        pass
 
     # Save verified output using utility (reasoning trace remains inline)
     output_file = save_command_output(

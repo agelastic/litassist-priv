@@ -28,9 +28,9 @@ from .prompt_builder import build_system_prompt, build_user_prompt
 @click.argument("documents", nargs=-1, required=True, type=click.Path(exists=True))
 @click.argument("query")
 @click.option(
-    "--noverify",
+    "--heavy",
     is_flag=True,
-    help="Skip standard verification",
+    help="Use verification-heavy mode (gpt-5-pro instead of gpt-5)",
 )
 @click.option(
     "--diversity",
@@ -41,7 +41,7 @@ from .prompt_builder import build_system_prompt, build_user_prompt
 @click.option("--output", type=str, help="Custom output filename prefix")
 @click.pass_context
 @timed
-def draft(ctx, documents, query, noverify, diversity, output):
+def draft(ctx, documents, query, heavy, diversity, output):
     """
     Citation-rich drafting via RAG & GPT-4o.
 
@@ -160,33 +160,31 @@ def draft(ctx, documents, query, noverify, diversity, output):
     )
 
     # Apply standard verification (uses verification chain like extractfacts/strategy)
-    if not noverify:
-        try:
-            log_task_event(
-                "draft",
-                "verification",
-                "start",
-                "Starting draft verification"
-            )
-        except Exception:
-            pass
-
-        content, _ = verify_content_if_needed(
-            client, content, "draft", verify_flag=True
+    try:
+        log_task_event(
+            "draft",
+            "verification",
+            "start",
+            "Starting draft verification"
         )
-        click.echo(info_message("Standard verification applied"))
+    except Exception:
+        pass
 
-        try:
-            log_task_event(
-                "draft",
-                "verification",
-                "end",
-                "Verification complete"
-            )
-        except Exception:
-            pass
-    else:
-        click.echo(info_message("Standard verification skipped by --noverify flag"))
+    content, _ = verify_content_if_needed(
+        client, content, "draft", verify_flag=True, heavy=heavy
+    )
+    verification_mode = "verification-heavy (gpt-5-pro)" if heavy else "Standard verification"
+    click.echo(info_message(f"{verification_mode} applied"))
+
+    try:
+        log_task_event(
+            "draft",
+            "verification",
+            "end",
+            "Verification complete"
+        )
+    except Exception:
+        pass
 
     # Track critiques for appending to output
     critiques = []
@@ -265,16 +263,17 @@ def draft(ctx, documents, query, noverify, diversity, output):
             },
             # Response content removed - already logged by LLMClient separately
             "usage": usage,
-            "verification": "standard" if not noverify else "disabled",
+            "verification": "heavy" if heavy else "standard",
             "output_file": output_file,
         },
     )
 
     # Show completion with preview
+    verification_mode = "verification-heavy (gpt-5-pro)" if heavy else "Standard verification"
     stats = {
         "Query": query,
         "Documents": len(documents),
-        "Verification": "Standard verification" if not noverify else "Disabled",
+        "Verification": verification_mode,
     }
 
     show_command_completion("draft", output_file, extra_files, stats)

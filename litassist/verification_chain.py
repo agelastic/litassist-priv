@@ -12,11 +12,17 @@ from litassist.logging import save_log, log_task_event
 
 
 def run_verification_chain(
-    content: str, command: str, skip_stages: Optional[set] = None
+    content: str, command: str, skip_stages: Optional[set] = None, heavy: bool = False
 ) -> Tuple[str, Dict]:
     """
     Minimal chain that orchestrates existing verification functions.
     Returns (content, verification_results).
+
+    Args:
+        content: Content to verify
+        command: Command name
+        skip_stages: Set of stages to skip
+        heavy: Use verification-heavy mode (gpt-5-pro instead of gpt-5)
     """
     skip_stages = skip_stages or set()
     results = {}
@@ -50,7 +56,8 @@ def run_verification_chain(
 
     # Stage 3: LLM verification (expensive, comprehensive)
     if "llm" not in skip_stages and command in ["extractfacts", "strategy", "draft"]:
-        client = LLMClientFactory.for_command("verification")
+        config_name = "verification-heavy" if heavy else "verification"
+        client = LLMClientFactory.for_command(config_name)
         citation_report = _format_simple_report(results.get("database", {}))
         corrected_content, model_name = client.verify(
             content, citation_context=citation_report if citation_report else None
@@ -86,7 +93,7 @@ def _format_simple_report(database_results: Dict) -> Optional[str]:
 
 
 def run_cove_verification(
-    content: str, command: str, prior_contexts: Optional[Dict] = None
+    content: str, command: str, prior_contexts: Optional[Dict] = None, heavy: bool = False
 ) -> Tuple[str, Dict]:
     """
     Chain of Verification - asks LLM to generate and answer questions.
@@ -100,13 +107,15 @@ def run_cove_verification(
         content: Document to verify (ideally already processed by other verifications)
         command: Command name for context
         prior_contexts: Optional dict with citation/reasoning/soundness results
+        heavy: Use heavy mode (gpt-5-pro) for answers stage
 
     Returns:
         Tuple of (content, cove_results dict)
     """
     # Create separate clients for each stage
     client_questions = LLMClientFactory.for_command("cove-questions")
-    client_answers = LLMClientFactory.for_command("cove-answers")
+    answers_config = "cove-answers-heavy" if heavy else "cove-answers"
+    client_answers = LLMClientFactory.for_command(answers_config)
     client_verify = LLMClientFactory.for_command("cove-verify")
 
     prior_contexts = prior_contexts or {}

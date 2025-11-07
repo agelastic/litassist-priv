@@ -47,13 +47,13 @@ from .file_handler import save_strategy_outputs, save_strategy_log
     "--verify", is_flag=True, help="Enable self-critique pass (default: auto-enabled)"
 )
 @click.option(
-    "--noverify",
+    "--heavy",
     is_flag=True,
-    help="Skip standard verification",
+    help="Use verification-heavy mode (gpt-5-pro instead of gpt-5)",
 )
 @click.option("--output", type=str, help="Custom output filename prefix")
 @timed
-def strategy(case_facts, outcome, strategies, verify, noverify, output):
+def strategy(case_facts, outcome, strategies, verify, heavy, output):
     """
     Generate legal strategy options and draft documents for Australian civil matters.
 
@@ -65,7 +65,7 @@ def strategy(case_facts, outcome, strategies, verify, noverify, output):
         outcome: Desired legal outcome (single sentence description)
         strategies: Optional strategies file from brainstorm command
         verify: Enable self-critique pass (always on by default)
-        noverify: Skip standard verification
+        heavy: Use verification-heavy mode (gpt-5-pro instead of gpt-5)
         output: Custom output filename prefix
 
     Raises:
@@ -401,13 +401,11 @@ def strategy(case_facts, outcome, strategies, verify, noverify, output):
 
     # Apply standard verification (CoVe moved to standalone 'verify-cove' command)
     cove_results = None
-    if not noverify:
-        strategy_content, _ = verify_content_if_needed(
-            llm_client, strategy_content, "strategy", verify_flag=True
-        )
-        click.echo(info_message("Standard verification applied"))
-    else:
-        click.echo(info_message("Standard verification skipped by --noverify flag"))
+    strategy_content, _ = verify_content_if_needed(
+        llm_client, strategy_content, "strategy", verify_flag=True, heavy=heavy
+    )
+    verification_mode = "verification-heavy (gpt-5-pro)" if heavy else "Standard verification"
+    click.echo(info_message(f"{verification_mode} applied"))
 
     # Save all outputs
     click.echo(info_message("Saving strategy outputs..."))

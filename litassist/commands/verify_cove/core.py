@@ -40,9 +40,14 @@ def _handle_cove_error(exception: Exception) -> None:
     type=str,
     help="Glob pattern for reference files to include in CoVe answer stage (e.g., 'exhibits/*.pdf', 'affidavits/*.txt').",
 )
+@click.option(
+    "--heavy",
+    is_flag=True,
+    help="Use verification-heavy mode (gpt-5-pro for answers stage)",
+)
 @click.option("--output", type=str, help="Custom output filename prefix")
 @timed
-def verify_cove(file, reference, output):
+def verify_cove(file, reference, heavy, output):
     """
     Run Chain of Verification (CoVe) on a legal document.
 
@@ -72,7 +77,7 @@ def verify_cove(file, reference, output):
     try:
         # Execute CoVe pipeline
         cove_content, cove_results, cove_report = execute_cove_pipeline(
-            content, reference_context
+            content, reference_context, heavy=heavy
         )
 
         # Save outputs (regenerated doc if needed, report)
