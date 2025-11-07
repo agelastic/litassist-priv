@@ -36,7 +36,9 @@ def save_command_output(
     """
     # Use provided output_dir or default
     if output_dir is None:
-        output_dir = os.path.join(os.path.dirname(os.path.dirname(__file__)), "..", "outputs")
+        output_dir = os.path.normpath(
+            os.path.join(os.path.dirname(os.path.dirname(__file__)), "..", "outputs")
+        )
 
     os.makedirs(output_dir, exist_ok=True)
 
