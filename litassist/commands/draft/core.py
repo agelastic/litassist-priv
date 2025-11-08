@@ -156,6 +156,9 @@ def draft(ctx, documents, query, heavy, noverify, diversity, output):
         from litassist.utils.formatting import warning_message
         click.echo(warning_message("--heavy flag ignored when --noverify is specified"))
 
+    if noverify:
+        click.echo(info_message("Standard verification skipped"))
+
     # Prepare base metadata
     base_metadata = {
         "Query": query,

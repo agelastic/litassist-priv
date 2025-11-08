@@ -19,6 +19,7 @@ import time
 import re
 import random
 import click
+from litassist.utils.formatting import success_message, error_message
 
 # Track last AustLII request completion time for rate limiting
 _last_austlii_completion = 0
@@ -56,9 +57,22 @@ def _try_fetch_and_validate(url: str, citation: str) -> Optional[str]:
             return content
         else:
             # Validation failed
+            save_log(
+                "citation_validation_failed",
+                {"url": url, "citation": citation, "reason": "Content validation failed"},
+            )
             return None
-    except Exception:
-        # Fetch failed
+    except Exception as e:
+        # Fetch failed - log for security audit trail
+        save_log(
+            "citation_fetch_exception",
+            {
+                "url": url,
+                "citation": citation,
+                "error": str(e),
+                "error_type": type(e).__name__,
+            },
+        )
         return None
 
 
@@ -187,7 +201,7 @@ def fetch_citation_context(citations: List[str]) -> tuple[Dict[str, str], List[t
                                         url = link
                                         content_valid = True
                                         result_rank = res["items"].index(item) + 1
-                                        click.echo(f"  ✓ Validated PDF (rank {result_rank}/3): {url}")
+                                        click.echo(success_message(f"Validated PDF (rank {result_rank}/3): {url}"))
                                         save_log(
                                             "citation_pdf_validated",
                                             {
@@ -233,7 +247,7 @@ def fetch_citation_context(citations: List[str]) -> tuple[Dict[str, str], List[t
                                         url = link
                                         content_valid = True
                                         result_rank = res["items"].index(item) + 1
-                                        click.echo(f"  ✓ Validated AustLII legis (rank {result_rank}/3): {url}")
+                                        click.echo(success_message(f"Validated AustLII legis (rank {result_rank}/3): {url}"))
                                         save_log(
                                             "citation_austlii_legis_validated",
                                             {
@@ -268,7 +282,7 @@ def fetch_citation_context(citations: List[str]) -> tuple[Dict[str, str], List[t
                                         url = link
                                         content_valid = True
                                         result_rank = res["items"].index(item) + 1
-                                        click.echo(f"  ✓ Validated comprehensive legis (rank {result_rank}/3): {url}")
+                                        click.echo(success_message(f"Validated comprehensive legis (rank {result_rank}/3): {url}"))
                                         save_log(
                                             "citation_comprehensive_legis_validated",
                                             {
@@ -313,7 +327,7 @@ def fetch_citation_context(citations: List[str]) -> tuple[Dict[str, str], List[t
                                         url = link
                                         content_valid = True
                                         result_rank = res["items"].index(item) + 1
-                                        click.echo(f"  ✓ Validated AustLII case (rank {result_rank}/3): {url}")
+                                        click.echo(success_message(f"Validated AustLII case (rank {result_rank}/3): {url}"))
                                         save_log(
                                             "citation_austlii_case_validated",
                                             {
@@ -349,7 +363,7 @@ def fetch_citation_context(citations: List[str]) -> tuple[Dict[str, str], List[t
                                         url = link
                                         content_valid = True
                                         result_rank = res["items"].index(item) + 1
-                                        click.echo(f"  ✓ Validated comprehensive case (rank {result_rank}/3): {url}")
+                                        click.echo(success_message(f"Validated comprehensive case (rank {result_rank}/3): {url}"))
                                         save_log(
                                             "citation_comprehensive_case_validated",
                                             {
@@ -375,7 +389,7 @@ def fetch_citation_context(citations: List[str]) -> tuple[Dict[str, str], List[t
                 if content:
                     url = austlii_url
                     content_valid = True
-                    click.echo("  ✓ Validated via direct AustLII URL")
+                    click.echo(success_message("Validated via direct AustLII URL"))
                     save_log(
                         "citation_austlii_direct_success",
                         {"citation": citation, "url": austlii_url},
@@ -400,7 +414,7 @@ def fetch_citation_context(citations: List[str]) -> tuple[Dict[str, str], List[t
                 context[citation] = cleaned_content
 
             # Log size for monitoring
-            click.echo(f"  ✓ Fetched {len(context[citation])} chars")
+            click.echo(success_message(f"Fetched {len(context[citation])} chars"))
             save_log(
                 "citation_document_fetched",
                 {
@@ -410,7 +424,7 @@ def fetch_citation_context(citations: List[str]) -> tuple[Dict[str, str], List[t
                 },
             )
         else:
-            click.echo(f"  ✗ No valid content found for {citation}")
+            click.echo(error_message(f"No valid content found for {citation}"))
             # Determine more specific failure reason
             if not url and not austlii_url:
                 reason = "URL not found - CSE returned no results"

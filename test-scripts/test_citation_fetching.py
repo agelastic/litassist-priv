@@ -22,6 +22,7 @@ from litassist.citation_context import fetch_citation_context
 from litassist.utils.formatting import (
     success_message,
     warning_message,
+    error_message,
     info_message,
     stats_message,
 )
@@ -61,10 +62,10 @@ def print_section_header(title):
 def print_citation_result(citation, content_length=None, reason=None):
     """Print result for a single citation."""
     if content_length:
-        click.echo(f"  ✓ {citation}")
+        click.echo(success_message(citation))
         click.echo(f"    Retrieved: {content_length:,} characters")
     else:
-        click.echo(f"  ✗ {citation}")
+        click.echo(error_message(citation))
         click.echo(f"    Reason: {reason}")
 
 

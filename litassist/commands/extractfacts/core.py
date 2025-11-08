@@ -104,6 +104,9 @@ def extractfacts(file, verify, heavy, noverify, output):
         from litassist.utils.formatting import warning_message
         click.echo(warning_message("--heavy flag ignored when --noverify is specified"))
 
+    if noverify:
+        click.echo(info_message("Standard verification skipped"))
+
     # Prepare metadata
     final_metadata = {"Source Files": ", ".join(source_files)}
 
