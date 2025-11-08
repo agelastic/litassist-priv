@@ -504,14 +504,12 @@ def _extract_metadata_header(content: str) -> str:
     return content[:min(earliest_pos, 1000)]
 
 
-def _check_alternative_citations_section(content: str, citation: str) -> bool:
+def _check_alternative_citations_section(header: str, citation: str) -> bool:
     """
     Search for alternative citations ONLY in metadata header.
     Generalized patterns catch: "Cite as:", "Citation:", "Reported:",
     "Alternative citation:", "Parallel citation:", etc.
     """
-    header = _extract_metadata_header(content)
-
     heading_patterns = [
         # Matches: "cite as:", "citation:", "citations:", "alternative citation:", etc.
         r'(?:^|\n)\s*(?:\w+\s+)?cit(?:e|ation|ations?)\s*(?:\w+\s*)?:(.+?)(?:\n\n|\n\w+:)',
@@ -533,14 +531,12 @@ def _check_alternative_citations_section(content: str, citation: str) -> bool:
     return False
 
 
-def _check_header_parallel_citations(content: str, citation: str) -> bool:
+def _check_header_parallel_citations(header: str, citation: str) -> bool:
     """
     Check for semicolon-separated parallel citations in header ONLY.
     Format: "[2022] HCA 34; 234 CLR 123; (2022) 96 ALJR 567"
     Semicolons indicate parallel cites, NOT judgment references.
     """
-    header = _extract_metadata_header(content)
-
     # Pattern: multiple citations separated by semicolons
     citation_group_pattern = r'(?:[^.!?]{0,200})\[?\d{4}\]?\s+[A-Z]{2,}\s+\d+\s*(?:;[^.!?]*?\[?\d{4}\]?\s+[A-Z]{2,}\s+\d+)+'
 
@@ -618,8 +614,8 @@ def _validate_citation_match(content: str, citation: str) -> bool:
     # Define validation strategies in order of reliability
     strategies = [
         ("exact_primary_location", lambda: citation.lower() in content[:500].lower()),
-        ("alternative_citations_header", lambda: _check_alternative_citations_section(content, citation)),
-        ("parallel_citations_header", lambda: _check_header_parallel_citations(content, citation)),
+        ("alternative_citations_header", lambda: _check_alternative_citations_section(header, citation)),
+        ("parallel_citations_header", lambda: _check_header_parallel_citations(header, citation)),
         ("case_name_header", lambda: _case_name_match(header, citation)),
         ("components_header_only", lambda: _validate_by_components(header, citation)),
         ("exact_match_extended_header", lambda: citation.lower() in content[:2000].lower()),
