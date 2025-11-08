@@ -121,8 +121,8 @@ class LLMClient(LLMVerificationMixin):
             # For o1/o3 models - merge system into first user message
             return self._merge_system_into_user(messages)
         else:
-            # For all other models - add Australian law to system messages
-            return self._add_australian_law_to_system(messages)
+            # For all other models - add base system prompts
+            return self._add_base_system_prompts(messages)
 
     def _merge_system_into_user(
         self, messages: List[Dict[str, str]]
@@ -138,7 +138,9 @@ class LLMClient(LLMVerificationMixin):
         # Combine all system content
         system_content = "\n".join([msg.get("content", "") for msg in system_messages])
         if "Australian English" not in system_content:
-            system_content += "\n" + PROMPTS.get("base.australian_law")
+            # Add base system prompts (Australian law, anti-injection, etc.)
+            base_prompts = PROMPTS.get("base.australian_law") + "\n\n" + PROMPTS.get("base.anti_injection")
+            system_content += "\n" + base_prompts
 
         # Find first user message and prepend system content
         modified_messages = []
@@ -152,13 +154,17 @@ class LLMClient(LLMVerificationMixin):
         # No user message found - just return non-system messages
         return non_system_messages
 
-    def _add_australian_law_to_system(
+    def _add_base_system_prompts(
         self, messages: List[Dict[str, str]]
     ) -> List[Dict[str, str]]:
-        """Add Australian law prompt to system messages."""
+        """Add base system prompts (Australian law, anti-injection, etc.) to system messages."""
         australian_law = PROMPTS.get("base.australian_law")
+        anti_injection = PROMPTS.get("base.anti_injection")
         if not australian_law:
             return messages
+
+        # Combine base system prompts
+        base_prompts = f"{australian_law}\n\n{anti_injection}" if anti_injection else australian_law
 
         modified_messages = []
         for msg in messages:
@@ -166,7 +172,7 @@ class LLMClient(LLMVerificationMixin):
                 content = msg.get("content", "")
                 # Only add if not already present
                 if australian_law not in content:
-                    content = f"{australian_law}\n\n{content}"
+                    content = f"{base_prompts}\n\n{content}"
                 modified_messages.append({"role": "system", "content": content})
             else:
                 modified_messages.append(msg)
