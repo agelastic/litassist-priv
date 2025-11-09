@@ -6,7 +6,7 @@ and government sources for use in Chain-of-Verification (CoVe) processes.
 It implements a fallback strategy from AustLII to comprehensive government sources.
 """
 
-from typing import Dict, List, Optional
+from typing import Callable, Dict, List, Optional
 from litassist.config import get_config
 from litassist.logging import save_log
 from litassist.citation.cache import (
@@ -74,6 +74,101 @@ def _try_fetch_and_validate(url: str, citation: str) -> Optional[str]:
             },
         )
         return None
+
+
+def _search_and_validate(
+    service,
+    cse_id: str,
+    query: str,
+    citation: str,
+    link_filter_func: Callable[[str], bool],
+    log_name: str,
+    success_msg_template: str,
+    apply_rate_limit: bool = False,
+) -> tuple[Optional[str], bool]:
+    """
+    Execute CSE search and validate results.
+
+    Performs a Google Custom Search, iterates through top results, filters
+    links using provided function, and validates content against citation.
+
+    Args:
+        service: Google CSE service instance
+        cse_id: Custom Search Engine ID
+        query: Search query string
+        citation: Citation being searched for
+        link_filter_func: Function that returns True if link should be processed
+        log_name: Name for success log event (e.g., "citation_pdf_validated")
+        success_msg_template: Template for success message (use {rank} and {url} placeholders)
+        apply_rate_limit: Whether to apply AustLII rate limiting (2-3 second delay)
+
+    Returns:
+        Tuple of (url, content_valid):
+        - url: URL of validated content, or None if no valid content found
+        - content_valid: True if validation succeeded, False otherwise
+    """
+    global _last_austlii_completion
+
+    # Apply rate limiting if requested (for AustLII searches)
+    if apply_rate_limit:
+        time_since_last = time.time() - _last_austlii_completion
+        if time_since_last < 2.0:
+            delay = random.uniform(2.0, 3.0) - time_since_last
+            if delay > 0:
+                time.sleep(delay)
+
+    try:
+        results = service.cse().list(q=query, cx=cse_id, num=5).execute()
+        if "items" not in results:
+            return None, False
+
+        # Process top 3 results
+        for result_rank, item in enumerate(results["items"][:3], start=1):
+            link = item.get("link", "")
+
+            # Apply link filter
+            if not link_filter_func(link):
+                continue
+
+            # Try to fetch and validate
+            content = _try_fetch_and_validate(link, citation)
+            if content:
+                # Success - log and return
+                save_log(
+                    log_name,
+                    {
+                        "citation": citation,
+                        "url": link,
+                        "result_rank": result_rank,
+                        "source_length": len(content),
+                    },
+                )
+                click.echo(success_message(success_msg_template.format(rank=result_rank, url=link)))
+
+                # Update rate limit timestamp if applicable
+                if apply_rate_limit:
+                    _last_austlii_completion = time.time()
+
+                return link, True
+
+        # Update rate limit timestamp even if no valid content found
+        if apply_rate_limit:
+            _last_austlii_completion = time.time()
+
+        return None, False
+
+    except Exception as e:
+        save_log(
+            "citation_cse_search_error",
+            {
+                "citation": citation,
+                "cse_id": cse_id,
+                "query": query,
+                "error": str(e),
+                "error_type": type(e).__name__,
+            },
+        )
+        return None, False
 
 
 def fetch_citation_context(citations: List[str]) -> tuple[Dict[str, str], List[tuple[str, str]]]:
@@ -181,203 +276,68 @@ def fetch_citation_context(citations: List[str]) -> tuple[Dict[str, str], List[t
             if is_legislation:
                 # STEP 1: Try PDF search FIRST (most likely to have complete document)
                 if cse_comprehensive:
-                    try:
-                        pdf_query = f"{citation} PDF"
-                        res = (
-                            service.cse()
-                            .list(q=pdf_query, cx=cse_comprehensive, num=5)
-                            .execute()
-                        )
-                        if "items" in res:
-                            # Try top 3 results with validation
-                            for item in res["items"][:3]:
-                                link = item.get("link", "")
-                                # Look for PDF URLs from government sources
-                                if ".gov.au" in link and (
-                                    ".pdf" in link.lower() or "/PDF/" in link
-                                ):
-                                    content = _try_fetch_and_validate(link, citation)
-                                    if content:
-                                        url = link
-                                        content_valid = True
-                                        result_rank = res["items"].index(item) + 1
-                                        click.echo(success_message(f"Validated PDF (rank {result_rank}/3): {url}"))
-                                        save_log(
-                                            "citation_pdf_validated",
-                                            {
-                                                "citation": citation,
-                                                "url": url,
-                                                "source": "pdf_search_primary",
-                                                "result_rank": result_rank,
-                                            },
-                                        )
-                                        break  # Success - exit loop
-                    except Exception as e:
-                        save_log(
-                            "citation_pdf_search_error",
-                            {"citation": citation, "error": str(e)},
-                        )
+                    url, content_valid = _search_and_validate(
+                        service,
+                        cse_comprehensive,
+                        f"{citation} PDF",
+                        citation,
+                        lambda link: ".gov.au" in link and (".pdf" in link.lower() or "/PDF/" in link),
+                        "citation_pdf_validated",
+                        "Validated PDF (rank {rank}/3): {url}",
+                        apply_rate_limit=False,
+                    )
 
                 # STEP 2: Try AustLII if no valid content found yet
                 if not content_valid and cse_austlii:
-                    # Rate limit AustLII searches
-                    current_time = time.time()
-                    if _last_austlii_completion > 0:
-                        elapsed = current_time - _last_austlii_completion
-                        delay = random.uniform(2.0, 3.0)
-                        if elapsed < delay:
-                            time.sleep(delay - elapsed)
-
-                    try:
-                        query = normalize_citation(citation)
-                        res = (
-                            service.cse()
-                            .list(q=query, cx=cse_austlii, num=5)
-                            .execute()
-                        )
-                        _last_austlii_completion = time.time()
-
-                        if "items" in res:
-                            # Try top 3 results with validation
-                            for item in res["items"][:3]:
-                                link = item.get("link", "")
-                                if "/au/legis/" in link:
-                                    content = _try_fetch_and_validate(link, citation)
-                                    if content:
-                                        url = link
-                                        content_valid = True
-                                        result_rank = res["items"].index(item) + 1
-                                        click.echo(success_message(f"Validated AustLII legis (rank {result_rank}/3): {url}"))
-                                        save_log(
-                                            "citation_austlii_legis_validated",
-                                            {
-                                                "citation": citation,
-                                                "url": url,
-                                                "result_rank": result_rank,
-                                            },
-                                        )
-                                        break
-                    except Exception as e:
-                        save_log(
-                            "citation_austlii_search_error",
-                            {"citation": citation, "error": str(e)},
-                        )
+                    url, content_valid = _search_and_validate(
+                        service,
+                        cse_austlii,
+                        normalize_citation(citation),
+                        citation,
+                        lambda link: "/au/legis/" in link,
+                        "citation_austlii_legis_validated",
+                        "Validated AustLII legis (rank {rank}/3): {url}",
+                        apply_rate_limit=True,
+                    )
 
                 # STEP 3: Try plain comprehensive CSE as final fallback
                 if not content_valid and cse_comprehensive:
-                    try:
-                        query = normalize_citation(citation)
-                        res = (
-                            service.cse()
-                            .list(q=query, cx=cse_comprehensive, num=5)
-                            .execute()
-                        )
-                        if "items" in res:
-                            # Try top 3 results with validation
-                            for item in res["items"][:3]:
-                                link = item.get("link", "")
-                                if ".gov.au" in link:
-                                    content = _try_fetch_and_validate(link, citation)
-                                    if content:
-                                        url = link
-                                        content_valid = True
-                                        result_rank = res["items"].index(item) + 1
-                                        click.echo(success_message(f"Validated comprehensive legis (rank {result_rank}/3): {url}"))
-                                        save_log(
-                                            "citation_comprehensive_legis_validated",
-                                            {
-                                                "citation": citation,
-                                                "url": url,
-                                                "result_rank": result_rank,
-                                            },
-                                        )
-                                        break
-                    except Exception as e:
-                        save_log(
-                            "citation_comprehensive_search_error",
-                            {"citation": citation, "error": str(e)},
-                        )
+                    url, content_valid = _search_and_validate(
+                        service,
+                        cse_comprehensive,
+                        normalize_citation(citation),
+                        citation,
+                        lambda link: ".gov.au" in link,
+                        "citation_comprehensive_legis_validated",
+                        "Validated comprehensive legis (rank {rank}/3): {url}",
+                        apply_rate_limit=False,
+                    )
             else:
                 # Case law - try AustLII FIRST
                 if cse_austlii:
-                    # Rate limit AustLII searches
-                    current_time = time.time()
-                    if _last_austlii_completion > 0:
-                        elapsed = current_time - _last_austlii_completion
-                        delay = random.uniform(2.0, 3.0)
-                        if elapsed < delay:
-                            time.sleep(delay - elapsed)
-
-                    try:
-                        query = normalize_citation(citation)
-                        res = (
-                            service.cse()
-                            .list(q=query, cx=cse_austlii, num=5)
-                            .execute()
-                        )
-                        _last_austlii_completion = time.time()
-
-                        if "items" in res:
-                            # Try top 3 results with validation
-                            for item in res["items"][:3]:
-                                link = item.get("link", "")
-                                if "/au/cases/" in link:
-                                    content = _try_fetch_and_validate(link, citation)
-                                    if content:
-                                        url = link
-                                        content_valid = True
-                                        result_rank = res["items"].index(item) + 1
-                                        click.echo(success_message(f"Validated AustLII case (rank {result_rank}/3): {url}"))
-                                        save_log(
-                                            "citation_austlii_case_validated",
-                                            {
-                                                "citation": citation,
-                                                "url": url,
-                                                "result_rank": result_rank,
-                                            },
-                                        )
-                                        break
-                    except Exception as e:
-                        save_log(
-                            "citation_austlii_search_error",
-                            {"citation": citation, "error": str(e)},
-                        )
+                    url, content_valid = _search_and_validate(
+                        service,
+                        cse_austlii,
+                        normalize_citation(citation),
+                        citation,
+                        lambda link: "/au/cases/" in link,
+                        "citation_austlii_case_validated",
+                        "Validated AustLII case (rank {rank}/3): {url}",
+                        apply_rate_limit=True,
+                    )
 
                 # Fallback to comprehensive for case law
                 if not content_valid and cse_comprehensive:
-                    try:
-                        query = normalize_citation(citation)
-                        res = (
-                            service.cse()
-                            .list(q=query, cx=cse_comprehensive, num=5)
-                            .execute()
-                        )
-                        if "items" in res:
-                            # Try top 3 results with validation
-                            for item in res["items"][:3]:
-                                link = item.get("link", "")
-                                # Accept any non-jade.io source
-                                if ".gov.au" in link or "austlii.edu.au" in link:
-                                    content = _try_fetch_and_validate(link, citation)
-                                    if content:
-                                        url = link
-                                        content_valid = True
-                                        result_rank = res["items"].index(item) + 1
-                                        click.echo(success_message(f"Validated comprehensive case (rank {result_rank}/3): {url}"))
-                                        save_log(
-                                            "citation_comprehensive_case_validated",
-                                            {
-                                                "citation": citation,
-                                                "url": url,
-                                                "result_rank": result_rank,
-                                            },
-                                        )
-                                        break
-                    except Exception as e:
-                        save_log(
-                            "citation_comprehensive_search_error",
-                            {"citation": citation, "error": str(e)},
-                        )
+                    url, content_valid = _search_and_validate(
+                        service,
+                        cse_comprehensive,
+                        normalize_citation(citation),
+                        citation,
+                        lambda link: ".gov.au" in link or "austlii.edu.au" in link,
+                        "citation_comprehensive_case_validated",
+                        "Validated comprehensive case (rank {rank}/3): {url}",
+                        apply_rate_limit=False,
+                    )
 
         # Content already fetched and validated in CSE loops above
         # If still no valid content, try direct AustLII URL construction as final fallback (case law only)
@@ -428,8 +388,8 @@ def fetch_citation_context(citations: List[str]) -> tuple[Dict[str, str], List[t
             # Determine more specific failure reason
             if not url and not austlii_url:
                 reason = "URL not found - CSE returned no results"
-            elif url and not content:
-                reason = "Document fetch returned empty content"
+            elif url and not content_valid:
+                reason = "Document fetch or content validation failed"
             else:
                 reason = "All retrieval strategies failed"
 
