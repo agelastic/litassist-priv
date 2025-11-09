@@ -166,11 +166,19 @@ def extractfacts(file, verify, heavy, noverify, output):
     )
 
     # Audit log (without response content)
+    # Build params based on flags
+    if noverify:
+        params_str = "noverify=True"
+    elif heavy:
+        params_str = "verify=True (auto-enabled), heavy=True"
+    else:
+        params_str = "verify=True (auto-enabled)"
+
     save_log(
         "extractfacts",
         {
             "inputs": {"source_files": list(file), "chunks": len(chunks)},
-            "params": "verify=True (auto-enabled)",
+            "params": params_str,
             # Response content removed - already logged by LLMClient separately
             "output_file": output_file,
         },

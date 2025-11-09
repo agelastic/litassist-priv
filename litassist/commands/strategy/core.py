@@ -435,6 +435,8 @@ def strategy(case_facts, outcome, strategies, verify, heavy, noverify, output):
         strategies_name=strategies.name if strategies else None,
         citation_issues=citation_issues,
         llm_model=llm_client.model,
+        noverify=noverify,
+        heavy=heavy,
     )
 
     # Save log

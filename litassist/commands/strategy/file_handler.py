@@ -20,6 +20,8 @@ def save_strategy_outputs(
     strategies_name: Optional[str] = None,
     citation_issues: Optional[List[str]] = None,
     llm_model: str = None,
+    noverify: bool = False,
+    heavy: bool = False,
 ) -> Tuple[str, str, str, str]:
     """
     Save all strategy command outputs to separate files.
@@ -57,7 +59,11 @@ def save_strategy_outputs(
         metadata["Strategies File"] = strategies_name
 
     # Add verification metadata
-    metadata["Verification"] = "Standard verification"
+    if noverify:
+        metadata["Verification"] = "Skipped (--noverify)"
+    else:
+        verification_mode = "verification-heavy (gpt-5-pro)" if heavy else "Standard verification"
+        metadata["Verification"] = verification_mode
     if llm_model:
         metadata["Model"] = llm_model
 
