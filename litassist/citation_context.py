@@ -168,6 +168,9 @@ def _search_and_validate(
                 "error_type": type(e).__name__,
             },
         )
+        # Update rate limit timestamp to prevent rapid retries on errors
+        if apply_rate_limit:
+            _last_austlii_completion = time.time()
         return None, False
 
 
@@ -591,8 +594,17 @@ def _validate_citation_match(content: str, citation: str) -> bool:
                     "header_length": len(header)
                 })
                 return True
-        except Exception:
-            # Strategy failed, try next
+        except Exception as e:
+            # Strategy failed, log it and try next
+            save_log(
+                "citation_validation_strategy_error",
+                {
+                    "citation": citation,
+                    "strategy": strategy_name,
+                    "error": str(e),
+                    "error_type": type(e).__name__,
+                },
+            )
             continue
 
     # All strategies failed
