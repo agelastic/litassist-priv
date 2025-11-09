@@ -28,9 +28,14 @@ from .prompt_builder import build_system_prompt, build_user_prompt
 @click.argument("documents", nargs=-1, required=True, type=click.Path(exists=True))
 @click.argument("query")
 @click.option(
+    "--heavy",
+    is_flag=True,
+    help="Use verification-heavy mode (gpt-5-pro instead of gpt-5)",
+)
+@click.option(
     "--noverify",
     is_flag=True,
-    help="Skip standard verification",
+    help="Skip verification stage (not recommended for legal work)",
 )
 @click.option(
     "--diversity",
@@ -41,7 +46,7 @@ from .prompt_builder import build_system_prompt, build_user_prompt
 @click.option("--output", type=str, help="Custom output filename prefix")
 @click.pass_context
 @timed
-def draft(ctx, documents, query, noverify, diversity, output):
+def draft(ctx, documents, query, heavy, noverify, diversity, output):
     """
     Citation-rich drafting via RAG & GPT-4o.
 
@@ -146,8 +151,32 @@ def draft(ctx, documents, query, noverify, diversity, output):
 
     # Note: Citation verification now handled automatically in LLMClient.complete()
 
-    # Apply standard verification (uses verification chain like extractfacts/strategy)
+    # Warn if both --noverify and --heavy are specified
+    if noverify and heavy:
+        from litassist.utils.formatting import warning_message
+        click.echo(warning_message("--heavy flag ignored when --noverify is specified"))
+
+    if noverify:
+        click.echo(info_message("Standard verification skipped"))
+
+    # Prepare base metadata
+    base_metadata = {
+        "Query": query,
+        "Documents": ", ".join(documents),
+    }
+
     if not noverify:
+        # Save raw pre-verification output for audit trail
+        raw_metadata = {**base_metadata, "Verification": "Not yet applied (raw output)"}
+        save_command_output(
+            output if output else "draft",
+            content,
+            "" if output else query,
+            metadata=raw_metadata,
+            suffix="_raw",
+        )
+
+        # Apply standard verification (uses verification chain like extractfacts/strategy)
         try:
             log_task_event(
                 "draft",
@@ -159,9 +188,10 @@ def draft(ctx, documents, query, noverify, diversity, output):
             pass
 
         content, _ = verify_content_if_needed(
-            client, content, "draft", verify_flag=True
+            client, content, "draft", verify_flag=True, heavy=heavy
         )
-        click.echo(info_message("Standard verification applied"))
+        verification_mode = "verification-heavy (gpt-5-pro)" if heavy else "Standard verification"
+        click.echo(info_message(f"{verification_mode} applied"))
 
         try:
             log_task_event(
@@ -172,8 +202,6 @@ def draft(ctx, documents, query, noverify, diversity, output):
             )
         except Exception:
             pass
-    else:
-        click.echo(info_message("Standard verification skipped by --noverify flag"))
 
     # Track critiques for appending to output
     critiques = []
@@ -230,11 +258,18 @@ def draft(ctx, documents, query, noverify, diversity, output):
         content = warning_header + content
 
     # Save output using utility
+    final_metadata = {"Query": query, "Documents": ", ".join(documents)}
+    if noverify:
+        final_metadata["Verification"] = "Skipped (--noverify)"
+    else:
+        verification_mode = "verification-heavy (gpt-5-pro)" if heavy else "Standard verification"
+        final_metadata["Verification"] = verification_mode
+
     output_file = save_command_output(
         output if output else "draft",
         content,
         "" if output else query,
-        metadata={"Query": query, "Documents": ", ".join(documents)},
+        metadata=final_metadata,
         critique_sections=critiques if critiques else None,
     )
 
@@ -252,16 +287,20 @@ def draft(ctx, documents, query, noverify, diversity, output):
             },
             # Response content removed - already logged by LLMClient separately
             "usage": usage,
-            "verification": "standard" if not noverify else "disabled",
+            "verification": "disabled" if noverify else ("heavy" if heavy else "standard"),
             "output_file": output_file,
         },
     )
 
     # Show completion with preview
+    if noverify:
+        verification_mode = "Skipped (--noverify)"
+    else:
+        verification_mode = "verification-heavy (gpt-5-pro)" if heavy else "Standard verification"
     stats = {
         "Query": query,
         "Documents": len(documents),
-        "Verification": "Standard verification" if not noverify else "Disabled",
+        "Verification": verification_mode,
     }
 
     show_command_completion("draft", output_file, extra_files, stats)

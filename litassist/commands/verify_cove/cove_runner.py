@@ -14,7 +14,8 @@ from litassist.verification_chain import run_cove_verification, format_cove_repo
 
 def execute_cove_pipeline(
     content: str,
-    reference_context: Optional[str]
+    reference_context: Optional[str],
+    heavy: bool = False
 ) -> Tuple[str, Dict, str]:
     """
     Execute the Chain of Verification pipeline.
@@ -22,6 +23,7 @@ def execute_cove_pipeline(
     Args:
         content: Document content to verify
         reference_context: Optional reference file context for CoVe answers stage
+        heavy: Use verification-heavy mode (gpt-5-pro for answers stage)
 
     Returns:
         Tuple of (cove_content, cove_results, cove_report)
@@ -51,6 +53,7 @@ def execute_cove_pipeline(
         content,
         "verify-cove",
         prior_contexts=prior_contexts if prior_contexts else None,
+        heavy=heavy,
     )
 
     cove_report = format_cove_report(cove_results)

@@ -11,7 +11,7 @@ from litassist.citation.verify import verify_all_citations
 from litassist.citation_patterns import extract_citations
 from litassist.citation_context import fetch_citation_context
 from litassist.logging import save_command_output, log_task_event
-from litassist.utils.formatting import verifying_message, success_message
+from litassist.utils.formatting import verifying_message, success_message, warning_message
 from .formatters import format_citation_report
 
 
@@ -60,7 +60,7 @@ def verify_citations(content: str, file: str, output: str = None) -> tuple:
         except Exception:
             pass
 
-        case_content = fetch_citation_context(verified)
+        case_content, failed_citations = fetch_citation_context(verified)
 
         if case_content:
             click.echo(success_message(f"Fetched content for {len(case_content)} cases"))
@@ -74,6 +74,11 @@ def verify_citations(content: str, file: str, output: str = None) -> tuple:
                 )
             except Exception:
                 pass
+
+        if failed_citations:
+            click.echo(warning_message(f"Could not retrieve {len(failed_citations)} verified citations:"))
+            for citation, reason in failed_citations:
+                click.echo(f"  - {citation}: {reason}")
 
     # Save citation report
     base_name = os.path.splitext(file)[0]

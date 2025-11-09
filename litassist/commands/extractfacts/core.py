@@ -31,13 +31,18 @@ from .multi_extractor import extract_multi_chunk
     "--verify", is_flag=True, help="Enable self-critique pass (default: auto-enabled)"
 )
 @click.option(
+    "--heavy",
+    is_flag=True,
+    help="Use verification-heavy mode (gpt-5-pro instead of gpt-5)",
+)
+@click.option(
     "--noverify",
     is_flag=True,
-    help="Skip standard verification",
+    help="Skip verification stage (not recommended for legal work)",
 )
 @click.option("--output", type=str, help="Custom output filename prefix")
 @timed
-def extractfacts(file, verify, noverify, output):
+def extractfacts(file, verify, heavy, noverify, output):
     """
     Auto-generate case_facts.txt under ten structured headings.
 
@@ -89,9 +94,37 @@ def extractfacts(file, verify, noverify, output):
 
     # Note: Citation verification now handled automatically in LLMClient.complete()
 
-    # Apply standard verification (CoVe moved to standalone 'verify-cove' command)
-    verification_metadata = {"Source Files": ", ".join(source_files)}
+    # Prepare slug and warn if conflicting flags
+    slug = "_".join(source_files[:3])  # Use first 3 files for slug
+    if len(source_files) > 3:
+        slug += f"_and_{len(source_files) - 3}_more"
+
+    # Warn if both --noverify and --heavy are specified
+    if noverify and heavy:
+        from litassist.utils.formatting import warning_message
+        click.echo(warning_message("--heavy flag ignored when --noverify is specified"))
+
+    if noverify:
+        click.echo(info_message("Standard verification skipped"))
+
+    # Prepare metadata
+    final_metadata = {"Source Files": ", ".join(source_files)}
+
     if not noverify:
+        # Save raw pre-verification output for audit trail
+        raw_metadata = {
+            "Source Files": ", ".join(source_files),
+            "Verification": "Not yet applied (raw output)",
+        }
+        save_command_output(
+            output if output else "extractfacts",
+            combined,
+            "" if output else slug,
+            metadata=raw_metadata,
+            suffix="_raw",
+        )
+
+        # Apply standard verification (CoVe moved to standalone 'verify-cove' command)
         try:
             log_task_event(
                 "extractfacts",
@@ -103,11 +136,12 @@ def extractfacts(file, verify, noverify, output):
             pass
 
         combined, _ = verify_content_if_needed(
-            client, combined, "extractfacts", verify_flag=True
+            client, combined, "extractfacts", verify_flag=True, heavy=heavy
         )
-        verification_metadata["Verification"] = "Standard verification"
-        verification_metadata["Model"] = client.model
-        click.echo(info_message("Standard verification applied"))
+        verification_mode = "verification-heavy (gpt-5-pro)" if heavy else "Standard verification"
+        final_metadata["Verification"] = verification_mode
+        final_metadata["Model"] = client.model
+        click.echo(info_message(f"{verification_mode} applied"))
 
         try:
             log_task_event(
@@ -119,19 +153,16 @@ def extractfacts(file, verify, noverify, output):
         except Exception:
             pass
     else:
-        verification_metadata["Verification"] = "Disabled"
-        verification_metadata["Model"] = "N/A"
-        click.echo(info_message("Standard verification skipped by --noverify flag"))
+        # No verification
+        final_metadata["Verification"] = "Skipped (--noverify)"
+        final_metadata["Model"] = client.model
 
-    # Save output using utility (reasoning trace remains inline)
-    slug = "_".join(source_files[:3])  # Use first 3 files for slug
-    if len(source_files) > 3:
-        slug += f"_and_{len(source_files) - 3}_more"
+    # Save final output using utility (reasoning trace remains inline)
     output_file = save_command_output(
         output if output else "extractfacts",
         combined,
         "" if output else slug,
-        metadata=verification_metadata,
+        metadata=final_metadata,
     )
 
     # Audit log (without response content)
@@ -150,13 +181,15 @@ def extractfacts(file, verify, noverify, output):
     source_desc = ", ".join(source_files[:3])
     if len(source_files) > 3:
         source_desc += f" + {len(source_files) - 3} more"
+    # Use verification status from metadata (correctly set at lines 142 or 157)
+    verification_status = final_metadata["Verification"]
     stats = {
         "Sources": (
             f"{len(source_files)} files" if len(source_files) > 1 else source_files[0]
         ),
         "Processed": chunk_desc,
         "Structure": "10 structured headings",
-        "Verification": "Legal accuracy review applied",
+        "Verification": verification_status,
     }
 
     show_command_completion("extractfacts", output_file, None, stats)

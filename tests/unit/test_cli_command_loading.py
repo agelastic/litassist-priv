@@ -323,7 +323,7 @@ def test_file_processing_commands(
     )
 
     # Test extractfacts
-    result = runner.invoke(cli, ["extractfacts", str(test_doc), "--noverify"])
+    result = runner.invoke(cli, ["extractfacts", str(test_doc)])
     assert result.exit_code in [
         0,
         1,

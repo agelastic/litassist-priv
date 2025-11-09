@@ -15,6 +15,12 @@ NEVER OVERENGINEER EVER
 9. Prefer deleting unnecessary parsing logic to adding more
 10. Use local text processing with regexes only when there is no sane alternative to it. Confirm with the user every time.
 
+**Exception for Code Duplication:**
+
+- Refactoring to avoid repeated logic (e.g., extracting helper functions to reduce duplication) is acceptable
+- MUST obtain explicit user confirmation before proceeding with such refactoring
+- Even when duplication is clear, always ask first - never assume permission
+
 **Red Flags for Over-Engineering:**
 
 - Creating classes for single functions
@@ -439,9 +445,9 @@ Essential for commands involving:
 1. `git filter-branch` - DESTROYS COMMIT HISTORY PERMANENTLY
 2. `git rebase -i` - Can lose commits if done wrong
 3. `git reset --hard` without checking uncommitted work
-4. `git push --force` without explicit safety checks
-5. ANY operation that rewrites history
-
+4. `git push` - NEVER push to remote without explicit user permission
+5. `git push --force` - ABSOLUTELY NEVER under any circumstances
+6. ANY operation that rewrites history
 
 ### What You CAN Do
 
@@ -449,12 +455,14 @@ Essential for commands involving:
 - `git diff` - View changes
 - `git log` - View history
 - `git branch` - List branches
-- `git add` - Stage files (but NEVER commit them)
+- `git add` - Stage files
+- `git commit` - ONLY after receiving explicit user permission
 - Help craft commit messages for the user to execute
 - Explain git workflows and best practices
 - use gh CLI for github access
 
 - NEVER modify git history
+- NEVER push commits without explicit permission
 
 ## SAFETY COMPLIANCE CHECK
 
@@ -463,7 +471,7 @@ Before EVERY action, ask yourself:
 1. Does this violate ANY rule in CLAUDE.md?
 2. Am I following MINIMAL CHANGES philosophy?
 3. Am I about to add emojis anywhere?
-4. Am I about to run git commit or push?
+4. Am I about to run git commit or push without explicit user permission?
 5. Am I following Australian legal requirements?
 6. Am I overengineering?
 

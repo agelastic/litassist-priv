@@ -480,7 +480,7 @@ class TestContentVerification:
         # Strategy command uses verification chain, returns False when no corrections
         assert verified is False
         assert result_content == content
-        mock_run_verification_chain.assert_called_once_with(content, "strategy")
+        mock_run_verification_chain.assert_called_once_with(content, "strategy", heavy=False)
 
     @patch("litassist.verification_chain.run_verification_chain")
     def test_verify_content_if_needed_disabled(self, mock_run_verification_chain):
@@ -499,10 +499,10 @@ class TestContentVerification:
             mock_client, content, "strategy", verify_flag=False
         )
 
-        # Strategy command always uses verification chain regardless of flag
+        # With verify_flag=False, verification is skipped
         assert verified is False
         assert result_content == content
-        mock_run_verification_chain.assert_called_once_with(content, "strategy")
+        mock_run_verification_chain.assert_not_called()
 
     def test_verify_content_if_needed_llm_failure(self):
         """Test content verification with LLM failure."""
@@ -536,7 +536,7 @@ class TestContentVerification:
         # Should return corrected content and True when corrections made
         assert verified is True
         assert result_content == "Corrected legal analysis content"
-        mock_run_verification_chain.assert_called_once_with(content, "strategy")
+        mock_run_verification_chain.assert_called_once_with(content, "strategy", heavy=False)
 
     @patch("litassist.verification_chain.run_verification_chain")
     def test_verify_content_if_needed_citation_already_verified(
@@ -568,7 +568,7 @@ class TestContentVerification:
         # Strategy command uses verification chain, returns False when no corrections
         assert verified is False
         assert result_content == content
-        mock_run_verification_chain.assert_called_once_with(content, "strategy")
+        mock_run_verification_chain.assert_called_once_with(content, "strategy", heavy=False)
         # These shouldn't be called since verification chain handles it
         mock_client.verify_with_level.assert_not_called()
         mock_client.validate_citations.assert_not_called()

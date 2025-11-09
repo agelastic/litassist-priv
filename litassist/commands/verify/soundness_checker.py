@@ -22,7 +22,8 @@ def verify_soundness(
     reference_context: str = None,
     citation_report: str = None,
     reasoning_response: str = None,
-    output: str = None
+    output: str = None,
+    heavy: bool = False,
 ) -> tuple:
     """
     Verify legal soundness and Australian law compliance.
@@ -35,6 +36,7 @@ def verify_soundness(
         citation_report: Optional citation report for context
         reasoning_response: Optional reasoning trace for context
         output: Optional custom output filename prefix
+        heavy: Use verification-heavy mode (gpt-5-pro)
 
     Returns:
         tuple: (soundness_result, issues, soundness_file)
@@ -56,11 +58,16 @@ def verify_soundness(
         all_citations = extract_citations(content)
         if all_citations:
             click.echo(verifying_message(f"Fetching content for {len(all_citations)} citations..."))
-            case_content = fetch_citation_context(all_citations)
+            case_content, failed_citations = fetch_citation_context(all_citations)
             if case_content:
                 click.echo(success_message(f"Fetched content for {len(case_content)} cases"))
+            if failed_citations:
+                click.echo(warning_message(f"Could not retrieve {len(failed_citations)} citations:"))
+                for citation, reason in failed_citations:
+                    click.echo(f"  - {citation}: {reason}")
 
-    client = LLMClientFactory.for_command("verify-soundness")
+    config_name = "verify-soundness-heavy" if heavy else "verify-soundness"
+    client = LLMClientFactory.for_command(config_name)
 
     # Try with full context, implement backoff if prompt overload
     soundness_result = None

@@ -98,8 +98,8 @@ class TestCoVeRegeneration:
                     "litassist.verification_chain.fetch_citation_context"
                 ) as mock_fetch:
                     mock_fetch.return_value = (
-                        {}
-                    )  # Return empty dict, no citations to fetch
+                        {}, []
+                    )  # Return empty dict and no failures
                     # Run CoVe verification
                     final_content, results = run_cove_verification(
                         original_content, "test"
@@ -195,8 +195,8 @@ class TestCoVeRegeneration:
                     "litassist.verification_chain.fetch_citation_context"
                 ) as mock_fetch:
                     mock_fetch.return_value = (
-                        {}
-                    )  # Return empty dict, no citations to fetch
+                        {}, []
+                    )  # Return empty dict and no failures
                     # Run CoVe verification
                     final_content, results = run_cove_verification(
                         original_content, "test"

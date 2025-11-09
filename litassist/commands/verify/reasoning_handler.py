@@ -27,7 +27,8 @@ def verify_reasoning(
     case_content: dict = None,
     reference_context: str = None,
     citation_report: str = None,
-    output: str = None
+    output: str = None,
+    heavy: bool = False,
 ) -> tuple:
     """
     Verify existing reasoning trace or generate new one.
@@ -39,6 +40,7 @@ def verify_reasoning(
         reference_context: Optional reference files context
         citation_report: Optional citation report for context
         output: Optional custom output filename prefix
+        heavy: Use verification-heavy mode (gpt-5-pro)
 
     Returns:
         tuple: (reasoning_response, reasoning_file, existing_trace)
@@ -60,9 +62,13 @@ def verify_reasoning(
         all_citations = extract_citations(content)
         if all_citations:
             click.echo(verifying_message(f"Fetching content for {len(all_citations)} citations..."))
-            case_content = fetch_citation_context(all_citations)
+            case_content, failed_citations = fetch_citation_context(all_citations)
             if case_content:
                 click.echo(success_message(f"Fetched content for {len(case_content)} cases"))
+            if failed_citations:
+                click.echo(warning_message(f"Could not retrieve {len(failed_citations)} citations:"))
+                for citation, reason in failed_citations:
+                    click.echo(f"  - {citation}: {reason}")
 
     client = None
     existing_trace = extract_reasoning_trace(content)
@@ -99,7 +105,8 @@ def verify_reasoning(
         model_name = "N/A (existing trace verified)"
     else:
         # Generate new trace
-        client = LLMClientFactory.for_command("verify-reasoning")
+        config_name = "verify-reasoning-heavy" if heavy else "verify-reasoning"
+        client = LLMClientFactory.for_command(config_name)
         enhanced_prompt = create_reasoning_prompt(content, "verify")
 
         # Append FULL case content if available

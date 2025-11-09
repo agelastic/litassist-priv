@@ -27,7 +27,7 @@ from litassist.utils.formatting import (
 )
 from litassist.llm.factory import LLMClientFactory
 from litassist.prompts import PROMPTS
-from litassist.logging import log_task_event
+from litassist.logging import log_task_event, save_command_output
 
 from .validators import validate_case_facts_format, extract_legal_issues
 from .ranker import create_consolidated_reasoning_trace
@@ -47,13 +47,18 @@ from .file_handler import save_strategy_outputs, save_strategy_log
     "--verify", is_flag=True, help="Enable self-critique pass (default: auto-enabled)"
 )
 @click.option(
+    "--heavy",
+    is_flag=True,
+    help="Use verification-heavy mode (gpt-5-pro instead of gpt-5)",
+)
+@click.option(
     "--noverify",
     is_flag=True,
-    help="Skip standard verification",
+    help="Skip verification stage (not recommended for legal work)",
 )
 @click.option("--output", type=str, help="Custom output filename prefix")
 @timed
-def strategy(case_facts, outcome, strategies, verify, noverify, output):
+def strategy(case_facts, outcome, strategies, verify, heavy, noverify, output):
     """
     Generate legal strategy options and draft documents for Australian civil matters.
 
@@ -65,7 +70,7 @@ def strategy(case_facts, outcome, strategies, verify, noverify, output):
         outcome: Desired legal outcome (single sentence description)
         strategies: Optional strategies file from brainstorm command
         verify: Enable self-critique pass (always on by default)
-        noverify: Skip standard verification
+        heavy: Use verification-heavy mode (gpt-5-pro instead of gpt-5)
         output: Custom output filename prefix
 
     Raises:
@@ -383,15 +388,38 @@ def strategy(case_facts, outcome, strategies, verify, noverify, output):
     except Exception:
         pass
 
-    # Apply standard verification (CoVe moved to standalone 'verify-cove' command)
+    # Warn if both --noverify and --heavy are specified
+    if noverify and heavy:
+        from litassist.utils.formatting import warning_message
+        click.echo(warning_message("--heavy flag ignored when --noverify is specified"))
+
+    if noverify:
+        click.echo(info_message("Standard verification skipped"))
+
     cove_results = None
     if not noverify:
-        strategy_content, _ = verify_content_if_needed(
-            llm_client, strategy_content, "strategy", verify_flag=True
+        # Save raw pre-verification output for audit trail
+        raw_metadata = {
+            "Desired Outcome": outcome,
+            "Case Facts File": case_facts.name,
+            "Verification": "Not yet applied (raw output)",
+        }
+        if strategies:
+            raw_metadata["Strategies File"] = strategies.name
+        save_command_output(
+            output if output else "strategy",
+            strategy_content,
+            "" if output else outcome,
+            metadata=raw_metadata,
+            suffix="_raw",
         )
-        click.echo(info_message("Standard verification applied"))
-    else:
-        click.echo(info_message("Standard verification skipped by --noverify flag"))
+
+        # Apply standard verification (CoVe moved to standalone 'verify-cove' command)
+        strategy_content, _ = verify_content_if_needed(
+            llm_client, strategy_content, "strategy", verify_flag=True, heavy=heavy
+        )
+        verification_mode = "verification-heavy (gpt-5-pro)" if heavy else "Standard verification"
+        click.echo(info_message(f"{verification_mode} applied"))
 
     # Save all outputs
     click.echo(info_message("Saving strategy outputs..."))
