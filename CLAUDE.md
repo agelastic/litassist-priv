@@ -15,6 +15,12 @@ NEVER OVERENGINEER EVER
 9. Prefer deleting unnecessary parsing logic to adding more
 10. Use local text processing with regexes only when there is no sane alternative to it. Confirm with the user every time.
 
+**Exception for Code Duplication:**
+
+- Refactoring to avoid repeated logic (e.g., extracting helper functions to reduce duplication) is acceptable
+- MUST obtain explicit user confirmation before proceeding with such refactoring
+- Even when duplication is clear, always ask first - never assume permission
+
 **Red Flags for Over-Engineering:**
 
 - Creating classes for single functions
@@ -442,7 +448,6 @@ Essential for commands involving:
 4. `git push` - NEVER push to remote without explicit user permission
 5. `git push --force` - ABSOLUTELY NEVER under any circumstances
 6. ANY operation that rewrites history
-
 
 ### What You CAN Do
 
