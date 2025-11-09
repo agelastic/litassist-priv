@@ -181,13 +181,15 @@ def extractfacts(file, verify, heavy, noverify, output):
     source_desc = ", ".join(source_files[:3])
     if len(source_files) > 3:
         source_desc += f" + {len(source_files) - 3} more"
+    # Use verification status from metadata (correctly set at lines 142 or 157)
+    verification_status = final_metadata["Verification"]
     stats = {
         "Sources": (
             f"{len(source_files)} files" if len(source_files) > 1 else source_files[0]
         ),
         "Processed": chunk_desc,
         "Structure": "10 structured headings",
-        "Verification": "Legal accuracy review applied",
+        "Verification": verification_status,
     }
 
     show_command_completion("extractfacts", output_file, None, stats)

@@ -287,13 +287,16 @@ def draft(ctx, documents, query, heavy, noverify, diversity, output):
             },
             # Response content removed - already logged by LLMClient separately
             "usage": usage,
-            "verification": "heavy" if heavy else "standard",
+            "verification": "disabled" if noverify else ("heavy" if heavy else "standard"),
             "output_file": output_file,
         },
     )
 
     # Show completion with preview
-    verification_mode = "verification-heavy (gpt-5-pro)" if heavy else "Standard verification"
+    if noverify:
+        verification_mode = "Skipped (--noverify)"
+    else:
+        verification_mode = "verification-heavy (gpt-5-pro)" if heavy else "Standard verification"
     stats = {
         "Query": query,
         "Documents": len(documents),
