@@ -3018,10 +3018,10 @@ LitAssist uses `thinking_effort` (for Claude models) and `reasoning_effort` (for
 ### Customization Notes
 
 While LitAssist's parameters are optimized for legal work, advanced users can:
-1. Modify parameters in the source code for different use cases
-2. Enable/disable token limits via `use_token_limits` in config.yaml
-3. Adjust document chunking via `max_chars` and `rag_max_chars` in config.yaml
-4. Use different models by changing model strings (requires API support)
+1. Modify model configurations in `litassist/llm/model_configs.yaml` for different use cases
+2. Adjust document chunking via `max_chars` and `rag_max_chars` in config.yaml
+3. Use different models by changing model strings (requires API support)
+4. Set explicit `max_tokens` for specific commands if output length control is needed
 
 **Warning**: Changing parameters may significantly affect output quality and consistency. The default values represent extensive testing for Australian legal contexts.
 

@@ -49,19 +49,23 @@
 - **LLM Models**:
   - **BYOK Required (October 2025)**: o3-pro, GPT-5, GPT-5 Pro (Tier 4+ OpenAI key via OpenRouter)
   - **No BYOK**: Claude Sonnet 4.5, Gemini 2.5 Pro (available directly through OpenRouter)
-- **Token & Chunk Limits**: Configurable in `general.max_chars`, `general.rag_max_chars`, and `llm.use_token_limits`
-  - **Verification Token Limits (July 2025)**: Increased to 8192-16384 tokens for full document verification
-  - **Chunk-Based Processing (July 2025)**: Large documents split into 50k token chunks for digest/strategy commands
+- **Reasoning Control (November 2025)**:
+  - **thinking_effort** (Claude): Controls reasoning budget (1K-32K tokens), NOT output length
+  - **reasoning_effort** (o-series): Controls reasoning depth (low/medium/high)
+  - **No automatic output limits**: Models use API defaults for maximum quality
+  - **Explicit limits**: Commands can set max_tokens if needed (rarely used)
+- **Input Processing**: Configurable in `general.max_chars` and `general.rag_max_chars`
+  - **Chunk-Based Processing**: Large documents split into 50K character chunks for digest/strategy commands
 - **Citation Verification**: Jade.io primary with offline pattern fallback (`citation_validation.offline_validation`)
 - **Strict Structure**: `extractfacts` and `strategy` enforce fixed heading formats
 - **Three-Tier Strategy (October 2025)**: Model selection optimizes accuracy vs cost based on task criticality  
 
 ## Tool Usage Patterns
 
-- **RAG**: Large documents (>50k chars) processed via Pinecone embeddings  
-- **Direct Processing**: Text `.txt` files under token/chunk limits passed directly to LLM  
-- **Chunk-Based Processing**: Digest and strategy commands split large documents into 50k token chunks for LLM processing (July 2025)
-- **Token Counting**: All major commands use tiktoken for accurate token counting and user warnings for large inputs (July 2025)
+- **RAG**: Large documents (>50k chars) processed via Pinecone embeddings
+- **Direct Processing**: Text `.txt` files under character limits passed directly to LLM
+- **Chunk-Based Processing**: Digest and strategy commands split large documents into 50K character chunks for LLM processing
+- **Token Counting**: All major commands use tiktoken for accurate token counting and user warnings for large inputs
 - **Selective Regeneration**: Strategy commands only regenerate or discard items with citation issues  
 - **Multi-Stage Refinement**: Prompts load from YAML templates and support iterative improvement loops
 - **Zero-Emoji Policy**: All output and code must be ASCII/ANSI only, no emoji (enforced July 2025)

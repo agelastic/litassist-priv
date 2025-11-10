@@ -50,12 +50,19 @@
 - EXPANDED: Documentation with analysis/planning docs moved to proper locations.
 - IMPROVED: .gitignore with comprehensive development patterns.
 
+**Previous update (November 2025 - Token Limit System Removal):**
+- REMOVED: Global token limit system (use_token_limits flag and auto-application of 16K limits)
+- RATIONALE: Quality over cost - modern models handle large outputs efficiently
+- CLARIFIED: thinking_effort controls reasoning budget (1K-32K tokens), NOT output length
+- UPDATED: Models now use API defaults (typically unlimited or very high limits)
+- SIMPLIFIED: Commands can explicitly set max_tokens if needed, but don't by default
+- MAINTAINED: thinking_effort and reasoning_effort remain for controlling model reasoning depth
+
 **Previous update (8 July 2025 - Token Limit Configuration & Brainstorm Enhancement):**
-- CHANGED: Default use_token_limits from False to True in config.py
+- ~~CHANGED: Default use_token_limits from False to True in config.py~~ (SUPERSEDED by November 2025 removal)
 - FIXED: Counselnotes empty output issue caused by low API default token limits
-- UPDATED: All models now use 32K token limits when use_token_limits is enabled
-- UPDATED: Documentation to reflect new default behavior
-- INSIGHT: use_token_limits: false doesn't mean "no limits", it means "API defaults" (~4K)
+- ~~UPDATED: All models now use 32K token limits when use_token_limits is enabled~~ (SUPERSEDED)
+- INSIGHT: Token limits were artificial restrictions that reduced output quality for legal work
 
 ## Next Steps
 
