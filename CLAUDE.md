@@ -38,6 +38,16 @@ NEVER OVERENGINEER EVER
 4. ALWAYS Check dependencies  - Understand how functions are used before moving/changing them
 5. Verify functionality still works after any modifications you do
 
+### Git Commit Standards
+
+**CRITICAL: NEVER add attribution footers to git commits**
+
+1. NEVER add "Generated with Claude Code" or similar footers
+2. NEVER add "Co-Authored-By: Claude" or any Claude attribution
+3. Commit messages must ONLY contain the technical description of changes
+4. No self-promotion, no tool attribution, no AI mentions whatsoever
+5. This applies to ALL git commits without exception
+
 ### Code Quality Standards
 
 1. All code must pass `ruff check` before you declare your fix complete
