@@ -57,7 +57,29 @@ def generate_orthodox_strategies(
 
     # Execute the query, heartbeat decorator handles progress notifications
     try:
+        log_task_event(
+            "brainstorm",
+            "orthodox",
+            "llm_call",
+            "Sending orthodox strategies prompt to LLM",
+            {"model": orthodox_client.model}
+        )
+    except Exception:
+        pass
+
+    try:
         orthodox_content, orthodox_usage = orthodox_client.complete(orthodox_messages)
+
+        try:
+            log_task_event(
+                "brainstorm",
+                "orthodox",
+                "llm_response",
+                "Orthodox strategies LLM response received",
+                {"model": orthodox_client.model}
+            )
+        except Exception:
+            pass
     except Exception as e:
         raise click.ClickException(f"Error generating orthodox strategies: {str(e)}")
 

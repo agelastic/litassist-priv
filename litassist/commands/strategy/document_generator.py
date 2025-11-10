@@ -5,7 +5,9 @@ This module handles the generation of legal documents based on strategy analysis
 """
 
 import click
+import logging
 from litassist.prompts import PROMPTS
+from litassist.logging import log_task_event
 
 
 def determine_document_type(outcome: str) -> str:
@@ -89,6 +91,17 @@ def generate_draft_document(
 {doc_formats.get(doc_type, doc_formats["claim"])}"""
 
     try:
+        log_task_event(
+            "strategy",
+            "document",
+            "llm_call",
+            f"Sending {doc_type} generation prompt to LLM",
+            {"model": llm_client.model}
+        )
+    except Exception:
+        pass
+
+    try:
         document_content, _ = llm_client.complete(
             [
                 {"role": "system", "content": system_prompt},
@@ -97,6 +110,19 @@ def generate_draft_document(
                 {"role": "user", "content": doc_prompt},
             ]
         )
+
+        try:
+            log_task_event(
+                "strategy",
+                "document",
+                "llm_response",
+                f"{doc_type.capitalize()} generation LLM response received",
+                {"model": llm_client.model}
+            )
+        except Exception:
+            pass
+
         return document_content
     except Exception as e:
+        logging.error(f"Document generation failed: {e}")
         raise click.ClickException(f"LLM document generation error: {e}")

@@ -9,6 +9,7 @@ import click
 from litassist.llm.factory import LLMClientFactory
 from litassist.utils.legal_reasoning import create_reasoning_prompt
 from litassist.prompts import PROMPTS
+from litassist.logging import log_task_event
 
 
 def generate_analysis(
@@ -58,7 +59,29 @@ def generate_analysis(
 
     # Execute analysis query for most promising strategies
     try:
+        log_task_event(
+            "brainstorm",
+            "analysis",
+            "llm_call",
+            "Sending strategy analysis prompt to LLM",
+            {"model": analysis_client.model}
+        )
+    except Exception:
+        pass
+
+    try:
         analysis_content, analysis_usage = analysis_client.complete(analysis_messages)
+
+        try:
+            log_task_event(
+                "brainstorm",
+                "analysis",
+                "llm_response",
+                "Strategy analysis LLM response received",
+                {"model": analysis_client.model}
+            )
+        except Exception:
+            pass
     except Exception as e:
         raise click.ClickException(f"Error analyzing strategies: {e}")
 

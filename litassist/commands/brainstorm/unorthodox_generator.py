@@ -63,9 +63,31 @@ def generate_unorthodox_strategies(facts: str, side: str, area: str):
 
     # Execute the query for unorthodox strategies
     try:
+        log_task_event(
+            "brainstorm",
+            "unorthodox",
+            "llm_call",
+            "Sending unorthodox strategies prompt to LLM",
+            {"model": unorthodox_client.model}
+        )
+    except Exception:
+        pass
+
+    try:
         unorthodox_content, unorthodox_usage = unorthodox_client.complete(
             unorthodox_messages
         )
+
+        try:
+            log_task_event(
+                "brainstorm",
+                "unorthodox",
+                "llm_response",
+                "Unorthodox strategies LLM response received",
+                {"model": unorthodox_client.model}
+            )
+        except Exception:
+            pass
     except Exception as e:
         raise click.ClickException(f"Error generating unorthodox strategies: {str(e)}")
 

@@ -373,7 +373,30 @@ def digest(ctx, file, mode, context, output, verify, noverify):
                 },
                 {"role": "user", "content": consolidation_prompt},
             ]
+
+            try:
+                log_task_event(
+                    "digest",
+                    "cross_file",
+                    "llm_call",
+                    "Sending cross-file consolidation prompt to LLM",
+                    {"model": llm_client.model}
+                )
+            except Exception:
+                pass
+
             cross_file_summary, usage = llm_client.complete(messages)
+
+            try:
+                log_task_event(
+                    "digest",
+                    "cross_file",
+                    "llm_response",
+                    "Cross-file consolidation LLM response received",
+                    {"model": llm_client.model}
+                )
+            except Exception:
+                pass
 
             # Append to output
             final_output += f"\n\n{'=' * 80}\nCROSS-FILE CONSOLIDATION\n{'=' * 80}\n{cross_file_summary}"
