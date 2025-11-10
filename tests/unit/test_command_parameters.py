@@ -533,7 +533,6 @@ Test objectives""")
         with patch("litassist.config.CONFIG") as mock_config:
             mock_config.openrouter_key = "test_key"
             mock_config.openai_key = "test_key"
-            mock_config.use_token_limits = False  # Avoid token limit logic
 
             # Test strategy command (uses o3-pro)
             client = LLMClientFactory.for_command(

@@ -33,7 +33,6 @@ class TestLLMClientFactory:
         """Test LLM client factory with parameter overrides."""
         mock_config.llm_model = "openai/gpt-4o"
         mock_config.api_key = "test-key"
-        mock_config.use_token_limits = False  # Disable auto token limits
 
         overrides = {"temperature": 0.5, "max_tokens": 2000}
         client = LLMClientFactory.for_command("lookup", **overrides)

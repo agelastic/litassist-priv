@@ -81,8 +81,8 @@ class TestCommandParameterConfiguration:
 
         client = LLMClientFactory.for_command("draft")
         assert client.model == "openai/o3-pro"
-        # max_completion_tokens might be set by default for o3-pro models
-        assert "max_completion_tokens" in client.default_params
+        # No automatic token limits - models use API defaults
+        # max_completion_tokens would only be present if explicitly configured
 
     @patch("litassist.config.CONFIG")
     def test_parameter_filtering_for_o3_pro(self, mock_config):

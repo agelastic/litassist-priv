@@ -197,8 +197,6 @@ class TestLLMClientFactoryThinkingEffort:
     @patch("litassist.config.CONFIG")
     def test_strategy_command_thinking_effort(self, mock_config):
         """Test strategy command uses thinking_effort."""
-        mock_config.use_token_limits = False
-
         client = LLMClientFactory.for_command("strategy")
 
         # Check that thinking_effort is in default params
@@ -210,8 +208,6 @@ class TestLLMClientFactoryThinkingEffort:
     @patch("litassist.config.CONFIG")
     def test_lookup_command_thinking_effort(self, mock_config):
         """Test lookup command uses thinking_effort for Gemini."""
-        mock_config.use_token_limits = False
-
         client = LLMClientFactory.for_command("lookup")
 
         # Check that thinking_effort is in default params
@@ -221,8 +217,6 @@ class TestLLMClientFactoryThinkingEffort:
     @patch("litassist.config.CONFIG")
     def test_brainstorm_orthodox_thinking_effort(self, mock_config):
         """Test brainstorm-orthodox uses thinking_effort for Claude."""
-        mock_config.use_token_limits = False
-
         client = LLMClientFactory.for_command("brainstorm", "orthodox")
 
         # Check that thinking_effort is in default params
@@ -232,8 +226,6 @@ class TestLLMClientFactoryThinkingEffort:
     @patch("litassist.config.CONFIG")
     def test_override_thinking_effort(self, mock_config):
         """Test that thinking_effort can be overridden."""
-        mock_config.use_token_limits = False
-
         client = LLMClientFactory.for_command("strategy", thinking_effort="low")
 
         # Check override worked
