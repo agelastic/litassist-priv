@@ -52,6 +52,41 @@ class NonRetryableAPIError(Exception):
 logger = logging.getLogger(__name__)
 
 
+def is_parameter_error(error) -> bool:
+    """
+    Detect errors that indicate parameter configuration issues.
+
+    These errors should not be retried because they indicate a fundamental
+    incompatibility between the requested parameters and the model/provider.
+    Retrying will not help and wastes time.
+
+    Args:
+        error: Exception object to check
+
+    Returns:
+        True if this is a parameter configuration error that should fail immediately
+    """
+    error_str = str(error).lower()
+
+    # Check for Bedrock thinking parameter errors
+    if "thinking is disabled" in error_str:
+        return True
+    if "extended thinking operations" in error_str:
+        return True
+    if "not supported for this model" in error_str and "thinking" in error_str:
+        return True
+
+    # Check for other parameter errors
+    if "400" in str(error) and any(phrase in error_str for phrase in [
+        "invalid parameter",
+        "parameter not allowed",
+        "unsupported parameter",
+    ]):
+        return True
+
+    return False
+
+
 def get_openai_client(model_name: str):
     """
     Get or create OpenAI client with appropriate configuration.
@@ -76,7 +111,9 @@ def get_openai_client(model_name: str):
     config = get_config()
     base_url = config.or_base
     api_key = config.or_key
-    return OpenAI(api_key=api_key, base_url=base_url, timeout=600.0, max_retries=0)
+    # Timeout reduced from 600s to 120s to prevent long hangs on streaming errors
+    # This timeout applies to the time between receiving data chunks
+    return OpenAI(api_key=api_key, base_url=base_url, timeout=120.0, max_retries=0)
 
 
 def parse_openrouter_error(error_info: Dict[str, Any]) -> Tuple[str, str]:
@@ -358,6 +395,33 @@ def execute_api_call_with_retry(
                 f"Incomplete API response (truncated JSON): {str(e)}"
             )
         except Exception as e:
+            # Check if it's a parameter configuration error - fail immediately with full diagnostics
+            if is_parameter_error(e):
+                error_str = str(e)
+                # Log full request details for diagnosis
+                from litassist.logging import save_log
+                import time
+                save_log("parameter_error_diagnostic", {
+                    "error_type": type(e).__name__,
+                    "error_message": error_str,
+                    "model": model_name,
+                    "messages_count": len(messages),
+                    "filtered_params": filtered_params,
+                    "extra_body": extra_body if 'extra_body' in locals() else None,
+                    "timestamp": time.strftime("%Y-%m-%d %H:%M:%S"),
+                })
+                # Show clear error to user
+                click.echo(warning_message(
+                    f"Parameter configuration error detected: {error_str[:250]}"
+                ))
+                click.echo(warning_message(
+                    "This model/provider combination may not support the requested parameters."
+                ))
+                click.echo(warning_message(
+                    f"Full diagnostic saved to logs. Model: {model_name}"
+                ))
+                raise NonRetryableAPIError(f"Parameter error (will not retry): {error_str}")
+
             # Check if it's a 413 or similar non-retryable error
             error_str = str(e)
             if any(
@@ -428,6 +492,27 @@ def execute_api_call_with_retry(
                 elif "Incomplete API response" in error_str or "truncated JSON" in error_str.lower():
                     click.echo(warning_message(
                         f"Received incomplete response (attempt {retry_state.attempt_number}/5), retrying..."
+                    ))
+                elif "400" in error_str or "BadRequestError" in str(type(error).__name__):
+                    # Extract detailed error from nested Bedrock/provider structure
+                    try:
+                        if hasattr(error, 'body'):
+                            body = json.loads(error.body) if isinstance(error.body, str) else error.body
+                            if 'error' in body and 'metadata' in body['error']:
+                                raw = body['error']['metadata'].get('raw', '')
+                                if raw:
+                                    parsed = json.loads(raw) if isinstance(raw, str) else raw
+                                    msg = parsed.get('message', '')
+                                    if msg:
+                                        click.echo(warning_message(
+                                            f"Provider error (attempt {retry_state.attempt_number}/5): {msg}"
+                                        ))
+                                        return
+                    except (json.JSONDecodeError, KeyError, AttributeError, TypeError):
+                        pass
+                    # Fallback to showing truncated error
+                    click.echo(warning_message(
+                        f"Bad request (attempt {retry_state.attempt_number}/5): {error_str[:150]}"
                     ))
             except Exception:
                 # If we can't get error details, just show generic retry message
