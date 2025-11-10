@@ -12,7 +12,7 @@ from click.testing import CliRunner
 
 from litassist.cli import cli
 from litassist.commands import register_commands
-from litassist.llm.factory import LLMClientFactory, LLMClient
+from litassist.llm.factory import LLMClientFactory
 from litassist.config import get_config
 CONFIG = get_config()
 
@@ -400,7 +400,6 @@ Worst: Pay $100k progress payment plus costs
             patch("litassist.commands.brainstorm.PROMPTS") as mock_brainstorm_prompts,
             patch("litassist.commands.lookup.processors.PROMPTS") as mock_lookup_prompts,
             patch.object(CONFIG, "max_chars", 10000),
-            patch.object(CONFIG, "use_token_limits", True),
             patch.object(CONFIG, "openrouter_key", "test_key"),
             patch.object(CONFIG, "openai_key", "test_key"),
             patch.object(CONFIG, "or_base", "https://openrouter.ai/api/v1"),
@@ -684,34 +683,3 @@ Worst: Pay $100k progress payment plus costs
                         # Verify the override is returned
                         model = LLMClientFactory.get_model_for_command("lookup")
                         assert model == "gemini-ultra"
-
-    def test_token_limit_enforcement(self):
-        """Test that token limits are enforced when CONFIG.use_token_limits=True."""
-        # Test with use_token_limits = True
-        with (
-            patch.object(CONFIG, "use_token_limits", True),
-            patch.object(CONFIG, "token_limit", 16384),
-            patch.object(CONFIG, "openrouter_key", "test_key"),
-            patch.object(CONFIG, "openai_key", "test_key"),
-        ):
-            # Create an LLMClient which should apply token limits
-            client = LLMClient("openai/gpt-4")
-
-            # Should use token_limit from config
-            expected_limit = 16384
-
-            # Check that default_params includes max_tokens
-            assert "max_tokens" in client.default_params
-            assert client.default_params["max_tokens"] == expected_limit
-
-        # Test with use_token_limits = False
-        with (
-            patch.object(CONFIG, "use_token_limits", False),
-            patch.object(CONFIG, "openrouter_key", "test_key"),
-            patch.object(CONFIG, "openai_key", "test_key"),
-        ):
-            # Create another client
-            client2 = LLMClient("openai/gpt-4")
-
-            # Should not include max_tokens when disabled
-            assert "max_tokens" not in client2.default_params

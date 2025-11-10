@@ -6,6 +6,7 @@ required for LitAssist's operation. All LLM calls route through OpenRouter API.
 """
 
 import os
+import warnings
 import yaml
 from typing import Dict, Any
 
@@ -137,8 +138,22 @@ class Config:
             llm_config = self.cfg.get("llm", {})
             if llm_config is None:
                 llm_config = {}
-            self.use_token_limits = llm_config.get("use_token_limits", True)
-            self.token_limit = llm_config.get("token_limit", 16384)
+
+            # Check for deprecated token limit settings
+            if "use_token_limits" in llm_config:
+                warnings.warn(
+                    "use_token_limits is deprecated and ignored (removed November 2025). "
+                    "Models now use API defaults. See docs/development/MODEL_CONFIGURATION.md",
+                    DeprecationWarning,
+                    stacklevel=2
+                )
+            if "token_limit" in llm_config:
+                warnings.warn(
+                    "token_limit is deprecated and ignored (removed November 2025). "
+                    "Models now use API defaults. See docs/development/MODEL_CONFIGURATION.md",
+                    DeprecationWarning,
+                    stacklevel=2
+                )
 
             # Extract optional general settings with defaults
             general_config = self.cfg.get("general", {})

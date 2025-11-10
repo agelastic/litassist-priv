@@ -14,7 +14,6 @@ from litassist.timing import timed
 from litassist.logging import save_log
 from litassist.utils.core import heartbeat
 from litassist.utils.formatting import success_message
-from litassist.config import get_config
 from litassist.prompts import PROMPTS
 from litassist.citation.exceptions import CitationVerificationError
 
@@ -78,22 +77,6 @@ class LLMClient(LLMVerificationMixin):
         """
         self.model = model
         self.command_context = None  # Track which command is using this client
-
-        # Set token limit from config if enabled and not explicitly specified
-        config = get_config()
-        if config.use_token_limits:
-            # Determine if we need to transform max_tokens to another parameter
-            test_params = {"max_tokens": 1}
-            filtered = get_model_parameters(model, test_params)
-            token_param = (
-                "max_completion_tokens"
-                if "max_completion_tokens" in filtered
-                else "max_tokens"
-            )
-
-            if token_param not in default_params:
-                # Use token limit from config
-                default_params[token_param] = config.token_limit
 
         self.default_params = default_params
         self._client = None  # Will be created when needed

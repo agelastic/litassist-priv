@@ -6,6 +6,7 @@ Handles selective regeneration of strategies with citation issues.
 
 import re
 import click
+import logging
 
 from litassist.llm.client import LLMClient
 from litassist.utils.formatting import (
@@ -15,6 +16,7 @@ from litassist.utils.formatting import (
     stats_message,
 )
 from litassist.prompts import PROMPTS
+from litassist.logging import log_task_event
 
 
 def regenerate_bad_strategies(
@@ -99,9 +101,31 @@ def regenerate_bad_strategies(
 
             try:
                 # Generate single replacement strategy
+                try:
+                    log_task_event(
+                        "brainstorm",
+                        "regeneration",
+                        "llm_call",
+                        f"Regenerating strategy {strategy_num}",
+                        {"model": client.model}
+                    )
+                except Exception:
+                    pass
+
                 new_strategy, _ = client.complete(
                     [{"role": "user", "content": regen_prompt}]
                 )
+
+                try:
+                    log_task_event(
+                        "brainstorm",
+                        "regeneration",
+                        "llm_response",
+                        f"Strategy {strategy_num} regeneration response received",
+                        {"model": client.model}
+                    )
+                except Exception:
+                    pass
 
                 # Validate the regenerated strategy
                 new_citation_issues = client.validate_citations(new_strategy)
@@ -125,6 +149,7 @@ def regenerate_bad_strategies(
                     strategy_results[strategy_num] = new_strategy
 
             except Exception as e:
+                logging.error(f"Regeneration failed for strategy {strategy_num}: {e}")
                 click.echo(
                     f"    [FAILED] Strategy {strategy_num}: Regeneration failed - {str(e)}"
                 )

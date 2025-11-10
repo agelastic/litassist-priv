@@ -167,7 +167,7 @@ def brainstorm(facts, side, area, research, verify, output):
     facts = combined_facts
 
     # Check file size to prevent token limit issues
-    validate_file_size_limit(facts, 50000, "Case facts")
+    validate_file_size_limit(facts, 600000, "Case facts")
 
     # Prepare research context for orthodox strategies
     if research:

@@ -91,7 +91,7 @@ def caseplan(case_facts, context, budget, output, verify, noverify):
         pass
 
     facts_content = case_facts.read()
-    validate_file_size_limit(facts_content, 50000, "Case facts")
+    validate_file_size_limit(facts_content, 600000, "Case facts")
 
     try:
         log_task_event(

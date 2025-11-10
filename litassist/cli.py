@@ -243,6 +243,7 @@ def test_scraping_capabilities():
             print("FAILED")
             print(f"    {error_message('Jina Reader could not fetch content')}")
     except Exception as e:
+        logging.error(f"Jina Reader error: {e}")
         print("FAILED")
         print(f"    {error_message(f'Jina Reader error: {str(e)[:100]}')}")
 
@@ -270,6 +271,7 @@ def test_scraping_capabilities():
             print("FAILED")
             print(f"    {error_message('PDF detection failed')}")
     except Exception as e:
+        logging.error(f"PDF fetching error: {e}")
         print("FAILED")
         print(f"    {error_message(f'PDF fetching error: {str(e)[:100]}')}")
 

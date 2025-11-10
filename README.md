@@ -133,7 +133,6 @@ pinecone:
   index_name:  "legal-rag"
 
 llm:
-  use_token_limits: false    # Enable conservative token limits for AI responses (default: false = use model defaults)
 
 general:
   heartbeat_interval: 10  # Progress indicator interval in seconds (default: 10)
@@ -412,10 +411,10 @@ Each command uses optimized LLM models and parameters:
 - **Creative tasks** (brainstorm, draft): `temperature=0.5-0.9` for innovation
 - **Verification**: Always uses `temperature=0` for consistency
 
-**Note**:  
-- Document chunking (`max_chars`) and AI output limits (`use_token_limits`) are separate systems.  
-- tiktoken is required for accurate token counting and large document handling.  
-- All output is now ASCII/ANSI only (no emoji).  
+**Note**:
+- Document chunking (`max_chars`) controls input processing for large files.
+- tiktoken is required for accurate token counting and large document handling.
+- All output is now ASCII/ANSI only (no emoji).
 - See the [LitAssist User Guide](docs/user/LitAssist_User_Guide.md#llm-models-and-parameter-configuration) for details.
 
 ## Disclaimer

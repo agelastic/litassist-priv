@@ -96,9 +96,6 @@ def strategy(case_facts, outcome, strategies, verify, heavy, noverify, output):
     click.echo(info_message("Validating case facts format..."))
     case_text = case_facts.read()
 
-    # Check case facts file size
-    validate_file_size_limit(case_text, 100000, "Case facts")
-
     if not validate_case_facts_format(case_text):
         raise click.ClickException(
             "Case facts file must follow the required 10-heading structure. Run 'litassist extractfacts' first."
@@ -122,8 +119,12 @@ def strategy(case_facts, outcome, strategies, verify, heavy, noverify, output):
         click.echo(info_message("Reading strategies from brainstorm file..."))
         strategies_content = strategies.read()
 
-        # Check strategies file size
-        validate_file_size_limit(strategies_content, 100000, "Strategies")
+        # Check combined input size when strategies provided
+        validate_file_size_limit(
+            case_text + strategies_content,
+            600000,
+            "Combined case facts and strategies"
+        )
 
         parsed_strategies = parse_strategies_file(strategies_content)
 
@@ -145,6 +146,9 @@ def strategy(case_facts, outcome, strategies, verify, heavy, noverify, output):
             click.echo(
                 "  - Warning: No strategies marked as 'most likely to succeed' found"
             )
+    else:
+        # Check case facts size when no strategies file
+        validate_file_size_limit(case_text, 600000, "Case facts")
 
     # Generate strategic options
     try:
@@ -435,6 +439,8 @@ def strategy(case_facts, outcome, strategies, verify, heavy, noverify, output):
         strategies_name=strategies.name if strategies else None,
         citation_issues=citation_issues,
         llm_model=llm_client.model,
+        noverify=noverify,
+        heavy=heavy,
     )
 
     # Save log

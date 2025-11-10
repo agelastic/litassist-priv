@@ -48,7 +48,6 @@ pinecone:
   environment: "TEST_ENV"
   index_name: "test-index"
 llm:
-  use_token_limits: true
 general:
   heartbeat_interval: 10
   max_chars: 200000
@@ -180,7 +179,7 @@ def test_all_commands_import_with_real_config(test_config_file):
 
     # Verify values from template
     assert config.max_chars == 200000, "max_chars should be 200000 from template"
-    assert config.log_format == "json", "log_format should be json from template"
+    assert config.log_format == "markdown", "log_format should be markdown from template"
 
     # Verify placeholder detection works
     placeholders = config.using_placeholders()

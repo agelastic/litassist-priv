@@ -167,31 +167,6 @@ class TestVerifyModes:
                 "Check only for Australian English spelling" in messages[0]["content"]
             )
 
-    @patch("litassist.llm.factory.LLMClientFactory.for_command")
-    @patch("litassist.llm.verification.get_config")
-    def test_token_limits_disabled(self, mock_get_config, mock_for_command):
-        """Test behavior when token limits are disabled."""
-        # Configure mock with token limits disabled
-        mock_config = Mock()
-        mock_config.use_token_limits = False
-        mock_get_config.return_value = mock_config
-
-        # Create a mock instance
-        mock_instance = Mock()
-        mock_instance.complete.return_value = ("Verified", {"total_tokens": 100})
-        mock_for_command.return_value = mock_instance
-
-        # Test both modes
-        for level in ["light", "heavy"]:
-            mock_instance.complete.reset_mock()
-
-            self.client.verify_with_level("Test text", level=level)
-
-            # Check that max_tokens was NOT set
-            kwargs = mock_instance.complete.call_args[1]
-            assert "max_tokens" not in kwargs
-            # No hardcoded temperature/top_p anymore - let factory handle it
-
     @patch("litassist.llm.client.LLMClient.verify")
     def test_unknown_level_calls_standard_verify(self, mock_verify):
         """Test that unknown levels call the standard verify method."""

@@ -1,5 +1,9 @@
 # LitAssist Development TODO
 
+**Note:** Strategic feature planning (litigation support, advisory capabilities, new commands) is now in [ROADMAP.md](ROADMAP.md). This file focuses on bugs, technical debt, and code quality improvements.
+
+---
+
 ## Current State Summary
 
 ### Completed Features [DONE]
@@ -25,6 +29,23 @@
   - Upgraded 20+ commands with 40-50% cost reduction while improving quality
   - All 380 unit tests passing
   - Comprehensive documentation updates across all user/dev docs
+- **November 2025: Verification System Enhancements & Tooling**
+  - Added --heavy flag to verify command for premium verification using gpt-5-pro
+  - Added --noverify flag to extractfacts, draft, and strategy commands for skipping verification
+  - Changed default verify-soundness from gpt-5-pro to claude-opus-4.1 (cost optimization)
+  - Fixed verify_content_if_needed() to properly respect verify_flag parameter
+  - Citation validation improvements with header analysis for PDF content
+  - PDF search validation with automatic retry logic (up to 3 attempts)
+  - Anti-injection prompt protection added for all LLM calls
+  - Raw pre-verification output persistence for audit trail compliance
+  - All 392 tests passing
+- **November 2025: Token Limit System Removal**
+  - Removed global token limit system (use_token_limits flag and automatic 16K output limits)
+  - Increased input file size limits: brainstorm (50K→600K), caseplan (50K→600K), strategy (100K+100K→600K combined)
+  - Clarified thinking_effort as reasoning budget (not output limit)
+  - Quality prioritized over cost - models use API defaults for comprehensive outputs
+  - Deprecation warnings added for old config files
+  - All 390 tests passing
 
 ### Pending Tasks [IN PROGRESS]
 - [x] ~~Fix lookup `--comprehensive` help/behavior mismatch~~ - Already correct (verified Oct 2025)
@@ -33,30 +54,23 @@
 - [x] ~~Remove redundant top‑level `litassist.py` entry point~~ - COMPLETED (Oct 2025)
 - [x] ~~Fail fast on config load errors~~ - Already implemented (verified Oct 2025)
 - [ ] REMOVE temporary glob help addon after unification (delete glob_help_addon.yaml, remove concatenation logic)
-- [ ] IMPLEMENT full glob unification per claude_glob_unification_plan.md (centralize expand_glob_patterns, update 5+ commands)
-- [ ] Implement advanced LLM prompting improvements from LLM_IMPROVEMENTS.md (IRAC/MIRAT, multi-model consensus, confidence scoring, adversarial testing) [EPIC-LLM]
-- [ ] Develop manual validation scripts for OpenRouter and extended RAG workflows (in test-scripts/) [QA]
-- [ ] Add cost-tracking system and quality-tier command options [TECH]
-- [ ] Create compound workflow commands (e.g., `workflow initial-advice`) [UX]
+- [ ] IMPLEMENT full glob unification (centralize expand_glob_patterns, update 5+ commands)
+- [x] ~~Develop manual validation scripts for OpenRouter and extended RAG workflows (in test-scripts/)~~ - COMPLETED (test_integrations.py, test_quality.py, test_cli_comprehensive.sh exist)
 - [ ] Enhance QA loops: iterative improvement, contingency planning, multi-perspective reviews
-- [ ] Update user/developer documentation to reflect new features when implemented
+- [ ] Keep documentation current with new features as they are implemented
 - [ ] Automate performance benchmarking and monitoring setup [MON]
 - [ ] Implement OpenAI API fine-tuning per platform recommendations
 - [ ] Add LLM response streaming functionality
 - [ ] Expose model configuration parameters via CLI/env vars
 - [ ] Develop "student mode" with newcomer-friendly explanations
-- [ ] Add thinking trace logging system
-- [ ] Integrate o3-pro coding standards
-- [ ] Adopt Jules framework for test instrumentation
-- [ ] **Refactor verify_with_level (Option B)**: Replace with boolean parameter `verify(content, comprehensive=False)` where comprehensive=True uses heavy verification prompt and comprehensive=False uses standard verification. This simplifies the API and removes the unused "light" level and redundant "medium" wrapper. See plan details from 2025-07-07. [DEBT]
+- [x] ~~Add thinking trace logging system~~ - COMPLETED (LegalReasoningTrace class exists and used throughout)
+- [x] ~~Integrate o3-pro coding standards~~ - COMPLETED (o3-pro model extensively integrated with proper parameter handling)
+- [ ] Adopt Jules framework for test instrumentation (evaluate if still desired)
+- [ ] **Refactor verify_with_level (Option B)**: Replace with boolean parameter `verify(content, comprehensive=False)` where comprehensive=True uses heavy verification prompt and comprehensive=False uses standard verification. This simplifies the API and removes the unused "light" level and redundant "medium" wrapper. NOTE: --heavy flag (Nov 2025) may already satisfy this need - evaluate if refactoring still needed. [DEBT]
 - [ ] **Add optional reasoning trace file output**: Implement `--save-reasoning` flag for commands (strategy, draft, verify, etc.) to optionally save reasoning traces as separate files for auditing purposes. Currently reasoning traces are embedded in main output only. Implementation removed 2025-07-08 but may be useful for professional liability requirements.
-- [ ] **Implement circuit breaker for API retries**: Add safety_cutoff parameter to disable retries after N failures/hour (see AG-124)
-- [ ] **Document July 2025 upgrades in all user/dev/system docs**: Large document chunking, tiktoken integration, verification model switch to Claude 4 Opus, prompt/policy refinements, zero-emoji policy, expanded test coverage, and file size warnings.
+- [x] ~~Document July 2025 upgrades in all user/dev/system docs~~ - COMPLETED (documented in LLM_PARSING_AUDIT_REPORT.md and other dev docs)
 
 ## Critical Bugs to Fix [HIGH PRIORITY]
-
-### API & Network Issues
-- [ ] **Add API call timeouts**: API calls in `api_handlers.py` can hang indefinitely. Add 30-second timeout parameter to `client.chat.completions.create()` calls (lines 278, 285)
 
 ### Code Quality Issues
 - [ ] **Fix thread safety in progress indicator**: No error handling if progress thread fails. Add exception handling and timeout
@@ -71,20 +85,26 @@ _No critical bugs identified - all items below verified as already implemented o
 - ~~Input validation~~ - Click validates file existence automatically at entry points
 
 ### Next Steps
-1. Commit `memory-bank/` directory and its files
-2. Merge initial Memory Bank into main branch
-3. Schedule sprint to implement high-impact prompt and verification enhancements
-4. Enhance manual API validation scripts per updated testing approach
-5. Plan cost-tracking and workflow command prototypes
-6. Review and prioritize new TODO items for implementation
+1. Review and prioritize remaining TODO items for next sprint
+2. Consider implementing circuit-breaker enhancement for API retries
+3. Evaluate glob unification plan for implementation (also in ROADMAP.md P4-25)
+4. Review ongoing prompt optimization opportunities (October 2025 model strategy implemented)
+5. See ROADMAP.md for strategic feature implementation planning
 
 ## Future Plans
-- See detailed LLM improvements in `docs/development/LLM_IMPROVEMENTS.md`  
-- Integration test strategy in `docs/development/integration_testing_approach.md`  
-- Cost-tracking and quality-tier features (planning in progress)  
-- Compound workflow commands prototypes (e.g., `workflow initial-advice`)  
-- Advanced QA loops: adversarial testing, iterative improvement loops, contingency planning  
-- Performance benchmarking and monitoring setup  
+
+**Strategic Features:** See [ROADMAP.md](ROADMAP.md) for comprehensive feature planning (litigation support, advisory capabilities, matter management, FOI tools, etc.)
+
+**Technical Documentation:**
+- Historical LLM analysis in `docs/prompts/llm_enhancement_recommendations.md` (pre-October 2025, superseded by three-tier model strategy)
+- Current model strategy in `docs/development/LLM_MODEL_STRATEGY.md`
+- Integration test strategy in `docs/development/integration_testing_approach.md`
+
+**Technical Enhancements:**
+- Advanced QA loops: adversarial testing, iterative improvement loops, contingency planning
+- Performance benchmarking and monitoring setup
+- LLM response streaming functionality
+- OpenAI API fine-tuning integration  
 
 ## Implementation Concerns & Considerations
 
