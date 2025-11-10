@@ -1,5 +1,9 @@
 # LitAssist Development TODO
 
+**Note:** Strategic feature planning (litigation support, advisory capabilities, new commands) is now in [ROADMAP.md](ROADMAP.md). This file focuses on bugs, technical debt, and code quality improvements.
+
+---
+
 ## Current State Summary
 
 ### Completed Features [DONE]
@@ -45,8 +49,6 @@
 - [ ] REMOVE temporary glob help addon after unification (delete glob_help_addon.yaml, remove concatenation logic)
 - [ ] IMPLEMENT full glob unification (centralize expand_glob_patterns, update 5+ commands)
 - [x] ~~Develop manual validation scripts for OpenRouter and extended RAG workflows (in test-scripts/)~~ - COMPLETED (test_integrations.py, test_quality.py, test_cli_comprehensive.sh exist)
-- [ ] Add cost-tracking system and quality-tier command options [TECH]
-- [ ] Create compound workflow commands (e.g., `workflow initial-advice`) [UX]
 - [ ] Enhance QA loops: iterative improvement, contingency planning, multi-perspective reviews
 - [ ] Keep documentation current with new features as they are implemented
 - [ ] Automate performance benchmarking and monitoring setup [MON]
@@ -78,18 +80,24 @@ _No critical bugs identified - all items below verified as already implemented o
 ### Next Steps
 1. Review and prioritize remaining TODO items for next sprint
 2. Consider implementing circuit-breaker enhancement for API retries
-3. Evaluate glob unification plan for implementation
+3. Evaluate glob unification plan for implementation (also in ROADMAP.md P4-25)
 4. Review ongoing prompt optimization opportunities (October 2025 model strategy implemented)
-5. Plan compound workflow commands prototypes
+5. See ROADMAP.md for strategic feature implementation planning
 
 ## Future Plans
-- See historical LLM analysis in `docs/prompts/llm_enhancement_recommendations.md` (pre-October 2025, superseded by three-tier model strategy)
-- See current model strategy in `docs/development/LLM_MODEL_STRATEGY.md`
-- Integration test strategy in `docs/development/integration_testing_approach.md`  
-- Cost-tracking and quality-tier features (planning in progress)  
-- Compound workflow commands prototypes (e.g., `workflow initial-advice`)  
-- Advanced QA loops: adversarial testing, iterative improvement loops, contingency planning  
-- Performance benchmarking and monitoring setup  
+
+**Strategic Features:** See [ROADMAP.md](ROADMAP.md) for comprehensive feature planning (litigation support, advisory capabilities, matter management, FOI tools, etc.)
+
+**Technical Documentation:**
+- Historical LLM analysis in `docs/prompts/llm_enhancement_recommendations.md` (pre-October 2025, superseded by three-tier model strategy)
+- Current model strategy in `docs/development/LLM_MODEL_STRATEGY.md`
+- Integration test strategy in `docs/development/integration_testing_approach.md`
+
+**Technical Enhancements:**
+- Advanced QA loops: adversarial testing, iterative improvement loops, contingency planning
+- Performance benchmarking and monitoring setup
+- LLM response streaming functionality
+- OpenAI API fine-tuning integration  
 
 ## Implementation Concerns & Considerations
 

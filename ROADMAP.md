@@ -1,0 +1,957 @@
+# LitAssist Feature Roadmap
+
+**Last Updated:** November 2025
+**Status:** Strategic Planning Phase
+**Confidence:** 0.88
+
+---
+
+## Executive Summary
+
+This roadmap prioritizes features for litassist based on **active litigation needs** over FOI and government affairs. The goal is to provide lawyer-like smart advice for legal and government dealings, advising on what to do when and how, with precision as the priority.
+
+**Total Planned Work:** ~280-370 hours across 7 phases
+
+**Key Principle:** Litigation > FOI > Other matters
+
+---
+
+## API Research Findings (November 2025)
+
+### JADE.io
+- **Status:** NO public API available
+- **History:** 2011 blog post about URL construction is deprecated
+- **Conclusion:** Continue current approach (Google CSE + web scraping)
+
+### AustLII SINO CGI API
+- **Status:** Documentation GONE (both URLs return 410 Gone)
+- **History:** Mentioned in old docs but no longer accessible
+- **Conclusion:** Continue current approach (Google CSE + direct URL construction + web scraping)
+
+### Available APIs
+- **Queensland Legislation API:** Requires registration, limited to QLD legislation only
+- **No other viable APIs** for Australian case law
+
+### Recommended Strategy
+**Continue current scraping approach** - This is the ONLY viable path for Australian legal databases. No programmatic APIs exist for JADE or AustLII currently.
+
+---
+
+## Feature Prioritization
+
+Features are prioritized to support active litigation (ACT civil matters), professional complaints, and FOI reviews, with emphasis on systematic matter tracking, deadline management, and strategic advice generation.
+
+---
+
+## PHASE 1: ACTIVE LITIGATION FOUNDATION (Sprint 1)
+**Duration:** 40-50 hours
+**Goal:** Foundation + immediate court needs
+
+### P0A-1: Matter Memory Module [ELEVATED TO P0]
+**Effort:** 15-18 hours
+**Priority:** CRITICAL - FOUNDATIONAL
+
+**Purpose:** Track all active matters with systematic persistence
+
+**Rationale:**
+- Everything else depends on this
+- Active litigation requires systematic tracking across multiple concurrent matters
+- Critical deadline management
+- Without this, Procedural Advisor cannot function
+
+**Capabilities:**
+- Matter-scoped storage: `~/.config/litassist/matters/{matter_id}/`
+- Track per matter:
+  - Facts (versioned)
+  - Strategy decisions + reasoning
+  - Correspondence (incoming/outgoing)
+  - Timeline (events, deadlines)
+  - Authorities (citations used, verification status)
+  - Exhibits (registry, file paths, hashes)
+  - Court filings and responses
+
+**Example Matter Types:**
+- `LITIGATION-001` - Civil litigation (ACT Magistrates Court)
+- `COMPLAINT-001` - Professional complaint (Legal Services Commission)
+- `FOI-001` - FOI review (OAIC)
+
+**Implementation:**
+- New module: `litassist/matter/`
+- Commands:
+  - `la matter create LITIGATION-001 --type litigation --court "ACT Magistrates"`
+  - `la matter list`
+  - `la matter show LITIGATION-001`
+- All existing commands enhanced with `--matter {id}` flag (required, not auto-detect)
+- Automatic output saving to matter directory
+- Git-based versioning (local only, deterministic)
+
+---
+
+### P0A-2: ACT Magistrates Court Procedures Calculator [ELEVATED TO P0]
+**Effort:** 8-10 hours
+**Priority:** CRITICAL - IMMEDIATE NEED
+
+**Purpose:** Critical deadline calculations for ACT litigation
+
+**Rationale:**
+- Defense/response due date calculations
+- Applications and interlocutory deadlines
+- Directions hearing preparation timeline
+- Discovery timelines
+- ACT Court Procedures Rules 2006 compliance
+
+**Capabilities:**
+- Service deadline calculations
+- Filing deadlines by application type:
+  - Defense due date
+  - Reply to defense
+  - Interlocutory applications (strike-out, summary judgment, etc.)
+  - Discovery requests and objections
+  - Witness lists and evidence
+  - Trial preparation milestones
+- Directions hearing preparation checklist
+- Court rules compliance checking
+- Plain text output for matter timeline integration
+
+**Implementation:**
+- New command: `la actcourt --calculate-deadline --served 2025-11-06 --type defense`
+- New command: `la actcourt --checklist --hearing-type directions --date 2025-12-15`
+- Pure calculation (no LLM, date arithmetic + rules)
+- Integration: `la actcourt --matter LITIGATION-001 --update-timeline`
+- Output: Deadline table + calendar reminders + plain text facts
+
+---
+
+### P0A-3: Letter Doctor [KEEP P0]
+**Effort:** 8-10 hours
+**Priority:** HIGH - QUALITY CONTROL
+
+**Purpose:** Ensure all court and legal correspondence is strategically sound
+
+**Rationale:**
+- One bad letter undermines months of work
+- Court correspondence requires professional tone
+- Settlement/procedural correspondence is critical
+
+**Capabilities:**
+- Detect aggressive, defensive, emotional language
+- Identify potential admissions or concessions
+- Flag manipulative phrasing
+- Suggest neutral alternatives
+- Tone analysis (professional / defensive / aggressive / conciliatory)
+- Legal risk assessment (defamation, contempt, professional conduct)
+- Bias detection (cognitive biases in arguments)
+- Court-specific tone guidance
+
+**Implementation:**
+- New module: `litassist/commands/doctor/`
+- Commands:
+  - `la doctor --input draft_letter.md --recipient court`
+  - `la doctor --input draft_email.md --recipient opposing-counsel`
+- LLM: GPT-5 (critical analysis) + Claude Sonnet 4.5 (neutral rewrite)
+- Output: Risk report + line-by-line suggestions + rewritten version
+
+---
+
+### P0A-4: Legal Correspondence Analyzer [RENAMED, KEEP P0]
+**Effort:** 10-12 hours
+**Priority:** HIGH - IMMEDIATE TRIAGE
+
+**Purpose:** Automated analysis of all incoming legal/court correspondence
+
+**Rationale:**
+- When defense/response filed, need instant analysis
+- Extract obligations, threats, tactical moves
+- Early warning system for procedural traps
+
+**Capabilities:**
+
+**Court/Legal Correspondence:**
+- Classify type (defense, application, directions order, costs application)
+- Extract obligations ("must file X by Y")
+- Identify threats (strike-out motions, costs applications)
+- Detect procedural defects in opponent's filings
+- Flag admissions or concessions by opponent
+- Identify weak points in opponent's case
+- Suggest strategic response classification
+
+**Government Correspondence:**
+- Classify type (FOI decision, OAIC response, agency request)
+- Extract statutory obligations
+- Identify delay tactics
+- Detect procedural defects in agency actions
+
+**Implementation:**
+- New module: `litassist/commands/analyze/`
+- Commands:
+  - `la analyze --input defense.pdf --type legal --opponent "Counsel A"`
+  - `la analyze --input foi_decision.pdf --type government --agency DHA`
+- LLM: Claude Sonnet 4.5 + GPT-5 cross-check for critical documents
+- Output: Threat assessment + obligation checklist + strategic recommendation + deadline extraction
+
+---
+
+### P0A-5: Fix API Timeout Bug [CRITICAL BUG]
+**Effort:** 5 minutes
+**Priority:** CRITICAL
+
+**Purpose:** Prevent hanging processes
+
+**Location:** `litassist/llm/api_handlers.py:278, 285`
+**Fix:** Add `timeout=30.0` to both API calls
+
+**From Codebase Review:** Both API calls lack timeout parameter, can hang indefinitely.
+
+---
+
+## PHASE 2: ACTIVE LITIGATION STRATEGIC (Sprint 2)
+**Duration:** 40-50 hours
+**Goal:** Strategic response and tactical planning
+
+### P0B-6: Procedural Advisor / "What to Do Next" [KEEP P0]
+**Effort:** 8-10 hours
+**Priority:** HIGH
+
+**Purpose:** Context-aware guidance on immediate next steps across all active matters
+
+**Rationale:**
+- Systematic approach prevents missed deadlines across multiple matters
+- Risk-based prioritization (what happens if deadline missed?)
+
+**Capabilities:**
+- Analyze current state of ALL matters (or specific matter)
+- Identify immediate obligations across matters
+- Recommend next action with rationale per matter
+- Prioritize across matters (urgent vs. important)
+- Procedural compliance checks (court rules, FOI Act, complaint processes)
+- Risk assessment
+- Calendar integration (export deadlines)
+
+**Implementation:**
+- New module: `litassist/commands/next/`
+- Commands:
+  - `la next` (analyze all matters)
+  - `la next --matter LITIGATION-001` (specific matter)
+  - `la next --urgent` (only critical deadlines)
+- Requires: Matter Memory from Sprint 1
+- LLM: Claude Sonnet 4.5 (strategic prioritization)
+- Output: Prioritized action list + deadline table + procedural guidance + risk warnings
+
+---
+
+### P0B-7: Tactical Response Generator [KEEP P0]
+**Effort:** 15-20 hours
+**Priority:** HIGH
+
+**Purpose:** Analyze incoming litigation documents and generate strategic response options
+
+**Rationale:**
+- When defense/application filed, need immediate strategic analysis
+- Generate multiple response options with pros/cons
+
+**Capabilities:**
+
+**Defense Analysis:**
+- Parse incoming defense
+- Identify admissions, denials, weak arguments
+- Spot procedural defects or late filings
+- Generate 3-5 response options:
+  - File reply addressing denials
+  - Apply to strike out deficient defense
+  - Seek summary judgment on admitted facts
+  - Request particulars of vague defenses
+  - Proceed straight to discovery
+- Timing recommendations (respond immediately vs. wait vs. apply)
+- Risk assessment per option (probability of success, cost, time)
+- Draft response templates
+
+**Application Analysis:**
+- Analyze opponent's applications (strike-out, summary judgment, etc.)
+- Identify weaknesses
+- Generate defense strategy
+- Counter-application opportunities
+
+**Implementation:**
+- New module: `litassist/commands/respond/`
+- Commands:
+  - `la respond --input defense.pdf --matter LITIGATION-001 --type defense`
+  - `la respond --input application.pdf --matter LITIGATION-001 --type application`
+- Loads matter context from Matter Memory
+- LLM: Claude Sonnet 4.5 (strategic reasoning) + o3-pro (extended tactical analysis)
+- Output: Strategic analysis + response options matrix + timing advice + draft templates
+
+---
+
+### P0B-8: Litigation Tactical Planner [ENHANCED caseplan]
+**Effort:** 10-12 hours
+**Priority:** MEDIUM-HIGH
+
+**Purpose:** Strategic tactical guidance for litigation, not just workflow automation
+
+**Rationale:**
+- Current caseplan generates workflow
+- Need tactical advice: when to file, when to delay, procedural tactics
+- Lawyer-like strategic judgment
+
+**Enhancements to Existing caseplan:**
+
+**Litigation Tactics:**
+- Timing Strategy: Early trial listing for pressure vs. late for more preparation
+- Interlocutory Tactics: When to apply for summary judgment, strike-out opportunities
+- Discovery Strategy: Broad vs. narrow discovery scope
+- Settlement Strategy: Optimal settlement windows
+- Witness Strategy: Who to call, order of testimony, preparation priorities
+- Cost Orders: When to seek indemnity costs
+- Procedural Pressure: Using applications to pressure settlement
+
+**Implementation:**
+- Enhance existing `caseplan` command
+- New flag: `la caseplan --matter LITIGATION-001 --tactical`
+- Add `--tactical` flag for strategic guidance layer
+- LLM: o3-pro (extended reasoning for complex tactical decisions)
+- Output: Current workflow bash script + NEW SECTION: Tactical Advisory
+- Integration: Loads matter context, past strategic decisions
+
+---
+
+## PHASE 3: STRATEGIC DEPTH (Sprint 3-4)
+**Duration:** 55-70 hours
+**Goal:** Opponent intelligence, negotiation, risk analysis, quality assurance
+
+### P1-9: Opponent Profiling System [ELEVATED TO P1]
+**Effort:** 8-10 hours
+**Priority:** HIGH
+
+**Purpose:** Track patterns and tactics of specific opponents and counsel
+
+**Rationale:**
+- Pattern recognition improves strategic advice
+- Historical behavior predicts future tactics
+- Specific lawyer tactics matter (not just generic approaches)
+
+**Opponent Profile Types:**
+- **Individual opponents** (litigation parties)
+- **Opposing counsel** (lawyers representing opponents)
+- **Government agencies** (FOI/complaint handling)
+- **Agency officers** (specific individuals in government matters)
+
+**Capabilities:**
+- Track per opponent:
+  - Tactic library (delay tactics, procedural moves, settlement offers)
+  - Historical outcomes (settlement rates, trial results)
+  - Communication patterns (aggressive, conciliatory, evasive)
+  - Financial capacity (cost orders risk)
+  - Professional reputation
+- Predict next moves based on past behavior
+- Update profiles after each interaction
+- Generate "What to expect next" predictions
+
+**Implementation:**
+- New module: `litassist/opponent/`
+- Storage: `~/.config/litassist/matters/profiles/{opponent}.yaml`
+- Commands:
+  - `la profile --create "Opponent A" --type individual`
+  - `la profile --update "Counsel A" --matter LITIGATION-001 --event "defense filed"`
+  - `la profile --analyze "Opponent A"` (generate predictions)
+- LLM: Claude Sonnet 4.5 (pattern analysis)
+- Output: Opponent dossier + predicted tactics + recommended counter-tactics
+
+---
+
+### P1-10: Negotiation Strategy Generator [KEEP P1]
+**Effort:** 10-12 hours
+**Priority:** MEDIUM-HIGH
+
+**Purpose:** Strategic negotiation planning for settlements
+
+**Rationale:**
+- Most cases settle - negotiation strategy is critical
+- BATNA analysis critical for good outcomes
+- Settlement probability assessment needed
+
+**Capabilities:**
+
+**Settlement Strategy:**
+- BATNA: Trial outcome probability × expected judgment - trial costs
+- Opening position: Full claim value + costs
+- Walk-away position: Minimum acceptable outcome
+- Concession strategy: What to offer, when, in what order
+- Opponent's incentives analysis
+- Settlement probability assessment
+- Multiple scenarios with probability weighting:
+  - Scenario A: Full claim + costs (example probability)
+  - Scenario B: Cash settlement at value (example probability)
+  - Scenario C: Compromised settlement (example probability)
+  - Scenario D: No settlement, proceed to trial (example probability)
+- Timing: Settle now vs. after discovery vs. door of court
+
+**Implementation:**
+- New module: `litassist/commands/negotiate/`
+- Commands:
+  - `la negotiate --matter LITIGATION-001 --type settlement --stage pre-discovery`
+- LLM: Claude Sonnet 4.5 (strategic reasoning) + o3-pro (probability calculations)
+- Uses opponent profile for pattern analysis
+- Output: Negotiation strategy + BATNA analysis + concession matrix + scenario probabilities
+
+---
+
+### P1-11: Risk Assessment Framework [KEEP P1]
+**Effort:** 12-15 hours
+**Priority:** MEDIUM-HIGH
+
+**Purpose:** Probability-based risk analysis for litigation decisions
+
+**Rationale:**
+- User wants ACTUAL PERCENTAGES (not qualitative)
+- "Should I settle?" requires quantified risk-benefit analysis
+- Professional advice includes probability judgments
+
+**Capabilities:**
+
+**Litigation Risk Analysis:**
+- Cause of action probability assessment
+- Overall case probability (weighted average)
+- Expected value calculation:
+  - EV = P(success) × judgment - P(failure) × adverse costs - own costs
+- Downside risk analysis
+- Procedural risks:
+  - Strike-out risk assessment
+  - Summary judgment probability
+  - Adverse costs orders likelihood
+
+**Settlement Decision Analysis:**
+- Compare: Settlement offer vs. Expected trial value
+- Risk-adjusted settlement threshold
+- Decision tree: Accept offer vs. Proceed to trial
+
+**Implementation:**
+- New module: `litassist/commands/risk/`
+- Commands:
+  - `la risk --matter LITIGATION-001 --analysis full`
+  - `la risk --matter LITIGATION-001 --scenario "settle-at-20k"`
+- LLM: o3-pro (probabilistic reasoning, extended thinking)
+- Uses legal analysis from strategy/brainstorm outputs
+- Output: Risk report + probability matrix + expected value calculations + decision recommendation
+
+---
+
+### P1-12: Multi-Model Cross-Checks [KEEP P1]
+**Effort:** 8-10 hours
+**Priority:** MEDIUM
+
+**Purpose:** Quality assurance for critical litigation documents
+
+**Rationale:**
+- Court submissions must be perfect
+- Cross-checks catch reasoning errors, hallucinations
+- Precision requirement
+
+**Capabilities:**
+- Run critical documents through 2+ models independently
+- Compare reasoning paths (not just conclusions)
+- Flag disagreements for human review
+- Confidence scoring based on agreement
+- Model specialization:
+  - Claude Sonnet 4.5: Legal reasoning, strategy
+  - GPT-5: Verification, fact-checking
+  - o3-pro: Extended reasoning, probability
+
+**Use Cases:**
+- Court submissions (affidavits, applications, submissions)
+- Settlement offer analysis
+- Defense response strategy
+- High-stakes correspondence
+
+**Implementation:**
+- Extend existing verification system in `litassist/verification_chain.py`
+- New flag: `la verify --input submission.md --cross-check --matter LITIGATION-001`
+- Output: Agreement level + disagreements highlighted + confidence score
+
+---
+
+### P1-13: Temporal Integrity Score (TIS) [KEEP P1]
+**Effort:** 12-15 hours
+**Priority:** MEDIUM
+
+**Purpose:** Ensure all legal authorities are current law
+
+**Rationale:**
+- CRITICAL FOR PRECISION
+- Citing overruled precedent = malpractice
+- Courts may rely on outdated authorities
+
+**Capabilities:**
+- Per-citation freshness assessment
+- Treatment classification: followed, distinguished, overruled, superseded
+- Fetch citing cases from JADE/AustLII (via Google CSE + scraping)
+- LLM analysis of case treatment
+- Aggregate TIS per document
+- Warnings: overruled, distinguished, superseded, aged (>10 years with no treatment)
+
+**Technical Implementation:**
+1. Google CSE: Search "citing:[CITATION]" on JADE
+2. Scraping: Fetch full text of citing cases
+3. LLM (Claude Sonnet 4.5): Analyze treatment
+4. Calculate TIS score: Recency + Treatment
+
+**Implementation:**
+- Extend `citation/verify.py` with TIS module
+- New module: `litassist/citation/temporal.py`
+- Commands:
+  - `la verify --input legal_memo.md --tis --threshold 70`
+  - `la tis --citation "[2020] HCA 15"` (single citation analysis)
+- Output: Per-citation TIS + aggregate document score + warnings + recommendations
+
+---
+
+### P1-14: Evidence Chain Tracker [NEW]
+**Effort:** 10-12 hours
+**Priority:** MEDIUM
+
+**Purpose:** Track evidence systematically for litigation matters
+
+**Rationale:**
+- Complex causes of action require systematic proof chains
+- Need evidence compilation and gap analysis
+
+**Capabilities:**
+- Track exhibits by category:
+  - Ownership/contractual evidence
+  - Performance/breach evidence
+  - Demand/notice evidence
+  - Loss/damage evidence
+- Link evidence to facts and causes of action
+- Identify gaps
+- Exhibit preparation (numbering, descriptions)
+- Chronological evidence timeline
+- Witness evidence mapping (who can prove what)
+
+**Implementation:**
+- Part of Matter Memory: `matters/LITIGATION-001/evidence/`
+- Commands:
+  - `la evidence --matter LITIGATION-001 --add exhibit_a.pdf --category ownership --fact "Contract executed"`
+  - `la evidence --matter LITIGATION-001 --gaps` (identify missing evidence)
+  - `la evidence --matter LITIGATION-001 --chain "breach"` (show evidence chain)
+- Output: Evidence registry + gap analysis + exhibit list
+
+---
+
+## PHASE 4: SECONDARY MATTERS (Sprint 5)
+**Duration:** 45-55 hours
+**Goal:** Professional complaints, FOI, administrative matters
+
+### P2-15: Professional Complaint Support [NEW]
+**Effort:** 10-12 hours
+**Priority:** MEDIUM
+
+**Purpose:** Strategic guidance for professional complaints (legal services, medical, etc.)
+
+**Rationale:**
+- Professional complaint processes are jurisdiction-specific
+- Evidence compilation and strategic timing matter
+
+**Capabilities:**
+- Complaint process guidance:
+  - Investigation stages
+  - Evidence requirements
+  - Response strategies
+  - Typical outcomes and timelines
+- Evidence compilation:
+  - Organize supporting evidence
+  - Link evidence to complaint grounds
+  - Identify evidence gaps
+- Strategic advice:
+  - When to provide additional evidence
+  - How to respond to requests
+  - Settlement vs. hearing decision support
+- Jurisdiction-specific compliance
+
+**Implementation:**
+- New module: `litassist/commands/complaint/`
+- Commands:
+  - `la complaint --matter COMPLAINT-001 --stage investigation`
+  - `la complaint --matter COMPLAINT-001 --evidence-compile`
+- LLM: Claude Sonnet 4.5 (process knowledge)
+- Output: Process guidance + evidence checklist + strategic advice
+
+---
+
+### P2-16: FOI Strategic Advisor [DEMOTED FROM P0, ENHANCED]
+**Effort:** 12-15 hours (Commonwealth), +4-6h per jurisdiction
+**Priority:** MEDIUM
+
+**Purpose:** Strategic FOI planning and tactical guidance
+
+**Rationale:**
+- FOI matters require strategic approach, not just timeline tracking
+- Agency delay tactics are predictable
+
+**Capabilities:**
+
+**Strategic Planning:**
+- Analyze request scope, optimal framing
+- Identify high-value vs. low-value documents
+- Recommend FOI Act sections to invoke
+- Timing strategy
+
+**Tactical Response:**
+- Analyze agency responses (delays, partial releases, exemptions)
+- Counter-tactics for agency delay strategies
+- Extension negotiation recommendations
+- Deemed refusal vs. negotiation decision support
+- OAIC/tribunal appeal strategy and timing
+
+**Timeline Tracking:**
+- Statutory clocks (extensions, deemed refusals, deadlines)
+- Review milestones
+- Multiple matters coordination
+
+**Implementation Stages:**
+
+**Stage 1 (Commonwealth FOI):** 8-10 hours
+- New module: `litassist/commands/foi/`
+- Commands:
+  - `la foi --type strategy --input agency_decision.pdf`
+  - `la foi --type timeline --lodged 2025-01-15 --matter FOI-001`
+  - `la foi --import foi_log.csv` (CSV import)
+- LLM: Claude Sonnet 4.5
+- Output: Strategic advice + timeline table + draft correspondence
+
+**Stage 2 (QLD RTI):** 4-6 hours
+**Stage 3 (ACT FOI):** 4-6 hours
+**Stage 4 (Gmail Integration):** 6-8 hours - SEPARATE FEATURE (Phase 6)
+
+---
+
+### P2-17: Administrative Complaint Drafter [NEW]
+**Effort:** 8-10 hours
+**Priority:** MEDIUM-LOW
+
+**Purpose:** Draft administrative complaints to government agencies
+
+**Rationale:**
+- Government agency complaints have specific formats
+- Evidence compilation and timing matter
+
+**Capabilities:**
+- Analyze background information
+- Identify potential complaint grounds
+- Draft complaint:
+  - Grounds for complaint
+  - Evidence compilation
+  - Relevant statutory sections
+  - Procedural requirements
+- Strategic timing advice
+- Risk assessment
+
+**Implementation:**
+- New module: `litassist/commands/admin/`
+- Commands:
+  - `la admin --type complaint --agency DHA`
+  - `la admin --draft --evidence-from matters/FOI-001/`
+- LLM: Claude Sonnet 4.5 + o3-pro (strategic timing)
+- Output: Draft complaint + evidence checklist + strategic timing advice
+
+---
+
+### P2-18: Cost-of-Obstruction Ledger [KEEP P2]
+**Effort:** 8-10 hours
+**Priority:** LOW (triggered by events)
+
+**Purpose:** Track incremental costs from opponent delay tactics
+
+**Rationale:**
+- Document delay tactics for costs orders
+- Pre-judgment interest calculation
+
+**Capabilities:**
+- Track timeline delays and costs incurred
+- Categorize obstruction:
+  - Late defenses/responses
+  - Frivolous applications
+  - Discovery abuse
+  - Needless adjournments
+- Calculate incremental costs per delay
+- Pre-judgment interest calculation
+- Costs orders argument preparation
+- Pattern documentation for indemnity costs application
+
+**Implementation:**
+- New module: `litassist/commands/costs/`
+- Commands:
+  - `la costs --matter LITIGATION-001 --track-obstruction`
+  - `la costs --matter LITIGATION-001 --event "late defense filed" --delay 15 --cost 500`
+- CSV export for evidence
+- Output: Obstruction ledger + costs breakdown + pre-judgment interest + indemnity costs argument
+
+---
+
+## PHASE 5: PRECISION TOOLS (Sprint 6)
+**Duration:** 20-30 hours
+**Goal:** Citation quality and compliance
+
+### P3-19: Pinpoint Validation [KEEP P3]
+**Effort:** 6-8 hours
+**Priority:** MEDIUM
+
+**Purpose:** Verify paragraph numbers in citations
+
+**Capabilities:**
+- Detect paragraph symbols (¶), ranges
+- Fetch case document, verify paragraph exists
+- Degrade to nearest match with warning
+- Show corrections
+
+**Implementation:**
+- Extend `citation/verify.py`
+- Scrape via Google CSE + JADE/AustLII
+- Output: Valid/Invalid + corrections
+
+---
+
+### P3-20: AGLC Validator [KEEP P3]
+**Effort:** 6-8 hours
+**Priority:** MEDIUM
+
+**Purpose:** Enforce Australian Guide to Legal Citation format
+
+**Capabilities:**
+- Normalize neutral citations
+- Verify parallel cites
+- Enforce pinpoint format
+- Resolve JADE/AustLII URLs
+
+**Implementation:**
+- Extend `citation/verify.py`
+- AGLC 4th edition rules
+- Output: Format corrections
+
+---
+
+### P3-21: Cross-Source Concordance [KEEP P3]
+**Effort:** 8-10 hours
+**Priority:** MEDIUM
+
+**Purpose:** Verify same authority across JADE + AustLII
+
+**Capabilities:**
+- Resolve each authority against two providers
+- Record titles and URLs
+- Flag disagreements
+- Choose canonical by policy
+
+**Implementation:**
+- Extend `citation/verify.py`
+- Two-provider verification via Google CSE + scraping
+- Output: Concordance report
+
+---
+
+## PHASE 6: INFRASTRUCTURE (Sprint 7)
+**Duration:** 25-35 hours
+**Goal:** Technical polish and infrastructure
+
+### P4-22: Verify Release Gate [REFRAMED]
+**Effort:** 4-6 hours
+**Priority:** LOW
+
+**Purpose:** Quality checklist before sending critical documents
+
+**Capabilities:**
+- Aggregate verification errors
+- Severity mapping (critical / major / minor)
+- Pass/fail threshold (configurable)
+- Pre-send checklist
+
+**Implementation:**
+- Extend existing verify command
+- Command: `la verify --gate --input submission.md --threshold major`
+- Output: Pass/fail + error summary
+
+---
+
+### P4-23: PDF Preflight Normalisation [KEEP P4]
+**Effort:** 8-10 hours
+**Priority:** LOW
+
+**Purpose:** Ensure PDF text extraction quality
+
+**Capabilities:**
+- Text layer extraction + page mapping
+- OCR fallback
+- Glyph sanity checks
+- Pass/fail signal
+
+**Implementation:**
+- Enhance existing `utils/file_ops.py:read_document()`
+- Add OCR support
+- Output: Extracted text + quality report
+
+---
+
+### P4-24: Retrieval Guardrails [KEEP P4]
+**Effort:** 4-6 hours
+**Priority:** LOW
+
+**Purpose:** Prevent hallucination in RAG-based drafting
+
+**Capabilities:**
+- Require resolvable authority IDs
+- Reject unverifiable claims
+- Track authority IDs used vs. generated
+
+**Implementation:**
+- Extend `litassist/commands/draft/rag.py`
+- Add `--strict-retrieval` flag
+- Output: Verification report
+
+---
+
+### P4-25: Glob Unification [From codebase review]
+**Effort:** 2-3 hours
+**Priority:** LOW
+
+**Purpose:** Centralize glob pattern expansion
+
+**Implementation:**
+- Centralize in `utils/file_ops.py`
+- Update 5+ commands
+- Remove temporary `prompts/glob_help_addon.yaml`
+
+---
+
+### P4-26: FOI Gmail Integration [SEPARATE FEATURE]
+**Effort:** 6-8 hours
+**Priority:** LOW
+
+**Purpose:** Automated FOI tracking via Gmail labels
+
+**Capabilities:**
+- OAuth authentication
+- Label-based tracking
+- Automatic deadline extraction
+
+**Implementation:**
+- Extend FOI module
+- Commands: `la foi --setup-gmail`, `la foi --sync-gmail`
+- Output: Synced correspondence + extracted deadlines
+
+---
+
+## DEPRIORITISED (Phase 7+)
+
+### DEP-27: Evidence-Pack Exporter / Court Document Bundling
+**Effort:** 15-20 hours
+**Priority:** SUPER LOW
+
+**Purpose:** Automated trial bundle preparation
+**Status:** Deferred indefinitely
+
+---
+
+### DEP-28: Judge Analytics
+**Effort:** 20-30 hours
+**Priority:** NONE (productization)
+
+**Purpose:** Judge decision pattern analysis
+**Status:** Deprioritized - productization feature
+
+---
+
+### DEP-29: Web UI / Packaging
+**Effort:** 40-60 hours
+**Priority:** NONE (productization)
+
+**Purpose:** Web interface, external packaging
+**Status:** Deprioritized - possible in 1+ years
+
+---
+
+## Implementation Notes
+
+### Example Matter Structure
+
+```bash
+# Example matter types
+la matter create LITIGATION-001 --type litigation --court "ACT Magistrates Court"
+la matter create COMPLAINT-001 --type complaint --agency QLSC
+la matter create FOI-001 --type foi-review --agency OAIC
+```
+
+### Opponent Profile Examples
+
+```bash
+# Example profiles
+la profile --create "Opponent A" --type individual
+la profile --create "Counsel A" --type lawyer
+la profile --create "Agency A" --type government
+```
+
+### FOI Implementation Staging
+
+**Stage 1:** Commonwealth FOI + CSV import (8-10h)
+**Stage 2:** QLD RTI (4-6h)
+**Stage 3:** ACT FOI (4-6h)
+**Stage 4:** Gmail integration (6-8h) - SEPARATE
+
+### LLM Strategy by Use Case
+
+**Strategic Reasoning & Legal Analysis:**
+- Model: Claude Sonnet 4.5
+- Use Cases: Correspondence analysis, legal reasoning, strategy generation
+- Rationale: Cost-effective, 80% cost reduction
+
+**Critical Verification:**
+- Model: GPT-5 / GPT-5 Pro
+- Use Cases: Document verification, cross-checks
+- Rationale: <1% hallucination rate
+
+**Extended Reasoning & Probability:**
+- Model: o3-pro
+- Use Cases: Tactical planning, risk assessment, probability calculations
+- Rationale: Extended thinking for complex decisions
+
+---
+
+## Confidence Assessment
+
+**Overall Confidence: 0.88**
+
+### High Confidence (0.92+)
+- Feature relevance for active litigation
+- Current codebase can support these features
+- Matter Memory is foundational
+- API research conclusions
+
+### Medium-High Confidence (0.85-0.90)
+- Effort estimates (based on similar existing commands)
+- LLM model choices (proven in existing commands)
+- Implementation approach
+
+### Medium Confidence (0.75-0.85)
+- TIS accuracy (treatment classification by LLM)
+- Risk assessment probability calibration
+- Opponent profiling effectiveness
+
+### Lower Confidence (0.60-0.70)
+- Negotiation strategy quality
+- Evidence Chain Tracker adoption
+
+---
+
+## Next Steps
+
+**Sprint 1 Sequence:**
+1. Fix API timeout bug (5 min)
+2. Matter Memory Module (15-18h)
+3. ACT Court Procedures Calculator (8-10h)
+4. Letter Doctor (8-10h)
+5. Legal Correspondence Analyzer (10-12h)
+
+**Total Phase 1 Effort:** 40-50 hours
+
+---
+
+**Last Updated:** November 2025
+**Status:** Strategic Planning Phase
+**Next Review:** After Phase 1 completion
