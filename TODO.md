@@ -39,6 +39,13 @@
   - Anti-injection prompt protection added for all LLM calls
   - Raw pre-verification output persistence for audit trail compliance
   - All 392 tests passing
+- **November 2025: Token Limit System Removal**
+  - Removed global token limit system (use_token_limits flag and automatic 16K output limits)
+  - Increased input file size limits: brainstorm (50K→600K), caseplan (50K→600K), strategy (100K+100K→600K combined)
+  - Clarified thinking_effort as reasoning budget (not output limit)
+  - Quality prioritized over cost - models use API defaults for comprehensive outputs
+  - Deprecation warnings added for old config files
+  - All 390 tests passing
 
 ### Pending Tasks [IN PROGRESS]
 - [x] ~~Fix lookup `--comprehensive` help/behavior mismatch~~ - Already correct (verified Oct 2025)
