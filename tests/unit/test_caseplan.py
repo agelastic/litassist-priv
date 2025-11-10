@@ -99,7 +99,7 @@ class TestCaseplanCommand:
     def test_file_size_validation(self, tmp_path):
         """Test rejection of oversized files."""
         case_facts = tmp_path / "case_facts.txt"
-        case_facts.write_text("A" * 60000)  # 60KB
+        case_facts.write_text("A" * 700000)  # 700K chars (exceeds 600K limit)
 
         runner = CliRunner()
         result = runner.invoke(caseplan, [str(case_facts)])

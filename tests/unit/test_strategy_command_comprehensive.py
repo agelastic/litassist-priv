@@ -726,8 +726,40 @@ class TestErrorHandling:
         """Test handling of file size limit exceeded."""
         mock_validate_size.side_effect = click.ClickException("File size exceeds limit")
 
+        valid_case_facts = """
+        1. PARTIES:
+        John Smith v ABC Corporation
+
+        2. BACKGROUND:
+        Test background
+
+        3. KEY EVENTS:
+        Timeline
+
+        4. LEGAL ISSUES:
+        Contract breach
+
+        5. EVIDENCE AVAILABLE:
+        Documents
+
+        6. OPPOSING ARGUMENTS:
+        Defense position
+
+        7. PROCEDURAL HISTORY:
+        Court history
+
+        8. JURISDICTION:
+        Federal Court
+
+        9. APPLICABLE LAW:
+        Contract law
+
+        10. CLIENT OBJECTIVES:
+        Damages
+        """
+
         with tempfile.NamedTemporaryFile(mode="w", suffix=".txt", delete=False) as f:
-            f.write("Test content")
+            f.write(valid_case_facts)
             facts_file = f.name
 
         try:
