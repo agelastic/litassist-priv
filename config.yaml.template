@@ -22,18 +22,15 @@ pinecone:
   index_name:  "legal-rag"
 
 llm:
-  use_token_limits: true     # Enable model-specific token limits (default: true, sets 32K tokens for most models)
 
 general:
   heartbeat_interval: 10    # Seconds between progress messages (default: 10)
   max_chars: 200000         # Maximum characters per chunk for document processing (default: 200000, ~50K tokens)
   rag_max_chars: 8000       # Maximum characters per chunk for RAG retrieval (default: 8000)
-  log_format: "json"        # Format for audit logs: "json" or "markdown" (default: json)
+  log_format: "markdown"        # Format for audit logs: "json" or "markdown" (default: markdown)
 
 citation_validation:
-  offline_validation: false  # Enable pattern-based offline validation (default: false - Jade primary)
-
-# Citation verification now uses Jade.io via Google CSE (primary) with offline pattern validation fallback
+  offline_validation: false  # Enable pattern-based offline validation (default: false - online primary)
 
 web_scraping:
   fetch_timeout: 10        # Timeout per URL fetch in seconds

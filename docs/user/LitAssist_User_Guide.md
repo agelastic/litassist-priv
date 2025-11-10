@@ -2974,32 +2974,9 @@ Without BYOK setup, commands using these models (draft, barbrief, counselnotes, 
 - Positive values reduce word repetition
 - Used in drafting for better flow
 
-### Token Limits
+### Document Chunking (Input Processing)
 
-When `use_token_limits: false`, models use their API default token limits (typically ~4096 tokens).
-
-When `use_token_limits: true` (default as of July 2025), LitAssist applies generous token limits:
-
-| Model | Completion Tokens | Verification Tokens |
-|-------|-------------------|---------------------|
-| `google/gemini-*` | 32768 | 16384 |
-| `anthropic/claude-*` | 32768 | 16384 |
-| `openai/gpt-4*` | 32768 | 16384 |
-| `x-ai/grok-*` | 32768 | 16384 |
-| `openai/o3-pro` | 32768 | 16384 |
-| Others | 32768 | 16384 |
-
-These generous limits ensure comprehensive responses for complex legal analysis (updated July 2025).
-
-**Note**: Token limits are not directly configurable. You can only enable/disable these limits via `use_token_limits`. The default is now `true` to ensure complete outputs. Custom token limits would require modifying the source code.
-
-### Document Chunking vs Token Limits
-
-LitAssist has two separate systems for managing text size:
-
-#### 1. Document Chunking (Input Processing)
-
-Controls how large documents are split before sending to the AI:
+LitAssist automatically splits large documents before sending them to AI models:
 
 ```yaml
 general:
@@ -3016,38 +2993,27 @@ general:
 - With `max_chars: 200000`: Creates ~2-3 chunks
 - With `max_chars: 10000`: Creates ~30-40 chunks (more API calls, more focused processing)
 
-#### 2. Token Limits (Output Generation)
-
-Controls how much text the AI can generate in responses:
-
-```yaml
-llm:
-  use_token_limits: true     # Default since July 2025: enable 32K token limits for comprehensive outputs
-```
-
-- `false`: Models use their API default limits (typically ~4096 tokens)
-- `true`: Applies generous 32K token limits for all models
-
-**Key differences:**
-| Aspect | Document Chunking | Token Limits |
-|--------|------------------|--------------|
-| **Purpose** | Split large inputs | Control output length |
-| **Units** | Characters (≈ 5 chars/word) | Tokens (≈ 1.3 tokens/word) |
-| **Applies to** | Documents being processed | AI responses |
-| **Config location** | `general` section | `llm` section |
-| **Customizable** | Yes, via config | Only on/off via config |
-
-### When to Adjust These Settings
+### When to Adjust Chunking Settings
 
 **Document Chunking (`max_chars`, `rag_max_chars`):**
 - **Decrease** (e.g., 10000) if documents have distinct sections that shouldn't be mixed
 - **Increase** (e.g., 40000) if documents have long continuous narratives
 - **Trade-off**: Smaller chunks = more API calls but more focused analysis
 
-**Token Limits (`use_token_limits`):**
-- **Enable** (`true`, default) for comprehensive, complete outputs
-- **Disable** (`false`) only if you want to use API default limits (~4K tokens)
-- **Trade-off**: Limited tokens = concise but potentially incomplete responses
+### Model Reasoning Control
+
+LitAssist uses `thinking_effort` (for Claude models) and `reasoning_effort` (for o-series models) to control how deeply models reason before responding:
+
+**thinking_effort** (Claude Sonnet 4.5):
+- `"low"`: Basic reasoning (1K reasoning tokens)
+- `"medium"`: Standard reasoning (8K reasoning tokens)
+- `"high"`: Deep reasoning (16K reasoning tokens)
+- `"max"`: Maximum reasoning (32K reasoning tokens)
+
+**reasoning_effort** (o3-pro):
+- `"low"`, `"medium"`, `"high"`: OpenAI reasoning depth levels
+
+**Note**: These parameters control REASONING BUDGET (how much the model thinks), NOT output length. Models can generate comprehensive responses regardless of thinking_effort level.
 
 ### Customization Notes
 

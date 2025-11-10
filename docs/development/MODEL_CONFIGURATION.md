@@ -343,31 +343,76 @@ The October 2025 upgrade implements a three-tier model selection strategy optimi
 - **Efficient**: Claude Sonnet 4.5 (best value for legal work)
 - **Creative**: Grok 4 (specialized ideation)
 
-## Token Limits & Configuration
+## Output Control Parameters
 
-### Generation Token Limits (July 2025 Update)
+### Understanding thinking_effort vs max_tokens
 
-All models now use increased token limits for better output quality:
+**IMPORTANT**: LitAssist uses two SEPARATE parameter systems for controlling model behavior:
 
-| Model | Generation Limit | Verification Limit |
-|-------|-----------------|-------------------|
-| `google/gemini-*` | 32768 | 8192 |
-| `anthropic/claude-*` | 32768 | 16384 (heavy) / 8192 (standard) |
-| `openai/gpt-4*` | 32768 | 8192 |
-| `openai/o3-pro` | 32768 (max_completion_tokens) | 16384 |
-| `x-ai/grok-*` | 32768 | 8192 |
+#### 1. thinking_effort (Reasoning Budget)
+**Purpose**: Controls how much computational effort the model spends reasoning BEFORE generating output
+**Applies to**: Claude models (Anthropic family)
+**NOT an output limit**: Does not restrict response length
+**Values**: `"low"`, `"medium"`, `"high"`, `"max"`
 
-### Verification Token Limits (July 2025)
+**Token Budget Mapping** (internal reasoning tokens, NOT output):
+- `"minimal"` / `"low"`: 1,024 reasoning tokens
+- `"medium"`: 8,192 reasoning tokens
+- `"high"`: 16,384 reasoning tokens
+- `"max"`: 32,000 reasoning tokens
 
-Verification limits were increased significantly to handle full document verification:
-- **Previous limits**: 800-1536 tokens (caused truncation)
-- **New limits**: 8192-16384 tokens (preserves full documents)
-
-### Configuration
-```yaml
-llm:
-  use_token_limits: true  # Default since July 2025 - enforces 32K token limits for comprehensive outputs
+**Example**:
+```python
+"strategy": {
+    "model": "anthropic/claude-sonnet-4.5",
+    "thinking_effort": "max",  # Uses 32K tokens for internal reasoning
+    # NO output length restriction - can generate as much as needed
+}
 ```
+
+#### 2. reasoning_effort (o-series Models)
+**Purpose**: Controls reasoning depth for OpenAI o1/o3 models
+**Applies to**: OpenAI reasoning models (o1, o3, o1-pro, o3-pro)
+**Values**: `"low"`, `"medium"`, `"high"`
+**NOT related to output length**
+
+#### 3. max_tokens / max_completion_tokens (Output Length)
+**Purpose**: Explicitly limits OUTPUT response length (when needed for cost control)
+**Applies to**: All models (parameter name varies by model family)
+**Use cases**: Cost-sensitive commands that need brief responses
+
+**Example**:
+```python
+# Brief response for cost control
+"lookup": {
+    "model": "google/gemini-2.5-pro",
+    "max_tokens": 4096,  # Explicit output limit
+}
+
+# Comprehensive analysis - NO limit
+"barbrief": {
+    "model": "openai/o3-pro",
+    "max_completion_tokens": 32768,  # Large limit for comprehensive briefs
+    "reasoning_effort": "high",  # Deep reasoning
+}
+```
+
+### November 2025 Update: Output Limits Removed
+
+**Previous behavior** (July-October 2025):
+- Global `use_token_limits` flag automatically applied 16K-32K output limits
+- All commands received automatic output restrictions
+
+**Current behavior** (November 2025+):
+- NO automatic output limits applied
+- Models use API defaults (typically unlimited or very high limits)
+- Commands that need output limits specify them explicitly in model_configs.yaml
+- Quality prioritized over cost savings
+
+**Rationale**:
+- Modern models (Claude Sonnet 4.5, GPT-5, o3-pro) handle large outputs efficiently
+- Legal work requires comprehensive responses - artificial truncation reduces quality
+- thinking_effort provides reasoning control without limiting output length
 
 ## Dynamic Parameter System
 

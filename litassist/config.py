@@ -137,8 +137,6 @@ class Config:
             llm_config = self.cfg.get("llm", {})
             if llm_config is None:
                 llm_config = {}
-            self.use_token_limits = llm_config.get("use_token_limits", True)
-            self.token_limit = llm_config.get("token_limit", 16384)
 
             # Extract optional general settings with defaults
             general_config = self.cfg.get("general", {})
