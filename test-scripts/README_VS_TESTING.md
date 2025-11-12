@@ -11,7 +11,7 @@ This test compares three approaches for implementing Verbalized Sampling in lita
 ## Running the Test
 
 ```bash
-cd /Users/witt/Projects/litassist
+# Run from the project root directory:
 python test-scripts/test_vs_exploration.py
 ```
 
@@ -168,7 +168,6 @@ This is representative of typical litassist use cases.
 ### Import Errors
 ```bash
 # Make sure you're in the project root
-cd /Users/witt/Projects/litassist
 # Run with python3 explicitly
 python3 test-scripts/test_vs_exploration.py
 ```
