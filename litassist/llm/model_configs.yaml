@@ -21,6 +21,8 @@ strategy:
 
 strategy-analysis:
   model: "openai/o3-pro"
+  temperature: 0.7
+  top_p: 0.95
   thinking_effort: "max"
   disable_tools: true
 
@@ -41,13 +43,15 @@ brainstorm-unorthodox:
 
 brainstorm-analysis:
   model: "openai/o3-pro"
-  temperature: 0.2
-  top_p: 0.8
+  temperature: 0.7
+  top_p: 0.9
   thinking_effort: "high"
   disable_tools: true
 
 draft:
   model: "openai/o3-pro"
+  temperature: 0.7
+  top_p: 0.95
   thinking_effort: "high"
   verbosity: "high"
   disable_tools: true
@@ -141,19 +145,23 @@ counselnotes:
 
 barbrief:
   model: "openai/o3-pro"
+  temperature: 0.7
+  top_p: 0.95
   thinking_effort: "high"
   verbosity: "high"
   disable_tools: true
 
 caseplan:
   model: "anthropic/claude-sonnet-4.5"
-  temperature: 0.5
+  temperature: 0.7
+  top_p: 0.95
   enforce_citations: false
   disable_tools: true
 
 caseplan-assessment:
   model: "anthropic/claude-sonnet-4.5"
-  temperature: 0.5
+  temperature: 0.7
+  top_p: 0.95
   enforce_citations: false
   disable_tools: true
 
@@ -175,8 +183,8 @@ cove-questions:
 
 cove-answers:
   model: "openai/gpt-5"
-  temperature: 0.2
-  top_p: 0.3
+  temperature: 0.5
+  top_p: 0.8
   thinking_effort: "high"
   enforce_citations: false
   disable_tools: true
@@ -191,8 +199,8 @@ cove-verify:
 
 cove-answers-heavy:
   model: "openai/gpt-5-pro"
-  temperature: 0.2
-  top_p: 0.3
+  temperature: 0.5
+  top_p: 0.8
   thinking_effort: "max"
   enforce_citations: false
   disable_tools: true
