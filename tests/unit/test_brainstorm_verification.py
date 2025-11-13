@@ -1,0 +1,238 @@
+"""Test brainstorm verification flow."""
+
+from unittest.mock import patch, MagicMock
+from click.testing import CliRunner
+from litassist.commands.brainstorm.core import (
+    verify_and_annotate_strategies,
+    assess_legal_plausibility_bulk,
+    _extract_strategies,
+    _annotate_strategies_with_verification,
+)
+
+
+class TestVerificationFlow:
+    """Test the new verification flow."""
+
+    def test_extract_strategies_with_numbered_format(self):
+        """Test extraction of strategies in ### 1. format."""
+        content = """## ORTHODOX STRATEGIES
+
+### 1. Negligence Claim
+This is the first strategy content.
+Legal basis: Donoghue v Stevenson.
+
+### 2. Contract Breach
+This is the second strategy content.
+Legal basis: Contract Act.
+"""
+        strategies = _extract_strategies(content, "orthodox")
+        assert len(strategies) == 2
+        assert "This is the first strategy content" in strategies[0]
+        assert "This is the second strategy content" in strategies[1]
+
+    def test_extract_strategies_fallback(self):
+        """Test fallback when no numbered patterns found."""
+        content = """Some strategy text
+
+Another strategy text
+
+Third strategy text"""
+        strategies = _extract_strategies(content, "orthodox")
+        assert len(strategies) == 3
+
+    @patch('litassist.citation.verify.verify_all_citations')
+    @patch('litassist.commands.brainstorm.core.assess_legal_plausibility_bulk')
+    def test_verify_and_annotate(self, mock_plausibility, mock_verify):
+        """Test verify_and_annotate_strategies function."""
+        # Setup mocks
+        mock_verify.return_value = (
+            ["[2020] HCA 1"],  # verified
+            [("[2024] FakeCourt 999", "not found")]  # unverified
+        )
+        mock_plausibility.return_value = {
+            "orthodox_1": {"risk": "HIGH", "explanation": "Likely hallucination"}
+        }
+
+        # Test content
+        orthodox = "### 1. Strategy\nCiting [2024] FakeCourt 999"
+        unorthodox = "### 1. Strategy\nCiting [2020] HCA 1"
+
+        # Run verification
+        orth_out, unorth_out, summary = verify_and_annotate_strategies(
+            orthodox, unorthodox
+        )
+
+        # Check annotations added
+        assert "[NOT VERIFIED]" in orth_out
+        assert "[VERIFIED]" in unorth_out
+        assert "1 verified, 1 unverified" in summary
+
+    def test_plausibility_assessment_parsing(self):
+        """Test JSON parsing in plausibility assessment."""
+        with patch('litassist.llm.factory.LLMClientFactory.for_command') as mock_factory:
+            mock_client = MagicMock()
+            mock_client.complete.return_value = (
+                '{"orthodox_1": {"risk": "MEDIUM", "explanation": "Test"}}',
+                {}
+            )
+            mock_factory.return_value = mock_client
+
+            result = assess_legal_plausibility_bulk([
+                ("orthodox_1", "Strategy text", [("[2024] Test 1", "not found")])
+            ])
+
+            assert result["orthodox_1"]["risk"] == "MEDIUM"
+
+    def test_annotation_with_risk_levels(self):
+        """Test strategy annotation includes risk levels."""
+        strategies = ["Strategy citing [2024] Test 1"]
+        verified = set()
+        unverified = {"[2024] Test 1": "not found"}
+        plausibility = {"orthodox_1": {"risk": "LOW", "explanation": "Typo likely"}}
+
+        annotated = _annotate_strategies_with_verification(
+            strategies, verified, unverified, plausibility, "orthodox"
+        )
+
+        assert "LOW RISK" in annotated[0]
+        assert "Typo likely" in annotated[0]
+
+    @patch('litassist.commands.brainstorm.core.brainstorm')
+    def test_verify_flag_behavior(self, mock_brainstorm):
+        """Test --verify flag triggers full verification."""
+        runner = CliRunner()
+
+        with patch('litassist.llm.factory.LLMClientFactory.for_command'):
+            # Test without --verify
+            runner.invoke(
+                mock_brainstorm,
+                ['--side', 'plaintiff', '--area', 'civil']
+            )
+            # Should see skip message
+
+            # Test with --verify
+            runner.invoke(
+                mock_brainstorm,
+                ['--side', 'plaintiff', '--area', 'civil', '--verify']
+            )
+            # Should trigger full verification
+
+
+class TestStrategyExtraction:
+    """Test strategy extraction patterns."""
+
+    def test_extract_with_strategy_keyword(self):
+        """Test extraction with '### Strategy 1:' format."""
+        content = """### Strategy 1: Test Strategy
+Strategy content here.
+
+### Strategy 2: Another Strategy
+More content."""
+        strategies = _extract_strategies(content, "orthodox")
+        assert len(strategies) == 2
+        assert "Strategy content here." in strategies[0]
+
+    def test_extract_with_simple_numbering(self):
+        """Test extraction with '1. Title' format."""
+        content = """1. First Strategy
+This is the first strategy.
+
+2. Second Strategy
+This is the second."""
+        strategies = _extract_strategies(content, "orthodox")
+        assert len(strategies) == 2
+        assert "This is the first strategy." in strategies[0]
+
+    def test_extract_with_uppercase_strategy(self):
+        """Test extraction with '## STRATEGY 1:' format."""
+        content = """## STRATEGY 1: Big Strategy
+Important content.
+
+## STRATEGY 2: Another Big One
+More important content."""
+        strategies = _extract_strategies(content, "orthodox")
+        assert len(strategies) == 2
+        assert "Important content." in strategies[0]
+
+    def test_extract_preserves_multiline(self):
+        """Test that extraction preserves multiline strategy content."""
+        content = """### 1. Complex Strategy
+Line 1 of the strategy.
+Line 2 with more detail.
+Line 3 with citation [2020] HCA 1.
+
+### 2. Simple Strategy
+Just one line."""
+        strategies = _extract_strategies(content, "orthodox")
+        assert len(strategies) == 2
+        assert "Line 1" in strategies[0]
+        assert "Line 2" in strategies[0]
+        assert "Line 3" in strategies[0]
+
+
+class TestCitationAnnotation:
+    """Test citation annotation features."""
+
+    def test_no_citations_no_annotation(self):
+        """Test that strategies without citations aren't annotated."""
+        strategies = ["Strategy with no citations"]
+        verified = set()
+        unverified = {}
+        plausibility = {}
+
+        annotated = _annotate_strategies_with_verification(
+            strategies, verified, unverified, plausibility, "orthodox"
+        )
+
+        assert annotated[0] == "Strategy with no citations"
+        assert "CITATION STATUS" not in annotated[0]
+
+    def test_verified_citation_marking(self):
+        """Test verified citations are marked correctly."""
+        strategies = ["Strategy citing [2020] HCA 1"]
+        verified = {"[2020] HCA 1"}
+        unverified = {}
+        plausibility = {}
+
+        annotated = _annotate_strategies_with_verification(
+            strategies, verified, unverified, plausibility, "orthodox"
+        )
+
+        assert "[VERIFIED]: [2020] HCA 1" in annotated[0]
+
+    def test_unverified_with_risk_assessment(self):
+        """Test unverified citations include risk assessment."""
+        strategies = ["Strategy citing [2024] Fake 1"]
+        verified = set()
+        unverified = {"[2024] Fake 1": "not found in database"}
+        plausibility = {
+            "orthodox_1": {
+                "risk": "HIGH",
+                "explanation": "Citation appears fabricated"
+            }
+        }
+
+        annotated = _annotate_strategies_with_verification(
+            strategies, verified, unverified, plausibility, "orthodox"
+        )
+
+        assert "[NOT VERIFIED]: [2024] Fake 1" in annotated[0]
+        assert "HIGH RISK" in annotated[0]
+        assert "Citation appears fabricated" in annotated[0]
+
+    def test_mixed_citations(self):
+        """Test strategies with both verified and unverified citations."""
+        strategies = ["Strategy citing [2020] HCA 1 and [2024] Fake 1"]
+        verified = {"[2020] HCA 1"}
+        unverified = {"[2024] Fake 1": "not found"}
+        plausibility = {
+            "orthodox_1": {"risk": "MEDIUM", "explanation": "Partial verification"}
+        }
+
+        annotated = _annotate_strategies_with_verification(
+            strategies, verified, unverified, plausibility, "orthodox"
+        )
+
+        assert "[VERIFIED]: [2020] HCA 1" in annotated[0]
+        assert "[NOT VERIFIED]: [2024] Fake 1" in annotated[0]
+        assert "MEDIUM RISK" in annotated[0]

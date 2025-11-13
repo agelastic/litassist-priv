@@ -224,19 +224,11 @@ class TestCommandParameterPropagation:
     @patch("litassist.utils.file_ops.read_document")
     def test_brainstorm_command_parameters(self, mock_read, mock_factory):
         """Test brainstorm command uses correct parameters."""
-        # Create a verification client for unorthodox verification
-        mock_verification_client = Mock()
-        mock_verification_client.verify.return_value = (
-            "Verified unorthodox strategies",
-            {},
-        )
-        mock_verification_client.model = "anthropic/claude-opus-4.1"
-
         # Set up factory to return different clients for different calls
+        # Note: Verification was removed from unorthodox generation
         mock_factory.side_effect = [
             self.mock_client,  # For orthodox
             self.mock_client,  # For unorthodox
-            mock_verification_client,  # For verification
             self.mock_client,  # For analysis
         ]
 
@@ -275,15 +267,15 @@ class TestCommandParameterPropagation:
 
                 traceback.print_tb(result.exc_info[2])
 
-        # Should be called 4 times (orthodox, unorthodox, verification, analysis)
-        assert mock_factory.call_count >= 4
+        # Should be called 3 times (orthodox, unorthodox, analysis)
+        # Note: Verification was removed from unorthodox generation
+        assert mock_factory.call_count >= 3
 
         # Check the calls were made in the correct order
         calls = mock_factory.call_args_list
         assert calls[0][0][0] == "brainstorm"  # orthodox
         assert calls[1][0][0] == "brainstorm"  # unorthodox
-        assert calls[2][0][0] == "verification"  # verification of unorthodox
-        assert calls[3][0][0] == "brainstorm"  # analysis
+        assert calls[2][0][0] == "brainstorm"  # analysis
 
     @patch("litassist.llm.factory.LLMClientFactory.for_command")
     @patch("litassist.utils.file_ops.read_document")

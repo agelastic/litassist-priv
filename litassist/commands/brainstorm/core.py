@@ -290,6 +290,12 @@ def verify_and_annotate_strategies(
         if header_end > 0:
             unorthodox_header = unorthodox_content[:header_end] + "\n\n"
 
+    # Add default headers if not present
+    if not orthodox_header:
+        orthodox_header = "## ORTHODOX STRATEGIES\n\n"
+    if not unorthodox_header:
+        unorthodox_header = "## UNORTHODOX STRATEGIES\n\n"
+
     annotated_orthodox_content = orthodox_header + "\n\n".join(annotated_orthodox)
     annotated_unorthodox_content = unorthodox_header + "\n\n".join(annotated_unorthodox)
 
@@ -333,7 +339,7 @@ def verify_and_annotate_strategies(
 @click.option(
     "--verify",
     is_flag=True,
-    help="Verify complete output (default: verify unorthodox only)",
+    help="Add LLM content verification for legal accuracy (citations always verified). Recommended for final versions.",
 )
 @click.option("--output", type=str, help="Custom output filename prefix")
 @timed
@@ -561,90 +567,82 @@ def brainstorm(facts, side, area, research, verify, output):
     final_citation_issues = None
 
     if verify:
-        click.echo(verifying_message("Verifying complete brainstorm output..."))
+        click.echo(verifying_message("Performing full content verification..."))
 
         try:
-            try:
-                log_task_event(
-                    "brainstorm",
-                    "final-verify",
-                    "start",
-                    "Verifying complete brainstorm output",
-                )
-            except Exception:
-                pass
-            # Use verification config for full document
-            verify_client = LLMClientFactory.for_command("verification")
-            correction, _ = verify_client.verify(combined_content)
-            full_verification_result = correction  # Keep full result for critique
+            log_task_event(
+                "brainstorm",
+                "full-verify",
+                "start",
+                "Full content verification of complete output"
+            )
+        except Exception:
+            pass
 
-            # Try to extract just the verified document part
-            match = re.search(
-                r"## Verified and Corrected Document\s*\n(.*)", correction, re.DOTALL
+        # Use verification config for full document
+        verify_client = LLMClientFactory.for_command("verification")
+        correction, verify_usage = verify_client.verify(combined_content)
+
+        # Update usage tracking
+        total_usage["total_tokens"] += verify_usage.get("total_tokens", 0)
+
+        full_verification_result = correction  # Keep full result for critique
+
+        # Try to extract just the verified document part
+        match = re.search(
+            r"## Verified and Corrected Document\s*\n(.*)", correction, re.DOTALL
+        )
+
+        if match:
+            # Successfully extracted the document
+            combined_content = match.group(1).strip()
+            click.echo(success_message("Full content verification complete"))
+        else:
+            # Could not find expected format - use whole output
+            logging.warning(
+                "Could not extract verified document section - using complete verification output"
+            )
+            combined_content = correction
+            click.echo(
+                warning_message(
+                    "Verification format unexpected - using original output"
+                )
             )
 
-            if match:
-                # Successfully extracted the document
-                combined_content = match.group(1).strip()
-                click.echo(success_message("Full output verified and corrected"))
-            else:
-                # Could not find expected format - use whole output
-                logging.warning(
-                    "Could not extract verified document section - using complete verification output"
-                )
-                combined_content = correction
-                click.echo(
-                    warning_message(
-                        "Verification format unexpected - using complete output"
-                    )
-                )
+        # Also run citation validation
+        citation_issues = verify_client.validate_citations(combined_content)
+        if citation_issues:
+            final_citation_issues = citation_issues  # Capture for critique section
+            click.echo(
+                warning_message(f"{len(citation_issues)} citation warnings found after verification")
+            )
 
-            # Also run citation validation
-            citation_issues = verify_client.validate_citations(combined_content)
-            if citation_issues:
-                final_citation_issues = citation_issues  # Capture for critique section
-                click.echo(
-                    warning_message(f"{len(citation_issues)} citation warnings found")
-                )
-            try:
-                log_task_event(
-                    "brainstorm",
-                    "final-verify",
-                    "end",
-                    "Full brainstorm output verified",
-                )
-            except Exception:
-                pass
+        try:
+            log_task_event(
+                "brainstorm",
+                "full-verify",
+                "end",
+                "Full content verification complete"
+            )
+        except Exception:
+            pass
 
-        except Exception as e:
-            raise click.ClickException(f"Verification error during brainstorming: {e}")
     else:
-        # Unorthodox was verified independently, just do citation check
+        # Citations have already been verified, skip LLM content verification
         click.echo(
             info_message(
-                "Skipping full document verification (unorthodox was verified independently)"
+                "Skipping LLM content verification (use --verify for legal accuracy check)"
             )
         )
         try:
             log_task_event(
                 "brainstorm",
-                "final-verify",
-                "progress",
-                "Skipping full document verification (unorthodox was verified independently)",
+                "full-verify",
+                "skip",
+                "Skipping LLM content verification",
             )
         except Exception:
             pass
-        try:
-            # Quick citation check using the analysis client
-            analysis_client = LLMClientFactory.for_command("brainstorm", "analysis")
-            citation_issues = analysis_client.validate_citations(combined_content)
-            if citation_issues:
-                final_citation_issues = citation_issues  # Capture for critique section
-                click.echo(
-                    warning_message(f"{len(citation_issues)} citation warnings found")
-                )
-        except Exception:
-            pass  # Non-critical if citation check fails
 
     # Add full verification result if available
     if full_verification_result:
