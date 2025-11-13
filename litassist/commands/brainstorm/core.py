@@ -8,6 +8,7 @@ import click
 import os
 import logging
 import re
+import json
 
 from litassist.utils.file_ops import (
     read_document,
@@ -32,7 +33,6 @@ from litassist.logging import (
     save_command_output,
 )
 from litassist.llm.factory import LLMClientFactory
-from litassist.prompts import PROMPTS
 
 # Import from submodules
 from .research_handler import analyze_research_size
@@ -42,7 +42,263 @@ from litassist.utils.file_ops import (
 from .orthodox_generator import generate_orthodox_strategies
 from .unorthodox_generator import generate_unorthodox_strategies
 from .analysis_generator import generate_analysis
-from .citation_regenerator import regenerate_bad_strategies
+
+
+def _extract_strategies(content: str, strategy_type: str) -> list[str]:
+    """Extract individual numbered strategies from content."""
+    # Pattern: "### Strategy 1:" or "### 1." or "## STRATEGY 1:" or "1. Strategy Title"
+    pattern = r'(?:^|\n)(?:###\s+Strategy\s+\d+:|###\s+\d+\.|##\s*STRATEGY\s*\d+:|\d+\.)[^\n]*\n(.*?)(?=(?:\n(?:###\s+Strategy\s+\d+:|###\s+\d+\.|##\s*STRATEGY\s*\d+:|\d+\.))|$)'
+    matches = re.findall(pattern, content, re.DOTALL | re.IGNORECASE)
+
+    if not matches:
+        # Fallback: split by blank lines
+        strategies = [s.strip() for s in content.split('\n\n') if s.strip()]
+        return strategies[:15]  # Cap at expected count
+
+    return [match.strip() for match in matches]
+
+
+def _extract_citations_from_strategy(strategy: str) -> list[str]:
+    """Extract all citations from a strategy text."""
+    from litassist.citation_patterns import extract_citations
+    return extract_citations(strategy)
+
+
+def _annotate_strategies_with_verification(
+    strategies: list[str],
+    verified_set: set[str],
+    unverified_dict: dict[str, str],
+    plausibility_assessments: dict[str, dict],
+    strategy_type: str,
+) -> list[str]:
+    """Add citation verification annotations to each strategy."""
+    annotated = []
+
+    for i, strategy in enumerate(strategies, 1):
+        strategy_id = f"{strategy_type}_{i}"
+        citations = _extract_citations_from_strategy(strategy)
+
+        if not citations:
+            # No citations - no annotation needed
+            annotated.append(strategy)
+            continue
+
+        # Build citation status annotation
+        annotation_lines = ["\n**CITATION STATUS:**"]
+
+        for citation in citations:
+            if citation in verified_set:
+                annotation_lines.append(f"  [VERIFIED]: {citation}")
+            elif citation in unverified_dict:
+                reason = unverified_dict[citation]
+
+                # Get plausibility assessment if available
+                assessment = plausibility_assessments.get(strategy_id, {})
+                risk_level = assessment.get("risk", "UNKNOWN")
+                explanation = assessment.get("explanation", reason)
+
+                annotation_lines.append(
+                    f"  [NOT VERIFIED]: {citation} - {risk_level} RISK - {explanation}"
+                )
+
+        # Append annotation to strategy
+        annotated_strategy = strategy + "\n" + "\n".join(annotation_lines)
+        annotated.append(annotated_strategy)
+
+    return annotated
+
+
+def assess_legal_plausibility_bulk(
+    strategies_with_unverified: list[tuple[str, str, list[tuple[str, str]]]]
+) -> dict[str, dict]:
+    """
+    ONE bulk LLM call to assess plausibility of ALL unverified citations.
+
+    Args:
+        strategies_with_unverified: List of (strategy_id, strategy_text, unverified_citations)
+            Example: [("orthodox_1", "Strategy text...", [("[2024] HCA 123", "not found")]), ...]
+
+    Returns:
+        Dict mapping strategy_id to assessment:
+            {"orthodox_1": {"risk": "MEDIUM", "explanation": "Principle sound..."}, ...}
+
+    Uses: brainstorm-analysis (openai/o3-pro, T=0.7, top_p=0.9, thinking_effort=high)
+    Token cost: ~5k (vs ~10k for per-strategy calls)
+    """
+    click.echo(
+        info_message(
+            f"Assessing plausibility of unverified citations in {len(strategies_with_unverified)} strategies..."
+        )
+    )
+
+    # Build comprehensive prompt with ALL strategies
+    strategies_section = []
+    for strategy_id, strategy_text, unverified_cits in strategies_with_unverified:
+        # Extract just the strategy title and core legal reasoning
+        strategy_preview = strategy_text[:500] + "..." if len(strategy_text) > 500 else strategy_text
+
+        citations_list = "\n".join([
+            f"  - {cit} (Reason: {reason})"
+            for cit, reason in unverified_cits
+        ])
+
+        strategies_section.append(
+            f"**{strategy_id.upper()}:**\n{strategy_preview}\n\nUnverified Citations:\n{citations_list}"
+        )
+
+    bulk_prompt = f"""You are assessing the legal plausibility of unverified citations across {len(strategies_with_unverified)} legal strategies.
+
+For each strategy below, assess whether the unverified citations appear to be:
+- **LOW RISK**: Legal principle is sound, citation appears real but needs verification (likely typo or database gap)
+- **MEDIUM RISK**: Principle exists in law, but this specific citation may be invented
+- **HIGH RISK**: Questionable legal basis, citation may be hallucination, strategy suspect
+
+{chr(10).join(strategies_section)}
+
+Respond with JSON mapping strategy_id to assessment:
+
+{{
+  "orthodox_1": {{"risk": "MEDIUM", "explanation": "Principle of XYZ exists but citation needs replacement"}},
+  "unorthodox_5": {{"risk": "HIGH", "explanation": "Legal theory questionable, citation appears invented"}},
+  ...
+}}
+
+Be concise. Focus on legal soundness, not citation accuracy."""
+
+    # ONE LLM call for all assessments
+    analysis_client = LLMClientFactory.for_command("brainstorm", "analysis")
+
+    messages = [
+        {
+            "role": "system",
+            "content": "You are a legal citation plausibility assessor. Evaluate whether unverified citations appear to be real but unfindable vs likely AI hallucinations.",
+        },
+        {"role": "user", "content": bulk_prompt},
+    ]
+
+    try:
+        response, _ = analysis_client.complete(messages, skip_citation_verification=True)
+
+        # Extract JSON from response
+        json_match = re.search(r'\{[\s\S]*\}', response)
+        if json_match:
+            assessments = json.loads(json_match.group(0))
+            return assessments
+        else:
+            click.echo(warning_message("Could not parse plausibility assessments - using defaults"))
+            return {}
+
+    except Exception as e:
+        click.echo(warning_message(f"Plausibility assessment failed: {e}"))
+        return {}
+
+
+def verify_and_annotate_strategies(
+    orthodox_content: str, unorthodox_content: str
+) -> tuple[str, str, str]:
+    """
+    Verify citations in all strategies and add annotations.
+
+    Args:
+        orthodox_content: Generated orthodox strategies
+        unorthodox_content: Generated unorthodox strategies
+
+    Returns:
+        Tuple of (annotated_orthodox, annotated_unorthodox, summary_stats)
+    """
+    from litassist.citation.verify import verify_all_citations
+
+    # Extract individual strategies
+    orthodox_strategies = _extract_strategies(orthodox_content, "orthodox")
+    unorthodox_strategies = _extract_strategies(unorthodox_content, "unorthodox")
+
+    # Verify all citations in one pass
+    all_text = orthodox_content + "\n\n" + unorthodox_content
+    verified_citations, unverified_citations = verify_all_citations(all_text)
+
+    # Build citation lookup maps
+    verified_set = set(verified_citations)
+    unverified_dict = {cit: reason for cit, reason in unverified_citations}
+
+    # Collect strategies with unverified citations for bulk plausibility
+    strategies_for_plausibility = []
+
+    # Process orthodox strategies
+    for i, strategy in enumerate(orthodox_strategies, 1):
+        strategy_citations = _extract_citations_from_strategy(strategy)
+        unverified_in_strategy = [
+            (cit, unverified_dict[cit])
+            for cit in strategy_citations
+            if cit in unverified_dict
+        ]
+
+        if unverified_in_strategy:
+            strategies_for_plausibility.append(
+                (f"orthodox_{i}", strategy, unverified_in_strategy)
+            )
+
+    # Process unorthodox strategies
+    for i, strategy in enumerate(unorthodox_strategies, 1):
+        strategy_citations = _extract_citations_from_strategy(strategy)
+        unverified_in_strategy = [
+            (cit, unverified_dict[cit])
+            for cit in strategy_citations
+            if cit in unverified_dict
+        ]
+
+        if unverified_in_strategy:
+            strategies_for_plausibility.append(
+                (f"unorthodox_{i}", strategy, unverified_in_strategy)
+            )
+
+    # ONE bulk LLM call for plausibility assessment
+    plausibility_assessments = {}
+    if strategies_for_plausibility:
+        plausibility_assessments = assess_legal_plausibility_bulk(
+            strategies_for_plausibility
+        )
+
+    # Annotate orthodox strategies
+    annotated_orthodox = _annotate_strategies_with_verification(
+        orthodox_strategies,
+        verified_set,
+        unverified_dict,
+        plausibility_assessments,
+        "orthodox",
+    )
+
+    # Annotate unorthodox strategies
+    annotated_unorthodox = _annotate_strategies_with_verification(
+        unorthodox_strategies,
+        verified_set,
+        unverified_dict,
+        plausibility_assessments,
+        "unorthodox",
+    )
+
+    # Rebuild content with annotations, preserving headers if present
+    # Check if original content has a header
+    orthodox_header = ""
+    if orthodox_content.strip().startswith("## "):
+        header_end = orthodox_content.find("\n")
+        if header_end > 0:
+            orthodox_header = orthodox_content[:header_end] + "\n\n"
+
+    unorthodox_header = ""
+    if unorthodox_content.strip().startswith("## "):
+        header_end = unorthodox_content.find("\n")
+        if header_end > 0:
+            unorthodox_header = unorthodox_content[:header_end] + "\n\n"
+
+    annotated_orthodox_content = orthodox_header + "\n\n".join(annotated_orthodox)
+    annotated_unorthodox_content = unorthodox_header + "\n\n".join(annotated_unorthodox)
+
+    # Summary stats
+    total_verified = len(verified_citations)
+    total_unverified = len(unverified_citations)
+    summary = f"{total_verified} verified, {total_unverified} unverified"
+
+    return annotated_orthodox_content, annotated_unorthodox_content, summary
 
 
 @click.command()
@@ -83,12 +339,13 @@ from .citation_regenerator import regenerate_bad_strategies
 @timed
 def brainstorm(facts, side, area, research, verify, output):
     """
-    Generate comprehensive legal strategies via Grok.
+    Generate comprehensive legal strategies.
 
-    Uses Grok's creative capabilities to generate:
-    - 10 orthodox legal strategies
-    - 10 unorthodox but potentially effective strategies
-    - A list of strategies most likely to succeed
+    Generates:
+    - 15 orthodox legal strategies
+    - 15 unorthodox but potentially effective strategies
+    - Analysis selecting 10 most promising
+    - Exactly 5 strategies most likely to succeed
 
     All strategies are tailored to your specified party side and legal area.
     The output is automatically saved with a timestamp for use in other commands.
@@ -201,50 +458,13 @@ def brainstorm(facts, side, area, research, verify, output):
         )
     except Exception:
         pass
-    orthodox_content, orthodox_usage, orthodox_citation_issues = (
-        generate_orthodox_strategies(facts, side, area, research_context)
+    orthodox_content, orthodox_usage = generate_orthodox_strategies(
+        facts, side, area, research_context
     )
     try:
         log_task_event("brainstorm", "orthodox", "end", "Orthodox strategies generated")
     except Exception:
         pass
-
-    # Selectively regenerate orthodox strategies with citation issues
-    if orthodox_citation_issues:
-        click.echo(
-            info_message(
-                f"Found {len(orthodox_citation_issues) - 1} citation issues in orthodox strategies - fixing..."
-            )
-        )
-        orthodox_client = LLMClientFactory.for_command("brainstorm", "orthodox")
-        # Rebuild the base prompt for regeneration
-        orthodox_template = PROMPTS.get(
-            "strategies.brainstorm.orthodox_prompt", research_context=research_context
-        )
-        orthodox_base_content = PROMPTS.get(
-            "strategies.brainstorm.orthodox_base"
-        ).format(facts=facts, side=side, area=area, research=orthodox_template)
-        orthodox_base_prompt = PROMPTS.get(
-            "strategies.brainstorm.orthodox_output_format"
-        ).format(content=orthodox_base_content)
-        try:
-            log_task_event(
-                "brainstorm",
-                "orthodox-repair",
-                "start",
-                "Fixing citation issues in orthodox strategies",
-            )
-        except Exception:
-            pass
-        orthodox_content = regenerate_bad_strategies(
-            orthodox_client, orthodox_content, orthodox_base_prompt, "orthodox"
-        )
-        try:
-            log_task_event(
-                "brainstorm", "orthodox-repair", "end", "Orthodox citation issues fixed"
-            )
-        except Exception:
-            pass
 
     # Generate Unorthodox Strategies
     try:
@@ -253,8 +473,8 @@ def brainstorm(facts, side, area, research, verify, output):
         )
     except Exception:
         pass
-    unorthodox_content, unorthodox_usage, unorthodox_citation_issues = (
-        generate_unorthodox_strategies(facts, side, area)
+    unorthodox_content, unorthodox_usage = generate_unorthodox_strategies(
+        facts, side, area
     )
     try:
         log_task_event(
@@ -263,43 +483,36 @@ def brainstorm(facts, side, area, research, verify, output):
     except Exception:
         pass
 
-    # Selectively regenerate unorthodox strategies with citation issues
-    if unorthodox_citation_issues:
-        click.echo(
-            info_message(
-                f"Found {len(unorthodox_citation_issues) - 1} citation issues in unorthodox strategies - fixing..."
-            )
+    # NEW: Verify all citations before analysis
+    try:
+        log_task_event(
+            "brainstorm",
+            "verify-citations",
+            "start",
+            "Verifying citations in all 30 strategies",
         )
-        unorthodox_client = LLMClientFactory.for_command("brainstorm", "unorthodox")
-        # Rebuild the base prompt for regeneration
-        unorthodox_template = PROMPTS.get("strategies.brainstorm.unorthodox_prompt")
-        unorthodox_base_content = PROMPTS.get(
-            "strategies.brainstorm.unorthodox_base"
-        ).format(facts=facts, side=side, area=area, research=unorthodox_template)
-        unorthodox_base_prompt = PROMPTS.get(
-            "strategies.brainstorm.unorthodox_output_format"
-        ).format(content=unorthodox_base_content)
-        try:
-            log_task_event(
-                "brainstorm",
-                "unorthodox-repair",
-                "start",
-                "Fixing citation issues in unorthodox strategies",
-            )
-        except Exception:
-            pass
-        unorthodox_content = regenerate_bad_strategies(
-            unorthodox_client, unorthodox_content, unorthodox_base_prompt, "unorthodox"
+    except Exception:
+        pass
+
+    click.echo(verifying_message("Verifying citations in all strategies..."))
+
+    # Verify and annotate both strategy sets
+    orthodox_content, unorthodox_content, verification_summary = (
+        verify_and_annotate_strategies(orthodox_content, unorthodox_content)
+    )
+
+    click.echo(success_message(f"Citation verification complete: {verification_summary}"))
+
+    try:
+        log_task_event(
+            "brainstorm",
+            "verify-citations",
+            "end",
+            "Citation verification complete",
+            {"summary": verification_summary},
         )
-        try:
-            log_task_event(
-                "brainstorm",
-                "unorthodox-repair",
-                "end",
-                "Unorthodox citation issues fixed",
-            )
-        except Exception:
-            pass
+    except Exception:
+        pass
 
     # Generate Most Likely to Succeed analysis
     try:
@@ -342,21 +555,6 @@ def brainstorm(facts, side, area, research, verify, output):
 
     # Collect all critiques for appending to output
     critiques = []
-
-    # Add orthodox citation issues if any
-    if orthodox_citation_issues:
-        critiques.append(
-            ("Orthodox Strategy Citation Issues", "\n".join(orthodox_citation_issues))
-        )
-
-    # Add unorthodox citation issues if any
-    if unorthodox_citation_issues:
-        critiques.append(
-            (
-                "Unorthodox Strategy Citation Issues",
-                "\n".join(unorthodox_citation_issues),
-            )
-        )
 
     # Conditional full verification based on --verify flag
     full_verification_result = None
@@ -501,14 +699,14 @@ def brainstorm(facts, side, area, research, verify, output):
                     ),
                 },
             },
-            "params": f"verify={'full' if verify else 'unorthodox-only'}, orthodox_temp=0.3, unorthodox_temp=0.9, analysis_temp=0.4",
+            "params": f"verify={'full' if verify else 'unorthodox-only'}, orthodox_count=15, unorthodox_count=15, selected=10, recommended=5",
             # Response content removed - already logged by LLMClient separately
             "output_file": output_file,
             "usage": usage,
             "stages": {
-                "orthodox": {"usage": orthodox_usage, "temperature": 0.3},
-                "unorthodox": {"usage": unorthodox_usage, "temperature": 0.9},
-                "analysis": {"usage": analysis_usage, "temperature": 0.4},
+                "orthodox": {"usage": orthodox_usage},
+                "unorthodox": {"usage": unorthodox_usage},
+                "analysis": {"usage": analysis_usage},
             },
         },
     )

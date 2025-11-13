@@ -8,7 +8,7 @@ strategies:
     # USED BY: brainstorm.py - when approach="orthodox"
     # LOCATION: brainstorm.py:441
     orthodox_prompt: |
-      Generate 10 ORTHODOX legal strategies - established, conservative approaches that follow conventional wisdom and accepted practice. Focus on:
+      Generate 15 ORTHODOX legal strategies - established, conservative approaches that follow conventional wisdom and accepted practice. Focus on:
       
       - Precedent-based arguments
       - Traditional legal remedies
@@ -32,7 +32,7 @@ strategies:
     # USED BY: brainstorm.py - when approach="unorthodox"
     # LOCATION: brainstorm.py:496
     unorthodox_prompt: |
-      Generate 10 UNORTHODOX legal strategies - creative, innovative approaches that think outside conventional frameworks. Focus on:
+      Generate 15 UNORTHODOX legal strategies - creative, innovative approaches that think outside conventional frameworks. Focus on:
       
       - Novel legal arguments
       - Creative use of existing law
@@ -54,7 +54,7 @@ strategies:
     # USED BY: brainstorm.py - when approach="analysis"
     # LOCATION: brainstorm.py:562
     analysis_prompt: |
-      Analyze ALL the strategies above and select EXACTLY 8 of the most promising strategies for a detailed review.
+      Analyze ALL the strategies above and select EXACTLY 10 of the most promising strategies for a detailed review.
 
       **SELECTION CRITERIA:**
       - Legal merit and strength of precedent
@@ -62,24 +62,40 @@ strategies:
       - Alignment with client objectives and risk/reward ratio
       - Strength of available evidence
 
+      **CITATION QUALITY CONSIDERATION:**
+      Each strategy includes citation verification status in this format:
+        [VERIFIED]: [Citation] - Confirmed in Jade.io/AustLII
+        [NOT VERIFIED]: [Citation] - RISK LEVEL - Assessment
+
+      Risk levels:
+      - LOW RISK: Legal principle sound, citation replaceable
+      - MEDIUM RISK: Principle exists, citation needs verification
+      - HIGH RISK: Questionable legal basis, may be hallucination
+
+      **Consider citation quality when selecting strategies:**
+      - Prefer strategies with verified citations
+      - For unverified citations, assess if legal reasoning is still sound
+      - HIGH RISK citations should trigger skepticism of entire strategy
+      - Strategy with all unverified citations = potential hallucination
+
       **CRITICAL FORMATTING INSTRUCTIONS:**
       You MUST structure your output in this EXACT order:
       1. FIRST: Add the section header "## STRATEGIES SELECTED FOR ANALYSIS" (this exact header is MANDATORY)
-      2. SECOND: Under that header, provide the detailed analysis of 8 selected strategies (using format "STRATEGY 1 –", "STRATEGY 2 –", etc.)
-      3. THIRD: After all 8 analyses, add the section header "## MOST LIKELY TO SUCCEED" (this exact header is MANDATORY)
-      4. FOURTH: Under that header, list your top 3-5 recommended strategies from the 8 analyzed above
+      2. SECOND: Under that header, provide the detailed analysis of 10 selected strategies (using format "STRATEGY 1 –", "STRATEGY 2 –", etc.)
+      3. THIRD: After all 10 analyses, add the section header "## MOST LIKELY TO SUCCEED" (this exact header is MANDATORY)
+      4. FOURTH: Under that header, list EXACTLY 5 recommended strategies from the 10 analyzed above
       5. FINALLY: The reasoning trace will be added at the very end (do NOT add it yourself)
 
       **IMPORTANT: DO NOT use divider lines, dashes, or any separators between strategies. Use only a single blank line to separate each strategy from the next.**
 
       Start your output with:
-      
+
       ## STRATEGIES SELECTED FOR ANALYSIS
-      
-      Then provide your 8 detailed strategy analyses.
+
+      Then provide your 10 detailed strategy analyses.
 
       **REQUIRED ANALYSIS:**
-      For each of the 8 selected strategies, provide a detailed analysis covering:
+      For each of the 10 selected strategies, provide a detailed analysis covering:
       1. **Why this strategy was selected** (detailed reasoning against the criteria)
       2. **Implementation roadmap** (3-5 key sequential steps)
       3. **Risk assessment** (potential downsides and mitigation)
@@ -87,20 +103,26 @@ strategies:
       
       **Remember: After completing each strategy's analysis, add only ONE blank line before starting the next strategy. NO divider lines, NO dashes, NO separators.**
 
-      After completing ALL 8 strategy analyses, you MUST add this section:
+      After completing ALL 10 strategy analyses, you MUST add this section:
 
       ## MOST LIKELY TO SUCCEED
-      
-      1. [Strategy Title from your 8 analyses above]
+
+      1. [Strategy Title from your 10 analyses above]
          [Why this strategy is most likely to succeed]
-      
-      2. [Strategy Title from your 8 analyses above]
+
+      2. [Strategy Title from your 10 analyses above]
          [Why this strategy is most likely to succeed]
-      
-      3. [Strategy Title from your 8 analyses above]
+
+      3. [Strategy Title from your 10 analyses above]
          [Why this strategy is most likely to succeed]
-      
-      [List 3-5 strategies total that are most likely to succeed]
+
+      4. [Strategy Title from your 10 analyses above]
+         [Why this strategy is most likely to succeed]
+
+      5. [Strategy Title from your 10 analyses above]
+         [Why this strategy is most likely to succeed]
+
+      [List EXACTLY 5 strategies that are most likely to succeed]
     
     # Regeneration prompt with feedback incorporation
     # NOT USED - Template not referenced in codebase
@@ -139,43 +161,43 @@ strategies:
     orthodox_base: |
       Facts:
       {facts}
-      
+
       Side: {side}
       Area: {area}
-      
+
       {research}
-      
-      Generate EXACTLY 10 ORTHODOX legal strategies for the {side} in this {area} matter.
+
+      Generate EXACTLY 15 ORTHODOX legal strategies for the {side} in this {area} matter.
     
     # USED BY: brainstorm.py - building unorthodox base prompt
     # LOCATION: brainstorm.py:498
     unorthodox_base: |
       Facts:
       {facts}
-      
+
       Side: {side}
       Area: {area}
-      
+
       {research}
-      
-      Generate EXACTLY 10 UNORTHODOX legal strategies for the {side} in this {area} matter.
+
+      Generate EXACTLY 15 UNORTHODOX legal strategies for the {side} in this {area} matter.
     
     # USED BY: brainstorm.py - building analysis base prompt
     # LOCATION: brainstorm.py:564
     analysis_base: |
       Facts:
       {facts}
-      
+
       Side: {side}
       Area: {area}
-      
+
       Orthodox Strategies:
       {orthodox_strategies}
-      
+
       Unorthodox Strategies:
       {unorthodox_strategies}
-      
-      Using Australian {area} law, identify the 8 MOST PROMISING strategies from all the strategies provided above for the {side}.
+
+      Using Australian {area} law, identify the 10 MOST PROMISING strategies from all the strategies provided above for the {side}.
     
     # Regeneration prompt template
     # USED BY: brainstorm.py - regenerating strategies with citation issues

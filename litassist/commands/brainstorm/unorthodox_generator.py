@@ -29,7 +29,7 @@ def generate_unorthodox_strategies(facts: str, side: str, area: str):
         area: Legal area (civil/criminal/etc)
 
     Returns:
-        Tuple of (content, usage, citation_issues, verification_result)
+        Tuple of (content, usage)
     """
     click.echo("Generating unorthodox strategies...")
     unorthodox_client = LLMClientFactory.for_command("brainstorm", "unorthodox")
@@ -132,32 +132,4 @@ def generate_unorthodox_strategies(facts: str, side: str, area: str):
     except Exception:
         pass
 
-    # Validate citations
-    try:
-        log_task_event(
-            "brainstorm",
-            "unorthodox-citations",
-            "start",
-            "Validating citations in unorthodox strategies",
-        )
-    except Exception:
-        pass
-    unorthodox_citation_issues = unorthodox_client.validate_citations(
-        unorthodox_content
-    )
-    try:
-        log_task_event(
-            "brainstorm",
-            "unorthodox-citations",
-            "end",
-            "Unorthodox citation validation complete",
-            {
-                "issues": (
-                    len(unorthodox_citation_issues) if unorthodox_citation_issues else 0
-                )
-            },
-        )
-    except Exception:
-        pass
-
-    return unorthodox_content, unorthodox_usage, unorthodox_citation_issues
+    return unorthodox_content, unorthodox_usage

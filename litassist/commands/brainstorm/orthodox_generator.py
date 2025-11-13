@@ -25,7 +25,7 @@ def generate_orthodox_strategies(
         research_context: Optional research context to inform strategies
 
     Returns:
-        Tuple of (content, usage, citation_issues)
+        Tuple of (content, usage)
     """
     click.echo("Generating orthodox strategies...")
     orthodox_client = LLMClientFactory.for_command("brainstorm", "orthodox")
@@ -83,30 +83,4 @@ def generate_orthodox_strategies(
     except Exception as e:
         raise click.ClickException(f"Error generating orthodox strategies: {str(e)}")
 
-    # Validate citations
-    try:
-        log_task_event(
-            "brainstorm",
-            "orthodox-citations",
-            "start",
-            "Validating citations in orthodox strategies",
-        )
-    except Exception:
-        pass
-    orthodox_citation_issues = orthodox_client.validate_citations(orthodox_content)
-    try:
-        log_task_event(
-            "brainstorm",
-            "orthodox-citations",
-            "end",
-            "Orthodox citation validation complete",
-            {
-                "issues": (
-                    len(orthodox_citation_issues) if orthodox_citation_issues else 0
-                )
-            },
-        )
-    except Exception:
-        pass
-
-    return orthodox_content, orthodox_usage, orthodox_citation_issues
+    return orthodox_content, orthodox_usage

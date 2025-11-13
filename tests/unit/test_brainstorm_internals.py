@@ -228,63 +228,6 @@ Pursue misleading conduct claim while simultaneously filing ombudsman complaint.
     @patch("litassist.commands.brainstorm.unorthodox_generator.LLMClientFactory")
     @patch("litassist.commands.brainstorm.orthodox_generator.LLMClientFactory")
     @patch("litassist.commands.brainstorm.core.LLMClientFactory")
-    def test_brainstorm_with_citation_issues(
-        self,
-        mock_factory_core,
-        mock_factory_orth,
-        mock_factory_unorth,
-        mock_factory_analysis,
-    ):
-        """Test brainstorm handling citation validation issues."""
-        # Configure citation issues
-        self.mock_orthodox_client.validate_citations.return_value = [
-            "Found invalid citation: [2024] FAKE 123"
-        ]
-
-        mock_factory_orth.for_command.return_value = self.mock_orthodox_client
-        mock_factory_unorth.for_command.side_effect = [
-            self.mock_unorthodox_client,  # First call for unorthodox
-            self.mock_verification_client,  # Second call for verification
-        ]
-        mock_factory_analysis.for_command.return_value = self.mock_analysis_client
-        mock_factory_core.for_command.return_value = (
-            self.mock_orthodox_client
-        )  # For regeneration
-
-        with self.runner.isolated_filesystem():
-            with open("facts.txt", "w") as f:
-                f.write("Test facts")
-
-            # Mock regenerate function
-            with patch(
-                "litassist.commands.brainstorm.core.regenerate_bad_strategies"
-            ) as mock_regen:
-                mock_regen.return_value = "Fixed orthodox content"
-
-                result = self.runner.invoke(
-                    cli,
-                    [
-                        "brainstorm",
-                        "--facts",
-                        "facts.txt",
-                        "--side",
-                        "defendant",
-                        "--area",
-                        "civil",
-                    ],
-                )
-
-                # Should still succeed
-                assert result.exit_code == 0
-
-                # Verify regeneration was called
-                mock_regen.assert_called_once()
-                assert "citation issues in orthodox strategies" in result.output
-
-    @patch("litassist.commands.brainstorm.analysis_generator.LLMClientFactory")
-    @patch("litassist.commands.brainstorm.unorthodox_generator.LLMClientFactory")
-    @patch("litassist.commands.brainstorm.orthodox_generator.LLMClientFactory")
-    @patch("litassist.commands.brainstorm.core.LLMClientFactory")
     def test_brainstorm_output_formatting(
         self,
         mock_factory_core,
