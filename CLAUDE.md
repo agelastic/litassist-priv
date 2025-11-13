@@ -6,11 +6,20 @@
 
 ### Code Analysis and Verification
 - Read the code first. Map each function’s purpose and dependencies. Propose only changes you can justify from the codebase. Verify behaviour after edits. Do not guess.
+- Make the smallest change that fixes the problem. No refactors unless explicitly asked. No opportunistic "improvements". No new abstractions. No silent fallbacks without explicit approval. Prefer inline fixes to architectural changes. One fix = one narrowly scoped change. Prefer deleting parsing logic to adding more. Use regex only as a last resort and confirm first.
+- Over‑engineering red flags: creating classes for single functions; factories with one product; decorators that could be plain calls; abstractions without multiple concrete implementations.
+- Code duplication: refactor to remove repetition only with explicit approval.
+
+### Code Analysis and Verification
+- Read the code first. Map each function’s purpose and dependencies. Propose only changes you can justify from the codebase. Verify behaviour after edits. Do not guess.
 
 ### Git Commit Standards
 - Never add attribution or AI footers. Commit messages contain only a technical description. No self-promotion. Applies to all commits.
 
 ### Code Quality Standards
+- Code must pass `ruff check`.
+- All pytest tests must pass before calling a fix complete.
+- Update TODO.md and any relevant docs when changing behaviour.
 - Code must pass `ruff check`.
 - All pytest tests must pass before calling a fix complete.
 - Update TODO.md and any relevant docs when changing behaviour.
@@ -30,6 +39,7 @@
 
 ### YAML File Integrity
 - Validate all `.yaml` changes with a linter (e.g., `yamllint`) before completion, especially under `litassist/prompts/`.
+- Validate all `.yaml` changes with a linter (e.g., `yamllint`) before completion, especially under `litassist/prompts/`.
 
 ### Prompt Template Management
 - Do not hardcode prompts in Python except trivial one-liners. Keep all prompts in YAML. Access via `PROMPTS.get()` with stable keys.
@@ -46,16 +56,31 @@
 - Route all LLM calls through OpenRouter by default.
 - When adding models/providers, try OpenRouter first. If unsupported, ask how to proceed.
 - Model names with `/` indicate OpenRouter routing (e.g., `anthropic/claude-sonnet-4`).
+- Never change model identifiers unless explicitly asked.
+
+### OpenRouter Usage
+- Route all LLM calls through OpenRouter by default.
+- When adding models/providers, try OpenRouter first. If unsupported, ask how to proceed.
+- Model names with `/` indicate OpenRouter routing (e.g., `anthropic/claude-sonnet-4`).
 
 ### Documentation Standards
 - Do not add “Recent Changes” sections. Document current behaviour only.
+- Do not add “Recent Changes” sections. Document current behaviour only.
 
+### Code Simplicity
+- Prefer plain Python functions to classes for stateless work. Avoid patterns unless solving a real problem. Abstract only when you have 3+ similar implementations. Do not optimise early. If complexity is justified, confirm first.
 ### Code Simplicity
 - Prefer plain Python functions to classes for stateless work. Avoid patterns unless solving a real problem. Abstract only when you have 3+ similar implementations. Do not optimise early. If complexity is justified, confirm first.
 
 ### Backward Compatibility
 - Legacy support is not required. Clean breaks are fine if they do not break current usage. Remove deprecated code decisively.
+### Backward Compatibility
+- Legacy support is not required. Clean breaks are fine if they do not break current usage. Remove deprecated code decisively.
 
+### LLM Response Processing
+- Prefer prompt engineering over local parsing. Ask for structured output (JSON/YAML or clear section markers) and one minimal example if needed.
+- Prefer one comprehensive call over many orchestrated calls when practical.
+- No fallback parsing logic. If format is wrong, fail fast rather than masking errors. Remove regex/string parsing where prompts can enforce structure.
 ### LLM Response Processing
 - Prefer prompt engineering over local parsing. Ask for structured output (JSON/YAML or clear section markers) and one minimal example if needed.
 - Prefer one comprehensive call over many orchestrated calls when practical.
@@ -70,8 +95,11 @@
 
 ### LLM Request and Response Logging
 - Log every LLM request and response in full with timestamp, model and parameters, token counts/costs, context identifiers, and errors/retries. Never truncate. Use `logging_utils.py`. Do not bypass logging in any environment.
+### LLM Request and Response Logging
+- Log every LLM request and response in full with timestamp, model and parameters, token counts/costs, context identifiers, and errors/retries. Never truncate. Use `logging_utils.py`. Do not bypass logging in any environment.
 
 ### Australian Legal Focus
+- Use Australian English spelling (e.g., "judgement"). Follow Australian precedent. Ensure citations are verifiable via Google CSE. Use DD/MM/YYYY dates.
 - Use Australian English spelling (e.g., "judgement"). Follow Australian precedent. Ensure citations are verifiable via Google CSE. Use DD/MM/YYYY dates.
 
 ## Testing Approach
@@ -102,6 +130,11 @@ Before any action confirm:
 - Prefix files generated by Claude with `claude_` to separate AI outputs from human-authored files.
 
 ## Development Philosophy
+- Broken tests are your responsibility until green. Assume recent changes caused failures.
+- Use a common user agent for web access. Do not use odd agents blocked by sites.
+- Never truncate API responses.
+- Do not scrape jade.io or its subdomains.
+- Do not blame providers. If something fails, check code or configuration first.
 - Broken tests are your responsibility until green. Assume recent changes caused failures.
 - Use a common user agent for web access. Do not use odd agents blocked by sites.
 - Never truncate API responses.
