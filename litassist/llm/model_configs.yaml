@@ -13,21 +13,23 @@ extractfacts:
 
 strategy:
   model: "anthropic/claude-sonnet-4.5"
-  temperature: 0.2
-  top_p: 0.8
+  temperature: 0.7
+  top_p: 0.95
   thinking_effort: "max"
   verbosity: "medium"
   enforce_citations: false
 
 strategy-analysis:
   model: "openai/o3-pro"
+  temperature: 0.7
+  top_p: 0.95
   thinking_effort: "max"
   disable_tools: true
 
 brainstorm-orthodox:
   model: "anthropic/claude-sonnet-4.5"
-  temperature: 0.3
-  top_p: 0.7
+  temperature: 0.7
+  top_p: 0.95
   thinking_effort: "medium"
   enforce_citations: false
 
@@ -41,13 +43,15 @@ brainstorm-unorthodox:
 
 brainstorm-analysis:
   model: "openai/o3-pro"
-  temperature: 0.2
-  top_p: 0.8
+  temperature: 0.7
+  top_p: 0.9
   thinking_effort: "high"
   disable_tools: true
 
 draft:
   model: "openai/o3-pro"
+  temperature: 0.7
+  top_p: 0.95
   thinking_effort: "high"
   verbosity: "high"
   disable_tools: true
@@ -61,8 +65,8 @@ digest-summary:
 
 digest-issues:
   model: "anthropic/claude-sonnet-4.5"
-  temperature: 0.2
-  top_p: 0.5
+  temperature: 0.5
+  top_p: 0.8
   thinking_effort: "high"
 
 lookup:
@@ -133,50 +137,54 @@ verify-soundness-heavy:
 
 counselnotes:
   model: "openai/o3-pro"
-  temperature: 0.3
-  top_p: 0.7
+  temperature: 0.7
+  top_p: 0.95
   thinking_effort: "high"
   enforce_citations: false
   disable_tools: true
 
 barbrief:
   model: "openai/o3-pro"
+  temperature: 0.7
+  top_p: 0.95
   thinking_effort: "high"
   verbosity: "high"
   disable_tools: true
 
 caseplan:
   model: "anthropic/claude-sonnet-4.5"
-  temperature: 0.5
+  temperature: 0.7
+  top_p: 0.95
   enforce_citations: false
   disable_tools: true
 
 caseplan-assessment:
   model: "anthropic/claude-sonnet-4.5"
-  temperature: 0.5
+  temperature: 0.7
+  top_p: 0.95
   enforce_citations: false
   disable_tools: true
 
 cove:
   model: "anthropic/claude-sonnet-4.5"
-  temperature: 0.2
-  top_p: 0.8
+  temperature: 0.7
+  top_p: 0.95
   thinking_effort: "medium"
   enforce_citations: false
   disable_tools: true
 
 cove-questions:
   model: "anthropic/claude-sonnet-4.5"
-  temperature: 0.2
-  top_p: 0.8
+  temperature: 0.6
+  top_p: 0.95
   thinking_effort: "low"
   enforce_citations: false
   disable_tools: true
 
 cove-answers:
   model: "openai/gpt-5"
-  temperature: 0.2
-  top_p: 0.3
+  temperature: 0.5
+  top_p: 0.8
   thinking_effort: "high"
   enforce_citations: false
   disable_tools: true
@@ -191,8 +199,8 @@ cove-verify:
 
 cove-answers-heavy:
   model: "openai/gpt-5-pro"
-  temperature: 0.2
-  top_p: 0.3
+  temperature: 0.5
+  top_p: 0.8
   thinking_effort: "max"
   enforce_citations: false
   disable_tools: true

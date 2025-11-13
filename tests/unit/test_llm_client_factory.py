@@ -135,8 +135,8 @@ class TestLLMClientFactory:
             assert "thinking_effort" in strategy_params
             assert "temperature" in strategy_params  # Claude supports temperature
             assert "top_p" in strategy_params  # Claude supports top_p
-            assert strategy_params["temperature"] == 0.2
-            assert strategy_params["top_p"] == 0.8
+            assert strategy_params["temperature"] == 0.7
+            assert strategy_params["top_p"] == 0.95
 
             # Test o3-pro model (draft)
             draft_client = LLMClientFactory.for_command("draft")
