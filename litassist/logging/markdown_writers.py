@@ -340,3 +340,102 @@ def write_generic_markdown(f, tag: str, ts: str, payload: dict):
         f.write("\n")
     else:
         f.write("No data available.\n")
+
+
+def _has_json_response(payload: dict) -> bool:
+    """Check if response contains valid JSON."""
+    import json
+    import re
+
+    response = payload.get("response", "")
+    if response:
+        json_match = re.search(r'\{[\s\S]*\}', response)
+        if json_match:
+            try:
+                json.loads(json_match.group(0))
+                return True
+            except json.JSONDecodeError:
+                pass
+    return False
+
+
+def _write_json_as_sections(f, data, level=2):
+    """Recursively write JSON as markdown sections."""
+    if isinstance(data, dict):
+        for key, value in data.items():
+            # Key becomes header
+            f.write(f"{'#' * level} {key}\n\n")
+
+            if isinstance(value, dict):
+                # Nested dict → bullet list
+                for k, v in value.items():
+                    # Format nested objects as JSON
+                    formatted_v = json.dumps(v) if isinstance(v, (dict, list)) else v
+                    f.write(f"- **{k}**: {formatted_v}\n")
+                f.write("\n")
+            elif isinstance(value, list):
+                for item in value:
+                    # Format nested objects as JSON
+                    formatted_item = json.dumps(item) if isinstance(item, (dict, list)) else item
+                    f.write(f"- {formatted_item}\n")
+                f.write("\n")
+            else:
+                f.write(f"{value}\n\n")
+
+
+def write_json_llm_response_markdown(f, tag: str, ts: str, payload: dict):
+    """Convert JSON in LLM response to markdown sections."""
+    import json
+    import re
+
+    f.write(f"# {tag}  {ts}\n\n")
+
+    # Summary
+    f.write("## Summary\n\n")
+    metadata = payload.get("metadata", {})
+    if isinstance(metadata, dict):
+        model = metadata.get("model", "N/A")
+        timestamp = metadata.get("timestamp", ts)
+    else:
+        model = payload.get("model", "N/A")
+        timestamp = payload.get("timestamp", ts)
+
+    f.write(f"- **Model**: {model}\n")
+    f.write(f"- **Timestamp**: {timestamp}\n")
+
+    # Add counts if present
+    if "strategies_assessed" in payload:
+        f.write(f"- **Strategies Assessed**: {payload['strategies_assessed']}\n")
+    if "citations_evaluated" in payload:
+        f.write(f"- **Citations Evaluated**: {payload['citations_evaluated']}\n")
+
+    f.write("\n")
+
+    # Prompt (if present)
+    if "prompt" in payload:
+        prompt = payload["prompt"]
+        f.write("## Prompt\n\n")
+        if len(prompt) > 10000:
+            f.write(f"{prompt[:10000]}\n\n... (truncated, {len(prompt)} total characters)\n\n")
+        else:
+            f.write(f"{prompt}\n\n")
+
+    # Extract and convert JSON
+    response = payload.get("response", "")
+    json_match = re.search(r'\{[\s\S]*\}', response)
+    if json_match:
+        try:
+            data = json.loads(json_match.group(0))
+            _write_json_as_sections(f, data)
+        except json.JSONDecodeError:
+            # If JSON parsing fails, show raw response
+            f.write("## Response\n\n")
+            f.write(f"{response}\n\n")
+
+    # Token usage (if present)
+    usage = payload.get("usage", {})
+    if usage and isinstance(usage, dict):
+        f.write("## Token Usage\n\n")
+        for key, value in usage.items():
+            f.write(f"- **{key}**: {value}\n")
+        f.write("\n")

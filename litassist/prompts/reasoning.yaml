@@ -6,8 +6,8 @@ reasoning:
   # USED BY: utils.py - appended to all command prompts that require reasoning traces
   # LOCATION: utils.py:553
   instruction: |
-    
-    IMPORTANT: At the VERY END of ALL your content (after the MOST LIKELY TO SUCCEED section if present), provide a clear reasoning trace using this exact format (DO NOT repeat any sections):
+
+    IMPORTANT: At the VERY END of ALL your content, provide a clear reasoning trace using this exact format (DO NOT repeat any sections):
     
     ## {reasoning_header}
     

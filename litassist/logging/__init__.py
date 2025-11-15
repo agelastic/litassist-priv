@@ -25,6 +25,8 @@ from .markdown_writers import (
     write_llm_messages_markdown,
     write_fetch_log_markdown,
     write_generic_markdown,
+    write_json_llm_response_markdown,
+    _has_json_response,
     format_dict_as_markdown as format_dict_as_markdown,
 )
 
@@ -117,6 +119,9 @@ def save_log(tag: str, payload: dict):
             ):
                 # LLM message logs (includes both sent messages and responses)
                 write_llm_messages_markdown(f, tag, ts, payload)
+            elif _has_json_response(payload):
+                # JSON-structured LLM responses (auto-detected)
+                write_json_llm_response_markdown(f, tag, ts, payload)
             elif "response" in payload or "inputs" in payload:
                 # Standard command output format
                 write_command_output_markdown(f, tag, ts, payload)

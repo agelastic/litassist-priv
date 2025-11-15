@@ -25,23 +25,30 @@ def generate_orthodox_strategies(
         research_context: Optional research context to inform strategies
 
     Returns:
-        Tuple of (content, usage, citation_issues)
+        Tuple of (content, usage)
     """
     click.echo("Generating orthodox strategies...")
     orthodox_client = LLMClientFactory.for_command("brainstorm", "orthodox")
 
-    # Use centralized orthodox prompt template with research context
-    orthodox_template = PROMPTS.get(
-        "strategies.brainstorm.orthodox_prompt", research_context=research_context
-    )
-    # Build orthodox base prompt from template
-    orthodox_base_content = PROMPTS.get("strategies.brainstorm.orthodox_base").format(
-        facts=facts, side=side, area=area, research=orthodox_template
+    # Use centralized orthodox prompt template with format instructions
+    orthodox_prompt_template = PROMPTS.get("strategies.brainstorm.orthodox_prompt")
+
+    # Build the complete prompt by combining template with context
+    # The orthodox_prompt contains format instructions, orthodox_base adds facts/side/area
+    facts_and_context = PROMPTS.get("strategies.brainstorm.orthodox_base").format(
+        facts=facts,
+        side=side,
+        area=area,
+        research=research_context if research_context else ""
     )
 
+    # Combine the format instructions with the facts/context
+    combined_content = facts_and_context + "\n\n" + orthodox_prompt_template
+
+    # Wrap in output format
     orthodox_base_prompt = PROMPTS.get(
         "strategies.brainstorm.orthodox_output_format"
-    ).format(content=orthodox_base_content)
+    ).format(content=combined_content)
 
     # Add reasoning trace to orthodox prompt
     orthodox_prompt = create_reasoning_prompt(
@@ -68,7 +75,9 @@ def generate_orthodox_strategies(
         pass
 
     try:
-        orthodox_content, orthodox_usage = orthodox_client.complete(orthodox_messages)
+        orthodox_content, orthodox_usage = orthodox_client.complete(
+            orthodox_messages, skip_citation_verification=True
+        )
 
         try:
             log_task_event(
@@ -83,30 +92,4 @@ def generate_orthodox_strategies(
     except Exception as e:
         raise click.ClickException(f"Error generating orthodox strategies: {str(e)}")
 
-    # Validate citations
-    try:
-        log_task_event(
-            "brainstorm",
-            "orthodox-citations",
-            "start",
-            "Validating citations in orthodox strategies",
-        )
-    except Exception:
-        pass
-    orthodox_citation_issues = orthodox_client.validate_citations(orthodox_content)
-    try:
-        log_task_event(
-            "brainstorm",
-            "orthodox-citations",
-            "end",
-            "Orthodox citation validation complete",
-            {
-                "issues": (
-                    len(orthodox_citation_issues) if orthodox_citation_issues else 0
-                )
-            },
-        )
-    except Exception:
-        pass
-
-    return orthodox_content, orthodox_usage, orthodox_citation_issues
+    return orthodox_content, orthodox_usage
