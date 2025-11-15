@@ -180,16 +180,22 @@ Be concise. Focus on legal soundness, not citation accuracy."""
     try:
         response, _ = analysis_client.complete(messages, skip_citation_verification=True)
 
+        logging.info(f"Plausibility LLM call completed, response length: {len(response)}")
+        logging.debug(f"Plausibility response preview: {response[:500]}")
+
         # Extract JSON from response
         json_match = re.search(r'\{[\s\S]*\}', response)
         if json_match:
             assessments = json.loads(json_match.group(0))
+            logging.info(f"Successfully parsed {len(assessments)} risk assessments")
             return assessments
         else:
+            logging.warning("No JSON found in plausibility response")
             click.echo(warning_message("Could not parse plausibility assessments - using defaults"))
             return {}
 
     except Exception as e:
+        logging.error(f"Plausibility assessment failed: {e}")
         click.echo(warning_message(f"Plausibility assessment failed: {e}"))
         return {}
 
@@ -212,6 +218,8 @@ def verify_and_annotate_strategies(
     # Extract individual strategies
     orthodox_strategies = _extract_strategies(orthodox_content, "orthodox")
     unorthodox_strategies = _extract_strategies(unorthodox_content, "unorthodox")
+
+    logging.info(f"Extracted {len(orthodox_strategies)} orthodox, {len(unorthodox_strategies)} unorthodox strategies")
 
     # Verify all citations in one pass
     all_text = orthodox_content + "\n\n" + unorthodox_content
@@ -251,6 +259,8 @@ def verify_and_annotate_strategies(
             strategies_for_plausibility.append(
                 (f"unorthodox_{i}", strategy, unverified_in_strategy)
             )
+
+    logging.info(f"Collected {len(strategies_for_plausibility)} strategies with unverified citations for plausibility assessment")
 
     # ONE bulk LLM call for plausibility assessment
     plausibility_assessments = {}
@@ -303,7 +313,17 @@ def verify_and_annotate_strategies(
     # Summary stats
     total_verified = len(verified_citations)
     total_unverified = len(unverified_citations)
+
+    # Count risk levels if plausibility was assessed
+    risk_counts = {"LOW": 0, "MEDIUM": 0, "HIGH": 0}
+    for assessment in plausibility_assessments.values():
+        risk = assessment.get("risk", "UNKNOWN")
+        if risk in risk_counts:
+            risk_counts[risk] += 1
+
     summary = f"{total_verified} verified, {total_unverified} unverified"
+    if plausibility_assessments:
+        summary += f" | Risk: LOW={risk_counts['LOW']}, MED={risk_counts['MEDIUM']}, HIGH={risk_counts['HIGH']}"
 
     return annotated_orthodox_content, annotated_unorthodox_content, summary
 
