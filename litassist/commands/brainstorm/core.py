@@ -340,15 +340,16 @@ def verify_and_annotate_strategies(
     total_unverified = len(unverified_citations)
 
     # Count risk levels if plausibility was assessed
-    risk_counts = {"LOW": 0, "MEDIUM": 0, "HIGH": 0}
+    risk_counts = {"LOW": 0, "MEDIUM": 0, "HIGH": 0, "UNKNOWN": 0}
     for assessment in plausibility_assessments.values():
         risk = assessment.get("risk", "UNKNOWN")
-        if risk in risk_counts:
-            risk_counts[risk] += 1
+        risk_counts[risk] += 1
 
     summary = f"{total_verified} verified, {total_unverified} unverified"
     if plausibility_assessments:
         summary += f" | Risk: LOW={risk_counts['LOW']}, MEDIUM={risk_counts['MEDIUM']}, HIGH={risk_counts['HIGH']}"
+        if risk_counts['UNKNOWN'] > 0:
+            summary += f", UNKNOWN={risk_counts['UNKNOWN']}"
 
     return annotated_orthodox_content, annotated_unorthodox_content, summary
 
