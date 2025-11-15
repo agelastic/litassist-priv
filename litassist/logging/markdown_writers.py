@@ -369,11 +369,15 @@ def _write_json_as_sections(f, data, level=2):
             if isinstance(value, dict):
                 # Nested dict → bullet list
                 for k, v in value.items():
-                    f.write(f"- **{k}**: {v}\n")
+                    # Format nested objects as JSON
+                    formatted_v = json.dumps(v) if isinstance(v, (dict, list)) else v
+                    f.write(f"- **{k}**: {formatted_v}\n")
                 f.write("\n")
             elif isinstance(value, list):
                 for item in value:
-                    f.write(f"- {item}\n")
+                    # Format nested objects as JSON
+                    formatted_item = json.dumps(item) if isinstance(item, (dict, list)) else item
+                    f.write(f"- {formatted_item}\n")
                 f.write("\n")
             else:
                 f.write(f"{value}\n\n")

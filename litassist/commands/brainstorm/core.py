@@ -177,7 +177,12 @@ def assess_legal_plausibility_bulk(
 
         # Extract JSON from response
         json_match = re.search(r'\{[\s\S]*\}', response)
-        if json_match:
+        if not json_match:
+            logging.warning("No JSON found in plausibility response")
+            click.echo(warning_message("Could not parse plausibility assessments - using defaults"))
+            return {}
+
+        try:
             assessments = json.loads(json_match.group(0))
             logging.info(f"Successfully parsed {len(assessments)} risk assessments")
 
@@ -201,13 +206,13 @@ def assess_legal_plausibility_bulk(
             )
 
             return assessments
-        else:
-            logging.warning("No JSON found in plausibility response")
-            click.echo(warning_message("Could not parse plausibility assessments - using defaults"))
+        except json.JSONDecodeError as e:
+            logging.error(f"Plausibility assessment JSON parsing failed: {e}")
+            click.echo(warning_message(f"Failed to parse plausibility JSON: {e}"))
             return {}
 
     except Exception as e:
-        logging.error(f"Plausibility assessment failed: {e}")
+        logging.error(f"Plausibility assessment LLM call failed: {e}")
         click.echo(warning_message(f"Plausibility assessment failed: {e}"))
         return {}
 
@@ -343,7 +348,7 @@ def verify_and_annotate_strategies(
 
     summary = f"{total_verified} verified, {total_unverified} unverified"
     if plausibility_assessments:
-        summary += f" | Risk: LOW={risk_counts['LOW']}, MED={risk_counts['MEDIUM']}, HIGH={risk_counts['HIGH']}"
+        summary += f" | Risk: LOW={risk_counts['LOW']}, MEDIUM={risk_counts['MEDIUM']}, HIGH={risk_counts['HIGH']}"
 
     return annotated_orthodox_content, annotated_unorthodox_content, summary
 
