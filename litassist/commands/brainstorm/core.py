@@ -47,7 +47,8 @@ from .analysis_generator import generate_analysis
 def _extract_strategies(content: str, strategy_type: str) -> list[str]:
     """Extract individual numbered strategies from content."""
     # Pattern: "### Strategy 1:" or "### 1." or "## STRATEGY 1:" or "1. Strategy Title"
-    pattern = r'(?:^|\n)(?:###\s+Strategy\s+\d+:|###\s+\d+\.|##\s*STRATEGY\s*\d+:|\d+\.)[^\n]*\n(.*?)(?=(?:\n(?:###\s+Strategy\s+\d+:|###\s+\d+\.|##\s*STRATEGY\s*\d+:|\d+\.))|$)'
+    # Capture entire strategy INCLUDING the header
+    pattern = r'((?:###\s+Strategy\s+\d+:|###\s+\d+\.|##\s*STRATEGY\s*\d+:|\d+\.)[^\n]*\n.*?)(?=(?:\n(?:###\s+Strategy\s+\d+:|###\s+\d+\.|##\s*STRATEGY\s*\d+:|\d+\.))|$)'
     matches = re.findall(pattern, content, re.DOTALL | re.IGNORECASE)
 
     if not matches:

@@ -32,16 +32,25 @@ def generate_unorthodox_strategies(facts: str, side: str, area: str):
     if "grok" in unorthodox_client.model.lower():
         logging.debug(f"Using {unorthodox_client.model} for unorthodox strategies")
 
-    # Use centralized unorthodox prompt template
-    unorthodox_template = PROMPTS.get("strategies.brainstorm.unorthodox_prompt")
-    # Build unorthodox base prompt from template
-    unorthodox_base_content = PROMPTS.get(
-        "strategies.brainstorm.unorthodox_base"
-    ).format(facts=facts, side=side, area=area, research=unorthodox_template)
+    # Use centralized unorthodox prompt template with format instructions
+    unorthodox_prompt_template = PROMPTS.get("strategies.brainstorm.unorthodox_prompt")
 
+    # Build the complete prompt by combining template with context
+    # The unorthodox_prompt contains format instructions, unorthodox_base adds facts/side/area
+    facts_and_context = PROMPTS.get("strategies.brainstorm.unorthodox_base").format(
+        facts=facts,
+        side=side,
+        area=area,
+        research=""  # No research context for unorthodox strategies
+    )
+
+    # Combine the format instructions with the facts/context
+    combined_content = facts_and_context + "\n\n" + unorthodox_prompt_template
+
+    # Wrap in output format
     unorthodox_base_prompt = PROMPTS.get(
         "strategies.brainstorm.unorthodox_output_format"
-    ).format(content=unorthodox_base_content)
+    ).format(content=combined_content)
 
     # Add reasoning trace to unorthodox prompt
     unorthodox_prompt = create_reasoning_prompt(

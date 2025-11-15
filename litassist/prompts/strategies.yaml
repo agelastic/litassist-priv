@@ -9,7 +9,7 @@ strategies:
     # LOCATION: brainstorm.py:441
     orthodox_prompt: |
       Generate 15 ORTHODOX legal strategies - established, conservative approaches that follow conventional wisdom and accepted practice. Focus on:
-      
+
       - Precedent-based arguments
       - Traditional legal remedies
       - Conservative interpretations
@@ -21,19 +21,26 @@ strategies:
 
       {research_context}
 
-      For each strategy, provide:
-      1. Strategy name/title
-      2. Comprehensive explanation (3-5 paragraphs detailing the approach, implementation steps, and anticipated outcomes)
-      3. Legal basis or precedent with specific case citations
-      4. Likelihood of success with detailed reasoning
-      5. Key considerations including risks and mitigation strategies
+      FORMAT EACH STRATEGY EXACTLY AS FOLLOWS:
+
+      ### Strategy 1: [Descriptive Strategy Title]
+
+      **Explanation:** [Concise explanation in 1-2 paragraphs detailing the approach and implementation steps]
+
+      **Legal Basis:** [Key precedents and authorities with specific case citations]
+
+      **Likelihood of Success:** [Percentage] - [Brief reasoning]
+
+      **Key Considerations:** [Main risks and mitigation strategies in 1 paragraph]
+
+      Continue this exact format for all 15 strategies (### Strategy 2:, ### Strategy 3:, etc.)
     
     # Unorthodox strategies generation prompt
     # USED BY: brainstorm.py - when approach="unorthodox"
     # LOCATION: brainstorm.py:496
     unorthodox_prompt: |
       Generate 15 UNORTHODOX legal strategies - creative, innovative approaches that think outside conventional frameworks. Focus on:
-      
+
       - Novel legal arguments
       - Creative use of existing law
       - Innovative procedural approaches
@@ -42,19 +49,26 @@ strategies:
       - Strategic forum shopping
       - Unconventional remedy combinations
       - Disruptive legal theories
-      
-      For each strategy, provide:
-      1. Strategy name/title
-      2. Comprehensive explanation (3-5 paragraphs detailing the creative approach, implementation pathway, and potential impact)
-      3. Legal basis or novel interpretation with supporting authorities
-      4. Risk assessment with detailed analysis of potential challenges
-      5. Innovation factor explaining why this approach is groundbreaking
+
+      FORMAT EACH STRATEGY EXACTLY AS FOLLOWS:
+
+      ### Strategy 1: [Creative Strategy Title]
+
+      **Explanation:** [Concise creative explanation in 1-2 paragraphs of the innovative approach and implementation]
+
+      **Legal Basis or Novel Interpretation:** [Supporting authorities and creative legal arguments]
+
+      **Risk Assessment:** [Percentage] - [Brief analysis of potential challenges]
+
+      **Innovation Factor:** [Why this approach is groundbreaking in 1 paragraph]
+
+      Continue this exact format for all 15 strategies (### Strategy 2:, ### Strategy 3:, etc.)
     
     # Strategy analysis prompt
     # USED BY: brainstorm.py - when approach="analysis"
     # LOCATION: brainstorm.py:562
     analysis_prompt: |
-      Analyze ALL the strategies above and select EXACTLY 10 of the most promising strategies for a detailed review.
+      Analyze ALL the strategies above and select EXACTLY 10 of the most promising strategies for focused review.
 
       **SELECTION CRITERIA:**
       - Legal merit and strength of precedent
@@ -81,25 +95,28 @@ strategies:
       **CRITICAL FORMATTING INSTRUCTIONS:**
       You MUST structure your output in this EXACT order:
       1. FIRST: Add the section header "## STRATEGIES SELECTED FOR ANALYSIS" (this exact header is MANDATORY)
-      2. SECOND: Under that header, provide the detailed analysis of 10 selected strategies (using format "STRATEGY 1 –", "STRATEGY 2 –", etc.)
+      2. SECOND: Under that header, provide the focused analysis of 10 selected strategies
       3. THIRD: After all 10 analyses, add the section header "## MOST LIKELY TO SUCCEED" (this exact header is MANDATORY)
       4. FOURTH: Under that header, list EXACTLY 5 recommended strategies from the 10 analyzed above
       5. FINALLY: The reasoning trace will be added at the very end (do NOT add it yourself)
-
-      **IMPORTANT: DO NOT use divider lines, dashes, or any separators between strategies. Use only a single blank line to separate each strategy from the next.**
 
       Start your output with:
 
       ## STRATEGIES SELECTED FOR ANALYSIS
 
-      Then provide your 10 detailed strategy analyses.
+      Then provide your 10 focused strategy analyses.
 
-      **REQUIRED ANALYSIS:**
-      For each of the 10 selected strategies, provide a detailed analysis covering:
-      1. **Why this strategy was selected** (detailed reasoning against the criteria)
-      2. **Implementation roadmap** (3-5 key sequential steps)
-      3. **Risk assessment** (potential downsides and mitigation)
-      4. **Success probability** (a percentage with qualitative justification)
+      **FORMAT EACH SELECTED STRATEGY AS:**
+
+      ### Strategy [Number]: [Full Strategy Title from Above]
+
+      **Why selected:** [Concise reasoning against the criteria in 1 paragraph]
+
+      **Implementation roadmap:** [3-5 key sequential steps in bullet points]
+
+      **Risk assessment:** [Potential downsides and mitigation in 1 paragraph]
+
+      **Success probability:** [Percentage] - [Brief justification]
       
       **Remember: After completing each strategy's analysis, add only ONE blank line before starting the next strategy. NO divider lines, NO dashes, NO separators.**
 
