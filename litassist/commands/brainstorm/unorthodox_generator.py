@@ -78,7 +78,7 @@ def generate_unorthodox_strategies(facts: str, side: str, area: str):
 
     try:
         unorthodox_content, unorthodox_usage = unorthodox_client.complete(
-            unorthodox_messages
+            unorthodox_messages, skip_citation_verification=True
         )
 
         try:

@@ -75,7 +75,9 @@ def generate_orthodox_strategies(
         pass
 
     try:
-        orthodox_content, orthodox_usage = orthodox_client.complete(orthodox_messages)
+        orthodox_content, orthodox_usage = orthodox_client.complete(
+            orthodox_messages, skip_citation_verification=True
+        )
 
         try:
             log_task_event(

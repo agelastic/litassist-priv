@@ -260,7 +260,15 @@ def verify_and_annotate_strategies(
                 (f"unorthodox_{i}", strategy, unverified_in_strategy)
             )
 
-    logging.info(f"Collected {len(strategies_for_plausibility)} strategies with unverified citations for plausibility assessment")
+    # Count total unverified citations
+    total_unverified_count = sum(
+        len(unverified_cits) for _, _, unverified_cits in strategies_for_plausibility
+    )
+
+    logging.info(
+        f"Collected {len(strategies_for_plausibility)} strategies with "
+        f"{total_unverified_count} unverified citations for plausibility assessment"
+    )
 
     # ONE bulk LLM call for plausibility assessment
     plausibility_assessments = {}
