@@ -99,9 +99,13 @@ def _annotate_strategies_with_verification(
                 assessment = plausibility_assessments.get(strategy_id, {})
                 risk_level = assessment.get("risk", "UNKNOWN")
                 explanation = assessment.get("explanation", reason)
+                confidence = assessment.get("confidence")
+
+                # Add confidence if available (Verbalised Sampling)
+                confidence_text = f" (confidence: {confidence}%)" if confidence else ""
 
                 annotation_lines.append(
-                    f"  [NOT VERIFIED]: {citation} - {risk_level} RISK - {explanation}"
+                    f"  [NOT VERIFIED]: {citation} - {risk_level} RISK{confidence_text} - {explanation}"
                 )
 
         # Append annotation to strategy

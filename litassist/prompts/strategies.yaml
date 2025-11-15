@@ -156,10 +156,23 @@ strategies:
       Respond with JSON mapping strategy_id to assessment:
 
       {{
-        "orthodox_1": {{"risk": "MEDIUM", "explanation": "Principle of XYZ exists but citation needs replacement"}},
-        "unorthodox_5": {{"risk": "HIGH", "explanation": "Legal theory questionable, citation appears invented"}},
+        "orthodox_1": {{
+          "risk": "MEDIUM",
+          "confidence": 70,
+          "explanation": "Principle of XYZ exists but citation needs replacement. Citation format plausible (60% real but unfindable, 40% invented)."
+        }},
+        "unorthodox_5": {{
+          "risk": "HIGH",
+          "confidence": 85,
+          "explanation": "Legal theory questionable. Citation likely invented (80% hallucination, 20% obscure real case)."
+        }},
         ...
       }}
+
+      For each assessment provide:
+      - **risk**: Category (LOW/MEDIUM/HIGH)
+      - **confidence**: Your confidence in this risk assessment (0-100, where 100 = certain)
+      - **explanation**: Brief reasoning. Include probability estimates for alternative explanations where relevant (e.g., "70% typo, 30% invented").
 
       Be concise. Focus on legal soundness, not citation accuracy.
 
