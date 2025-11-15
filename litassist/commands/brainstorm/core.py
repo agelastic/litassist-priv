@@ -9,6 +9,7 @@ import os
 import logging
 import re
 import json
+import time
 
 from litassist.utils.file_ops import (
     read_document,
@@ -188,6 +189,26 @@ Be concise. Focus on legal soundness, not citation accuracy."""
         if json_match:
             assessments = json.loads(json_match.group(0))
             logging.info(f"Successfully parsed {len(assessments)} risk assessments")
+
+            # Save comprehensive audit log
+            save_log(
+                "plausibility_assessment",
+                {
+                    "strategies_assessed": len(strategies_with_unverified),
+                    "citations_evaluated": sum(
+                        len(unverified_cits)
+                        for _, _, unverified_cits in strategies_with_unverified
+                    ),
+                    "prompt": bulk_prompt,
+                    "response": response,
+                    "assessments": assessments,
+                    "metadata": {
+                        "model": "openai/o3-pro",
+                        "timestamp": time.strftime("%Y-%m-%d %H:%M:%S"),
+                    },
+                },
+            )
+
             return assessments
         else:
             logging.warning("No JSON found in plausibility response")
