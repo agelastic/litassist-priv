@@ -140,7 +140,29 @@ strategies:
          [Why this strategy is most likely to succeed]
 
       [List EXACTLY 5 strategies that are most likely to succeed]
-    
+
+    # Bulk plausibility assessment for unverified citations
+    # USED BY: brainstorm/core.py assess_legal_plausibility_bulk()
+    plausibility_prompt: |
+      You are assessing the legal plausibility of unverified citations across {num_strategies} legal strategies.
+
+      For each strategy below, assess whether the unverified citations appear to be:
+      - **LOW RISK**: Legal principle is sound, citation appears real but needs verification (likely typo or database gap)
+      - **MEDIUM RISK**: Principle exists in law, but this specific citation may be invented
+      - **HIGH RISK**: Questionable legal basis, citation may be hallucination, strategy suspect
+
+      {strategies_section}
+
+      Respond with JSON mapping strategy_id to assessment:
+
+      {{
+        "orthodox_1": {{"risk": "MEDIUM", "explanation": "Principle of XYZ exists but citation needs replacement"}},
+        "unorthodox_5": {{"risk": "HIGH", "explanation": "Legal theory questionable, citation appears invented"}},
+        ...
+      }}
+
+      Be concise. Focus on legal soundness, not citation accuracy.
+
     # Regeneration prompt with feedback incorporation
     # NOT USED - Template not referenced in codebase
     regeneration_prompt: |

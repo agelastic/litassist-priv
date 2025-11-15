@@ -49,6 +49,8 @@ class TestYAMLPromptValidation:
             "orthodox_strategies",
             "unorthodox_strategies",
             "strategy_count",
+            "num_strategies",
+            "strategies_section",
             "selected_count",
             "remaining_strategies_list",
             "strategies_list",

@@ -34,6 +34,7 @@ from litassist.logging import (
     save_command_output,
 )
 from litassist.llm.factory import LLMClientFactory
+from litassist.prompts import PROMPTS
 
 # Import from submodules
 from .research_handler import analyze_research_size
@@ -148,24 +149,10 @@ def assess_legal_plausibility_bulk(
             f"**{strategy_id.upper()}:**\n{strategy_preview}\n\nUnverified Citations:\n{citations_list}"
         )
 
-    bulk_prompt = f"""You are assessing the legal plausibility of unverified citations across {len(strategies_with_unverified)} legal strategies.
-
-For each strategy below, assess whether the unverified citations appear to be:
-- **LOW RISK**: Legal principle is sound, citation appears real but needs verification (likely typo or database gap)
-- **MEDIUM RISK**: Principle exists in law, but this specific citation may be invented
-- **HIGH RISK**: Questionable legal basis, citation may be hallucination, strategy suspect
-
-{chr(10).join(strategies_section)}
-
-Respond with JSON mapping strategy_id to assessment:
-
-{{
-  "orthodox_1": {{"risk": "MEDIUM", "explanation": "Principle of XYZ exists but citation needs replacement"}},
-  "unorthodox_5": {{"risk": "HIGH", "explanation": "Legal theory questionable, citation appears invented"}},
-  ...
-}}
-
-Be concise. Focus on legal soundness, not citation accuracy."""
+    bulk_prompt = PROMPTS.get("strategies.brainstorm.plausibility_prompt").format(
+        num_strategies=len(strategies_with_unverified),
+        strategies_section="\n\n".join(strategies_section)
+    )
 
     # ONE LLM call for all assessments
     analysis_client = LLMClientFactory.for_command("brainstorm", "analysis")
@@ -173,7 +160,7 @@ Be concise. Focus on legal soundness, not citation accuracy."""
     messages = [
         {
             "role": "system",
-            "content": "You are a legal citation plausibility assessor. Evaluate whether unverified citations appear to be real but unfindable vs likely AI hallucinations.",
+            "content": PROMPTS.get("commands.brainstorm.plausibility_system"),
         },
         {"role": "user", "content": bulk_prompt},
     ]
