@@ -73,6 +73,7 @@ def _annotate_strategies_with_verification(
     unverified_dict: dict[str, str],
     plausibility_assessments: dict[str, dict],
     strategy_type: str,
+    verified_snippets: dict[str, str] = None,
 ) -> list[str]:
     """Add citation verification annotations to each strategy."""
     annotated = []
@@ -92,6 +93,11 @@ def _annotate_strategies_with_verification(
         for citation in citations:
             if citation in verified_set:
                 annotation_lines.append(f"  [VERIFIED]: {citation}")
+                # Add snippet if available
+                if verified_snippets and citation in verified_snippets:
+                    snippet = verified_snippets[citation]
+                    if snippet:
+                        annotation_lines.append(f"    Context: {snippet}")
             elif citation in unverified_dict:
                 reason = unverified_dict[citation]
 
@@ -116,7 +122,8 @@ def _annotate_strategies_with_verification(
 
 
 def assess_legal_plausibility_bulk(
-    strategies_with_unverified: list[tuple[str, str, list[tuple[str, str]]]]
+    strategies_with_unverified: list[tuple[str, str, list[tuple[str, str]]]],
+    verified_snippets: dict[str, str] = None,
 ) -> dict[str, dict]:
     """
     ONE bulk LLM call to assess plausibility of ALL unverified citations.
@@ -124,6 +131,7 @@ def assess_legal_plausibility_bulk(
     Args:
         strategies_with_unverified: List of (strategy_id, strategy_text, unverified_citations)
             Example: [("orthodox_1", "Strategy text...", [("[2024] HCA 123", "not found")]), ...]
+        verified_snippets: Optional dict mapping verified citation -> snippet text
 
     Returns:
         Dict mapping strategy_id to assessment:
@@ -144,13 +152,27 @@ def assess_legal_plausibility_bulk(
         # Extract just the strategy title and core legal reasoning
         strategy_preview = strategy_text[:500] + "..." if len(strategy_text) > 500 else strategy_text
 
+        # Build verified citations section with snippets for this strategy
+        verified_section = ""
+        if verified_snippets:
+            strategy_citations = _extract_citations_from_strategy(strategy_text)
+            verified_in_strategy = []
+            for citation in strategy_citations:
+                if citation in verified_snippets:
+                    snippet = verified_snippets[citation]
+                    verified_in_strategy.append(f"  - {citation}\n    Context: {snippet}")
+
+            if verified_in_strategy:
+                verified_section = "\n\nVerified Citations (legal context):\n" + "\n".join(verified_in_strategy)
+
+        # Build unverified citations list
         citations_list = "\n".join([
             f"  - {cit} (Reason: {reason})"
             for cit, reason in unverified_cits
         ])
 
         strategies_section.append(
-            f"**{strategy_id.upper()}:**\n{strategy_preview}\n\nUnverified Citations:\n{citations_list}"
+            f"**{strategy_id.upper()}:**\n{strategy_preview}{verified_section}\n\nUnverified Citations:\n{citations_list}"
         )
 
     bulk_prompt = PROMPTS.get("strategies.brainstorm.plausibility_prompt").format(
@@ -246,6 +268,15 @@ def verify_and_annotate_strategies(
     verified_set = set(verified_citations)
     unverified_dict = {cit: reason for cit, reason in unverified_citations}
 
+    # Build snippet map for verified citations
+    from litassist.citation.cache import get_from_cache
+
+    verified_snippets = {}
+    for citation in verified_citations:
+        cached = get_from_cache(citation)
+        if cached and "snippet" in cached and cached["snippet"]:
+            verified_snippets[citation] = cached["snippet"]
+
     # Collect strategies with unverified citations for bulk plausibility
     strategies_for_plausibility = []
 
@@ -291,7 +322,7 @@ def verify_and_annotate_strategies(
     plausibility_assessments = {}
     if strategies_for_plausibility:
         plausibility_assessments = assess_legal_plausibility_bulk(
-            strategies_for_plausibility
+            strategies_for_plausibility, verified_snippets
         )
 
     # Annotate orthodox strategies
@@ -301,6 +332,7 @@ def verify_and_annotate_strategies(
         unverified_dict,
         plausibility_assessments,
         "orthodox",
+        verified_snippets,
     )
 
     # Annotate unorthodox strategies
@@ -310,6 +342,7 @@ def verify_and_annotate_strategies(
         unverified_dict,
         plausibility_assessments,
         "unorthodox",
+        verified_snippets,
     )
 
     # Rebuild content with annotations, preserving headers if present

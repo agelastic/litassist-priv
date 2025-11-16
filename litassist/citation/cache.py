@@ -27,7 +27,9 @@ def get_from_cache(citation: str) -> Optional[Dict]:
         return _citation_cache.get(citation)
 
 
-def add_to_cache(citation: str, exists: bool, url: str, reason: str) -> None:
+def add_to_cache(
+    citation: str, exists: bool, url: str, reason: str, snippet: str = ""
+) -> None:
     """
     Add a citation verification result to the cache.
 
@@ -36,12 +38,14 @@ def add_to_cache(citation: str, exists: bool, url: str, reason: str) -> None:
         exists: Whether the citation exists
         url: URL where found (if exists)
         reason: Reason string (verification source or error message)
+        snippet: Text snippet from search result (optional, from Google CSE)
     """
     with _cache_lock:
         _citation_cache[citation] = {
             "exists": exists,
             "url": url,
             "reason": reason,
+            "snippet": snippet,
         }
 
 

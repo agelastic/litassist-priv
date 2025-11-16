@@ -14,7 +14,7 @@ from litassist.config import get_config
 
 def search_legal_database_via_cse(
     citation: str, cse_id: str = None, cse_name: str = "Jade.io", timeout: int = 10
-) -> bool:
+) -> tuple[bool, str, str]:
     """
     Search legal databases for a citation using Google Custom Search Engine.
 
@@ -25,7 +25,10 @@ def search_legal_database_via_cse(
         timeout: Request timeout in seconds
 
     Returns:
-        True if citation is found in search results via Google CSE
+        Tuple of (success: bool, url: str, snippet: str)
+        - success: True if citation is found
+        - url: URL where citation was found (empty if not found)
+        - snippet: Text snippet from search result (empty if not found)
     """
     start_time = time.time()
 
@@ -54,6 +57,7 @@ def search_legal_database_via_cse(
         # Enhanced search with multiple variations to handle different citation formats
         success = False
         found_url = ""
+        found_snippet = ""
         if "items" in res:
             # Create multiple search variations for better matching
             base_citation = (
@@ -90,6 +94,7 @@ def search_legal_database_via_cse(
                     if variation in combined_text:
                         success = True
                         found_url = item.get("link", "")
+                        found_snippet = item.get("snippet", "").replace("\n", " ")
                         break
 
                 if success:
@@ -109,10 +114,13 @@ def search_legal_database_via_cse(
                     ):
                         success = True
                         found_url = item.get("link", "")
+                        found_snippet = item.get("snippet", "").replace("\n", " ")
                         break
 
     except Exception:
         success = False
+        found_url = ""
+        found_snippet = ""
 
     # Log the search attempt with URL
     save_log(
@@ -124,13 +132,14 @@ def search_legal_database_via_cse(
             "citation": citation,
             "success": success,
             "url": found_url if found_url else None,
+            "snippet": found_snippet if found_snippet else None,
             "response_time_ms": round((time.time() - start_time) * 1000, 2),
             "timeout": timeout,
             "timestamp": time.strftime("%Y-%m-%d %H:%M:%S"),
         },
     )
 
-    return (success, found_url)
+    return (success, found_url, found_snippet)
 
 
 def search_jade_via_google_cse(citation: str, timeout: int = 10) -> bool:
@@ -144,7 +153,7 @@ def search_jade_via_google_cse(citation: str, timeout: int = 10) -> bool:
     Returns:
         True if citation is found in Jade search results via Google CSE
     """
-    success, url = search_legal_database_via_cse(
+    success, url, snippet = search_legal_database_via_cse(
         citation, cse_id=None, cse_name="Jade.io", timeout=timeout
     )
     return success

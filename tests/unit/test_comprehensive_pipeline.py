@@ -382,8 +382,12 @@ Worst: Pay $100k progress payment plus costs
                     verified_citations = ["[2016] VSC 23", "[2018] VSC 432", "Security of Payment Act"]
                     mock_verify_citations.return_value = (verified_citations, [])
                     mock_fetch_context.return_value = ({}, [])
-                    # Mock CSE search to always find citations and return a URL
-                    mock_search_cse.return_value = (True, "https://jade.io/citation/test")
+                    # Mock CSE search to always find citations and return a URL with snippet
+                    mock_search_cse.return_value = (
+                        True,
+                        "https://jade.io/citation/test",
+                        "Grocon Constructors v Planit Cocciardi - Security of Payment Act",
+                    )
                     
                     self._run_pipeline_test()
     
