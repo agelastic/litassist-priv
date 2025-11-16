@@ -158,12 +158,16 @@ graph TD
 - <1.6% hallucination rate on all verification tasks
 - 380 unit tests passing with all new configurations
 
-**Brainstorm Verification Behavior (Updated January 2025):**
+**Brainstorm Verification Behavior (Updated November 2025):**
 - Verification is ALWAYS performed on all brainstorm outputs automatically
 - No --verify flag needed or available - verification is mandatory
 - All three sub-types (orthodox, unorthodox, analysis) have enforce_citations=True
 - Clean single message: "[VERIFYING] Verifying brainstorm strategies..."
 - Maintains zero-tolerance citation policy across all strategies
+- **Plausibility Assessment System**: Confidence-scored risk annotations on generated strategies
+- **Audit Logging**: Detailed plausibility assessments with JSON auto-formatted to markdown
+- **Risk Statistics**: Confidence percentages displayed in strategy output
+- **Performance Option**: Citation verification can be skipped for faster generation (internal flag)
 
 **CounselNotes Specific Patterns:**
 - Multi-document cross-synthesis capabilities
@@ -197,3 +201,21 @@ graph TD
 - **Test Fixtures**: Migrated from `tempfile` to pytest's `tmp_path` fixture for better test isolation.
 - **Python Version**: Updated requirement to >=3.11 to leverage modern Python features and maintain compatibility.
 - **Documentation Organization**: Analysis and planning docs moved to `docs/development/` for clearer structure.
+
+## Logging Infrastructure Patterns (November 2025)
+
+- **Markdown Default**: Log format switched from JSON to markdown as default for better readability
+- **JSON Auto-Formatting**: LLM responses in JSON automatically formatted to rich markdown in logs
+- **Comprehensive Error Logging**: All LLM call/response messages logged with full error context
+- **Output Location**: Outputs saved to current working directory instead of package directory
+- **Parameter Error Handling**: Enhanced fail-fast detection for invalid LLM parameters
+- **Anti-Injection Protection**: Prompt injection protection added for all LLM calls
+- **Raw Output Persistence**: Pre-verification outputs saved for audit trail compliance
+
+## Verification Flag Patterns (November 2025)
+
+- **--heavy Flag**: Premium verification using gpt-5-pro for critical documents (verify command)
+- **--noverify Flag**: Skip verification entirely (extractfacts, draft, strategy commands)
+- **Default Behavior**: Standard verification uses claude-opus-4.1 (cost-optimized from gpt-5-pro)
+- **Flag Handling**: verify_content_if_needed() properly respects verify_flag parameter
+- **Audit Trail**: Raw pre-verification output always persisted regardless of verification choice

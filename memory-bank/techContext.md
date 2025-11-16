@@ -35,14 +35,19 @@
 ## Tooling & Conventions
 
 - **Testing**: A two-tiered testing strategy is in place, as documented in `test-scripts/TESTS_STATUS.md`. This includes a suite of fully-mocked, offline `pytest` unit tests (`tests/unit/`) and a collection of manual integration scripts (`test-scripts/`) that perform real API calls for validation.
+  - **Test Count (November 2025)**: 390 tests passing
 - **Linting**: `ruff` for code style and static analysis
 - **CI/CD**: GitHub Actions workflow running tests on Python 3.11 and 3.12
 - **Pre-commit**: Automated pytest runs with fast-fail on every commit
 - **Prompt Templates**: YAML files under `litassist/prompts/` for centralized prompt management  
-- **Logging**: Configurable via `general.log_format` in config.yaml (`json` or `markdown`)  
+- **Logging**: Configurable via `general.log_format` in config.yaml (`json` or `markdown`)
+  - **Default Format (November 2025)**: Switched from JSON to markdown for better readability
+  - **JSON Auto-Formatting**: LLM responses in JSON automatically formatted to rich markdown
+  - **Output Location (November 2025)**: Saved to current working directory instead of package directory
 - **Performance**: `@timed` decorator records durations for key operations  
 - **Zero-Emoji Policy**: Enforced across all code and documentation (July 2025)
-- **Documentation**: LaTeX articles, architectural diagrams, and comprehensive dev docs  
+- **Documentation**: LaTeX articles, architectural diagrams, and comprehensive dev docs
+- **Security (November 2025)**: Anti-injection prompt protection added for all LLM calls
 
 ## Dependencies & Constraints
 
@@ -54,11 +59,15 @@
   - **reasoning_effort** (o-series): Controls reasoning depth (low/medium/high)
   - **No automatic output limits**: Models use API defaults for maximum quality
   - **Explicit limits**: Commands can set max_tokens if needed (rarely used)
+  - **Token Limit System REMOVED**: use_token_limits flag eliminated (November 2025)
 - **Input Processing**: Configurable in `general.max_chars` and `general.rag_max_chars`
   - **Chunk-Based Processing**: Large documents split into 50K character chunks for digest/strategy commands
+  - **Raised Limits (November 2025)**: brainstorm/caseplan input limits increased from 50K to 600K characters
 - **Citation Verification**: Jade.io primary with offline pattern fallback (`citation_validation.offline_validation`)
+  - **Verification Flags (November 2025)**: --heavy (premium gpt-5-pro), --noverify (skip verification)
+  - **Default Changed (November 2025)**: verify-soundness now uses claude-opus-4.1 instead of gpt-5-pro
 - **Strict Structure**: `extractfacts` and `strategy` enforce fixed heading formats
-- **Three-Tier Strategy (October 2025)**: Model selection optimizes accuracy vs cost based on task criticality  
+- **Three-Tier Strategy (October 2025)**: Model selection optimizes accuracy vs cost based on task criticality
 
 ## Tool Usage Patterns
 
