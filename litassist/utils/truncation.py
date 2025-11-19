@@ -119,6 +119,7 @@ def execute_with_truncation(
     # Default execution function if none provided
     if execute_fn is None:
         def default_execute(prompt):
+            """Execute LLM call with system and user messages."""
             messages = []
             if system_content:
                 messages.append({"role": "system", "content": system_content})

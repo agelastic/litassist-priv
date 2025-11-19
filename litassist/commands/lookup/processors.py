@@ -32,6 +32,12 @@ class LookupProcessor:
     """Orchestrates the lookup processing workflow."""
 
     def __init__(self, config):
+        """
+        Initialise the lookup processor.
+
+        Args:
+            config: Configuration object containing lookup settings
+        """
         self.config = config
 
     def fetch_content(self, links, all_snippets, no_fetch):

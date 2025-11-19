@@ -11,6 +11,13 @@ class PineconeWrapper:
     """Wrapper class to handle Pinecone operations using direct API calls"""
 
     def __init__(self, api_key, index_name):
+        """
+        Initialise the Pinecone wrapper with API credentials.
+
+        Args:
+            api_key: Pinecone API key for authentication
+            index_name: Name of the Pinecone index to connect to
+        """
         self.api_key = api_key
         self.index_name = index_name
         self.host = f"https://{index_name}-g2m2vyy.svc.aped-4627-b74a.pinecone.io"

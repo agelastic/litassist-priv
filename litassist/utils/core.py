@@ -47,6 +47,7 @@ def timed(func: Callable) -> Callable:
 
     @functools.wraps(func)
     def wrapper(*args, **kwargs):
+        """Execute function with timing and logging."""
         start_time = time.time()
         start_timestamp = time.strftime("%Y-%m-%d %H:%M:%S")
 
@@ -115,8 +116,10 @@ def heartbeat(interval: Optional[int] = None):
     """
 
     def decorator(fn):
+        """Apply heartbeat wrapper to the target function."""
         @functools.wraps(fn)
         def wrapper(*args, **kwargs):
+            """Execute function with background heartbeat thread."""
             # Determine interval at runtime
             actual_interval = interval
             if actual_interval is None:
@@ -134,6 +137,7 @@ def heartbeat(interval: Optional[int] = None):
             done = threading.Event()
 
             def ping():
+                """Emit periodic heartbeat messages until signalled to stop."""
                 while not done.is_set():
                     # Suppress during pytest runs
                     if not os.environ.get("PYTEST_CURRENT_TEST"):

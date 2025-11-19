@@ -82,6 +82,7 @@ def generate_full_plan(
 
     @timed
     def _generate_plan():
+        """Execute plan generation LLM call with timing."""
         try:
             log_task_event(
                 "caseplan",

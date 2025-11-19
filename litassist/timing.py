@@ -30,6 +30,7 @@ def timed(func: Callable) -> Callable:
 
     @functools.wraps(func)
     def wrapper(*args, **kwargs):
+        """Execute function with timing and logging."""
         start_time = time.time()
         start_timestamp = time.strftime("%Y-%m-%d %H:%M:%S")
 

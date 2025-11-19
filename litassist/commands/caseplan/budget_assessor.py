@@ -61,6 +61,7 @@ def assess_budget(
 
     @timed
     def _assess_budget():
+        """Execute budget assessment LLM call with timing."""
         try:
             log_task_event(
                 "caseplan",
