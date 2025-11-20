@@ -35,6 +35,8 @@ from litassist.logging import (
 )
 from litassist.llm.factory import LLMClientFactory
 from litassist.prompts import PROMPTS
+from litassist.citation.verify import verify_all_citations
+from litassist.citation.cache import get_from_cache
 
 # Import from submodules
 from .research_handler import analyze_research_size
@@ -252,8 +254,6 @@ def verify_and_annotate_strategies(
     Returns:
         Tuple of (annotated_orthodox, annotated_unorthodox, summary_stats)
     """
-    from litassist.citation.verify import verify_all_citations
-
     # Extract individual strategies
     orthodox_strategies = _extract_strategies(orthodox_content, "orthodox")
     unorthodox_strategies = _extract_strategies(unorthodox_content, "unorthodox")
@@ -269,8 +269,6 @@ def verify_and_annotate_strategies(
     unverified_dict = {cit: reason for cit, reason in unverified_citations}
 
     # Build snippet map for verified citations
-    from litassist.citation.cache import get_from_cache
-
     verified_snippets = {}
     for citation in verified_citations:
         cached = get_from_cache(citation)
