@@ -1,5 +1,43 @@
 # Progress
 
+## Recent Developments (November 2025)
+
+- **Brainstorm Command Enhancements (November 2025)**
+  - Implemented confidence-scored plausibility assessment system with risk annotations
+  - Added detailed audit logging of plausibility assessments with JSON auto-formatting to markdown
+  - Externalized plausibility prompts to YAML configuration files
+  - Enhanced citation verification with skip option for performance
+  - Added risk statistics and confidence percentages to strategy output
+
+- **Token Limit System Removal (November 2025)**
+  - Removed global `use_token_limits` flag and automatic 16K output limits
+  - Raised input size limits dramatically: brainstorm/caseplan (50K→600K characters)
+  - Clarified `thinking_effort` as reasoning budget (1K-32K tokens), NOT output length
+  - Added deprecation warnings for old config files using removed settings
+  - Quality prioritized over cost - models now use API defaults for comprehensive outputs
+
+- **Verification System Enhancements (November 2025)**
+  - Added `--heavy` flag for premium verification using gpt-5-pro
+  - Added `--noverify` flag to extractfacts, draft, and strategy commands for skipping verification
+  - Changed default verify-soundness from gpt-5-pro to claude-opus-4.1 (cost optimization)
+  - Fixed verify_content_if_needed() to properly respect verify_flag parameter
+  - Enhanced citation validation with header analysis for PDF content
+  - Added PDF search validation with automatic retry logic (up to 3 attempts)
+  - Raw pre-verification output persistence for audit trail compliance
+
+- **Logging Infrastructure Improvements (November 2025)**
+  - Auto-format JSON LLM responses into rich markdown for better readability
+  - Comprehensive error logging with LLM call/response messages
+  - Save outputs to current working directory instead of package directory
+  - Default log format switched to markdown (from JSON)
+  - Enhanced parameter error handling with fail-fast detection
+
+- **Configuration Optimizations (November 2025)**
+  - Optimized sampling parameters for creative and analytical tasks
+  - Raised Claude & o3 preset entropy to foster creativity
+  - Added anti-injection prompt protection for all LLM calls
+  - All 390 tests passing with updated configurations
+
 ## Recent Developments (July 2025)
 
 - **Infrastructure & Architecture Improvements (July 18)**

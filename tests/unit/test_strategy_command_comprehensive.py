@@ -772,9 +772,17 @@ class TestErrorHandling:
         finally:
             Path(facts_file).unlink()
 
+    @patch("litassist.citation.verify.verify_all_citations")
+    @patch("litassist.citation.verify.verify_single_citation")
     @patch("litassist.commands.strategy.core.LLMClientFactory.for_command")
-    def test_strategy_generation_citation_validation_warnings(self, mock_llm_factory):
+    def test_strategy_generation_citation_validation_warnings(
+        self, mock_llm_factory, mock_verify_single, mock_verify_all
+    ):
         """Test handling of citation validation warnings."""
+        # Mock citation verification to prevent real API calls
+        mock_verify_all.return_value = ([], [("[2025] FAKE 999", "Citation not found")])
+        mock_verify_single.return_value = (False, "", "Not found", "")
+
         # Mock LLM client with citation issues
         mock_client = MagicMock()
         mock_client.complete.return_value = (

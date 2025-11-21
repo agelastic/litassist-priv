@@ -416,6 +416,8 @@ class TestDraftErrorHandling:
 class TestDraftIntegration:
     """Test integration scenarios for draft command."""
 
+    @patch("litassist.citation.verify.verify_all_citations")
+    @patch("litassist.citation.verify.verify_single_citation")
     @patch("litassist.commands.draft.core.LLMClientFactory.for_command")
     @patch("litassist.commands.draft.core.save_command_output")
     @patch("litassist.commands.draft.core.save_log")
@@ -426,8 +428,14 @@ class TestDraftIntegration:
         mock_save_log,
         mock_save_output,
         mock_llm_factory,
+        mock_verify_single,
+        mock_verify_all,
     ):
         """Test draft command with citation validation warnings."""
+        # Mock citation verification to prevent real API calls
+        mock_verify_all.return_value = ([], [("[2025] FAKE 999", "Citation not found")])
+        mock_verify_single.return_value = (False, "", "Not found", "")
+
         # Mock prompts
         mock_prompts.get.return_value = "Test template"
 

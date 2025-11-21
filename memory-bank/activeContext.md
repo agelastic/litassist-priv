@@ -50,13 +50,18 @@
 - EXPANDED: Documentation with analysis/planning docs moved to proper locations.
 - IMPROVED: .gitignore with comprehensive development patterns.
 
-**Previous update (November 2025 - Token Limit System Removal):**
+**Latest update (November 2025 - Brainstorm Enhancements & System Improvements):**
+- ADDED: Confidence-scored plausibility assessment in brainstorm command with risk annotations
+- ADDED: Detailed audit logging of plausibility assessments with JSON auto-formatting to markdown
 - REMOVED: Global token limit system (use_token_limits flag and auto-application of 16K limits)
-- RATIONALE: Quality over cost - modern models handle large outputs efficiently
+- RAISED: Input size limits dramatically (brainstorm/caseplan: 50K→600K characters)
+- ADDED: --heavy flag for premium verification (gpt-5-pro) and --noverify flag to skip verification
+- CHANGED: Default verify-soundness from gpt-5-pro to claude-opus-4.1 (cost optimization)
+- ENHANCED: Logging infrastructure with comprehensive error logging and markdown default format
+- OPTIMIZED: Sampling parameters for creative/analytical tasks with raised entropy presets
+- FIXED: Verification flag handling and raw pre-verification output persistence
+- ADDED: Anti-injection prompt protection for all LLM calls
 - CLARIFIED: thinking_effort controls reasoning budget (1K-32K tokens), NOT output length
-- UPDATED: Models now use API defaults (typically unlimited or very high limits)
-- SIMPLIFIED: Commands can explicitly set max_tokens if needed, but don't by default
-- MAINTAINED: thinking_effort and reasoning_effort remain for controlling model reasoning depth
 
 **Previous update (8 July 2025 - Token Limit Configuration & Brainstorm Enhancement):**
 - ~~CHANGED: Default use_token_limits from False to True in config.py~~ (SUPERSEDED by November 2025 removal)
@@ -92,7 +97,14 @@
 8. **[MB][P2] Memory Bank Maintenance**  
    - Continue systematic updates after major changes
 
-(AG- tags and priorities correspond to TODO.md and alignment plan.)
+9. **[ROADMAP][P0] Phase 1: Active Litigation Foundation**  
+   - Matter Memory Module (P0A-1) - foundational per-matter storage
+   - ACT Magistrates Court Procedures Calculator (P0A-2) - critical deadline calculations
+   - Letter Doctor (P0A-3) - strategic correspondence quality control
+   - Legal Correspondence Analyzer (P0A-4) - automated triage of incoming docs
+   - Fix API Timeout Bug (P0A-5) - add timeout=30.0 to API calls
+
+(AG- tags and priorities correspond to TODO.md and ROADMAP.md.)
 
 ## Active Decisions & Considerations
 - Strict adherence to Memory Bank hierarchy and .clinerules formatting rules.

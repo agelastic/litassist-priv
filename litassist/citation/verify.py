@@ -23,7 +23,7 @@ from .cache import get_from_cache, add_to_cache
 
 
 @timed
-def verify_single_citation(citation: str) -> Tuple[bool, str, str]:
+def verify_single_citation(citation: str) -> Tuple[bool, str, str, str]:
     """
     Verify a single citation against available databases.
 
@@ -31,7 +31,11 @@ def verify_single_citation(citation: str) -> Tuple[bool, str, str]:
         citation: Citation to verify
 
     Returns:
-        Tuple of (exists, url, reason) where reason explains failure if any
+        Tuple of (exists, url, reason, snippet) where:
+        - exists: True if citation found
+        - url: URL where found (empty if not found)
+        - reason: Explanation of verification result
+        - snippet: Text snippet from search result (empty if not found)
     """
     # Normalize first
     normalized = normalize_citation(citation)
@@ -39,7 +43,12 @@ def verify_single_citation(citation: str) -> Tuple[bool, str, str]:
     # Check cache first
     cached = get_from_cache(normalized)
     if cached:
-        return cached["exists"], cached.get("url", ""), cached.get("reason", "")
+        return (
+            cached["exists"],
+            cached.get("url", ""),
+            cached.get("reason", ""),
+            cached.get("snippet", ""),
+        )
 
     # Check for hardcoded FOIA citations first
     if normalized in HARDCODED_FOIA_FILES:
@@ -49,8 +58,9 @@ def verify_single_citation(citation: str) -> Tuple[bool, str, str]:
             exists=True,
             url=file_path,
             reason="FOIA citation - using pre-downloaded local file",
+            snippet="",
         )
-        return True, file_path, "FOIA citation - using pre-downloaded local file"
+        return True, file_path, "FOIA citation - using pre-downloaded local file", ""
 
     # Check for UK/International citations first (these are valid but not Australian)
     international_reason = check_international_citation(normalized)
@@ -60,8 +70,9 @@ def verify_single_citation(citation: str) -> Tuple[bool, str, str]:
             exists=True,  # Valid but not Australian
             url="",
             reason=international_reason,
+            snippet="",
         )
-        return True, "", international_reason
+        return True, "", international_reason, ""
 
     # Skip verification for legislation - Acts and Regulations aren't in case law databases
     if is_legislation_reference(normalized):
@@ -70,8 +81,9 @@ def verify_single_citation(citation: str) -> Tuple[bool, str, str]:
             exists=True,  # Legislation is assumed valid
             url="",
             reason="Legislation reference - verification skipped",
+            snippet="",
         )
-        return True, "", "Legislation reference - verification skipped"
+        return True, "", "Legislation reference - verification skipped", ""
 
     # Check for format issues using offline validation
     format_issues = validate_citation_patterns(normalized, enable_online=False)
@@ -82,25 +94,28 @@ def verify_single_citation(citation: str) -> Tuple[bool, str, str]:
             exists=False,
             url="",
             reason=f"Invalid citation format: {format_issues[0]}",
+            snippet="",
         )
-        return False, "", f"Invalid citation format: {format_issues[0]}"
+        return False, "", f"Invalid citation format: {format_issues[0]}", ""
 
     # Primary verification: Use Jade.io via Google CSE for ALL citations
     config = get_config()
 
     try:
         # Try Jade.io CSE first (primary source)
-        exists_in_jade, url_jade = search_legal_database_via_cse(
+        exists_in_jade, url_jade, snippet_jade = search_legal_database_via_cse(
             normalized, cse_id=config.cse_id, cse_name="Jade.io", timeout=5
         )
         if exists_in_jade:
             reason = "Verified via Jade.io CSE"
-            add_to_cache(normalized, exists=True, url=url_jade, reason=reason)
-            return True, url_jade, reason
+            add_to_cache(
+                normalized, exists=True, url=url_jade, reason=reason, snippet=snippet_jade
+            )
+            return True, url_jade, reason, snippet_jade
 
         # Fallback to comprehensive CSE if configured and Jade didn't find it
         if hasattr(config, "cse_id_comprehensive") and config.cse_id_comprehensive:
-            exists_in_comprehensive, url_comp = search_legal_database_via_cse(
+            exists_in_comprehensive, url_comp, snippet_comp = search_legal_database_via_cse(
                 normalized,
                 cse_id=config.cse_id_comprehensive,
                 cse_name="Comprehensive legal sources",
@@ -108,18 +123,26 @@ def verify_single_citation(citation: str) -> Tuple[bool, str, str]:
             )
             if exists_in_comprehensive:
                 reason = "Verified via comprehensive legal sources CSE"
-                add_to_cache(normalized, exists=True, url=url_comp, reason=reason)
-                return True, url_comp, reason
+                add_to_cache(
+                    normalized, exists=True, url=url_comp, reason=reason, snippet=snippet_comp
+                )
+                return True, url_comp, reason, snippet_comp
 
         # Final fallback to AustLII CSE if configured
         if hasattr(config, "cse_id_austlii") and config.cse_id_austlii:
-            exists_in_austlii, url_austlii = search_legal_database_via_cse(
+            exists_in_austlii, url_austlii, snippet_austlii = search_legal_database_via_cse(
                 normalized, cse_id=config.cse_id_austlii, cse_name="AustLII", timeout=5
             )
             if exists_in_austlii:
                 reason = "Verified via AustLII CSE"
-                add_to_cache(normalized, exists=True, url=url_austlii, reason=reason)
-                return True, url_austlii, reason
+                add_to_cache(
+                    normalized,
+                    exists=True,
+                    url=url_austlii,
+                    reason=reason,
+                    snippet=snippet_austlii,
+                )
+                return True, url_austlii, reason, snippet_austlii
 
         # NEW: Final fallback - try direct AustLII URL construction
         # Only attempt for Australian medium neutral citations
@@ -129,17 +152,21 @@ def verify_single_citation(citation: str) -> Tuple[bool, str, str]:
             )
             if exists_via_austlii:
                 add_to_cache(
-                    normalized, exists=True, url=url_austlii, reason=reason_austlii
+                    normalized,
+                    exists=True,
+                    url=url_austlii,
+                    reason=reason_austlii,
+                    snippet="",
                 )
-                return True, url_austlii, reason_austlii
+                return True, url_austlii, reason_austlii, ""
 
     except Exception:
         pass  # Fall through to mark as unverified
 
     # If all verification attempts fail, mark as UNVERIFIED
     reason = "Citation not found in online databases"
-    add_to_cache(normalized, exists=False, url="", reason=reason)
-    return False, "", reason
+    add_to_cache(normalized, exists=False, url="", reason=reason, snippet="")
+    return False, "", reason, ""
 
 
 @timed
@@ -162,7 +189,7 @@ def verify_all_citations(text: str) -> Tuple[List[str], List[Tuple[str, str]]]:
     detailed_results = []
 
     for citation in citations:
-        exists, url, reason = verify_single_citation(citation)
+        exists, url, reason, snippet = verify_single_citation(citation)
 
         # Capture full details for logging
         citation_detail = {
@@ -170,6 +197,7 @@ def verify_all_citations(text: str) -> Tuple[List[str], List[Tuple[str, str]]]:
             "verified": exists,
             "url": url if url else None,
             "reason": reason if reason else None,
+            "snippet": snippet if snippet else None,
             "is_traditional": is_traditional_citation_format(citation),
             "is_international": (
                 "UK/International citation" in reason if reason else False

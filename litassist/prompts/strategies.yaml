@@ -124,32 +124,36 @@ strategies:
 
       ## MOST LIKELY TO SUCCEED
 
-      1. [Strategy Title from your 10 analyses above]
-         [Why this strategy is most likely to succeed]
+      List EXACTLY 5 strategies that are most likely to succeed. For each strategy, provide a substantive justification (2-4 sentences) explaining:
+      - Why this strategy ranks in top 5 compared to others
+      - What legal foundation supports it
+      - How it aligns with the fact pattern
+      - What makes it particularly strong or compelling
 
-      2. [Strategy Title from your 10 analyses above]
-         [Why this strategy is most likely to succeed]
+      Format each entry as:
 
-      3. [Strategy Title from your 10 analyses above]
-         [Why this strategy is most likely to succeed]
+      **[NUMBER]. [Strategy Title from your 10 analyses above]**
 
-      4. [Strategy Title from your 10 analyses above]
-         [Why this strategy is most likely to succeed]
-
-      5. [Strategy Title from your 10 analyses above]
-         [Why this strategy is most likely to succeed]
-
-      [List EXACTLY 5 strategies that are most likely to succeed]
+      Justification: [2-4 sentences with detailed reasoning. Example: "Strongest legal foundation with clear High Court authority (Calverley v Green). Direct payment of purchase price creates presumption of beneficial interest. Well-supported by verified precedent and aligns with fact pattern. Objective evidence of financial contribution makes this the most defensible approach."]
 
     # Bulk plausibility assessment for unverified citations
     # USED BY: brainstorm/core.py assess_legal_plausibility_bulk()
     plausibility_prompt: |
       You are assessing the legal plausibility of unverified citations across {num_strategies} legal strategies.
 
-      For each strategy below, assess whether the unverified citations appear to be:
-      - **LOW RISK**: Legal principle is sound, citation appears real but needs verification (likely typo or database gap)
-      - **MEDIUM RISK**: Principle exists in law, but this specific citation may be invented
-      - **HIGH RISK**: Questionable legal basis, citation may be hallucination, strategy suspect
+      For each strategy below, you are provided with:
+      1. Strategy preview
+      2. **Verified citations WITH context** (actual case summaries from legal databases) - use these to understand the legal principles at play
+      3. Unverified citations that need assessment
+
+      Use the verified citations to evaluate whether the legal principles in unverified citations are plausible.
+      If a verified citation in the same strategy establishes a similar legal principle, this suggests the
+      unverified citation may be a typo or database gap rather than hallucination.
+
+      Assess each unverified citation as:
+      - **LOW RISK**: Legal principle confirmed by verified citations above, likely typo/database gap
+      - **MEDIUM RISK**: Principle plausible but citation suspect, needs manual verification
+      - **HIGH RISK**: No verified support, questionable legal basis, likely hallucination
 
       {strategies_section}
 

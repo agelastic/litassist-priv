@@ -11,12 +11,12 @@ from litassist.utils.text_processing import chunk_text
 from litassist.utils.file_ops import read_document
 
 
-# Model-aware chunk sizing
+# Model-aware chunk sizing - optimized for modern long-context models
 MODEL_CHUNK_LIMITS = {
-    "google": 30000,  # Conservative for Gemini
-    "anthropic": 150000,  # Claude handles larger chunks
-    "openai": 100000,  # GPT-4 limit
-    "x-ai": 100000,  # Grok limit
+    "google": 500000,  # ~150k tokens, 15% of Gemini 2.5 Pro's 1M context
+    "anthropic": 500000,  # ~150k tokens, 75% of Claude Sonnet's 200k context
+    "openai": 500000,  # ~150k tokens, 37% of GPT-4/o3's 400k context
+    "x-ai": 500000,  # ~150k tokens, safe for Grok's context window
 }
 
 
@@ -110,7 +110,7 @@ def warn_if_large_processing(total_chars: int) -> None:
     Args:
         total_chars: Total number of characters to process
     """
-    if total_chars > 500000:  # More than 500k chars
+    if total_chars > 1500000:  # More than 1.5M chars (~3+ chunks)
         estimated_tokens = total_chars / 4
         click.echo(
             click.style(

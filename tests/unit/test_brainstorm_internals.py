@@ -128,6 +128,18 @@ Pursue misleading conduct claim while simultaneously filing ombudsman complaint.
             {},
         )
 
+        # Mock citation verification to avoid real Google CSE API calls
+        self.mock_verify_citations = patch(
+            'litassist.citation.verify.verify_all_citations'
+        )
+        self.mock_verify = self.mock_verify_citations.start()
+        # Return empty lists (no citations found in test data)
+        self.mock_verify.return_value = ([], [])
+
+    def teardown_method(self):
+        """Clean up patches."""
+        self.mock_verify_citations.stop()
+
     @patch("litassist.commands.brainstorm.analysis_generator.LLMClientFactory")
     @patch("litassist.commands.brainstorm.unorthodox_generator.LLMClientFactory")
     @patch("litassist.commands.brainstorm.orthodox_generator.LLMClientFactory")

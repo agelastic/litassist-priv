@@ -18,6 +18,7 @@ class TestVerificationError(CitationVerificationError):
     """Raised for expected verification errors in tests - no console output."""
 
     def __str__(self):
+        """Return empty string to suppress console output in tests."""
         return ""
 
 
