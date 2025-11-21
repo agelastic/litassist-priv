@@ -117,10 +117,19 @@ def search_legal_database_via_cse(
                         found_snippet = item.get("snippet", "").replace("\n", " ")
                         break
 
-    except Exception:
+    except Exception as e:
         success = False
         found_url = ""
         found_snippet = ""
+        save_log(
+            "google_cse_search_error",
+            {
+                "citation": citation,
+                "cse_name": cse_name,
+                "error": str(e),
+                "error_type": type(e).__name__,
+            },
+        )
 
     # Log the search attempt with URL
     save_log(

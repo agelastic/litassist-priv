@@ -30,7 +30,7 @@ Before describing the full adversarial modelling vision, note what already exist
 - "Write as [Opponent]" simulation
 - Paragraph-by-paragraph adversarial review
 - Move prediction
-- Profile-based behavioral modeling
+- Profile-based behavioural modelling
 
 ---
 
