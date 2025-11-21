@@ -376,20 +376,21 @@ Worst: Pay $100k progress payment plus costs
         # Use context managers to patch everything
         # Setup citation mocks first to prevent ANY real API calls
         with patch("litassist.citation.verify.verify_all_citations") as mock_verify_citations:
-            with patch("litassist.citation_context.fetch_citation_context") as mock_fetch_context:
-                with patch("litassist.citation.google_cse.search_legal_database_via_cse") as mock_search_cse:
-                    # Configure citation mocks to prevent real API calls
-                    verified_citations = ["[2016] VSC 23", "[2018] VSC 432", "Security of Payment Act"]
-                    mock_verify_citations.return_value = (verified_citations, [])
-                    mock_fetch_context.return_value = ({}, [])
-                    # Mock CSE search to always find citations and return a URL with snippet
-                    mock_search_cse.return_value = (
-                        True,
-                        "https://jade.io/citation/test",
-                        "Grocon Constructors v Planit Cocciardi - Security of Payment Act",
-                    )
-                    
-                    self._run_pipeline_test()
+            with patch("litassist.citation.verify.verify_single_citation") as mock_verify_single:
+                with patch("litassist.citation_context.fetch_citation_context") as mock_fetch_context:
+                    with patch("litassist.citation.google_cse.search_legal_database_via_cse") as mock_search_cse:
+                        # Configure citation mocks to prevent real API calls
+                        mock_verify_citations.return_value = ([], [])  # No citations to avoid verification overhead
+                        mock_verify_single.return_value = (False, "", "Not found", "")  # Prevent real network calls
+                        mock_fetch_context.return_value = ({}, [])
+                        # Mock CSE search to always find citations and return a URL with snippet
+                        mock_search_cse.return_value = (
+                            True,
+                            "https://jade.io/citation/test",
+                            "Grocon Constructors v Planit Cocciardi - Security of Payment Act",
+                        )
+
+                        self._run_pipeline_test()
     
     def _run_pipeline_test(self):
         """Run the actual pipeline test with all mocks."""
