@@ -8,7 +8,7 @@ and managing the verification workflow.
 
 import re
 import time
-from typing import List, Tuple
+from typing import Dict, List, Tuple
 
 from litassist.timing import timed
 from litassist.logging import save_log
@@ -170,7 +170,7 @@ def verify_single_citation(citation: str) -> Tuple[bool, str, str, str]:
 
 
 @timed
-def verify_all_citations(text: str) -> Tuple[List[str], List[Tuple[str, str]]]:
+def verify_all_citations(text: str) -> Tuple[List[Dict[str, str]], List[Tuple[str, str]]]:
     """
     Verify all citations in text content.
 
@@ -178,7 +178,9 @@ def verify_all_citations(text: str) -> Tuple[List[str], List[Tuple[str, str]]]:
         text: Text content containing citations
 
     Returns:
-        Tuple of (verified_citations, unverified_citations_with_reasons)
+        Tuple of (verified_citation_details, unverified_citations_with_reasons)
+        where verified_citation_details is a list of dicts with keys:
+        citation, url, snippet, reason
     """
     start_time = time.time()
     citations = extract_citations(text)
@@ -206,7 +208,13 @@ def verify_all_citations(text: str) -> Tuple[List[str], List[Tuple[str, str]]]:
         detailed_results.append(citation_detail)
 
         if exists:
-            verified.append(citation)
+            # Keep full details for verified citations (eliminates redundant cache lookups)
+            verified.append({
+                "citation": citation,
+                "url": url or "",
+                "snippet": snippet or "",
+                "reason": reason or "",
+            })
         else:
             unverified.append((citation, reason))
 
@@ -217,7 +225,7 @@ def verify_all_citations(text: str) -> Tuple[List[str], List[Tuple[str, str]]]:
         "citations_found": len(citations),
         "citations_verified": len(verified),
         "citations_unverified": len(unverified),
-        "verified_citations": verified,
+        "verified_citations": [v["citation"] for v in verified],
         "unverified_citations": [
             {"citation": cit, "reason": reason} for cit, reason in unverified
         ],

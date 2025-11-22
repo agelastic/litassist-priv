@@ -46,7 +46,7 @@ Third strategy text"""
         """Test verify_and_annotate_strategies function."""
         # Setup mocks
         mock_verify.return_value = (
-            ["[2020] HCA 1"],  # verified
+            [{"citation": "[2020] HCA 1", "url": "", "snippet": "", "reason": ""}],  # verified
             [("[2024] FakeCourt 999", "not found")]  # unverified
         )
         mock_plausibility.return_value = {

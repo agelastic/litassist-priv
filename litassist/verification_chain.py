@@ -43,9 +43,9 @@ def run_verification_chain(
     if "database" not in skip_stages and results.get("patterns", {}).get(
         "passed", True
     ):
-        verified, unverified = verify_all_citations(content)
+        verified_details, unverified = verify_all_citations(content)
         results["database"] = {
-            "verified": verified,
+            "verified": [v["citation"] for v in verified_details],
             "unverified": unverified,
             "passed": len(unverified) == 0,
         }

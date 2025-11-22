@@ -83,8 +83,8 @@ class TestVerifyCommand:
         ):
             mock_citations.return_value = (
                 [
-                    "Mabo v Queensland (No 2) [1992] HCA 23",
-                    "Donoghue v Stevenson [1932] AC 562",
+                    {"citation": "Mabo v Queensland (No 2) [1992] HCA 23", "url": "", "snippet": "", "reason": ""},
+                    {"citation": "Donoghue v Stevenson [1932] AC 562", "url": "", "snippet": "", "reason": ""},
                 ],
                 [("Smith v Jones [2025] NSWSC 999", "Future citation")],
             )
@@ -125,7 +125,7 @@ class TestVerifyCommand:
         ):
             mock_extract.return_value = ["Mabo v Queensland (No 2) [1992] HCA 23"]
             mock_citations.return_value = (
-                ["Mabo v Queensland (No 2) [1992] HCA 23"],
+                [{"citation": "Mabo v Queensland (No 2) [1992] HCA 23", "url": "", "snippet": "", "reason": ""}],
                 [],
             )
             mock_fetch.return_value = ({}, [])  # Mock empty case content, no failures
@@ -324,7 +324,7 @@ class TestVerifyCommand:
             patch("litassist.commands.verify.soundness_checker.LLMClientFactory") as mock_soundness_factory,
             patch("litassist.commands.verify.core.save_log") as _mock_save_log,
         ):
-            mock_citations.return_value = (["Case1"], [])
+            mock_citations.return_value = ([{"citation": "Case1", "url": "", "snippet": "", "reason": ""}], [])
             mock_fetch.return_value = ({}, [])  # Mock empty case content, no failures
             mock_reasoning_fetch.return_value = ({}, [])  # Mock empty case content, no failures
             mock_soundness_fetch.return_value = ({}, [])  # Mock empty case content, no failures

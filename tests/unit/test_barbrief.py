@@ -328,7 +328,7 @@ class TestBarbriefCommand:
         mock_factory.for_command.return_value = mock_client
 
         mock_citation_verify.return_value = (
-            ["[2024] HCA 1"],  # verified
+            [{"citation": "[2024] HCA 1", "url": "", "snippet": "", "reason": ""}],  # verified
             [("[2024] FAKE 99", "Citation not found in database")],  # unverified
         )
 

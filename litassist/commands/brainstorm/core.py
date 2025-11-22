@@ -255,7 +255,6 @@ def verify_and_annotate_strategies(
     # Local imports - citation chain loads unittest.mock (19ms) + other heavy modules
     # PEP 8 permits this to avoid loading modules that might not be used
     from litassist.citation.verify import verify_all_citations
-    from litassist.citation.cache import get_from_cache
 
     # Extract individual strategies
     orthodox_strategies = _extract_strategies(orthodox_content, "orthodox")
@@ -265,18 +264,16 @@ def verify_and_annotate_strategies(
 
     # Verify all citations in one pass
     all_text = orthodox_content + "\n\n" + unorthodox_content
-    verified_citations, unverified_citations = verify_all_citations(all_text)
+    verified_details, unverified_citations = verify_all_citations(all_text)
 
-    # Build citation lookup maps
-    verified_set = set(verified_citations)
+    # Build citation lookup maps (using returned details, no redundant cache lookups)
+    verified_set = {v["citation"] for v in verified_details}
     unverified_dict = {cit: reason for cit, reason in unverified_citations}
 
-    # Build snippet map for verified citations
-    verified_snippets = {}
-    for citation in verified_citations:
-        cached = get_from_cache(citation)
-        if cached and "snippet" in cached and cached["snippet"]:
-            verified_snippets[citation] = cached["snippet"]
+    # Build snippet map directly from returned details
+    verified_snippets = {
+        v["citation"]: v["snippet"] for v in verified_details if v.get("snippet")
+    }
 
     # Collect strategies with unverified citations for bulk plausibility
     strategies_for_plausibility = []
@@ -370,7 +367,7 @@ def verify_and_annotate_strategies(
     annotated_unorthodox_content = unorthodox_header + "\n\n".join(annotated_unorthodox)
 
     # Summary stats
-    total_verified = len(verified_citations)
+    total_verified = len(verified_details)
     total_unverified = len(unverified_citations)
 
     # Count risk levels if plausibility was assessed

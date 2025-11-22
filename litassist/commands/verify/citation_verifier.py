@@ -40,27 +40,28 @@ def verify_citations(content: str, file: str, output: str = None) -> tuple:
         pass
 
     # Verify citations
-    verified, unverified = verify_all_citations(content)
+    verified_details, unverified = verify_all_citations(content)
+    verified_citations = [v["citation"] for v in verified_details]
     citation_report = format_citation_report(
-        verified, unverified, total_found=len(extract_citations(content))
+        verified_citations, unverified, total_found=len(extract_citations(content))
     )
 
     # Fetch FULL case content for ALL verified citations
     case_content = {}
-    if verified:
-        click.echo(verifying_message(f"Fetching full content for {len(verified)} verified cases..."))
+    if verified_details:
+        click.echo(verifying_message(f"Fetching full content for {len(verified_details)} verified cases..."))
 
         try:
             log_task_event(
                 "verify",
                 "citations",
                 "fetching_start",
-                f"Fetching content for {len(verified)} verified cases"
+                f"Fetching content for {len(verified_details)} verified cases"
             )
         except Exception:
             pass
 
-        case_content, failed_citations = fetch_citation_context(verified)
+        case_content, failed_citations = fetch_citation_context(verified_citations)
 
         if case_content:
             click.echo(success_message(f"Fetched content for {len(case_content)} cases"))
@@ -90,7 +91,7 @@ def verify_citations(content: str, file: str, output: str = None) -> tuple:
             "Type": "Citation Verification",
             "File": file,
             "Total Citations": str(len(extract_citations(content))),
-            "Verified": str(len(verified)),
+            "Verified": str(len(verified_details)),
             "Unverified": str(len(unverified)),
             "Status": "[VERIFIED]" if not unverified else "[WARNING]",
         },
@@ -100,7 +101,7 @@ def verify_citations(content: str, file: str, output: str = None) -> tuple:
     status = "[VERIFIED]" if not unverified else "[WARNING]"
     click.echo(f"\n{status} Citation verification complete")
     click.echo(
-        f"   - {len(verified)} citations verified, {len(unverified)} unverified"
+        f"   - {len(verified_details)} citations verified, {len(unverified)} unverified"
     )
     click.echo(f"   - Details: {citation_file}")
 
@@ -109,9 +110,9 @@ def verify_citations(content: str, file: str, output: str = None) -> tuple:
             "verify",
             "citations",
             "end",
-            f"Citation verification complete - {len(verified)} verified, {len(unverified)} unverified"
+            f"Citation verification complete - {len(verified_details)} verified, {len(unverified)} unverified"
         )
     except Exception:
         pass
 
-    return citation_report, case_content, citation_file, verified, unverified
+    return citation_report, case_content, citation_file, verified_citations, unverified
