@@ -166,10 +166,11 @@ def extract_reasoning_trace(
     trace_text = match.group(1).strip()
 
     # Normalize markdown bold in section headers so regex lookaheads can match
-    # LLM outputs (especially after verification) use **Label:** format, but regex
-    # patterns expect plain "Label:" in lookaheads. This prevents capturing overlapping content.
+    # LLM outputs use **Label**: or **Label:** format, but regex patterns expect
+    # plain "Label:" in lookaheads. Handle both: **Label**: (colon outside) and
+    # **Label:** (colon inside) to prevent capturing overlapping content.
     trace_text = re.sub(
-        r'\*\*(Issue|Applicable Law|Application to Facts|Conclusion|Confidence|Sources):\*\*',
+        r'\*\*(Issue|Applicable Law|Application to Facts|Conclusion|Confidence|Sources)(?:\*\*:|:\*\*)',
         r'\1:',
         trace_text
     )

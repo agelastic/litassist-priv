@@ -270,7 +270,99 @@ def strategy(case_facts, outcome, strategies, verify, heavy, noverify, output):
         option_traces, outcome, overall_reasoning
     )
 
-    # Generate recommended next steps
+    # Validate citations in strategic options
+    try:
+        log_task_event(
+            "strategy",
+            "citations",
+            "start",
+            "Validating citations",
+            {"model": LLMClientFactory.get_model_for_command("strategy")},
+        )
+    except Exception:
+        pass
+    click.echo(info_message("Validating citations..."))
+    citation_issues = llm_client.validate_citations(strategy_content)
+    try:
+        log_task_event(
+            "strategy",
+            "citations",
+            "end",
+            "Citation validation complete",
+            {
+                "issues": len(citation_issues) if citation_issues else 0,
+                "model": llm_client.model,
+            },
+        )
+    except Exception:
+        pass
+
+    # Warn if both --noverify and --heavy are specified
+    if noverify and heavy:
+        from litassist.utils.formatting import warning_message
+        click.echo(warning_message("--heavy flag ignored when --noverify is specified"))
+
+    if not noverify:
+        # Save raw pre-verification output for audit trail (before warnings prepended)
+        raw_metadata = {
+            "Desired Outcome": outcome,
+            "Case Facts File": case_facts.name,
+            "Verification": "Not yet applied (raw output)",
+        }
+        if strategies:
+            raw_metadata["Strategies File"] = strategies.name
+        save_command_output(
+            output if output else "strategy",
+            strategy_content,
+            "" if output else outcome,
+            metadata=raw_metadata,
+            suffix="_raw",
+        )
+
+        # Prepend citation warnings (if any) before verification
+        if citation_issues:
+            citation_warning = "--- CITATION VALIDATION WARNINGS ---\n"
+            citation_warning += "\n".join(citation_issues)
+            citation_warning += "\n" + "-" * 40 + "\n\n"
+            strategy_content = citation_warning + strategy_content
+
+        # Apply standard verification before generating next steps and draft
+        try:
+            log_task_event(
+                "strategy",
+                "verification",
+                "start",
+                "Applying standard verification",
+                {"model": LLMClientFactory.get_model_for_command("verification")},
+            )
+        except Exception:
+            pass
+        click.echo(info_message("Applying standard verification..."))
+        strategy_content, _ = verify_content_if_needed(
+            llm_client, strategy_content, "strategy", verify_flag=True, heavy=heavy
+        )
+        verification_mode = "verification-heavy (gpt-5-pro)" if heavy else "Standard verification"
+        click.echo(info_message(f"{verification_mode} complete"))
+        try:
+            log_task_event(
+                "strategy",
+                "verification",
+                "end",
+                "Verification complete",
+                {"model": LLMClientFactory.get_model_for_command("verification")},
+            )
+        except Exception:
+            pass
+    else:
+        # No verification - still prepend citation warnings if any
+        if citation_issues:
+            citation_warning = "--- CITATION VALIDATION WARNINGS ---\n"
+            citation_warning += "\n".join(citation_issues)
+            citation_warning += "\n" + "-" * 40 + "\n\n"
+            strategy_content = citation_warning + strategy_content
+        click.echo(info_message("Standard verification skipped"))
+
+    # Generate recommended next steps (using verified strategic options)
     try:
         log_task_event(
             "strategy",
@@ -285,7 +377,6 @@ def strategy(case_facts, outcome, strategies, verify, heavy, noverify, output):
     next_steps_prompt = PROMPTS.get("strategies.strategy.next_steps_prompt")
 
     try:
-        # Explicit on-screen LLM call event with model name
         try:
             log_task_event(
                 "strategy",
@@ -306,7 +397,6 @@ def strategy(case_facts, outcome, strategies, verify, heavy, noverify, output):
             ]
         )
 
-        # Explicit on-screen LLM response event with model name
         try:
             log_task_event(
                 "strategy",
@@ -331,7 +421,7 @@ def strategy(case_facts, outcome, strategies, verify, heavy, noverify, output):
     except Exception as e:
         raise click.ClickException(f"LLM next steps generation error: {e}")
 
-    # Determine document type and generate draft
+    # Determine document type and generate draft (using verified strategic options)
     click.echo(info_message("Determining document type..."))
     doc_type = determine_document_type(outcome)
     try:
@@ -359,72 +449,6 @@ def strategy(case_facts, outcome, strategies, verify, heavy, noverify, output):
     except Exception:
         pass
 
-    # Validate and verify strategy content (most important)
-    try:
-        log_task_event(
-            "strategy",
-            "citations",
-            "start",
-            "Validating citations",
-            {"model": LLMClientFactory.get_model_for_command("strategy")},
-        )
-    except Exception:
-        pass
-    click.echo(info_message("Validating citations..."))
-    citation_issues = llm_client.validate_citations(strategy_content)
-    if citation_issues:
-        # Prepend warnings to strategy content
-        citation_warning = "--- CITATION VALIDATION WARNINGS ---\n"
-        citation_warning += "\n".join(citation_issues)
-        citation_warning += "\n" + "-" * 40 + "\n\n"
-        strategy_content = citation_warning + strategy_content
-    try:
-        log_task_event(
-            "strategy",
-            "citations",
-            "end",
-            "Citation validation complete",
-            {
-                "issues": len(citation_issues) if citation_issues else 0,
-                "model": llm_client.model,
-            },
-        )
-    except Exception:
-        pass
-
-    # Warn if both --noverify and --heavy are specified
-    if noverify and heavy:
-        from litassist.utils.formatting import warning_message
-        click.echo(warning_message("--heavy flag ignored when --noverify is specified"))
-
-    if noverify:
-        click.echo(info_message("Standard verification skipped"))
-
-    cove_results = None
-    if not noverify:
-        # Save raw pre-verification output for audit trail
-        raw_metadata = {
-            "Desired Outcome": outcome,
-            "Case Facts File": case_facts.name,
-            "Verification": "Not yet applied (raw output)",
-        }
-        if strategies:
-            raw_metadata["Strategies File"] = strategies.name
-        save_command_output(
-            output if output else "strategy",
-            strategy_content,
-            "" if output else outcome,
-            metadata=raw_metadata,
-            suffix="_raw",
-        )
-
-        # Apply standard verification (CoVe moved to standalone 'verify-cove' command)
-        strategy_content, _ = verify_content_if_needed(
-            llm_client, strategy_content, "strategy", verify_flag=True, heavy=heavy
-        )
-        verification_mode = "verification-heavy (gpt-5-pro)" if heavy else "Standard verification"
-        click.echo(info_message(f"{verification_mode} applied"))
-
     # Save all outputs
     click.echo(info_message("Saving strategy outputs..."))
     strategy_file, steps_file, draft_file, trace_file = save_strategy_outputs(
@@ -444,7 +468,7 @@ def strategy(case_facts, outcome, strategies, verify, heavy, noverify, output):
     )
 
     # Save log
-    save_strategy_log(outcome, strategy_content, strategy_usage, cove_results)
+    save_strategy_log(outcome, strategy_content, strategy_usage)
 
     # Show completion message
     click.echo()
