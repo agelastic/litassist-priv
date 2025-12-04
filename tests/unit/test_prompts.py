@@ -199,7 +199,8 @@ class TestTemplateValidation:
         """Test that all essential templates are present."""
         essential_templates = [
             "base.australian_law",
-            # 'base.citation_standards',
+            "base.anti_injection",
+            "base.anti_hallucination",
             "commands.extractfacts.system",
             "commands.lookup.system",
             "formats.case_facts_10_heading",
@@ -220,6 +221,19 @@ class TestTemplateValidation:
         # Should mention Australian requirements
         assert any(
             word in australian_law.lower() for word in ["australian", "australia"]
+        )
+
+    def test_anti_hallucination_template_content(self):
+        """Test that anti-hallucination template contains placeholder guidance."""
+        anti_hallucination = PROMPTS.get("base.anti_hallucination")
+
+        # Should contain placeholder patterns
+        assert "ANTI-HALLUCINATION" in anti_hallucination
+        assert "[" in anti_hallucination and "]" in anti_hallucination
+        # Should mention not inventing information
+        assert any(
+            word in anti_hallucination.lower()
+            for word in ["invent", "placeholder", "not specified"]
         )
 
     def test_case_facts_template_structure(self):
@@ -329,3 +343,50 @@ test:
             # Should fail without required parameters
             with pytest.raises(ValueError, match="Missing template variable"):
                 manager.get("test.parameterized", name="John")  # Missing 'place'
+
+
+class TestBasePromptInjection:
+    """Test that base prompts are properly injected by LLMClient."""
+
+    def test_base_prompts_all_exist(self):
+        """Test that all three base prompts exist and are non-empty."""
+        australian_law = PROMPTS.get("base.australian_law")
+        anti_injection = PROMPTS.get("base.anti_injection")
+        anti_hallucination = PROMPTS.get("base.anti_hallucination")
+
+        assert australian_law and len(australian_law.strip()) > 0
+        assert anti_injection and len(anti_injection.strip()) > 0
+        assert anti_hallucination and len(anti_hallucination.strip()) > 0
+
+    def test_base_prompts_injection_in_client(self):
+        """Test that LLMClient._add_base_system_prompts injects all base prompts."""
+        from unittest.mock import patch
+
+        # Create a minimal LLMClient instance
+        with patch("litassist.config.CONFIG") as mock_config:
+            mock_config.openrouter_key = "test_key"
+            mock_config.openai_key = "test_openai_key"
+
+            from litassist.llm.client import LLMClient
+
+            client = LLMClient(model="test/model", api_key="test_key")
+
+            # Test message injection
+            test_messages = [
+                {"role": "system", "content": "Test system prompt"},
+                {"role": "user", "content": "Test user message"},
+            ]
+
+            result = client._add_base_system_prompts(test_messages)
+
+            # Find the system message
+            system_msg = next(
+                (m for m in result if m.get("role") == "system"), None
+            )
+            assert system_msg is not None
+
+            # Verify all three base prompts are in the system message
+            content = system_msg["content"]
+            assert "Australian" in content  # australian_law
+            assert "ANTI-INJECTION" in content  # anti_injection
+            assert "ANTI-HALLUCINATION" in content  # anti_hallucination
