@@ -42,6 +42,7 @@ brainstorm-unorthodox:
   min_p: 0.05
   repetition_penalty: 1.2
   enforce_citations: false
+  disable_tools: true
 
 brainstorm-analysis:
   model: "openai/o3-pro"
@@ -79,6 +80,7 @@ lookup:
   thinking_effort: "low"
   verbosity: "low"
   enforce_citations: false
+  disable_tools: true
 
 verification:
   model: "openai/gpt-5.1"
