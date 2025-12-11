@@ -8,6 +8,7 @@ including regex patterns for model detection and allowed parameter profiles.
 # Model family patterns for dynamic parameter handling
 MODEL_PATTERNS = {
     "openai_reasoning": r"openai/o\d+",  # Matches o1, o3, o1-pro, o3-pro, o4, etc.
+    "gpt5.1": r"openai/gpt-5\.1",  # GPT-5.1 family (November 2025) - must come before gpt5-pro
     "gpt5-pro": r"openai/gpt-5-pro$",  # GPT-5 Pro specifically - must come before base gpt5
     "gpt5": r"openai/gpt-5$",  # GPT-5 base model only (August 2025)
     "claude4": r"anthropic/claude-(opus-4|sonnet-4)(\.\d+)?",  # Claude 4 models (includes 4.1, 4.5, etc.)
@@ -73,6 +74,25 @@ PARAMETER_PROFILES = {
             "parallel_tool_calls",  # Parallel tool execution
             # NOTE: Base gpt-5 also doesn't support temperature/top_p
             # GPT-5 series removed sampling parameters to maintain reasoning quality
+        ],
+        "transforms": {
+            "max_tokens": "max_completion_tokens",
+        },
+        "system_message_support": True,
+    },
+    "gpt5.1": {
+        "allowed": [
+            "reasoning",  # OpenRouter reasoning object (none/low/medium/high)
+            "verbosity",  # low/medium/high
+            "max_completion_tokens",  # NOT max_tokens
+            "response_format",  # Structured outputs
+            "seed",  # Deterministic outputs
+            "stop",  # Stop sequences
+            "stream",  # Streaming
+            "tools",  # Function/tool calling
+            "tool_choice",  # Tool selection
+            "parallel_tool_calls",  # Parallel tool execution
+            # GPT-5.1 uses adaptive reasoning - no sampling parameters
         ],
         "transforms": {
             "max_tokens": "max_completion_tokens",

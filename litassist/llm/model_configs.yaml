@@ -81,7 +81,7 @@ lookup:
   enforce_citations: false
 
 verification:
-  model: "openai/gpt-5"
+  model: "openai/gpt-5.1"
   temperature: 0.2
   top_p: 0.3
   thinking_effort: "medium"
@@ -185,7 +185,7 @@ cove-questions:
   disable_tools: true
 
 cove-answers:
-  model: "openai/gpt-5"
+  model: "openai/gpt-5.1"
   temperature: 0.5
   top_p: 0.8
   thinking_effort: "high"
