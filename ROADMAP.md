@@ -1,6 +1,6 @@
 # LitAssist Feature Roadmap
 
-**Last Updated:** November 2025
+**Last Updated:** December 2025
 **Status:** Strategic Planning Phase
 **Confidence:** 0.88
 
@@ -10,7 +10,7 @@
 
 This roadmap prioritizes features for litassist based on **active litigation needs** over FOI and government affairs. The goal is to provide lawyer-like smart advice for legal and government dealings, advising on what to do when and how, with precision as the priority.
 
-**Total Planned Work:** ~280-370 hours across 7 phases
+**Total Planned Work:** ~300-390 hours across 7 phases (updated Dec 2025)
 
 **Key Principle:** Litigation > FOI > Other matters
 
@@ -142,14 +142,20 @@ Features are prioritized to support active litigation (ACT civil matters), profe
 - Legal risk assessment (defamation, contempt, professional conduct)
 - Bias detection (cognitive biases in arguments)
 - Court-specific tone guidance
+- **Bias/Tone Scanning (integrated from research map):**
+  - Modal language detection (likely, probably, usually)
+  - Argumentative drift analysis
+  - Agency/dominance shift detection (important for FVO contexts)
+  - Optional `--bias-scan` flag for detailed bias analysis
 
 **Implementation:**
 - New module: `litassist/commands/doctor/`
 - Commands:
   - `la doctor --input draft_letter.md --recipient court`
   - `la doctor --input draft_email.md --recipient opposing-counsel`
+  - `la doctor --input draft.md --bias-scan` (detailed bias analysis)
 - LLM: GPT-5 (critical analysis) + Claude Sonnet 4.5 (neutral rewrite)
-- Output: Risk report + line-by-line suggestions + rewritten version
+- Output: Risk report + line-by-line suggestions + rewritten version + bias report (if --bias-scan)
 
 ---
 
@@ -191,16 +197,18 @@ Features are prioritized to support active litigation (ACT civil matters), profe
 
 ---
 
-### P0A-5: Fix API Timeout Bug [CRITICAL BUG]
+### P0A-5: Fix API Timeout Bug [DONE]
 **Effort:** 5 minutes
 **Priority:** CRITICAL
+**Status:** COMPLETED (December 2025)
 
 **Purpose:** Prevent hanging processes
 
-**Location:** `litassist/llm/api_handlers.py:278, 285`
-**Fix:** Add `timeout=30.0` to both API calls
-
-**From Codebase Review:** Both API calls lack timeout parameter, can hang indefinitely.
+**Resolution:** Timeout already configured at client level in `litassist/llm/api_handlers.py:116`:
+```python
+return OpenAI(api_key=api_key, base_url=base_url, timeout=120.0, max_retries=0)
+```
+All API calls inherit this 120-second timeout. The 120s value is appropriate for o3-pro extended thinking (can take 60-90s).
 
 ---
 
@@ -271,14 +279,22 @@ Features are prioritized to support active litigation (ACT civil matters), profe
 - Generate defense strategy
 - Counter-application opportunities
 
+**3-Variant Output (integrated from research map):**
+- Conservative response option (low risk, procedural focus)
+- Adversarial response option (aggressive, maximum pressure)
+- Neutral/balanced response option (professional, measured)
+- Each variant includes risk assessment and CoVe verification
+- Comparison matrix showing trade-offs
+
 **Implementation:**
 - New module: `litassist/commands/respond/`
 - Commands:
   - `la respond --input defense.pdf --matter LITIGATION-001 --type defense`
   - `la respond --input application.pdf --matter LITIGATION-001 --type application`
+  - `la respond --input defense.pdf --matter LITIGATION-001 --variants` (3-variant output)
 - Loads matter context from Matter Memory
 - LLM: Claude Sonnet 4.5 (strategic reasoning) + o3-pro (extended tactical analysis)
-- Output: Strategic analysis + response options matrix + timing advice + draft templates
+- Output: Strategic analysis + response options matrix + timing advice + draft templates + variant comparison
 
 ---
 
@@ -537,8 +553,8 @@ Features are prioritized to support active litigation (ACT civil matters), profe
 ---
 
 ## PHASE 4: SECONDARY MATTERS (Sprint 5)
-**Duration:** 45-55 hours
-**Goal:** Professional complaints, FOI, administrative matters
+**Duration:** 55-67 hours (includes P2-19 Bias Divergence Detector: 10-12h)
+**Goal:** Professional complaints, FOI, administrative matters, quality assurance
 
 ### P2-15: Professional Complaint Support [NEW]
 **Effort:** 10-12 hours
@@ -686,9 +702,44 @@ Features are prioritized to support active litigation (ACT civil matters), profe
 
 ---
 
+### P2-19: Bias Divergence Detector [NEW - from research map]
+**Effort:** 10-12 hours
+**Priority:** MEDIUM
+**Dependency:** Requires P1-12 Multi-Model Cross-Checks
+
+**Purpose:** Detect uncertainty by comparing model outputs on bias-sensitive issues
+
+**Rationale:**
+- Inspired by systematic-investing research: model divergence signals uncertainty
+- Where models disagree, human review is warranted
+- Reduces overconfidence in LLM outputs
+
+**Capabilities:**
+- Run same prompt through 2-3 models independently
+- Compare outputs for substantive divergence (not just wording)
+- Flag areas where models disagree as requiring human review
+- Use divergence as "uncertainty interval" indicator
+- Confidence scoring based on agreement level
+
+**Use Cases:**
+- Risk assessments where bias could affect probability estimates
+- Strategic advice where different models suggest different approaches
+- Settlement recommendations where stakes are high
+
+**Implementation:**
+- Extend `litassist/verification_chain.py` with divergence detection
+- New module: `litassist/verification/divergence.py`
+- Commands:
+  - `la verify --input strategy.md --divergence-check`
+  - `la verify --input risk_assessment.md --divergence-check --models claude,gpt5,o3`
+- LLM: Run through Claude Sonnet 4.5, GPT-5, and optionally o3-pro
+- Output: Divergence report + agreement/disagreement matrix + confidence score + flagged sections
+
+---
+
 ## PHASE 5: PRECISION TOOLS (Sprint 6)
-**Duration:** 20-30 hours
-**Goal:** Citation quality and compliance
+**Duration:** 28-40 hours (includes P3-22 Simulated-Adversary Drafts: 8-10h)
+**Goal:** Citation quality, compliance, and robustness testing
 
 ### P3-19: Pinpoint Validation [KEEP P3]
 **Effort:** 6-8 hours
@@ -697,15 +748,23 @@ Features are prioritized to support active litigation (ACT civil matters), profe
 **Purpose:** Verify paragraph numbers in citations
 
 **Capabilities:**
-- Detect paragraph symbols (¶), ranges
+- Detect paragraph symbols, ranges
 - Fetch case document, verify paragraph exists
 - Degrade to nearest match with warning
 - Show corrections
 
+**Citation Integrity Scoring (integrated from research map):**
+- Combined with P3-20 to produce `citation_integrity_score` (0-100)
+- Score components:
+  - Format correctness (AGLC compliance)
+  - Database verification status
+  - Pinpoint accuracy
+  - Currency (not overruled, from P1-13 TIS)
+
 **Implementation:**
 - Extend `citation/verify.py`
 - Scrape via Google CSE + JADE/AustLII
-- Output: Valid/Invalid + corrections
+- Output: Valid/Invalid + corrections + integrity score
 
 ---
 
@@ -720,11 +779,12 @@ Features are prioritized to support active litigation (ACT civil matters), profe
 - Verify parallel cites
 - Enforce pinpoint format
 - Resolve JADE/AustLII URLs
+- Contribute to citation integrity score (see P3-19)
 
 **Implementation:**
 - Extend `citation/verify.py`
 - AGLC 4th edition rules
-- Output: Format corrections
+- Output: Format corrections + AGLC compliance score component
 
 ---
 
@@ -744,6 +804,43 @@ Features are prioritized to support active litigation (ACT civil matters), profe
 - Extend `citation/verify.py`
 - Two-provider verification via Google CSE + scraping
 - Output: Concordance report
+
+---
+
+### P3-22: Simulated-Adversary Drafts [NEW - from research map]
+**Effort:** 8-10 hours
+**Priority:** MEDIUM
+**Dependency:** Optional synergy with P1-9 Opponent Profiling
+
+**Purpose:** Stress-test arguments by generating opposing counsel's likely response
+
+**Rationale:**
+- Identifies weaknesses before filing
+- Anticipates opponent's counter-arguments
+- Improves robustness of submissions
+
+**Capabilities:**
+- Take draft submission (application, affidavit, submissions)
+- Generate adversary's response using adversarial prompt
+- Identify weaknesses in original draft
+- Suggest strengthening changes
+- Optional: Use opponent profile (from P1-9) for tailored simulation
+
+**Adversary Simulation:**
+- Counter-arguments to each point
+- Procedural challenges (standing, jurisdiction, timeliness)
+- Factual challenges (credibility, gaps, contradictions)
+- Legal challenges (authority currency, distinguishing cases)
+- Weakness severity rating (critical / major / minor)
+
+**Implementation:**
+- New module: `litassist/commands/adversary/`
+- Commands:
+  - `la adversary --input submission.md --matter LITIGATION-001`
+  - `la adversary --input submission.md --opponent "Counsel A"` (uses profile)
+  - `la draft --input case_facts.txt --adversary-test` (integrated mode)
+- LLM: Claude Sonnet 4.5 (adversarial reasoning) + GPT-5 (weakness identification)
+- Output: Adversary response + weakness report + strengthening recommendations
 
 ---
 

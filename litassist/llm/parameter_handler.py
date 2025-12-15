@@ -28,7 +28,7 @@ def convert_thinking_effort(effort: str, model_name: str) -> dict:
     model_family = get_model_family(model_name)
 
     # Check model type for appropriate sub-parameters
-    if model_family in ["openai_reasoning", "gpt5", "xai"]:
+    if model_family in ["openai_reasoning", "gpt5", "gpt5.1", "xai"]:
         # Effort-based models (OpenAI, Grok, GPT-5)
         effort_map = {
             "minimal": "minimal",  # GPT-5 specific
@@ -55,8 +55,8 @@ def convert_thinking_effort(effort: str, model_name: str) -> dict:
                     "summary": "auto",  # New o4 feature for automatic summarization
                 }
             }
-        # GPT-5 supports both reasoning and verbosity
-        elif model_family == "gpt5":
+        # GPT-5/5.1 supports both reasoning and verbosity
+        elif model_family in ["gpt5", "gpt5.1"]:
             return {
                 "reasoning": {"effort": mapped_effort}
                 # Verbosity handled separately via convert_verbosity
@@ -65,15 +65,15 @@ def convert_thinking_effort(effort: str, model_name: str) -> dict:
             return {"reasoning": {"effort": mapped_effort}}
 
     elif model_family in ["claude4", "anthropic"]:
-        # Token-based models (Anthropic)
-        token_map = {
-            "minimal": 1024,
-            "low": 1024,
-            "medium": 8192,
-            "high": 16384,
-            "max": 32000,  # Max allowed by OpenRouter
+        # Anthropic models - use effort-based reasoning (OpenRouter transforms to budget_tokens)
+        effort_map = {
+            "minimal": "low",
+            "low": "low",
+            "medium": "medium",
+            "high": "high",
+            "max": "high",
         }
-        return {"reasoning": {"max_tokens": token_map.get(effort, 8192)}}
+        return {"reasoning": {"effort": effort_map.get(effort, "medium")}}
 
     elif model_family == "google":
         # Google/Gemini models - try unified reasoning
@@ -133,7 +133,7 @@ def get_openrouter_params() -> set:
     Returns:
         Set of parameter names that are OpenRouter-specific
     """
-    return {"reasoning", "min_p", "top_a", "repetition_penalty"}
+    return {"reasoning", "min_p", "top_a", "repetition_penalty", "provider", "verbosity"}
 
 
 def get_model_parameters(model_name: str, requested_params: dict) -> dict:
@@ -177,11 +177,13 @@ def get_model_parameters(model_name: str, requested_params: dict) -> dict:
         params_to_process.pop("thinking", None)
         params_to_process.pop("thinking_config", None)
 
-    # Handle verbosity parameter
+    # Handle verbosity parameter (GPT-5 family only, not o-series)
     if "verbosity" in params_to_process and params_to_process["verbosity"] is not None:
         verbosity = params_to_process.pop("verbosity")
-        verbosity_params = convert_verbosity(verbosity, model_name)
-        filtered.update(verbosity_params)
+        # Skip verbosity for o-series models - they don't support it
+        if model_family != "openai_reasoning":
+            verbosity_params = convert_verbosity(verbosity, model_name)
+            filtered.update(verbosity_params)
 
     # Get OpenRouter-specific parameters
     openrouter_params = get_openrouter_params()

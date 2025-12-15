@@ -53,21 +53,22 @@ class TestThinkingEffortConversion:
         # Test none returns empty
         assert convert_thinking_effort("none", "anthropic/claude-4") == {}
 
-        # Test token-based allocation for OpenRouter
+        # Test effort-based allocation for OpenRouter
         assert convert_thinking_effort("low", "anthropic/claude-4") == {
-            "reasoning": {"max_tokens": 1024}
+            "reasoning": {"effort": "low"}
         }
 
         assert convert_thinking_effort("medium", "anthropic/claude-4") == {
-            "reasoning": {"max_tokens": 8192}
+            "reasoning": {"effort": "medium"}
         }
 
         assert convert_thinking_effort("high", "anthropic/claude-4") == {
-            "reasoning": {"max_tokens": 16384}
+            "reasoning": {"effort": "high"}
         }
 
+        # "max" maps to "high" for Anthropic models
         assert convert_thinking_effort("max", "anthropic/claude-4") == {
-            "reasoning": {"max_tokens": 32000}
+            "reasoning": {"effort": "high"}
         }
 
     def test_google_thinking_config_conversion(self):
@@ -137,9 +138,9 @@ class TestModelParameterFiltering:
 
         filtered = get_model_parameters("anthropic/claude-opus-4.1", params)
 
-        # Should have reasoning object for OpenRouter
+        # Should have reasoning object for OpenRouter (effort-based)
         assert "reasoning" in filtered
-        assert filtered["reasoning"] == {"max_tokens": 8192}
+        assert filtered["reasoning"] == {"effort": "medium"}
         assert "thinking_effort" not in filtered
         assert "thinking" not in filtered  # Should not have vendor-specific format
 
@@ -296,10 +297,9 @@ class TestVerbosityParameter:
         assert "verbosity" in filtered
         assert filtered["verbosity"] == "high"
 
-        # For o3-pro which also supports it
+        # For o3-pro - o-series models do NOT support verbosity (removed per OpenAI docs)
         filtered = get_model_parameters("openai/o3-pro", params)
-        assert "verbosity" in filtered
-        assert filtered["verbosity"] == "high"
+        assert "verbosity" not in filtered  # o-series skips verbosity
 
 
 class TestAdvancedParameters:

@@ -140,14 +140,19 @@ class LLMClient(LLMVerificationMixin):
     def _add_base_system_prompts(
         self, messages: List[Dict[str, str]]
     ) -> List[Dict[str, str]]:
-        """Add base system prompts (Australian law, anti-injection, etc.) to system messages."""
+        """Add base system prompts (Australian law, anti-injection, anti-hallucination) to system messages."""
         australian_law = PROMPTS.get("base.australian_law")
         anti_injection = PROMPTS.get("base.anti_injection")
+        anti_hallucination = PROMPTS.get("base.anti_hallucination")
         if not australian_law:
             return messages
 
         # Combine base system prompts
-        base_prompts = f"{australian_law}\n\n{anti_injection}" if anti_injection else australian_law
+        base_prompts = australian_law
+        if anti_injection:
+            base_prompts = f"{base_prompts}\n\n{anti_injection}"
+        if anti_hallucination:
+            base_prompts = f"{base_prompts}\n\n{anti_hallucination}"
 
         modified_messages = []
         for msg in messages:
