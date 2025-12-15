@@ -659,10 +659,8 @@ def brainstorm(facts, side, area, research, verify, output):
 
         # Use verification config for full document
         verify_client = LLMClientFactory.for_command("verification")
-        correction, verify_usage = verify_client.verify(combined_content)
-
-        # Update usage tracking
-        total_usage["total_tokens"] += verify_usage.get("total_tokens", 0)
+        correction, _ = verify_client.verify(combined_content)
+        # Note: verify() returns (correction, model_name), not usage dict
 
         full_verification_result = correction  # Keep full result for critique
 

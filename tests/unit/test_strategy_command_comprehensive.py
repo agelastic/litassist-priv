@@ -358,7 +358,7 @@ class TestStrategyGeneration:
             assert result.exit_code == 0
             assert "Strategy generation complete!" in result.output
             # Output format changed, just verify it succeeded
-            assert "Strategic options:" in result.output
+            assert "Strategic options saved to:" in result.output
 
             # Verify LLM was called
             mock_client.complete.assert_called()

@@ -477,10 +477,10 @@ def strategy(case_facts, outcome, strategies, verify, heavy, noverify, output):
     except Exception:
         pass
     click.echo(success_message("Strategy generation complete!"))
-    click.echo(saved_message(f"Strategic options: {strategy_file}"))
-    click.echo(saved_message(f"Next steps: {steps_file}"))
-    click.echo(saved_message(f"Draft document: {draft_file}"))
-    click.echo(saved_message(f"Reasoning trace: {trace_file}"))
+    click.echo(saved_message(f"Strategic options saved to: {strategy_file}"))
+    click.echo(saved_message(f"Next steps saved to: {steps_file}"))
+    click.echo(saved_message(f"Draft document saved to: {draft_file}"))
+    click.echo(saved_message(f"Reasoning trace saved to: {trace_file}"))
     click.echo()
     click.echo(stats_message(f"Total tokens used: {strategy_usage['total_tokens']:,}"))
     click.echo()

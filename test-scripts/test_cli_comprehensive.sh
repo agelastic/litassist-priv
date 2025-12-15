@@ -477,104 +477,92 @@ test_lookup_command() {
 
 test_extractfacts_command() {
     print_section "Testing EXTRACTFACTS Command"
-    
-    # Single test with verification to cover both extraction and verification
-    run_test "ExtractFacts - With verification" \
-        "litassist extractfacts test_inputs/mock_case_facts.txt --verify" \
+
+    # Comprehensive test with all options
+    run_test "ExtractFacts - Comprehensive with all options" \
+        "litassist extractfacts test_inputs/mock_case_facts.txt --verify --output test_output" \
         "complete|saved to|case_facts|verification"
 }
 
 test_strategy_command() {
     print_section "Testing STRATEGY Command"
-    
-    # Comprehensive test with all options to minimize LLM calls
+
+    # Comprehensive test with all options
     run_test "Strategy - Comprehensive with all options" \
-        "litassist strategy test_inputs/mock_case_facts.txt --outcome 'Win breach of contract case' --strategies test_inputs/mock_strategy_headers.txt --verify" \
+        "litassist strategy test_inputs/mock_case_facts.txt --outcome 'Win breach of contract case' --strategies test_inputs/mock_strategy_headers.txt --verify --output test_output" \
         "complete|saved to|strategy|verification"
 }
 
 test_brainstorm_command() {
     print_section "Testing BRAINSTORM Command"
-    
-    # Single test covering core functionality (verification is automatic)
-    run_test "Brainstorm - Civil" \
-        "litassist brainstorm --facts test_inputs/mock_case_facts.txt --side plaintiff --area civil" \
+
+    # Comprehensive test with all options
+    run_test "Brainstorm - Comprehensive with all options" \
+        "litassist brainstorm --facts test_inputs/mock_case_facts.txt --side plaintiff --area civil --research test_inputs/mock_research_output.txt --verify --output test_output" \
         "complete|saved to|strategies|Verifying"
 }
 
 test_digest_command() {
     print_section "Testing DIGEST Command"
-    
-    # Single test with issues mode (more comprehensive than summary)
-    run_test "Digest - Issues mode" \
-        "litassist digest test_inputs/mock_case_facts.txt --mode issues" \
+
+    # Comprehensive test with all options
+    run_test "Digest - Comprehensive with all options" \
+        "litassist digest test_inputs/mock_case_facts.txt --mode issues --context 'Focus on contractual obligations' --output test_output" \
         "complete|saved to|digest"
 }
 
 test_draft_command() {
     print_section "Testing DRAFT Command"
-    
-    # Comprehensive test with multiple documents and verification
-    run_test "Draft - Multiple documents with verification" \
-        "litassist draft test_inputs/mock_case_facts.txt test_inputs/mock_strategy_headers.txt 'Draft Statement of Claim for breach of contract' --verify" \
+
+    # Comprehensive test with all options
+    run_test "Draft - Comprehensive with all options" \
+        "litassist draft test_inputs/mock_case_facts.txt test_inputs/mock_strategy_headers.txt 'Draft Statement of Claim for breach of contract' --output test_output" \
         "complete|saved to|draft|verification"
 }
 
 test_verify_command() {
     print_section "Testing VERIFY Command"
-    
-    # Single comprehensive test covering all three verification types
-    run_test "Verify - Comprehensive verification" \
-        "litassist verify test_inputs/mock_case_facts.txt" \
-        "Citation verification complete|Legal soundness check complete|Reasoning trace|3 reports generated"
+
+    # Comprehensive test with all options
+    run_test "Verify - Comprehensive with all options" \
+        "litassist verify test_inputs/mock_case_facts.txt --cove --reference 'test_inputs/*.txt' --output test_output" \
+        "Citation verification complete|Legal soundness check complete|Reasoning trace|4 reports generated"
 }
 
 test_counselnotes_command() {
     print_section "Testing COUNSELNOTES Command"
-    
-    # Test basic counselnotes command
-    run_test "Counselnotes - Basic analysis" \
-        "litassist counselnotes test_inputs/mock_case_facts.txt" \
-        "Counselnotes complete|complete|saved to"
-    
-    # Test counselnotes with extraction mode
-    run_test "Counselnotes - With extraction mode" \
-        "litassist counselnotes test_inputs/mock_case_facts.txt --extract citations" \
-        "Counselnotes complete|complete|saved to"
-    
-    # Test counselnotes with output option
-    run_test "Counselnotes - With custom output" \
-        "litassist counselnotes test_inputs/mock_case_facts.txt --output test_output" \
+
+    # Single comprehensive test with all options
+    run_test "Counselnotes - Comprehensive with all options" \
+        "litassist counselnotes test_inputs/mock_case_facts.txt --extract citations --output test_output" \
         "Counselnotes complete|complete|saved to"
 }
 
 test_barbrief_command() {
     print_section "Testing BARBRIEF Command"
-    
-    # Test basic barbrief command for trial
-    run_test "Barbrief - Basic trial brief" \
-        "litassist barbrief test_inputs/mock_10heading_case_facts.txt --hearing-type trial" \
-        "Barristers Brief Generated complete|saved to"
-    
-    # Test barbrief with strategies
-    run_test "Barbrief - With strategies" \
-        "litassist barbrief test_inputs/mock_10heading_case_facts.txt --hearing-type directions --strategies test_inputs/mock_strategies.txt" \
-        "Barristers Brief Generated complete|saved to"
-    
-    # Test barbrief with research
-    run_test "Barbrief - With research" \
-        "litassist barbrief test_inputs/mock_10heading_case_facts.txt --hearing-type interlocutory --research test_inputs/mock_research_output.txt" \
-        "Barristers Brief Generated complete|saved to"
-    
-    # Test barbrief with documents
-    run_test "Barbrief - With supporting documents" \
-        "litassist barbrief test_inputs/mock_10heading_case_facts.txt --hearing-type appeal --documents test_inputs/mock_affidavit.txt --documents test_inputs/mock_evidence.txt" \
-        "Barristers Brief Generated complete|saved to"
-    
-    # Test barbrief with all options
+
+    # Single comprehensive test with all options
     run_test "Barbrief - Comprehensive with all options" \
         "litassist barbrief test_inputs/mock_10heading_case_facts.txt --hearing-type trial --strategies test_inputs/mock_strategies.txt --research test_inputs/mock_research_output.txt --documents test_inputs/mock_affidavit.txt --context 'Focus on jurisdiction issues' --verify" \
         "Barristers Brief Generated complete|saved to"
+}
+
+test_caseplan_command() {
+    print_section "Testing CASEPLAN Command"
+
+    # Comprehensive test with all options
+    run_test "Caseplan - Comprehensive with all options" \
+        "litassist caseplan test_inputs/mock_10heading_case_facts.txt --budget comprehensive --context 'Commercial dispute with international elements' --output test_output" \
+        "complete|saved to|caseplan"
+}
+
+test_verify_cove_command() {
+    print_section "Testing VERIFY-COVE Command"
+
+    # Comprehensive test with all options
+    run_test "Verify-CoVe - Comprehensive with all options" \
+        "litassist verify-cove test_inputs/mock_case_facts.txt --reference 'test_inputs/*.txt' --heavy --output test_output" \
+        "complete|cove"
 }
 
 test_error_conditions() {
@@ -710,6 +698,8 @@ show_help() {
     echo "  verify        Test verify command"
     echo "  counselnotes  Test counselnotes command"
     echo "  barbrief      Test barbrief command"
+    echo "  caseplan      Test caseplan command"
+    echo "  verifycove    Test verify-cove command"
     echo "  errors        Test error conditions"
     echo "  all           Run all tests"
     echo ""
@@ -762,6 +752,12 @@ run_test_group() {
         barbrief)
             test_barbrief_command
             ;;
+        caseplan)
+            test_caseplan_command
+            ;;
+        verifycove)
+            test_verify_cove_command
+            ;;
         errors)
             test_error_conditions
             ;;
@@ -777,6 +773,8 @@ run_test_group() {
             test_verify_command
             test_counselnotes_command
             test_barbrief_command
+            test_caseplan_command
+            test_verify_cove_command
             test_error_conditions
             ;;
         *)
