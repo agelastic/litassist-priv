@@ -1,7 +1,7 @@
 # LitAssist Feature Roadmap
 
-**Last Updated:** December 2025
-**Status:** Strategic Planning Phase
+**Last Substantive Update:** December 2025
+**Status:** Strategic Planning Phase -- no features from this roadmap have been implemented yet
 **Confidence:** 0.88
 
 ---
@@ -194,21 +194,6 @@ Features are prioritized to support active litigation (ACT civil matters), profe
   - `la analyze --input foi_decision.pdf --type government --agency DHA`
 - LLM: Claude Sonnet 4.5 + GPT-5 cross-check for critical documents
 - Output: Threat assessment + obligation checklist + strategic recommendation + deadline extraction
-
----
-
-### P0A-5: Fix API Timeout Bug [DONE]
-**Effort:** 5 minutes
-**Priority:** CRITICAL
-**Status:** COMPLETED (December 2025)
-
-**Purpose:** Prevent hanging processes
-
-**Resolution:** Timeout already configured at client level in `litassist/llm/api_handlers.py:116`:
-```python
-return OpenAI(api_key=api_key, base_url=base_url, timeout=120.0, max_retries=0)
-```
-All API calls inherit this 120-second timeout. The 120s value is appropriate for o3-pro extended thinking (can take 60-90s).
 
 ---
 
@@ -993,13 +978,15 @@ la profile --create "Agency A" --type government
 
 ### LLM Strategy by Use Case
 
+**Note:** For current model assignments and upgrade recommendations, see `LLM_USE_REVIEW_AND_MODEL_RECOMMENDATIONS_2026-02.md` (more recent and authoritative).
+
 **Strategic Reasoning & Legal Analysis:**
 - Model: Claude Sonnet 4.5
 - Use Cases: Correspondence analysis, legal reasoning, strategy generation
 - Rationale: Cost-effective, 80% cost reduction
 
 **Critical Verification:**
-- Model: GPT-5 / GPT-5 Pro
+- Model: GPT-5.1 / GPT-5 Pro
 - Use Cases: Document verification, cross-checks
 - Rationale: <1% hallucination rate
 
@@ -1039,16 +1026,15 @@ la profile --create "Agency A" --type government
 ## Next Steps
 
 **Sprint 1 Sequence:**
-1. Fix API timeout bug (5 min)
-2. Matter Memory Module (15-18h)
-3. ACT Court Procedures Calculator (8-10h)
-4. Letter Doctor (8-10h)
-5. Legal Correspondence Analyzer (10-12h)
+1. Matter Memory Module (15-18h)
+2. ACT Court Procedures Calculator (8-10h)
+3. Letter Doctor (8-10h)
+4. Legal Correspondence Analyzer (10-12h)
 
 **Total Phase 1 Effort:** 40-50 hours
 
 ---
 
-**Last Updated:** November 2025
-**Status:** Strategic Planning Phase
+**Last Substantive Update:** December 2025
+**Status:** Strategic Planning Phase -- no features from this roadmap have been implemented yet
 **Next Review:** After Phase 1 completion

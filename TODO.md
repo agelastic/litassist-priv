@@ -27,7 +27,7 @@
   - Tier 2: GPT-5 for fast verification (1.4% hallucination rate)
   - Tier 3: Claude Sonnet 4.5 for legal reasoning (state-of-the-art for litigation)
   - Upgraded 20+ commands with 40-50% cost reduction while improving quality
-  - All 380 unit tests passing
+  - All 407 unit tests passing
   - Comprehensive documentation updates across all user/dev docs
 - **November 2025: Verification System Enhancements & Tooling**
   - Added --heavy flag to verify command for premium verification using gpt-5-pro
@@ -68,7 +68,7 @@
 - [ ] Adopt Jules framework for test instrumentation (evaluate if still desired)
 - [ ] **Refactor verify_with_level (Option B)**: Replace with boolean parameter `verify(content, comprehensive=False)` where comprehensive=True uses heavy verification prompt and comprehensive=False uses standard verification. This simplifies the API and removes the unused "light" level and redundant "medium" wrapper. NOTE: --heavy flag (Nov 2025) may already satisfy this need - evaluate if refactoring still needed. [DEBT]
 - [ ] **Add optional reasoning trace file output**: Implement `--save-reasoning` flag for commands (strategy, draft, verify, etc.) to optionally save reasoning traces as separate files for auditing purposes. Currently reasoning traces are embedded in main output only. Implementation removed 2025-07-08 but may be useful for professional liability requirements.
-- [x] ~~Document July 2025 upgrades in all user/dev/system docs~~ - COMPLETED (documented in LLM_PARSING_AUDIT_REPORT.md and other dev docs)
+- [x] ~~Document July 2025 upgrades in all user/dev/system docs~~ - COMPLETED
 
 ## Critical Bugs to Fix [HIGH PRIORITY]
 
@@ -98,7 +98,7 @@ _No critical bugs identified - all items below verified as already implemented o
 **Technical Documentation:**
 - Historical LLM analysis in `docs/prompts/llm_enhancement_recommendations.md` (pre-October 2025, superseded by three-tier model strategy)
 - Current model strategy in `docs/development/LLM_MODEL_STRATEGY.md`
-- Integration test strategy in `docs/development/integration_testing_approach.md`
+- Testing approach in `docs/testing/test_README.md`
 
 **Technical Enhancements:**
 - Advanced QA loops: adversarial testing, iterative improvement loops, contingency planning

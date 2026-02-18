@@ -1,3 +1,5 @@
+**Status: Unimplemented Proposal** -- The code location audit (Section 3) is accurate as of November 2025 but the proposed prompt expansions were never applied to the YAML files.
+
 # LitAssist System Prompt Expansion Proposal
 
 ## Executive Summary
