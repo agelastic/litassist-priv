@@ -1,14 +1,10 @@
 # LitAssist Logging Infrastructure Documentation
 
-**Last Updated**: October 23, 2025
-**Status**: Current and Accurate
-
 ## Overview
 
 The litassist codebase implements a comprehensive structured logging system using the `log_task_event` function to track all stages of command execution, including file I/O, LLM interactions, and processing stages. This provides complete visibility into command execution for debugging, auditing, and performance monitoring.
 
-**Location**: `litassist/logging_utils.py:606`
-**Usage**: 178 occurrences across commands (October 2025)
+**Location**: `litassist/logging/task_events.py` (public API via `litassist/logging/__init__.py`)
 
 ## Core Components
 
@@ -429,40 +425,10 @@ All commands have comprehensive logging:
 | digest | ✅ Complete | 21 | init, file processing, chunks, consolidation |
 | caseplan | ✅ Complete | 12 | init, assessment/plan modes, command extraction |
 
-## Future Enhancements
-
-Potential improvements to the logging infrastructure:
-
-1. **Structured Output Format**: Export logs in JSON/CSV for analysis
-2. **Log Levels**: Add DEBUG/INFO/WARNING/ERROR levels
-3. **Performance Metrics**: Auto-calculate duration between start/end
-4. **Cost Tracking**: Calculate API costs from token usage
-5. **Visualization**: Generate execution flow diagrams from logs
-6. **Alerting**: Trigger alerts on specific error patterns
-7. **Log Aggregation**: Centralized logging service integration
-8. **User Preferences**: Allow users to control logging verbosity
-
 ## Related Documentation
 
 - **LLM_MODEL_STRATEGY.md** - LLM configuration and usage patterns
 - **ARCHITECTURE_ANALYSIS_2025.md** - Overall architecture including logging approach
 - **CLAUDE.md** - Development guidelines including logging requirements
 
-## Conclusion
-
-The comprehensive logging infrastructure provides complete visibility into litassist command execution, supporting debugging, auditing, and performance monitoring while maintaining clean error handling that doesn't disrupt command execution. The consistent patterns and naming conventions make the logs easy to understand and analyze.
-
-**Current Status** (October 2025):
-- ✅ All commands have comprehensive logging (178 total log_task_event calls)
-- ✅ Consistent patterns across all command types
-- ✅ Error handling prevents logging failures from breaking commands
-- ✅ Metadata/details included for all LLM calls
-
-**Document Status**: Current and accurate as of October 23, 2025
-
----
-
-**Document Owner**: Development Team
-**Created**: ~June-August 2025
-**Last Reviewed**: October 23, 2025
-**Status**: Current - matches actual implementation
+All commands have comprehensive logging with consistent patterns. Error handling (try/except pass) prevents logging failures from breaking command execution.

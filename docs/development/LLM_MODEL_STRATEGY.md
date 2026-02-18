@@ -795,7 +795,7 @@ Reference relevant practice directions and court guides.
 - 40-50% overall cost reduction
 - Improved legal reasoning quality
 - Maintained <2% hallucination rate on verification
-- 380 unit tests passing
+- 407 unit tests passing
 
 **Files Modified**:
 - `litassist/llm/client.py` - Core configuration
@@ -934,7 +934,6 @@ verification:
 - **ARCHITECTURE_ANALYSIS_2025.md** - Overall architecture including LLM strategy
 - **CLAUDE.md** - Development guidelines including prompt management policy
 - **VERIFICATION_SYSTEM_COMPREHENSIVE.md** - Verification chain architecture
-- **LLM_PARSING_AUDIT_REPORT.md** - Analysis of parsing patterns to eliminate
 
 ---
 
