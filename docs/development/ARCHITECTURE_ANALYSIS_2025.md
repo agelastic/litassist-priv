@@ -336,7 +336,9 @@ you do not need fallback parsing.
 ```python
 MODEL_PATTERNS = {
     "openai_reasoning": r"openai/o\d+",
-    "gpt5": r"openai/gpt-5(-pro)?",
+    "gpt5.1": r"openai/gpt-5\.1",           # Added Nov 2025 (must precede gpt5-pro)
+    "gpt5-pro": r"openai/gpt-5-pro$",       # Added Nov 2025
+    "gpt5": r"openai/gpt-5$",               # Now exact match only
     "claude4": r"anthropic/claude-(opus-4|sonnet-4)(\.\d+)?",
     ...
 }

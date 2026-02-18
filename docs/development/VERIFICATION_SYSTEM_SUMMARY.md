@@ -1,5 +1,5 @@
 # LitAssist Verification System - Executive Summary
-*Last Updated: 2025-10-14 - October 2025 Model Upgrade*
+*Last Updated: 2026-02-18 - February 2026 model config sync*
 
 ## Quick Reference
 
@@ -56,18 +56,25 @@
 2. **Database Check**: Real-time Jade.io verification
 3. **Selective Regeneration**: Remove bad, regenerate affected sections
 
-### Model Configuration (October 2025)
+### Model Configuration (current)
 
 ```yaml
-# Three-tier strategy for optimal accuracy
-verification: openai/gpt-5, temp=0.2 (1.4% hallucination rate)
-verification-heavy: openai/gpt-5-pro, temp=0.2, thinking_effort=max (<1% hallucination)
-verification-light: anthropic/claude-sonnet-4.5, temp=0.0 (spelling/terminology)
-cove-questions: anthropic/claude-sonnet-4.5, temp=0.3
-cove-answers: openai/gpt-5, temp=0.2
-cove-verify: anthropic/claude-sonnet-4.5, temp=0.0
-cove-final: openai/gpt-5-pro, temp=0.2, thinking_effort=max (premium regeneration)
+# Verification family - sourced from litassist/llm/model_configs.yaml
+verification:          openai/gpt-5.1, temp=0.2, top_p=0.3, thinking_effort=medium
+verification-heavy:    openai/gpt-5-pro, temp=0.2, top_p=0.3, thinking_effort=max (<1% hallucination)
+verification-light:    anthropic/claude-sonnet-4.5, temp=0.2, top_p=0.2, thinking_effort=medium
+verify-soundness:      anthropic/claude-opus-4.1, temp=0.2, top_p=0.3, thinking_effort=high  # Nov 2025: cost opt.
+verify-soundness-heavy: openai/gpt-5-pro, temp=0.2, top_p=0.3, thinking_effort=max
+verify-reasoning:      anthropic/claude-sonnet-4.5, temp=0.2, top_p=0.3, thinking_effort=high
+verify-reasoning-heavy: openai/gpt-5-pro, temp=0.2, top_p=0.3, thinking_effort=max
+cove-questions:        anthropic/claude-sonnet-4.5, temp=0.6, top_p=0.95, thinking_effort=low
+cove-answers:          openai/gpt-5.1, temp=0.5, top_p=0.8, thinking_effort=high
+cove-verify:           anthropic/claude-sonnet-4.5, temp=0.2, top_p=0.3, thinking_effort=high
+cove-final:            anthropic/claude-sonnet-4.5, temp=0.2, top_p=0.4, thinking_effort=medium
+cove-answers-heavy:    openai/gpt-5-pro, temp=0.5, top_p=0.8, thinking_effort=max
 ```
+
+**November 2025 changes**: `verify-soundness` moved from `gpt-5-pro` to `claude-opus-4.1` (cost optimisation; heavy variant retains gpt-5-pro). `verification` and `cove-answers` upgraded from `gpt-5` to `gpt-5.1`. `cove-final` moved from `gpt-5-pro` to `claude-sonnet-4.5`.
 
 ### Important Architecture Decisions
 
@@ -134,8 +141,8 @@ AI CRITIQUE & VERIFICATION
 ### Key Files
 
 - `verification_chain.py` - Orchestrates both verification types
-- `llm.py` - LLM client with verify() method
-- `citation_verify.py` - Real-time Jade.io checking
+- `litassist/llm/` - LLM client package with verify() method
+- `litassist/citation/` - Citation verification package (Jade.io checking)
 - `citation_patterns.py` - Offline pattern validation
 
 ### Logging
@@ -143,6 +150,7 @@ AI CRITIQUE & VERIFICATION
 - Standard: `logs/verification_summary.json`
 - CoVe: `logs/cove_[command]_summary.json`
 - Full accountability with prompts, responses, models, tokens
+- Full log infrastructure in `litassist/logging/` package
 
 ## Critical Points
 

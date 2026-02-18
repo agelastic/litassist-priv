@@ -1,5 +1,11 @@
 # Code Coverage Setup Plan for LitAssist
 
+**Status:** PENDING - Not Implemented
+**Last Verified:** February 2026
+**Note:** Coverage tooling has not been set up. Low priority. Tests run via `pytest` without coverage reporting.
+
+---
+
 ## Current Situation
 - No coverage tools currently installed
 - `.gitignore` already configured to ignore coverage files (lines 98-102)

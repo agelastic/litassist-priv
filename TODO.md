@@ -7,7 +7,7 @@
 ## Current State Summary
 
 ### Completed Features [DONE]
-- All 9 core commands (lookup, digest, extractfacts, brainstorm, strategy, draft, verify, counselnotes, barbrief)
+- All 11 core commands (lookup, digest, extractfacts, brainstorm, strategy, draft, verify, verify-cove, counselnotes, barbrief, caseplan)
 - Global installation via pipx
 - Single configuration approach
 - Outputs organized in `outputs/` directory

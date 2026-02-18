@@ -2795,7 +2795,7 @@ Each LitAssist command uses a specific LLM model chosen for its strengths:
 | counselnotes | `openai/o3-pro` | N/A | Strategic advocate analysis (BYOK required) |
 | barbrief | `openai/o3-pro` | N/A | Comprehensive briefs (BYOK required) |
 | verify (critical) | `openai/gpt-5-pro` | N/A | Critical soundness checking (BYOK required) |
-| verify (standard) | `openai/gpt-5` | N/A | Fast verification (BYOK required) |
+| verify (standard) | `openai/gpt-5.1` | N/A | Fast verification (BYOK required) |
 
 ### Brainstorm Sub-Command Models
 
@@ -2911,7 +2911,7 @@ temperature=0.2, top_p=0.3, thinking_effort="max"
 - **Hallucination Rate**: <1% (industry-leading)
 - **Why**: Legal work requires absolute accuracy; premium model justified
 
-**Standard Verification** (`openai/gpt-5`):
+**Standard Verification** (`openai/gpt-5.1`):
 ```python
 temperature=0.2, top_p=0.3
 ```
