@@ -54,7 +54,8 @@
 - Model names with `/` indicate OpenRouter routing (e.g., `anthropic/claude-sonnet-4`).
 
 ### Documentation Standards
-- Do not add “Recent Changes” sections. Document current behaviour only.
+- Do not add "Recent Changes" sections. Document current behaviour only.
+- Add a `Last updated: DD/MM/YYYY` header to all documentation files when creating or modifying them.
 
 ### Code Simplicity
 - Prefer plain Python functions to classes for stateless work. Avoid patterns unless solving a real problem. Abstract only when you have 3+ similar implementations. Do not optimise early. If complexity is justified, confirm first.

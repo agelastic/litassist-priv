@@ -1,6 +1,6 @@
 # Counsel's Notes Command Guide
 
-**Last Updated**: October 12, 2025
+**Last Updated**: February 2026
 
 The `counselnotes` command provides strategic analysis and tactical insights for legal documents from an advocate's perspective, complementing the neutral analysis provided by the `digest` command.
 
@@ -359,7 +359,7 @@ When processing multiple documents, the command performs:
 ### Citation Quality Control
 Comprehensive citation verification includes:
 - **Pattern validation**: Detects generic or suspicious case names
-- **Online verification**: Real-time checking against AustLII database
+- **Online verification**: Real-time checking against Jade.io via Google Custom Search
 - **International recognition**: Identifies UK, US, and other international citations
 - **Format compliance**: Ensures Australian citation standards
 
@@ -386,7 +386,7 @@ The `counselnotes` command uses a preconfigured LLM setup optimized for strategi
 - `examples/example_counselnotes_extractions.json`: All extraction mode examples
 
 ### Technical Documentation
-- `docs/counselnotes/COUNSELNOTES_IMPLEMENTATION.md`: Technical implementation details
+- `docs/development/COUNSELNOTES_IMPLEMENTATION.md`: Technical implementation details
 - Integration patterns and customization guidance
 
 ### Getting Help

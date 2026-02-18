@@ -5,8 +5,8 @@ LitAssist uses up to three Google Custom Search Engines for different legal data
 ## CSE 1: Jade.io (Primary - Required)
 
 **Used by:**
-- Citation verification (`citation_verify.py`) - validates all citations in LLM outputs
-- Lookup command (`lookup.py`) - primary legal research source
+- Citation verification (`litassist/citation/`) - validates all citations in LLM outputs
+- Lookup command (`litassist/commands/lookup/`) - primary legal research source
 
 1. **Create the Jade.io CSE**
 
@@ -17,7 +17,7 @@ LitAssist uses up to three Google Custom Search Engines for different legal data
 ## CSE 2: AustLII (Optional)
 
 **Used by:**
-- Lookup command (`lookup.py`) - secondary legal research source, searched after Jade.io
+- Lookup command (`litassist/commands/lookup/`) - secondary legal research source, searched after Jade.io
 
 1. **Create the AustLII CSE**
 
@@ -28,7 +28,7 @@ LitAssist uses up to three Google Custom Search Engines for different legal data
 ## CSE 3: Comprehensive (Optional)
 
 **Used by:**
-- Lookup command (`lookup.py`) - only when `--comprehensive` flag is used
+- Lookup command (`litassist/commands/lookup/`) - only when `--comprehensive` flag is used
 
 1. **Create the Comprehensive CSE**
 

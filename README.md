@@ -410,7 +410,7 @@ Each command uses optimized LLM models and parameters:
 - Document chunking (`max_chars`) controls input processing for large files.
 - tiktoken is required for accurate token counting and large document handling.
 - All output is now ASCII/ANSI only (no emoji).
-- See the [LitAssist User Guide](docs/user/LitAssist_User_Guide.md#llm-models-and-parameter-configuration) for details.
+- See the [LitAssist User Guide](docs/user/LitAssist_User_Guide.md#model-configuration) for details.
 
 ## Disclaimer
 
