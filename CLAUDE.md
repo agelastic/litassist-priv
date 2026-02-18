@@ -48,11 +48,6 @@
 - Model names with `/` indicate OpenRouter routing (e.g., `anthropic/claude-sonnet-4`).
 - Never change model identifiers unless explicitly asked.
 
-### OpenRouter Usage
-- Route all LLM calls through OpenRouter by default.
-- When adding models/providers, try OpenRouter first. If unsupported, ask how to proceed.
-- Model names with `/` indicate OpenRouter routing (e.g., `anthropic/claude-sonnet-4`).
-
 ### Documentation Standards
 - Do not add "Recent Changes" sections. Document current behaviour only.
 - Add a `Last updated: DD/MM/YYYY` header to all documentation files when creating or modifying them.
