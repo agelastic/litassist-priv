@@ -139,10 +139,14 @@ def heartbeat(interval: Optional[int] = None):
             def ping():
                 """Emit periodic heartbeat messages until signalled to stop."""
                 while not done.is_set():
-                    # Suppress during pytest runs
-                    if not os.environ.get("PYTEST_CURRENT_TEST"):
-                        click.echo("…still working, please wait…", err=True)
-                    time.sleep(actual_interval)
+                    try:
+                        # Suppress during pytest runs
+                        if not os.environ.get("PYTEST_CURRENT_TEST"):
+                            click.echo("…still working, please wait…", err=True)
+                    except Exception:
+                        logging.debug("Heartbeat thread: failed to emit message, stopping")
+                        break
+                    done.wait(timeout=actual_interval)
 
             t = threading.Thread(target=ping, daemon=True)
             t.start()
@@ -150,7 +154,9 @@ def heartbeat(interval: Optional[int] = None):
                 return fn(*args, **kwargs)
             finally:
                 done.set()
-                t.join(timeout=0)
+                t.join(timeout=2)
+                if t.is_alive():
+                    logging.debug("Heartbeat thread did not stop within 2 seconds")
 
         return wrapper
 
