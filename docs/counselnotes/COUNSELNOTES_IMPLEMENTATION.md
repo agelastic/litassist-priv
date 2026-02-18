@@ -1,526 +1,117 @@
-# Counsel's Notes Command - Technical Implementation
+# Counsel's Notes Command -- Technical Implementation
 
 ## Overview
 
-The `counselnotes` command provides strategic analysis and structured extraction from legal documents using an advocate's perspective. This document covers the technical implementation details, architecture patterns, and integration with the LitAssist system.
+The `counselnotes` command generates strategic analysis and structured extractions from legal documents using an advocate's perspective. It complements the neutral analysis provided by the `digest` command.
 
-## Command Architecture
+Model: `openai/o3-pro` via OpenRouter with `thinking_effort: high`. Configuration in `litassist/llm/model_configs.yaml` under the `counselnotes` key.
 
-### Core Module Structure
+## Command Signature
 
 ```
-litassist/commands/counselnotes.py
-├── counselnotes()           # Main Click command interface
-├── process_documents()      # Document processing pipeline
-├── generate_strategic_analysis()  # Strategic analysis generation
-├── generate_extraction()    # Structured JSON extraction
-└── verify_citations()       # Citation verification integration
+litassist counselnotes FILES [OPTIONS]
 ```
 
-### Key Dependencies
+| Argument/Option | Type | Description |
+|-----------------|------|-------------|
+| `FILES` | paths (required, multiple) | One or more document files (PDF or text) |
+| `--extract` | `all\|citations\|principles\|checklist` | Structured extraction mode. Omit for strategic analysis. |
+| `--verify` | flag | Enable citation pattern validation after LLM response |
+| `--output` | string | Custom output filename prefix |
 
-- **LLMClientFactory**: Model selection and configuration
-- **PROMPTS**: YAML-based prompt template system
-- **Citation Verification**: Real-time validation via Jade.io
-- **File Processing**: Document reading and chunking utilities
-- **Progress Tracking**: Real-time progress indicators
+No `--heavy` or `--noverify` flags.
 
-## Implementation Patterns
+## Module Architecture
 
-### 1. LLMClientFactory Integration
-
-```python
-def counselnotes():
-    client = LLMClientFactory.for_command("counselnotes")
-    # Uses openai/o3-pro for advanced strategic reasoning (October 2025)
+```
+litassist/commands/counselnotes/
+  __init__.py              -- exports the click command
+  core.py                  -- orchestration: reads files, routes to mode, saves output
+  document_processor.py    -- read_and_consolidate_documents(), prepare_chunks()
+  extraction_processor.py  -- process_extraction_mode(), consolidate_extraction_results()
+  analysis_processor.py    -- analyze_single_chunk(), analyze_multiple_chunks(), process_strategic_analysis()
+  consolidator.py          -- consolidate_analyses()
 ```
 
-**Benefits:**
-- Centralized model configuration
-- Consistent parameter application
-- Easy model switching for different analysis types
+## Processing Workflow
 
-### 2. YAML-Based Prompt Management
+### Document Phase
 
-```python
-def generate_strategic_analysis(content):
-    prompt = PROMPTS.get("counselnotes_strategic_analysis")
-    # Structured prompts in litassist/prompts/processing.yaml
+1. `read_and_consolidate_documents(files)` reads each file via `read_document()` and wraps each with `=== DOCUMENT: {filename} ===` markers. Returns combined content and file metadata.
+
+2. `prepare_chunks(content)` checks content length against `config.max_chars`. If exceeded, chunks text via `chunk_text()` and sets mode to "chunked". Otherwise uses a single chunk with mode "unified".
+
+### Routing
+
+The command branches based on `--extract`:
+
+- **With `--extract`**: routes to `process_extraction_mode()`
+- **Without `--extract`**: routes to `process_strategic_analysis()`
+
+### Extraction Mode
+
+`process_extraction_mode()` iterates over chunks with a progress bar. For each chunk:
+
+1. Gets the prompt via `PROMPTS.get(f"processing.counselnotes.extraction.{extract}", documents=chunk)`
+2. Calls `client.complete()` with the system prompt and extraction prompt
+3. If `--verify`: calls `client.validate_citations()` and displays warnings to CLI
+
+Results are joined by `consolidate_extraction_results()`. Multiple chunks are separated with `---` dividers and a consolidation header.
+
+Extraction output is plain text with section headers (e.g. `CITATIONS FOUND:`, `LEGAL PRINCIPLES:`, `PRACTICAL CHECKLIST:`), not JSON.
+
+### Strategic Analysis Mode
+
+`process_strategic_analysis()` dispatches based on chunk count:
+
+**Single chunk (unified mode):**
+- `analyze_single_chunk()` calls `client.complete()` with the `strategic_analysis` prompt
+- If `--verify`: validates citations and prepends a `--- CITATION WARNINGS ---` block if issues found
+- Returns content directly, no consolidation needed
+
+**Multiple chunks:**
+- `analyze_multiple_chunks()` processes each chunk with the `chunk_analysis` prompt (includes chunk number and total for context)
+- Returns list of partial analyses, flagged for consolidation
+
+**Consolidation:**
+- `consolidate_analyses()` wraps each partial analysis with `=== ANALYSIS FROM DOCUMENT SECTION N ===` markers
+- Calls `client.complete()` with the `consolidation` prompt to synthesise into unified counsel's notes
+- If `--verify`: validates citations on the final consolidated output
+
+## Prompt Templates
+
+All prompts are in `litassist/prompts/processing.yaml` under `processing.counselnotes`:
+
+| Key | Purpose | Parameters |
+|-----|---------|------------|
+| `system_prompt` | System prompt for all modes | None |
+| `strategic_analysis` | Full document strategic analysis | `{documents}` |
+| `chunk_analysis` | Partial analysis of a single chunk | `{documents}`, `{chunk_num}`, `{total_chunks}` |
+| `consolidation` | Synthesise chunk analyses into final notes | `{chunk_analyses}`, `{total_chunks}` |
+| `extraction.all` | Extract all counsel's notes elements | `{documents}` |
+| `extraction.citations` | Extract citations only | `{documents}` |
+| `extraction.principles` | Extract legal principles with authorities | `{documents}` |
+| `extraction.checklist` | Extract tactical checklist items | `{documents}` |
+
+## Verification Behaviour
+
+- `--verify` calls `client.validate_citations()` -- pattern-based offline checking, not database lookup
+- `enforce_citations: false` in model config -- no automatic LLM retry on citation format errors
+- In strategic analysis mode: citation warnings are prepended to output as a `--- CITATION WARNINGS ---` block
+- In extraction mode: citation warnings are displayed to CLI only (not included in output)
+
+## Output
+
+Uses `save_command_output()` from `litassist/logging`. Output files include a metadata header:
+
+```
+Mode: Strategic Analysis | Extraction (citations|principles|all|checklist)
+Documents Analyzed: file1.pdf, file2.pdf
+Processing Mode: unified | chunked
+Extraction Type: all | citations | principles | checklist | None
+Citation Verification: Enabled | Disabled
 ```
 
-**Template Structure:**
-- `counselnotes_strategic_analysis`: Main strategic analysis framework
-- `counselnotes_extract_*`: Extraction mode templates (all, citations, principles, checklist)
-- `counselnotes_synthesis`: Multi-document cross-synthesis prompts
+Filename pattern: `{prefix}_{slug}_{timestamp}.txt` saved to the `outputs/` directory.
 
-### 3. Document Processing Pipeline
-
-```python
-def process_documents(files):
-    for file_path in files:
-        content = read_document(file_path)
-        if len(content) > CONFIG.max_chars:
-            chunks = create_chunks(content, CONFIG.max_chars)
-            # Process each chunk with progress tracking
-        else:
-            # Direct processing for smaller documents
-```
-
-**Features:**
-- Automatic chunking for large documents
-- Progress bars with timing information
-- Memory-efficient processing
-- Error handling for unsupported formats
-
-### 4. Citation Verification Integration
-
-```python
-def verify_citations(text, verify_flag):
-    if verify_flag:
-        verification_results = citation_verify.verify_citations(text)
-        # Real-time validation against Jade.io database
-        # Enhanced error messages for failure types
-```
-
-**Verification Modes:**
-- **Optional verification**: Via `--verify` flag
-- **Pattern validation**: Offline detection of problematic patterns
-- **Online validation**: Real-time checks against Australian legal databases
-- **Enhanced error reporting**: Specific failure types and actions taken
-
-## Strategic Analysis Framework
-
-### Five-Section Analysis Structure
-
-1. **Case Overview & Position**
-   - Strategic strengths and vulnerabilities assessment
-   - Client's position relative to opposing party
-   - Key factual advantages and disadvantages
-
-2. **Tactical Opportunities**
-   - Procedural advantages to exploit
-   - Evidence strengths to emphasize
-   - Settlement leverage points
-   - Opposing party vulnerabilities
-
-3. **Risk Assessment**
-   - Litigation exposure and cost considerations
-   - Evidence gaps or weaknesses
-   - Potential adverse findings
-   - Mitigation strategies
-
-4. **Strategic Recommendations**
-   - Priority actions and next steps
-   - Resource allocation priorities
-   - Alternative dispute resolution considerations
-   - Recommended litigation approach
-
-5. **Case Management Notes**
-   - Key deadlines and milestones
-   - Witness considerations and availability
-   - Expert evidence requirements
-   - Discovery/disclosure strategy
-
-### Implementation Details
-
-```python
-def generate_strategic_analysis(documents_content):
-    # LLMClientFactory provides configured client
-    client = LLMClientFactory.for_command("counselnotes")
-    # Uses openai/o3-pro, reasoning_effort=high, max_completion_tokens=8192 (October 2025)
-
-    # Multi-document synthesis
-    if len(documents_content) > 1:
-        synthesis_prompt = PROMPTS.get("processing.counselnotes.synthesis")
-        # Cross-document analysis for consistent themes
-
-    # Strategic analysis with advocate perspective
-    analysis_prompt = PROMPTS.get("processing.counselnotes.strategic_analysis")
-
-    return client.complete(
-        prompt=analysis_prompt,
-        context=documents_content
-        # Configuration parameters handled by LLMClientFactory
-    )
-```
-
-## JSON Extraction Modes
-
-### Extraction Mode Implementation
-
-```python
-def generate_extraction(content, mode):
-    extraction_templates = {
-        "all": "counselnotes_extract_all",
-        "citations": "counselnotes_extract_citations", 
-        "principles": "counselnotes_extract_principles",
-        "checklist": "counselnotes_extract_checklist"
-    }
-    
-    prompt_key = extraction_templates[mode]
-    prompt = PROMPTS.get(prompt_key)
-    
-    # JSON-first extraction following June 2025 patterns
-    response = client.complete(prompt, content)
-    
-    # Parse and validate JSON structure
-    try:
-        parsed_json = json.loads(response)
-        return json.dumps(parsed_json, indent=2)
-    except json.JSONDecodeError:
-        # Fallback handling for malformed JSON
-        return create_structured_fallback(response)
-```
-
-### Extract Mode Specifications
-
-#### `--extract all`
-```json
-{
-  "strategic_summary": "Brief overview of case position",
-  "key_citations": ["Case v Name [2023] HCA 1"],
-  "legal_principles": [
-    {
-      "principle": "Legal rule or concept",
-      "authority": "Supporting case or statute"
-    }
-  ],
-  "tactical_checklist": ["Actionable item"],
-  "risk_assessment": "Assessment of litigation risks",
-  "recommendations": ["Strategic recommendation"]
-}
-```
-
-#### `--extract citations`
-```json
-{
-  "citations": [
-    "Commonwealth v Tasmania [1983] HCA 21",
-    "Contract Law Act 1987 (NSW) s 42"
-  ]
-}
-```
-
-#### `--extract principles`
-```json
-{
-  "principles": [
-    {
-      "principle": "Good faith in contract performance",
-      "authority": "Renard Constructions v Minister [1992] HCA 19"
-    }
-  ]
-}
-```
-
-#### `--extract checklist`
-```json
-{
-  "checklist": [
-    "Verify witness statement consistency",
-    "Prepare discovery plan within 14 days",
-    "Assess summary judgment prospects"
-  ]
-}
-```
-
-## Multi-Document Processing
-
-### Cross-Document Synthesis
-
-```python
-def process_multiple_documents(files):
-    contents = []
-    for file_path in files:
-        content = read_document(file_path)
-        contents.append({
-            'filename': file_path.name,
-            'content': content,
-            'length': len(content)
-        })
-    
-    # Cross-document synthesis analysis
-    synthesis_analysis = generate_synthesis(contents)
-    
-    # Combined strategic analysis
-    combined_content = merge_documents(contents)
-    strategic_analysis = generate_strategic_analysis(combined_content)
-    
-    return {
-        'synthesis': synthesis_analysis,
-        'strategic_analysis': strategic_analysis
-    }
-```
-
-### Synthesis Features
-
-- **Common Theme Identification**: Identifies consistent issues across documents
-- **Contradiction Detection**: Highlights conflicting information between documents
-- **Gap Analysis**: Identifies missing information or evidence
-- **Unified Recommendations**: Provides strategic advice based on complete picture
-
-## Error Handling and Validation
-
-### Document Processing Errors
-
-```python
-def safe_document_processing(file_path):
-    try:
-        content = read_document(file_path)
-        if not content.strip():
-            raise ValueError(f"Document {file_path} appears to be empty")
-        return content
-    except Exception as e:
-        click.echo(f"Error processing {file_path}: {str(e)}", err=True)
-        return None
-```
-
-### JSON Validation
-
-```python
-def validate_extraction(json_text, mode):
-    try:
-        data = json.loads(json_text)
-        required_keys = get_required_keys_for_mode(mode)
-        
-        for key in required_keys:
-            if key not in data:
-                raise ValidationError(f"Missing required key: {key}")
-        
-        return data
-    except json.JSONDecodeError as e:
-        # Provide structured fallback
-        return create_fallback_structure(json_text, mode)
-```
-
-### Citation Verification Error Handling
-
-```python
-def handle_citation_verification(text, verify_enabled):
-    if not verify_enabled:
-        return text
-    
-    try:
-        verification_results = citation_verify.verify_citations(text)
-        
-        if verification_results.has_issues:
-            # Append detailed warnings about citation issues
-            warnings = format_citation_warnings(verification_results)
-            return f"{text}\n\n{warnings}"
-        
-        return text
-    except Exception as e:
-        # Log error but don't fail the command
-        logger.warning(f"Citation verification failed: {e}")
-        return text
-```
-
-## Performance Optimizations
-
-### Chunking Strategy
-
-```python
-def create_optimized_chunks(content, max_chars):
-    # Strategic chunking that preserves document structure
-    paragraphs = content.split('\n\n')
-    chunks = []
-    current_chunk = ""
-    
-    for paragraph in paragraphs:
-        if len(current_chunk + paragraph) <= max_chars:
-            current_chunk += paragraph + '\n\n'
-        else:
-            if current_chunk:
-                chunks.append(current_chunk.strip())
-            current_chunk = paragraph + '\n\n'
-    
-    if current_chunk:
-        chunks.append(current_chunk.strip())
-    
-    return chunks
-```
-
-### Progress Tracking
-
-```python
-@timed
-def counselnotes():
-    # Automatic timing via decorator
-    
-    with click.progressbar(files, label='Processing documents') as bar:
-        for file_path in bar:
-            process_single_document(file_path)
-    
-    # Real-time progress indicators during LLM processing
-    with progress_indicator("Generating strategic analysis"):
-        analysis = generate_strategic_analysis(content)
-```
-
-## Integration with LitAssist Ecosystem
-
-### Command Registration
-
-```python
-# In litassist/commands/__init__.py
-from .counselnotes import counselnotes
-
-def get_commands():
-    return {
-        'counselnotes': counselnotes,
-        # ... other commands
-    }
-```
-
-### Output File Management
-
-```python
-def save_counselnotes_output(content, file_prefix, extraction_mode=None):
-    if extraction_mode:
-        filename = f"counselnotes_{extraction_mode}_{timestamp}.json"
-    else:
-        filename = f"counselnotes_strategic_{timestamp}.txt"
-    
-    output_path = save_command_output(content, filename)
-    return output_path
-```
-
-### Audit Trail Integration
-
-```python
-def create_audit_log(command_details):
-    log_data = {
-        'command': 'counselnotes',
-        'files_processed': command_details.files,
-        'extraction_mode': command_details.extraction_mode,
-        'verification_enabled': command_details.verify,
-        'processing_time': command_details.duration,
-        'output_files': command_details.outputs
-    }
-    
-    save_log(log_data, f"counselnotes_{timestamp}")
-```
-
-## Testing Strategy
-
-### Unit Test Coverage
-
-```python
-# tests/unit/test_counselnotes_basic.py
-class TestCounselNotesBasic:
-    def test_strategic_analysis_mode(self):
-        # Test basic strategic analysis functionality
-        
-    def test_extraction_modes(self):
-        # Test all four extraction modes
-        
-    def test_citation_verification(self):
-        # Test citation verification integration
-        
-    def test_multi_document_processing(self):
-        # Test cross-document synthesis
-        
-    def test_error_handling(self):
-        # Test various error scenarios
-```
-
-### Integration Test Patterns
-
-```bash
-# test-scripts/test_counselnotes.sh
-#!/bin/bash
-
-# Test strategic analysis
-litassist counselnotes examples/test_document.pdf
-
-# Test extraction modes
-litassist counselnotes --extract all examples/test_document.pdf
-litassist counselnotes --extract citations examples/test_document.pdf
-
-# Test verification
-litassist counselnotes --verify examples/test_document.pdf
-
-# Test multi-document processing
-litassist counselnotes doc1.pdf doc2.pdf doc3.pdf
-```
-
-## Configuration and Customization
-
-### Model Configuration (October 2025)
-
-```yaml
-# config.yaml
-llm:
-  models:
-    counselnotes: "openai/o3-pro"
-
-  parameters:
-    counselnotes:
-      reasoning_effort: high
-      max_completion_tokens: 8192
-      enforce_citations: true
-```
-
-### Prompt Customization
-
-```yaml
-# litassist/prompts/processing.yaml
-counselnotes_strategic_analysis: |
-  You are an experienced barrister reviewing legal documents from an advocate's perspective.
-  
-  Analyze the following document(s) strategically, focusing on:
-  1. Case Overview & Position
-  2. Tactical Opportunities  
-  3. Risk Assessment
-  4. Strategic Recommendations
-  5. Case Management Notes
-  
-  Documents to analyze:
-  {content}
-```
-
-## Future Enhancement Opportunities
-
-### Planned Features
-
-1. **Template Integration**: Pre-defined templates for different practice areas
-2. **Collaborative Analysis**: Multi-user strategic planning support
-3. **Integration APIs**: Direct integration with case management systems
-4. **Advanced Filtering**: Document section-specific analysis
-5. **Export Formats**: Direct export to Word, PDF, case management systems
-
-### Architectural Considerations
-
-1. **Scalability**: Async processing for large document sets
-2. **Security**: Enhanced encryption for sensitive legal documents
-3. **Compliance**: Audit trail enhancements for regulatory requirements
-4. **Performance**: Caching strategies for repeated analysis
-5. **Extensibility**: Plugin architecture for custom analysis types
-
-## Maintenance and Monitoring
-
-### Performance Metrics
-
-- Document processing time per page
-- LLM response time and token usage
-- Citation verification success rates
-- Error rates by document type
-- User satisfaction with strategic analysis quality
-
-### Monitoring Integration
-
-```python
-def track_performance_metrics(command_execution):
-    metrics = {
-        'documents_processed': len(command_execution.files),
-        'total_processing_time': command_execution.duration,
-        'extraction_mode': command_execution.extraction_mode,
-        'verification_enabled': command_execution.verify,
-        'token_usage': command_execution.token_usage,
-        'citation_verification_results': command_execution.citation_results
-    }
-    
-    # Send to monitoring system
-    monitor.track('counselnotes_execution', metrics)
-```
-
-This implementation follows LitAssist's established patterns while providing unique strategic analysis capabilities specifically designed for litigation support workflows in Australian legal practice.
+Audit logging via `save_log()` captures file paths, extraction mode, verification status, processing mode, chunk count, and token usage.
