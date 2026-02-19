@@ -1,3 +1,5 @@
+Last updated: 18/02/2026
+
 Prompt Engineering for LitAssist: OpenAI, Anthropic Claude, Google Gemini, and xAI Grok
 
 LitAssist uses a multi-model pipeline where each command is routed to the model best suited for its task via OpenRouter. The active model inventory includes anthropic/claude-sonnet-4.5, anthropic/claude-opus-4.1, openai/o3-pro, openai/gpt-5.1, openai/gpt-5-pro, google/gemini-2.5-pro, and x-ai/grok-4. This document covers prompt engineering techniques and parameters for each model family, with emphasis on the legal reasoning, verification, and document drafting tasks that LitAssist performs.
