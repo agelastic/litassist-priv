@@ -1,5 +1,7 @@
 # Comprehensive Test Suite Summary
 
+Last updated: 19/08/2025
+
 ## Overview
 
 Added **50+ comprehensive pytest test cases** covering the most critical functionality in the LitAssist codebase. All tests are designed to run offline using mocked dependencies.

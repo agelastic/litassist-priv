@@ -244,6 +244,25 @@ class TestTiming:
             result = heartbeat_func()
             assert result == "result"
 
+    @patch("litassist.utils.core.click.echo", side_effect=OSError("Broken pipe"))
+    def test_heartbeat_ping_thread_handles_exception(self, mock_echo):
+        """Test that heartbeat ping thread handles exceptions without crashing."""
+        # Remove PYTEST_CURRENT_TEST so click.echo is actually called in ping()
+        env = os.environ.copy()
+        env.pop("PYTEST_CURRENT_TEST", None)
+
+        with patch.dict(os.environ, env, clear=True):
+
+            def slow_function():
+                time.sleep(0.1)
+                return "done"
+
+            decorated = heartbeat(0.01)(slow_function)
+            result = decorated()
+
+            assert result == "done"
+            assert mock_echo.called
+
 
 class TestReasoningPrompts:
     """Test reasoning prompt creation and extraction."""

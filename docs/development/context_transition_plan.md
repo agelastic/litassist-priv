@@ -1,5 +1,11 @@
 # Transition Plan: From Prompt Engineering to Context Engineering
 
+**Status:** PENDING - Not Implemented
+Last updated: 18/02/2026
+**Note:** This is an aspirational design direction. No implementation has begun. The YAML-based prompt system and Pinecone RAG for `draft` remain the current approach.
+
+---
+
 This plan outlines steps to evolve the LitAssist codebase from its current prompt-centric approach to a context-engineered architecture. The goal is to keep prompts lightweight while dynamically assembling relevant contextual data for each LLM call.
 
 ## 1. Catalogue Existing Prompts

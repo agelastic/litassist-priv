@@ -1,6 +1,6 @@
 # LitAssist Model Configuration Guide
 
-**Last Updated**: October 23, 2025
+Last updated: 18/02/2026
 **Status**: Technical Reference - See `LLM_MODEL_STRATEGY.md` for strategy overview
 
 ## Overview
@@ -29,44 +29,60 @@ All models are accessed through OpenRouter as the primary routing service, with 
 Major upgrade implementing three-tier strategy for optimal accuracy and cost-efficiency:
 
 **Tier 1: Critical Verification (GPT-5 Pro)**
-- verify-soundness, verification-heavy, cove-final
+- verification-heavy, verify-soundness-heavy, verify-reasoning-heavy, cove-answers-heavy
 - <1% hallucination rate for critical legal accuracy
 - Premium cost justified by superior accuracy
 
-**Tier 2: Fast Verification (GPT-5)**
+**Tier 2: Fast Verification (GPT-5.1)**
 - verification, cove-answers
-- 1.4-1.6% hallucination rate
+- Upgraded from GPT-5 in November 2025
 - Balanced speed and accuracy
 
-**Tier 3: Legal Reasoning (Claude Sonnet 4.5)**
-- Most commands (14 total)
+**Tier 3: Legal Reasoning (Claude Sonnet 4.5 / Opus 4.1)**
+- Most commands; verify-soundness uses Claude Opus 4.1 (cost-effective soundness)
 - "State of the art on complex litigation tasks" per Anthropic
-- 80% cost reduction vs Claude Opus 4.1
+- 80% cost reduction vs Claude Opus 4.1 for standard tasks
 - Extended thinking mode for multi-step analysis
+
+#### November 2025 Updates
+- `verification`: `gpt-5` → `gpt-5.1` (upgraded)
+- `cove-answers`: `gpt-5` → `gpt-5.1` (upgraded)
+- `verify-soundness`: `gpt-5-pro` → `claude-opus-4.1` (cost optimisation; heavy variant retains `gpt-5-pro`)
+- `cove-final`: `gpt-5-pro` → `claude-sonnet-4.5` (cost optimisation)
+- Added `--heavy` variants for verify-soundness and verify-reasoning
+- Global token limit system removed; models use API defaults
 
 | Command | Model | Purpose | Key Parameters |
 |---------|-------|---------|----------------|
-| **lookup** | `google/gemini-2.5-pro` | Rapid case law research | temperature: 0.2, top_p: 0.4, 1M context |
+| **lookup** | `google/gemini-2.5-pro` | Rapid case law research | temperature: 0.2, top_p: 0.4, thinking_effort: low |
 | **digest-summary** | `anthropic/claude-sonnet-4.5` | Document summarization | temperature: 0.2, top_p: 0.3, thinking_effort: medium |
-| **digest-issues** | `anthropic/claude-sonnet-4.5` | Issue identification | temperature: 0.2, top_p: 0.5, thinking_effort: high |
-| **caseplan** | `anthropic/claude-sonnet-4.5` | Workflow planning | temperature: 0.5, top_p: 0.7 |
-| **caseplan-assessment** | `anthropic/claude-sonnet-4.5` | Budget assessment | temperature: 0.2, thinking_effort: medium |
+| **digest-issues** | `anthropic/claude-sonnet-4.5` | Issue identification | temperature: 0.5, top_p: 0.8, thinking_effort: high |
+| **caseplan** | `anthropic/claude-sonnet-4.5` | Workflow planning | temperature: 0.7, top_p: 0.95 |
+| **caseplan-assessment** | `anthropic/claude-sonnet-4.5` | Budget assessment | temperature: 0.7, top_p: 0.95 |
 | **extractfacts** | `anthropic/claude-sonnet-4.5` | Structured fact extraction | temperature: 0, top_p: 0.15, thinking_effort: high |
-| **brainstorm-orthodox** | `anthropic/claude-sonnet-4.5` | Conservative legal strategies | temperature: 0.3, top_p: 0.7 |
-| **brainstorm-unorthodox** | `x-ai/grok-4` | Creative strategy generation | temperature: 0.9, top_p: 0.95 |
-| **brainstorm-analysis** | `openai/o3-pro` | Strategy analysis & ranking | max_completion_tokens: 8192, reasoning_effort: high |
-| **strategy** | `anthropic/claude-sonnet-4.5` | Legal strategy planning | temperature: 0.2, top_p: 0.8, thinking_effort: max |
-| **strategy-analysis** | `openai/o3-pro` | Strategy assessment | max_completion_tokens: 4096, reasoning_effort: high |
-| **draft** | `openai/o3-pro` | Legal document drafting | max_completion_tokens: 4096, reasoning_effort: medium |
-| **counselnotes** | `openai/o3-pro` | Strategic advocate analysis | max_completion_tokens: 8192, reasoning_effort: high |
-| **barbrief** | `openai/o3-pro` | Comprehensive briefs | max_completion_tokens: 32768, reasoning_effort: high |
-| **verification** | `openai/gpt-5` | Standard verification | temperature: 0.2, top_p: 0.3 |
+| **brainstorm-orthodox** | `anthropic/claude-sonnet-4.5` | Conservative legal strategies | temperature: 0.7, top_p: 0.95, thinking_effort: medium |
+| **brainstorm-unorthodox** | `x-ai/grok-4` | Creative strategy generation | temperature: 0.8, top_p: 0.95, min_p: 0.05 |
+| **brainstorm-analysis** | `openai/o3-pro` | Strategy analysis & ranking | temperature: 0.7, top_p: 0.9, thinking_effort: high* |
+| **strategy** | `anthropic/claude-sonnet-4.5` | Legal strategy planning | temperature: 0.7, top_p: 0.95, thinking_effort: max |
+| **strategy-analysis** | `openai/o3-pro` | Strategy assessment | temperature: 0.7, top_p: 0.95, thinking_effort: max* |
+| **draft** | `openai/o3-pro` | Legal document drafting | temperature: 0.7, top_p: 0.95, thinking_effort: high, verbosity: high* |
+| **counselnotes** | `openai/o3-pro` | Strategic advocate analysis | temperature: 0.7, top_p: 0.95, thinking_effort: high* |
+| **barbrief** | `openai/o3-pro` | Comprehensive briefs | temperature: 0.7, top_p: 0.95, thinking_effort: high, verbosity: high* |
+| **verification** | `openai/gpt-5.1` | Standard verification | temperature: 0.2, top_p: 0.3, thinking_effort: medium |
 | **verification-heavy** | `openai/gpt-5-pro` | Critical verification | temperature: 0.2, top_p: 0.3, thinking_effort: max |
-| **verification-light** | `anthropic/claude-sonnet-4.5` | Spelling/terminology | temperature: 0, top_p: 0.2 |
-| **verify-soundness** | `openai/gpt-5-pro` | Soundness checking | temperature: 0.2, top_p: 0.3, thinking_effort: max |
+| **verification-light** | `anthropic/claude-sonnet-4.5` | Spelling/terminology | temperature: 0.2, top_p: 0.2, thinking_effort: medium |
+| **verify-soundness** | `anthropic/claude-opus-4.1` | Soundness checking | temperature: 0.2, top_p: 0.3, thinking_effort: high |
+| **verify-soundness-heavy** | `openai/gpt-5-pro` | Critical soundness checking | temperature: 0.2, top_p: 0.3, thinking_effort: max |
 | **verify-reasoning** | `anthropic/claude-sonnet-4.5` | Reasoning extraction | temperature: 0.2, top_p: 0.3, thinking_effort: high |
+| **verify-reasoning-heavy** | `openai/gpt-5-pro` | Critical reasoning check | temperature: 0.2, top_p: 0.3, thinking_effort: max |
 | **cove** (stages) | `anthropic/claude-sonnet-4.5` | Chain of Verification | Various parameters per stage |
-| **cove-final** | `openai/gpt-5-pro` | Final CoVe validation | temperature: 0.2, thinking_effort: high |
+| **cove-questions** | `anthropic/claude-sonnet-4.5` | CoVe question generation | temperature: 0.6, top_p: 0.95, thinking_effort: low |
+| **cove-answers** | `openai/gpt-5.1` | CoVe independent answers | temperature: 0.5, top_p: 0.8, thinking_effort: high |
+| **cove-answers-heavy** | `openai/gpt-5-pro` | CoVe answers (heavy) | temperature: 0.5, top_p: 0.8, thinking_effort: max |
+| **cove-verify** | `anthropic/claude-sonnet-4.5` | CoVe inconsistency check | temperature: 0.2, top_p: 0.3, thinking_effort: high |
+| **cove-final** | `anthropic/claude-sonnet-4.5` | CoVe final validation | temperature: 0.2, top_p: 0.4, thinking_effort: medium |
+
+*\*o3-pro rows show YAML values; `temperature` and `top_p` are stripped by the dynamic parameter filter before the API call. Effective parameters passed to o3-pro are `max_completion_tokens` and `reasoning_effort` (derived from `thinking_effort` mapping). See "Dynamic Parameter System" below.*
 
 ### Model Capabilities & Restrictions
 
@@ -97,21 +113,16 @@ Major upgrade implementing three-tier strategy for optimal accuracy and cost-eff
 - **BYOK**: Required on OpenRouter (Tier 4+ API key)
 
 #### OpenAI o3 & o3-pro
-- **o3**:
-  - **Purpose**: Technical legal writing
-  - **Used by**: draft command
-  - **Default max_completion_tokens**: 4096
 - **o3-pro**:
   - **Purpose**: Extended comprehensive document generation
-  - **Used by**: barbrief, counselnotes, analysis commands
-  - **Default max_completion_tokens**: 32768 (32K)
-- **Supported Parameters (both models)**:
+  - **Used by**: draft, barbrief, counselnotes, brainstorm-analysis, strategy-analysis
+- **Effective API Parameters** (what the API actually receives):
   - `max_completion_tokens` (NOT `max_tokens`)
-  - `reasoning_effort` (low, medium, high)
-- **Restrictions (both models)**:
-  - NO temperature, top_p, or penalty parameters
+  - `reasoning_effort` (low, medium, high — derived from `thinking_effort` mapping)
+- **API Restrictions**:
+  - NO temperature, top_p, or penalty parameters accepted
   - Requires BYOK setup through OpenRouter
-- **Key Difference**: o3-pro supports much longer outputs (32K vs 4K tokens)
+- **YAML vs API note**: The `model_configs.yaml` entries for o3-pro commands include `temperature` and `top_p` values. These are present in the YAML but are silently removed by the dynamic parameter filter (`litassist/llm/`) before the API call is made. Only `max_completion_tokens` and `reasoning_effort` reach the API. Do not remove them from the YAML — they serve as documentation of intent and have no runtime effect.
 
 #### Grok 4 (July 2025)
 - **Model ID**: `x-ai/grok-4`
@@ -133,105 +144,157 @@ Major upgrade implementing three-tier strategy for optimal accuracy and cost-eff
 
 All model configurations are centralized in `litassist/llm/client.py` as `COMMAND_CONFIGS` dictionary:
 
-```python
-COMMAND_CONFIGS = {
-    # Tier 3: Legal Reasoning - Claude Sonnet 4.5 (state-of-the-art litigation)
-    "extractfacts": {
-        "model": "anthropic/claude-sonnet-4.5",
-        "temperature": 0,
-        "top_p": 0.15,
-        "thinking_effort": "high",
-        "enforce_citations": True,
-    },
-    "strategy": {
-        "model": "anthropic/claude-sonnet-4.5",
-        "temperature": 0.2,
-        "top_p": 0.8,
-        "thinking_effort": "max",
-    },
-    "brainstorm-orthodox": {
-        "model": "anthropic/claude-sonnet-4.5",
-        "temperature": 0.3,
-        "top_p": 0.7,
-        "thinking_effort": "medium",
-    },
-    "digest-summary": {
-        "model": "anthropic/claude-sonnet-4.5",
-        "temperature": 0.2,
-        "top_p": 0.3,
-        "thinking_effort": "medium",
-    },
-    "digest-issues": {
-        "model": "anthropic/claude-sonnet-4.5",
-        "temperature": 0.2,
-        "top_p": 0.5,
-        "thinking_effort": "high",
-    },
+```yaml
+# Canonical source: litassist/llm/model_configs.yaml
+# Note: temperature/top_p in o3-pro entries are stripped by the dynamic parameter filter.
 
-    # Tier 1: Critical Verification - GPT-5 Pro (<1% hallucination)
-    "verification-heavy": {
-        "model": "openai/gpt-5-pro",
-        "temperature": 0.2,
-        "top_p": 0.3,
-        "thinking_effort": "max",
-    },
-    "verify-soundness": {
-        "model": "openai/gpt-5-pro",
-        "temperature": 0.2,
-        "top_p": 0.3,
-        "thinking_effort": "max",
-    },
+# Tier 3: Legal Reasoning - Claude Sonnet 4.5
+extractfacts:
+  model: "anthropic/claude-sonnet-4.5"
+  temperature: 0
+  top_p: 0.15
+  thinking_effort: "high"
+  enforce_citations: true
 
-    # Tier 2: Fast Verification - GPT-5 (1.4% hallucination)
-    "verification": {
-        "model": "openai/gpt-5",
-        "temperature": 0.2,
-        "top_p": 0.3,
-    },
+strategy:
+  model: "anthropic/claude-sonnet-4.5"
+  temperature: 0.7
+  top_p: 0.95
+  thinking_effort: "max"
 
-    # Advanced Reasoning - o3-pro (drafting and comprehensive analysis)
-    "draft": {
-        "model": "openai/o3-pro",
-        "max_completion_tokens": 4096,
-        "reasoning_effort": "medium",
-    },
-    "counselnotes": {
-        "model": "openai/o3-pro",
-        "max_completion_tokens": 8192,
-        "reasoning_effort": "high",
-    },
-    "barbrief": {
-        "model": "openai/o3-pro",
-        "max_completion_tokens": 32768,
-        "reasoning_effort": "high",
-    },
+brainstorm-orthodox:
+  model: "anthropic/claude-sonnet-4.5"
+  temperature: 0.7
+  top_p: 0.95
+  thinking_effort: "medium"
 
-    # Research - Gemini 2.5 Pro (1M context window)
-    "lookup": {
-        "model": "google/gemini-2.5-pro",
-        "temperature": 0.2,
-        "top_p": 0.4,
-    },
+digest-summary:
+  model: "anthropic/claude-sonnet-4.5"
+  temperature: 0.2
+  top_p: 0.3
+  thinking_effort: "medium"
 
-    # Creative Ideation - Grok 4
-    "brainstorm-unorthodox": {
-        "model": "x-ai/grok-4",
-        "temperature": 0.9,
-        "top_p": 0.95,
-    },
-    "brainstorm-analysis": {
-        "model": "openai/o3-pro",
-        "temperature": 0.2,
-        "top_p": 0.8,
-        "thinking_effort": "high",
-        "disable_tools": True,
-    },
-    "strategy-analysis": {
-        "model": "openai/o3-pro",
-        "thinking_effort": "max",
-        "disable_tools": True,
-    },
-}
+digest-issues:
+  model: "anthropic/claude-sonnet-4.5"
+  temperature: 0.5
+  top_p: 0.8
+  thinking_effort: "high"
+
+# Tier 1: Critical Verification - GPT-5 Pro (<1% hallucination)
+verification-heavy:
+  model: "openai/gpt-5-pro"
+  temperature: 0.2
+  top_p: 0.3
+  thinking_effort: "max"
+
+verify-soundness:
+  model: "anthropic/claude-opus-4.1"  # Nov 2025: was gpt-5-pro
+  temperature: 0.2
+  top_p: 0.3
+  thinking_effort: "high"
+
+verify-soundness-heavy:
+  model: "openai/gpt-5-pro"
+  temperature: 0.2
+  top_p: 0.3
+  thinking_effort: "max"
+
+verify-reasoning:
+  model: "anthropic/claude-sonnet-4.5"
+  temperature: 0.2
+  top_p: 0.3
+  thinking_effort: "high"
+
+verify-reasoning-heavy:
+  model: "openai/gpt-5-pro"
+  temperature: 0.2
+  top_p: 0.3
+  thinking_effort: "max"
+
+# Tier 2: Fast Verification - GPT-5.1
+verification:
+  model: "openai/gpt-5.1"  # Nov 2025: was gpt-5
+  temperature: 0.2
+  top_p: 0.3
+  thinking_effort: "medium"
+
+# Advanced Reasoning - o3-pro (temperature/top_p stripped by param filter)
+draft:
+  model: "openai/o3-pro"
+  temperature: 0.7
+  top_p: 0.95
+  thinking_effort: "high"
+  verbosity: "high"
+
+counselnotes:
+  model: "openai/o3-pro"
+  temperature: 0.7
+  top_p: 0.95
+  thinking_effort: "high"
+
+barbrief:
+  model: "openai/o3-pro"
+  temperature: 0.7
+  top_p: 0.95
+  thinking_effort: "high"
+  verbosity: "high"
+
+brainstorm-analysis:
+  model: "openai/o3-pro"
+  temperature: 0.7
+  top_p: 0.9
+  thinking_effort: "high"
+
+strategy-analysis:
+  model: "openai/o3-pro"
+  temperature: 0.7
+  top_p: 0.95
+  thinking_effort: "max"
+
+# Research - Gemini 2.5 Pro (1M context window)
+lookup:
+  model: "google/gemini-2.5-pro"
+  temperature: 0.2
+  top_p: 0.4
+  thinking_effort: "low"
+
+# Creative Ideation - Grok 4
+brainstorm-unorthodox:
+  model: "x-ai/grok-4"
+  temperature: 0.8
+  top_p: 0.95
+  min_p: 0.05
+
+# CoVe stages
+cove-questions:
+  model: "anthropic/claude-sonnet-4.5"
+  temperature: 0.6
+  top_p: 0.95
+  thinking_effort: "low"
+
+cove-answers:
+  model: "openai/gpt-5.1"  # Nov 2025: was gpt-5
+  temperature: 0.5
+  top_p: 0.8
+  thinking_effort: "high"
+
+cove-answers-heavy:
+  model: "openai/gpt-5-pro"
+  temperature: 0.5
+  top_p: 0.8
+  thinking_effort: "max"
+
+cove-verify:
+  model: "anthropic/claude-sonnet-4.5"
+  temperature: 0.2
+  top_p: 0.3
+  thinking_effort: "high"
+
+cove-final:
+  model: "anthropic/claude-sonnet-4.5"  # Nov 2025: was gpt-5-pro
+  temperature: 0.2
+  top_p: 0.4
+  thinking_effort: "medium"
 ```
 
 ### Environment Variable Overrides
@@ -276,7 +339,7 @@ openai:
 - No retries for authentication errors (4xx)
 - Circuit breaker activates after 5 failures/hour
 
-The retry logic is implemented in `litassist/llm.py` using the `tenacity` library. Only transient network errors (connection, timeout) are retried. All retry attempts and failures are logged for audit and debugging.
+The retry logic is implemented in `litassist/llm/` package using the `tenacity` library. Only transient network errors (connection, timeout) are retried. All retry attempts and failures are logged for audit and debugging.
 
 ## Model Selection Philosophy
 
@@ -288,15 +351,15 @@ The October 2025 upgrade implements a three-tier model selection strategy optimi
 - **Purpose**: Maximum accuracy for critical legal soundness checking
 - **Hallucination Rate**: <1% (industry-leading)
 - **Cost**: Premium, justified by superior accuracy
-- **Use Cases**: verify-soundness, verification-heavy, cove-final
+- **Use Cases**: verification-heavy, verify-soundness-heavy, verify-reasoning-heavy, cove-answers-heavy
 - **Rationale**: Legal work requires absolute accuracy; <1% hallucination rate worth premium cost
 
-**Tier 2: Fast Verification (GPT-5)**
+**Tier 2: Fast Verification (GPT-5.1)**
 - **Purpose**: Balanced speed and accuracy for standard verification
 - **Hallucination Rate**: 1.4-1.6%
 - **Cost**: Moderate
 - **Use Cases**: verification, cove-answers
-- **Rationale**: 80% fewer errors than previous models at reasonable cost
+- **Note**: Upgraded from GPT-5 in November 2025; verify-soundness (standard) moved to claude-opus-4.1 as cost optimisation
 
 **Tier 3: Legal Reasoning (Claude Sonnet 4.5)**
 - **Purpose**: State-of-the-art legal domain knowledge and reasoning
@@ -430,9 +493,12 @@ LitAssist uses a dynamic, pattern-based parameter filtering system that automati
 ```python
 MODEL_PATTERNS = {
     "openai_reasoning": r"openai/o\d+",     # o1, o3, o1-pro, o3-pro, future o5, etc.
+    "gpt5.1": r"openai/gpt-5\.1",           # GPT-5.1 (must precede gpt5-pro)
+    "gpt5-pro": r"openai/gpt-5-pro$",       # GPT-5 Pro specifically
+    "gpt5": r"openai/gpt-5$",               # GPT-5 base model
     "anthropic": r"anthropic/claude",       # All Claude models
     "google": r"google/(gemini|palm|bard)", # Google models
-    "openai_standard": r"openai/(gpt|chatgpt)", # Standard GPT models
+    "xai": r"x-ai/grok",                    # xAI Grok models
     # ... more patterns
 }
 ```
@@ -560,4 +626,4 @@ See `LLM_MODEL_STRATEGY.md` → "Future Model Opportunities" for:
 
 **Document Purpose**: Technical reference for model configuration and parameters
 **Strategic Guidance**: See `LLM_MODEL_STRATEGY.md`
-**Last Updated**: October 23, 2025
+Last updated: 18/02/2026

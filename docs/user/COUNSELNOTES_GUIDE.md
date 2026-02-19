@@ -1,6 +1,6 @@
 # Counsel's Notes Command Guide
 
-**Last Updated**: October 12, 2025
+Last updated: 18/02/2026
 
 The `counselnotes` command provides strategic analysis and tactical insights for legal documents from an advocate's perspective, complementing the neutral analysis provided by the `digest` command.
 
@@ -359,25 +359,20 @@ When processing multiple documents, the command performs:
 ### Citation Quality Control
 Comprehensive citation verification includes:
 - **Pattern validation**: Detects generic or suspicious case names
-- **Online verification**: Real-time checking against AustLII database
+- **Online verification**: Real-time checking against Jade.io via Google Custom Search
 - **International recognition**: Identifies UK, US, and other international citations
 - **Format compliance**: Ensures Australian citation standards
 
-### Customization Options
-Advanced users can:
-- **Customize prompts**: Modify analysis templates for specific practice areas
-- **Batch processing**: Process multiple matters efficiently
-- **Integration APIs**: Connect with external case management systems
-- **Reporting templates**: Create standardized output formats
+### Prompt Customisation
+Advanced users can modify analysis templates in `litassist/prompts/` for specific practice areas. See `docs/user/PROMPTS_README.md` for details.
 
 ### Model Configuration
-The `counselnotes` command uses a preconfigured LLM setup optimized for strategic legal analysis:
+The `counselnotes` command uses a preconfigured LLM setup optimised for strategic legal analysis:
 - **Model**: `openai/o3-pro` for advanced reasoning and strategic analysis
 - **Reasoning Effort**: `high` for comprehensive strategic insights
-- **Max Completion Tokens**: `8192` for detailed multi-section output
 - **Verification**: Enabled for automatic citation verification and legal accountability
 
-**October 2025 Update**: Upgraded to o3-pro for superior strategic reasoning capabilities, enabling deeper tactical analysis and more sophisticated case assessments. This configuration requires BYOK (Bring Your Own Key) setup through OpenRouter.
+This configuration requires BYOK (Bring Your Own Key) setup through OpenRouter.
 
 ## Support and Resources
 
@@ -386,7 +381,7 @@ The `counselnotes` command uses a preconfigured LLM setup optimized for strategi
 - `examples/example_counselnotes_extractions.json`: All extraction mode examples
 
 ### Technical Documentation
-- `docs/counselnotes/COUNSELNOTES_IMPLEMENTATION.md`: Technical implementation details
+- `docs/development/COUNSELNOTES_IMPLEMENTATION.md`: Technical implementation details
 - Integration patterns and customization guidance
 
 ### Getting Help

@@ -1,5 +1,7 @@
 # LitAssist Release Process
 
+Last updated: 19/07/2025
+
 ## Overview
 This document provides a step-by-step process for creating releases, from branch creation through GitHub release publication. Each release should follow semantic versioning (MAJOR.MINOR.PATCH).
 

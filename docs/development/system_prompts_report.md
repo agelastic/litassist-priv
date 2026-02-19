@@ -1,6 +1,6 @@
 # LitAssist System Prompts Report
 
-**Last Updated**: October 22, 2025 (Updated from January 2025 version)
+Last updated: 18/02/2026
 **Status**: Reference Document
 
 ## Overview
@@ -167,11 +167,11 @@ Used by multiple commands (verify, draft, barbrief, counselnotes, extractfacts, 
 - `verification.cove.inconsistency_system` - Detect inconsistencies
 - `verification.cove.regeneration_system` - Regenerate corrected content
 
-**Models Used** (October 2025):
+**Models Used** (current - updated Feb 2026):
 - Questions: Claude Sonnet 4.5 (cove-questions client)
-- Answers: GPT-5 (cove-answers client) - 1.4% hallucination rate
+- Answers: GPT-5.1 (cove-answers client) - updated Nov 2025
 - Verify: Claude Sonnet 4.5 (cove-verify client)
-- Final: GPT-5 Pro (cove-final client) - <1% hallucination rate
+- Final: Claude Sonnet 4.5 (cove-final client) - moved from GPT-5 Pro Nov 2025
 
 ### 12. Base/Fallback System Prompt
 

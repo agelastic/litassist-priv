@@ -1,6 +1,6 @@
 # LitAssist
 
-**Last Updated**: October 12, 2025
+Last updated: 18/02/2026
 
 **LitAssist** is a comprehensive legal workflow automation tool designed for Australian legal practice. It provides a structured end-to-end pipeline for litigation support:
 
@@ -87,10 +87,7 @@ pipx inject litassist tiktoken
 pipx ensurepath
 source ~/.zshrc
 
-# For local development with pip instead of pipx
-# use the pinned requirements to avoid version issues
-# (openai==0.28.1, google-api-python-client, etc.)
-#
+# For local development with pip instead of pipx:
 # pip install -r requirements.txt
 
 # 3. Setup configuration
@@ -162,7 +159,7 @@ LitAssist uses a three-tier strategy with cutting-edge AI models optimized for l
 
 **Three-Tier Model Strategy (October 2025):**
 - **Tier 1: Critical Verification** - GPT-5 Pro (<1% hallucination rate) for soundness checking
-- **Tier 2: Fast Verification** - GPT-5 (1.4% hallucination rate) for standard verification
+- **Tier 2: Fast Verification** - GPT-5.1 (1.4% hallucination rate) for standard verification
 - **Tier 3: Legal Reasoning** - Claude Sonnet 4.5 (state-of-the-art for complex litigation tasks)
 
 | Command | Model | BYOK Required | Purpose |
@@ -177,7 +174,7 @@ LitAssist uses a three-tier strategy with cutting-edge AI models optimized for l
 | **counselnotes** | OpenAI o3-pro | **Yes** | Strategic advocate analysis |
 | **barbrief** | OpenAI o3-pro | **Yes** | Comprehensive barrister's briefs |
 | **verify (critical)** | GPT-5 Pro | **Yes** | Critical soundness verification |
-| **verify (standard)** | GPT-5 | **Yes** | Fast verification with high accuracy |
+| **verify (standard)** | GPT-5.1 | **Yes** | Fast verification with high accuracy |
 
 #### Why These Models?
 
@@ -213,7 +210,7 @@ litassist [GLOBAL OPTIONS] <command> [ARGS] [OPTIONS]
 ```
 
 Global options:
-- `--log-format [json|markdown]`: Choose audit-log format (default: json)
+- `--log-format [json|markdown]`: Choose audit-log format (default: from config.yaml)
 - `--verbose`: Enable debug-level logging
 
 ### Core Pipeline Commands
@@ -415,7 +412,7 @@ Each command uses optimized LLM models and parameters:
 - Document chunking (`max_chars`) controls input processing for large files.
 - tiktoken is required for accurate token counting and large document handling.
 - All output is now ASCII/ANSI only (no emoji).
-- See the [LitAssist User Guide](docs/user/LitAssist_User_Guide.md#llm-models-and-parameter-configuration) for details.
+- See the [LitAssist User Guide](docs/user/LitAssist_User_Guide.md#model-configuration) for details.
 
 ## Disclaimer
 

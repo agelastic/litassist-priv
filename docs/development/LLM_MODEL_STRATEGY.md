@@ -1,6 +1,6 @@
 # LitAssist LLM Model Strategy
 
-**Last Updated**: October 23, 2025
+Last updated: 18/02/2026
 **Status**: Living Document
 **Purpose**: Comprehensive guide to LLM usage, model selection, and improvement strategies
 
@@ -26,10 +26,11 @@
 
 | Model | Commands Using It | Purpose | Hallucination Rate | Cost |
 |-------|------------------|---------|-------------------|------|
-| **Claude Sonnet 4.5** | strategy, extractfacts, digest-*, caseplan, brainstorm-orthodox, verification-light, cove-* | Legal reasoning, foundational tasks | ~2-3% | $3/$15 |
-| **OpenAI GPT-5 Pro** | verification-heavy | Critical verification (<1% hallucination) | <1% | Premium |
-| **OpenAI GPT-5** | verification, cove-answers, cove-final | Standard verification | 1.4-1.6% | Higher |
-| **OpenAI o3-pro** | draft, counselnotes, barbrief, strategy-analysis, brainstorm-analysis, verify-reasoning | Advanced reasoning, superior drafting | ~15-20%* | Higher |
+| **Claude Sonnet 4.5** | strategy, extractfacts, digest-*, caseplan, brainstorm-orthodox, verification-light, cove-questions, cove-verify, cove-final | Legal reasoning, foundational tasks | ~2-3% | $3/$15 |
+| **Claude Opus 4.1** | verify-soundness | Soundness checking (cost opt. Nov 2025; was gpt-5-pro) | ~2-3% | Moderate |
+| **OpenAI GPT-5 Pro** | verification-heavy, verify-soundness-heavy, verify-reasoning-heavy, cove-answers-heavy | Critical verification (<1% hallucination) | <1% | Premium |
+| **OpenAI GPT-5.1** | verification, cove-answers | Standard verification (upgraded Nov 2025 from gpt-5) | 1.4-1.6% | Higher |
+| **OpenAI o3-pro** | draft, counselnotes, barbrief, strategy-analysis, brainstorm-analysis | Advanced reasoning, superior drafting | ~15-20%* | Higher |
 | **Google Gemini 2.5 Pro** | lookup | Rapid processing (1M context) | ~2-3% | $1.25/$5 |
 | **xAI Grok 4** | brainstorm-unorthodox | Creative ideation | ~5-8% | Medium |
 
@@ -54,14 +55,15 @@
 ### Tier 1: Critical Accuracy (GPT-5 Pro)
 - **Hallucination Rate**: <1%
 - **Use Case**: Final verification, critical legal analysis
-- **Commands**: verification-heavy, cove-final
+- **Commands**: verification-heavy, verify-soundness-heavy, verify-reasoning-heavy, cove-answers-heavy
 - **Cost**: Premium, justified by professional liability requirements
 
-### Tier 2: Fast Verification (GPT-5)
+### Tier 2: Fast Verification (GPT-5.1)
 - **Hallucination Rate**: 1.4-1.6%
 - **Use Case**: Standard verification, fact-checking
 - **Commands**: verification, cove-answers
 - **Cost**: Higher, but 6x better than o3 on hallucinations
+- **Note (Nov 2025)**: Upgraded from GPT-5. verify-soundness (standard) moved to claude-opus-4.1 as cost optimisation.
 
 ### Tier 3: Legal Reasoning (Claude Sonnet 4.5)
 - **Hallucination Rate**: ~2-3%
@@ -101,7 +103,7 @@
 - **Key Features**: 6x fewer factual errors, 80% fewer hallucinations than o3
 - **Parameters**: Standard OpenAI (temperature, top_p, max_tokens)
 - **BYOK**: Required on OpenRouter (Tier 4+ API key)
-- **Commands**: verification (GPT-5), verification-heavy/cove-final (GPT-5 Pro)
+- **Commands**: verification-heavy, verify-soundness-heavy, verify-reasoning-heavy, cove-answers-heavy (GPT-5 Pro); verification/cove-answers use GPT-5.1 (Nov 2025 upgrade)
 
 #### OpenAI o3-pro
 - **Model ID**: `openai/o3-pro`
@@ -123,7 +125,7 @@
 - **Model ID**: `x-ai/grok-4`
 - **Purpose**: Creative legal strategy generation
 - **Auto-verification**: Enabled due to higher hallucination tendency
-- **Parameters**: temperature (0.9), top_p (0.95) for creativity
+- **Parameters**: temperature (0.8), top_p (0.95), min_p (0.05) for creativity
 - **Commands**: brainstorm-unorthodox
 
 ### Dynamic Parameter System
@@ -133,7 +135,9 @@ LitAssist uses pattern-based parameter filtering:
 ```python
 MODEL_PATTERNS = {
     "openai_reasoning": r"openai/o\d+",      # o3, o3-pro, future o4, o5
-    "gpt5": r"openai/gpt-5(-pro)?",          # GPT-5, GPT-5 Pro
+    "gpt5.1": r"openai/gpt-5\.1",             # GPT-5.1 (must precede gpt5-pro)
+    "gpt5-pro": r"openai/gpt-5-pro$",        # GPT-5 Pro specifically
+    "gpt5": r"openai/gpt-5$",                # GPT-5 base model
     "claude4": r"anthropic/claude-(opus-4|sonnet-4)(\.\d+)?",  # Claude 4.x
     "anthropic": r"anthropic/claude",         # Other Claude models
     "google": r"google/(gemini|palm|bard)",
@@ -506,7 +510,7 @@ Alternative paths:
 
 ### When Next-Generation Models Arrive
 
-**Note**: The models below DO NOT EXIST as of October 2025. These are forward-looking recommendations for when they become available.
+**Note**: Most models below DO NOT EXIST as of the last update. GPT-5.1 is now live (see section 3 below). These are forward-looking recommendations; confirm availability before use.
 
 #### 1. OpenAI o4 Family (Future)
 
@@ -539,27 +543,17 @@ Alternative paths:
 - Pattern matcher already supports `claude-` family
 - No code changes required, just config updates
 
-#### 3. GPT-5.1 (Future)
+#### 3. GPT-5.1 - NOW IMPLEMENTED (November 2025)
 
-**Potential Applications**:
-- `verification-critical`: New tier with structured JSON schema output
-- Hallucination reduction specifically for legal citations
+**Status**: Live in production as of November 2025.
 
-**Prerequisites**:
-- Confirm `response_format={"type": "json_schema"}` support on OpenRouter
-- Benchmark hallucination rate vs GPT-5
-- Test deterministic output quality
+**Current usage**:
+- `verification`: upgraded from `openai/gpt-5` to `openai/gpt-5.1`
+- `cove-answers`: upgraded from `openai/gpt-5` to `openai/gpt-5.1`
 
-**Implementation**:
-```python
-"verification-critical": {
-    "model": "openai/gpt-5.1",
-    "temperature": 0.2,
-    "top_p": 0.3,
-    "response_format": {"type": "json_schema"},
-    "thinking_effort": "max",
-}
-```
+**Original aspirational notes** (kept for context):
+- A `verification-critical` tier with structured JSON schema output was proposed but not implemented; standard `openai/gpt-5.1` with `thinking_effort: medium` is the current approach.
+- JSON schema `response_format` not currently used.
 
 #### 4. Grok 4 Turbo (Future)
 
@@ -656,7 +650,7 @@ def multi_model_consensus(prompt, task_type):
     """Get consensus from multiple models for critical tasks."""
 
     models = {
-        "analytical": "openai/gpt-5",
+        "analytical": "openai/gpt-5.1",
         "creative": "anthropic/claude-sonnet-4.5",
         "precise": "google/gemini-2.5-pro"
     }
@@ -679,7 +673,7 @@ def multi_model_consensus(prompt, task_type):
     4. Create final version incorporating strengths of all
     """
 
-    return generate("openai/gpt-5", synthesis_prompt)
+    return generate("openai/gpt-5.1", synthesis_prompt)
 ```
 
 **Status**: Not implemented, HIGH COST, use only for critical tasks
@@ -801,7 +795,7 @@ Reference relevant practice directions and court guides.
 - 40-50% overall cost reduction
 - Improved legal reasoning quality
 - Maintained <2% hallucination rate on verification
-- 380 unit tests passing
+- 407 unit tests passing
 
 **Files Modified**:
 - `litassist/llm/client.py` - Core configuration
@@ -809,6 +803,20 @@ Reference relevant practice directions and court guides.
 - Documentation updated
 
 **Reference**: See `claude_llm_model_recommendations_oct_2025.md` for full analysis
+
+### November 2025 Model Changes ✅ IMPLEMENTED
+
+**Key Changes**:
+1. ✅ **GPT-5 → GPT-5.1** for `verification` and `cove-answers`
+   - Improved accuracy and reliability
+2. ✅ **verify-soundness**: `gpt-5-pro` → `claude-opus-4.1` (cost optimisation)
+   - `verify-soundness-heavy` retains `gpt-5-pro` for critical use
+3. ✅ **cove-final**: `gpt-5-pro` → `claude-sonnet-4.5` (cost optimisation)
+4. ✅ **Added `--heavy` variants**: `verify-soundness-heavy`, `verify-reasoning-heavy`
+5. ✅ **Global token limit system removed** — models use API defaults; quality over cost
+6. ✅ **Increased input size limits**: brainstorm/caseplan/strategy now accept up to 600K chars
+
+**o3-pro YAML note**: `model_configs.yaml` entries for o3-pro commands include `temperature` and `top_p`. These are stripped by the dynamic parameter filter before the API call — only `max_completion_tokens` and `reasoning_effort` (derived from `thinking_effort`) reach the API. This is intentional; the YAML values are documentation of intent and have no runtime effect on o3-pro.
 
 ### June-July 2025 Enhancements ✅ IMPLEMENTED
 
@@ -904,7 +912,7 @@ models:
 ```yaml
 verification:
   light: ["anthropic/claude-sonnet-4.5"]
-  standard: ["openai/gpt-5"]
+  standard: ["openai/gpt-5.1"]
   heavy: ["openai/gpt-5-pro", "x-ai/grok-4-turbo"]  # Ensemble
 ```
 
@@ -926,7 +934,6 @@ verification:
 - **ARCHITECTURE_ANALYSIS_2025.md** - Overall architecture including LLM strategy
 - **CLAUDE.md** - Development guidelines including prompt management policy
 - **VERIFICATION_SYSTEM_COMPREHENSIVE.md** - Verification chain architecture
-- **LLM_PARSING_AUDIT_REPORT.md** - Analysis of parsing patterns to eliminate
 
 ---
 
@@ -954,7 +961,7 @@ verification:
 
 1. **Multi-model consensus** for critical tasks (when cost justified)
 2. **Iterative improvement loops** for complex analysis
-3. **Migrate to future models** (o4, Claude 4.2, GPT-5.1) when available
+3. **Migrate to future models** (o4, Claude 4.2) when available — GPT-5.1 already live
 4. **Systematic parsing elimination** through structured outputs
 
 ---

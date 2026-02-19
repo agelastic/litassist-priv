@@ -1,8 +1,8 @@
 # Chain of Verification (CoVe) Architecture for LitAssist
 
-**Status**: IMPLEMENTATION COMPLETE (2025-08-23)
-**Last Verified**: October 2025
-**Production Status**: Ready for testing
+Last updated: 18/02/2026
+
+**Status**: Implementation complete
 
 ## Executive Summary
 
@@ -31,15 +31,15 @@ The "factored" approach prevents the model from attending to prior answers, redu
 
 ### Core Components
 
-**File**: `litassist/verification_chain.py` (556 lines)
+**File**: `litassist/verification_chain.py`
 
 #### 1. Standard Verification Chain
 
-**Function**: `run_verification_chain(content, command, skip_stages)` (lines 14-70)
+**Function**: `run_verification_chain(content, command, skip_stages, heavy)`
 
 Three-stage verification process:
 1. **Pattern Validation** (offline, fast) - Uses `citation_patterns.py`
-2. **Database Verification** (online, authoritative) - Uses `citation_verify.py`
+2. **Database Verification** (online, authoritative) - Uses `litassist/citation/` package
 3. **LLM Verification** (expensive, comprehensive) - Uses `LLMClientFactory.for_command('verification')`
 
 Returns: `(content, verification_results)` tuple
@@ -48,27 +48,27 @@ Returns: `(content, verification_results)` tuple
 
 #### 2. Chain of Verification (CoVe)
 
-**Function**: `run_cove_verification(content, command, prior_contexts)` (lines 88-531)
+**Function**: `run_cove_verification(content, command, prior_contexts, heavy)`
 
 Four-stage CoVe process:
-1. **Generate Questions** (lines 140-183)
+1. **Generate Questions**
    - Uses `LLMClientFactory.for_command('cove-questions')`
    - Generates 5-10 verification questions focused on citations, dates, parties, legal principles
-   - Extracts citations from questions (lines 185-260)
+   - Extracts citations from questions
    - Fetches full legal documents for cited cases automatically
 
-2. **Answer Questions** (lines 261-386)
-   - Uses `LLMClientFactory.for_command('cove-answers')`
+2. **Answer Questions**
+   - Uses `LLMClientFactory.for_command('cove-answers')` (or `cove-answers-heavy` when `heavy=True`)
    - Factored approach: Answers based on legal knowledge + full cited documents
-   - Scalable context inclusion: Drop-largest backoff on token errors (lines 278-360)
+   - Scalable context inclusion: Drop-largest backoff on token errors
    - Supports reference files via `prior_contexts['cove_reference_files']`
 
-3. **Detect Inconsistencies** (lines 388-429)
+3. **Detect Inconsistencies**
    - Uses `LLMClientFactory.for_command('cove-verify')`
    - Compares independent answers against original document
    - Returns issues found or "no issues found"
 
-4. **Regenerate if Needed** (lines 431-490)
+4. **Regenerate if Needed**
    - Uses `LLMClientFactory.for_command('cove-final')`
    - Only runs if inconsistencies detected
    - Incorporates verification findings into corrected document
@@ -77,7 +77,7 @@ Returns: `(final_content, cove_results)` tuple
 
 #### 3. Report Formatting
 
-**Function**: `format_cove_report(cove_results)` (lines 534-556)
+**Function**: `format_cove_report(cove_results)`
 
 Generates readable markdown report with:
 - Verification status (PASSED/ISSUES FOUND)
@@ -90,7 +90,7 @@ Generates readable markdown report with:
 #### Primary: Standalone Command
 
 **Command**: `litassist verify-cove`
-**File**: `litassist/commands/verify_cove.py` (311 lines)
+**Package**: `litassist/commands/verify_cove/` (core.py, cove_runner.py, document_reader.py, fallback_handler.py)
 **Usage**: `litassist verify-cove document.txt [--reference "exhibits/*.pdf"]`
 
 Features:
@@ -110,11 +110,7 @@ Features:
    - Usage: `litassist verify document.txt --cove`
    - Also supports `--cove-reference` for reference documents
 
-2. **`strategy` command** - Shows `--cove` in help text only
-   - **WARNING**: Help text is outdated/misleading
-   - `strategy` function signature has NO `cove` parameter (line 56)
-   - Comment at line 384 says: "CoVe moved to standalone 'verify-cove' command"
-   - The `--cove` flag does NOT actually exist in strategy command
+The `strategy` command does not have a `--cove` flag. CoVe is available only via the standalone `verify-cove` command or the `verify --cove` flag.
 
 #### No CoVe Integration in Other Commands
 
@@ -157,7 +153,6 @@ CoVe Questions → Fetch Citations → Answer with Context → Detect Issues →
 
 ### Citation Context Fetching
 
-Lines 185-260 in `verification_chain.py`:
 - Automatically extracts citations from generated questions
 - Fetches full legal documents using `fetch_citation_context()`
 - Includes full case text in answer stage for accurate verification
@@ -165,7 +160,6 @@ Lines 185-260 in `verification_chain.py`:
 
 ### Token Limit Handling
 
-Lines 278-360 in `verification_chain.py`:
 - Intelligent retry loop with drop-largest backoff
 - Detects token/context limit errors
 - Drops largest legal document and retries
@@ -219,41 +213,9 @@ Allows different models for different CoVe stages.
 4. Token limit retry logic with drop-largest strategy
 5. Safe string handling prevents None crashes
 
-## Testing Status
+## Testing
 
-### Unit Tests
-- [Y] All tests passing as of 2025-08-23
-- [Y] Mocked LLM responses for offline testing
-- [Y] Coverage of all core functions
-
-### Production Testing (PENDING)
-- [ ] Hallucination rate measurement
-- [ ] High Court case validation
-- [ ] Statutory reference validation
-- [ ] Legal principle attribution assessment
-
-## Implementation Statistics
-
-| Component | Lines | Files | Status |
-|-----------|-------|-------|--------|
-| Verification Chain | 556 | 1 new | COMPLETE |
-| CoVe Functions | (included above) | - | COMPLETE |
-| Standalone Command | 311 | 1 new | COMPLETE |
-| verify command --cove flag | ~30 | 1 modified | COMPLETE |
-| **Total** | ~897 | 2 new, 1 modified | **COMPLETE** |
-
-**Note**: Original plan estimated 251 lines. Actual implementation is larger due to:
-- Citation fetching infrastructure
-- Scalable context inclusion with backoff
-- Enhanced logging and error handling
-- Reference document support
-- Full standalone command implementation
-
-**Command Integration Reality**:
-- Only `verify` command has working `--cove` flag
-- `strategy` command has outdated help text mentioning CoVe but no actual flag
-- All other commands (extractfacts, draft, barbrief, counselnotes) have NO CoVe integration
-- **Primary usage**: Standalone `verify-cove` command for all CoVe needs
+Unit tests use mocked LLM responses for offline testing. See `tests/unit/test_verification.py`.
 
 ## Example Verification Questions
 
@@ -276,20 +238,6 @@ Allows different models for different CoVe stages.
 - "Is the accident date consistently stated as March 15, 2023?"
 - "Is the plaintiff's name spelled 'Smith' throughout?"
 - "Do the claimed damages align with the injury description?"
-
-## Expected Outcomes
-
-### Metrics
-- **Baseline**: 69-88% hallucination rate (research data)
-- **Standard CoVe**: ~30-40% reduction (Meta's results)
-- **Legal CoVe Target**: <10% hallucination rate
-
-### Quality Improvements
-1. Every citation verified against legal databases
-2. Every statute checked for current validity
-3. Every principle validated through factored verification
-4. Every fact cross-referenced for consistency
-5. Full audit trail for professional liability
 
 ## Usage Examples
 
@@ -333,14 +281,6 @@ litassist verify-cove outputs/draft_*.md --reference "exhibits/*.pdf"
 4. **Reliability**: Chain continues even if one stage fails
 5. **Token Limits**: Drop-largest backoff handles context overflow
 
-## Future Enhancements (Optional)
-
-1. **Performance Optimization**: Consider caching CoVe results for repeated documents
-2. **Question Template Refinement**: Develop specialized templates for document types
-3. **Configurable CoVe Depth**: Allow users to specify number of verification questions
-4. **CoVe Report Export**: Add option to save detailed analysis separately
-5. **Multi-Model Consensus**: Use multiple models for critical verifications
-
 ## References
 
 - Meta AI CoVe Paper: arXiv:2309.11495 (Dhuliawala et al., 2023)
@@ -351,12 +291,6 @@ litassist verify-cove outputs/draft_*.md --reference "exhibits/*.pdf"
 ## Related Documentation
 
 - Implementation code: `litassist/verification_chain.py`
-- Standalone command: `litassist/commands/verify_cove.py`
+- Standalone command: `litassist/commands/verify_cove/`
 - User guide: `docs/user/LitAssist_User_Guide.md`
 - Testing: `tests/unit/test_verification.py`
-
----
-
-**Last Updated**: October 2025
-**Status**: IMPLEMENTATION COMPLETE - Production testing pending
-**Priority**: HIGH - Addresses critical legal accuracy requirements
