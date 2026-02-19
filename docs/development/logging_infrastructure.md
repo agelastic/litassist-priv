@@ -1,5 +1,7 @@
 # LitAssist Logging Infrastructure Documentation
 
+Last updated: 18/02/2026
+
 ## Overview
 
 The litassist codebase implements a comprehensive structured logging system using the `log_task_event` function to track all stages of command execution, including file I/O, LLM interactions, and processing stages. This provides complete visibility into command execution for debugging, auditing, and performance monitoring.

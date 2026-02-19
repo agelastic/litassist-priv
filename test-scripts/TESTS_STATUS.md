@@ -1,5 +1,7 @@
 # Test Status
 
+Last updated: 18/02/2026
+
 ## Important Testing Policy
 
 [WARNING] **ALL pytest tests MUST run offline with mocked dependencies**

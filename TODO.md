@@ -1,5 +1,7 @@
 # LitAssist Development TODO
 
+Last updated: 18/02/2026
+
 **Note:** Strategic feature planning (litigation support, advisory capabilities, new commands) is now in [ROADMAP.md](ROADMAP.md). This file focuses on bugs, technical debt, and code quality improvements.
 
 ---

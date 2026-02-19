@@ -1,6 +1,6 @@
 # LitAssist Feature Roadmap
 
-**Last Substantive Update:** December 2025
+Last updated: 18/02/2026
 **Status:** Strategic Planning Phase -- no features from this roadmap have been implemented yet
 **Confidence:** 0.88
 
@@ -1035,6 +1035,6 @@ la profile --create "Agency A" --type government
 
 ---
 
-**Last Substantive Update:** December 2025
+Last updated: 18/02/2026
 **Status:** Strategic Planning Phase -- no features from this roadmap have been implemented yet
 **Next Review:** After Phase 1 completion

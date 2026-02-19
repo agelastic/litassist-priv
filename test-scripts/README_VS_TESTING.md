@@ -1,5 +1,7 @@
 # Verbalized Sampling Exploratory Testing
 
+Last updated: 12/11/2025
+
 ## Overview
 
 This test compares three approaches for implementing Verbalized Sampling in litassist:

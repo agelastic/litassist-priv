@@ -1,4 +1,7 @@
 <!-- markdownlint-disable MD041 -->
+
+Last updated: 18/02/2026
+
 ### CRITICAL: Minimal Changes Philosophy
 - Make the smallest change that fixes the problem. No refactors unless explicitly asked. No opportunistic "improvements". No new abstractions. No silent fallbacks without explicit approval. Prefer inline fixes to architectural changes. One fix = one narrowly scoped change. Prefer deleting parsing logic to adding more. Use regex only as a last resort and confirm first.
 - Over-engineering red flags: creating classes for single functions; factories with one product; decorators that could be plain calls; abstractions without multiple concrete implementations.
@@ -50,7 +53,7 @@
 
 ### Documentation Standards
 - Do not add "Recent Changes" sections. Document current behaviour only.
-- Add a `Last updated: DD/MM/YYYY` header to all documentation files when creating or modifying them.
+- When creating or substantially updating text (txt md etc) files make sure there is a "Last updated: DD/MM/YYYY" header. Adding housekeeping info like this, or improving formatting are not substantial updates.
 
 ### Code Simplicity
 - Prefer plain Python functions to classes for stateless work. Avoid patterns unless solving a real problem. Abstract only when you have 3+ similar implementations. Do not optimise early. If complexity is justified, confirm first.

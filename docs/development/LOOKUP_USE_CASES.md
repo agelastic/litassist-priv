@@ -1,5 +1,7 @@
 # Lookup Command Use Cases and Workflows
 
+Last updated: 18/02/2026
+
 ## Overview
 
 This document provides real-world examples of how lawyers use the lookup command in daily practice.

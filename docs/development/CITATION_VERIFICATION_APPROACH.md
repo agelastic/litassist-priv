@@ -1,5 +1,7 @@
 # Citation Verification System
 
+Last updated: 18/02/2026
+
 ## Problem
 
 AI models hallucinate legal citations. LitAssist implements a two-phase verification system to detect and handle fictitious citations across all commands.

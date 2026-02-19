@@ -2,7 +2,7 @@
 
 **Date:** 2025-11-16
 **Status:** Planning Phase — Not Implemented
-**Last Verified:** February 2026
+Last updated: 18/02/2026
 **Goal:** Add 2-3 sentence case summaries to verified citations for better strategy selection
 
 ## Executive Summary

@@ -1,7 +1,7 @@
 # Transition Plan: From Prompt Engineering to Context Engineering
 
 **Status:** PENDING - Not Implemented
-**Last Verified:** February 2026
+Last updated: 18/02/2026
 **Note:** This is an aspirational design direction. No implementation has begun. The YAML-based prompt system and Pinecone RAG for `draft` remain the current approach.
 
 ---

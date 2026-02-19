@@ -1,5 +1,7 @@
 # Chain of Verification (CoVe) Architecture for LitAssist
 
+Last updated: 18/02/2026
+
 **Status**: Implementation complete
 
 ## Executive Summary

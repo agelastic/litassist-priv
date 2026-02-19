@@ -1,5 +1,5 @@
 # LitAssist Verification System - Executive Summary
-*Last Updated: 2026-02-18 - February 2026 model config sync*
+Last updated: 18/02/2026
 
 ## Quick Reference
 

@@ -1,5 +1,7 @@
 # LitAssist Installation Guide
 
+Last updated: 18/02/2026
+
 This guide provides comprehensive installation instructions for LitAssist, including multiple installation methods, configuration setup, and troubleshooting.
 
 ## Prerequisites

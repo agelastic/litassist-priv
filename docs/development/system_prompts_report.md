@@ -1,6 +1,6 @@
 # LitAssist System Prompts Report
 
-**Last Updated**: October 22, 2025 (Updated from January 2025 version)
+Last updated: 18/02/2026
 **Status**: Reference Document
 
 ## Overview

@@ -1,5 +1,7 @@
 # LitAssist LLM Use Review and Model Recommendations (2026-02)
 
+Last updated: 16/02/2026
+
 ## Scope
 This review covers how LitAssist currently uses LLMs in production code, compares that design to recent GenAI platform trends, and recommends practical upgrades—especially model-selection changes.
 

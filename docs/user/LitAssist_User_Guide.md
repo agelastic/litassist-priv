@@ -1,5 +1,7 @@
 # LitAssist User Guide
 
+Last updated: 18/02/2026
+
 ## Overview
 
 LitAssist is a command-line tool for Australian litigation support. It automates

@@ -1,5 +1,7 @@
 # LitAssist Verification Mechanisms Analysis
 
+Last updated: 18/02/2026
+
 ## Overview
 
 This document describes how verification works across LitAssist commands. There are two independent layers: citation enforcement at the LLM client level, and command-level verification logic.

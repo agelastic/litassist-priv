@@ -1,6 +1,6 @@
 # LitAssist Architecture Analysis 2025
 
-**Last Updated**: October 24, 2025
+Last updated: 18/02/2026
 **Analysis Date**: October 2025
 **Codebase Version**: Post-October 2025 Model Upgrade
 

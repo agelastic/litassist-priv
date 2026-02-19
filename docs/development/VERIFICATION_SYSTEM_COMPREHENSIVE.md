@@ -1,5 +1,7 @@
 # LitAssist Verification System - Comprehensive Documentation
 
+Last updated: 18/02/2026
+
 ## Table of Contents
 1. [Executive Summary](#executive-summary)
 2. [System Architecture](#system-architecture)

@@ -2,6 +2,8 @@
 
 # LitAssist System Prompt Expansion Proposal
 
+Last updated: 18/02/2026
+
 ## Executive Summary
 
 This document proposes expanding LitAssist's system prompts to improve output quality and consistency across all commands. The current architecture has a minimal base prompt with inconsistent depth across command-specific prompts.

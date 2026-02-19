@@ -1,5 +1,7 @@
 # Using LitAssist with Non-Legal Documents
 
+Last updated: 18/02/2026
+
 While LitAssist is optimized for legal documents and Australian litigation workflows, it can be adapted to work with non-legal documents with some limitations and adjustments. This guide provides recommendations for processing various document types.
 
 **Important**: If you're unsure whether to use `extractfacts` or `digest`, see their respective sections in the [User Guide](LitAssist_User_Guide.md#command-reference). In short: `digest` provides flexible document analysis with optional context, while `extractfacts` produces the rigid 10-heading structure required by downstream commands.

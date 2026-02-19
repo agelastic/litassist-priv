@@ -1,5 +1,7 @@
 # LitAssist Architecture
 
+Last updated: 18/02/2026
+
 ## Overview
 LitAssist is a Python-based CLI tool for AI-powered litigation support in Australian law. It uses LLMs (via OpenRouter) and external search (Google CSE) to assist with legal research, document analysis, strategy generation, and drafting.
 

@@ -1,6 +1,6 @@
 # LitAssist Model Configuration Guide
 
-**Last Updated**: February 2026 - sync with model_configs.yaml
+Last updated: 18/02/2026
 **Status**: Technical Reference - See `LLM_MODEL_STRATEGY.md` for strategy overview
 
 ## Overview
@@ -626,4 +626,4 @@ See `LLM_MODEL_STRATEGY.md` → "Future Model Opportunities" for:
 
 **Document Purpose**: Technical reference for model configuration and parameters
 **Strategic Guidance**: See `LLM_MODEL_STRATEGY.md`
-**Last Updated**: February 2026 (sync with model_configs.yaml; November 2025 changes documented)
+Last updated: 18/02/2026

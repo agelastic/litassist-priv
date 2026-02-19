@@ -1,5 +1,7 @@
 # Lookup Command Enhancement Roadmap
 
+Last updated: 18/02/2026
+
 ## Current State (Feb 2026)
 
 The lookup command is a modular system at `litassist/commands/lookup/` that searches Jade and AustLII via Google CSE, fetches accessible content, and synthesises results with `google/gemini-2.5-pro`.

@@ -1,5 +1,7 @@
 # Counsel's Notes Command -- Technical Implementation
 
+Last updated: 18/02/2026
+
 ## Overview
 
 The `counselnotes` command generates strategic analysis and structured extractions from legal documents using an advocate's perspective. It complements the neutral analysis provided by the `digest` command.

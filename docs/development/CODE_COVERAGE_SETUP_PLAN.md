@@ -1,7 +1,7 @@
 # Code Coverage Setup Plan for LitAssist
 
 **Status:** PENDING - Not Implemented
-**Last Verified:** February 2026
+Last updated: 18/02/2026
 **Note:** Coverage tooling has not been set up. Low priority. Tests run via `pytest` without coverage reporting.
 
 ---

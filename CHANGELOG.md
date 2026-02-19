@@ -1,5 +1,7 @@
 # Changelog
 
+Last updated: 18/02/2026
+
 All notable changes to LitAssist will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
