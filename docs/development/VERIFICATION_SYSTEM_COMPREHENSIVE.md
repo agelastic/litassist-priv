@@ -346,8 +346,6 @@ commands:
     temperature: 0.2
     top_p: 0.4
     thinking_effort: medium
-    top_p: 0.3
-    thinking_effort: max
 ```
 
 ### Model-Specific Parameter Restrictions

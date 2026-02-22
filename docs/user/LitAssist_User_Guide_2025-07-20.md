@@ -1,6 +1,6 @@
 # LitAssist User Guide
 
-**Last Updated**: July 20, 2025
+Last updated: 20/07/2025
 
 ## Introduction
 
