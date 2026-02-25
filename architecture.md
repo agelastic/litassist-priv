@@ -51,7 +51,6 @@ Commands are organised as packages in `litassist/commands/`. Each command has:
 - **Factory Pattern**: `litassist/llm/factory.py` provides `LLMClientFactory.for_command("commandname")` to create configured clients.
 - **Configuration**: Model assignments in `litassist/llm/model_configs.yaml` (temperature, top_p, max_tokens per command).
 - **Client**: `litassist/llm/client.py` handles API interactions via OpenRouter. Base system prompts (Australian law, anti-injection, anti-hallucination) are automatically prepended.
-- **Flexibility**: Supports environment variable overrides for model selection per command.
 
 ### 4. Citation Handling & Verification
 - **Offline Validation**: `litassist/citation_patterns.py` validates citation format (pattern matching, no network).

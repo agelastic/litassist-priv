@@ -145,19 +145,6 @@ class TestLLMClientFactory:
             # o3-pro should have thinking_effort for draft as well
             assert "thinking_effort" in draft_params
 
-    def test_environment_variable_override(self):
-        """Test that environment variables can override model selection."""
-        with patch("litassist.config.CONFIG") as mock_config:
-            mock_config.openrouter_key = "test_key"
-            mock_config.openai_key = "test_openai_key"
-
-            with patch.dict(
-                "os.environ",
-                {"LITASSIST_LOOKUP_MODEL": "anthropic/claude-3-5-sonnet-20241022"},
-            ):
-                client = LLMClientFactory.for_command("lookup")
-                # Environment variable should override the model
-                assert client.model == "anthropic/claude-3-5-sonnet-20241022"
 
 
 class TestLLMClientFactoryIntegration:

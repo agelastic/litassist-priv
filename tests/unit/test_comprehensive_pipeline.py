@@ -12,7 +12,6 @@ from click.testing import CliRunner
 
 from litassist.cli import cli
 from litassist.commands import register_commands
-from litassist.llm.factory import LLMClientFactory
 from litassist.config import get_config
 CONFIG = get_config()
 
@@ -648,43 +647,3 @@ Worst: Pay $100k progress payment plus costs
                 call[0] in ["openai", "requests_get"] for call in external_calls
             ), "Only expected mocked calls"
 
-    def test_env_var_overrides(self):
-        """Test that environment variables override model configurations."""
-        # Set environment variables
-        test_env = {
-            "OPENAI_MODEL": "gpt-4-turbo-preview",
-            "ANTHROPIC_MODEL": "claude-3-opus",
-            "GOOGLE_MODEL": "gemini-ultra",
-            "XGROK_MODEL": "grok-2-beta",
-        }
-
-        with patch.dict(os.environ, test_env):
-            # Test that config picks up environment variables
-            from litassist.config import Config
-
-            # Create a config instance that should pick up env vars
-            with patch.object(Config, "_load_config", return_value={}):
-                Config()
-
-                # The get_required_key method should return env values when available
-                # Testing model overrides
-                assert os.environ.get("OPENAI_MODEL") == "gpt-4-turbo-preview"
-                assert os.environ.get("ANTHROPIC_MODEL") == "claude-3-opus"
-                assert os.environ.get("GOOGLE_MODEL") == "gemini-ultra"
-                assert os.environ.get("XGROK_MODEL") == "grok-2-beta"
-
-                # Test that LLMClientFactory would use these when creating clients
-                with patch("litassist.config.CONFIG") as mock_config:
-                    mock_config.openrouter_key = "test_key"
-                    mock_config.openai_key = "test_key"
-
-                    # Mock the model retrieval to use env var
-                    with patch.object(
-                        LLMClientFactory, "get_model_for_command"
-                    ) as mock_get_model:
-                        # When env var is set, it should override default model
-                        mock_get_model.return_value = test_env["GOOGLE_MODEL"]
-
-                        # Verify the override is returned
-                        model = LLMClientFactory.get_model_for_command("lookup")
-                        assert model == "gemini-ultra"

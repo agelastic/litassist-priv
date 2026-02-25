@@ -168,15 +168,6 @@ MODEL_PATTERNS = {
 - ✅ **Thinking Mode**: Supports `thinking_effort` parameter
 - ⚠️ **BYOK Required**: Must configure OpenAI API key in OpenRouter
 
-### Environment Variable Overrides
-
-```bash
-export ANTHROPIC_MODEL="anthropic/claude-sonnet-4.5"
-export OPENAI_MODEL="openai/o3-pro"
-export GOOGLE_MODEL="google/gemini-2.5-pro"
-export XGROK_MODEL="x-ai/grok-4"
-```
-
 ### OpenRouter Configuration
 
 **All models route through OpenRouter**:

@@ -297,16 +297,6 @@ cove-final:
   thinking_effort: "medium"
 ```
 
-### Environment Variable Overrides
-
-Models can be overridden via environment variables:
-```bash
-export ANTHROPIC_MODEL="anthropic/claude-sonnet-4"
-export OPENAI_MODEL="openai/o3-pro"
-export GOOGLE_MODEL="google/gemini-2.5-pro"
-export XGROK_MODEL="x-ai/grok-4"
-```
-
 ### OpenRouter Configuration
 
 **Primary Routing**: All models route through OpenRouter
