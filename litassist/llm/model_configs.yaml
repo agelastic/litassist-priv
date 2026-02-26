@@ -74,7 +74,7 @@ digest-issues:
   disable_tools: true
 
 lookup:
-  model: "google/gemini-2.5-pro"
+  model: "anthropic/claude-sonnet-4.6"
   temperature: 0.2
   top_p: 0.4
   thinking_effort: "low"
