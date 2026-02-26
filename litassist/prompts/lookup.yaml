@@ -199,7 +199,7 @@ lookup:
     Below is the REAL HTML/TEXT content fetched directly from these URLs:
     {content}
     
-    Based on the content above, answer the user's question comprehensively.
+    Answer the user's question comprehensively using the fetched content above and your own legal knowledge. Prioritise the provided sources, citing them directly; use your own knowledge to supplement and fill gaps.
     
     CITATION REQUIREMENTS:
     - Use medium neutral citation format for all case references
