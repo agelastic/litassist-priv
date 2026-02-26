@@ -74,7 +74,7 @@ class TruncationManager:
         """
         error_str = str(error).lower()
         token_error_keywords = [
-            'token', 'context', 'length', 'too long', 'maximum',
+            'token', 'context', 'length', 'too long', 'too large', 'maximum',
             'exceeded', 'limit', 'too many tokens'
         ]
         return any(keyword in error_str for keyword in token_error_keywords)
