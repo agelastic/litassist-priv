@@ -1975,28 +1975,29 @@ verification when the output contains:
 
 ## 7. Model Configuration
 
-### 7.1 Three-Tier Model Strategy
+### 7.1 Task-Based Model Selection
 
-LitAssist uses a tiered approach to model selection, matching model capabilities
-to task requirements:
+LitAssist matches each command to the model best suited for its job:
 
-| Tier | Purpose | Models | Cost |
-|------|---------|--------|------|
-| **Critical** | Verification, soundness checks | GPT-5 Pro, Claude Opus 4.1 | Highest |
-| **Fast** | Standard verification, CoVe answers | GPT-5.1 | Medium |
-| **Legal Reasoning** | Analysis, drafting, extraction | Claude Sonnet 4.5, o3-pro, Grok-4, Gemini 2.5 Pro | Varies |
+| Role | Purpose | Model | Commands |
+|------|---------|-------|----------|
+| **Legal Reasoning** | Analysis, extraction, strategy, lookup | Claude Sonnet 4.6 | 15 |
+| **Advanced Drafting** | Documents, briefs, deep analysis | o3-pro | 5 |
+| **Critical Verification** | Highest-stakes soundness checks | GPT-5 Pro | 4 |
+| **Standard Verification** | Self-critique, CoVe answers | GPT-5.1 | 2 |
+| **Soundness Checking** | Logical soundness analysis | Claude Opus 4.1 | 1 |
+| **Creative Ideation** | Unorthodox brainstorming | Grok 4 | 1 |
 
 **Rationale for task specialisation:**
 
-- **Critical tier** models are used sparingly for the highest-stakes tasks
-  (verifying court-ready documents). These models have maximum reasoning effort
-  enabled.
-- **Fast tier** provides accurate verification at moderate cost. Used for standard
-  self-critique passes and CoVe answer generation.
-- **Legal reasoning tier** handles the bulk of work. Different models are chosen
-  for their specific strengths: Claude Sonnet 4.5 for structured analysis, o3-pro
-  for deep reasoning, Grok-4 for creative generation, Gemini 2.5 Pro for large
-  context research.
+- **Verification** models (GPT-5 Pro, GPT-5.1) are chosen for their low
+  hallucination rates (<1% and 1.4% respectively), critical for court-ready
+  documents.
+- **Legal reasoning** (Sonnet 4.6) handles the bulk of work at $3/$15 per M
+  tokens with 1M context window and strong legal benchmarks.
+- **Drafting** (o3-pro) provides extended reasoning traces for structured
+  document generation.
+- **Creative** (Grok 4) uses high temperature with auto-verification.
 
 ### 7.2 Complete Command-to-Model Assignment Table
 

@@ -67,7 +67,7 @@
   - **Verification Flags (November 2025)**: --heavy (premium gpt-5-pro), --noverify (skip verification)
   - **Default Changed (November 2025)**: verify-soundness now uses claude-opus-4.1 instead of gpt-5-pro
 - **Strict Structure**: `extractfacts` and `strategy` enforce fixed heading formats
-- **Three-Tier Strategy (October 2025)**: Model selection optimizes accuracy vs cost based on task criticality
+- **Task-Based Model Selection**: Each command matched to the model best suited for its job (6 models across 28 configs)
 
 ## Tool Usage Patterns
 
