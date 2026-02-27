@@ -22,14 +22,14 @@ Before describing the full adversarial modelling vision, note what already exist
 **Orthodox/Unorthodox Strategy Generation (PRODUCTION)**
 - `litassist brainstorm` generates 15 orthodox (conservative, precedent-based) + 15 unorthodox (creative) strategies
 - These are YOUR strategies for YOUR side, not opponent simulation
-- Uses Claude Sonnet 4.5 (orthodox) + Grok-4 (unorthodox) with different temperature settings
+- Uses Claude Sonnet 4.6 (orthodox) + Grok-4 (unorthodox) with different temperature settings
 - Analysis/selection stage uses o3-pro with `thinking_effort: high`
 - See: `litassist/commands/brainstorm/`
 
 **Chain of Verification (CoVe) - PRODUCTION**
 - `litassist verify-cove` implements 4-stage verification loop
 - Questions --> Answers --> Critical verification --> Synthesis
-- Uses a multi-model pipeline: Claude Sonnet 4.5 for question generation and verification stages, GPT-5.1 for answer generation (per `model_configs.yaml`)
+- Uses a multi-model pipeline: Claude Sonnet 4.6 for question generation and verification stages, GPT-5.1 for answer generation (per `model_configs.yaml`)
 - Soundness verification uses Claude Opus 4.1
 - See: `litassist/commands/verify_cove/`
 
@@ -69,7 +69,7 @@ Models available for adversarial features, routed through OpenRouter (BYOK avail
 | Model | Context | Key Benchmarks | Cost (input / output per M tokens) |
 |---|---|---|---|
 | Claude Opus 4.6 | 1M | GDPval-AA 1606 Elo, BigLaw Bench 90.2%, adaptive thinking | $5 / $25 ($10 / $37.50 >200K) |
-| Claude Sonnet 4.5 | 200K (1M beta) | GDPval-AA 1259 Elo, strong instruction following | $3 / $15 |
+| Claude Sonnet 4.6 | 1M | GDPval-AA 1633 Elo, BigLaw Bench 87.6%, strong instruction following | $3 / $15 |
 | Claude Haiku 4.5 | 200K | Fast inference, extended thinking support | $1 / $5 |
 
 ### OpenAI

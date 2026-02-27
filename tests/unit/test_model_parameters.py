@@ -31,7 +31,7 @@ class TestGetModelFamily:
         # Claude 4 models get special family
         assert get_model_family("anthropic/claude-opus-4") == "claude4"
         assert get_model_family("anthropic/claude-opus-4.1") == "claude4"
-        assert get_model_family("anthropic/claude-sonnet-4") == "claude4"
+        assert get_model_family("anthropic/claude-sonnet-4.6") == "claude4"
 
         # Claude 3 and other models are standard anthropic
         assert get_model_family("anthropic/claude-3-opus") == "anthropic"

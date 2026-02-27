@@ -58,11 +58,11 @@ graph TD
   - Adapts to case complexity: minimal, standard, or comprehensive workflows
 
 ### Primary Workflow Commands
-- **Lookup**: Rapid case-law research (Jade.io database via Google Custom Search + Gemini 2.5 Pro)
-- **Digest**: Mass document processing (chronological summaries or issue-spotting via Claude Sonnet 4.5)
-- **ExtractFacts**: Automatic extraction of case facts into a structured file (Claude Sonnet 4.5)
+- **Lookup**: Rapid case-law research (Jade.io database via Google Custom Search + Gemini 2.5 Pro or Claude Sonnet 4.6)
+- **Digest**: Mass document processing (chronological summaries or issue-spotting via Claude Sonnet 4.6)
+- **ExtractFacts**: Automatic extraction of case facts into a structured file (Claude Sonnet 4.6)
 - **Brainstorm**: Creative legal strategy generation (unorthodox strategies via Grok 4, analysis via o3-pro)
-- **Strategy**: Targeted legal options with probability assessments (state-of-the-art litigation reasoning via Claude Sonnet 4.5)
+- **Strategy**: Targeted legal options with probability assessments (state-of-the-art litigation reasoning via Claude Sonnet 4.6)
 - **Draft**: Citation-rich document creation (superior technical writing via o3-pro)
 
 ### Specialized Commands
@@ -144,7 +144,7 @@ OpenRouter is the primary API gateway for all LLM calls. Some models require BYO
 **Models requiring BYOK:**
 - OpenAI o3-pro (draft, barbrief, counselnotes commands)
 - OpenAI GPT-5 and GPT-5 Pro (critical verification commands)
-- Claude Sonnet 4.5 available without BYOK
+- Claude Sonnet 4.6 available without BYOK
 
 **Quick BYOK Setup:**
 1. Go to [OpenRouter Settings](https://openrouter.ai/settings/integrations)
@@ -155,21 +155,23 @@ OpenRouter is the primary API gateway for all LLM calls. Some models require BYO
 
 ### Model Configuration & BYOK Requirements
 
-LitAssist uses a three-tier strategy with cutting-edge AI models optimized for legal work:
+LitAssist uses task-based model selection, matching each command to the model best suited for its job:
 
-**Three-Tier Model Strategy (October 2025):**
-- **Tier 1: Critical Verification** - GPT-5 Pro (<1% hallucination rate) for soundness checking
-- **Tier 2: Fast Verification** - GPT-5.1 (1.4% hallucination rate) for standard verification
-- **Tier 3: Legal Reasoning** - Claude Sonnet 4.5 (state-of-the-art for complex litigation tasks)
+- **Legal Reasoning** - Claude Sonnet 4.6 (15 commands: analysis, extraction, strategy, lookup)
+- **Advanced Drafting** - o3-pro (5 commands: draft, barbrief, counselnotes, analysis stages)
+- **Critical Verification** - GPT-5 Pro (<1% hallucination rate, 4 heavy verification commands)
+- **Standard Verification** - GPT-5.1 (1.4% hallucination rate, verification + cove-answers)
+- **Soundness Checking** - Claude Opus 4.1 (verify-soundness)
+- **Creative Ideation** - Grok 4 (brainstorm-unorthodox)
 
 | Command | Model | BYOK Required | Purpose |
 |---------|-------|--------------|---------|
-| **caseplan** | Claude Sonnet 4.5 | No | Workflow planning - START HERE! |
-| **lookup** | Google Gemini 2.5 Pro | No | Rapid case-law research with 1M context |
-| **digest** | Claude Sonnet 4.5 | No | Document analysis and issue identification |
-| **extractfacts** | Claude Sonnet 4.5 | No | Structured fact extraction with citations |
-| **brainstorm** | Claude Sonnet 4.5 / Grok 4 | No | Legal strategies + creative ideation |
-| **strategy** | Claude Sonnet 4.5 | No | State-of-the-art legal reasoning |
+| **caseplan** | Claude Sonnet 4.6 | No | Workflow planning - START HERE! |
+| **lookup** | Claude Sonnet 4.6 | No | Case-law research with 1M context |
+| **digest** | Claude Sonnet 4.6 | No | Document analysis and issue identification |
+| **extractfacts** | Claude Sonnet 4.6 | No | Structured fact extraction with citations |
+| **brainstorm** | Claude Sonnet 4.6 / Grok 4 | No | Legal strategies + creative ideation |
+| **strategy** | Claude Sonnet 4.6 | No | State-of-the-art legal reasoning |
 | **draft** | OpenAI o3-pro | **Yes** | Superior technical legal writing |
 | **counselnotes** | OpenAI o3-pro | **Yes** | Strategic advocate analysis |
 | **barbrief** | OpenAI o3-pro | **Yes** | Comprehensive barrister's briefs |
@@ -178,7 +180,7 @@ LitAssist uses a three-tier strategy with cutting-edge AI models optimized for l
 
 #### Why These Models?
 
-**Claude Sonnet 4.5** (September 2025):
+**Claude Sonnet 4.6** (February 2026):
 - Explicitly "state of the art on complex litigation tasks"
 - Superior legal domain knowledge and reasoning
 - 80% cost reduction vs previous models

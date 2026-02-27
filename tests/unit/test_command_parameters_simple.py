@@ -21,12 +21,12 @@ class TestCommandParameterConfiguration:
         configs = LLMClientFactory.list_configurations()
         assert "extractfacts" in configs
         config = configs["extractfacts"]
-        # UPDATED: Oct 2025 - Model upgraded to Sonnet 4.5
-        assert config["model"] == "anthropic/claude-sonnet-4.5"
+        # UPDATED: Feb 2026 - Model upgraded to Sonnet 4.6
+        assert config["model"] == "anthropic/claude-sonnet-4.6"
 
         # Create client and verify model
         client = LLMClientFactory.for_command("extractfacts")
-        assert client.model == "anthropic/claude-sonnet-4.5"
+        assert client.model == "anthropic/claude-sonnet-4.6"
 
     @patch("litassist.config.CONFIG")
     def test_lookup_configuration(self, mock_config):
@@ -37,12 +37,12 @@ class TestCommandParameterConfiguration:
         configs = LLMClientFactory.list_configurations()
         assert "lookup" in configs
         config = configs["lookup"]
-        assert config["model"] == "google/gemini-2.5-pro"
+        assert config["model"] == "anthropic/claude-sonnet-4.6"
         # Just verify the key exists, don't assert specific value
         assert "enforce_citations" in config
 
         client = LLMClientFactory.for_command("lookup")
-        assert client.model == "google/gemini-2.5-pro"
+        assert client.model == "anthropic/claude-sonnet-4.6"
         # Just verify the attribute exists, don't assert specific value
         assert hasattr(client, "_enforce_citations")
 
@@ -55,14 +55,14 @@ class TestCommandParameterConfiguration:
         configs = LLMClientFactory.list_configurations()
         assert "strategy" in configs
         config = configs["strategy"]
-        # UPDATED: Oct 2025 - Model upgraded to Sonnet 4.5
-        assert config["model"] == "anthropic/claude-sonnet-4.5"
+        # UPDATED: Feb 2026 - Model upgraded to Sonnet 4.6
+        assert config["model"] == "anthropic/claude-sonnet-4.6"
         assert config["thinking_effort"] == "max"
         # Just verify the key exists, don't assert specific value
         assert "enforce_citations" in config
 
         client = LLMClientFactory.for_command("strategy")
-        assert client.model == "anthropic/claude-sonnet-4.5"
+        assert client.model == "anthropic/claude-sonnet-4.6"
         # Just verify the attribute exists, don't assert specific value
         assert hasattr(client, "_enforce_citations")
         assert client.default_params.get("thinking_effort") == "max"
@@ -145,7 +145,7 @@ class TestCommandParameterConfiguration:
 
         # digest-summary and digest-issues should work
         client_summary = LLMClientFactory.for_command("digest", "summary")
-        assert client_summary.model == "anthropic/claude-sonnet-4.5"
+        assert client_summary.model == "anthropic/claude-sonnet-4.6"
 
         client_issues = LLMClientFactory.for_command("digest", "issues")
-        assert client_issues.model == "anthropic/claude-sonnet-4.5"
+        assert client_issues.model == "anthropic/claude-sonnet-4.6"

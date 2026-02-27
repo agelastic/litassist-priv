@@ -52,7 +52,7 @@ class LLMClient(LLMVerificationMixin):
     Example:
         ```python
         # Initialize client with default parameters
-        client = LLMClient("anthropic/claude-sonnet-4", temperature=0.2, top_p=0.8)
+        client = LLMClient("anthropic/claude-sonnet-4.6", temperature=0.2, top_p=0.8)
 
         # Run a completion
         content, usage = client.complete([
@@ -71,7 +71,7 @@ class LLMClient(LLMVerificationMixin):
         Initialize an LLM client for chat completions.
 
         Args:
-            model: The model name to use (e.g., 'openai/gpt-4o', 'anthropic/claude-sonnet-4').
+            model: The model name to use (e.g., 'openai/gpt-4o', 'anthropic/claude-sonnet-4.6').
             **default_params: Default decoding parameters (temperature, top_p, etc.) to use
                              for all completions unless overridden.
         """

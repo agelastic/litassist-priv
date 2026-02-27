@@ -59,19 +59,19 @@ class TestCoVeRegeneration:
                 mock_questions,
                 {"total_tokens": 50},
             )
-            mock_questions_client.model = "anthropic/claude-sonnet-4"
+            mock_questions_client.model = "anthropic/claude-sonnet-4.6"
 
             mock_answers_client.complete.return_value = (
                 mock_answers,
                 {"total_tokens": 60},
             )
-            mock_answers_client.model = "anthropic/claude-sonnet-4"
+            mock_answers_client.model = "anthropic/claude-sonnet-4.6"
 
             mock_verify_client.complete.return_value = (
                 mock_issues,
                 {"total_tokens": 40},
             )
-            mock_verify_client.model = "anthropic/claude-sonnet-4"
+            mock_verify_client.model = "anthropic/claude-sonnet-4.6"
 
             mock_final_client.complete.return_value = (
                 regenerated_content,
@@ -162,19 +162,19 @@ class TestCoVeRegeneration:
                 mock_questions,
                 {"total_tokens": 50},
             )
-            mock_questions_client.model = "anthropic/claude-sonnet-4"
+            mock_questions_client.model = "anthropic/claude-sonnet-4.6"
 
             mock_answers_client.complete.return_value = (
                 mock_answers,
                 {"total_tokens": 60},
             )
-            mock_answers_client.model = "anthropic/claude-sonnet-4"
+            mock_answers_client.model = "anthropic/claude-sonnet-4.6"
 
             mock_verify_client.complete.return_value = (
                 mock_no_issues,
                 {"total_tokens": 20},
             )
-            mock_verify_client.model = "anthropic/claude-sonnet-4"
+            mock_verify_client.model = "anthropic/claude-sonnet-4.6"
 
             # Configure factory
             def get_client(command):

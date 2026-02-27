@@ -48,7 +48,7 @@ Last updated: 18/02/2026
 ### OpenRouter Usage
 - Route all LLM calls through OpenRouter by default.
 - When adding models/providers, try OpenRouter first. If unsupported, ask how to proceed.
-- Model names with `/` indicate OpenRouter routing (e.g., `anthropic/claude-sonnet-4`).
+- Model names with `/` indicate OpenRouter routing (e.g., `anthropic/claude-sonnet-4.6`).
 - Never change model identifiers unless explicitly asked.
 
 ### Documentation Standards
@@ -113,5 +113,4 @@ Before any action confirm:
 - Do not scrape jade.io or its subdomains.
 - Do not blame providers. If something fails, check code or configuration first.
 
-When using anthropic/claude-sonnet-4.5 model via openrouter, always add disable_tools: "true" configuration parameter.
 Do not assume, make things up or guess.  

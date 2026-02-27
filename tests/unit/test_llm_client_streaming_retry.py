@@ -42,7 +42,7 @@ def test_streaming_error_retry(monkeypatch):
         mock_config.or_key = "test_key"
         mock_config.openai_key = "test_key"
 
-        client = LLMClient("anthropic/claude-sonnet-4")
+        client = LLMClient("anthropic/claude-sonnet-4.6")
 
         call_count = {"n": 0}
 
@@ -73,7 +73,7 @@ def test_streaming_error_max_retries(monkeypatch):
         mock_config.or_key = "test_key"
         mock_config.openai_key = "test_key"
 
-        client = LLMClient("anthropic/claude-sonnet-4")
+        client = LLMClient("anthropic/claude-sonnet-4.6")
 
         def always_streaming_error(*args, **kwargs):
             raise Exception("Error processing stream")
