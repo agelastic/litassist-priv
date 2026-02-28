@@ -49,7 +49,7 @@ class TestLLMClientFactory:
             client = LLMClientFactory.for_command("strategy")
 
             assert isinstance(client, LLMClient)
-            # UPDATED: Feb 2026 - Model upgraded to Sonnet 4.5
+            # UPDATED: Feb 2026 - Model upgraded to Sonnet 4.6
             assert client.model == "anthropic/claude-sonnet-4.6"
             # Just verify the attribute exists, don't assert specific value
             assert hasattr(client, "_enforce_citations")
@@ -210,12 +210,12 @@ class TestLLMClientFactoryIntegration:
 
             # Specific model assertions based on current configuration
             assert "claude-sonnet" in models["lookup"].lower()  # Uses Claude Sonnet for search
-            # UPDATED: Feb 2026 - Strategy now uses Sonnet 4.5
+            # UPDATED: Feb 2026 - Strategy now uses Sonnet 4.6
             assert (
                 "claude-sonnet" in models["strategy"].lower()
             )  # Uses Claude Sonnet 4.6 for strategy
             assert "o3-pro" in models["draft"].lower()  # Uses o3-pro for drafting
-            # UPDATED: Feb 2026 - Extractfacts upgraded to Sonnet 4.5
+            # UPDATED: Feb 2026 - Extractfacts upgraded to Sonnet 4.6
             assert (
                 "anthropic/claude-sonnet-4.6" in models["extractfacts"].lower()
             )  # Uses Claude Sonnet 4.6 for extraction
