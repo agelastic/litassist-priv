@@ -26,9 +26,9 @@ class TestBrainstormInternals:
         self.mock_analysis_client = Mock()
 
         # Set model attributes to avoid "Mock not iterable" errors
-        self.mock_orthodox_client.model = "anthropic/claude-sonnet-4"
+        self.mock_orthodox_client.model = "anthropic/claude-sonnet-4.6"
         self.mock_unorthodox_client.model = "x-ai/grok-3"
-        self.mock_analysis_client.model = "anthropic/claude-sonnet-4"
+        self.mock_analysis_client.model = "anthropic/claude-sonnet-4.6"
 
         # Set up mock responses
         self.orthodox_response = """## ORTHODOX LEGAL STRATEGIES

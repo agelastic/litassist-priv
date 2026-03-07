@@ -6,7 +6,6 @@ and output generation for the lookup command.
 """
 
 import click
-import logging
 import time
 import os
 from litassist.logging import save_command_output, log_task_event
@@ -23,7 +22,6 @@ from litassist.llm.factory import LLMClientFactory
 from litassist.prompts import PROMPTS
 from .fetchers import _fetch_url_content
 from .error_handlers import (
-    handle_llm_error,
     warn_large_content_non_gemini,
 )
 
@@ -345,47 +343,35 @@ class LookupProcessor:
             )
         
         def execute_fn(prompt):
-            """Execute the LLM call - API handler manages retries."""
+            """Execute the LLM call. Errors propagate to the truncation loop."""
             try:
-                try:
-                    log_task_event(
-                        "lookup",
-                        "generation",
-                        "llm_call",
-                        "Sending lookup prompt to LLM",
-                        {"model": client.model}
-                    )
-                except Exception:
-                    pass
-                
-                result = client.complete([
-                    {"role": "system", "content": system_content},
-                    {"role": "user", "content": prompt},
-                ])
-                
-                try:
-                    log_task_event(
-                        "lookup",
-                        "generation",
-                        "llm_response",
-                        "Lookup LLM response received",
-                        {"model": client.model}
-                    )
-                except Exception:
-                    pass
-                
-                return result
-            except Exception as e:
-                error_str = str(e)
-                logging.error(f"Lookup error details: {error_str}")
-                
-                # Let truncation manager handle token/length errors
-                if any(x in error_str.lower() for x in ['token', 'context', 'length', 'too long', 'maximum']):
-                    raise
-                
-                # For all other errors, show user-friendly message and fail
-                handle_llm_error(error_str, documents)
-                raise click.ClickException("Lookup failed - see error details above")
+                log_task_event(
+                    "lookup",
+                    "generation",
+                    "llm_call",
+                    "Sending lookup prompt to LLM",
+                    {"model": client.model}
+                )
+            except Exception:
+                pass
+
+            result = client.complete([
+                {"role": "system", "content": system_content},
+                {"role": "user", "content": prompt},
+            ])
+
+            try:
+                log_task_event(
+                    "lookup",
+                    "generation",
+                    "llm_response",
+                    "Lookup LLM response received",
+                    {"model": client.model}
+                )
+            except Exception:
+                pass
+
+            return result
         
         def log_drop(dropped_name, remaining_docs, attempt):
             """Log when a document is dropped."""
@@ -446,35 +432,24 @@ class LookupProcessor:
     ):
         """Save the lookup output with appropriate metadata."""
         if extract:
-            # Extraction mode - content is already formatted by LLM
             command_name = f"{output}_{extract}" if output else f"lookup_{extract}"
-            metadata = {"Query": question, "Mode": mode, "Extract": extract}
-            if context:
-                metadata["Context"] = context
-            if comprehensive:
-                metadata["Comprehensive"] = "True"
-
-            return save_command_output(
-                command_name,
-                content,
-                "" if output else question,
-                metadata=metadata,
-            )
         else:
-            # Non-extraction mode - save content as-is
             command_name = output if output else "lookup"
-            metadata = {"Query": question, "Mode": mode}
-            if context:
-                metadata["Context"] = context
-            if comprehensive:
-                metadata["Comprehensive"] = "True"
 
-            return save_command_output(
-                command_name,
-                content,
-                "" if output else question,
-                metadata=metadata,
-            )
+        metadata = {"Query": question, "Mode": mode}
+        if extract:
+            metadata["Extract"] = extract
+        if context:
+            metadata["Context"] = context
+        if comprehensive:
+            metadata["Comprehensive"] = "True"
+
+        return save_command_output(
+            command_name,
+            content,
+            "" if output else question,
+            metadata=metadata,
+        )
 
     def display_completion_summary(
         self, output_file, question, extract, comprehensive, context, links

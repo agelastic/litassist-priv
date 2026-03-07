@@ -18,7 +18,7 @@ class TestVerifyModes:
         with patch("litassist.config.CONFIG") as mock_config:
             mock_config.openrouter_key = "test_key"
             mock_config.openai_key = "test_key"
-            self.client = LLMClient("anthropic/claude-sonnet-4")
+            self.client = LLMClient("anthropic/claude-sonnet-4.6")
 
     @patch("litassist.llm.factory.LLMClientFactory.for_command")
     def test_light_verification_mode(self, mock_for_command):

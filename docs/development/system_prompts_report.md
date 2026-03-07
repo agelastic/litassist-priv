@@ -168,10 +168,10 @@ Used by multiple commands (verify, draft, barbrief, counselnotes, extractfacts, 
 - `verification.cove.regeneration_system` - Regenerate corrected content
 
 **Models Used** (current - updated Feb 2026):
-- Questions: Claude Sonnet 4.5 (cove-questions client)
+- Questions: Claude Sonnet 4.6 (cove-questions client)
 - Answers: GPT-5.1 (cove-answers client) - updated Nov 2025
-- Verify: Claude Sonnet 4.5 (cove-verify client)
-- Final: Claude Sonnet 4.5 (cove-final client) - moved from GPT-5 Pro Nov 2025
+- Verify: Claude Sonnet 4.6 (cove-verify client)
+- Final: Claude Sonnet 4.6 (cove-final client) - moved from GPT-5 Pro Nov 2025
 
 ### 12. Base/Fallback System Prompt
 
@@ -247,7 +247,7 @@ All prompts are defined in YAML files under `litassist/prompts/`:
 ## Key Changes Since January 2025
 
 ### October 2025 Model Upgrade
-- **Three-Tier Strategy**: Critical verification (GPT-5 Pro), Fast verification (GPT-5), Legal reasoning (Claude Sonnet 4.5)
+- **Three-Tier Strategy**: Critical verification (GPT-5 Pro), Fast verification (GPT-5), Legal reasoning (Claude Sonnet 4.6)
 - **Verification Commands**: Split into verification, verification-heavy, verification-light
 - **CoVe Models**: Now uses GPT-5 family for answers and final stages (accuracy improvement)
 

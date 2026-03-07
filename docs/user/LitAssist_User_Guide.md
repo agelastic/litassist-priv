@@ -552,36 +552,39 @@ litassist verify draft.txt --heavy --cove --cove-reference 'exhibits/*.pdf'
 
 ## Model Configuration
 
-### Three-Tier Strategy
+### Task-Based Model Selection
 
-| Tier | Purpose | Models | Cost |
-|------|---------|--------|------|
-| Critical | Verification, soundness checks | GPT-5 Pro, Claude Opus 4.1 | Highest |
-| Fast | Standard verification, CoVe answers | GPT-5.1 | Medium |
-| Legal Reasoning | Most commands (analysis, drafting, extraction) | Claude Sonnet 4.5, o3-pro, Grok-4, Gemini 2.5 Pro | Varies |
+| Role | Purpose | Model | Commands |
+|------|---------|-------|----------|
+| Legal Reasoning | Analysis, extraction, strategy, lookup | Claude Sonnet 4.6 | 15 |
+| Advanced Drafting | Documents, briefs, deep analysis | o3-pro | 5 |
+| Critical Verification | Highest-stakes soundness checks | GPT-5 Pro | 4 |
+| Standard Verification | Self-critique, CoVe answers | GPT-5.1 | 2 |
+| Soundness Checking | Logical soundness analysis | Claude Opus 4.1 | 1 |
+| Creative Ideation | Unorthodox brainstorming | Grok 4 | 1 |
 
 ### Command-to-Model Assignments
 
 | Command | Model | BYOK Required |
 |---------|-------|---------------|
-| caseplan | Claude Sonnet 4.5 | No |
-| lookup | Gemini 2.5 Pro | No |
-| digest | Claude Sonnet 4.5 | No |
-| extractfacts | Claude Sonnet 4.5 | No |
-| brainstorm (orthodox) | Claude Sonnet 4.5 | No |
-| brainstorm (unorthodox) | Grok-4 | No |
+| caseplan | Claude Sonnet 4.6 | No |
+| lookup | Claude Sonnet 4.6 | No |
+| digest | Claude Sonnet 4.6 | No |
+| extractfacts | Claude Sonnet 4.6 | No |
+| brainstorm (orthodox) | Claude Sonnet 4.6 | No |
+| brainstorm (unorthodox) | Grok 4 | No |
 | brainstorm (analysis) | o3-pro | Yes |
-| strategy | Claude Sonnet 4.5 | No |
+| strategy | Claude Sonnet 4.6 | No |
 | strategy (analysis) | o3-pro | Yes |
 | draft | o3-pro | Yes |
 | counselnotes | o3-pro | Yes |
 | barbrief | o3-pro | Yes |
-| verification (standard) | GPT-5.1 | No |
-| verification (heavy) | GPT-5 Pro | No |
+| verification (standard) | GPT-5.1 | Yes |
+| verification (heavy) | GPT-5 Pro | Yes |
 | verify-soundness | Claude Opus 4.1 | No |
-| verify-soundness (heavy) | GPT-5 Pro | No |
-| verify-reasoning | Claude Sonnet 4.5 | No |
-| CoVe questions/verify/final | Claude Sonnet 4.5 | No |
+| verify-soundness (heavy) | GPT-5 Pro | Yes |
+| verify-reasoning | Claude Sonnet 4.6 | No |
+| CoVe questions/verify/final | Claude Sonnet 4.6 | No |
 | CoVe answers | GPT-5.1 | No |
 | CoVe answers (heavy) | GPT-5 Pro | No |
 
