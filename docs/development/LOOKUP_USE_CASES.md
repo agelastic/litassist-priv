@@ -1,16 +1,18 @@
 # Lookup Command Use Cases and Workflows
 
-## Status Update (June 2025)
-
-- Lookup is now Jade.io-only (no Google CSE).
-- All citations are verified in real time against AustLII; warnings are provided for unverifiable citations.
-- The --comprehensive flag is available for exhaustive analysis (up to 40 sources).
-- Extract options (--extract citations|principles|checklist) and structured output are fully supported.
+Last updated: 18/02/2026
 
 ## Overview
-This document provides real-world examples of how lawyers use the lookup command in their daily practice, showing current pain points and how the minimal enhancements would help.
 
-**Note:** The lookup command now uses Jade.io exclusively for case law search, with all citations verified in real time against AustLII. The --comprehensive flag enables exhaustive analysis, and warnings are provided for any unverifiable citations.
+This document provides real-world examples of how lawyers use the lookup command in daily practice.
+
+The lookup command searches Jade and AustLII via Google CSE and uses `google/gemini-2.5-pro` to synthesise results. Key options:
+
+- `--mode irac` (default) — structured IRAC analysis; `--mode broad` — wider discursive answer
+- `--extract citations|principles|checklist` — extract a specific output type
+- `--comprehensive` — exhaustive analysis using up to 40 sources
+- `--context` — additional context string appended to the query
+- `--output` — save result to a named file
 
 ## Criminal Law Use Cases
 
@@ -18,14 +20,14 @@ This document provides real-world examples of how lawyers use the lookup command
 
 **Scenario**: Defence lawyer needs authorities on exceptional circumstances for serious offences.
 
-**Current Workflow**:
+**Without --extract**:
 ```bash
 litassist lookup "exceptional circumstances bail serious offences NSW"
 ```
 *Result*: Wall of text mixing cases, legislation, and commentary
 *Pain*: Manually extract each case citation, copy to Word, format properly
 
-**Enhanced Workflow**:
+**With --extract**:
 ```bash
 litassist lookup "exceptional circumstances bail serious offences NSW" --extract citations
 ```
@@ -43,7 +45,7 @@ R v Young [2019] NSWSC 1345
 
 **Scenario**: Client charged with assault, need to explain self-defence requirements.
 
-**Current Workflow**:
+**Without --extract**:
 ```bash
 litassist lookup "self defence assault NSW elements"
 # Read through output
@@ -51,18 +53,18 @@ litassist lookup "self defence assault NSW elements"
 # Draft advice letter
 ```
 
-**Enhanced Workflow**:
+**With --extract**:
 ```bash
 litassist lookup "self defence assault NSW elements" --extract checklist
 ```
 *Result*:
 ```
 PRACTICAL CHECKLIST:
-□ Accused believed conduct necessary to defend self/another
-□ Conduct was reasonable response in circumstances as accused perceived
-□ Accused's belief based on reasonable grounds
-□ No opportunity to retreat safely
-□ Force used was proportionate to threat
+[] Accused believed conduct necessary to defend self/another
+[] Conduct was reasonable response in circumstances as accused perceived
+[] Accused's belief based on reasonable grounds
+[] No opportunity to retreat safely
+[] Force used was proportionate to threat
 ```
 *Benefit*: Use checklist in client conference and file notes
 
@@ -70,7 +72,11 @@ PRACTICAL CHECKLIST:
 
 **Scenario**: Need sentencing range for drug supply offences.
 
-**Enhanced Output Structure**:
+**With --extract**:
+```bash
+litassist lookup "sentencing range drug supply NSW" --extract principles
+```
+*Example output structure*:
 ```
 === SENTENCING PRINCIPLES ===
 1. Objective seriousness assessed by quantity and role
@@ -87,9 +93,9 @@ Mid-level supply: 2-4 years
 - R v Jones [2020] NSWDC 789 - 3 years, NPP 18 months
 
 === MITIGATING FACTORS ===
-□ Early guilty plea (25% discount)
-□ Assistance to authorities
-□ Drug rehabilitation efforts
+[] Early guilty plea (25% discount)
+[] Assistance to authorities
+[] Drug rehabilitation efforts
 ```
 
 ## Family Law Use Cases
@@ -98,7 +104,7 @@ Mid-level supply: 2-4 years
 
 **Scenario**: Parent wants to relocate with children interstate.
 
-**Current Workflow**:
+**Without --extract**:
 ```bash
 litassist lookup "relocation best interests child factors"
 # Scroll through pages of text
@@ -106,7 +112,7 @@ litassist lookup "relocation best interests child factors"
 # Cross-reference with client's circumstances
 ```
 
-**Enhanced Workflow**:
+**With --extract**:
 ```bash
 litassist lookup "relocation best interests child factors" --extract principles
 ```
@@ -129,7 +135,11 @@ LEGAL PRINCIPLES:
 
 ### Use Case 5: Property Settlement Factors
 
-**Enhanced Output Structure**:
+**With --extract**:
+```bash
+litassist lookup "property settlement s79 factors contributions" --extract principles
+```
+*Example output structure*:
 ```
 === S.79 FACTORS ===
 1. Identify and value property pool
@@ -137,15 +147,15 @@ LEGAL PRINCIPLES:
 
 2. Assess contributions (s.79(4)(a)-(c))
    - Financial contributions
-   - Non-financial contributions  
+   - Non-financial contributions
    - Homemaker contributions
    - Post-separation contributions
 
 3. Future needs factors (s.75(2))
-   □ Age and health
-   □ Income and earning capacity
-   □ Care of children
-   □ Length of marriage
+   [] Age and health
+   [] Income and earning capacity
+   [] Care of children
+   [] Length of marriage
 
 === RECENT APPROACH ===
 High wealth cases: Detailed contributions analysis
@@ -158,31 +168,31 @@ High wealth cases: Detailed contributions analysis
 
 **Scenario**: Advising on potential breach of director duties.
 
-**Enhanced Workflow**:
+**With --extract**:
 ```bash
 litassist lookup "breach director duties insolvent trading" --extract checklist
 ```
 *Result*:
 ```
 DIRECTOR DUTIES CHECKLIST:
-□ Company incurred debt
-□ Company was insolvent at time OR became insolvent
-□ Reasonable grounds to suspect insolvency
-□ Director aware OR ought to have been aware
-□ Defence: Reasonable grounds to expect solvency
-□ Defence: Reasonable steps to prevent debt
+[] Company incurred debt
+[] Company was insolvent at time OR became insolvent
+[] Reasonable grounds to suspect insolvency
+[] Director aware OR ought to have been aware
+[] Defence: Reasonable grounds to expect solvency
+[] Defence: Reasonable steps to prevent debt
 
 Key Dates to Establish:
-□ When insolvency began
-□ When each debt incurred
-□ When director knew/should have known
+[] When insolvency began
+[] When each debt incurred
+[] When director knew/should have known
 ```
 
 ### Use Case 7: Contract Dispute Research
 
-**Current Pain Point**: Getting clean citations for pleadings
+**Pain point**: Getting clean citations for pleadings.
 
-**Enhanced Workflow**:
+**With --extract**:
 ```bash
 litassist lookup "repudiation contract principles" --extract citations
 # Then in draft command:
@@ -196,7 +206,11 @@ litassist draft "statement of claim for repudiation"
 
 **Scenario**: Initial advice on medical negligence claim.
 
-**Enhanced Output Structure**:
+**With --extract**:
+```bash
+litassist lookup "medical negligence elements duty breach causation NSW" --extract principles
+```
+*Example output structure*:
 ```
 === NEGLIGENCE ELEMENTS ===
 1. Duty of care
@@ -223,13 +237,13 @@ Long-stop 12 years - s.50C(2)
 
 ### Use Case 9: Discovery Objections
 
-**Enhanced Workflow**:
+**With --extract**:
 ```bash
 litassist lookup "proportionality discovery Federal Court" --extract principles
 ```
 *Use in*:
 ```bash
-litassist draft "objections to discovery categories" 
+litassist draft "objections to discovery categories"
 # Copy principles into draft for authority
 ```
 
@@ -239,7 +253,11 @@ litassist draft "objections to discovery categories"
 
 **Scenario**: Challenging immigration decision.
 
-**Enhanced Output Structure**:
+**With --extract**:
+```bash
+litassist lookup "judicial review grounds immigration jurisdictional error" --extract checklist
+```
+*Example output structure*:
 ```
 === GROUNDS FOR REVIEW ===
 1. Jurisdictional error
@@ -251,10 +269,10 @@ litassist draft "objections to discovery categories"
    - Kioa v West [1985] HCA 81
 
 === PROCEDURAL REQUIREMENTS ===
-□ File within 35 days - s.477 Migration Act
-□ Form 62 - Federal Circuit Court
-□ Supporting affidavit
-□ $1,000 filing fee
+[] File within 35 days - s.477 Migration Act
+[] Form 62 - Federal Circuit Court
+[] Supporting affidavit
+[] $1,000 filing fee
 ```
 
 ## Workflow Integration Examples
@@ -303,37 +321,24 @@ litassist lookup "Calderbank offers costs consequences" --extract principles
 litassist strategy case_facts.txt --outcome "Settlement $200-300k"
 ```
 
-## Benefits of Minimal Enhancement
+## Benefits
 
 ### Time Savings
-- **Current**: 15-20 minutes to extract citations from lookup
-- **Enhanced**: 30 seconds with --extract citations
+- Manual citation extraction from unstructured output: 15-20 minutes
+- With `--extract citations`: under 30 seconds
 
 ### Accuracy
-- **Current**: Manual extraction risks missing citations
-- **Enhanced**: All citations captured systematically
+- Manual extraction risks missing citations; `--extract` captures all systematically
 
 ### Usability
-- **Current**: Need to read entire output to find what you need
-- **Enhanced**: Jump directly to relevant section
+- Plain output requires reading in full; `--extract` jumps directly to the relevant section
 
 ### Integration
-- **Current**: Completely manual transfer to other documents
-- **Enhanced**: Structured sections make copy-paste reliable
+- Structured sections make copy-paste into submissions and file notes reliable
 
 ## Common Patterns
 
-1. **Citation Extraction**: Most common use of --extract citations
-2. **Checklist Generation**: Popular for procedural matters
-3. **Principles Summary**: Used for advice letters
-4. **Quick Reference**: Structured output saved for future use
-
-## Future Possibilities
-
-Without overengineering, these use cases suggest future enhancements:
-1. Save extracted citations to a file for reuse
-2. Tag citations by court level
-3. Date-sort cases for recency
-4. Simple templates for common queries
-
-But the minimal enhancement provides 80% of the value with 20% of the complexity.
+1. **Citation Extraction**: `--extract citations` — most common; use for pleadings and submissions
+2. **Checklist Generation**: `--extract checklist` — procedural matters and client conferences
+3. **Principles Summary**: `--extract principles` — advice letters and affidavit structure
+4. **Deep Research**: `--comprehensive` — exhaustive analysis when thoroughness matters

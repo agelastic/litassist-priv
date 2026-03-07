@@ -96,67 +96,50 @@ graph TD
 
 ## LLMClientFactory Configuration Pattern
 
-**October 2025 Update:** Major model upgrade implementing three-tier strategy for optimal accuracy and cost-efficiency. See `docs/development/claude_llm_model_recommendations_oct_2025.md` for complete analysis and implementation details.
+### Task-Based Model Selection
 
-### Three-Tier Model Strategy
+Each command is assigned the model best suited to its task. Six models serve distinct roles:
 
-**Tier 1: Critical Verification (GPT-5 Pro)**
-- **Purpose**: Maximum accuracy for critical legal soundness checking
-- **Hallucination Rate**: <1% (industry-leading)
-- **Commands**: verify-soundness, verification-heavy, cove-final
-- **Cost**: Premium, justified by superior accuracy
-- **BYOK**: Required (Tier 4+ OpenAI API key)
-
-**Tier 2: Fast Verification (GPT-5)**
-- **Purpose**: Balanced speed and accuracy for standard verification
-- **Hallucination Rate**: 1.4-1.6%
-- **Commands**: verification, cove-answers
-- **Cost**: Moderate
-- **BYOK**: Required (Tier 4+ OpenAI API key)
-
-**Tier 3: Legal Reasoning (Claude Sonnet 4.5)**
-- **Purpose**: State-of-the-art legal domain knowledge and reasoning
-- **Hallucination Rate**: ~2-3%
-- **Commands**: 14 commands including strategy, extractfacts, digest, caseplan, brainstorm-orthodox
-- **Cost**: 80% reduction vs Claude Opus 4.1 ($3/$15 vs $15/$75)
-- **Rationale**: Explicitly "state of the art on complex litigation tasks" per Anthropic
+- **Claude Sonnet 4.6** (15 commands): Legal reasoning, extraction, analysis, lookup
+- **OpenAI o3-pro** (5 commands): Drafting, barbrief, counselnotes, analysis stages
+- **GPT-5 Pro** (4 commands): Critical verification (<1% hallucination)
+- **GPT-5.1** (2 commands): Standard verification (1.4-1.6% hallucination)
+- **Claude Opus 4.1** (1 command): verify-soundness
+- **Grok 4** (1 command): brainstorm-unorthodox (creative ideation)
 
 ### Current Command Configurations
 
 **Strategic Analysis:**
-- **CounselNotes**: `openai/o3-pro`, reasoning_effort=high, max_completion_tokens=8192
-- **Strategy**: `anthropic/claude-sonnet-4.5`, temp=0.2, top_p=0.8, thinking_effort=max
-- **ExtractFacts**: `anthropic/claude-sonnet-4.5`, temp=0, top_p=0.15, thinking_effort=high
-- **Barbrief**: `openai/o3-pro`, reasoning_effort=high, max_completion_tokens=32768
+- **CounselNotes**: `openai/o3-pro`, thinking_effort=high
+- **Strategy**: `anthropic/claude-sonnet-4.6`, temp=0.7, top_p=0.95, thinking_effort=max
+- **ExtractFacts**: `anthropic/claude-sonnet-4.6`, temp=0, top_p=0.15, thinking_effort=high
+- **Barbrief**: `openai/o3-pro`, thinking_effort=high
 
 **Brainstorming:**
-- **Brainstorm-Orthodox**: `anthropic/claude-sonnet-4.5`, temp=0.3, top_p=0.7, thinking_effort=medium
-- **Brainstorm-Unorthodox**: `x-ai/grok-4`, temp=0.9, top_p=0.95
-- **Brainstorm-Analysis**: `openai/o3-pro`, reasoning_effort=high, max_completion_tokens=8192
+- **Brainstorm-Orthodox**: `anthropic/claude-sonnet-4.6`, temp=0.7, top_p=0.95, thinking_effort=medium
+- **Brainstorm-Unorthodox**: `x-ai/grok-4`, temp=0.8, top_p=0.95
+- **Brainstorm-Analysis**: `openai/o3-pro`, thinking_effort=high
 
 **Verification:**
 - **Verification-Heavy** (Critical): `openai/gpt-5-pro`, temp=0.2, top_p=0.3, thinking_effort=max
-- **Verification** (Standard): `openai/gpt-5`, temp=0.2, top_p=0.3
-- **Verification-Light** (Spelling): `anthropic/claude-sonnet-4.5`, temp=0, top_p=0.2
+- **Verification** (Standard): `openai/gpt-5.1`, temp=0.2, top_p=0.3, thinking_effort=medium
+- **Verification-Light** (Spelling): `anthropic/claude-sonnet-4.6`, temp=0.2, top_p=0.2
 
 **Document Processing:**
-- **Digest-Summary**: `anthropic/claude-sonnet-4.5`, temp=0.2, top_p=0.3, thinking_effort=medium
-- **Digest-Issues**: `anthropic/claude-sonnet-4.5`, temp=0.2, top_p=0.5, thinking_effort=high
-- **Lookup**: `google/gemini-2.5-pro`, temp=0.2, top_p=0.4 (1M context window)
+- **Digest-Summary**: `anthropic/claude-sonnet-4.6`, temp=0.2, top_p=0.3, thinking_effort=medium
+- **Digest-Issues**: `anthropic/claude-sonnet-4.6`, temp=0.5, top_p=0.8, thinking_effort=high
+- **Lookup**: `anthropic/claude-sonnet-4.6`, temp=0.2, top_p=0.4 (1M context)
 
 **Configuration Philosophy:**
-- Three-tier strategy optimizes accuracy vs cost based on task criticality
-- GPT-5 family for maximum verification accuracy where needed
-- Claude Sonnet 4.5 for superior legal reasoning at reduced cost
+- Task-based selection: each command gets the model best suited to its job
+- GPT-5 family for verification where low hallucination rates justify premium cost
+- Claude Sonnet 4.6 for legal reasoning at $3/$15 per M tokens
 - o3-pro for technical drafting and comprehensive analysis
 - Thinking effort parameters enable extended reasoning on complex tasks
-- All configurations require force verification for professional legal accountability
 
 **Impact:**
-- 40-50% overall cost reduction across application
-- Superior legal reasoning quality (state-of-the-art for litigation)
+- 40-50% cost reduction vs single-model approach
 - <1.6% hallucination rate on all verification tasks
-- 380 unit tests passing with all new configurations
 
 **Brainstorm Verification Behavior (Updated November 2025):**
 - Verification is ALWAYS performed on all brainstorm outputs automatically

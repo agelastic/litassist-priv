@@ -1,5 +1,7 @@
 # LitAssist Demo: The Case of the Catastrophic Cat
 
+Last updated: 23/07/2025
+
 ## "My neighbor's cat is destroying my roses..."
 
 What starts as a simple complaint about a troublesome feline named Mr. Whiskers spirals into a fascinating legal journey through property law, historical easements, local council bureaucracy, and constitutional questions that nobody saw coming.

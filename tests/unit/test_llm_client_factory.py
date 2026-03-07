@@ -18,7 +18,7 @@ class TestLLMClientFactory:
             client = LLMClientFactory.for_command("lookup")
 
             assert isinstance(client, LLMClient)
-            assert client.model == "google/gemini-2.5-pro"
+            assert client.model == "anthropic/claude-sonnet-4.6"
             # Just verify the attribute exists, don't assert specific value
             assert hasattr(client, "_enforce_citations")
 
@@ -49,8 +49,8 @@ class TestLLMClientFactory:
             client = LLMClientFactory.for_command("strategy")
 
             assert isinstance(client, LLMClient)
-            # UPDATED: Oct 2025 - Model upgraded to Sonnet 4.5
-            assert client.model == "anthropic/claude-sonnet-4.5"
+            # UPDATED: Feb 2026 - Model upgraded to Sonnet 4.6
+            assert client.model == "anthropic/claude-sonnet-4.6"
             # Just verify the attribute exists, don't assert specific value
             assert hasattr(client, "_enforce_citations")
 
@@ -127,11 +127,11 @@ class TestLLMClientFactory:
             mock_config.openrouter_key = "test_key"
             mock_config.openai_key = "test_openai_key"
 
-            # UPDATED: Oct 2025 - Test claude-sonnet-4.5 model (strategy)
+            # UPDATED: Feb 2026 - Test claude-sonnet-4.6 model (strategy)
             strategy_client = LLMClientFactory.for_command("strategy")
             strategy_params = strategy_client.default_params
 
-            # claude-sonnet-4.5 should have thinking_effort and standard params
+            # claude-sonnet-4.6 should have thinking_effort and standard params
             assert "thinking_effort" in strategy_params
             assert "temperature" in strategy_params  # Claude supports temperature
             assert "top_p" in strategy_params  # Claude supports top_p
@@ -145,19 +145,6 @@ class TestLLMClientFactory:
             # o3-pro should have thinking_effort for draft as well
             assert "thinking_effort" in draft_params
 
-    def test_environment_variable_override(self):
-        """Test that environment variables can override model selection."""
-        with patch("litassist.config.CONFIG") as mock_config:
-            mock_config.openrouter_key = "test_key"
-            mock_config.openai_key = "test_openai_key"
-
-            with patch.dict(
-                "os.environ",
-                {"LITASSIST_LOOKUP_MODEL": "anthropic/claude-3-5-sonnet-20241022"},
-            ):
-                client = LLMClientFactory.for_command("lookup")
-                # Environment variable should override the model
-                assert client.model == "anthropic/claude-3-5-sonnet-20241022"
 
 
 class TestLLMClientFactoryIntegration:
@@ -222,13 +209,13 @@ class TestLLMClientFactoryIntegration:
                 models[command] = client.model
 
             # Specific model assertions based on current configuration
-            assert "gemini" in models["lookup"].lower()  # Uses Gemini for search
-            # UPDATED: Oct 2025 - Strategy now uses Sonnet 4.5
+            assert "claude-sonnet" in models["lookup"].lower()  # Uses Claude Sonnet for search
+            # UPDATED: Feb 2026 - Strategy now uses Sonnet 4.6
             assert (
                 "claude-sonnet" in models["strategy"].lower()
-            )  # Uses Claude Sonnet 4.5 for strategy
+            )  # Uses Claude Sonnet 4.6 for strategy
             assert "o3-pro" in models["draft"].lower()  # Uses o3-pro for drafting
-            # UPDATED: Oct 2025 - Extractfacts upgraded to Sonnet 4.5
+            # UPDATED: Feb 2026 - Extractfacts upgraded to Sonnet 4.6
             assert (
-                "anthropic/claude-sonnet-4.5" in models["extractfacts"].lower()
-            )  # Uses Claude Sonnet 4.5 for extraction
+                "anthropic/claude-sonnet-4.6" in models["extractfacts"].lower()
+            )  # Uses Claude Sonnet 4.6 for extraction

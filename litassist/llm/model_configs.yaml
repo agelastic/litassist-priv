@@ -1,10 +1,10 @@
 ---
 # LLM Model Configurations for Commands
-# Last updated: 2025-10-24
+# Last updated: 2026-02-26
 # NO FALLBACKS - Missing keys will raise KeyError
 
 extractfacts:
-  model: "anthropic/claude-sonnet-4.5"
+  model: "anthropic/claude-sonnet-4.6"
   temperature: 0
   top_p: 0.15
   thinking_effort: "high"
@@ -12,7 +12,7 @@ extractfacts:
   disable_tools: true
 
 strategy:
-  model: "anthropic/claude-sonnet-4.5"
+  model: "anthropic/claude-sonnet-4.6"
   temperature: 0.7
   top_p: 0.95
   thinking_effort: "max"
@@ -28,7 +28,7 @@ strategy-analysis:
   disable_tools: true
 
 brainstorm-orthodox:
-  model: "anthropic/claude-sonnet-4.5"
+  model: "anthropic/claude-sonnet-4.6"
   temperature: 0.7
   top_p: 0.95
   thinking_effort: "medium"
@@ -60,21 +60,21 @@ draft:
   disable_tools: true
 
 digest-summary:
-  model: "anthropic/claude-sonnet-4.5"
+  model: "anthropic/claude-sonnet-4.6"
   temperature: 0.2
   top_p: 0.3
   thinking_effort: "medium"
   disable_tools: true
 
 digest-issues:
-  model: "anthropic/claude-sonnet-4.5"
+  model: "anthropic/claude-sonnet-4.6"
   temperature: 0.5
   top_p: 0.8
   thinking_effort: "high"
   disable_tools: true
 
 lookup:
-  model: "google/gemini-2.5-pro"
+  model: "anthropic/claude-sonnet-4.6"
   temperature: 0.2
   top_p: 0.4
   thinking_effort: "low"
@@ -91,7 +91,7 @@ verification:
   disable_tools: true
 
 verification-light:
-  model: "anthropic/claude-sonnet-4.5"
+  model: "anthropic/claude-sonnet-4.6"
   temperature: 0.2
   top_p: 0.2
   thinking_effort: "medium"
@@ -107,7 +107,7 @@ verification-heavy:
   disable_tools: true
 
 verify-reasoning:
-  model: "anthropic/claude-sonnet-4.5"
+  model: "anthropic/claude-sonnet-4.6"
   temperature: 0.2
   top_p: 0.3
   thinking_effort: "high"
@@ -157,21 +157,21 @@ barbrief:
   disable_tools: true
 
 caseplan:
-  model: "anthropic/claude-sonnet-4.5"
+  model: "anthropic/claude-sonnet-4.6"
   temperature: 0.7
   top_p: 0.95
   enforce_citations: false
   disable_tools: true
 
 caseplan-assessment:
-  model: "anthropic/claude-sonnet-4.5"
+  model: "anthropic/claude-sonnet-4.6"
   temperature: 0.7
   top_p: 0.95
   enforce_citations: false
   disable_tools: true
 
 cove:
-  model: "anthropic/claude-sonnet-4.5"
+  model: "anthropic/claude-sonnet-4.6"
   temperature: 0.7
   top_p: 0.95
   thinking_effort: "medium"
@@ -179,7 +179,7 @@ cove:
   disable_tools: true
 
 cove-questions:
-  model: "anthropic/claude-sonnet-4.5"
+  model: "anthropic/claude-sonnet-4.6"
   temperature: 0.6
   top_p: 0.95
   thinking_effort: "low"
@@ -195,7 +195,7 @@ cove-answers:
   disable_tools: true
 
 cove-verify:
-  model: "anthropic/claude-sonnet-4.5"
+  model: "anthropic/claude-sonnet-4.6"
   temperature: 0.2
   top_p: 0.3
   thinking_effort: "high"
@@ -211,7 +211,7 @@ cove-answers-heavy:
   disable_tools: true
 
 cove-final:
-  model: "anthropic/claude-sonnet-4.5"
+  model: "anthropic/claude-sonnet-4.6"
   temperature: 0.2
   top_p: 0.4
   thinking_effort: "medium"

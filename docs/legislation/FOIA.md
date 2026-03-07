@@ -1,5 +1,7 @@
 Title: Freedom of Information Act 1982
 
+Last updated: 11/09/2025
+
 URL Source: https://www.legislation.gov.au/C2004A02562/2025-02-21/2025-02-21/text/original/pdf
 
 Markdown Content:

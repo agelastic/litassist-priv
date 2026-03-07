@@ -1,5 +1,7 @@
 # LitAssist Package Architecture
 
+Last updated: 09/07/2025
+
 This directory contains the modular implementation of LitAssist, providing a structured approach to handling Australian legal workflows through various specialized commands.
 
 ## Package Structure

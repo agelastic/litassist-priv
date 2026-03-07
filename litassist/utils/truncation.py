@@ -74,8 +74,10 @@ class TruncationManager:
         """
         error_str = str(error).lower()
         token_error_keywords = [
-            'token', 'context', 'length', 'too long', 'maximum',
-            'exceeded', 'limit', 'too many tokens'
+            'token limit', 'context length', 'too long', 'too large',
+            'too many tokens', 'maximum context', 'prompt is too long',
+            'payload too large', 'request entity too large',
+            '413',
         ]
         return any(keyword in error_str for keyword in token_error_keywords)
 

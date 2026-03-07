@@ -275,12 +275,12 @@ def test_litassist_models(model_type="fast"):
 
         # Fast models - tested by default with --all
         fast_models = {
-            "extractfacts": "anthropic/claude-sonnet-4.5",
-            "strategy": "anthropic/claude-sonnet-4.5",
-            "brainstorm-orthodox": "anthropic/claude-sonnet-4.5",
+            "extractfacts": "anthropic/claude-sonnet-4.6",
+            "strategy": "anthropic/claude-sonnet-4.6",
+            "brainstorm-orthodox": "anthropic/claude-sonnet-4.6",
             "brainstorm-unorthodox": "x-ai/grok-4",
-            "digest-summary": "anthropic/claude-sonnet-4.5",
-            "lookup": "google/gemini-2.5-pro",
+            "digest-summary": "anthropic/claude-sonnet-4.6",
+            "lookup": "anthropic/claude-sonnet-4.6",
         }
 
         # Slow/expensive models - only tested with --slow or --openrouter
@@ -426,7 +426,7 @@ def test_openrouter_australian_judgment():
         client = OpenAI(api_key=OR_KEY, base_url=OR_BASE)
 
         # Use a model that LitAssist actually uses
-        model = "anthropic/claude-sonnet-4.5"
+        model = "anthropic/claude-sonnet-4.6"
         print(f"Testing Australian judgment format with {model} via OpenRouter...")
 
         # Test with a more explicit request for Australian judgment format
@@ -506,7 +506,7 @@ def test_openrouter_australian_judgment():
         result.failure(
             e,
             context={
-                "model": model if "model" in locals() else "anthropic/claude-sonnet-4",
+                "model": model if "model" in locals() else "anthropic/claude-sonnet-4.6",
                 "api_base": OR_BASE,
                 "request_type": "australian_judgment_format",
             },
@@ -533,7 +533,7 @@ def test_openrouter_case_citation():
         client = OpenAI(api_key=OR_KEY, base_url=OR_BASE)
 
         # Use a model that LitAssist actually uses
-        model = "anthropic/claude-sonnet-4.5"
+        model = "anthropic/claude-sonnet-4.6"
         print(f"Testing Australian case citation format with {model} via OpenRouter...")
 
         # Test with a request to format citations correctly in Australian style
@@ -615,7 +615,7 @@ def test_openrouter_case_citation():
         result.failure(
             e,
             context={
-                "model": model if "model" in locals() else "anthropic/claude-sonnet-4",
+                "model": model if "model" in locals() else "anthropic/claude-sonnet-4.6",
                 "api_base": OR_BASE,
                 "request_type": "australian_citation_format",
             },
@@ -1402,7 +1402,7 @@ def test_verification_system():
         # Test with real LLM calls to measure actual verification effectiveness
         # Use OpenRouter to access Claude for verification testing
         print("Initializing Claude for verification effectiveness testing...")
-        test_client = LLMClient("anthropic/claude-sonnet-4.5", temperature=0.2)
+        test_client = LLMClient("anthropic/claude-sonnet-4.6", temperature=0.2)
 
         # Test cases with known issues that verification should catch
         test_cases = [
@@ -1519,7 +1519,7 @@ def test_verification_system():
                 f"Verification effectiveness score ({quality_score}/100) below threshold. Results: {verification_results}",
                 context={
                     "api_base": OR_BASE,
-                    "test_client_model": "anthropic/claude-sonnet-4",
+                    "test_client_model": "anthropic/claude-sonnet-4.6",
                     "quality_score": quality_score,
                     "test_cases": [tc["name"] for tc in test_cases],
                 },

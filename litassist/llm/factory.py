@@ -5,13 +5,10 @@ This module contains the LLMClientFactory class that centralizes all model
 and parameter configurations for each command.
 """
 
-import os
 import logging
 import yaml
 from pathlib import Path
 from typing import Dict, Any
-
-from litassist.utils.formatting import info_message
 
 # Import LLMClient - must be imported after the class is defined in client.py
 # This creates a one-way dependency: factory -> client
@@ -123,21 +120,6 @@ class LLMClientFactory:
         # Extract special flags
         enforce_citations = config.pop("enforce_citations", False)
         disable_tools = config.pop("disable_tools", False)
-
-        # Remove premium_model key if present (no longer needed)
-        config.pop("premium_model", None)
-
-        # Allow environment variable overrides for model selection
-        env_model_key = f"LITASSIST_{command_name.upper()}_MODEL"
-        if sub_type:
-            env_model_key = f"LITASSIST_{command_name.upper()}_{sub_type.upper()}_MODEL"
-
-        env_model = os.environ.get(env_model_key)
-        if env_model:
-            config["model"] = env_model
-            # Suppress informational message during pytest runs
-            if not os.environ.get("PYTEST_CURRENT_TEST"):
-                logger.info(info_message(f"Using model from environment: {env_model}"))
 
         # Apply any provided overrides
         config.update(overrides)

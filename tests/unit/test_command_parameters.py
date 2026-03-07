@@ -25,7 +25,7 @@ class TestCommandParameterPropagation:
             "Test response",
             {"total_tokens": 100},
         )
-        self.mock_client.model = "anthropic/claude-sonnet-4"  # Add model attribute
+        self.mock_client.model = "anthropic/claude-sonnet-4.6"  # Add model attribute
         self.mock_client.verify.return_value = ""  # Add verify method
         self.mock_client.validate_citations.return_value = []  # Add validate_citations method
 
@@ -80,9 +80,9 @@ class TestCommandParameterPropagation:
         # Check that LLMClientFactory would create correct model
         from litassist.llm.factory import LLMClientFactory
 
-        # UPDATED: Oct 2025 - Model upgraded to Sonnet 4.5
+        # UPDATED: Feb 2026 - Model upgraded to Sonnet 4.6
         configs = LLMClientFactory.list_configurations()
-        assert configs["extractfacts"]["model"] == "anthropic/claude-sonnet-4.5"
+        assert configs["extractfacts"]["model"] == "anthropic/claude-sonnet-4.6"
 
     @patch("litassist.llm.factory.LLMClientFactory.for_command")
     @patch("litassist.utils.file_ops.read_document")
@@ -146,7 +146,7 @@ class TestCommandParameterPropagation:
     @patch("litassist.llm.factory.LLMClientFactory.for_command")
     @patch("litassist.commands.lookup.search.get_config")
     def test_lookup_command_parameters(self, mock_get_config, mock_factory, mock_sleep):
-        """Test lookup command uses correct model (gemini-2.5-pro)."""
+        """Test lookup command uses correct model (claude-sonnet-4.6)."""
         mock_factory.return_value = self.mock_client
         mock_config = Mock()
         mock_config.g_key = "test_google_key"
@@ -188,7 +188,7 @@ class TestCommandParameterPropagation:
         from litassist.llm.factory import LLMClientFactory
 
         configs = LLMClientFactory.list_configurations()
-        assert configs["lookup"]["model"] == "google/gemini-2.5-pro"
+        assert configs["lookup"]["model"] == "anthropic/claude-sonnet-4.6"
         # Just verify the key exists, don't assert specific value
         assert "enforce_citations" in configs["lookup"]
 
@@ -378,9 +378,9 @@ Test objectives""")
         # Check configuration
         from litassist.llm.factory import LLMClientFactory
 
-        # UPDATED: Oct 2025 - Model upgraded to Sonnet 4.5
+        # UPDATED: Feb 2026 - Model upgraded to Sonnet 4.6
         configs = LLMClientFactory.list_configurations()
-        assert configs["strategy"]["model"] == "anthropic/claude-sonnet-4.5"
+        assert configs["strategy"]["model"] == "anthropic/claude-sonnet-4.6"
         assert configs["strategy"]["thinking_effort"] == "max"
         # Just verify the key exists, don't assert specific value
         assert "enforce_citations" in configs["strategy"]

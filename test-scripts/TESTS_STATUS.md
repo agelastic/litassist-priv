@@ -1,5 +1,7 @@
 # Test Status
 
+Last updated: 18/02/2026
+
 ## Important Testing Policy
 
 [WARNING] **ALL pytest tests MUST run offline with mocked dependencies**
@@ -76,4 +78,4 @@ See `test_real_functionality.py` for examples of:
 - Correct mocking patterns
 - Real functionality testing
 
-For integration test approach details, see [integration_testing_approach.md](/docs/development/integration_testing_approach.md).
+For testing approach details, see `docs/testing/test_README.md`.

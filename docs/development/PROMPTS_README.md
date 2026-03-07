@@ -1,32 +1,11 @@
 # LitAssist Centralized Prompt Management
 
-**Status**: Phase 1 Complete [DONE]  
-**Last Updated**: July 31, 2025
-
-## Recent Updates (July 2025)
-
-- **Prompt YAML Overhaul**: Major updates to barbrief.yaml, strategies.yaml, verification.yaml, caseplan.yaml, formats.yaml, glob_help_addon.yaml, lookup.yaml, system_feedback.yaml for clarity, compliance, and chunk-aware prompting.
-- **Zero-Emoji Policy**: All prompts and system feedback now enforce ASCII/ANSI-only output (no emoji) for professional compliance.
-- **Chunk-Aware Prompting**: Digest, strategy, and brainstorm prompts now include instructions for 50k token chunk processing and user warnings for large files.
-- **Verification Model**: Verification prompts updated for Claude 4 Opus as the default verification model.
-- **File Size Warnings**: New prompt templates for research file size analysis and user warnings when exceeding 128k tokens.
-- **CasePlan**: New and expanded prompts for phased workflow planning and command coverage analysis.
-- **Digest/ExtractFacts**: Prompts updated for multi-file and chunked input handling.
-- **System Feedback**: Expanded error and warning messages for chunking, token limits, and policy compliance.
-
-## Recent Updates (June 2025)
-
-- **Verify Command**: Added comprehensive verification prompts for citation checking, legal soundness, and reasoning trace generation
-- **Digest --context Option**: Added context instruction templates for focused document analysis
-- **Brainstorm --research Option**: Added research context injection capability for orthodox strategies
-- **System Feedback**: Consolidated error and warning messages into system_feedback.yaml
-- **Improved Organization**: All verification-related prompts now centralized in verification.yaml
+**Status**: Implementation Complete (Phase 1 & 2)
+Last updated: 18/02/2026
 
 ## Overview
 
-This document describes the centralized prompt management system implemented in Phase 1 and expanded in July 2025, designed to improve consistency, maintainability, and quality control across all LitAssist commands.
-
-**July 2025: All prompt templates now support chunk-based processing, token counting, and zero-emoji output. PromptManager and YAMLs have been updated for new verification models and file size handling.**
+This document describes the centralized prompt management system, designed to improve consistency, maintainability, and quality control across all LitAssist commands. All prompt templates support chunk-based processing, token counting, and ASCII-only output.
 
 ## Architecture
 
@@ -169,14 +148,18 @@ composed = PROMPTS.compose_prompt('base.australian_law', 'base.citation_standard
 
 ### Phase 1 Implementation - COMPLETE [Y]
 
-[Y] **`llm.py`** - Imports PROMPTS module  
-[Y] **`extractfacts.py`** - Fully integrated with centralized prompts  
-[Y] **`lookup.py`** - Fully integrated with centralized prompts  
-[Y] **`brainstorm.py`** - Fully integrated with centralized prompts  
-[Y] **`strategy.py`** - Fully integrated with centralized prompts  
-[Y] **`draft.py`** - Fully integrated with centralized prompts  
-[Y] **`digest.py`** - Fully integrated with centralized prompts  
-[Y] **`barbrief.py`** - Fully integrated with centralized prompts (2025 addition)  
+[Y] **`litassist/llm/`** - Imports PROMPTS module
+[Y] **`litassist/commands/extractfacts/`** - Fully integrated with centralized prompts
+[Y] **`litassist/commands/lookup/`** - Fully integrated with centralized prompts
+[Y] **`litassist/commands/brainstorm/`** - Fully integrated with centralized prompts
+[Y] **`litassist/commands/strategy/`** - Fully integrated with centralized prompts
+[Y] **`litassist/commands/draft/`** - Fully integrated with centralized prompts
+[Y] **`litassist/commands/digest/`** - Fully integrated with centralized prompts
+[Y] **`litassist/commands/barbrief/`** - Fully integrated with centralized prompts
+[Y] **`litassist/commands/counselnotes/`** - Fully integrated with centralized prompts
+[Y] **`litassist/commands/caseplan/`** - Fully integrated with centralized prompts
+[Y] **`litassist/commands/verify/`** - Fully integrated with centralized prompts
+[Y] **`litassist/commands/verify_cove/`** - Fully integrated with centralized prompts  
 
 **Integration Status**: All commands now use centralized prompt templates from the YAML files, with comprehensive coverage of system prompts, format templates, and document templates.
 
@@ -256,17 +239,11 @@ python -m pytest tests/unit/test_prompts.py -v
 
 ## Future Work
 
-### Phase 2: Complete Command Migration
-- Integrate centralized prompts into all commands
-- Remove hardcoded prompts from command files
-- Implement graceful fallbacks where appropriate
-
 ### Phase 3: Advanced Features
 - Template inheritance and composition
 - Jurisdiction-specific prompt sets
 - Client-specific customizations
 - Prompt performance analytics
-- A/B testing support
 
 ## Migration Guide
 
@@ -291,17 +268,22 @@ To integrate centralized prompts into a command:
 
 ```
 litassist/
-├── prompts.py                 # Core prompt management module
+├── prompts.py                 # Core prompt management module (PromptManager)
 ├── prompts/                   # Template directory
+│   ├── analysis.yaml         # Analysis prompts
+│   ├── barbrief.yaml         # Barrister's brief generation templates
 │   ├── base.yaml             # System prompts & Australian law requirements
-│   ├── formats.yaml          # Output format templates
+│   ├── capabilities.yaml     # Capability-related prompts
+│   ├── caseplan.yaml         # Workflow planning prompts
 │   ├── documents.yaml        # Legal document templates
-│   ├── warnings.yaml         # Warning and error messages
+│   ├── formats.yaml          # Output format templates
+│   ├── glob_help_addon.yaml  # Glob pattern help text
 │   ├── lookup.yaml           # Lookup command prompts
 │   ├── processing.yaml       # Digest/draft processing prompts
+│   ├── reasoning.yaml        # Reasoning-related prompts
 │   ├── strategies.yaml       # Brainstorm/strategy prompts
+│   ├── system_feedback.yaml  # Error and warning messages
 │   └── verification.yaml     # Verification prompts
-test_prompts.py               # Simple test script
 tests/unit/test_prompts.py    # Comprehensive pytest suite
 ```
 

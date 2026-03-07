@@ -1,6 +1,6 @@
 # LitAssist Architecture Analysis 2025
 
-**Last Updated**: October 24, 2025
+Last updated: 26/02/2026
 **Analysis Date**: October 2025
 **Codebase Version**: Post-October 2025 Model Upgrade
 
@@ -65,7 +65,7 @@ LitAssist is a CLI-based legal assistance tool that has evolved from a monolithi
 class LLMClientFactory:
     COMMAND_CONFIGS = {
         "extractfacts": {
-            "model": "anthropic/claude-sonnet-4.5",
+            "model": "anthropic/claude-sonnet-4.6",
             "temperature": 0,
             "thinking_effort": "high",
             ...
@@ -81,7 +81,7 @@ class LLMClientFactory:
 **Strengths**:
 - Single source of truth for all model configurations
 - Easy to add new commands or change models
-- Supports three-tier model strategy (Critical/Fast/Legal Reasoning)
+- Supports task-based model selection (6 models matched to command requirements)
 - Dynamic parameter filtering based on model families
 - Clear separation between configuration and implementation
 
@@ -236,13 +236,15 @@ CRITICAL: NEVER HARDCODE PROMPTS IN PYTHON FILES
 
 **Impact**: Enables rapid prompt refinement that drove October 2025 model upgrade success
 
-#### 2. Three-Tier Model Strategy
-**Location**: `litassist/llm/client.py` - `COMMAND_CONFIGS`
+#### 2. Task-Based Model Selection
+**Location**: `litassist/llm/model_configs.yaml`
 
-**Decision**: Segregate models by accuracy requirements:
-- Tier 1: GPT-5 Pro (<1% hallucination) for critical verification
-- Tier 2: GPT-5 (1.4% hallucination) for fast verification
-- Tier 3: Claude Sonnet 4.5 for legal reasoning (80% cost reduction)
+**Decision**: Match each command to the model best suited for its task:
+- Claude Sonnet 4.6 for legal reasoning (15 commands, 80% cheaper than GPT-5 Pro)
+- o3-pro for advanced drafting (5 commands)
+- GPT-5 Pro for critical verification (<1% hallucination, 4 commands)
+- GPT-5.1 for standard verification (1.4% hallucination, 2 commands)
+- Claude Opus 4.1 for soundness checking, Grok 4 for creative ideation
 
 **Why Excellent**:
 - Optimizes cost vs. accuracy tradeoff
@@ -336,7 +338,9 @@ you do not need fallback parsing.
 ```python
 MODEL_PATTERNS = {
     "openai_reasoning": r"openai/o\d+",
-    "gpt5": r"openai/gpt-5(-pro)?",
+    "gpt5.1": r"openai/gpt-5\.1",           # Added Nov 2025 (must precede gpt5-pro)
+    "gpt5-pro": r"openai/gpt-5-pro$",       # Added Nov 2025
+    "gpt5": r"openai/gpt-5$",               # Now exact match only
     "claude4": r"anthropic/claude-(opus-4|sonnet-4)(\.\d+)?",
     ...
 }
@@ -685,7 +689,7 @@ class EmergencySaveHandler:
 **Implementation**:
 ```python
 # All model names use provider/model format
-"anthropic/claude-sonnet-4.5"
+"anthropic/claude-sonnet-4.6"
 "openai/o3-pro"
 "google/gemini-2.5-pro"
 "x-ai/grok-4"
@@ -725,7 +729,7 @@ ALL LLM interactions MUST be logged IN FULL - NO EXCEPTIONS
 
 **Anti-Hallucination Measures**:
 - Placeholder detection for missing facts
-- Three-tier model strategy (highest accuracy for critical tasks)
+- Task-based model selection (highest accuracy models for critical tasks)
 - Self-verification loops
 
 **Quality Assessment**: **EXCELLENT** - Demonstrates understanding of professional liability
@@ -812,7 +816,7 @@ ALL LLM interactions MUST be logged IN FULL - NO EXCEPTIONS
 
 **systemPatterns.md** (Up to date):
 - Accurately describes Factory pattern
-- Documents three-tier strategy
+- Documents task-based model selection strategy
 - Current as of October 2025
 
 **Recommendation**: Keep updated, excellent living document
@@ -926,7 +930,7 @@ Code must break instead of masking errors
 - ✅ **Zero standalone command files remain** - complete architectural consistency
 - ✅ Excellent use of Factory and Strategy patterns
 - ✅ YAML-based prompt management (best practice)
-- ✅ Three-tier model strategy demonstrates sophistication
+- ✅ Task-based model selection demonstrates sophistication
 - ✅ Clear separation of concerns throughout entire codebase
 - ✅ Comprehensive testing approach (389 tests passing)
 - ✅ Professional liability features (logging, verification)
@@ -951,7 +955,7 @@ Code must break instead of masking errors
 
 1. **100% Command Modularization** - ALL 11 commands now follow consistent package pattern (completed Oct 24, 2025)
 2. **LLMClientFactory** - Textbook factory pattern implementation
-3. **Three-Tier Model Strategy** - Optimizes accuracy vs. cost (40-50% cost reduction)
+3. **Task-Based Model Selection** - Optimizes accuracy vs. cost (40-50% cost reduction)
 4. **YAML Prompt Management** - Eliminates "prompt soup" anti-pattern
 5. **Verification Chain** - Elegant three-stage pipeline with CoVe deep analysis
 6. **No Backward Compatibility** - Enforces CLAUDE.md principle, removed lookup.py shim

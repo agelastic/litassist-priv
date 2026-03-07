@@ -93,13 +93,12 @@ analysis:
   # USED BY: lookup.py - lines 130-133 (preparing search prompt)
   # LOCATION: Formats question with search result links
   lookup:
-    question_prompt: "Question: {question}\nLinks:\n{links}"
+    question_prompt: "Question: {question}\nLinks:\n{links}\n\nContent from these links could not be fetched. Answer using your own legal knowledge, referencing the links above where relevant."
     # USED BY: lookup.py - lines 135-138 (adding context to prompt)
     # LOCATION: Prepends context information to search prompt
     context_prompt: |
       === USER GUIDANCE (NOT facts from sources) ===
       The user wants you to consider: {context}
-      IMPORTANT: This is analysis guidance only. Extract facts ONLY from the sources below.
       === END USER GUIDANCE ===
       
       {prompt}
