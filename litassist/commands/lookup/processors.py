@@ -432,35 +432,24 @@ class LookupProcessor:
     ):
         """Save the lookup output with appropriate metadata."""
         if extract:
-            # Extraction mode - content is already formatted by LLM
             command_name = f"{output}_{extract}" if output else f"lookup_{extract}"
-            metadata = {"Query": question, "Mode": mode, "Extract": extract}
-            if context:
-                metadata["Context"] = context
-            if comprehensive:
-                metadata["Comprehensive"] = "True"
-
-            return save_command_output(
-                command_name,
-                content,
-                "" if output else question,
-                metadata=metadata,
-            )
         else:
-            # Non-extraction mode - save content as-is
             command_name = output if output else "lookup"
-            metadata = {"Query": question, "Mode": mode}
-            if context:
-                metadata["Context"] = context
-            if comprehensive:
-                metadata["Comprehensive"] = "True"
 
-            return save_command_output(
-                command_name,
-                content,
-                "" if output else question,
-                metadata=metadata,
-            )
+        metadata = {"Query": question, "Mode": mode}
+        if extract:
+            metadata["Extract"] = extract
+        if context:
+            metadata["Context"] = context
+        if comprehensive:
+            metadata["Comprehensive"] = "True"
+
+        return save_command_output(
+            command_name,
+            content,
+            "" if output else question,
+            metadata=metadata,
+        )
 
     def display_completion_summary(
         self, output_file, question, extract, comprehensive, context, links

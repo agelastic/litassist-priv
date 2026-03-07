@@ -121,9 +121,6 @@ class LLMClientFactory:
         enforce_citations = config.pop("enforce_citations", False)
         disable_tools = config.pop("disable_tools", False)
 
-        # Remove premium_model key if present (no longer needed)
-        config.pop("premium_model", None)
-
         # Apply any provided overrides
         config.update(overrides)
 
