@@ -487,7 +487,7 @@ litassist caseplan <case_facts> [OPTIONS]
   technical choices (e.g., why `--comprehensive` was selected, why `--mode irac`
   was chosen over `--mode broad`).
 
-**Model:** Claude Sonnet 4.5
+**Model:** Claude Sonnet 4.6
 
 **Smith v Jones example:**
 
@@ -605,7 +605,7 @@ The `--extract` option produces structured output instead of a narrative analysi
   supporting authority
 - `checklist`: An actionable checklist of legal requirements or elements to prove
 
-**Model:** Gemini 2.5 Pro
+**Model:** Claude Sonnet 4.6
 
 **Smith v Jones example:**
 
@@ -715,7 +715,7 @@ Documents exceeding the chunk size limit (default: 200,000 characters, configura
 via `max_chars` in config.yaml) are automatically split into chunks. Each chunk is
 processed independently, and results are consolidated into a single output.
 
-**Model:** Claude Sonnet 4.5
+**Model:** Claude Sonnet 4.6
 
 **Smith v Jones example:**
 
@@ -808,7 +808,7 @@ reviews the output for accuracy, completeness, and citation quality.
 - Skip verification with `--noverify` (acceptable for iteration, not for final
   outputs)
 
-**Models:** Claude Sonnet 4.5 (extraction), GPT-5.1 or GPT-5 Pro (verification)
+**Models:** Claude Sonnet 4.6 (extraction), GPT-5.1 or GPT-5 Pro (verification)
 
 **Smith v Jones example:**
 
@@ -892,7 +892,7 @@ litassist brainstorm [OPTIONS]
 
 **Three-stage generation:**
 
-1. **Orthodox strategies** (Claude Sonnet 4.5): 15 conventional legal approaches
+1. **Orthodox strategies** (Claude Sonnet 4.6): 15 conventional legal approaches
    grounded in established case law and statutory provisions. When `--research`
    files are provided, these strategies are informed by actual authorities found
    via lookup.
@@ -916,7 +916,7 @@ Each citation is annotated with its verification status.
 Brainstorm saves separate reasoning files for the orthodox, unorthodox, and
 analysis stages. These show the logic behind strategy selection and ranking.
 
-**Models:** Claude Sonnet 4.5 (orthodox), Grok-4 (unorthodox), o3-pro (analysis)
+**Models:** Claude Sonnet 4.6 (orthodox), Grok-4 (unorthodox), o3-pro (analysis)
 **BYOK required:** Yes (analysis stage)
 
 **Smith v Jones example:**
@@ -1018,7 +1018,7 @@ intelligently uses it:
 - Provides a coherent tactical plan anchored in both creative and conventional
   thinking
 
-**Models:** Claude Sonnet 4.5 (strategy), o3-pro (analysis)
+**Models:** Claude Sonnet 4.6 (strategy), o3-pro (analysis)
 **BYOK required:** Yes (analysis stage)
 
 **Smith v Jones example:**
@@ -1361,7 +1361,7 @@ additional stage after the selected checks.
    correct application of Australian law, appropriate jurisdiction references, and
    logical consistency.
 
-3. **Reasoning trace** (Claude Sonnet 4.5): Analyses the document's reasoning
+3. **Reasoning trace** (Claude Sonnet 4.6): Analyses the document's reasoning
    structure, checking for logical gaps, unsupported conclusions, and assumptions
    that need explicit support.
 
@@ -1377,7 +1377,7 @@ The `--reference` option provides additional documents as context during
 verification. This is useful when the document being verified references exhibits,
 affidavits, or other materials that the verifier needs to see.
 
-**Models:** GPT-5.1 (citations), Claude Opus 4.1 (soundness), Claude Sonnet 4.5
+**Models:** GPT-5.1 (citations), Claude Opus 4.1 (soundness), Claude Sonnet 4.6
 (reasoning), GPT-5 Pro (heavy mode)
 
 **Smith v Jones example:**
@@ -1469,7 +1469,7 @@ litassist verify-cove <file> [OPTIONS]
 
 **The four CoVe stages:**
 
-1. **Generate verification questions** (Claude Sonnet 4.5): The model reads the
+1. **Generate verification questions** (Claude Sonnet 4.6): The model reads the
    document and generates specific factual and legal questions that, if answered
    correctly, would confirm the document's accuracy.
 
@@ -1477,15 +1477,15 @@ litassist verify-cove <file> [OPTIONS]
    question independently, without seeing the original document. If `--reference`
    files are provided, they are used as the sole factual source for answers.
 
-3. **Detect inconsistencies** (Claude Sonnet 4.5): The original document is
+3. **Detect inconsistencies** (Claude Sonnet 4.6): The original document is
    compared against the independent answers. Any discrepancies are flagged with
    specific details.
 
-4. **Regenerate** (Claude Sonnet 4.5): If inconsistencies are found, a corrected
+4. **Regenerate** (Claude Sonnet 4.6): If inconsistencies are found, a corrected
    version of the document is produced. If no issues are detected, the original
    is confirmed as accurate.
 
-**Models:** Claude Sonnet 4.5 (questions, verify, final), GPT-5.1 or GPT-5 Pro
+**Models:** Claude Sonnet 4.6 (questions, verify, final), GPT-5.1 or GPT-5 Pro
 (answers)
 
 **Smith v Jones example:**
@@ -2003,32 +2003,32 @@ LitAssist matches each command to the model best suited for its job:
 
 | Config Key | Model | Command / Stage | BYOK |
 |-----------|-------|-----------------|------|
-| `extractfacts` | Claude Sonnet 4.5 | Fact extraction | No |
-| `lookup` | Gemini 2.5 Pro | Case law research | No |
-| `digest-summary` | Claude Sonnet 4.5 | Document summary | No |
-| `digest-issues` | Claude Sonnet 4.5 | Issue identification | No |
-| `brainstorm-orthodox` | Claude Sonnet 4.5 | Orthodox strategies | No |
+| `extractfacts` | Claude Sonnet 4.6 | Fact extraction | No |
+| `lookup` | Claude Sonnet 4.6 | Case law research | No |
+| `digest-summary` | Claude Sonnet 4.6 | Document summary | No |
+| `digest-issues` | Claude Sonnet 4.6 | Issue identification | No |
+| `brainstorm-orthodox` | Claude Sonnet 4.6 | Orthodox strategies | No |
 | `brainstorm-unorthodox` | Grok-4 | Unorthodox strategies | No |
 | `brainstorm-analysis` | o3-pro | Strategy ranking and top 5 | Yes |
-| `strategy` | Claude Sonnet 4.5 | Strategic options | No |
+| `strategy` | Claude Sonnet 4.6 | Strategic options | No |
 | `strategy-analysis` | o3-pro | Strategy analysis | Yes |
 | `draft` | o3-pro | Document generation | Yes |
 | `counselnotes` | o3-pro | Advocate analysis | Yes |
 | `barbrief` | o3-pro | Barrister's brief | Yes |
-| `caseplan` | Claude Sonnet 4.5 | Full plan generation | No |
-| `caseplan-assessment` | Claude Sonnet 4.5 | Budget assessment | No |
+| `caseplan` | Claude Sonnet 4.6 | Full plan generation | No |
+| `caseplan-assessment` | Claude Sonnet 4.6 | Budget assessment | No |
 | `verification` | GPT-5.1 | Standard citation verification | No |
-| `verification-light` | Claude Sonnet 4.5 | Quick verification checks | No |
+| `verification-light` | Claude Sonnet 4.6 | Quick verification checks | No |
 | `verification-heavy` | GPT-5 Pro | Heavy citation verification | No |
-| `verify-reasoning` | Claude Sonnet 4.5 | Reasoning trace analysis | No |
+| `verify-reasoning` | Claude Sonnet 4.6 | Reasoning trace analysis | No |
 | `verify-reasoning-heavy` | GPT-5 Pro | Heavy reasoning analysis | No |
 | `verify-soundness` | Claude Opus 4.1 | Legal soundness review | No |
 | `verify-soundness-heavy` | GPT-5 Pro | Heavy soundness review | No |
-| `cove-questions` | Claude Sonnet 4.5 | CoVe question generation | No |
+| `cove-questions` | Claude Sonnet 4.6 | CoVe question generation | No |
 | `cove-answers` | GPT-5.1 | CoVe independent answers | No |
 | `cove-answers-heavy` | GPT-5 Pro | CoVe heavy answers | No |
-| `cove-verify` | Claude Sonnet 4.5 | CoVe inconsistency detection | No |
-| `cove-final` | Claude Sonnet 4.5 | CoVe final output | No |
+| `cove-verify` | Claude Sonnet 4.6 | CoVe inconsistency detection | No |
+| `cove-final` | Claude Sonnet 4.6 | CoVe final output | No |
 
 All model assignments are defined in `litassist/llm/model_configs.yaml`.
 
@@ -2065,7 +2065,7 @@ All LLM calls route through OpenRouter's API. Model names follow the
 - `openai/o3-pro`
 - `openai/gpt-5.1`
 - `openai/gpt-5-pro`
-- `google/gemini-2.5-pro`
+- `anthropic/claude-sonnet-4.6`
 - `x-ai/grok-4`
 - `anthropic/claude-opus-4.1`
 
