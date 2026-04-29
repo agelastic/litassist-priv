@@ -197,3 +197,10 @@ yarn-error.log*
 tmp/
 temp/
 .vscode/
+# Added by code-review-graph
+.code-review-graph/
+.*/
+.mcp.json
+.opencode.json
+.windsurfrules
+.cursorrules
