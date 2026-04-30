@@ -58,7 +58,7 @@ litassist/citation_context.py:229 - `normalize_citation()` called inside `_cache
 litassist/citation_context.py:255-275 - `(act)` substring match collides with "ACT" jurisdiction tag - match jurisdiction abbreviations as regex `r"\(([a-z]{2,3})\)$"` against fixed set
 litassist/citation_context.py:288-289 - `".pdf" in link.lower()` mixed with `"/PDF/" in link` (uppercase, no .lower) - normalize once, check once
 litassist/citation_context.py:369 - `"s " in citation.lower()` matches "sunrise" - use `re.search(r'\bs\b|\bsection\b', ..., re.I)`
-litassist/citation_context.py:427 - `r"\n+(?:Copyright|(c)).*?(?:All rights reserved|$).*$"` - orphan trailing `.*$` swallows valid text - use `re.MULTILINE` and tighter end anchor
+litassist/citation_context.py:427 - `r"\n+(?:Copyright|\xa9).*?(?:All rights reserved|$).*$"` - orphan trailing `.*$` swallows valid text - use `re.MULTILINE` and tighter end anchor
 litassist/citation_context.py:457 - judgment marker regex requires literal `\n` on both sides - fails when JUDGMENT is first/last line - use `(?:^|\n)` ... `(?:\n|$)`
 litassist/citation_context.py:459 - `r'\n\s*\[\d+\]\s+'` matches `[12345]` - constrain to `\d{1,3}`
 litassist/citation_context.py:460 - `r'\n[A-Z\s]{10,}:\s*\n'` matches 10+ spaces or random caps - require word characters

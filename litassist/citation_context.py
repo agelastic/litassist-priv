@@ -424,7 +424,7 @@ def _clean_document(text: str) -> str:
     """
     # Remove common website footer patterns
     garbage_patterns = [
-        r"\n+(?:Copyright|©).*?(?:All rights reserved|$).*$",
+        r"\n+(?:Copyright|\xa9).*?(?:All rights reserved|$).*$",
         r"\n+(?:Privacy|Terms of use|Disclaimer|Contact us).*$",
         r"\n+Page \d+ of \d+.*$",
         r"\n+\[Home\]\[Index\]\[Search\].*$",

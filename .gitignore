@@ -196,7 +196,6 @@ yarn-error.log*
 .temp/
 tmp/
 temp/
-.vscode/
 # Added by code-review-graph
 .code-review-graph/
 # Local agent/IDE config dirs
