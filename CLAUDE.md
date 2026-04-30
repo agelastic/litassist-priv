@@ -8,7 +8,7 @@ Last updated: 18/02/2026
 - Code duplication: refactor to remove repetition only with explicit approval.
 
 ### Code Analysis and Verification
-- Read the code first. Map each function’s purpose and dependencies. Propose only changes you can justify from the codebase. Verify behaviour after edits. Do not guess.
+- Read the code first. Map each function's purpose and dependencies. Propose only changes you can justify from the codebase. Verify behaviour after edits. Do not guess.
 
 ### Git Commit Standards
 - Never add attribution or AI footers. Commit messages contain only a technical description. No self-promotion. Applies to all commits.
@@ -81,7 +81,7 @@ Last updated: 18/02/2026
 
 ## Testing Approach
 - Pytest tests in `tests/unit/` run offline with mocked dependencies. No real API calls in pytest.
-- “Integration” tests are still offline mocked interactions.
+- "Integration" tests are still offline mocked interactions.
 - Manual real-API checks live in `test-scripts/` and incur costs. Run manually only.
 - Remove tests that no longer test meaningful behaviour.
 
@@ -138,8 +138,8 @@ Fall back to Grep/Glob/Read **only** when the graph doesn't cover what you need.
 
 | Tool | Use when |
 |------|----------|
-| `detect_changes` | Reviewing code changes — gives risk-scored analysis |
-| `get_review_context` | Need source snippets for review — token-efficient |
+| `detect_changes` | Reviewing code changes - gives risk-scored analysis |
+| `get_review_context` | Need source snippets for review - token-efficient |
 | `get_impact_radius` | Understanding blast radius of a change |
 | `get_affected_flows` | Finding which execution paths are impacted |
 | `query_graph` | Tracing callers, callees, imports, tests, dependencies |
