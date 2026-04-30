@@ -199,7 +199,9 @@ temp/
 .vscode/
 # Added by code-review-graph
 .code-review-graph/
-.*/
+# Local agent/IDE config dirs
+.claude/
+.kiro/
 .mcp.json
 .opencode.json
 .windsurfrules

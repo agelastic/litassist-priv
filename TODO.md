@@ -1,6 +1,6 @@
 # LitAssist Development TODO
 
-Last updated: 18/02/2026
+Last updated: 30/04/2026
 
 **Note:** Strategic feature planning (litigation support, advisory capabilities, new commands) is now in [ROADMAP.md](ROADMAP.md). This file focuses on bugs, technical debt, and code quality improvements.
 
@@ -70,6 +70,7 @@ Last updated: 18/02/2026
 - [ ] Adopt Jules framework for test instrumentation (evaluate if still desired)
 - [ ] **Refactor verify_with_level (Option B)**: Replace with boolean parameter `verify(content, comprehensive=False)` where comprehensive=True uses heavy verification prompt and comprehensive=False uses standard verification. This simplifies the API and removes the unused "light" level and redundant "medium" wrapper. NOTE: --heavy flag (Nov 2025) may already satisfy this need - evaluate if refactoring still needed. [DEBT]
 - [ ] **Add optional reasoning trace file output**: Implement `--save-reasoning` flag for commands (strategy, draft, verify, etc.) to optionally save reasoning traces as separate files for auditing purposes. Currently reasoning traces are embedded in main output only. Implementation removed 2025-07-08 but may be useful for professional liability requirements.
+- [ ] **Migrate off Google Custom Search JSON API by 01/01/2027**: Google has announced the JSON API is being retired in favour of Vertex AI Search (favourable alternative for <=50 domains) or the new full web search solution. LitAssist uses the JSON API in `litassist/citation/google_cse.py`, `litassist/commands/lookup/search.py`, `litassist/citation_context.py`, `litassist/cli.py` (startup ping), and two test-scripts. All three configured CSEs (Jade.io, AustLII, Comprehensive) are well under the 50-domain threshold and none use "Search the entire web", so the transition target is Vertex AI Search. Design sketch in `docs/development/GOOGLE_CSE_MIGRATION_PLAN.md`. No urgent action; deadline 01/01/2027.
 - [x] ~~Document July 2025 upgrades in all user/dev/system docs~~ - COMPLETED
 
 ## Critical Bugs to Fix [HIGH PRIORITY]
