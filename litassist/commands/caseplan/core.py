@@ -8,7 +8,7 @@ and generates a customized, efficient litigation workflow plan.
 import click
 
 from litassist.logging import log_task_event
-from litassist.utils.core import timed
+from litassist.timing import timed
 from litassist.utils.file_ops import validate_file_size_limit
 from litassist.utils.formatting import warning_message
 

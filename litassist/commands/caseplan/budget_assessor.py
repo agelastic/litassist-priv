@@ -8,7 +8,7 @@ import click
 from typing import Dict, Tuple
 
 from litassist.logging import save_log, save_command_output, log_task_event
-from litassist.utils.core import timed
+from litassist.timing import timed
 from litassist.llm.factory import LLMClientFactory
 from litassist.utils.formatting import saved_message, tip_message
 from litassist.prompts import PROMPTS

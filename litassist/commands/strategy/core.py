@@ -8,8 +8,8 @@ legal strategy generation for Australian civil proceedings.
 import click
 import re
 
+from litassist.timing import timed
 from litassist.utils.core import (
-    timed,
     parse_strategies_file,
 )
 from litassist.utils.file_ops import validate_file_size_limit
