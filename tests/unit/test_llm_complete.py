@@ -367,44 +367,16 @@ class TestLLMClientComplete:
         assert "reasoning" in call_params
         assert call_params["reasoning"] == {"effort": "high"}
 
-    @patch("litassist.config.CONFIG")
-    @patch("litassist.llm.client.execute_api_call_with_retry")
-    def test_heartbeat_and_timed_decorators(self, mock_execute, mock_config):
-        """Test that heartbeat and timed decorators are applied."""
-        mock_config.or_key = "test_key"
-        mock_config.openai_key = "test_key"
+    def test_heartbeat_and_timed_decorators(self):
+        """LLMClient.complete must carry both @heartbeat() and @timed."""
+        from litassist.llm.client import LLMClient
 
-        mock_response = Mock()
-        mock_response.choices = [Mock()]
-        mock_response.choices[0].message = Mock(content="Response")
-        mock_response.choices[0].finish_reason = "stop"
-        mock_response.choices[0].error = None
-        mock_response.usage = Mock(
-            total_tokens=50,
-            prompt_tokens=25,
-            completion_tokens=25,
-            model_dump=lambda: {
-                "total_tokens": 50,
-                "prompt_tokens": 25,
-                "completion_tokens": 25,
-            },
+        # Both decorators use functools.wraps, so a __wrapped__ chain of
+        # length >= 2 confirms the stacked decoration survived.
+        complete = LLMClient.complete
+        first = getattr(complete, "__wrapped__", None)
+        assert first is not None, "LLMClient.complete is undecorated"
+        second = getattr(first, "__wrapped__", None)
+        assert second is not None, (
+            "LLMClient.complete has only one decorator; expected heartbeat+timed"
         )
-
-        mock_execute.return_value = mock_response
-
-        # Patch the decorators
-        with patch("litassist.utils.core.heartbeat") as mock_heartbeat:
-            with patch("litassist.timing.timed") as mock_timed:
-                # Make decorators passthrough
-                mock_heartbeat.side_effect = lambda f: f
-                mock_timed.side_effect = lambda f: f
-
-                # Import after patching to get decorated version
-                from litassist.llm.client import LLMClient as DecoratedClient
-
-                client = DecoratedClient(model="gpt-4")
-                response, stats = client.complete([{"role": "user", "content": "Test"}])
-
-                # The complete method should have decorators applied
-                # Note: This is more of an integration test
-                assert response == "Response"

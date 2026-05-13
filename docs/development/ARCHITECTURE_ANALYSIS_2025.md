@@ -160,14 +160,13 @@ class LLMVerificationMixin:
         """Verify content using verification prompts"""
         ...
 
-class LLMVerificationClient(LLMVerificationMixin, LLMClient):
-    """Client with verification capabilities"""
+class LLMClient(LLMVerificationMixin):
+    """Standard client; verification capability comes from the mixin."""
 ```
 
 **Strengths**:
-- Composition over inheritance
-- Reusable verification logic
-- Clean separation of concerns
+- Reusable verification logic via mixin
+- Clean separation of verification concerns from request/response handling
 
 **Pattern Quality**: **GOOD** - Appropriate use of mixin pattern
 
