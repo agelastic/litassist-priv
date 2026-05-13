@@ -1,0 +1,28 @@
+{
+  "venvPath": ".",
+  "venv": ".venv",
+  "pythonVersion": "3.11",
+  "extraPaths": ["."],
+  "include": ["litassist", "tests"],
+  "exclude": [
+    "**/__pycache__",
+    ".venv",
+    "test-scripts",
+    "scripts",
+    "examples",
+    "demo",
+    "outputs",
+    "output",
+    "logs",
+    "tmp"
+  ],
+  "reportMissingImports": "warning",
+  "reportMissingTypeStubs": "none",
+  "executionEnvironments": [
+    {
+      "root": "tests",
+      "reportAttributeAccessIssue": "none",
+      "reportFunctionMemberAccess": "none"
+    }
+  ]
+}
