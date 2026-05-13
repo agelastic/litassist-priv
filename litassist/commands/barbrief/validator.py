@@ -4,7 +4,7 @@ Case facts validation for barbrief command.
 Validates that case facts follow the required 10-heading format.
 """
 
-from litassist.utils.core import timed
+from litassist.timing import timed
 
 
 @timed

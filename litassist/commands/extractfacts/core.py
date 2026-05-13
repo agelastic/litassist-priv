@@ -7,8 +7,8 @@ documents and organizing facts using single-chunk or multi-chunk extraction.
 
 import click
 
+from litassist.timing import timed
 from litassist.utils.core import (
-    timed,
     show_command_completion,
 )
 from litassist.utils.legal_reasoning import verify_content_if_needed

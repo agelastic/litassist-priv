@@ -5,7 +5,7 @@ Handles preparation of sections and content for the barrister's brief.
 """
 
 from typing import List, Optional, Dict, Any
-from litassist.utils.core import timed
+from litassist.timing import timed
 
 
 @timed

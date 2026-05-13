@@ -8,8 +8,8 @@ perspective, complementing the neutral analysis provided by the digest command.
 
 import click
 
+from litassist.timing import timed
 from litassist.utils.core import (
-    timed,
     show_command_completion,
 )
 from litassist.logging import (

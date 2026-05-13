@@ -10,7 +10,8 @@ with proper citations and Australian legal formatting.
 import click
 
 from litassist.utils.file_ops import expand_glob_patterns_callback as expand_glob_patterns
-from litassist.utils.core import timed, show_command_completion
+from litassist.timing import timed
+from litassist.utils.core import show_command_completion
 from litassist.utils.text_processing import count_tokens_and_words
 from litassist.logging import save_command_output, log_task_event
 from litassist.llm.factory import LLMClientFactory

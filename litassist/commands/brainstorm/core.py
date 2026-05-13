@@ -15,8 +15,8 @@ from litassist.utils.file_ops import (
     read_document,
     validate_file_size_limit,
 )
+from litassist.timing import timed
 from litassist.utils.core import (
-    timed,
     parse_strategies_file,
     validate_side_area_combination,
 )

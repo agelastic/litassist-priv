@@ -394,7 +394,7 @@ class TestLLMClientComplete:
 
         # Patch the decorators
         with patch("litassist.utils.core.heartbeat") as mock_heartbeat:
-            with patch("litassist.utils.core.timed") as mock_timed:
+            with patch("litassist.timing.timed") as mock_timed:
                 # Make decorators passthrough
                 mock_heartbeat.side_effect = lambda f: f
                 mock_timed.side_effect = lambda f: f
