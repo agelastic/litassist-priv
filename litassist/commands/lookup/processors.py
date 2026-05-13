@@ -51,8 +51,6 @@ class LookupProcessor:
         skipped_count = 0
         pdf_count = 0
 
-        # Selenium removed - using Jina Reader instead
-
         # Skip fetching if --no-fetch flag is set
         if no_fetch:
             click.echo("  [Info: Content fetching disabled by --no-fetch flag]")
@@ -113,7 +111,6 @@ class LookupProcessor:
 
             content = _fetch_url_content(link, timeout=self.config.fetch_timeout)
 
-            # If HTTP fetch got minimal/no content, try Selenium for non-Jade sites
             # Method determination (Jina fallback is handled inside _fetch_url_content)
             method = "HTTP/Jina" if content else "Failed"
 

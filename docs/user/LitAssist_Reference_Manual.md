@@ -222,8 +222,6 @@ citation_validation:
 web_scraping:
   fetch_timeout: 10          # Per-request timeout in seconds
   max_fetch_time: 300        # Total fetch time limit in seconds
-  selenium_enabled: true     # Use Selenium for JavaScript-rendered pages
-  selenium_timeout_multiplier: 2  # Multiplier for Selenium timeouts
 ```
 
 **Key points:**

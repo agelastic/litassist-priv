@@ -677,8 +677,6 @@ citation_validation:
 web_scraping:
   fetch_timeout: 10          # Per-request timeout (seconds)
   max_fetch_time: 300        # Total fetch time limit (seconds)
-  selenium_enabled: true     # Use Selenium for complex pages
-  selenium_timeout_multiplier: 2
 ```
 
 ---

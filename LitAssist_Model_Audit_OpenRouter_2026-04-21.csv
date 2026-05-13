@@ -1,0 +1,8 @@
+model_id,used_in,status,price_in_per_1m_usd,price_out_per_1m_usd,context_length,expiration_date,byok_required,byok_optional,recommended_replacement,notes
+anthropic/claude-sonnet-4.6,"litassist/llm/model_configs.yaml (14 profiles)",STILL_SERVED,3.00,15.00,1000000,,no,yes,,Workhorse model. Supports response_format/structured_outputs/tools.
+anthropic/claude-opus-4.1,"litassist/llm/model_configs.yaml:126 (verify-soundness)",STILL_SERVED,15.00,75.00,200000,,no,yes,anthropic/claude-opus-4.6,Newer Opus 4.6/4.7 available; benchmark before swapping.
+openai/o3-pro,"litassist/llm/model_configs.yaml:24,48,55,144,152",STILL_SERVED,20.00,80.00,200000,,no,yes,,Project uses BYOK by choice; not required.
+openai/gpt-5.1,"litassist/llm/model_configs.yaml:86,190",STILL_SERVED,1.25,10.00,400000,,no,yes,,Best price/performance reasoning model in the configured set.
+openai/gpt-5-pro,"litassist/llm/model_configs.yaml:102,118,135,206",STILL_SERVED,15.00,120.00,400000,,no,yes,openai/gpt-5.2-pro,Most expensive completion price in configured set.
+x-ai/grok-4,"litassist/llm/model_configs.yaml:39 (brainstorm-unorthodox)",EXPIRES_2026-05-15,3.00,15.00,256000,2026-05-15,no,yes,x-ai/grok-4.20,"Action required before 15 May 2026. Replacement grok-4.20 has 2M context and lower price."
+text-embedding-3-small,"config.yaml.template:11; litassist/config.py:120",NOT_VIA_OPENROUTER,n/a,n/a,n/a,,n/a,n/a,,OpenAI direct call by design; not routed via OpenRouter.

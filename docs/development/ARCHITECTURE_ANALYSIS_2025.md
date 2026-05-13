@@ -644,8 +644,6 @@ class EmergencySaveHandler:
 - `ARCHITECTURE_DESCRIPTION.md` - Detailed layered architecture
 - `MODEL_CONFIGURATION.md` - Model configuration guide
 - `CHAIN_OF_VERIFICATION_ARCHITECTURE.md` - CoVe deep dive
-- `memory-bank/systemPatterns.md` - Design patterns (up to date)
-- `memory-bank/techContext.md` - Technology stack
 
 **User Docs**:
 - `docs/user/LitAssist_User_Guide.md` - Comprehensive user manual

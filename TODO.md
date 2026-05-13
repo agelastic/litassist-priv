@@ -21,7 +21,6 @@ Last updated: 30/04/2026
 - Clean CLI summaries instead of content dumps
 - Comprehensive logging and timing instrumentation
 - Fixed all ruff linting errors and removed unused dependencies
-- Memory Bank initialized with core context, patterns, architecture, and technical setup
 - CounselNotes command for strategic advocate analysis (January 2025)
 - Barbrief command for comprehensive barrister's briefs (January 2025)
 - **October 2025: Major LLM Model Upgrade** - Implemented three-tier strategy
@@ -144,6 +143,5 @@ _No critical bugs identified - all items below verified as already implemented o
 
 ## Notes
 - Prioritize minimal whitespace changes to maintain clean diffs
-- Reference Memory Bank for all session context and planning
 - Consider implementing features incrementally with feature flags to minimize integration risk
 - Establish clear success criteria and rollback plans for each major change
