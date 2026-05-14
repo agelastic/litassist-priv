@@ -40,9 +40,17 @@ old_ids=""
 new_ids=""
 
 case "$tool" in
-  Edit|MultiEdit)
+  Edit)
     old=$(echo "$input" | jq -r '.tool_input.old_string // empty')
     new=$(echo "$input" | jq -r '.tool_input.new_string // empty')
+    old_ids=$(printf '%s' "$old" | extract_ids)
+    new_ids=$(printf '%s' "$new" | extract_ids)
+    ;;
+  MultiEdit)
+    # MultiEdit's tool_input.edits is an array of {old_string,new_string}
+    # objects; concatenate each side so the regex sees every replacement.
+    old=$(echo "$input" | jq -r '[.tool_input.edits[]?.old_string // empty] | join("\n")')
+    new=$(echo "$input" | jq -r '[.tool_input.edits[]?.new_string // empty] | join("\n")')
     old_ids=$(printf '%s' "$old" | extract_ids)
     new_ids=$(printf '%s' "$new" | extract_ids)
     ;;
