@@ -18,6 +18,11 @@ Last updated: 18/02/2026
 - All pytest tests must pass before calling a fix complete.
 - Update TODO.md and any relevant docs when changing behaviour.
 
+### After every 5 iterations:
+1. Summarize what changed and why
+2. Run the test suite
+3. Flag any naming drift from the original spec
+
 ### Refactoring Guidelines
 - Goal: split 1000+ line files into focused modules under 500 lines when refactoring is explicitly requested.
 - Strategy: identify functional groups and extract by responsibility.
