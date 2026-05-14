@@ -6,7 +6,7 @@ Provides consistent logging for command execution stages and progress tracking.
 
 import time
 import click
-from typing import Any, Dict, Optional
+from typing import Any, Callable, Dict, Optional
 
 
 def log_task_event(
@@ -15,8 +15,8 @@ def log_task_event(
     event: str,
     message: str = "",
     details: Optional[Dict[str, Any]] = None,
-    save_log_fn=None,
-):
+    save_log_fn: Optional[Callable[[str, dict], None]] = None,
+) -> None:
     """
     Log structured events for multistage commands.
 
