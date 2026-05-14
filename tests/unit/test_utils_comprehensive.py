@@ -196,16 +196,19 @@ class TestTiming:
     """Test timing and performance measurement functionality."""
 
     def test_timed_decorator_function(self):
-        """Test the timed decorator on a function."""
+        """timed must populate timing metadata on (content, usage_dict) returns."""
 
         @timed
-        def test_function():
-            time.sleep(0.01)  # Small delay
-            return "test_result"
+        def returns_tuple():
+            time.sleep(0.01)
+            return "content", {}
 
-        # Should return original function result
-        result = test_function()
-        assert result == "test_result"
+        content, usage = returns_tuple()
+        assert content == "content"
+        timing = usage.get("timing")
+        assert timing is not None, "timed did not attach timing metadata"
+        assert timing["duration_seconds"] >= 0.01
+        assert "start_time" in timing and "end_time" in timing
 
     def test_timed_decorator_with_exception(self):
         """Test timed decorator when decorated function raises exception."""
@@ -235,14 +238,23 @@ class TestTiming:
         mock_func.assert_called_once_with("test_arg", keyword="test_kwarg")
 
     def test_heartbeat_decorator_with_interval(self):
-        """Test heartbeat decorator with custom interval."""
-        mock_func = MagicMock(return_value="result")
+        """heartbeat must respect the configured interval and emit pings."""
+        env = os.environ.copy()
+        env.pop("PYTEST_CURRENT_TEST", None)
 
-        # Test different intervals
-        for interval in [0.5, 1.0, 2.0]:
-            heartbeat_func = heartbeat(interval)(mock_func)
-            result = heartbeat_func()
-            assert result == "result"
+        with patch.dict(os.environ, env, clear=True):
+            with patch("litassist.utils.core.click.echo") as mock_echo:
+
+                @heartbeat(0.05)
+                def slow_function():
+                    time.sleep(0.18)  # > 3x the interval; guarantees a ping
+                    return "result"
+
+                assert slow_function() == "result"
+                assert mock_echo.call_count >= 1, (
+                    f"heartbeat thread did not fire within 0.18s "
+                    f"at 0.05s interval (call_count={mock_echo.call_count})"
+                )
 
     @patch("litassist.utils.core.click.echo", side_effect=OSError("Broken pipe"))
     def test_heartbeat_ping_thread_handles_exception(self, mock_echo):
