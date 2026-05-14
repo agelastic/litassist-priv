@@ -30,6 +30,11 @@
             "type": "command",
             "command": ".claude/hooks/log-coverage.sh",
             "timeout": 5
+          },
+          {
+            "type": "command",
+            "command": ".claude/hooks/yaml-lint-prompts.sh",
+            "timeout": 10
           }
         ]
       }
