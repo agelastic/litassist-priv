@@ -133,7 +133,10 @@ mock_*.txt
 sample_*.txt
 test_inputs/
 
-**/.claude/settings.local.json
+# Local-only config: any file whose name contains ".local" or ends in ".local"
+# Examples: settings.local.json, .env.local, foo.local.yaml, config.local
+*.local
+*.local.*
 
 # Claude-generated files
 claude_*
@@ -198,8 +201,7 @@ tmp/
 temp/
 # Added by code-review-graph
 .code-review-graph/
-# Local agent/IDE config dirs
-.claude/
+# Local agent/IDE config dirs (other tools' configs we removed in cleanup)
 .kiro/
 .mcp.json
 .opencode.json
