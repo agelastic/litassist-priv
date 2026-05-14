@@ -7,6 +7,7 @@ All tests run offline using mocked dependencies.
 
 import pytest
 import os
+import threading
 import time
 from unittest.mock import patch, MagicMock, mock_open, Mock
 
@@ -237,24 +238,37 @@ class TestTiming:
         # Original function should be called with same arguments
         mock_func.assert_called_once_with("test_arg", keyword="test_kwarg")
 
-    def test_heartbeat_decorator_with_interval(self):
-        """heartbeat must respect the configured interval and emit pings."""
+    def test_heartbeat_decorator_with_interval(self, monkeypatch):
+        """heartbeat must propagate the configured interval to Event.wait."""
         env = os.environ.copy()
         env.pop("PYTEST_CURRENT_TEST", None)
+
+        captured_timeouts = []
+        real_wait = threading.Event.wait
+
+        def spying_wait(self, timeout=None):
+            captured_timeouts.append(timeout)
+            # End the thread on first wait so the test stays deterministic.
+            self.set()
+            return real_wait(self, 0)
+
+        monkeypatch.setattr(threading.Event, "wait", spying_wait)
 
         with patch.dict(os.environ, env, clear=True):
             with patch("litassist.utils.core.click.echo") as mock_echo:
 
                 @heartbeat(0.05)
-                def slow_function():
-                    time.sleep(0.18)  # > 3x the interval; guarantees a ping
+                def fn():
+                    time.sleep(0.01)  # let the heartbeat thread run once
                     return "result"
 
-                assert slow_function() == "result"
-                assert mock_echo.call_count >= 1, (
-                    f"heartbeat thread did not fire within 0.18s "
-                    f"at 0.05s interval (call_count={mock_echo.call_count})"
-                )
+                assert fn() == "result"
+
+        assert mock_echo.call_count >= 1, "heartbeat thread did not emit a ping"
+        assert 0.05 in captured_timeouts, (
+            f"heartbeat did not pass interval=0.05 to Event.wait; "
+            f"captured={captured_timeouts}"
+        )
 
     @patch("litassist.utils.core.click.echo", side_effect=OSError("Broken pipe"))
     def test_heartbeat_ping_thread_handles_exception(self, mock_echo):
