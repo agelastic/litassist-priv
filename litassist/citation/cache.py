@@ -47,29 +47,3 @@ def add_to_cache(
             "reason": reason,
             "snippet": snippet,
         }
-
-
-def get_verification_stats() -> Dict:
-    """
-    Get statistics about citation verification cache.
-
-    Returns:
-        Dictionary with cache statistics
-    """
-    with _cache_lock:
-        total = len(_citation_cache)
-        verified = sum(1 for entry in _citation_cache.values() if entry["exists"])
-        unverified = total - verified
-
-        return {
-            "total_checked": total,
-            "verified": verified,
-            "unverified": unverified,
-            "cache_hit_rate": f"{(verified / total * 100):.1f}%" if total > 0 else "0%",
-        }
-
-
-def clear_verification_cache():
-    """Clear the citation verification cache."""
-    with _cache_lock:
-        _citation_cache.clear()

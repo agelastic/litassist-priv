@@ -11,22 +11,6 @@ from litassist.utils.formatting import error_message, info_message, success_mess
 from .response_parser import extract_content_and_usage
 
 
-def should_retry_for_citations(error: Exception) -> bool:
-    """
-    Determine if an error warrants a retry with enhanced citation instructions.
-
-    Args:
-        error: The exception that occurred
-
-    Returns:
-        True if retry should be attempted, False otherwise
-    """
-    from litassist.citation.exceptions import CitationVerificationError
-
-    # Only retry for citation verification errors
-    return isinstance(error, CitationVerificationError)
-
-
 def enhance_messages_for_retry(
     messages: List[Dict[str, Any]], model: str
 ) -> List[Dict[str, Any]]:
