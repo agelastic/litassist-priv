@@ -160,14 +160,13 @@ class LLMVerificationMixin:
         """Verify content using verification prompts"""
         ...
 
-class LLMVerificationClient(LLMVerificationMixin, LLMClient):
-    """Client with verification capabilities"""
+class LLMClient(LLMVerificationMixin):
+    """Standard client; verification capability comes from the mixin."""
 ```
 
 **Strengths**:
-- Composition over inheritance
-- Reusable verification logic
-- Clean separation of concerns
+- Reusable verification logic via mixin
+- Clean separation of verification concerns from request/response handling
 
 **Pattern Quality**: **GOOD** - Appropriate use of mixin pattern
 
@@ -644,8 +643,6 @@ class EmergencySaveHandler:
 - `ARCHITECTURE_DESCRIPTION.md` - Detailed layered architecture
 - `MODEL_CONFIGURATION.md` - Model configuration guide
 - `CHAIN_OF_VERIFICATION_ARCHITECTURE.md` - CoVe deep dive
-- `memory-bank/systemPatterns.md` - Design patterns (up to date)
-- `memory-bank/techContext.md` - Technology stack
 
 **User Docs**:
 - `docs/user/LitAssist_User_Guide.md` - Comprehensive user manual

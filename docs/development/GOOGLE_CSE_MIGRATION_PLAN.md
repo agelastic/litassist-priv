@@ -122,7 +122,7 @@ call-site replacements. No refactor of surrounding logic.
    - Replace `docs/user/Google CSE setup.md` with `docs/user/Vertex AI Search setup.md`
      (or rename in place) covering data store creation, IAM, quotas, billing.
    - Update `docs/user/LitAssist_Reference_Manual.md`, `INSTALLATION.md`,
-     `README.md`, and `memory-bank/techContext.md` references.
+     and `README.md` references.
 
 ## Open questions
 

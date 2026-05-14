@@ -7,6 +7,7 @@ All tests run offline using mocked dependencies.
 
 import pytest
 import os
+import threading
 import time
 from unittest.mock import patch, MagicMock, mock_open, Mock
 
@@ -196,16 +197,19 @@ class TestTiming:
     """Test timing and performance measurement functionality."""
 
     def test_timed_decorator_function(self):
-        """Test the timed decorator on a function."""
+        """timed must populate timing metadata on (content, usage_dict) returns."""
 
         @timed
-        def test_function():
-            time.sleep(0.01)  # Small delay
-            return "test_result"
+        def returns_tuple():
+            time.sleep(0.01)
+            return "content", {}
 
-        # Should return original function result
-        result = test_function()
-        assert result == "test_result"
+        content, usage = returns_tuple()
+        assert content == "content"
+        timing = usage.get("timing")
+        assert timing is not None, "timed did not attach timing metadata"
+        assert timing["duration_seconds"] >= 0.01
+        assert "start_time" in timing and "end_time" in timing
 
     def test_timed_decorator_with_exception(self):
         """Test timed decorator when decorated function raises exception."""
@@ -234,15 +238,51 @@ class TestTiming:
         # Original function should be called with same arguments
         mock_func.assert_called_once_with("test_arg", keyword="test_kwarg")
 
-    def test_heartbeat_decorator_with_interval(self):
-        """Test heartbeat decorator with custom interval."""
-        mock_func = MagicMock(return_value="result")
+    def test_heartbeat_decorator_with_interval(self, monkeypatch):
+        """heartbeat must propagate the configured interval to Event.wait."""
+        env = os.environ.copy()
+        env.pop("PYTEST_CURRENT_TEST", None)
 
-        # Test different intervals
-        for interval in [0.5, 1.0, 2.0]:
-            heartbeat_func = heartbeat(interval)(mock_func)
-            result = heartbeat_func()
-            assert result == "result"
+        captured_timeouts = []
+        # Semaphore (not Event) so signalling does not trip the Event.wait spy.
+        captured_signal = threading.Semaphore(0)
+        real_wait = threading.Event.wait
+
+        def spying_wait(self, timeout=None):
+            # Only react to the heartbeat thread's own wait(0.05). Unrelated
+            # Event.wait calls in pytest/threading internals pass through
+            # unchanged, otherwise they would signal captured_signal early
+            # and let fn() return before the heartbeat thread emits a ping.
+            if timeout == 0.05:
+                captured_timeouts.append(timeout)
+                captured_signal.release()
+                # End the thread on first wait so it does not sleep further.
+                self.set()
+                return real_wait(self, 0)
+            return real_wait(self, timeout)
+
+        monkeypatch.setattr(threading.Event, "wait", spying_wait)
+
+        with patch.dict(os.environ, env, clear=True):
+            with patch("litassist.utils.core.click.echo") as mock_echo:
+
+                @heartbeat(0.05)
+                def fn():
+                    # Block deterministically until the heartbeat thread
+                    # reaches its done.wait(0.05) call.
+                    assert captured_signal.acquire(timeout=1.0), (
+                        "heartbeat thread did not reach Event.wait(0.05) "
+                        "within 1s"
+                    )
+                    return "result"
+
+                assert fn() == "result"
+
+        assert mock_echo.call_count >= 1, "heartbeat thread did not emit a ping"
+        assert 0.05 in captured_timeouts, (
+            f"heartbeat did not pass interval=0.05 to Event.wait; "
+            f"captured={captured_timeouts}"
+        )
 
     @patch("litassist.utils.core.click.echo", side_effect=OSError("Broken pipe"))
     def test_heartbeat_ping_thread_handles_exception(self, mock_echo):

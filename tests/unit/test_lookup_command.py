@@ -35,8 +35,6 @@ class TestLookupCommand:
         mock_config.cse_id_comprehensive = None
         mock_config.max_fetch_time = 60
         mock_config.fetch_timeout = 10
-        mock_config.selenium_timeout_multiplier = 2
-        mock_config.selenium_enabled = False
         mock_search_get_config.return_value = mock_config
         mock_init_get_config.return_value = mock_config
 
@@ -102,8 +100,6 @@ class TestLookupCommand:
         mock_config.cse_id_comprehensive = None
         mock_config.max_fetch_time = 60
         mock_config.fetch_timeout = 10
-        mock_config.selenium_timeout_multiplier = 2
-        mock_config.selenium_enabled = False
         mock_search_get_config.return_value = mock_config
         mock_init_get_config.return_value = mock_config
 
@@ -168,8 +164,6 @@ class TestLookupCommand:
         mock_config.cse_id_comprehensive = None
         mock_config.max_fetch_time = 60
         mock_config.fetch_timeout = 10
-        mock_config.selenium_timeout_multiplier = 2
-        mock_config.selenium_enabled = False
         mock_search_get_config.return_value = mock_config
         mock_init_get_config.return_value = mock_config
 
@@ -235,8 +229,6 @@ class TestLookupCommand:
         mock_config.cse_id_comprehensive = None
         mock_config.max_fetch_time = 60
         mock_config.fetch_timeout = 10
-        mock_config.selenium_timeout_multiplier = 2
-        mock_config.selenium_enabled = False
         mock_search_get_config.return_value = mock_config
         mock_init_get_config.return_value = mock_config
 
@@ -371,8 +363,6 @@ class TestLookupCommandIntegration:
         mock_config.cse_id_comprehensive = None
         mock_config.max_fetch_time = 60
         mock_config.fetch_timeout = 10
-        mock_config.selenium_timeout_multiplier = 2
-        mock_config.selenium_enabled = False
         mock_search_get_config.return_value = mock_config
         mock_init_get_config.return_value = mock_config
 

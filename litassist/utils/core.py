@@ -27,7 +27,7 @@ from litassist.utils.formatting import (
 # Logging is now configured centrally in logging_utils.setup_logging()
 
 
-def heartbeat(interval: Optional[int] = None):
+def heartbeat(interval: Optional[float] = None):
     """
     Decorator to emit a heartbeat message every `interval` seconds while a long-running function executes.
 

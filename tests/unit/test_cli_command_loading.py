@@ -58,8 +58,6 @@ citation_validation:
 web_scraping:
   fetch_timeout: 10
   max_fetch_time: 300
-  selenium_enabled: true
-  selenium_timeout_multiplier: 2
 """
             )
         config_path = Path(f.name)
