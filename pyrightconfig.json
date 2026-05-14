@@ -1,12 +1,25 @@
 {
+  // Project venv at ./.venv (created via `python -m venv .venv`).
   "venvPath": ".",
   "venv": ".venv",
+
+  // Match setup.py's declared minimum (3.11). Local dev may run a newer
+  // interpreter, but checking against the declared minimum surfaces any
+  // accidental use of newer syntax / stdlib that would break portability.
   "pythonVersion": "3.11",
+
+  // litassist is installed editable; pyright needs the repo root on the
+  // import path so `from litassist.x import y` resolves the working tree
+  // rather than a stale site-packages copy.
   "extraPaths": ["."],
+
   "include": ["litassist", "tests"],
   "exclude": [
     "**/__pycache__",
     ".venv",
+    // test-scripts/ and scripts/ are ad-hoc integration probes and one-off
+    // helpers — not part of the typed surface. examples/, demo/, outputs/,
+    // logs/, tmp/ contain generated artefacts, not source.
     "test-scripts",
     "scripts",
     "examples",
@@ -16,8 +29,17 @@
     "logs",
     "tmp"
   ],
+
+  // Several transitive deps (click, pinecone-client v2) ship no py.typed
+  // marker, so pyright would otherwise drown the output with errors the
+  // dev cannot fix. Downgrade to warning; suppress stub complaints.
   "reportMissingImports": "warning",
   "reportMissingTypeStubs": "none",
+
+  // pytest tests legitimately monkeypatch attributes (e.g. client._enforce_citations
+  // = True) and inspect decorator internals (e.g. fn.__wrapped__). Those two
+  // checks fire on nearly every test file. Suppress them ONLY under tests/ —
+  // production code keeps the default strictness.
   "executionEnvironments": [
     {
       "root": "tests",

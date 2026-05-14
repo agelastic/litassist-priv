@@ -244,13 +244,22 @@ class TestTiming:
         env.pop("PYTEST_CURRENT_TEST", None)
 
         captured_timeouts = []
+        # Semaphore (not Event) so signalling does not trip the Event.wait spy.
+        captured_signal = threading.Semaphore(0)
         real_wait = threading.Event.wait
 
         def spying_wait(self, timeout=None):
-            captured_timeouts.append(timeout)
-            # End the thread on first wait so the test stays deterministic.
-            self.set()
-            return real_wait(self, 0)
+            # Only react to the heartbeat thread's own wait(0.05). Unrelated
+            # Event.wait calls in pytest/threading internals pass through
+            # unchanged, otherwise they would signal captured_signal early
+            # and let fn() return before the heartbeat thread emits a ping.
+            if timeout == 0.05:
+                captured_timeouts.append(timeout)
+                captured_signal.release()
+                # End the thread on first wait so it does not sleep further.
+                self.set()
+                return real_wait(self, 0)
+            return real_wait(self, timeout)
 
         monkeypatch.setattr(threading.Event, "wait", spying_wait)
 
@@ -259,7 +268,12 @@ class TestTiming:
 
                 @heartbeat(0.05)
                 def fn():
-                    time.sleep(0.01)  # let the heartbeat thread run once
+                    # Block deterministically until the heartbeat thread
+                    # reaches its done.wait(0.05) call.
+                    assert captured_signal.acquire(timeout=1.0), (
+                        "heartbeat thread did not reach Event.wait(0.05) "
+                        "within 1s"
+                    )
                     return "result"
 
                 assert fn() == "result"
