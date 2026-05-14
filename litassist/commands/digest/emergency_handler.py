@@ -27,7 +27,7 @@ class EmergencySaveHandler:
         self.enabled = False
         self.output_prefix = None
 
-    def setup(self, metadata: Dict[str, Any], output_prefix: Optional[str] = None):
+    def setup(self, metadata: Dict[str, Any], output_prefix: Optional[str] = None) -> None:
         """
         Set up emergency save handlers.
 
@@ -46,7 +46,7 @@ class EmergencySaveHandler:
         # Register exit handler
         atexit.register(self._emergency_save)
 
-    def update_output(self, content: str):
+    def update_output(self, content: str) -> None:
         """
         Update the partial output with new content.
 
@@ -56,7 +56,7 @@ class EmergencySaveHandler:
         if self.enabled:
             self.partial_output.append(content)
 
-    def update_metadata(self, key: str, value: Any):
+    def update_metadata(self, key: str, value: Any) -> None:
         """
         Update metadata for emergency save.
 
@@ -67,14 +67,14 @@ class EmergencySaveHandler:
         if self.enabled:
             self.metadata[key] = value
 
-    def disable(self):
+    def disable(self) -> None:
         """Disable emergency save (used when completing normally)."""
         self.enabled = False
         # Unregister handlers
         signal.signal(signal.SIGINT, signal.SIG_DFL)
         signal.signal(signal.SIGTERM, signal.SIG_DFL)
 
-    def _handle_signal(self, signum, frame):
+    def _handle_signal(self, signum, frame) -> None:
         """
         Handle interrupt signals.
 
@@ -88,7 +88,7 @@ class EmergencySaveHandler:
             self._emergency_save()
         sys.exit(1)
 
-    def _emergency_save(self):
+    def _emergency_save(self) -> None:
         """Perform emergency save of partial results."""
         if not self.enabled or not self.partial_output:
             return

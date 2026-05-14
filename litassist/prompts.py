@@ -29,7 +29,7 @@ class PromptManager:
         self.templates = None  # Lazy load - don't load until actually needed
         self._templates_loaded = False
 
-    def _ensure_loaded(self):
+    def _ensure_loaded(self) -> None:
         """Ensure templates are loaded when first accessed."""
         if self.templates is None:
             self.templates = self._load_templates()

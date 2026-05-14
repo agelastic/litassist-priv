@@ -11,7 +11,9 @@ from litassist.prompts import PROMPTS
 
 
 @timed
-def create_consolidated_reasoning_trace(option_traces, outcome, overall_reasoning=None):
+def create_consolidated_reasoning_trace(
+    option_traces, outcome: str, overall_reasoning=None
+) -> str:
     """Create a consolidated reasoning trace from multiple strategy options."""
 
     # Use centralized consolidated reasoning template

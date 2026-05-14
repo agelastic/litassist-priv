@@ -8,7 +8,7 @@ handling parameter management and response processing.
 import time
 import logging
 from datetime import datetime
-from typing import List, Dict, Any, Tuple
+from typing import List, Dict, Any, Tuple, Optional
 
 from litassist.timing import timed
 from litassist.logging import save_log
@@ -76,7 +76,7 @@ class LLMClient(LLMVerificationMixin):
                              for all completions unless overridden.
         """
         self.model = model
-        self.command_context = None  # Track which command is using this client
+        self.command_context: Optional[str] = None  # Track which command is using this client
 
         self.default_params = default_params
         self._client = None  # Will be created when needed
@@ -276,8 +276,8 @@ class LLMClient(LLMVerificationMixin):
                 # Add tool definitions for date handling
                 tools = get_tool_definitions()
 
-                # Add tools to parameters (most models support this)
-                # We'll try with tools, and fall back without if it fails
+                # Tools are sent optimistically; the request is retried
+                # without them on failure.
                 filtered_params_with_tools = filtered_params.copy()
                 filtered_params_with_tools["tools"] = tools
                 # Let the model decide when to call tools (follows "MUST" instruction in prompt)
