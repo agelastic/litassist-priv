@@ -6,7 +6,6 @@ required for LitAssist's operation. All LLM calls route through OpenRouter API.
 """
 
 import os
-import warnings
 import yaml
 from typing import Dict, Any
 
@@ -102,7 +101,7 @@ class Config:
             except yaml.YAMLError as e:
                 raise ConfigError(f"Invalid YAML in {self.config_path}: {e}")
 
-    def _validate_config(self):
+    def _validate_config(self) -> None:
         """
         Validate all required configuration values.
 
@@ -133,27 +132,6 @@ class Config:
             self.pc_key = self.cfg["pinecone"]["api_key"]
             self.pc_env = self.cfg["pinecone"]["environment"]
             self.pc_index = self.cfg["pinecone"]["index_name"]
-
-            # Extract optional LLM settings with defaults
-            llm_config = self.cfg.get("llm", {})
-            if llm_config is None:
-                llm_config = {}
-
-            # Check for deprecated token limit settings
-            if "use_token_limits" in llm_config:
-                warnings.warn(
-                    "use_token_limits is deprecated and ignored (removed November 2025). "
-                    "Models now use API defaults. See docs/development/MODEL_CONFIGURATION.md",
-                    DeprecationWarning,
-                    stacklevel=2
-                )
-            if "token_limit" in llm_config:
-                warnings.warn(
-                    "token_limit is deprecated and ignored (removed November 2025). "
-                    "Models now use API defaults. See docs/development/MODEL_CONFIGURATION.md",
-                    DeprecationWarning,
-                    stacklevel=2
-                )
 
             # Extract optional general settings with defaults
             general_config = self.cfg.get("general", {})
@@ -195,10 +173,9 @@ class Config:
             if not isinstance(val, str) or not val.strip():
                 raise ConfigError(f"config '{key}' must be a non-empty string")
 
-    def _setup_api_keys(self):
+    def _setup_api_keys(self) -> None:
         """Set API keys for external services."""
-        # OpenAI SDK v1.0+ no longer uses global api_key
-        # Keys are now passed when creating client instances
+        # API keys are passed per client instance; no global setup is required.
         pass
 
     def using_placeholders(self) -> Dict[str, bool]:
