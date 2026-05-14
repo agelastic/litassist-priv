@@ -9,6 +9,7 @@ from typing import List, Dict, Tuple
 
 from litassist.prompts import PROMPTS
 from litassist.logging import log_task_event
+from litassist.utils.formatting import format_citation_warnings
 
 
 def analyze_single_chunk(chunk: str, verify: bool, client) -> Tuple[str, Dict]:
@@ -72,10 +73,7 @@ def analyze_single_chunk(chunk: str, verify: bool, client) -> Tuple[str, Dict]:
     if verify:
         citation_issues = client.validate_citations(content)
         if citation_issues:
-            citation_warning = "--- CITATION WARNINGS ---\n"
-            citation_warning += "\n".join(citation_issues)
-            citation_warning += "\n" + "-" * 40 + "\n\n"
-            content = citation_warning + content
+            content = format_citation_warnings(citation_issues) + content
 
     return content, usage
 

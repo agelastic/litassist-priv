@@ -8,7 +8,7 @@ import click
 from typing import List, Dict, Tuple
 
 from litassist.prompts import PROMPTS
-from litassist.utils.formatting import info_message
+from litassist.utils.formatting import info_message, format_citation_warnings
 from litassist.logging import log_task_event
 
 
@@ -92,9 +92,6 @@ def consolidate_analyses(
     if verify:
         citation_issues = client.validate_citations(final_content)
         if citation_issues:
-            citation_warning = "--- CITATION WARNINGS ---\n"
-            citation_warning += "\n".join(citation_issues)
-            citation_warning += "\n" + "-" * 40 + "\n\n"
-            final_content = citation_warning + final_content
+            final_content = format_citation_warnings(citation_issues) + final_content
 
     return final_content, final_usage
