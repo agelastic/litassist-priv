@@ -10,7 +10,7 @@ import os
 import re
 import time
 import click
-from typing import List, Dict, Any, Optional
+from typing import List, Any, Optional
 
 from litassist.prompts import PROMPTS
 from litassist.utils.formatting import verifying_message, info_message
@@ -57,19 +57,6 @@ class LegalReasoningTrace:
         self.command = command
         self.header = header or "Overall Strategic Reasoning"
         self.timestamp = time.strftime("%Y-%m-%d %H:%M:%S")
-
-    def to_dict(self) -> Dict[str, Any]:
-        """Convert reasoning trace to dictionary format."""
-        return {
-            "issue": self.issue,
-            "applicable_law": self.applicable_law,
-            "application": self.application,
-            "conclusion": self.conclusion,
-            "confidence": self.confidence,
-            "sources": self.sources,
-            "command": self.command,
-            "timestamp": self.timestamp,
-        }
 
 
 def create_reasoning_prompt(base_prompt: str, command: str) -> str:
