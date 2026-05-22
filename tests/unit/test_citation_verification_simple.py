@@ -4,7 +4,7 @@ Simple tests for citation verification functionality.
 
 from unittest.mock import Mock, patch
 from litassist.citation_patterns import extract_citations
-from litassist.citation.google_cse import search_jade_via_google_cse
+from litassist.citation.google_cse import search_legal_database_via_cse
 
 
 class TestCitationVerificationBasic:
@@ -28,8 +28,8 @@ class TestCitationVerificationBasic:
 
     @patch("litassist.citation.google_cse.get_config")
     @patch("googleapiclient.discovery.build")
-    def test_search_jade_via_google_cse_not_found(self, mock_build, mock_get_config):
-        """Test Jade search when nothing found."""
+    def test_search_legal_database_via_cse_not_found(self, mock_build, mock_get_config):
+        """Test CSE legal-database search when nothing found."""
         mock_config = Mock()
         mock_config.g_key = "test_key"
         mock_config.cse_id = "test_cse_id"
@@ -43,8 +43,8 @@ class TestCitationVerificationBasic:
             "items": []
         }
 
-        result = search_jade_via_google_cse("[2099] FCA 999")
-        assert result is False
+        success, url, snippet = search_legal_database_via_cse("[2099] FCA 999")
+        assert success is False
 
     def test_citation_extraction_integration(self):
         """Test that citation extraction works with real legal text."""

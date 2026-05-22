@@ -5,7 +5,7 @@ This module handles extraction and cleaning of content and usage data
 from various LLM API response formats.
 """
 
-from typing import Dict, Any, Optional, Tuple
+from typing import Dict, Any, Tuple
 
 
 def extract_content_and_usage(response: Any) -> Tuple[str, Dict[str, Any]]:
@@ -64,68 +64,3 @@ def extract_usage_data(response: Any) -> Dict[str, Any]:
     usage.setdefault("total_tokens", 0)
 
     return usage
-
-
-def clean_response_content(content: str) -> str:
-    """
-    Clean and normalize response content.
-
-    Currently a passthrough but provides a hook for future
-    content cleaning requirements.
-
-    Args:
-        content: Raw content string from LLM
-
-    Returns:
-        Cleaned content string
-    """
-    # Future: Add any content cleaning logic here
-    # For now, just return as-is
-    return content
-
-
-def check_response_errors(response: Any) -> Optional[str]:
-    """
-    Check for errors in the API response.
-
-    Args:
-        response: The API response object
-
-    Returns:
-        Error message if found, None otherwise
-    """
-    # Check for error in response structure
-    if hasattr(response, "error"):
-        return str(response.error)
-
-    # Check for error finish_reason
-    if hasattr(response, "choices") and response.choices:
-        finish_reason = response.choices[0].finish_reason
-        if finish_reason == "error":
-            return "Response finished with error status"
-
-    return None
-
-
-def parse_chat_response(response: Any) -> Tuple[str, Dict[str, Any], Optional[str]]:
-    """
-    Parse a complete chat completion response.
-
-    Args:
-        response: The API response object
-
-    Returns:
-        Tuple of (content, usage dict, error message or None)
-    """
-    # Check for errors first
-    error = check_response_errors(response)
-    if error:
-        return "", {}, error
-
-    # Extract content and usage
-    content, usage = extract_content_and_usage(response)
-
-    # Clean content if needed
-    content = clean_response_content(content)
-
-    return content, usage, None

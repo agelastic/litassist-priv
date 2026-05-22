@@ -5,7 +5,7 @@ Handles parsing of markdown plan output to extract executable bash commands.
 """
 
 
-def extract_cli_commands(plan_content):
+def extract_cli_commands(plan_content: str) -> str:
     """
     Extract all CLI commands from the caseplan output.
 

@@ -203,6 +203,7 @@ temp/
 .code-review-graph/
 # Local agent/IDE config dirs (other tools' configs we removed in cleanup)
 .kiro/
+.letta/
 .mcp.json
 .opencode.json
 .windsurfrules

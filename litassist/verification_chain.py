@@ -566,7 +566,7 @@ def format_cove_report(cove_results: Dict) -> str:
     cove_data = cove_results.get("cove", {})
 
     # Helper to ensure string values (handles None gracefully)
-    def safe_str(value, default):
+    def safe_str(value: str | None, default: str) -> str:
         """Return value if not None, otherwise return default."""
         return value if value is not None else default
 

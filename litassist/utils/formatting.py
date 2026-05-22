@@ -64,3 +64,10 @@ def saved_message(message: str) -> str:
 def verifying_message(message: str) -> str:
     """Format a verifying message with blue [VERIFYING] prefix."""
     return colored_message("[VERIFYING]", message, Colors.BLUE)
+
+
+def format_citation_warnings(
+    issues: list[str], header: str = "CITATION WARNINGS"
+) -> str:
+    """Format citation issues as a warning banner to prepend to output content."""
+    return f"--- {header} ---\n" + "\n".join(issues) + "\n" + "-" * 40 + "\n\n"

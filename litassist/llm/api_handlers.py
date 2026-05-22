@@ -19,7 +19,7 @@ Usage:
 import json
 import logging
 import os
-from typing import Dict, Any, Tuple
+from typing import Dict, Any, Tuple, TYPE_CHECKING
 
 import click
 import requests
@@ -28,6 +28,9 @@ import tenacity
 from litassist.config import get_config
 from litassist.logging import log_task_event
 from litassist.utils.formatting import warning_message
+
+if TYPE_CHECKING:
+    from openai import OpenAI
 
 
 # Custom exception classes for retry logic
@@ -87,7 +90,7 @@ def is_parameter_error(error) -> bool:
     return False
 
 
-def get_openai_client(model_name: str):
+def get_openai_client(model_name: str) -> "OpenAI":
     """
     Get or create OpenAI client with appropriate configuration.
 

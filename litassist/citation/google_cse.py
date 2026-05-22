@@ -149,20 +149,3 @@ def search_legal_database_via_cse(
     )
 
     return (success, found_url, found_snippet)
-
-
-def search_jade_via_google_cse(citation: str, timeout: int = 10) -> bool:
-    """
-    Backward compatibility wrapper for search_legal_database_via_cse.
-
-    Args:
-        citation: The citation to search for
-        timeout: Request timeout in seconds
-
-    Returns:
-        True if citation is found in Jade search results via Google CSE
-    """
-    success, url, snippet = search_legal_database_via_cse(
-        citation, cse_id=None, cse_name="Jade.io", timeout=timeout
-    )
-    return success

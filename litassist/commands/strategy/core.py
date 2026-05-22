@@ -24,6 +24,7 @@ from litassist.utils.formatting import (
     stats_message,
     info_message,
     tip_message,
+    format_citation_warnings,
 )
 from litassist.llm.factory import LLMClientFactory
 from litassist.prompts import PROMPTS
@@ -321,10 +322,12 @@ def strategy(case_facts, outcome, strategies, verify, heavy, noverify, output):
 
         # Prepend citation warnings (if any) before verification
         if citation_issues:
-            citation_warning = "--- CITATION VALIDATION WARNINGS ---\n"
-            citation_warning += "\n".join(citation_issues)
-            citation_warning += "\n" + "-" * 40 + "\n\n"
-            strategy_content = citation_warning + strategy_content
+            strategy_content = (
+                format_citation_warnings(
+                    citation_issues, header="CITATION VALIDATION WARNINGS"
+                )
+                + strategy_content
+            )
 
         # Apply standard verification before generating next steps and draft
         try:
@@ -356,10 +359,12 @@ def strategy(case_facts, outcome, strategies, verify, heavy, noverify, output):
     else:
         # No verification - still prepend citation warnings if any
         if citation_issues:
-            citation_warning = "--- CITATION VALIDATION WARNINGS ---\n"
-            citation_warning += "\n".join(citation_issues)
-            citation_warning += "\n" + "-" * 40 + "\n\n"
-            strategy_content = citation_warning + strategy_content
+            strategy_content = (
+                format_citation_warnings(
+                    citation_issues, header="CITATION VALIDATION WARNINGS"
+                )
+                + strategy_content
+            )
         click.echo(info_message("Standard verification skipped"))
 
     # Generate recommended next steps (using verified strategic options)

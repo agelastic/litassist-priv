@@ -7,13 +7,16 @@ and other text processing operations used throughout LitAssist.
 
 import re
 import logging
-from typing import List, Any
+from typing import List, TYPE_CHECKING
 
 from litassist.timing import timed
 
+if TYPE_CHECKING:
+    from openai.types import Embedding
+
 
 @timed
-def create_embeddings(texts: List[str]) -> List[Any]:
+def create_embeddings(texts: List[str]) -> List["Embedding"]:
     """
     Create embeddings for a list of text inputs.
 

@@ -9,7 +9,7 @@ from datetime import datetime
 import pytz
 
 
-def get_tool_definitions():
+def get_tool_definitions() -> list[dict]:
     """Return tool definitions for LLM function calling."""
     return [
         {
@@ -27,7 +27,7 @@ def get_tool_definitions():
     ]
 
 
-def execute_tool(tool_name, arguments=None):
+def execute_tool(tool_name: str, arguments: dict | None = None) -> dict:
     """Execute a tool and return its result."""
     if tool_name == "now":
         # Get current time in Sydney
@@ -47,7 +47,7 @@ def execute_tool(tool_name, arguments=None):
     raise ValueError(f"Unknown tool: {tool_name}")
 
 
-def format_tool_response(tool_name, result):
+def format_tool_response(tool_name: str, result: dict) -> str:
     """Format tool response for injection into conversation."""
     if tool_name == "now":
         return (
