@@ -129,7 +129,7 @@ def expand_glob_pattern(pattern: str, warn_non_files: bool = True) -> List[str]:
     if not pattern:
         return []
 
-    matches = glob.glob(pattern)
+    matches = sorted(glob.glob(pattern))
     valid_files = []
 
     for f in matches:
@@ -167,7 +167,7 @@ def expand_glob_patterns_callback(ctx, param, value):
         # Check if it's a glob pattern (contains *, ?, or [)
         if any(char in pattern for char in ["*", "?", "["]):
             # Expand the glob pattern
-            matches = glob.glob(pattern)
+            matches = sorted(glob.glob(pattern))
             if not matches:
                 raise click.BadParameter(f"No files matching pattern: {pattern}")
             expanded_paths.extend(matches)

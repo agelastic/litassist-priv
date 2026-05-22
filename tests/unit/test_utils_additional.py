@@ -143,6 +143,22 @@ def test_expand_glob_patterns(tmp_path):
         os.chdir(cwd)
 
 
+def test_expand_glob_patterns_sorts_matches(monkeypatch):
+    """Glob matches must be returned in deterministic sorted order.
+
+    Shells expand globs alphabetically; in-app expansion via glob.glob()
+    returns arbitrary filesystem order. Order-sensitive commands (digest,
+    extractfacts) require the callback to sort so quoted and unquoted
+    patterns behave identically.
+    """
+    monkeypatch.setattr(
+        "litassist.utils.file_ops.glob.glob",
+        lambda pattern: ["z.txt", "a.txt", "m.txt"],
+    )
+    result = expand_glob_patterns(None, None, ("*.txt",))
+    assert list(result) == ["a.txt", "m.txt", "z.txt"]
+
+
 def test_regenerate_bad_strategies_no_issues(monkeypatch):
     from litassist.commands.brainstorm import regenerate_bad_strategies
 
