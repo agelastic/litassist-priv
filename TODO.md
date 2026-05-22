@@ -1,6 +1,6 @@
 # LitAssist Development TODO
 
-Last updated: 30/04/2026
+Last updated: 22/05/2026
 
 **Note:** Strategic feature planning (litigation support, advisory capabilities, new commands) is now in [ROADMAP.md](ROADMAP.md). This file focuses on bugs, technical debt, and code quality improvements.
 
@@ -54,8 +54,9 @@ Last updated: 30/04/2026
 - [ ] Implement circuit‑breaker (`safety_cutoff`) in retry logic [AG-124] - OPTIONAL enhancement (has 5-retry limit)
 - [x] ~~Remove redundant top‑level `litassist.py` entry point~~ - COMPLETED (Oct 2025)
 - [x] ~~Fail fast on config load errors~~ - Already implemented (verified Oct 2025)
-- [ ] REMOVE temporary glob help addon after unification (delete glob_help_addon.yaml, remove concatenation logic)
-- [ ] IMPLEMENT full glob unification (centralize expand_glob_patterns, update 5+ commands)
+- [x] ~~REMOVE temporary glob help addon after unification~~ - COMPLETED (deleted glob_help_addon.yaml, removed concatenation logic in caseplan/plan_generator.py)
+- [x] ~~IMPLEMENT full glob unification~~ - COMPLETED (extractfacts, digest, draft, counselnotes routed through expand_glob_patterns_callback; brainstorm and barbrief already used it)
+- [ ] DEFERRED: extend glob support to strategy --strategies (currently single-file only). Requires changing --strategies from a single file to multiple files plus glob - an interface change deliberately deferred from the glob unification work. See ROADMAP.md P4-25.
 - [x] ~~Develop manual validation scripts for OpenRouter and extended RAG workflows (in test-scripts/)~~ - COMPLETED (test_integrations.py, test_quality.py, test_cli_comprehensive.sh exist)
 - [ ] Enhance QA loops: iterative improvement, contingency planning, multi-perspective reviews
 - [ ] Keep documentation current with new features as they are implemented
@@ -89,7 +90,7 @@ _No critical bugs identified - all items below verified as already implemented o
 ### Next Steps
 1. Review and prioritize remaining TODO items for next sprint
 2. Consider implementing circuit-breaker enhancement for API retries
-3. Evaluate glob unification plan for implementation (also in ROADMAP.md P4-25)
+3. Extend glob support to strategy --strategies (deferred glob-unification item; see Pending Tasks)
 4. Review ongoing prompt optimization opportunities (October 2025 model strategy implemented)
 5. See ROADMAP.md for strategic feature implementation planning
 

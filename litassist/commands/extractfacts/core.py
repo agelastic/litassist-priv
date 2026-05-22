@@ -13,6 +13,7 @@ from litassist.utils.core import (
 )
 from litassist.utils.legal_reasoning import verify_content_if_needed
 from litassist.utils.formatting import info_message
+from litassist.utils.file_ops import expand_glob_patterns_callback as expand_glob_patterns
 from litassist.logging import (
     save_log,
     save_command_output,
@@ -26,7 +27,9 @@ from .multi_extractor import extract_multi_chunk
 
 
 @click.command()
-@click.argument("file", nargs=-1, required=True, type=click.Path(exists=True))
+@click.argument(
+    "file", nargs=-1, required=True, type=click.Path(), callback=expand_glob_patterns
+)
 @click.option(
     "--verify", is_flag=True, help="Enable self-critique pass (default: auto-enabled)"
 )

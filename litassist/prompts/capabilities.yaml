@@ -31,7 +31,7 @@ capabilities:
 
     ### digest - Document Intelligence Processor
     Purpose: Extracts key facts, issues, and evidence from large document sets
-    Syntax: litassist digest FILE [FILE...] [options]
+    Syntax: litassist digest FILE [FILE...] [options] (FILE arguments support glob patterns)
     Inputs: Multiple PDFs, text files, images (contracts, statements, evidence)
     Outputs: Structured summaries or issue-spotting reports with key findings
     Strategic Use: Critical for discovering hidden facts and strengthening case_facts.txt
@@ -51,7 +51,7 @@ capabilities:
 
     ### extractfacts - Structured Fact Organizer
     Purpose: Converts raw documents into structured 10-heading case facts format
-    Syntax: litassist extractfacts FILE [FILE...] [options]
+    Syntax: litassist extractfacts FILE [FILE...] [options] (FILE arguments support glob patterns)
     Inputs: Source documents (witness statements, affidavits, chronologies) - NOT case_facts.txt
     Outputs: Properly structured case_facts.txt ready for strategic analysis
     Strategic Use: Essential first step - creates foundation for all downstream analysis
@@ -112,7 +112,7 @@ capabilities:
 
     ### counselnotes - Multi-Document Strategic Synthesizer
     Purpose: Synthesizes multiple documents/analyses into cohesive strategic assessment
-    Syntax: litassist counselnotes FILE [FILE...] [options]
+    Syntax: litassist counselnotes FILE [FILE...] [options] (FILE arguments support glob patterns)
     Inputs: Any combination of documents, research, strategies, briefs
     Outputs: High-level strategic analysis with practical recommendations
     Strategic Use: CRITICAL for synthesis - transforms information into actionable intelligence
@@ -157,7 +157,7 @@ capabilities:
 
     ### draft - Precision Legal Document Creator
     Purpose: Generates litigation documents, correspondence, and memoranda with citations
-    Syntax: litassist draft FILE [FILE...] "description" [options]
+    Syntax: litassist draft FILE [FILE...] "description" [options] (FILE arguments support glob patterns)
     Inputs: Multiple source documents plus specific drafting instruction
     Outputs: Publication-ready legal documents with verified citations
     Strategic Use: Transforms strategy into concrete legal documents

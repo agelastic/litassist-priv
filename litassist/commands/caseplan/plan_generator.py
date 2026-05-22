@@ -73,13 +73,6 @@ def generate_full_plan(
     prompt_parts.append(PROMPTS.get(analysis_prompt_key))
     user_prompt = "\n\n".join(prompt_parts)
 
-    # Add glob help section if available
-    try:
-        glob_help = PROMPTS.get("glob_help_section")
-        user_prompt = f"{user_prompt}\n\n{glob_help}"
-    except KeyError:
-        pass  # Glob help addon not available
-
     @timed
     def _generate_plan():
         """Execute plan generation LLM call with timing."""

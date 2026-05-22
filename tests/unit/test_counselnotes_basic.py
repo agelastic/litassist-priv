@@ -145,4 +145,10 @@ class TestCounselNotesBasic:
         """Test error handling for missing files."""
         result = self.runner.invoke(counselnotes, ["nonexistent.txt"])
         assert result.exit_code != 0
-        assert "does not exist" in result.output
+        assert "not found" in result.output
+
+    def test_glob_pattern_no_match(self):
+        """A glob pattern matching no files is rejected by the glob callback."""
+        result = self.runner.invoke(counselnotes, ["no_such_files_*.xyz"])
+        assert result.exit_code != 0
+        assert "No files matching pattern" in result.output
