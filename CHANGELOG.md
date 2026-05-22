@@ -1,6 +1,6 @@
 # Changelog
 
-Last updated: 18/02/2026
+Last updated: 22/05/2026
 
 All notable changes to LitAssist will be documented in this file.
 
@@ -19,6 +19,25 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Case plan generation for litigation planning
 
 ### Changed
+
+#### November 2025: Token Limit System Removal
+- Removed the global token limit system (use_token_limits flag and automatic 16K output limits)
+- Increased input file size limits: brainstorm (50K to 600K), caseplan (50K to 600K), strategy (100K+100K to 600K combined)
+- Clarified thinking_effort as a reasoning budget rather than an output limit
+- Quality prioritised over cost: models use API defaults for comprehensive outputs
+- Deprecation warnings added for old config files
+- All 390 tests passing
+
+#### November 2025: Verification System Enhancements & Tooling
+- Added `--heavy` flag to the verify command for premium verification using gpt-5-pro
+- Added `--noverify` flag to extractfacts, draft, and strategy commands for skipping verification
+- Changed default verify-soundness model from gpt-5-pro to claude-opus-4.1 (cost optimisation)
+- Fixed `verify_content_if_needed()` to properly respect the verify_flag parameter
+- Citation validation improvements with header analysis for PDF content
+- PDF search validation with automatic retry logic (up to 3 attempts)
+- Anti-injection prompt protection added for all LLM calls
+- Raw pre-verification output persistence for audit trail compliance
+- All 392 tests passing
 
 #### October 2025: Major Model Upgrade - Three-Tier Strategy Implementation
 - **Implemented three-tier model strategy** for optimal accuracy and cost-efficiency:
