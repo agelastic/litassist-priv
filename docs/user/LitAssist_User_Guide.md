@@ -1,6 +1,6 @@
 # LitAssist User Guide
 
-Last updated: 18/02/2026
+Last updated: 22/05/2026
 
 ## Overview
 
@@ -193,6 +193,8 @@ a chronological summary or legal issues identification.
 litassist digest <files>... [OPTIONS]
 ```
 
+The `files` argument supports glob patterns.
+
 | Option | Type | Description |
 |--------|------|-------------|
 | `--mode` | `summary` / `issues` | Chronological summary or legal issue identification |
@@ -223,6 +225,8 @@ format used by brainstorm, strategy, and barbrief commands.
 ```bash
 litassist extractfacts <files>... [OPTIONS]
 ```
+
+The `files` argument supports glob patterns.
 
 | Option | Type | Description |
 |--------|------|-------------|
@@ -323,6 +327,8 @@ Pinecone embeddings with MMR re-ranking.
 litassist draft <documents>... <query> [OPTIONS]
 ```
 
+The `documents` argument supports glob patterns.
+
 | Option | Type | Description |
 |--------|------|-------------|
 | `--heavy` | flag | Use GPT-5 Pro for verification |
@@ -354,6 +360,8 @@ neutral analysis from digest. Supports structured JSON extraction modes.
 ```bash
 litassist counselnotes <files>... [OPTIONS]
 ```
+
+The `files` argument supports glob patterns.
 
 | Option | Type | Description |
 |--------|------|-------------|

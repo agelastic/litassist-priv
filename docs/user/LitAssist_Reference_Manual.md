@@ -1,6 +1,6 @@
 # LitAssist Reference Manual
 
-Last updated: 23/02/2026
+Last updated: 22/05/2026
 
 ---
 
@@ -688,7 +688,7 @@ litassist digest <files>... [OPTIONS]
 
 | Argument | Description |
 |----------|-------------|
-| `files` | One or more document files (PDF or text) |
+| `files` | One or more document files (PDF or text), glob supported |
 
 **Options:**
 
@@ -767,7 +767,7 @@ litassist extractfacts <files>... [OPTIONS]
 
 | Argument | Description |
 |----------|-------------|
-| `files` | One or more document files (PDF or text) |
+| `files` | One or more document files (PDF or text), glob supported |
 
 **Options:**
 
@@ -1087,7 +1087,7 @@ litassist draft <documents>... <query> [OPTIONS]
 
 | Argument | Description |
 |----------|-------------|
-| `documents` | One or more document files (PDF or text) as knowledge base |
+| `documents` | One or more document files (PDF or text) as knowledge base, glob supported |
 | `query` | The specific legal topic or argument to draft |
 
 **Options:**
@@ -1177,7 +1177,7 @@ litassist counselnotes <files>... [OPTIONS]
 
 | Argument | Description |
 |----------|-------------|
-| `files` | One or more document files (PDF or text) |
+| `files` | One or more document files (PDF or text), glob supported |
 
 **Options:**
 

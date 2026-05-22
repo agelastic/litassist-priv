@@ -1,7 +1,7 @@
 # LitAssist Centralized Prompt Management
 
 **Status**: Implementation Complete (Phase 1 & 2)
-Last updated: 18/02/2026
+Last updated: 22/05/2026
 
 ## Overview
 
@@ -277,7 +277,6 @@ litassist/
 │   ├── caseplan.yaml         # Workflow planning prompts
 │   ├── documents.yaml        # Legal document templates
 │   ├── formats.yaml          # Output format templates
-│   ├── glob_help_addon.yaml  # Glob pattern help text
 │   ├── lookup.yaml           # Lookup command prompts
 │   ├── processing.yaml       # Digest/draft processing prompts
 │   ├── reasoning.yaml        # Reasoning-related prompts
