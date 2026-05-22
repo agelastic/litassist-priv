@@ -6,13 +6,20 @@ and managing strategy rankings.
 """
 
 import time
+from typing import TYPE_CHECKING
+
 from litassist.timing import timed
 from litassist.prompts import PROMPTS
+
+if TYPE_CHECKING:
+    from litassist.utils.legal_reasoning import LegalReasoningTrace
 
 
 @timed
 def create_consolidated_reasoning_trace(
-    option_traces, outcome: str, overall_reasoning=None
+    option_traces: list[dict],
+    outcome: str,
+    overall_reasoning: "LegalReasoningTrace | None" = None,
 ) -> str:
     """Create a consolidated reasoning trace from multiple strategy options."""
 

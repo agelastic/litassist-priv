@@ -8,8 +8,11 @@ the digest process is interrupted or fails.
 import sys
 import atexit
 import signal
-from typing import Dict, Any, Optional
+from typing import TYPE_CHECKING, Dict, Any, Optional
 from litassist.logging import save_command_output
+
+if TYPE_CHECKING:
+    from types import FrameType
 
 
 class EmergencySaveHandler:
@@ -74,7 +77,7 @@ class EmergencySaveHandler:
         signal.signal(signal.SIGINT, signal.SIG_DFL)
         signal.signal(signal.SIGTERM, signal.SIG_DFL)
 
-    def _handle_signal(self, signum, frame) -> None:
+    def _handle_signal(self, signum: int, frame: Optional["FrameType"]) -> None:
         """
         Handle interrupt signals.
 
