@@ -12,6 +12,7 @@ from litassist.timing import timed
 from litassist.utils.core import (
     show_command_completion,
 )
+from litassist.utils.file_ops import expand_glob_patterns_callback as expand_glob_patterns
 from litassist.logging import (
     save_log,
     save_command_output,
@@ -26,7 +27,9 @@ from .consolidator import consolidate_analyses
 
 
 @click.command()
-@click.argument("files", nargs=-1, type=click.Path(exists=True), required=True)
+@click.argument(
+    "files", nargs=-1, type=click.Path(), required=True, callback=expand_glob_patterns
+)
 @click.option(
     "--extract",
     type=click.Choice(["all", "citations", "principles", "checklist"]),

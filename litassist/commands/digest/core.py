@@ -10,6 +10,7 @@ from litassist.logging import save_log, save_command_output, log_task_event
 from litassist.timing import timed
 from litassist.utils.core import show_command_completion
 from litassist.utils.formatting import info_message, warning_message
+from litassist.utils.file_ops import expand_glob_patterns_callback as expand_glob_patterns
 from litassist.llm.factory import LLMClientFactory
 from litassist.llm.api_handlers import NonRetryableAPIError
 from litassist.prompts import PROMPTS
@@ -31,7 +32,9 @@ from .emergency_handler import create_emergency_handler
 
 
 @click.command()
-@click.argument("file", nargs=-1, required=True, type=click.Path(exists=True))
+@click.argument(
+    "file", nargs=-1, required=True, type=click.Path(), callback=expand_glob_patterns
+)
 @click.option("--mode", type=click.Choice(["summary", "issues"]), default="summary")
 @click.option(
     "--context",

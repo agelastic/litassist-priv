@@ -1,6 +1,6 @@
 # LitAssist Feature Roadmap
 
-Last updated: 18/02/2026
+Last updated: 22/05/2026
 **Status:** Strategic Planning Phase -- no features from this roadmap have been implemented yet
 **Confidence:** 0.88
 
@@ -889,16 +889,24 @@ Features are prioritized to support active litigation (ACT civil matters), profe
 
 ---
 
-### P4-25: Glob Unification [From codebase review]
+### P4-25: Glob Unification [DONE]
 **Effort:** 2-3 hours
 **Priority:** LOW
 
 **Purpose:** Centralize glob pattern expansion
 
+**Status:** Complete
+
 **Implementation:**
-- Centralize in `utils/file_ops.py`
-- Update 5+ commands
-- Remove temporary `prompts/glob_help_addon.yaml`
+- Glob expansion centralised in `utils/file_ops.py`
+- `extractfacts`, `digest`, `draft`, and `counselnotes` route their FILE
+  arguments through `expand_glob_patterns_callback`, matching `brainstorm`
+  and `barbrief`
+- Temporary `prompts/glob_help_addon.yaml` removed
+
+**Deferred:**
+- Glob support for `strategy --strategies` remains outstanding: it requires
+  changing the option from a single-file to a multiple-files interface
 
 ---
 
@@ -1035,6 +1043,6 @@ la profile --create "Agency A" --type government
 
 ---
 
-Last updated: 18/02/2026
+Last updated: 22/05/2026
 **Status:** Strategic Planning Phase -- no features from this roadmap have been implemented yet
 **Next Review:** After Phase 1 completion

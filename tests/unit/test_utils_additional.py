@@ -143,6 +143,37 @@ def test_expand_glob_patterns(tmp_path):
         os.chdir(cwd)
 
 
+def test_expand_glob_patterns_sorts_matches(monkeypatch):
+    """Glob matches must be returned in deterministic sorted order.
+
+    Shells expand globs alphabetically; in-app expansion via glob.glob()
+    returns arbitrary filesystem order. Order-sensitive commands (digest,
+    extractfacts) require the callback to sort so quoted and unquoted
+    patterns behave identically.
+    """
+    monkeypatch.setattr(
+        "litassist.utils.file_ops.glob.glob",
+        lambda pattern: ["z.txt", "a.txt", "m.txt"],
+    )
+    monkeypatch.setattr("litassist.utils.file_ops.os.path.isfile", lambda p: True)
+    result = expand_glob_patterns(None, None, ("*.txt",))
+    assert list(result) == ["a.txt", "m.txt", "z.txt"]
+
+
+def test_expand_glob_patterns_accepts_literal_bracketed_filename(tmp_path):
+    """Literal filenames containing [ must be accepted, not treated as globs.
+
+    Legal documents are commonly named with bracketed annotations such as
+    'Evidence [final].pdf' or 'Memo [draft].pdf'. The callback's glob
+    detection used to treat any '[' as a glob marker, causing glob.glob to
+    interpret '[final]' as a character class and reject the literal file.
+    """
+    bracketed = tmp_path / "Evidence [final].pdf"
+    bracketed.write_text("x")
+    result = expand_glob_patterns(None, None, (str(bracketed),))
+    assert result == (str(bracketed),)
+
+
 def test_regenerate_bad_strategies_no_issues(monkeypatch):
     from litassist.commands.brainstorm import regenerate_bad_strategies
 

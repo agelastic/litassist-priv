@@ -1,6 +1,6 @@
 # LitAssist System Prompts Report
 
-Last updated: 18/02/2026
+Last updated: 22/05/2026
 **Status**: Reference Document
 
 ## Overview
@@ -234,7 +234,6 @@ All prompts are defined in YAML files under `litassist/prompts/`:
 - `formats.yaml` - Output format specifications
 - `capabilities.yaml` - Command capability descriptions
 - `system_feedback.yaml` - User feedback and help prompts
-- `glob_help_addon.yaml` - Glob pattern help
 
 ## Key Patterns
 

@@ -17,6 +17,7 @@ from litassist.utils.legal_reasoning import (
     verify_content_if_needed,
 )
 from litassist.utils.core import show_command_completion
+from litassist.utils.file_ops import expand_glob_patterns_callback as expand_glob_patterns
 from litassist.llm.factory import LLMClientFactory
 
 from .document_processor import read_and_categorize_documents, build_text_context
@@ -25,7 +26,13 @@ from .prompt_builder import build_system_prompt, build_user_prompt
 
 
 @click.command()
-@click.argument("documents", nargs=-1, required=True, type=click.Path(exists=True))
+@click.argument(
+    "documents",
+    nargs=-1,
+    required=True,
+    type=click.Path(),
+    callback=expand_glob_patterns,
+)
 @click.argument("query")
 @click.option(
     "--heavy",
