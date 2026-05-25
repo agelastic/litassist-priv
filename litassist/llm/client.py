@@ -24,7 +24,6 @@ from .retry_handler import handle_citation_retry
 from .citation_handler import process_citation_verification, handle_retry_failure
 from .tools import get_tool_definitions, execute_tool, format_tool_response
 from .parameter_handler import (
-    get_model_family,
     get_model_parameters,
     supports_system_messages,
 )
@@ -46,13 +45,13 @@ class LLMClient(LLMVerificationMixin):
     as legal self-critique verification.
 
     Attributes:
-        model: The model identifier to use for completions (e.g., 'openai/gpt-4o').
+        model: The model identifier to use for completions (provider/model slug).
         default_params: Default parameters dictionary for completions.
 
     Example:
         ```python
         # Initialize client with default parameters
-        client = LLMClient("anthropic/claude-sonnet-4.6", temperature=0.2, top_p=0.8)
+        client = LLMClient("<provider>/<model>", temperature=0.2, top_p=0.8)
 
         # Run a completion
         content, usage = client.complete([
@@ -71,7 +70,7 @@ class LLMClient(LLMVerificationMixin):
         Initialize an LLM client for chat completions.
 
         Args:
-            model: The model name to use (e.g., 'openai/gpt-4o', 'anthropic/claude-sonnet-4.6').
+            model: The model identifier to use (provider/model slug).
             **default_params: Default decoding parameters (temperature, top_p, etc.) to use
                              for all completions unless overridden.
         """
@@ -234,16 +233,8 @@ class LLMClient(LLMVerificationMixin):
         # Merge default and override parameters
         params = {**self.default_params, **overrides}
 
-        # Determine the correct model name
+        # All calls route through OpenRouter, which requires provider/model slugs.
         model_name = self.model
-
-        # Extract just the model name for direct OpenAI models
-        if (
-            self.model.startswith("openai/")
-            and "/" in self.model
-            and not get_model_family(self.model) == "openai_reasoning"
-        ):
-            model_name = self.model.replace("openai/", "")
 
         try:
             # Filter parameters based on model capabilities

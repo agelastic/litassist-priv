@@ -48,6 +48,14 @@ class TestThinkingEffortConversion:
             "reasoning": {"effort": "low"}
         }
 
+        # GPT-5.5 family must emit reasoning effort (regression: previously dropped)
+        assert convert_thinking_effort("medium", "openai/gpt-5.5") == {
+            "reasoning": {"effort": "medium"}
+        }
+        assert convert_thinking_effort("max", "openai/gpt-5.5") == {
+            "reasoning": {"effort": "high"}
+        }
+
     def test_anthropic_thinking_conversion(self):
         """Test Anthropic Claude reasoning object conversion for OpenRouter."""
         # Test none returns empty

@@ -1,8 +1,10 @@
 ---
 # LLM Model Configurations for Commands
-# Last updated: 2026-02-26
+# Last updated: 23/05/2026
 # NO FALLBACKS - Missing keys will raise KeyError
 
+# extractfacts: deterministic structured extraction from legal documents.
+# Anthropic family chosen because temperature/top_p are honoured (GPT-5 family strips them).
 extractfacts:
   model: "anthropic/claude-sonnet-4.6"
   temperature: 0
@@ -12,7 +14,7 @@ extractfacts:
   disable_tools: true
 
 strategy:
-  model: "anthropic/claude-sonnet-4.6"
+  model: "anthropic/claude-opus-4.7"
   temperature: 0.7
   top_p: 0.95
   thinking_effort: "max"
@@ -36,7 +38,7 @@ brainstorm-orthodox:
   disable_tools: true
 
 brainstorm-unorthodox:
-  model: "x-ai/grok-4"
+  model: "x-ai/grok-4.20"
   temperature: 0.8
   top_p: 0.95
   min_p: 0.05
@@ -83,7 +85,7 @@ lookup:
   disable_tools: true
 
 verification:
-  model: "openai/gpt-5.1"
+  model: "openai/gpt-5.5"
   temperature: 0.2
   top_p: 0.3
   thinking_effort: "medium"
@@ -99,7 +101,7 @@ verification-light:
   disable_tools: true
 
 verification-heavy:
-  model: "openai/gpt-5-pro"
+  model: "openai/gpt-5.5"
   temperature: 0.2
   top_p: 0.3
   thinking_effort: "max"
@@ -115,7 +117,7 @@ verify-reasoning:
   disable_tools: true
 
 verify-reasoning-heavy:
-  model: "openai/gpt-5-pro"
+  model: "openai/gpt-5.5"
   temperature: 0.2
   top_p: 0.3
   thinking_effort: "max"
@@ -123,7 +125,7 @@ verify-reasoning-heavy:
   disable_tools: true
 
 verify-soundness:
-  model: "anthropic/claude-opus-4.1"
+  model: "anthropic/claude-opus-4.7"
   temperature: 0.2
   top_p: 0.3
   thinking_effort: "high"
@@ -132,7 +134,7 @@ verify-soundness:
   disable_tools: true
 
 verify-soundness-heavy:
-  model: "openai/gpt-5-pro"
+  model: "openai/gpt-5.5"
   temperature: 0.2
   top_p: 0.3
   thinking_effort: "max"
@@ -187,7 +189,7 @@ cove-questions:
   disable_tools: true
 
 cove-answers:
-  model: "openai/gpt-5.1"
+  model: "openai/gpt-5.5"
   temperature: 0.5
   top_p: 0.8
   thinking_effort: "high"
@@ -203,7 +205,7 @@ cove-verify:
   disable_tools: true
 
 cove-answers-heavy:
-  model: "openai/gpt-5-pro"
+  model: "openai/gpt-5.5"
   temperature: 0.5
   top_p: 0.8
   thinking_effort: "max"
