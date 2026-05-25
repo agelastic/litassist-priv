@@ -269,24 +269,30 @@ def test_litassist_models(model_type="fast"):
             )
             return result
 
-        from litassist.llm import LLMClientFactory
+        from litassist.llm.factory import LLMClientFactory
+        from litassist.llm.parameter_handler import get_model_family
 
         print("Testing availability of models used by LitAssist commands...")
 
-        # Fast models - tested by default with --all
-        fast_models = {
-            "extractfacts": "anthropic/claude-sonnet-4.6",
-            "strategy": "anthropic/claude-sonnet-4.6",
-            "brainstorm-orthodox": "anthropic/claude-sonnet-4.6",
-            "brainstorm-unorthodox": "x-ai/grok-4",
-            "digest-summary": "anthropic/claude-sonnet-4.6",
-            "lookup": "anthropic/claude-sonnet-4.6",
-        }
+        # Pull models from configuration; classify by family.
+        # Reasoning-family models are treated as slow/expensive (tested only with --slow).
+        all_configs = LLMClientFactory.list_configurations()
+        fast_commands = [
+            "extractfacts",
+            "strategy",
+            "brainstorm-orthodox",
+            "brainstorm-unorthodox",
+            "digest-summary",
+            "lookup",
+        ]
+        slow_commands = ["draft"]
 
-        # Slow/expensive models - only tested with --slow or --openrouter
-        slow_models = {
-            "draft": "openai/o3-pro",
-        }
+        def _model_for(cmd):
+            return all_configs[cmd]["model"]
+
+        fast_models = {cmd: _model_for(cmd) for cmd in fast_commands if cmd in all_configs}
+        slow_models = {cmd: _model_for(cmd) for cmd in slow_commands if cmd in all_configs}
+        _ = get_model_family  # available for future classification
 
         # Select models based on test type
         if model_type == "fast":
@@ -305,7 +311,7 @@ def test_litassist_models(model_type="fast"):
                     cmd, subtype = command.split("-", 1)
                     client = LLMClientFactory.for_command(cmd, subtype)
                 else:
-                    # Override verbosity for o3-pro models (they only accept "medium")
+                    # Reasoning models only accept "medium" verbosity
                     if command == "draft":
                         client = LLMClientFactory.for_command(command, verbosity="medium")
                     else:
@@ -313,9 +319,10 @@ def test_litassist_models(model_type="fast"):
 
                 actual_model = client.model
 
-                # Test a minimal completion to verify model is accessible
-                # For o3-pro models, avoid system messages as they don't support them
-                if "o3" in actual_model or "o1" in actual_model:
+                # Test a minimal completion to verify model is accessible.
+                # Reasoning-family models do not support system messages.
+                from litassist.llm.parameter_handler import get_model_family
+                if get_model_family(actual_model) == "openai_reasoning":
                     test_messages = [
                         {"role": "user", "content": "Reply with 'OK'"},
                     ]
@@ -425,8 +432,9 @@ def test_openrouter_australian_judgment():
         # Configure OpenAI client with OpenRouter base
         client = OpenAI(api_key=OR_KEY, base_url=OR_BASE)
 
-        # Use a model that LitAssist actually uses
-        model = "anthropic/claude-sonnet-4.6"
+        # Use a model the project actually configures (extractfacts is a stable representative)
+        from litassist.llm.factory import LLMClientFactory
+        model = LLMClientFactory.list_configurations()["extractfacts"]["model"]
         print(f"Testing Australian judgment format with {model} via OpenRouter...")
 
         # Test with a more explicit request for Australian judgment format
@@ -506,7 +514,7 @@ def test_openrouter_australian_judgment():
         result.failure(
             e,
             context={
-                "model": model if "model" in locals() else "anthropic/claude-sonnet-4.6",
+                "model": model if "model" in locals() else "unknown",
                 "api_base": OR_BASE,
                 "request_type": "australian_judgment_format",
             },
@@ -532,8 +540,9 @@ def test_openrouter_case_citation():
         # Configure OpenAI client with OpenRouter base
         client = OpenAI(api_key=OR_KEY, base_url=OR_BASE)
 
-        # Use a model that LitAssist actually uses
-        model = "anthropic/claude-sonnet-4.6"
+        # Use a model the project actually configures
+        from litassist.llm.factory import LLMClientFactory
+        model = LLMClientFactory.list_configurations()["extractfacts"]["model"]
         print(f"Testing Australian case citation format with {model} via OpenRouter...")
 
         # Test with a request to format citations correctly in Australian style
@@ -615,7 +624,7 @@ def test_openrouter_case_citation():
         result.failure(
             e,
             context={
-                "model": model if "model" in locals() else "anthropic/claude-sonnet-4.6",
+                "model": model if "model" in locals() else "unknown",
                 "api_base": OR_BASE,
                 "request_type": "australian_citation_format",
             },
@@ -1398,11 +1407,13 @@ def test_verification_system():
 
         print("Testing verification system with real LLM calls...")
         from litassist.llm import LLMClient
+        from litassist.llm.factory import LLMClientFactory
 
-        # Test with real LLM calls to measure actual verification effectiveness
-        # Use OpenRouter to access Claude for verification testing
-        print("Initializing Claude for verification effectiveness testing...")
-        test_client = LLMClient("anthropic/claude-sonnet-4.6", temperature=0.2)
+        # Test with real LLM calls to measure actual verification effectiveness.
+        # Use the configured verification-light model (Anthropic family) as a stable proxy.
+        verification_model = LLMClientFactory.list_configurations()["verification-light"]["model"]
+        print(f"Initializing {verification_model} for verification effectiveness testing...")
+        test_client = LLMClient(verification_model, temperature=0.2)
 
         # Test cases with known issues that verification should catch
         test_cases = [
@@ -1490,9 +1501,9 @@ def test_verification_system():
             "critical_commands_auto_verify": test_client.should_auto_verify(
                 "test", "extractfacts"
             ),
-            "grok_auto_verify": LLMClient("x-ai/grok-3").should_auto_verify(
-                "test"
-            ),
+            "grok_auto_verify": LLMClient(
+                LLMClientFactory.list_configurations()["brainstorm-unorthodox"]["model"]
+            ).should_auto_verify("test"),
             "real_llm_verification_works": any(
                 "correction" in r["corrections_sample"].lower()
                 or "error" in r["corrections_sample"].lower()
@@ -1519,7 +1530,7 @@ def test_verification_system():
                 f"Verification effectiveness score ({quality_score}/100) below threshold. Results: {verification_results}",
                 context={
                     "api_base": OR_BASE,
-                    "test_client_model": "anthropic/claude-sonnet-4.6",
+                    "test_client_model": test_client.model,
                     "quality_score": quality_score,
                     "test_cases": [tc["name"] for tc in test_cases],
                 },
@@ -1553,7 +1564,7 @@ if __name__ == "__main__":
         "--verification", action="store_true", help="Test verification system quality"
     )
     parser.add_argument(
-        "--slow", action="store_true", help="Test slow/expensive models (o3-pro, etc)"
+        "--slow", action="store_true", help="Test slow/expensive reasoning-family models"
     )
 
     args = parser.parse_args()

@@ -8,6 +8,8 @@ from unittest.mock import Mock, patch
 
 from litassist.llm.client import LLMClient
 
+_MOCK_MODEL = "test/mock-model"
+
 
 class TestVerifyModes:
     """Test different verification modes in verify_with_level."""
@@ -18,7 +20,7 @@ class TestVerifyModes:
         with patch("litassist.config.CONFIG") as mock_config:
             mock_config.openrouter_key = "test_key"
             mock_config.openai_key = "test_key"
-            self.client = LLMClient("anthropic/claude-sonnet-4.6")
+            self.client = LLMClient(_MOCK_MODEL)
 
     @patch("litassist.llm.factory.LLMClientFactory.for_command")
     def test_light_verification_mode(self, mock_for_command):
@@ -126,7 +128,7 @@ class TestVerifyModes:
         # Mock the verify method
         mock_verify.return_value = (
             "Standard verification complete.",
-            "anthropic/claude-opus-4.1",
+            _MOCK_MODEL,
         )
 
         # Call verify_with_level with invalid level
@@ -135,7 +137,7 @@ class TestVerifyModes:
         # Check the result
         assert result == (
             "Standard verification complete.",
-            "anthropic/claude-opus-4.1",
+            _MOCK_MODEL,
         )
 
         # Verify that the standard verify method was called
@@ -172,7 +174,7 @@ class TestVerifyModes:
         """Test that unknown levels call the standard verify method."""
         mock_verify.return_value = (
             "Standard verification",
-            "anthropic/claude-opus-4.1",
+            _MOCK_MODEL,
         )
 
         # Test various unknown levels
@@ -181,5 +183,5 @@ class TestVerifyModes:
 
             result = self.client.verify_with_level("Test", level=level)
 
-            assert result == ("Standard verification", "anthropic/claude-opus-4.1")
+            assert result == ("Standard verification", _MOCK_MODEL)
             mock_verify.assert_called_once_with("Test")

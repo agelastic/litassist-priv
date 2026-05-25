@@ -40,7 +40,7 @@ def verify_reasoning(
         reference_context: Optional reference files context
         citation_report: Optional citation report for context
         output: Optional custom output filename prefix
-        heavy: Use verification-heavy mode (gpt-5-pro)
+        heavy: Use verification-heavy mode (max thinking effort)
 
     Returns:
         tuple: (reasoning_response, reasoning_file, existing_trace)

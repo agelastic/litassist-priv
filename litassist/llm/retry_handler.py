@@ -44,7 +44,7 @@ def execute_retry_request(
     Execute a retry request with enhanced messages.
 
     Args:
-        model: Full model identifier (e.g., "openai/o3-pro")
+        model: Full model identifier (provider/model slug)
         model_name: Model name for API call
         enhanced_messages: Messages with citation instructions added
         params: Model parameters

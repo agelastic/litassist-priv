@@ -62,7 +62,7 @@ def save_strategy_outputs(
     if noverify:
         metadata["Verification"] = "Skipped (--noverify)"
     else:
-        verification_mode = "verification-heavy (gpt-5-pro)" if heavy else "Standard verification"
+        verification_mode = "verification-heavy (max thinking effort)" if heavy else "Standard verification"
         metadata["Verification"] = verification_mode
     if llm_model:
         metadata["Model"] = llm_model

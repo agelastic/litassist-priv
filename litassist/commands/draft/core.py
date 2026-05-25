@@ -37,7 +37,7 @@ from .prompt_builder import build_system_prompt, build_user_prompt
 @click.option(
     "--heavy",
     is_flag=True,
-    help="Use verification-heavy mode (gpt-5-pro instead of gpt-5)",
+    help="Use verification-heavy mode (max thinking effort)",
 )
 @click.option(
     "--noverify",
@@ -197,7 +197,7 @@ def draft(ctx, documents, query, heavy, noverify, diversity, output):
         content, _ = verify_content_if_needed(
             client, content, "draft", verify_flag=True, heavy=heavy
         )
-        verification_mode = "verification-heavy (gpt-5-pro)" if heavy else "Standard verification"
+        verification_mode = "verification-heavy (max thinking effort)" if heavy else "Standard verification"
         click.echo(info_message(f"{verification_mode} applied"))
 
         try:
@@ -269,7 +269,7 @@ def draft(ctx, documents, query, heavy, noverify, diversity, output):
     if noverify:
         final_metadata["Verification"] = "Skipped (--noverify)"
     else:
-        verification_mode = "verification-heavy (gpt-5-pro)" if heavy else "Standard verification"
+        verification_mode = "verification-heavy (max thinking effort)" if heavy else "Standard verification"
         final_metadata["Verification"] = verification_mode
 
     output_file = save_command_output(
@@ -303,7 +303,7 @@ def draft(ctx, documents, query, heavy, noverify, diversity, output):
     if noverify:
         verification_mode = "Skipped (--noverify)"
     else:
-        verification_mode = "verification-heavy (gpt-5-pro)" if heavy else "Standard verification"
+        verification_mode = "verification-heavy (max thinking effort)" if heavy else "Standard verification"
     stats = {
         "Query": query,
         "Documents": len(documents),

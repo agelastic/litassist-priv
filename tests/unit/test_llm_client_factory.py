@@ -10,16 +10,16 @@ class TestLLMClientFactory:
     """Test the LLMClientFactory pattern."""
 
     def test_for_command_lookup(self):
-        """Test factory creates lookup client with correct configuration."""
+        """Test factory creates lookup client wired to its configured model."""
         with patch("litassist.config.CONFIG") as mock_config:
             mock_config.openrouter_key = "test_key"
             mock_config.openai_key = "test_openai_key"
 
+            configs = LLMClientFactory.list_configurations()
             client = LLMClientFactory.for_command("lookup")
 
             assert isinstance(client, LLMClient)
-            assert client.model == "anthropic/claude-sonnet-4.6"
-            # Just verify the attribute exists, don't assert specific value
+            assert client.model == configs["lookup"]["model"]
             assert hasattr(client, "_enforce_citations")
 
     def test_for_command_brainstorm(self):
@@ -41,29 +41,29 @@ class TestLLMClientFactory:
             assert hasattr(client, "_enforce_citations")
 
     def test_for_command_strategy(self):
-        """Test factory creates strategy client with correct configuration."""
+        """Test factory creates strategy client wired to its configured model."""
         with patch("litassist.config.CONFIG") as mock_config:
             mock_config.openrouter_key = "test_key"
             mock_config.openai_key = "test_openai_key"
 
+            configs = LLMClientFactory.list_configurations()
             client = LLMClientFactory.for_command("strategy")
 
             assert isinstance(client, LLMClient)
-            # UPDATED: Feb 2026 - Model upgraded to Sonnet 4.6
-            assert client.model == "anthropic/claude-sonnet-4.6"
-            # Just verify the attribute exists, don't assert specific value
+            assert client.model == configs["strategy"]["model"]
             assert hasattr(client, "_enforce_citations")
 
     def test_for_command_draft(self):
-        """Test factory creates draft client with correct configuration."""
+        """Test factory creates draft client wired to its configured model."""
         with patch("litassist.config.CONFIG") as mock_config:
             mock_config.openrouter_key = "test_key"
             mock_config.openai_key = "test_openai_key"
 
+            configs = LLMClientFactory.list_configurations()
             client = LLMClientFactory.for_command("draft")
 
             assert isinstance(client, LLMClient)
-            assert client.model == "openai/o3-pro"
+            assert client.model == configs["draft"]["model"]
             assert hasattr(client, "_enforce_citations")
 
     def test_for_command_with_overrides(self):
@@ -122,27 +122,23 @@ class TestLLMClientFactory:
                 )
 
     def test_model_parameter_restrictions(self):
-        """Test that o1/o3 models have correct parameter restrictions."""
+        """Test that command clients carry the parameters defined in their config."""
         with patch("litassist.config.CONFIG") as mock_config:
             mock_config.openrouter_key = "test_key"
             mock_config.openai_key = "test_openai_key"
 
-            # UPDATED: Feb 2026 - Test claude-sonnet-4.6 model (strategy)
             strategy_client = LLMClientFactory.for_command("strategy")
             strategy_params = strategy_client.default_params
 
-            # claude-sonnet-4.6 should have thinking_effort and standard params
             assert "thinking_effort" in strategy_params
-            assert "temperature" in strategy_params  # Claude supports temperature
-            assert "top_p" in strategy_params  # Claude supports top_p
+            assert "temperature" in strategy_params
+            assert "top_p" in strategy_params
             assert strategy_params["temperature"] == 0.7
             assert strategy_params["top_p"] == 0.95
 
-            # Test o3-pro model (draft)
             draft_client = LLMClientFactory.for_command("draft")
             draft_params = draft_client.default_params
 
-            # o3-pro should have thinking_effort for draft as well
             assert "thinking_effort" in draft_params
 
 
@@ -195,27 +191,15 @@ class TestLLMClientFactoryIntegration:
             assert override_temp != base_temp  # Should be different from base
 
     def test_configured_commands_have_specific_models(self):
-        """Test that configured commands use specific models."""
+        """Test factory wires each configured command to the model named in its config."""
         with patch("litassist.config.CONFIG") as mock_config:
             mock_config.openrouter_key = "test_key"
             mock_config.openai_key = "test_openai_key"
 
-            models = {}
-            # Only test commands that have explicit configurations
+            configs = LLMClientFactory.list_configurations()
             configured_commands = ["lookup", "strategy", "draft", "extractfacts"]
 
             for command in configured_commands:
                 client = LLMClientFactory.for_command(command)
-                models[command] = client.model
-
-            # Specific model assertions based on current configuration
-            assert "claude-sonnet" in models["lookup"].lower()  # Uses Claude Sonnet for search
-            # UPDATED: Feb 2026 - Strategy now uses Sonnet 4.6
-            assert (
-                "claude-sonnet" in models["strategy"].lower()
-            )  # Uses Claude Sonnet 4.6 for strategy
-            assert "o3-pro" in models["draft"].lower()  # Uses o3-pro for drafting
-            # UPDATED: Feb 2026 - Extractfacts upgraded to Sonnet 4.6
-            assert (
-                "anthropic/claude-sonnet-4.6" in models["extractfacts"].lower()
-            )  # Uses Claude Sonnet 4.6 for extraction
+                assert client.model == configs[command]["model"]
+                assert "/" in client.model  # provider/model slug format

@@ -36,7 +36,7 @@ from .multi_extractor import extract_multi_chunk
 @click.option(
     "--heavy",
     is_flag=True,
-    help="Use verification-heavy mode (gpt-5-pro instead of gpt-5)",
+    help="Use verification-heavy mode (max thinking effort)",
 )
 @click.option(
     "--noverify",
@@ -141,7 +141,7 @@ def extractfacts(file, verify, heavy, noverify, output):
         combined, _ = verify_content_if_needed(
             client, combined, "extractfacts", verify_flag=True, heavy=heavy
         )
-        verification_mode = "verification-heavy (gpt-5-pro)" if heavy else "Standard verification"
+        verification_mode = "verification-heavy (max thinking effort)" if heavy else "Standard verification"
         final_metadata["Verification"] = verification_mode
         final_metadata["Model"] = client.model
         click.echo(info_message(f"{verification_mode} applied"))

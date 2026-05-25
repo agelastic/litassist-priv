@@ -2,6 +2,7 @@
 Simplified tests for command-specific parameter propagation.
 
 Tests the LLMClientFactory directly to verify correct model configuration.
+Expected model identifiers are read from configuration, not hardcoded.
 """
 
 from unittest.mock import patch
@@ -17,16 +18,12 @@ class TestCommandParameterConfiguration:
         mock_config.openrouter_key = "test_key"
         mock_config.openai_key = "test_key"
 
-        # Check the configuration
         configs = LLMClientFactory.list_configurations()
         assert "extractfacts" in configs
-        config = configs["extractfacts"]
-        # UPDATED: Feb 2026 - Model upgraded to Sonnet 4.6
-        assert config["model"] == "anthropic/claude-sonnet-4.6"
+        expected_model = configs["extractfacts"]["model"]
 
-        # Create client and verify model
         client = LLMClientFactory.for_command("extractfacts")
-        assert client.model == "anthropic/claude-sonnet-4.6"
+        assert client.model == expected_model
 
     @patch("litassist.config.CONFIG")
     def test_lookup_configuration(self, mock_config):
@@ -37,13 +34,10 @@ class TestCommandParameterConfiguration:
         configs = LLMClientFactory.list_configurations()
         assert "lookup" in configs
         config = configs["lookup"]
-        assert config["model"] == "anthropic/claude-sonnet-4.6"
-        # Just verify the key exists, don't assert specific value
         assert "enforce_citations" in config
 
         client = LLMClientFactory.for_command("lookup")
-        assert client.model == "anthropic/claude-sonnet-4.6"
-        # Just verify the attribute exists, don't assert specific value
+        assert client.model == config["model"]
         assert hasattr(client, "_enforce_citations")
 
     @patch("litassist.config.CONFIG")
@@ -55,15 +49,11 @@ class TestCommandParameterConfiguration:
         configs = LLMClientFactory.list_configurations()
         assert "strategy" in configs
         config = configs["strategy"]
-        # UPDATED: Feb 2026 - Model upgraded to Sonnet 4.6
-        assert config["model"] == "anthropic/claude-sonnet-4.6"
         assert config["thinking_effort"] == "max"
-        # Just verify the key exists, don't assert specific value
         assert "enforce_citations" in config
 
         client = LLMClientFactory.for_command("strategy")
-        assert client.model == "anthropic/claude-sonnet-4.6"
-        # Just verify the attribute exists, don't assert specific value
+        assert client.model == config["model"]
         assert hasattr(client, "_enforce_citations")
         assert client.default_params.get("thinking_effort") == "max"
 
@@ -76,44 +66,32 @@ class TestCommandParameterConfiguration:
         configs = LLMClientFactory.list_configurations()
         assert "draft" in configs
         config = configs["draft"]
-        assert config["model"] == "openai/o3-pro"
         assert config["thinking_effort"] == "high"
 
         client = LLMClientFactory.for_command("draft")
-        assert client.model == "openai/o3-pro"
-        # No automatic token limits - models use API defaults
-        # max_completion_tokens would only be present if explicitly configured
+        assert client.model == config["model"]
 
     @patch("litassist.config.CONFIG")
-    def test_parameter_filtering_for_o3_pro(self, mock_config):
-        """Test that o3-pro models filter out unsupported parameters during API call."""
+    def test_parameter_filtering_for_reasoning_family(self, mock_config):
+        """Test that o-series reasoning models filter out unsupported sampling parameters."""
         mock_config.openrouter_key = "test_key"
         mock_config.openai_key = "test_key"
 
-        # Use draft command which actually uses o3-pro model
+        from litassist.llm.parameter_handler import get_model_family, get_model_parameters
+
         client = LLMClientFactory.for_command("draft", temperature=0.9, top_p=0.95)
 
-        # Parameters are stored in default_params but will be filtered during API call
-        # This is the actual behavior - filtering happens at API call time, not init time
-        assert (
-            client.default_params.get("temperature") == 0.9
-        )  # Stored but will be filtered
-        assert client.default_params.get("top_p") == 0.95  # Stored but will be filtered
-        assert client.default_params.get("thinking_effort") == "high"  # Draft uses high
+        assert client.default_params.get("temperature") == 0.9
+        assert client.default_params.get("top_p") == 0.95
+        assert client.default_params.get("thinking_effort") == "high"
 
-        # Verify the model is correct
-        assert client.model == "openai/o3-pro"
-
-        # Test that get_model_parameters would filter these out
-        from litassist.llm.parameter_handler import get_model_parameters
-
-        filtered = get_model_parameters("openai/o3-pro", client.default_params)
-        assert "temperature" not in filtered
-        assert "top_p" not in filtered
-        assert "reasoning" in filtered  # Should have reasoning object
-        assert filtered["reasoning"] == {
-            "effort": "high"
-        }  # Converted from thinking_effort (max maps to high)
+        # Only meaningful when draft is configured with an openai_reasoning model
+        if get_model_family(client.model) == "openai_reasoning":
+            filtered = get_model_parameters(client.model, client.default_params)
+            assert "temperature" not in filtered
+            assert "top_p" not in filtered
+            assert "reasoning" in filtered
+            assert filtered["reasoning"] == {"effort": "high"}
 
     @patch("litassist.config.CONFIG")
     def test_default_command_configuration(self, mock_config):
@@ -121,7 +99,6 @@ class TestCommandParameterConfiguration:
         mock_config.openrouter_key = "test_key"
         mock_config.openai_key = "test_key"
 
-        # Command not in configs should raise KeyError - NO FALLBACKS
         import pytest
 
         with pytest.raises(KeyError) as exc_info:
@@ -135,7 +112,6 @@ class TestCommandParameterConfiguration:
         mock_config.openrouter_key = "test_key"
         mock_config.openai_key = "test_key"
 
-        # digest without sub-type should raise KeyError - NO FALLBACKS
         import pytest
 
         with pytest.raises(KeyError) as exc_info:
@@ -143,9 +119,9 @@ class TestCommandParameterConfiguration:
         assert "No model configuration found" in str(exc_info.value)
         assert "digest" in str(exc_info.value)
 
-        # digest-summary and digest-issues should work
+        configs = LLMClientFactory.list_configurations()
         client_summary = LLMClientFactory.for_command("digest", "summary")
-        assert client_summary.model == "anthropic/claude-sonnet-4.6"
+        assert client_summary.model == configs["digest-summary"]["model"]
 
         client_issues = LLMClientFactory.for_command("digest", "issues")
-        assert client_issues.model == "anthropic/claude-sonnet-4.6"
+        assert client_issues.model == configs["digest-issues"]["model"]

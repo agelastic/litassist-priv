@@ -15,7 +15,7 @@ def convert_thinking_effort(effort: str, model_name: str) -> dict:
 
     Args:
         effort: Universal effort level (none, minimal, low, medium, high, max)
-        model_name: Full model name (e.g., "openai/o3-pro", "anthropic/claude-4")
+        model_name: Full model identifier (provider/model slug)
 
     Returns:
         Dict with OpenRouter reasoning object
@@ -28,7 +28,7 @@ def convert_thinking_effort(effort: str, model_name: str) -> dict:
     model_family = get_model_family(model_name)
 
     # Check model type for appropriate sub-parameters
-    if model_family in ["openai_reasoning", "gpt5", "gpt5.1", "xai"]:
+    if model_family in ["openai_reasoning", "gpt5", "gpt5.1", "gpt5.5", "gpt5-pro", "xai"]:
         # Effort-based models (OpenAI, Grok, GPT-5)
         effort_map = {
             "minimal": "minimal",  # GPT-5 specific
@@ -55,8 +55,8 @@ def convert_thinking_effort(effort: str, model_name: str) -> dict:
                     "summary": "auto",  # New o4 feature for automatic summarization
                 }
             }
-        # GPT-5/5.1 supports both reasoning and verbosity
-        elif model_family in ["gpt5", "gpt5.1"]:
+        # GPT-5 family supports both reasoning and verbosity
+        elif model_family in ["gpt5", "gpt5.1", "gpt5.5", "gpt5-pro"]:
             return {
                 "reasoning": {"effort": mapped_effort}
                 # Verbosity handled separately via convert_verbosity
@@ -112,7 +112,7 @@ def get_model_family(model_name: str) -> str:
     Identify the model family based on pattern matching.
 
     Args:
-        model_name: The full model name (e.g., "openai/gpt-4", "anthropic/claude-3")
+        model_name: The full model identifier (provider/model slug)
 
     Returns:
         The model family name (e.g., "openai_standard", "anthropic")

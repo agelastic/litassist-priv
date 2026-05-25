@@ -52,7 +52,7 @@ def run_verification_workflow(
         output: Optional custom output filename prefix
         reference: Optional reference file glob pattern
         cove_reference: Optional CoVe reference file glob pattern
-        heavy: Use verification-heavy mode (gpt-5-pro for reasoning and soundness)
+        heavy: Use verification-heavy mode (max thinking effort for reasoning and soundness)
 
     Returns:
         dict: Workflow results including files generated and reports

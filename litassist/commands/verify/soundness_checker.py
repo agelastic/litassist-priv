@@ -36,7 +36,7 @@ def verify_soundness(
         citation_report: Optional citation report for context
         reasoning_response: Optional reasoning trace for context
         output: Optional custom output filename prefix
-        heavy: Use verification-heavy mode (gpt-5-pro)
+        heavy: Use verification-heavy mode (max thinking effort)
 
     Returns:
         tuple: (soundness_result, issues, soundness_file)

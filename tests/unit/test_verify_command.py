@@ -11,6 +11,8 @@ from unittest.mock import Mock, patch
 import pytest
 from click.testing import CliRunner
 
+_MOCK_MODEL = "test/mock-model"
+
 # Mock pypdf to avoid import errors in test environment
 sys.modules["pypdf"] = Mock()
 
@@ -94,7 +96,7 @@ class TestVerifyCommand:
             mock_client = Mock()
             mock_client.verify.return_value = (
                 "No legal issues found.",
-                "anthropic/claude-opus-4.1",
+                _MOCK_MODEL,
             )
             mock_client.complete.return_value = ("Analysis with reasoning trace", {})
             mock_reasoning_factory.for_command.return_value = mock_client
@@ -154,7 +156,7 @@ class TestVerifyCommand:
 ## Issues Found
 1. The document contains an error in citation format.
 """,
-                "anthropic/claude-opus-4.1",
+                _MOCK_MODEL,
             )
             mock_llm_factory.for_command.return_value = mock_client
 
@@ -329,7 +331,7 @@ class TestVerifyCommand:
             mock_reasoning_fetch.return_value = ({}, [])  # Mock empty case content, no failures
             mock_soundness_fetch.return_value = ({}, [])  # Mock empty case content, no failures
             mock_client = Mock()
-            mock_client.verify.return_value = ("No issues", "anthropic/claude-opus-4.1")
+            mock_client.verify.return_value = ("No issues", _MOCK_MODEL)
             mock_client.complete.return_value = ("Analysis", {})
             mock_reasoning_factory.for_command.return_value = mock_client
             mock_soundness_factory.for_command.return_value = mock_client

@@ -168,18 +168,21 @@ def validate_credentials(show_progress=True):
             if response.status_code != 200:
                 raise Exception(f"HTTP {response.status_code}: {response.text}")
 
-            # Verify at least one required model is available
+            # Verify configured models are available
             models = response.json().get("data", [])
-            model_ids = [m.get("id", "") for m in models]
-            required_models = [
-                "anthropic/claude-sonnet-4.6",
-                "x-ai/grok-3",
-                "google/gemini-2.5-pro-preview",
-            ]
+            model_ids = {m.get("id", "") for m in models}
 
-            if not any(model in model_ids for model in required_models):
+            from litassist.llm.factory import LLMClientFactory
+
+            configured_models = {
+                cfg["model"]
+                for cfg in LLMClientFactory.list_configurations().values()
+                if cfg.get("model")
+            }
+            missing = configured_models - model_ids
+            if missing:
                 raise Exception(
-                    f"No required models found. Available: {len(model_ids)} models"
+                    f"OpenRouter missing configured models: {sorted(missing)}"
                 )
 
             if show_progress:

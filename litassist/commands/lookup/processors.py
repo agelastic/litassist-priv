@@ -21,9 +21,6 @@ from litassist.logging import LOG_DIR
 from litassist.llm.factory import LLMClientFactory
 from litassist.prompts import PROMPTS
 from .fetchers import _fetch_url_content
-from .error_handlers import (
-    warn_large_content_non_gemini,
-)
 
 
 class LookupProcessor:
@@ -322,14 +319,7 @@ class LookupProcessor:
         from litassist.utils.formatting import warning_message
         from litassist.logging import save_log
         
-        # Estimate tokens for warning purposes
         if documents:
-            total_chars = sum(len(content) for _, content in documents)
-            estimated_tokens = total_chars / 4
-            # Warn if using large content with non-Gemini models
-            warn_large_content_non_gemini(client, estimated_tokens)
-            
-            # Show processing stage
             click.echo(info_message(f"Processing {len(documents)} documents for analysis..."))
         
         def build_prompt_fn(current_documents):
