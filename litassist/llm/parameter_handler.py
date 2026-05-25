@@ -28,7 +28,7 @@ def convert_thinking_effort(effort: str, model_name: str) -> dict:
     model_family = get_model_family(model_name)
 
     # Check model type for appropriate sub-parameters
-    if model_family in ["openai_reasoning", "gpt5", "gpt5.1", "gpt5.5", "xai"]:
+    if model_family in ["openai_reasoning", "gpt5", "gpt5.1", "gpt5.5", "gpt5-pro", "xai"]:
         # Effort-based models (OpenAI, Grok, GPT-5)
         effort_map = {
             "minimal": "minimal",  # GPT-5 specific
@@ -56,7 +56,7 @@ def convert_thinking_effort(effort: str, model_name: str) -> dict:
                 }
             }
         # GPT-5 family supports both reasoning and verbosity
-        elif model_family in ["gpt5", "gpt5.1", "gpt5.5"]:
+        elif model_family in ["gpt5", "gpt5.1", "gpt5.5", "gpt5-pro"]:
             return {
                 "reasoning": {"effort": mapped_effort}
                 # Verbosity handled separately via convert_verbosity
