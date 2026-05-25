@@ -75,8 +75,11 @@ digest-issues:
   thinking_effort: "high"
   disable_tools: true
 
+# lookup: rapid case-law analysis over concatenated full-text legal judgements.
+# Gemini chosen for 1M context, low hallucination rate, and configurable thinking levels.
+# OpenRouter provider fallback covers transient outages.
 lookup:
-  model: "anthropic/claude-sonnet-4.6"
+  model: "google/gemini-3.5-flash"
   temperature: 0.2
   top_p: 0.4
   thinking_effort: "low"
