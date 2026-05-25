@@ -22,7 +22,7 @@ def run_verification_chain(
         content: Content to verify
         command: Command name
         skip_stages: Set of stages to skip
-        heavy: Use verification-heavy mode (gpt-5-pro instead of gpt-5)
+        heavy: Use verification-heavy mode (max thinking effort)
     """
     skip_stages = skip_stages or set()
     results = {}
@@ -107,7 +107,7 @@ def run_cove_verification(
         content: Document to verify (ideally already processed by other verifications)
         command: Command name for context
         prior_contexts: Optional dict with citation/reasoning/soundness results
-        heavy: Use heavy mode (gpt-5-pro) for answers stage
+        heavy: Use heavy mode (max thinking effort) for answers stage
 
     Returns:
         Tuple of (content, cove_results dict)

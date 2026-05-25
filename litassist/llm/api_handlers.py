@@ -97,7 +97,7 @@ def get_openai_client(model_name: str) -> "OpenAI":
     ALL models are routed through OpenRouter. No exceptions.
 
     Args:
-        model_name: The model identifier (e.g., 'openai/gpt-4', 'anthropic/claude-sonnet-4.6')
+        model_name: The model identifier (provider/model slug)
 
     Returns:
         Configured OpenAI client instance routed through OpenRouter

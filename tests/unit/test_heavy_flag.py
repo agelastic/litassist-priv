@@ -2,7 +2,7 @@
 Tests for the --heavy flag functionality across commands.
 
 This module tests that the --heavy flag properly enables verification-heavy mode
-(gpt-5-pro instead of gpt-5).
+(max thinking effort).
 """
 
 import tempfile

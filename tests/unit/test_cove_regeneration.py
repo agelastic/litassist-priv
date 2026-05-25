@@ -8,6 +8,8 @@ from unittest.mock import Mock, patch
 import pytest
 from litassist.verification_chain import run_cove_verification
 
+_MOCK_MODEL = "test/mock-model"
+
 
 class TestCoVeRegeneration:
     """Test the complete 4-step CoVe process including regeneration."""
@@ -59,25 +61,25 @@ class TestCoVeRegeneration:
                 mock_questions,
                 {"total_tokens": 50},
             )
-            mock_questions_client.model = "anthropic/claude-sonnet-4.6"
+            mock_questions_client.model = _MOCK_MODEL
 
             mock_answers_client.complete.return_value = (
                 mock_answers,
                 {"total_tokens": 60},
             )
-            mock_answers_client.model = "anthropic/claude-sonnet-4.6"
+            mock_answers_client.model = _MOCK_MODEL
 
             mock_verify_client.complete.return_value = (
                 mock_issues,
                 {"total_tokens": 40},
             )
-            mock_verify_client.model = "anthropic/claude-sonnet-4.6"
+            mock_verify_client.model = _MOCK_MODEL
 
             mock_final_client.complete.return_value = (
                 regenerated_content,
                 {"total_tokens": 100},
             )
-            mock_final_client.model = "anthropic/claude-opus-4.1"
+            mock_final_client.model = _MOCK_MODEL
 
             # Configure factory to return appropriate clients
             def get_client(command):
@@ -162,19 +164,19 @@ class TestCoVeRegeneration:
                 mock_questions,
                 {"total_tokens": 50},
             )
-            mock_questions_client.model = "anthropic/claude-sonnet-4.6"
+            mock_questions_client.model = _MOCK_MODEL
 
             mock_answers_client.complete.return_value = (
                 mock_answers,
                 {"total_tokens": 60},
             )
-            mock_answers_client.model = "anthropic/claude-sonnet-4.6"
+            mock_answers_client.model = _MOCK_MODEL
 
             mock_verify_client.complete.return_value = (
                 mock_no_issues,
                 {"total_tokens": 20},
             )
-            mock_verify_client.model = "anthropic/claude-sonnet-4.6"
+            mock_verify_client.model = _MOCK_MODEL
 
             # Configure factory
             def get_client(command):

@@ -50,7 +50,7 @@ from .file_handler import save_strategy_outputs, save_strategy_log
 @click.option(
     "--heavy",
     is_flag=True,
-    help="Use verification-heavy mode (gpt-5-pro instead of gpt-5)",
+    help="Use verification-heavy mode (max thinking effort)",
 )
 @click.option(
     "--noverify",
@@ -71,7 +71,7 @@ def strategy(case_facts, outcome, strategies, verify, heavy, noverify, output):
         outcome: Desired legal outcome (single sentence description)
         strategies: Optional strategies file from brainstorm command
         verify: Enable self-critique pass (always on by default)
-        heavy: Use verification-heavy mode (gpt-5-pro instead of gpt-5)
+        heavy: Use verification-heavy mode (max thinking effort)
         output: Custom output filename prefix
 
     Raises:
@@ -344,7 +344,7 @@ def strategy(case_facts, outcome, strategies, verify, heavy, noverify, output):
         strategy_content, _ = verify_content_if_needed(
             llm_client, strategy_content, "strategy", verify_flag=True, heavy=heavy
         )
-        verification_mode = "verification-heavy (gpt-5-pro)" if heavy else "Standard verification"
+        verification_mode = "verification-heavy (max thinking effort)" if heavy else "Standard verification"
         click.echo(info_message(f"{verification_mode} complete"))
         try:
             log_task_event(

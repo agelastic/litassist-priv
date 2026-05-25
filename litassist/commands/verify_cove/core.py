@@ -43,7 +43,7 @@ def _handle_cove_error(exception: Exception) -> None:
 @click.option(
     "--heavy",
     is_flag=True,
-    help="Use verification-heavy mode (gpt-5-pro for answers stage)",
+    help="Use verification-heavy mode (max thinking effort for answers stage)",
 )
 @click.option("--output", type=str, help="Custom output filename prefix")
 @timed

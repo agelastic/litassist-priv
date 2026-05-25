@@ -137,7 +137,7 @@ def assess_legal_plausibility_bulk(
         Dict mapping strategy_id to assessment:
             {"orthodox_1": {"risk": "MEDIUM", "explanation": "Principle sound..."}, ...}
 
-    Uses: brainstorm-analysis (openai/o3-pro, T=0.7, top_p=0.9, thinking_effort=high)
+    Uses: brainstorm-analysis config (see model_configs.yaml).
     Token cost: ~5k (vs ~10k for per-strategy calls)
     """
     click.echo(
@@ -221,7 +221,7 @@ def assess_legal_plausibility_bulk(
                     "response": response,
                     "assessments": assessments,
                     "metadata": {
-                        "model": "openai/o3-pro",
+                        "model": analysis_client.model,
                         "timestamp": time.strftime("%Y-%m-%d %H:%M:%S"),
                     },
                 },

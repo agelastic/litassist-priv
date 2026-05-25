@@ -23,7 +23,7 @@ def execute_cove_pipeline(
     Args:
         content: Document content to verify
         reference_context: Optional reference file context for CoVe answers stage
-        heavy: Use verification-heavy mode (gpt-5-pro for answers stage)
+        heavy: Use verification-heavy mode (max thinking effort for answers stage)
 
     Returns:
         Tuple of (cove_content, cove_results, cove_report)

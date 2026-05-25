@@ -250,7 +250,7 @@ def verify_content_if_needed(
         command_name: Name of the command (for context)
         verify_flag: Whether user explicitly requested verification
         citation_already_verified: Whether citation verification was already performed
-        heavy: Use verification-heavy mode (gpt-5-pro instead of gpt-5)
+        heavy: Use verification-heavy mode (max thinking effort)
 
     Returns:
         Tuple of (possibly modified content, whether verification was performed)

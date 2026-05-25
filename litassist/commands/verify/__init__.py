@@ -35,7 +35,7 @@ from .core import run_verification_workflow
 @click.option(
     "--heavy",
     is_flag=True,
-    help="Use verification-heavy mode (gpt-5-pro for reasoning and soundness stages)"
+    help="Use verification-heavy mode (max thinking effort for reasoning and soundness stages)"
 )
 @timed
 def verify(file, citations, soundness, reasoning, cove, output, reference, cove_reference, heavy):

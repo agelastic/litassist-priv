@@ -25,7 +25,7 @@ class TestCommandParameterPropagation:
             "Test response",
             {"total_tokens": 100},
         )
-        self.mock_client.model = "anthropic/claude-sonnet-4.6"  # Add model attribute
+        self.mock_client.model = "test/mock-model"
         self.mock_client.verify.return_value = ""  # Add verify method
         self.mock_client.validate_citations.return_value = []  # Add validate_citations method
 
@@ -80,9 +80,9 @@ class TestCommandParameterPropagation:
         # Check that LLMClientFactory would create correct model
         from litassist.llm.factory import LLMClientFactory
 
-        # UPDATED: Feb 2026 - Model upgraded to Sonnet 4.6
         configs = LLMClientFactory.list_configurations()
-        assert configs["extractfacts"]["model"] == "anthropic/claude-sonnet-4.6"
+        assert "extractfacts" in configs
+        assert configs["extractfacts"].get("model")
 
     @patch("litassist.llm.factory.LLMClientFactory.for_command")
     @patch("litassist.utils.file_ops.read_document")
@@ -146,7 +146,7 @@ class TestCommandParameterPropagation:
     @patch("litassist.llm.factory.LLMClientFactory.for_command")
     @patch("litassist.commands.lookup.search.get_config")
     def test_lookup_command_parameters(self, mock_get_config, mock_factory, mock_sleep):
-        """Test lookup command uses correct model (claude-sonnet-4.6)."""
+        """Test lookup command pulls its model from configuration."""
         mock_factory.return_value = self.mock_client
         mock_config = Mock()
         mock_config.g_key = "test_google_key"
@@ -188,8 +188,7 @@ class TestCommandParameterPropagation:
         from litassist.llm.factory import LLMClientFactory
 
         configs = LLMClientFactory.list_configurations()
-        assert configs["lookup"]["model"] == "anthropic/claude-sonnet-4.6"
-        # Just verify the key exists, don't assert specific value
+        assert configs["lookup"].get("model")
         assert "enforce_citations" in configs["lookup"]
 
     @patch("litassist.llm.factory.LLMClientFactory.for_command")
@@ -280,7 +279,7 @@ class TestCommandParameterPropagation:
     @patch("litassist.llm.factory.LLMClientFactory.for_command")
     @patch("litassist.utils.file_ops.read_document")
     def test_strategy_command_parameters(self, mock_read, mock_factory):
-        """Test strategy command uses o3-pro model."""
+        """Test strategy command uses its configured model."""
         mock_factory.return_value = self.mock_client
         mock_read.return_value = """
 Parties:
@@ -378,11 +377,9 @@ Test objectives""")
         # Check configuration
         from litassist.llm.factory import LLMClientFactory
 
-        # UPDATED: Feb 2026 - Model upgraded to Sonnet 4.6
         configs = LLMClientFactory.list_configurations()
-        assert configs["strategy"]["model"] == "anthropic/claude-sonnet-4.6"
+        assert configs["strategy"].get("model")
         assert configs["strategy"]["thinking_effort"] == "max"
-        # Just verify the key exists, don't assert specific value
         assert "enforce_citations" in configs["strategy"]
 
     @patch("litassist.llm.factory.LLMClientFactory.for_command")
@@ -392,7 +389,7 @@ Test objectives""")
     def test_draft_command_parameters(
         self, mock_config, mock_pinecone, mock_read, mock_factory
     ):
-        """Test draft command uses o3-pro model."""
+        """Test draft command uses its configured model."""
         # Create verification client mock
         mock_verification_client = Mock()
         mock_verification_client.complete.return_value = (
@@ -404,7 +401,8 @@ Test objectives""")
             "Verified content",
             "mock-model",
         )
-        mock_verification_client.model = "anthropic/claude-opus-4.1"
+        from litassist.llm.factory import LLMClientFactory as _Factory
+        mock_verification_client.model = _Factory.list_configurations()["verification"]["model"]
 
         # Set up factory to return different clients for different calls
         mock_factory.side_effect = [
@@ -455,7 +453,7 @@ Test objectives""")
         from litassist.llm.factory import LLMClientFactory
 
         configs = LLMClientFactory.list_configurations()
-        assert configs["draft"]["model"] == "openai/o3-pro"
+        assert configs["draft"].get("model")
         assert configs["draft"]["thinking_effort"] == "high"
 
     @patch("litassist.llm.factory.LLMClientFactory.for_command")
@@ -517,33 +515,25 @@ Test objectives""")
             assert "@patch" in source or "mock_" in source
 
     def test_model_parameter_filtering(self):
-        """Test that model-specific parameter filtering is applied."""
-        # Test a command that uses o3-pro (should filter temperature/top_p)
+        """Test parameters are stored on the client and filtered per model family at API time."""
         from litassist.llm.factory import LLMClientFactory
+        from litassist.llm.parameter_handler import get_model_family, get_model_parameters
 
-        # Directly test the factory behavior without mocking
         with patch("litassist.config.CONFIG") as mock_config:
             mock_config.openrouter_key = "test_key"
             mock_config.openai_key = "test_key"
 
-            # Test strategy command (uses o3-pro)
             client = LLMClientFactory.for_command(
                 "strategy", temperature=0.9, top_p=0.95
             )
 
-            # For o3-pro, temperature and top_p are stored but will be filtered during API call
             assert hasattr(client, "default_params")
-            if client.model == "openai/o3-pro":
-                # Parameters are stored in default_params but filtered during API call
-                assert client.default_params.get("temperature") == 0.9  # Stored
-                assert client.default_params.get("top_p") == 0.95  # Stored
-                assert client.default_params.get("thinking_effort") == "high"
+            assert client.default_params.get("temperature") == 0.9
+            assert client.default_params.get("top_p") == 0.95
 
-                # Test that get_model_parameters would filter these out
-                from litassist.llm import get_model_parameters
-
-                filtered = get_model_parameters("openai/o3-pro", client.default_params)
+            # If strategy is wired to an openai_reasoning model, sampling params get filtered out
+            if get_model_family(client.model) == "openai_reasoning":
+                filtered = get_model_parameters(client.model, client.default_params)
                 assert "temperature" not in filtered
                 assert "top_p" not in filtered
                 assert "reasoning" in filtered
-                assert filtered["reasoning"] == {"effort": "high"}

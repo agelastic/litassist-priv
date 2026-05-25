@@ -10,6 +10,8 @@ from click.testing import CliRunner
 from litassist.cli import cli
 from litassist.commands import register_commands
 
+_MOCK_MODEL = "test/mock-model"
+
 
 class TestBrainstormInternals:
     """Test brainstorm command internal flow and output structure."""
@@ -26,9 +28,9 @@ class TestBrainstormInternals:
         self.mock_analysis_client = Mock()
 
         # Set model attributes to avoid "Mock not iterable" errors
-        self.mock_orthodox_client.model = "anthropic/claude-sonnet-4.6"
-        self.mock_unorthodox_client.model = "x-ai/grok-3"
-        self.mock_analysis_client.model = "anthropic/claude-sonnet-4.6"
+        self.mock_orthodox_client.model = _MOCK_MODEL
+        self.mock_unorthodox_client.model = _MOCK_MODEL
+        self.mock_analysis_client.model = _MOCK_MODEL
 
         # Set up mock responses
         self.orthodox_response = """## ORTHODOX LEGAL STRATEGIES
@@ -122,7 +124,7 @@ Pursue misleading conduct claim while simultaneously filing ombudsman complaint.
 
         # Create mock verification client for unorthodox verification
         self.mock_verification_client = Mock()
-        self.mock_verification_client.model = "anthropic/claude-opus-4.1"
+        self.mock_verification_client.model = _MOCK_MODEL
         self.mock_verification_client.verify.return_value = (
             self.unorthodox_response,
             {},
