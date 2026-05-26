@@ -9,7 +9,7 @@ import glob
 import os
 from typing import Optional, Tuple, List
 import click
-from pypdf import PdfReader
+import pdfplumber
 
 from litassist.timing import timed
 
@@ -30,12 +30,12 @@ def read_document(path: str) -> str:
     """
     try:
         if path.lower().endswith(".pdf"):
-            reader = PdfReader(path)
             pages = []
-            for page in reader.pages:
-                txt = page.extract_text()
-                if txt:
-                    pages.append(txt)
+            with pdfplumber.open(path) as pdf:
+                for page in pdf.pages:
+                    txt = page.extract_text()
+                    if txt:
+                        pages.append(txt)
             if not pages:
                 raise click.ClickException(f"No extractable text found in PDF: {path}")
             return "\n".join(pages)

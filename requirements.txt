@@ -4,7 +4,6 @@ tiktoken
 tenacity>=8.2.3
 aiohttp>=3.8.0
 pinecone-client==2.2.4
-pypdf
 google-api-python-client
 pyyaml
 pytz>=2023.3

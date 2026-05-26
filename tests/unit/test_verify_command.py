@@ -13,8 +13,8 @@ from click.testing import CliRunner
 
 _MOCK_MODEL = "test/mock-model"
 
-# Mock pypdf to avoid import errors in test environment
-sys.modules["pypdf"] = Mock()
+# Mock pdfplumber to avoid import errors in test environment
+sys.modules["pdfplumber"] = Mock()
 
 from litassist.commands.verify import verify  # noqa: E402
 from litassist.commands.verify.formatters import (  # noqa: E402
