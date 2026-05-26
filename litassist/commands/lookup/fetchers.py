@@ -521,6 +521,13 @@ def _fetch_url_content(url: str, timeout: int = 10) -> str:
         click.echo("  → curl_cffi returned PDF, extracting text...")
         return _extract_pdf_text(url, response.content)
 
+    # 6b. RTF magic bytes (AustLII serves some cases as .rtf)
+    from litassist.utils.rtf import looks_like_rtf, extract_rtf_text
+
+    if looks_like_rtf(response.content):
+        click.echo("  → curl_cffi returned RTF, extracting text...")
+        return extract_rtf_text(url, response.content)
+
     raw_html = response.text
 
     # 7. BS4 text extract
