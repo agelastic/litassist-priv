@@ -90,6 +90,69 @@ class TestChallengeDetection:
         reason = _looks_like_challenge_page(body)
         assert reason and "error 403" in reason.lower()
 
+    def test_recaptcha_widget_in_legitimate_page_not_rejected(self):
+        """Regression: fedcourt.gov.au's practice-note pages embed a Google
+        reCAPTCHA widget. The bare substring 'captcha' was previously in the
+        marker tuple and rejected these pages as Cloudflare challenges
+        (verified 26/05/2026: 6/6 fetches returned HTTP 200 with real content
+        + false-positive detector verdict). Now only the canonical Cloudflare
+        phrasings 'please complete the captcha' and 'captcha challenge' should
+        match - bare 'captcha' substring in legitimate prose must not match.
+        """
+        # Mimic fedcourt's actual page shape: long real prose with a reCAPTCHA
+        # widget embedded in the page footer.
+        real_prose = (
+            "Section 1. Commercial Arbitration Practice Note. "
+            "This practice note sets out the procedures to be followed. "
+        ) * 100  # >> 2000 chars
+        body = (
+            f"<html><body><h1>Commercial Arbitration Practice Note</h1>"
+            f"<p>{real_prose}</p>"
+            "<div class='footer'>"
+            "<p>* This online submission is protected by captcha</p>"
+            "<script src='https://www.google.com/recaptcha/api.js'></script>"
+            "<div class='g-recaptcha' data-sitekey='abc123'></div>"
+            "</div></body></html>"
+        )
+        assert _looks_like_challenge_page(body) == "", (
+            "Legitimate page with reCAPTCHA widget must NOT be flagged as a "
+            "Cloudflare challenge"
+        )
+
+    def test_canonical_cloudflare_captcha_phrasing_still_rejected(self):
+        """If Cloudflare ever serves a challenge whose body literally says
+        'please complete the captcha', that wording is still flagged - we
+        narrowed the bare 'captcha' marker, we did not remove all captcha
+        coverage.
+        """
+        body = (
+            "Please complete the CAPTCHA to continue browsing this site. "
+            + ("filler text " * 200)
+        )
+        reason = _looks_like_challenge_page(body)
+        assert reason and "captcha" in reason.lower()
+
+    def test_captcha_challenge_phrasing_still_rejected(self):
+        body = (
+            "You have triggered a captcha challenge. Please complete it to continue. "
+            + ("filler text " * 200)
+        )
+        reason = _looks_like_challenge_page(body)
+        assert reason and "captcha challenge" in reason.lower()
+
+    def test_bare_captcha_word_in_legal_prose_not_rejected(self):
+        """A judgment or article that mentions the word 'captcha' in passing
+        (e.g., discussing captcha technology in a case) must not be flagged.
+        """
+        body = (
+            "The defendant attempted to bypass the captcha system used by the "
+            "plaintiff's website. This was held to be unlawful under section 477A. "
+            + ("Further analysis follows in detail. " * 100)
+        )
+        assert _looks_like_challenge_page(body) == "", (
+            "Legal prose mentioning 'captcha' must not be flagged"
+        )
+
 
 class TestSpaShellDetection:
     def test_empty_html_not_flagged(self):

@@ -15,8 +15,20 @@ import click
 # Track last AustLII request completion time for rate limiting
 _last_austlii_completion = 0
 
-# Markers that indicate Jina returned a bot-challenge / error interstitial
-# instead of the requested page content. Matched case-insensitively.
+# Markers that indicate the response is a bot-challenge / error interstitial
+# rather than the requested page content. Matched case-insensitively. Used on
+# both Jina-rendered responses and curl_cffi raw HTML responses.
+#
+# Audit performed 26/05/2026 against (a) a captured Cloudflare challenge body
+# and (b) real fedcourt content with a reCAPTCHA-protected contact form:
+# - "captcha" alone is OVER-BROAD - the literal substring appears in
+#   legitimate pages embedding Google reCAPTCHA widgets (fedcourt.gov.au
+#   practice-note pages, etc.). Replaced with canonical Cloudflare phrasings
+#   below that do not appear in real content.
+# - The remaining markers are full phrases unlikely to occur in legal prose.
+# - "just a moment..." and "enable javascript and cookies to continue" fire
+#   reliably on the captured Cloudflare body and were not observed in real
+#   fedcourt content.
 _JINA_CHALLENGE_MARKERS = (
     "just a moment...",
     "performing security verification",
@@ -27,7 +39,10 @@ _JINA_CHALLENGE_MARKERS = (
     "verification successful. waiting for",
     "checking your browser before accessing",
     "enable javascript and cookies to continue",
-    "captcha",
+    # Replaced bare "captcha" with phrase-level markers that distinguish
+    # Cloudflare interstitials from legitimate reCAPTCHA-protected forms.
+    "please complete the captcha",
+    "captcha challenge",
     "please make sure you are authorized to access this page",
 )
 
@@ -270,6 +285,26 @@ def _rate_limit_austlii() -> None:
         wait_time = delay - elapsed
         click.echo(f"  → Rate limiting AustLII: waiting {wait_time:.1f}s")
         time.sleep(wait_time)
+
+
+def _response_audit_fields(response) -> dict:
+    """
+    Extract HTTP status and Cloudflare diagnostic headers from a response
+    for inclusion in save_log audit payloads. Returning these fields makes
+    retroactive forensics on the markdown audit log possible (e.g. answering
+    "was this a real Cloudflare challenge or a detector false positive").
+
+    Returns a dict with http_status (always) plus cf_mitigated and cf_ray
+    when those headers are present on the response.
+    """
+    fields: dict = {"http_status": response.status_code}
+    cf_mit = response.headers.get("cf-mitigated", "")
+    if cf_mit:
+        fields["cf_mitigated"] = cf_mit
+    cf_ray = response.headers.get("cf-ray", "")
+    if cf_ray:
+        fields["cf_ray"] = cf_ray
+    return fields
 
 
 def _extract_text_from_html(html: str) -> str:
@@ -538,8 +573,8 @@ def _fetch_url_content(url: str, timeout: int = 10) -> str:
                 "url": url,
                 "method": "curl_cffi",
                 "status": "failed",
-                "http_status": response.status_code,
                 "timestamp": time.time(),
+                **_response_audit_fields(response),
             },
         )
         return _fetch_via_jina(url, timeout)
@@ -601,6 +636,7 @@ def _fetch_url_content(url: str, timeout: int = 10) -> str:
                 "content_size": len(raw_html),
                 "rejection_reason": challenge_reason,
                 "timestamp": time.time(),
+                **_response_audit_fields(response),
             },
         )
         return _fetch_via_jina(url, timeout)
@@ -619,6 +655,7 @@ def _fetch_url_content(url: str, timeout: int = 10) -> str:
                 "content_size": len(raw_html),
                 "rejection_reason": spa_reason,
                 "timestamp": time.time(),
+                **_response_audit_fields(response),
             },
         )
         return _fetch_via_jina(url, timeout)
@@ -634,6 +671,7 @@ def _fetch_url_content(url: str, timeout: int = 10) -> str:
                 "content_size": len(text),
                 "rejection_reason": "gibberish (too short or no structure)",
                 "timestamp": time.time(),
+                **_response_audit_fields(response),
             },
         )
         return _fetch_via_jina(url, timeout)
@@ -649,6 +687,7 @@ def _fetch_url_content(url: str, timeout: int = 10) -> str:
             "content_size": len(text),
             "content": content,
             "timestamp": time.time(),
+            **_response_audit_fields(response),
         },
     )
     click.echo(f"  ✓ curl_cffi fetch: {len(text)} chars")
