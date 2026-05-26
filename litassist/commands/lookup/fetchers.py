@@ -484,6 +484,34 @@ def _fetch_url_content(url: str, timeout: int = 10) -> str:
         )
         return ""
 
+    # 3b. AustLII PDF -> HTML substitution. AustLII serves PDFs behind a
+    # Cloudflare policy that blocks every Python transport tested (vanilla
+    # requests, curl_cffi across multiple impersonation profiles, Playwright
+    # with playwright_stealth, patchright, nodriver, Camoufox - 16+ approaches,
+    # all returned challenge body). The HTML sibling at the same path is on a
+    # relaxed Cloudflare policy that curl_cffi clears. Some journal articles
+    # have full HTML text; others have an HTML stub containing only the
+    # citation + title (still more than the CSE snippet); some PDFs have no
+    # HTML sibling and return 404 (legis/bill_em PDFs in particular).
+    if "austlii.edu.au" in lower_url and lower_url.endswith(".pdf"):
+        html_url = url[:-4] + ".html"
+        click.echo(
+            f"  → AustLII PDF blocked by Cloudflare; substituting HTML sibling: {html_url}"
+        )
+        save_log(
+            "fetch_attempt",
+            {
+                "url": url,
+                "method": "austlii_pdf_to_html",
+                "status": "rewrite",
+                "rewrite_target": html_url,
+                "reason": "AustLII Cloudflare policy blocks PDF paths; HTML sibling reachable",
+                "timestamp": time.time(),
+            },
+        )
+        url = html_url
+        lower_url = url.lower()
+
     # 4. AustLII rate limit
     is_austlii = "austlii.edu.au" in lower_url
     if is_austlii:
