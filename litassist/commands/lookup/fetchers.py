@@ -55,6 +55,63 @@ def _looks_like_challenge_page(text: str) -> str:
     return ""
 
 
+# Framework root-container markers that identify a JavaScript SPA shell.
+# Matched case-insensitively against raw HTML before script removal.
+_SPA_CONTAINER_MARKERS = (
+    "<app-root",
+    'id="root"',
+    'id="app"',
+    'id="__next"',
+    'id="__nuxt"',
+    "ng-version=",
+)
+
+# When a SPA shell is detected, extracted text shorter than this is treated
+# as the empty body of an unrendered page.
+_SPA_MIN_TEXT_LENGTH = 1000
+
+# Raw HTML must be at least this large for the ratio heuristic to fire.
+# Smaller pages (e.g. legitimate one-paragraph stubs) are exempt.
+_SPA_MIN_HTML_LENGTH = 3000
+
+# Maximum text-to-html ratio that still counts as a shell. Real legal pages
+# routinely exceed 30%. Shells with bulky script tags fall well below 5%.
+_SPA_TEXT_RATIO_THRESHOLD = 0.05
+
+
+def _looks_like_spa_shell(raw_html: str, extracted_text: str) -> str:
+    """
+    Return a short reason string if the response looks like a JavaScript SPA
+    shell (empty container + script bundle, no rendered content), or "" if it
+    looks like a normal HTML page.
+
+    Two signals, either of which flags the response:
+
+    1. Known framework root-container marker is present in the raw HTML and
+       the extracted text is short. This catches Angular/React/Vue/Next/Nuxt
+       envelopes regardless of script bulk.
+    2. Raw HTML is large but extracted text is a tiny fraction of it. Catches
+       shells that use uncommon container names but still ship mostly script.
+    """
+    if not raw_html:
+        return ""
+
+    raw_lower = raw_html.lower()
+    for marker in _SPA_CONTAINER_MARKERS:
+        if marker in raw_lower and len(extracted_text) < _SPA_MIN_TEXT_LENGTH:
+            return f"spa container '{marker}' with only {len(extracted_text)} chars of text"
+
+    if len(raw_html) > _SPA_MIN_HTML_LENGTH:
+        ratio = len(extracted_text) / len(raw_html)
+        if ratio < _SPA_TEXT_RATIO_THRESHOLD:
+            return (
+                f"text/html ratio {ratio:.3f} below {_SPA_TEXT_RATIO_THRESHOLD} "
+                f"({len(extracted_text)} text / {len(raw_html)} html)"
+            )
+
+    return ""
+
+
 def _fetch_via_curl_cffi(url: str, timeout: int = 10):
     """
     Fetch URL via curl_cffi using Chrome TLS impersonation.
