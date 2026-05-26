@@ -660,8 +660,16 @@ def _fetch_url_content(url: str, timeout: int = 10) -> str:
         )
         return _fetch_via_jina(url, timeout)
 
-    if len(text) < 100 or text.count("\n") < 5:
-        click.echo("  ✗ Extracted text too short/unstructured, falling back to Jina")
+    # Gibberish heuristic: only reject if text is so short it cannot carry
+    # meaningful content. The earlier newline-count check (text.count("\n") < 5)
+    # was removed 26/05/2026 after live testing on Nuxt-pre-rendered pages
+    # (e.g. triplezero.vic.gov.au): those pages use Unicode word-joiner
+    # separators (U+2060) instead of newlines, so the count rejected real
+    # content. Empirical comparison vs Jina showed 78% vocabulary overlap
+    # and all substantive legal phrases present - the content was correct,
+    # only the formatting was poor.
+    if len(text) < 100:
+        click.echo("  ✗ Extracted text too short, falling back to Jina")
         save_log(
             "fetch_attempt",
             {
@@ -669,7 +677,7 @@ def _fetch_url_content(url: str, timeout: int = 10) -> str:
                 "method": "curl_cffi",
                 "status": "failed",
                 "content_size": len(text),
-                "rejection_reason": "gibberish (too short or no structure)",
+                "rejection_reason": "gibberish (text < 100 chars)",
                 "timestamp": time.time(),
                 **_response_audit_fields(response),
             },
