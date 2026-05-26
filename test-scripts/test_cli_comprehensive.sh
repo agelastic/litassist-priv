@@ -45,9 +45,23 @@ run_test() {
     echo -e "\n${BLUE}Test $TOTAL_TESTS: $test_name${NC}"
     echo "Command: $command"
     echo "Running: $command" >> "$TEST_LOG"
-    
-    # Run the command and capture output
-    if output=$(eval "$command" 2>&1); then
+
+    # Run the command. In verbose mode stream live to terminal while still
+    # capturing output for pattern matching; otherwise capture silently.
+    local tmpfile
+    tmpfile=$(mktemp)
+
+    if (( VERBOSE )); then
+        eval "$command" 2>&1 | tee "$tmpfile"
+    else
+        eval "$command" 2>&1 | tee "$tmpfile" > /dev/null
+    fi
+    local rc=${PIPESTATUS[0]}
+    local output
+    output=$(< "$tmpfile")
+    rm -f "$tmpfile"
+
+    if (( rc == 0 )); then
         echo -e "${GREEN}[OK] Command executed successfully${NC}"
         
         # Check for expected patterns if provided
@@ -79,8 +93,7 @@ run_test() {
             echo "PASSED: $test_name" >> "$TEST_LOG"
         fi
     else
-        RET=$?
-        local RET
+        local RET=$rc
         # Check if this is a credit limitation error (acceptable for strategy tests)
         if echo "$output" | grep -q "credits\|max_tokens\|afford\|quota"; then
             PASSED_TESTS=$((PASSED_TESTS + 1))
@@ -704,6 +717,7 @@ show_help() {
     echo "  all           Run all tests"
     echo ""
     echo "Options:"
+    echo "  --verbose, -v Stream underlying command output to terminal in real time"
     echo "  --help, -h    Show this help message"
     echo ""
     echo "Examples:"
@@ -786,14 +800,48 @@ run_test_group() {
     esac
 }
 
+# Verbosity flag (set by argument parsing in main); used inside run_test
+VERBOSE=0
+
 # Main execution
 main() {
     # Parse command line arguments
-    if [[ $# -eq 0 ]] || [[ "$1" == "--help" ]] || [[ "$1" == "-h" ]]; then
+    local TEST_GROUP=""
+
+    if [[ $# -eq 0 ]]; then
         show_help
         exit 0
     fi
-    
+
+    while [[ $# -gt 0 ]]; do
+        case "$1" in
+            -h|--help)
+                show_help
+                exit 0
+                ;;
+            -v|--verbose)
+                VERBOSE=1
+                shift
+                ;;
+            -*)
+                echo -e "${RED}Error: Unknown option '$1'${NC}"
+                echo ""
+                show_help
+                exit 1
+                ;;
+            *)
+                TEST_GROUP="$1"
+                shift
+                break
+                ;;
+        esac
+    done
+
+    if [[ -z "$TEST_GROUP" ]]; then
+        show_help
+        exit 0
+    fi
+
     # Check if we're in the right directory
     # Check if litassist is available (either installed or in development mode)
     if ! command -v litassist &> /dev/null && [[ ! -d "litassist" ]]; then
@@ -801,25 +849,26 @@ main() {
         echo -e "${YELLOW}Try: pip install -e . (from project root)${NC}"
         exit 1
     fi
-    
+
     # Check if virtual environment is activated (optional warning)
     if [[ -z "$VIRTUAL_ENV" ]]; then
         echo -e "${YELLOW}Warning: No virtual environment detected. Make sure dependencies are installed.${NC}"
     fi
-    
+
     print_header
-    
+
     # Initialize log
     echo "LitAssist CLI Test Run - $(date)" > "$TEST_LOG"
-    echo "Test Group: $1" >> "$TEST_LOG"
+    echo "Test Group: $TEST_GROUP" >> "$TEST_LOG"
+    echo "Verbose: $VERBOSE" >> "$TEST_LOG"
     echo "=========================================" >> "$TEST_LOG"
-    
+
     # Setup mock files before running any tests
     setup_mock_files
-    
+
     # Run requested test group
-    echo -e "${BLUE}Running test group: $1${NC}"
-    run_test_group "$1"
+    echo -e "${BLUE}Running test group: $TEST_GROUP${NC}"
+    run_test_group "$TEST_GROUP"
     
     # Cleanup and summary
     cleanup_test_files
