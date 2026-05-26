@@ -85,3 +85,22 @@ class TestAustliiPdfSubstitution:
 
         assert jina.called
         assert content == ""
+
+    def test_austlii_pdf_url_with_query_and_fragment_is_rewritten(self):
+        """Regression for review finding: substitution uses urlsplit so
+        query strings and fragments do not defeat the .pdf detection.
+        Path is rewritten; query and fragment are preserved on the new URL."""
+        pdf_url = "https://www.austlii.edu.au/au/journals/Foo/2020/1.pdf?download=1#page=2"
+        expected_html = "https://www.austlii.edu.au/au/journals/Foo/2020/1.html?download=1#page=2"
+        captured = {}
+
+        def fake_fetch(url, timeout=10):
+            captured["url"] = url
+            return _build_response(status=200, text=_good_html())
+
+        with patch.object(fetchers, "_fetch_via_curl_cffi", side_effect=fake_fetch):
+            fetchers._fetch_url_content(pdf_url, timeout=15)
+
+        assert captured["url"] == expected_html, (
+            f"Query/fragment-bearing PDF URL must still be rewritten: got {captured['url']!r}"
+        )

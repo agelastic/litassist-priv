@@ -6,11 +6,14 @@ HTML pages, PDFs, and JavaScript-rendered sites.
 """
 
 import logging
-import requests
-import time
 import random
-from litassist.logging import save_log
+import time
+from urllib.parse import urlsplit, urlunsplit
+
 import click
+import requests
+
+from litassist.logging import save_log
 
 # Track last AustLII request completion time for rate limiting
 _last_austlii_completion = 0
@@ -46,18 +49,27 @@ _JINA_CHALLENGE_MARKERS = (
     "please make sure you are authorized to access this page",
 )
 
-# Minimum bytes Jina must return for content to be treated as plausibly real.
-# Cloudflare interstitials are typically 800-1500 chars; legitimate legal docs
-# are routinely >10k. 2000 is a conservative line that catches the bad case
-# without rejecting genuinely short legitimate content like one-paragraph
-# definitions or empty-stub pages.
+# Minimum bytes a Jina-rendered response must return for content to be
+# treated as plausibly real. Jina returns markdown extracted from the
+# upstream HTML, so a Cloudflare interstitial passed through Jina collapses
+# to ~800-1500 chars of "Just a moment..." text. The same number does NOT
+# apply to raw curl_cffi HTML: real Cloudflare interstitial HTML is ~31 KB,
+# and legitimate short raw HTML pages are not necessarily junk. The size
+# floor is therefore conditional on the caller (see is_jina_markdown).
 _JINA_MIN_USEFUL_CHARS = 2000
 
 
-def _looks_like_challenge_page(text: str) -> str:
+def _looks_like_challenge_page(text: str, is_jina_markdown: bool = True) -> str:
     """
-    Return a short reason string if the given Jina response body looks like a
+    Return a short reason string if the given response body looks like a
     bot-challenge / error interstitial, or "" if it looks like real content.
+
+    The size floor (`_JINA_MIN_USEFUL_CHARS`) applies only to Jina-rendered
+    markdown responses, where Cloudflare interstitials shrink to ~1 KB and
+    a short body is itself a strong signal of trouble. For raw curl HTML
+    callers (`is_jina_markdown=False`), only marker-based detection runs;
+    short legitimate pages would otherwise be discarded by the floor even
+    though they carry usable text after BS4 extraction.
     """
     if not text:
         return "empty body"
@@ -65,7 +77,7 @@ def _looks_like_challenge_page(text: str) -> str:
     for marker in _JINA_CHALLENGE_MARKERS:
         if marker in lowered:
             return f"challenge marker: '{marker}'"
-    if len(text) < _JINA_MIN_USEFUL_CHARS:
+    if is_jina_markdown and len(text) < _JINA_MIN_USEFUL_CHARS:
         return f"too short ({len(text)} < {_JINA_MIN_USEFUL_CHARS} chars)"
     return ""
 
@@ -240,8 +252,11 @@ def _fetch_via_jina(url: str, timeout: int = 15) -> str:
                     "method": "jina_reader",
                     "status": "failed",
                     "http_status": response.status_code,
-                    "response_size": len(response.text),
-                    "error_message": (
+                    # Use formatter-recognised field names so audit log
+                    # surfaces the failure detail (rather than silently
+                    # dropping response_size / error_message).
+                    "content_size": len(response.text),
+                    "error": (
                         response.text if response.status_code != 200 else None
                     ),
                     "timestamp": time.time(),
@@ -464,15 +479,19 @@ def _fetch_url_content(url: str, timeout: int = 10) -> str:
     challenge pages, SPA shells, or gibberish fall through to Jina rendering.
 
     Order:
-      1. Local file path        -> read_document
-      2. jade.io main domain    -> skip (cookie-gated)
-      3. ndfv.jade.io           -> Jina with /download URL rewrite
-      4. AustLII rate-limit     -> 2-3s random delay
-      5. curl_cffi GET
-      6. PDF magic bytes        -> _extract_pdf_text
-      7. BS4 text extract
-      8. Unusable response      -> Jina fallback
-      9. Otherwise              -> return cleaned text
+      1.  Local file path        -> read_document
+      2.  jade.io main domain    -> skip (cookie-gated)
+      3.  ndfv.jade.io           -> Jina with /download URL rewrite
+      3b. AustLII PDF URL        -> rewrite to .html sibling
+      4.  AustLII rate-limit     -> 2-3s random delay
+      5.  curl_cffi GET
+      6.  PDF magic bytes        -> _extract_pdf_text
+      6b. RTF magic bytes        -> extract_rtf_text
+      6c. Content-Type guard     -> non-text payload falls back to Jina
+      6d. legislation.gov.au ToC -> follow OEBPS document link
+      7.  BS4 text extract
+      8.  Unusable response      -> Jina fallback
+      9.  Otherwise              -> return cleaned text
     """
     global _last_austlii_completion
     click.echo(f"[FETCH] Checking: {url}")
@@ -528,8 +547,14 @@ def _fetch_url_content(url: str, timeout: int = 10) -> str:
     # have full HTML text; others have an HTML stub containing only the
     # citation + title (still more than the CSE snippet); some PDFs have no
     # HTML sibling and return 404 (legis/bill_em PDFs in particular).
-    if "austlii.edu.au" in lower_url and lower_url.endswith(".pdf"):
-        html_url = url[:-4] + ".html"
+    #
+    # Use urlsplit so the substitution works when the URL carries a query
+    # string or fragment (e.g. .../5.pdf?download=1, .../5.pdf#page=2): we
+    # rewrite only the path's .pdf suffix and reassemble.
+    parts = urlsplit(url)
+    if (parts.hostname or "").lower().endswith("austlii.edu.au") and parts.path.lower().endswith(".pdf"):
+        new_path = parts.path[:-4] + ".html"
+        html_url = urlunsplit((parts.scheme, parts.netloc, new_path, parts.query, parts.fragment))
         click.echo(
             f"  → AustLII PDF blocked by Cloudflare; substituting HTML sibling: {html_url}"
         )
@@ -591,10 +616,43 @@ def _fetch_url_content(url: str, timeout: int = 10) -> str:
         click.echo("  → curl_cffi returned RTF, extracting text...")
         return extract_rtf_text(url, response.content)
 
-    # 6c. legislation.gov.au /latest/text returns a ToC page that links to
+    # 6c. Content-Type guard. If curl_cffi returned a non-HTML payload (e.g.
+    # a script bundle from a misconfigured redirect, raw JSON, or a binary
+    # blob), treating it as HTML and running BS4 on it would yield long
+    # garbage text that the gibberish heuristic (text < 100 chars only)
+    # would not catch. Reject non-text content types here; route to Jina.
+    _ct = (response.headers.get("content-type", "") or "").lower().split(";")[0].strip()
+    _acceptable_types = ("text/html", "text/plain", "text/xml", "application/xhtml+xml", "application/xml", "")
+    if _ct and _ct not in _acceptable_types:
+        click.echo(
+            f"  ✗ curl_cffi returned unexpected content-type '{_ct}', falling back to Jina"
+        )
+        save_log(
+            "fetch_attempt",
+            {
+                "url": url,
+                "method": "curl_cffi",
+                "status": "failed",
+                "rejection_reason": f"unexpected content-type: {_ct}",
+                "timestamp": time.time(),
+                **_response_audit_fields(response),
+            },
+        )
+        return _fetch_via_jina(url, timeout)
+
+    # 6d. legislation.gov.au /latest/text returns a ToC page that links to
     # the actual document at OEBPS/document_1/document_1.html. Follow the
     # link via curl_cffi and replace the response with the real document.
-    if "legislation.gov.au" in lower_url and "/latest/text" in lower_url:
+    #
+    # Use the parsed host (not a substring match on the full URL) so we
+    # don't accept malicious URLs of the form
+    # https://evil.example.com/?ref=legislation.gov.au/latest/text.
+    _legis_parts = urlsplit(url)
+    _legis_host = (_legis_parts.hostname or "").lower()
+    if (
+        (_legis_host == "legislation.gov.au" or _legis_host.endswith(".legislation.gov.au"))
+        and "/latest/text" in _legis_parts.path.lower()
+    ):
         import re
         from urllib.parse import urljoin
 
@@ -621,8 +679,12 @@ def _fetch_url_content(url: str, timeout: int = 10) -> str:
         click.echo(f"  ✗ HTML parsing failed: {e}, falling back to Jina")
         return _fetch_via_jina(url, timeout)
 
-    # 8. Unusable response detection
-    challenge_reason = _looks_like_challenge_page(raw_html)
+    # 8. Unusable response detection.
+    # raw_html is curl_cffi's untransformed HTML body - the size floor in
+    # _looks_like_challenge_page is calibrated for Jina markdown responses
+    # only, so skip it here via is_jina_markdown=False. Marker-based detection
+    # still runs.
+    challenge_reason = _looks_like_challenge_page(raw_html, is_jina_markdown=False)
     if challenge_reason:
         click.echo(
             f"  ✗ curl_cffi returned challenge page: {challenge_reason}, falling back to Jina"
