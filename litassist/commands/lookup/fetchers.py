@@ -251,240 +251,41 @@ def _fetch_via_jina(url: str, timeout: int = 15) -> str:
         return ""
 
 
-def _fetch_from_austlii(url: str, timeout: int = 10) -> str:
+def _rate_limit_austlii() -> None:
     """
-    Fetch content directly from AustLII with proper headers and rate limiting.
+    Enforce a 2-3 second random delay between AustLII requests.
 
-    Args:
-        url: AustLII URL
-        timeout: Request timeout
-
-    Returns:
-        Extracted text content or empty string if failed
+    Even with curl_cffi's TLS impersonation defeating Cloudflare's fingerprint
+    check, aggressive parallel requests against austlii.edu.au still risk
+    re-triggering rate-based protections. The delay is measured from the
+    completion of the previous AustLII request (not its start), so a slow
+    fetch followed by a fast one waits the full window.
     """
-    # Rate limit - random 2-3 second delay after last request completed
     global _last_austlii_completion
-
-    current_time = time.time()
-    if _last_austlii_completion > 0:
-        elapsed = current_time - _last_austlii_completion
-        delay = random.uniform(2.0, 3.0)
-        if elapsed < delay:
-            wait_time = delay - elapsed
-            click.echo(f"  → Rate limiting AustLII: waiting {wait_time:.1f}s")
-            time.sleep(wait_time)
-
-    try:
-        response = _fetch_via_curl_cffi(url, timeout)
-
-        # Update completion timestamp AFTER request finishes
-        _last_austlii_completion = time.time()
-
-        if response is None:
-            click.echo("  ✗ AustLII fetch returned no response")
-            save_log(
-                "fetch_attempt",
-                {
-                    "url": url,
-                    "method": "austlii_curl_cffi",
-                    "status": "failed",
-                    "error": "curl_cffi returned None",
-                    "timestamp": time.time(),
-                },
-            )
-            return ""
-
-        if response.status_code == 200:
-            # Check if content is actually a PDF
-            if response.content.startswith(b'%PDF'):
-                click.echo("  → AustLII returned PDF, extracting text...")
-                return _extract_pdf_text(url, response.content)
-
-            # Detect Cloudflare interstitial slipping through despite impersonation
-            challenge_reason = _looks_like_challenge_page(response.text)
-            if challenge_reason:
-                click.echo(
-                    f"  ✗ AustLII curl_cffi returned challenge page: {challenge_reason}"
-                )
-                save_log(
-                    "fetch_attempt",
-                    {
-                        "url": url,
-                        "method": "austlii_curl_cffi",
-                        "status": "failed",
-                        "http_status": response.status_code,
-                        "content_size": len(response.text),
-                        "rejection_reason": challenge_reason,
-                        "timestamp": time.time(),
-                    },
-                )
-                return ""
-
-            # Extract text using BeautifulSoup
-            from bs4 import BeautifulSoup
-
-            soup = BeautifulSoup(response.text, "html.parser")
-
-            # Remove script and style elements
-            for script in soup(["script", "style", "meta", "link"]):
-                script.decompose()
-
-            # Get text
-            text = soup.get_text()
-
-            # Clean up whitespace
-            lines = (line.strip() for line in text.splitlines())
-            chunks = (phrase.strip() for line in lines for phrase in line.split("  "))
-            text = "\n".join(chunk for chunk in chunks if chunk)
-
-            content = f"[Source: {url}]\n\n{text}"
-
-            save_log(
-                "fetch_attempt",
-                {
-                    "url": url,
-                    "method": "austlii_curl_cffi",
-                    "status": "success",
-                    "content_size": len(text),
-                    "content": content,
-                    "timestamp": time.time(),
-                },
-            )
-
-            click.echo(f"  ✓ AustLII curl_cffi fetch: {len(text)} chars")
-            return content
-        else:
-            click.echo(f"  ✗ AustLII returned HTTP {response.status_code}")
-            save_log(
-                "fetch_attempt",
-                {
-                    "url": url,
-                    "method": "austlii_curl_cffi",
-                    "status": "failed",
-                    "http_status": response.status_code,
-                    "timestamp": time.time(),
-                },
-            )
-            return ""
-
-    except Exception as e:
-        # Update completion timestamp even on error
-        _last_austlii_completion = time.time()
-
-        click.echo(f"  ✗ AustLII error: {str(e)}")
-        logging.warning(f"AustLII curl_cffi fetch failed for {url}: {e}")
-        save_log(
-            "fetch_attempt",
-            {
-                "url": url,
-                "method": "austlii_curl_cffi",
-                "status": "failed",
-                "error": str(e),
-                "timestamp": time.time(),
-            },
-        )
-        return ""
+    if _last_austlii_completion <= 0:
+        return
+    elapsed = time.time() - _last_austlii_completion
+    delay = random.uniform(2.0, 3.0)
+    if elapsed < delay:
+        wait_time = delay - elapsed
+        click.echo(f"  → Rate limiting AustLII: waiting {wait_time:.1f}s")
+        time.sleep(wait_time)
 
 
-def _fetch_gov_legislation(url: str, timeout: int = 10) -> str:
+def _extract_text_from_html(html: str) -> str:
     """
-    Fetch legislation from government sites using direct HTTP.
-    Handles table of contents pages by following document links.
-    Only uses Jina as last resort if content is gibberish/wrong.
-
-    Args:
-        url: Government legislation URL
-        timeout: Request timeout
-
-    Returns:
-        Extracted text content or empty string if failed
+    Strip scripts/styles/meta/link/noscript and return cleaned text from HTML.
     """
-    try:
-        headers = {
-            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36"
-        }
+    from bs4 import BeautifulSoup
 
-        # Direct HTTP fetch
-        response = requests.get(url, headers=headers, timeout=timeout)
+    soup = BeautifulSoup(html, "html.parser")
+    for tag in soup(["script", "style", "meta", "link", "noscript"]):
+        tag.decompose()
 
-        if response.status_code == 200:
-            content = response.text
-
-            # Check if this is a ToC page (legislation.gov.au pattern)
-            if "legislation.gov.au" in url and "/latest/text" in url:
-                # Look for document link
-                import re
-
-                doc_match = re.search(
-                    r'href="([^"]*?/OEBPS/document_1/document_1\.html[^"]*)"', content
-                )
-                if doc_match:
-                    doc_url = doc_match.group(1)
-                    if not doc_url.startswith("http"):
-                        # Make absolute URL
-                        from urllib.parse import urljoin
-
-                        doc_url = urljoin(url, doc_url)
-
-                    click.echo(f"  → Following document link: {doc_url}")
-                    # Fetch the actual document
-                    doc_response = requests.get(
-                        doc_url, headers=headers, timeout=timeout
-                    )
-                    if doc_response.status_code == 200:
-                        content = doc_response.text
-
-            # Extract text from HTML
-            from bs4 import BeautifulSoup
-
-            soup = BeautifulSoup(content, "html.parser")
-
-            # Remove script and style elements
-            for script in soup(["script", "style", "meta", "link"]):
-                script.decompose()
-
-            # Get text
-            text = soup.get_text()
-
-            # Clean up whitespace
-            lines = (line.strip() for line in text.splitlines())
-            chunks = (phrase.strip() for line in lines for phrase in line.split("  "))
-            text = "\n".join(chunk for chunk in chunks if chunk)
-
-            # Validate we got sensible content (not gibberish)
-            if len(text) < 100 or text.count("\n") < 5:
-                # Too short or no structure, might be gibberish
-                click.echo("  ✗ Direct fetch returned gibberish, falling back to Jina")
-                return _fetch_via_jina(url, timeout)
-
-            result = f"[Source: {url}]\n\n{text}"
-
-            save_log(
-                "fetch_attempt",
-                {
-                    "url": url,
-                    "method": "gov_direct",
-                    "status": "success",
-                    "content_size": len(text),
-                    "content": result,
-                    "timestamp": time.time(),
-                },
-            )
-
-            click.echo(f"  ✓ Direct government fetch: {len(text)} chars")
-            return result
-
-        else:
-            # Non-200 status, try Jina
-            click.echo(
-                f"  ✗ Direct fetch failed (HTTP {response.status_code}), trying Jina"
-            )
-            return _fetch_via_jina(url, timeout)
-
-    except Exception as e:
-        click.echo(f"  ✗ Direct fetch error: {str(e)}, trying Jina")
-        logging.warning(f"Government direct fetch failed for {url}: {e}")
-        return _fetch_via_jina(url, timeout)
+    text = soup.get_text()
+    lines = (line.strip() for line in text.splitlines())
+    chunks = (phrase.strip() for line in lines for phrase in line.split("  "))
+    return "\n".join(chunk for chunk in chunks if chunk)
 
 
 def _extract_pdf_text(url: str, pdf_bytes: bytes) -> str:
@@ -623,18 +424,27 @@ def _extract_pdf_text(url: str, pdf_bytes: bytes) -> str:
 
 def _fetch_url_content(url: str, timeout: int = 10) -> str:
     """
-    Fetch content from URL with smart routing based on source type.
-    - AustLII: Direct download with rate limiting
-    - Government sites: Direct HTTP first, Jina as fallback
-    - PDFs: Direct download
-    - Local files: Direct file reading
-    - Others: Jina Reader
+    Fetch content from URL via a generic chain. All HTTP sources go through
+    curl_cffi first (defeats TLS fingerprinting). Responses that look like
+    challenge pages, SPA shells, or gibberish fall through to Jina rendering.
+
+    Order:
+      1. Local file path        -> read_document
+      2. jade.io main domain    -> skip (cookie-gated)
+      3. ndfv.jade.io           -> Jina with /download URL rewrite
+      4. AustLII rate-limit     -> 2-3s random delay
+      5. curl_cffi GET
+      6. PDF magic bytes        -> _extract_pdf_text
+      7. BS4 text extract
+      8. Unusable response      -> Jina fallback
+      9. Otherwise              -> return cleaned text
     """
+    global _last_austlii_completion
     click.echo(f"[FETCH] Checking: {url}")
 
-    # Check if this is a local file path (not a URL)
     import os
 
+    # 1. Local file
     if not url.startswith(("http://", "https://", "ftp://")) and os.path.isfile(url):
         click.echo("  → Reading local file...")
         try:
@@ -642,141 +452,148 @@ def _fetch_url_content(url: str, timeout: int = 10) -> str:
 
             content = read_document(url)
             if content:
-                result = f"[Source: {url}]\n\n{content}"
                 click.echo(f"  ✓ Local file read: {len(content)} chars")
-                return result
-            else:
-                click.echo("  ✗ Local file is empty")
-                return ""
+                return f"[Source: {url}]\n\n{content}"
+            click.echo("  ✗ Local file is empty")
+            return ""
         except Exception as e:
             click.echo(f"  ✗ Local file read error: {str(e)}")
             return ""
 
-    # Handle jade.io URLs - special case for ndfv.jade.io
-    if "jade.io" in url.lower():
-        # Special handling for ndfv.jade.io subdomain
-        if "ndfv.jade.io" in url.lower():
-            if "/download" not in url.lower():
-                # Transform to download URL
-                url = url.rstrip('/') + '/download'
+    lower_url = url.lower()
+
+    # 2/3. jade.io special handling
+    if "jade.io" in lower_url:
+        if "ndfv.jade.io" in lower_url:
+            if "/download" not in lower_url:
+                url = url.rstrip("/") + "/download"
                 click.echo(f"  → Transforming to ndfv.jade.io download URL: {url}")
-            # Use Jina for ndfv.jade.io URLs
             click.echo("  → Fetching ndfv.jade.io via Jina Reader...")
             return _fetch_via_jina(url, timeout)
-        else:
-            # Skip all other jade.io domains (main domain and other subdomains)
-            logging.info(f"Skipping Jade.io URL (blocked from scrapers): {url}")
-            save_log(
-                "fetch_attempt",
-                {
-                    "url": url,
-                    "method": "skipped",
-                    "status": "blocked",
-                    "reason": "Jade.io blocked from scrapers",
-                    "content": "",
-                    "timestamp": time.time(),
-                },
-            )
-            return ""
-
-    # AustLII - use direct download with rate limiting
-    if "austlii.edu.au" in url.lower():
-        click.echo("  → Detected AustLII URL, attempting direct download...")
-        content = _fetch_from_austlii(url, timeout)
-        if content:
-            return content
-        # Fall through to try Jina if direct download fails
-        click.echo("  → AustLII direct failed, trying Jina...")
-        return _fetch_via_jina(url, timeout)
-
-    # Government legislation sites - use direct HTTP first
-    if any(gov in url.lower() for gov in [".gov.au", "legislation."]):
-        click.echo("  → Fetching government content...")
-        try:
-            response = requests.get(
-                url,
-                timeout=timeout,
-                headers={
-                    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
-                },
-            )
-            if response.status_code == 200:
-                # Check if content is actually a PDF
-                if response.content.startswith(b'%PDF'):
-                    click.echo("  → Government site returned PDF, extracting text...")
-                    return _extract_pdf_text(url, response.content)
-                else:
-                    # HTML legislation - parse with government fetcher
-                    click.echo("  → Parsing government HTML content...")
-                    return _fetch_gov_legislation(url, timeout)
-            else:
-                logging.warning(
-                    f"Failed to fetch from {url}: HTTP {response.status_code}"
-                )
-                return ""
-        except Exception as e:
-            logging.warning(f"Failed to fetch from {url}: {e}")
-            return ""
-
-    # Everything else - check if PDF first, otherwise use Jina
-    try:
-        # Quick check for PDF
-        head_response = requests.head(
-            url,
-            timeout=5,
-            headers={
-                "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
-            },
-            allow_redirects=True,
-        )
-
-        content_type = head_response.headers.get("content-type", "").lower()
-        is_pdf = "application/pdf" in content_type or url.lower().endswith(".pdf")
-
-        if is_pdf:
-            click.echo("  → Downloading PDF...")
-            response = requests.get(
-                url,
-                timeout=timeout,
-                headers={
-                    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
-                },
-            )
-            if response.status_code == 200:
-                # Verify it's actually a PDF
-                if response.content.startswith(b'%PDF'):
-                    return _extract_pdf_text(url, response.content)
-                else:
-                    # Not actually a PDF, try Jina instead
-                    click.echo("  → Content not PDF despite headers, trying Jina...")
-                    return _fetch_via_jina(url, timeout)
-            else:
-                logging.warning(
-                    f"Failed to download PDF from {url}: HTTP {response.status_code}"
-                )
-                return ""
-        else:
-            click.echo("  → Fetching via Jina Reader...")
-            return _fetch_via_jina(url, timeout)
-
-    except Exception as e:
-        logging.warning(f"Failed to fetch {url}: {e}")
-
-        # Try Jina as fallback
-        try:
-            return _fetch_via_jina(url, timeout)
-        except Exception as jina_error:
-            logging.error(f"Jina fallback also failed for {url}: {jina_error}")
-
+        logging.info(f"Skipping Jade.io URL (blocked from scrapers): {url}")
         save_log(
             "fetch_attempt",
             {
                 "url": url,
-                "method": "failed",
-                "status": "failed",
-                "error": str(e),
+                "method": "skipped",
+                "status": "blocked",
+                "reason": "Jade.io blocked from scrapers",
                 "content": "",
                 "timestamp": time.time(),
             },
         )
         return ""
+
+    # 4. AustLII rate limit
+    is_austlii = "austlii.edu.au" in lower_url
+    if is_austlii:
+        _rate_limit_austlii()
+
+    # 5. curl_cffi GET
+    try:
+        response = _fetch_via_curl_cffi(url, timeout)
+    finally:
+        if is_austlii:
+            _last_austlii_completion = time.time()
+
+    if response is None:
+        click.echo("  → curl_cffi returned no response, falling back to Jina")
+        return _fetch_via_jina(url, timeout)
+
+    if response.status_code != 200:
+        click.echo(
+            f"  ✗ curl_cffi returned HTTP {response.status_code}, falling back to Jina"
+        )
+        save_log(
+            "fetch_attempt",
+            {
+                "url": url,
+                "method": "curl_cffi",
+                "status": "failed",
+                "http_status": response.status_code,
+                "timestamp": time.time(),
+            },
+        )
+        return _fetch_via_jina(url, timeout)
+
+    # 6. PDF magic bytes (binary check first - response.text on a PDF is junk)
+    if response.content.startswith(b"%PDF"):
+        click.echo("  → curl_cffi returned PDF, extracting text...")
+        return _extract_pdf_text(url, response.content)
+
+    raw_html = response.text
+
+    # 7. BS4 text extract
+    try:
+        text = _extract_text_from_html(raw_html)
+    except Exception as e:
+        click.echo(f"  ✗ HTML parsing failed: {e}, falling back to Jina")
+        return _fetch_via_jina(url, timeout)
+
+    # 8. Unusable response detection
+    challenge_reason = _looks_like_challenge_page(raw_html)
+    if challenge_reason:
+        click.echo(
+            f"  ✗ curl_cffi returned challenge page: {challenge_reason}, falling back to Jina"
+        )
+        save_log(
+            "fetch_attempt",
+            {
+                "url": url,
+                "method": "curl_cffi",
+                "status": "failed",
+                "content_size": len(raw_html),
+                "rejection_reason": challenge_reason,
+                "timestamp": time.time(),
+            },
+        )
+        return _fetch_via_jina(url, timeout)
+
+    spa_reason = _looks_like_spa_shell(raw_html, text)
+    if spa_reason:
+        click.echo(
+            f"  ✗ curl_cffi returned SPA shell: {spa_reason}, falling back to Jina"
+        )
+        save_log(
+            "fetch_attempt",
+            {
+                "url": url,
+                "method": "curl_cffi",
+                "status": "failed",
+                "content_size": len(raw_html),
+                "rejection_reason": spa_reason,
+                "timestamp": time.time(),
+            },
+        )
+        return _fetch_via_jina(url, timeout)
+
+    if len(text) < 100 or text.count("\n") < 5:
+        click.echo("  ✗ Extracted text too short/unstructured, falling back to Jina")
+        save_log(
+            "fetch_attempt",
+            {
+                "url": url,
+                "method": "curl_cffi",
+                "status": "failed",
+                "content_size": len(text),
+                "rejection_reason": "gibberish (too short or no structure)",
+                "timestamp": time.time(),
+            },
+        )
+        return _fetch_via_jina(url, timeout)
+
+    # 9. Success
+    content = f"[Source: {url}]\n\n{text}"
+    save_log(
+        "fetch_attempt",
+        {
+            "url": url,
+            "method": "curl_cffi",
+            "status": "success",
+            "content_size": len(text),
+            "content": content,
+            "timestamp": time.time(),
+        },
+    )
+    click.echo(f"  ✓ curl_cffi fetch: {len(text)} chars")
+    return content
