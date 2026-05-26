@@ -528,6 +528,27 @@ def _fetch_url_content(url: str, timeout: int = 10) -> str:
         click.echo("  → curl_cffi returned RTF, extracting text...")
         return extract_rtf_text(url, response.content)
 
+    # 6c. legislation.gov.au /latest/text returns a ToC page that links to
+    # the actual document at OEBPS/document_1/document_1.html. Follow the
+    # link via curl_cffi and replace the response with the real document.
+    if "legislation.gov.au" in lower_url and "/latest/text" in lower_url:
+        import re
+        from urllib.parse import urljoin
+
+        doc_match = re.search(
+            r'href="([^"]*?/OEBPS/document_1/document_1\.html[^"]*)"',
+            response.text,
+        )
+        if doc_match:
+            doc_url = doc_match.group(1)
+            if not doc_url.startswith("http"):
+                doc_url = urljoin(url, doc_url)
+            click.echo(f"  → Following legislation.gov.au document link: {doc_url}")
+            doc_response = _fetch_via_curl_cffi(doc_url, timeout)
+            if doc_response is not None and doc_response.status_code == 200:
+                url = doc_url
+                response = doc_response
+
     raw_html = response.text
 
     # 7. BS4 text extract
