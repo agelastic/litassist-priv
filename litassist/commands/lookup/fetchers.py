@@ -15,6 +15,45 @@ import click
 # Track last AustLII request completion time for rate limiting
 _last_austlii_completion = 0
 
+# Markers that indicate Jina returned a bot-challenge / error interstitial
+# instead of the requested page content. Matched case-insensitively.
+_JINA_CHALLENGE_MARKERS = (
+    "just a moment...",
+    "performing security verification",
+    "this website uses a security service to protect against malicious bots",
+    "warning: target url returned error 403",
+    "warning: target url returned error 404",
+    "warning: target url returned error 5",
+    "verification successful. waiting for",
+    "checking your browser before accessing",
+    "enable javascript and cookies to continue",
+    "captcha",
+    "please make sure you are authorized to access this page",
+)
+
+# Minimum bytes Jina must return for content to be treated as plausibly real.
+# Cloudflare interstitials are typically 800-1500 chars; legitimate legal docs
+# are routinely >10k. 2000 is a conservative line that catches the bad case
+# without rejecting genuinely short legitimate content like one-paragraph
+# definitions or empty-stub pages.
+_JINA_MIN_USEFUL_CHARS = 2000
+
+
+def _looks_like_challenge_page(text: str) -> str:
+    """
+    Return a short reason string if the given Jina response body looks like a
+    bot-challenge / error interstitial, or "" if it looks like real content.
+    """
+    if not text:
+        return "empty body"
+    lowered = text.lower()
+    for marker in _JINA_CHALLENGE_MARKERS:
+        if marker in lowered:
+            return f"challenge marker: '{marker}'"
+    if len(text) < _JINA_MIN_USEFUL_CHARS:
+        return f"too short ({len(text)} < {_JINA_MIN_USEFUL_CHARS} chars)"
+    return ""
+
 
 def _fetch_via_jina(url: str, timeout: int = 15) -> str:
     """
@@ -52,6 +91,27 @@ def _fetch_via_jina(url: str, timeout: int = 15) -> str:
         )
 
         if response.status_code == 200 and response.text.strip():
+            challenge_reason = _looks_like_challenge_page(response.text)
+            if challenge_reason:
+                click.echo(
+                    f"  [✗ Jina returned challenge/interstitial: {challenge_reason}]"
+                )
+                save_log(
+                    "fetch_attempt",
+                    {
+                        "url": original_url,
+                        "actual_url": url if url != original_url else None,
+                        "method": "jina_reader",
+                        "status": "failed",
+                        "http_status": response.status_code,
+                        "content_size": len(response.text),
+                        "rejection_reason": challenge_reason,
+                        "response_body": response.text,
+                        "timestamp": time.time(),
+                    },
+                )
+                return ""
+
             content = f"[Source: {original_url}]\n\n{response.text}"
             save_log(
                 "fetch_attempt",
