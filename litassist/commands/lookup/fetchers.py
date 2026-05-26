@@ -392,9 +392,9 @@ def _extract_pdf_text(url: str, pdf_bytes: bytes) -> str:
             num_pages = len(pdf.pages)
             text_parts = []
 
-            # Extract text from up to 50 pages
-            pages_to_extract = min(num_pages, 50)
-            for i, page in enumerate(pdf.pages[:pages_to_extract], 1):
+            # Extract text from every page; oversized prompts are handled
+            # by the drop-largest truncation manager at the orchestration layer.
+            for i, page in enumerate(pdf.pages, 1):
                 page_text = page.extract_text()
                 if page_text:
                     text_parts.append(page_text)
@@ -462,7 +462,7 @@ def _extract_pdf_text(url: str, pdf_bytes: bytes) -> str:
                     return ""
 
                 # Add clear markers for LLM
-                header = f"[PDF DOCUMENT EXTRACTED - {num_pages} pages total, {pages_to_extract} pages processed]\n"
+                header = f"[PDF DOCUMENT EXTRACTED - {num_pages} pages]\n"
                 header += f"[Source: {url}]\n"
                 header += "=" * 80 + "\n"
 
@@ -479,7 +479,6 @@ def _extract_pdf_text(url: str, pdf_bytes: bytes) -> str:
                         "method": "pdf",
                         "status": "success",
                         "pdf_pages": num_pages,
-                        "pages_extracted": pages_to_extract,
                         "extracted_size": len(extracted_text),
                         "final_size": len(pdf_content),
                         "pdf_size": pdf_size,
