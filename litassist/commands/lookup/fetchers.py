@@ -55,6 +55,27 @@ def _looks_like_challenge_page(text: str) -> str:
     return ""
 
 
+def _fetch_via_curl_cffi(url: str, timeout: int = 10):
+    """
+    Fetch URL via curl_cffi using Chrome TLS impersonation.
+
+    Defeats TLS fingerprint detection (e.g. Cloudflare) that flags
+    python-requests. Returns the curl_cffi response object (shape-compatible
+    with requests.Response: .status_code, .content, .text, .headers) on
+    success, or None on transport failure.
+
+    Note: curl_cffi defeats TLS fingerprints only. JavaScript-rendered SPAs
+    still need Jina rendering.
+    """
+    from curl_cffi import requests as curl_requests
+
+    try:
+        return curl_requests.get(url, timeout=timeout, impersonate="chrome136")
+    except Exception as e:
+        logging.warning(f"curl_cffi fetch failed for {url}: {e}")
+        return None
+
+
 def _fetch_via_jina(url: str, timeout: int = 15) -> str:
     """
     Fetch content using Jina Reader API - works for JavaScript sites and complex HTML.
@@ -197,21 +218,51 @@ def _fetch_from_austlii(url: str, timeout: int = 10) -> str:
             time.sleep(wait_time)
 
     try:
-        headers = {
-            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36"
-        }
-
-        response = requests.get(url, headers=headers, timeout=timeout)
+        response = _fetch_via_curl_cffi(url, timeout)
 
         # Update completion timestamp AFTER request finishes
         _last_austlii_completion = time.time()
+
+        if response is None:
+            click.echo("  ✗ AustLII fetch returned no response")
+            save_log(
+                "fetch_attempt",
+                {
+                    "url": url,
+                    "method": "austlii_curl_cffi",
+                    "status": "failed",
+                    "error": "curl_cffi returned None",
+                    "timestamp": time.time(),
+                },
+            )
+            return ""
 
         if response.status_code == 200:
             # Check if content is actually a PDF
             if response.content.startswith(b'%PDF'):
                 click.echo("  → AustLII returned PDF, extracting text...")
                 return _extract_pdf_text(url, response.content)
-            
+
+            # Detect Cloudflare interstitial slipping through despite impersonation
+            challenge_reason = _looks_like_challenge_page(response.text)
+            if challenge_reason:
+                click.echo(
+                    f"  ✗ AustLII curl_cffi returned challenge page: {challenge_reason}"
+                )
+                save_log(
+                    "fetch_attempt",
+                    {
+                        "url": url,
+                        "method": "austlii_curl_cffi",
+                        "status": "failed",
+                        "http_status": response.status_code,
+                        "content_size": len(response.text),
+                        "rejection_reason": challenge_reason,
+                        "timestamp": time.time(),
+                    },
+                )
+                return ""
+
             # Extract text using BeautifulSoup
             from bs4 import BeautifulSoup
 
@@ -235,7 +286,7 @@ def _fetch_from_austlii(url: str, timeout: int = 10) -> str:
                 "fetch_attempt",
                 {
                     "url": url,
-                    "method": "austlii_direct",
+                    "method": "austlii_curl_cffi",
                     "status": "success",
                     "content_size": len(text),
                     "content": content,
@@ -243,7 +294,7 @@ def _fetch_from_austlii(url: str, timeout: int = 10) -> str:
                 },
             )
 
-            click.echo(f"  ✓ Direct AustLII fetch: {len(text)} chars")
+            click.echo(f"  ✓ AustLII curl_cffi fetch: {len(text)} chars")
             return content
         else:
             click.echo(f"  ✗ AustLII returned HTTP {response.status_code}")
@@ -251,7 +302,7 @@ def _fetch_from_austlii(url: str, timeout: int = 10) -> str:
                 "fetch_attempt",
                 {
                     "url": url,
-                    "method": "austlii_direct",
+                    "method": "austlii_curl_cffi",
                     "status": "failed",
                     "http_status": response.status_code,
                     "timestamp": time.time(),
@@ -264,12 +315,12 @@ def _fetch_from_austlii(url: str, timeout: int = 10) -> str:
         _last_austlii_completion = time.time()
 
         click.echo(f"  ✗ AustLII error: {str(e)}")
-        logging.warning(f"AustLII direct fetch failed for {url}: {e}")
+        logging.warning(f"AustLII curl_cffi fetch failed for {url}: {e}")
         save_log(
             "fetch_attempt",
             {
                 "url": url,
-                "method": "austlii_direct",
+                "method": "austlii_curl_cffi",
                 "status": "failed",
                 "error": str(e),
                 "timestamp": time.time(),
