@@ -7,16 +7,16 @@ Handles saving command outputs with standard formatting and metadata.
 import os
 import re
 import time
-from typing import Dict, List, Optional, Tuple
+from typing import Any, List, Mapping, Optional, Tuple
 
 
 def save_command_output(
     command_name: str,
     content: str,
     query_or_slug: str,
-    metadata: Optional[Dict[str, str]] = None,
+    metadata: Optional[Mapping[str, Any]] = None,
     critique_sections: Optional[List[Tuple[str, str]]] = None,
-    output_dir: str = None,
+    output_dir: Optional[str] = None,
     suffix: str = "",
 ) -> str:
     """

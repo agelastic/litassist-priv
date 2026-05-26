@@ -8,6 +8,7 @@ and handles Chain of Verification (CoVe) as the final verification stage.
 import os
 import re
 import logging
+from typing import Optional
 import click
 from litassist.utils.file_ops import read_document, process_reference_files
 from litassist.utils.formatting import (
@@ -35,9 +36,9 @@ def run_verification_workflow(
     soundness: bool,
     reasoning: bool,
     cove: bool,
-    output: str = None,
-    reference: str = None,
-    cove_reference: str = None,
+    output: Optional[str] = None,
+    reference: Optional[str] = None,
+    cove_reference: Optional[str] = None,
     heavy: bool = False,
 ) -> dict:
     """
@@ -145,6 +146,9 @@ def run_verification_workflow(
     citation_report = None
     reasoning_response = None
     case_content = {}
+    soundness_result = None
+    issues = None
+    regen_file = None
 
     # 1. Citation Verification
     if citations:
@@ -206,7 +210,7 @@ def run_verification_workflow(
             try:
                 # Use the most refined version of content available
                 final_content = content
-                if soundness and "soundness_result" in locals():
+                if soundness and soundness_result is not None:
                     # Extract corrected document from soundness result if available
                     match = re.search(
                         r"## Verified and Corrected Document\s*\n(.*)",
@@ -220,7 +224,7 @@ def run_verification_workflow(
                 prior_contexts_dict = {
                     "citations": citation_report,
                     "reasoning": reasoning_response,
-                    "soundness": issues if soundness and "issues" in locals() else None,
+                    "soundness": issues if soundness and issues is not None else None,
                     "reference_files": reference_context if reference_context else None,
                 }
 

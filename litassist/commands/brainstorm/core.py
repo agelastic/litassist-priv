@@ -32,6 +32,7 @@ from litassist.utils.formatting import (
 from litassist.logging import (
     save_log,
     save_command_output,
+    log_task_event,
 )
 from litassist.llm.factory import LLMClientFactory
 from litassist.prompts import PROMPTS
@@ -73,7 +74,7 @@ def _annotate_strategies_with_verification(
     unverified_dict: dict[str, str],
     plausibility_assessments: dict[str, dict],
     strategy_type: str,
-    verified_snippets: dict[str, str] = None,
+    verified_snippets: dict[str, str] | None = None,
 ) -> list[str]:
     """Add citation verification annotations to each strategy."""
     annotated = []
@@ -123,7 +124,7 @@ def _annotate_strategies_with_verification(
 
 def assess_legal_plausibility_bulk(
     strategies_with_unverified: list[tuple[str, str, list[tuple[str, str]]]],
-    verified_snippets: dict[str, str] = None,
+    verified_snippets: dict[str, str] | None = None,
 ) -> dict[str, dict]:
     """
     ONE bulk LLM call to assess plausibility of ALL unverified citations.
@@ -460,10 +461,6 @@ def brainstorm(facts, side, area, research, verify, output):
 
     # Command-level start log
     try:
-        from litassist.logging import (
-            log_task_event,
-        )  # safe re-import in case of test contexts
-
         log_task_event("brainstorm", "init", "start", "Starting brainstorm")
     except Exception:
         pass
