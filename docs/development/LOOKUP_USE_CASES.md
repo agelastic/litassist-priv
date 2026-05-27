@@ -24,7 +24,8 @@ The lookup command's content-fetching layer was reworked in May 2026 for Cloudfl
 - **Australian government sites served as PDF** — finance.gov.au, accc.gov.au, supremecourt.nsw.gov.au, fedcourt.gov.au speech documents
 - **legislation.gov.au** legislation pages (including `/latest/text` ToC pattern which follows to the real document)
 - **State government and tribunal sites** (fairwork.gov.au, fedcourt.gov.au practice notes, apsc.gov.au, aemc.gov.au)
-- **Local `.pdf`, `.rtf`, `.txt`, `.md` files** — pass a filesystem path instead of a URL and lookup reads it directly
+
+The lookup command itself takes a question string and fetches URLs returned by Google CSE. To feed an existing document into the toolchain instead, use a command that accepts file paths directly (`extractfacts`, `counselnotes`, `digest`, `draft`, `brainstorm`, `barbrief`).
 
 ### What you get citation-only stub content for
 - **AustLII PDF URLs without a full HTML sibling** — some journal articles (notably older issues of VUWLawRw, AukULawRw) publish only the PDF; the `.html` URL exists but contains only the title and journal citation. The CSE snippet plus the citation is what reaches the LLM.
@@ -334,21 +335,7 @@ litassist draft case_facts.txt "urgent injunction application"
 litassist lookup "urgent injunction procedure Federal Court" --extract checklist
 ```
 
-### Workflow 3: Local RTF judgment file
-
-**Scenario**: Solicitor received an older case judgment as an `.rtf` file from another practitioner or downloaded from an archive. Need to extract holdings without re-typing.
-
-```bash
-# Pass the .rtf path directly - lookup-adjacent commands accept it
-litassist extractfacts old_judgment_2018.rtf
-
-# Or use as input file for downstream commands
-litassist counselnotes "key authority for our position" --research old_judgment_2018.rtf
-```
-
-**Result**: `litassist/utils/rtf.py` extracts plain text via `striprtf` and wraps with `[RTF DOCUMENT EXTRACTED]` markers before the content reaches the LLM. Works for AustLII RTF case files too (some older cases on AustLII publish in RTF format).
-
-### Workflow 4: Settlement Conference Prep
+### Workflow 3: Settlement Conference Prep
 
 ```bash
 # Get recent settlement ranges

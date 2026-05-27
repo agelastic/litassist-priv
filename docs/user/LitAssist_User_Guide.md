@@ -715,6 +715,17 @@ Commands using o3-pro (draft, counselnotes, barbrief, brainstorm-analysis,
 strategy-analysis) require a valid OpenAI API key. Set `openai.api_key` in
 config.yaml to your actual OpenAI key (not a placeholder).
 
+### Supported Input File Formats
+
+Commands that accept file paths (`extractfacts`, `counselnotes`, `digest`,
+`draft`, `brainstorm`, `barbrief`, `verify`) read these formats:
+
+- `.pdf` — extracted via `pdfplumber` (no OCR, so scanned PDFs without
+  underlying text return empty content)
+- `.rtf` — extracted via `striprtf` (May 2026 addition; works for AustLII
+  RTF case files and any local RTF document)
+- `.txt`, `.md` — read as UTF-8 text directly
+
 ### Large File Processing
 
 Files exceeding `max_chars` (default 200,000 characters) are automatically
