@@ -20,7 +20,7 @@ The lookup command is a modular system at `litassist/commands/lookup/` that sear
 - Cloudflare-resilient fetching via `curl_cffi` (Chrome 136 TLS impersonation) — defeats the TLS fingerprint detection that newly applied to AustLII
 - AustLII PDF URLs transparently rewritten to their `.html` siblings (Cloudflare blocks AustLII PDFs for all tested Python clients; HTML siblings stay reachable)
 - RTF document handling: URL fetches with RTF magic bytes and local `.rtf` files both extract via `striprtf` (via `litassist/utils/rtf.py`)
-- PDF extraction via `pdfplumber` (no page cap; binary truncation deferred to the orchestration layer)
+- PDF extraction via `pdfplumber`; image-only/low-text URL PDFs can fall back to OCR via `ocrmypdf`/Tesseract when the external toolchain is installed
 - legislation.gov.au `/latest/text` ToC-link follow with hostname-based safety check
 - SPA-shell detection (Angular / React / Vue / Next / Nuxt markers + text/HTML ratio) routes JS-rendered sites to Jina
 - Content-Type guard rejects non-text payloads before they reach BS4
@@ -43,7 +43,8 @@ search.py     -- Google CSE queries (Jade, AustLII, secondary)
 fetchers.py   -- URL content fetching: curl_cffi primary, Jina fallback,
                  PDF/RTF magic-byte routing, AustLII PDF -> HTML rewrite,
                  challenge / SPA-shell / Content-Type / gibberish detection
-processors.py -- Prompt building, LLM interaction, output saving
+processors.py -- Fetch ordering (PDFs first), background OCR collection,
+                 prompt building, LLM interaction, output saving
 error_handlers.py -- User-facing error guidance
 ```
 
@@ -51,7 +52,9 @@ Configuration in `litassist/llm/model_configs.yaml` under the `lookup` key.
 
 ### Fetcher chain (post May 2026 rework)
 
-The single-pipeline `_fetch_url_content` in `fetchers.py` handles every URL:
+The lookup processor starts PDF URL fetches first so any OCR fallback can run in
+the background while the remaining HTTP sources continue fetching. The
+single-pipeline `_fetch_url_content` in `fetchers.py` handles each URL:
 
 1. **Local file path** → `read_document` (PDF via pdfplumber, RTF via `litassist/utils/rtf.py`, text directly).
 2. **`jade.io` main domain** → skipped (cookie-gated; future cookie-reuse work tracked in TODO.md `[SOON]` entry).
@@ -59,7 +62,7 @@ The single-pipeline `_fetch_url_content` in `fetchers.py` handles every URL:
 4. **AustLII URL normalisation** → `cgi-bin/viewdoc` / `viewdb` wrapper paths are rewritten to direct `/au/...` content paths; AustLII `*.pdf` URLs are rewritten to `.html` siblings; AustLII `*.rtf` URLs are rewritten to `.html` siblings for journals and `/index.html` siblings for consolidated legislation. If a binary URL's flat `.html` sibling returns 404, the fetcher retries the equivalent `/index.html` sibling. If both siblings return 404, the fetcher skips Jina because Jina would only render the same not-found page. AustLII Cloudflare policy blocks PDF/RTF paths for Python clients in common cases, while the HTML siblings stay reachable. URL parsing uses `urlsplit` to preserve query strings and fragments.
 5. **AustLII rate limit** → 2–3 s random delay between requests (measured from previous request completion).
 6. **`curl_cffi` GET** with Chrome 136 TLS impersonation. Replaces direct `requests` calls; defeats Cloudflare's TLS fingerprint detection.
-7. **PDF magic bytes** (`%PDF`) → `_extract_pdf_text` via pdfplumber. Text-empty/image-only PDFs are logged and reported as skipped, not network failures.
+7. **PDF magic bytes** (`%PDF`) → `_extract_pdf_text` via pdfplumber. Text-empty or very low-text URL PDFs schedule OCR via `ocrmypdf`/Tesseract when available; OCR runs in a background worker while later sources continue fetching. If OCR is unavailable, fails, times out, or exceeds the page limit, the PDF is logged and reported as skipped, not as a network failure.
 8. **RTF magic bytes** (`{\rtf`) → `extract_rtf_text` via striprtf.
 9. **Content-Type guard** → non-text payloads (`application/javascript`, `application/json`, etc.) route to Jina; prevents long-garbage text passing through to BS4.
 10. **legislation.gov.au `/latest/text`** → follow the OEBPS document link via curl_cffi to retrieve the real document (the URL itself returns a ToC page). Hostname check via `urlsplit().hostname` (not substring) prevents attacker URLs with `legislation.gov.au` in query string from triggering the follow.
@@ -73,8 +76,8 @@ The single-pipeline `_fetch_url_content` in `fetchers.py` handles every URL:
 
 Successful fetches carry lightweight transport metadata used by the lookup
 processor's console output, so user-facing status lines report the actual path
-(`curl_cffi`, `Jina Reader`, `pdfplumber`, `striprtf`, or `local file`) rather
-than a generic HTTP/Jina label.
+(`curl_cffi`, `Jina Reader`, `pdfplumber`, `ocrmypdf/Tesseract`, `striprtf`, or
+`local file`) rather than a generic HTTP/Jina label.
 
 #### Audit logging
 Every step writes a `fetch_attempt` log entry. Markdown renderer in `litassist/logging/markdown_writers.py` includes `http_status`, `content_size`, `rejection_reason`, `cf_mitigated`, `cf_ray`, `rewrite_target` — enough to distinguish a real Cloudflare challenge (HTTP 403 + `cf-mitigated: challenge`) from a detector false positive (HTTP 200 + no `cf-mitigated`).
