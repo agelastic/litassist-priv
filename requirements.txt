@@ -4,10 +4,12 @@ tiktoken
 tenacity>=8.2.3
 aiohttp>=3.8.0
 pinecone-client==2.2.4
-pypdf
 google-api-python-client
 pyyaml
 pytz>=2023.3
 requests>=2.32.0
+curl_cffi>=0.11.0  # TLS-impersonating HTTP client (defeats Cloudflare TLS fingerprinting); >=0.11 required for chrome136 impersonation target
+beautifulsoup4>=4.11.0  # HTML parsing for lookup fetcher (was being installed transitively via pypdf on master; now declared explicitly since pypdf was removed)
 reportlab>=4.1.0  # For PDF generation
 pdfplumber>=0.9.0  # For PDF text extraction (no OCR)
+striprtf>=0.0.26  # For RTF text extraction

@@ -1,6 +1,6 @@
 # LitAssist User Guide
 
-Last updated: 22/05/2026
+Last updated: 27/05/2026
 
 ## Overview
 
@@ -671,7 +671,12 @@ pinecone:
   index_name: "your-index-name"           # Required
 
 jina_reader:
-  api_key: "your-jina-key"               # Optional (higher rate limits)
+  api_key: "your-jina-key"               # Optional - fallback transport for
+                                         # JavaScript-rendered pages and
+                                         # Cloudflare-blocked content. Primary
+                                         # transport is curl_cffi (no key
+                                         # required); Jina key enables higher
+                                         # rate limits on the fallback path.
 
 general:
   heartbeat_interval: 20     # Seconds between "still working" messages
@@ -709,6 +714,17 @@ BYOK required for o3-pro
 Commands using o3-pro (draft, counselnotes, barbrief, brainstorm-analysis,
 strategy-analysis) require a valid OpenAI API key. Set `openai.api_key` in
 config.yaml to your actual OpenAI key (not a placeholder).
+
+### Supported Input File Formats
+
+Commands that accept file paths (`extractfacts`, `counselnotes`, `digest`,
+`draft`, `brainstorm`, `barbrief`, `verify`) read these formats:
+
+- `.pdf` — extracted via `pdfplumber` (no OCR, so scanned PDFs without
+  underlying text are reported as skipped)
+- `.rtf` — extracted via `striprtf` (May 2026 addition; works for AustLII
+  RTF case files and any local RTF document)
+- `.txt`, `.md` — read as UTF-8 text directly
 
 ### Large File Processing
 

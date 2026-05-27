@@ -1,6 +1,6 @@
 # LitAssist Architecture
 
-Last updated: 18/02/2026
+Last updated: 27/05/2026
 
 ## Overview
 LitAssist is a Python-based CLI tool for AI-powered litigation support in Australian law. It uses LLMs (via OpenRouter) and external search (Google CSE) to assist with legal research, document analysis, strategy generation, and drafting.
@@ -70,8 +70,24 @@ Commands are organised as packages in `litassist/commands/`. Each command has:
 ## External Integrations
 - **OpenRouter**: Primary API gateway for all LLM calls (Claude, GPT, Gemini, Grok, o3-pro).
 - **Google Custom Search Engine (CSE)**: Retrieves legal documents from Jade.io and AustLII.
-- **Jina Reader**: Scraping and parsing web content into markdown (fallback for complex pages).
+- **curl_cffi**: Primary content-fetch transport with Chrome 136 TLS impersonation. Defeats Cloudflare TLS fingerprint detection for HTML responses on AustLII and similar protected hosts. Direct `requests` is not used for content fetching.
+- **Jina Reader**: Fallback transport used by `litassist/commands/lookup/fetchers.py` when curl_cffi returns a Cloudflare challenge body, a JavaScript SPA shell, or non-HTML content. Also serves `ndfv.jade.io` URLs directly. Narrower role since the May 2026 fetcher rework (see CHANGELOG).
 - **Pinecone**: Vector database (configuration present; not actively used by current commands).
+
+### Lookup fetcher chain
+The fetcher in `litassist/commands/lookup/fetchers.py` runs every URL through a single generic pipeline:
+
+1. Local file path → `read_document` (handles PDF via pdfplumber, RTF via `litassist/utils/rtf.py`, text directly).
+2. `jade.io` main domain → skipped; `ndfv.jade.io` subdomain → Jina with `/download` URL rewrite.
+3. AustLII `*.pdf` URL → rewritten to `.html` sibling before HTTP (AustLII Cloudflare policy blocks PDF paths for all tested Python clients).
+4. AustLII rate limit → 2–3 s random delay between requests.
+5. `curl_cffi` GET with Chrome 136 TLS impersonation.
+6. Magic-byte routing: PDF → `_extract_pdf_text` (pdfplumber); RTF → `_extract_rtf_text` (striprtf).
+7. Content-Type guard: non-text payloads route to Jina rather than passing through to BS4.
+8. legislation.gov.au `/latest/text` → follow the OEBPS document link via curl_cffi.
+9. BS4 text extraction (strip scripts/styles/meta/link/noscript).
+10. Detection: Cloudflare challenge markers (`_looks_like_challenge_page`), SPA shell (`_looks_like_spa_shell`), or gibberish (text < 100 chars) → Jina fallback.
+11. Otherwise return cleaned text.
 
 ## Data Flow
 1. **User Input**: User runs a CLI command (e.g., `litassist extractfacts my_case.pdf`).

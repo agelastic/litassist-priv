@@ -278,8 +278,20 @@ def write_fetch_log_markdown(f, tag: str, ts: str, payload: dict):
     f.write(f"- **URL**: `{payload.get('url', 'N/A')}`  \n")
     if payload.get("original_url"):
         f.write(f"- **Original URL**: `{payload.get('original_url')}`  \n")
+    if payload.get("rewrite_target"):
+        f.write(f"- **Rewrite Target**: `{payload.get('rewrite_target')}`  \n")
     f.write(f"- **Method**: `{payload.get('method', 'N/A')}`  \n")
     f.write(f"- **Status**: `{payload.get('status', 'N/A')}`  \n")
+    if payload.get("http_status") is not None:
+        f.write(f"- **HTTP Status**: `{payload.get('http_status')}`  \n")
+    if payload.get("content_size") is not None:
+        f.write(f"- **Content Size**: {payload['content_size']:,} chars  \n")
+    if payload.get("rejection_reason"):
+        f.write(f"- **Rejection Reason**: {payload.get('rejection_reason')}  \n")
+    if payload.get("cf_mitigated"):
+        f.write(f"- **Cloudflare Mitigation**: `{payload.get('cf_mitigated')}`  \n")
+    if payload.get("cf_ray"):
+        f.write(f"- **Cloudflare Ray ID**: `{payload.get('cf_ray')}`  \n")
     if payload.get("reason"):
         f.write(f"- **Reason**: {payload.get('reason')}  \n")
     if payload.get("error"):

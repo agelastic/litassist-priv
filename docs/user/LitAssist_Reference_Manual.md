@@ -1,6 +1,6 @@
 # LitAssist Reference Manual
 
-Last updated: 22/05/2026
+Last updated: 27/05/2026
 
 ---
 
@@ -131,7 +131,7 @@ caseplan --> extractfacts --> lookup --> brainstorm --> strategy --> draft --> v
   - **OpenAI** (required): Embeddings and BYOK for o3-pro commands
   - **Google Custom Search** (required): Citation verification and legal research
   - **Pinecone** (required): Vector database for RAG pipeline
-  - **Jina Reader** (optional): Higher rate limits for web content fetching
+  - **Jina Reader** (optional): Fallback transport for JavaScript-rendered pages and Cloudflare-blocked content. The primary fetch transport is `curl_cffi` (no key required); a Jina API key enables the fallback path with higher rate limits.
 
 ### 2.2 Installation Methods
 
@@ -2403,7 +2403,7 @@ relying on citations for court filings.
 
 - Check that the Pinecone index is accessible (`litassist test`)
 - Verify that the `rag_max_chars` setting produces appropriately sized chunks
-- Ensure the PDF is text-based (not scanned images)
+- Ensure the PDF is text-based; scanned/image-only PDFs are reported as skipped
 
 ### 10.6 Command Validation Errors
 

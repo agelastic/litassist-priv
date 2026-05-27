@@ -76,6 +76,8 @@ class LLMClient(LLMVerificationMixin):
         """
         self.model = model
         self.command_context: Optional[str] = None  # Track which command is using this client
+        self._enforce_citations: bool = False
+        self._disable_tools: bool = False
 
         self.default_params = default_params
         self._client = None  # Will be created when needed
@@ -471,13 +473,21 @@ class LLMClient(LLMVerificationMixin):
                     # No cleanup needed with client instances
                     pass
 
-        # Normalize usage data so it can be safely serialized
-        if hasattr(usage, "_asdict"):
-            usage = usage._asdict()
-        elif hasattr(usage, "to_dict"):
-            usage = usage.to_dict()
-        elif not isinstance(usage, dict):
-            usage = {"raw": str(usage)}
+        # Normalize usage data so it can be safely serialized.
+        usage_obj: Any = usage
+        usage_asdict = getattr(usage_obj, "_asdict", None)
+        usage_to_dict = getattr(usage_obj, "to_dict", None)
+        if callable(usage_asdict):
+            normalized_usage: Any = usage_asdict()
+        elif callable(usage_to_dict):
+            normalized_usage = usage_to_dict()
+        else:
+            normalized_usage = usage_obj
+
+        if isinstance(normalized_usage, dict):
+            usage_dict: Dict[str, Any] = normalized_usage
+        else:
+            usage_dict = {"raw": str(normalized_usage)}
 
         # Log the LLM call with optional CoVe stage identification
         log_tag = f"llm_{self.model.replace('/', '_')}"
@@ -496,9 +506,9 @@ class LLMClient(LLMVerificationMixin):
                 "messages": messages,
                 "params": {**self.default_params, **overrides},
                 "response": content,
-                "usage": usage,
+                "usage": usage_dict,
                 "timestamp": time.strftime("%Y-%m-%d %H:%M:%S"),
             },
         )
 
-        return content, usage
+        return content, usage_dict

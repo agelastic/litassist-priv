@@ -1,6 +1,6 @@
 # Changelog
 
-Last updated: 22/05/2026
+Last updated: 27/05/2026
 
 All notable changes to LitAssist will be documented in this file.
 
@@ -19,6 +19,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Case plan generation for litigation planning
 
 ### Changed
+
+#### May 2026: Lookup fetcher chain rework (curl_cffi + Cloudflare resilience)
+- New transport: `curl_cffi` with Chrome 136 TLS impersonation replaces direct `requests` calls for all content fetching. Defeats Cloudflare's TLS fingerprint detection that newly applied to AustLII; HTML resources now return real content (verified end-to-end). Added as a project dependency.
+- AustLII PDF URLs are rewritten to their `.html` siblings before fetch. AustLII's Cloudflare policy on PDF paths is unreachable by any open-source Python client tested (curl_cffi multiple Chrome profiles, Playwright + playwright_stealth, patchright, nodriver, Camoufox — 16+ approaches all returned challenge body). HTML siblings remain reachable; substitution recovers full article text for most journal/case URLs, citation-only stub HTML for some, and 404 for the small set without HTML siblings (notably `legis/bill_em/`). URL parsing uses `urlsplit` to preserve query strings and fragments.
+- RTF document support added (`litassist/utils/rtf.py`). Both URL fetches (RTF magic-byte detection) and local file reads (`read_document` extension dispatch) extract text via `striprtf`. AustLII serves some case files as RTF; users may hand in local RTF documents.
+- Per-domain fetcher branching collapsed into a single generic chain: local file → jade.io skip / ndfv.jade.io Jina → AustLII PDF→HTML rewrite → AustLII rate limit → curl_cffi GET → PDF/RTF magic bytes → Content-Type guard → legislation.gov.au ToC follow → BS4 text extract → challenge/SPA-shell/gibberish detection → Jina fallback.
+- SPA-shell detector (`_looks_like_spa_shell`) catches single-page-application envelopes via known framework markers (`<app-root>`, `id="root"`, `id="app"`, `id="__next"`, `id="__nuxt"`, `ng-version=`) or a text/HTML ratio threshold. Detected pages fall back to Jina for JS rendering.
+- Captcha challenge marker narrowed from bare `"captcha"` substring (which false-positive-flagged fedcourt.gov.au practice-note pages embedding Google reCAPTCHA widgets) to canonical Cloudflare phrasings (`"please complete the captcha"`, `"captcha challenge"`). Real Cloudflare challenges still match via these and other markers.
+- Gibberish heuristic loosened: dropped the newline-count condition (`text.count("\n") < 5`) which rejected Nuxt server-pre-rendered pages using Unicode word-joiner separators (e.g. triplezero.vic.gov.au — empirically 78% vocabulary overlap with Jina rendering and all substantive legal phrases present). Kept the length floor (`len(text) < 100`).
+- Content-Type guard added after curl_cffi GET: payloads with non-text content types (e.g. `application/javascript`, `application/json`) route to Jina rather than passing through to BS4 as long-garbage text.
+- legislation.gov.au ToC-link follow tightened: hostname check via `urlsplit().hostname` (was substring match) prevents attacker URLs containing `legislation.gov.au` in query strings from triggering the follow.
+- Audit log fidelity restored: `write_fetch_log_markdown` now renders `http_status`, `content_size`, `rejection_reason`, `cf_mitigated`, `cf_ray`, `rewrite_target` fields that the previous formatter silently dropped. New `_response_audit_fields(response)` helper consolidates capture from curl_cffi response headers. Markdown audit logs can now distinguish real Cloudflare challenges (HTTP 403 + `cf-mitigated: challenge`) from detector false positives (HTTP 200 + no `cf-mitigated`).
+- Log filename collision fixed: `save_log` filenames now use microsecond resolution (`%Y%m%d-%H%M%S-%f`) instead of second resolution. Two `save_log` calls within the same wall-clock second previously overwrote each other — specifically biting the curl_cffi-failure → immediate-Jina-fallback path.
+- 50-page PDF extraction cap removed; PDFs of any size are now fully extracted, with oversized-prompt handling deferred to the truncation manager at the orchestration layer.
+- PDF library consolidated onto `pdfplumber`; `pypdf` dependency removed.
+- All 437 unit tests passing.
 
 #### November 2025: Token Limit System Removal
 - Removed the global token limit system (use_token_limits flag and automatic 16K output limits)

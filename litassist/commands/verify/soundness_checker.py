@@ -6,6 +6,7 @@ using LLM-based analysis with automatic token limit backoff.
 """
 
 import os
+from typing import Optional
 import click
 from litassist.llm.factory import LLMClientFactory
 from litassist.logging import save_command_output, log_task_event
@@ -18,11 +19,11 @@ from .formatters import parse_soundness_issues, format_soundness_report
 def verify_soundness(
     content: str,
     file: str,
-    case_content: dict = None,
-    reference_context: str = None,
-    citation_report: str = None,
-    reasoning_response: str = None,
-    output: str = None,
+    case_content: Optional[dict] = None,
+    reference_context: Optional[str] = None,
+    citation_report: Optional[str] = None,
+    reasoning_response: Optional[str] = None,
+    output: Optional[str] = None,
     heavy: bool = False,
 ) -> tuple:
     """

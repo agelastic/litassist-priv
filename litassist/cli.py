@@ -211,11 +211,16 @@ def test_scraping_capabilities():
     # Test plain HTTP scraping
     print("  - Testing plain HTTP scraping... ", end="", flush=True)
     try:
-        from litassist.commands.lookup.fetchers import _fetch_url_content
+        from litassist.commands.lookup.fetchers import (
+            PendingOcrContent,
+            _fetch_url_content,
+        )
 
         # Test with a reliable static HTML page
         test_url = "https://webscraper.io/test-sites"  # Dedicated scraping test site
         content = _fetch_url_content(test_url, timeout=5)
+        if isinstance(content, PendingOcrContent):
+            content = content.future.result(timeout=5)
 
         if content and len(content) > 1000:  # webscraper.io has substantial content
             print(f"OK (fetched {len(content)} chars)")

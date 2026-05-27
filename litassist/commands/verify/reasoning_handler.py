@@ -6,6 +6,7 @@ and generation of new traces using LLM when none exist.
 """
 
 import os
+from typing import Optional
 import click
 from litassist.prompts import PROMPTS
 from litassist.llm.factory import LLMClientFactory
@@ -24,10 +25,10 @@ from .formatters import verify_reasoning_trace
 def verify_reasoning(
     content: str,
     file: str,
-    case_content: dict = None,
-    reference_context: str = None,
-    citation_report: str = None,
-    output: str = None,
+    case_content: Optional[dict] = None,
+    reference_context: Optional[str] = None,
+    citation_report: Optional[str] = None,
+    output: Optional[str] = None,
     heavy: bool = False,
 ) -> tuple:
     """

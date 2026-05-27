@@ -6,9 +6,9 @@ It handles both JSON and Markdown log formats with intelligent template selectio
 """
 
 import os
-import time
 import json
 import logging
+from datetime import datetime
 import click
 from typing import Dict
 
@@ -62,7 +62,11 @@ def save_log(tag: str, payload: dict):
     from litassist.config import get_config
     from litassist.prompts import PROMPTS
 
-    ts = time.strftime("%Y%m%d-%H%M%S")
+    # Microsecond resolution prevents file overwrites when two save_log calls
+    # land in the same wall-clock second (e.g. curl_cffi failure followed by
+    # immediate Jina fallback failure - sub-second separation is routine and
+    # second-resolution timestamps were silently losing the first record).
+    ts = datetime.now().strftime("%Y%m%d-%H%M%S-%f")
     ctx = get_current_context(silent=True)
 
     # Try to get log format from click context first, then CONFIG, then default to json

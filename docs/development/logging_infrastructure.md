@@ -1,12 +1,33 @@
 # LitAssist Logging Infrastructure Documentation
 
-Last updated: 18/02/2026
+Last updated: 27/05/2026
 
 ## Overview
 
 The litassist codebase implements a comprehensive structured logging system using the `log_task_event` function to track all stages of command execution, including file I/O, LLM interactions, and processing stages. This provides complete visibility into command execution for debugging, auditing, and performance monitoring.
 
 **Location**: `litassist/logging/task_events.py` (public API via `litassist/logging/__init__.py`)
+
+### Filename uniqueness (microsecond-resolution timestamps)
+
+Audit log files in `logs/` are named `{tag}_YYYYMMDD-HHMMSS-MICROSECONDS.{json,md}` (added May 2026). Two `save_log` calls within the same wall-clock second previously collided on a second-resolution filename and the second silently overwrote the first; in the lookup fetcher, the curl_cffi-failure → immediate-Jina-fallback path triggered this routinely when Jina returned a fast error. Microsecond resolution prevents the collision and preserves both records.
+
+### Fetch attempt log fields
+
+`fetch_attempt`-tagged entries from `litassist/commands/lookup/fetchers.py` carry diagnostic fields rendered by `write_fetch_log_markdown` (in `litassist/logging/markdown_writers.py`):
+
+| Field | Source | Purpose |
+|---|---|---|
+| `url`, `method`, `status`, `timestamp` | Always present | Identifies the fetch attempt |
+| `http_status` | Response code from curl_cffi or Jina | Distinguishes 200/403/404 etc. |
+| `content_size` | Length of raw HTML or extracted text | Sizes the response body |
+| `rejection_reason` | The marker phrase that fired or the heuristic that rejected | Explains why a 200-OK response was treated as failure |
+| `cf_mitigated` | `cf-mitigated` response header (e.g. `challenge`) | Confirms Cloudflare actually issued a challenge |
+| `cf_ray` | `cf-ray` response header | Ties response to a specific Cloudflare edge node |
+| `rewrite_target` | New URL when path rewriting applies (e.g. AustLII PDF → HTML) | Audit trail for URL substitutions |
+| `original_url`, `actual_url` | Jina-specific (when URL transform applied) | Jina `/download` rewrite and similar |
+
+Together these distinguish a real Cloudflare challenge (HTTP 403 + `cf-mitigated: challenge` + matching marker) from a detector false positive (HTTP 200 + no `cf-mitigated` + matching marker on legitimate content).
 
 ## Core Components
 

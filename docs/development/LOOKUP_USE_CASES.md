@@ -1,18 +1,45 @@
 # Lookup Command Use Cases and Workflows
 
-Last updated: 18/02/2026
+Last updated: 27/05/2026
 
 ## Overview
 
 This document provides real-world examples of how lawyers use the lookup command in daily practice.
 
-The lookup command searches Jade and AustLII via Google CSE and uses `google/gemini-2.5-pro` to synthesise results. Key options:
+The lookup command searches Jade and AustLII via Google CSE and uses `google/gemini-3.5-flash` (per `litassist/llm/model_configs.yaml`) to synthesise results. Key options:
 
 - `--mode irac` (default) — structured IRAC analysis; `--mode broad` — wider discursive answer
 - `--extract citations|principles|checklist` — extract a specific output type
 - `--comprehensive` — exhaustive analysis using up to 40 sources
 - `--context` — additional context string appended to the query
 - `--output` — save result to a named file
+
+## Source coverage and known limitations
+
+The lookup command's content-fetching layer was reworked in May 2026 for Cloudflare resilience. What this means for practitioners:
+
+### What you reliably get full text for
+- **AustLII HTML** — case judgments, legislation, journal articles served as HTML
+- **AustLII PDF URLs with an HTML sibling** — most journal articles and reported cases (the lookup chain transparently substitutes `<path>.pdf` for `<path>.html` since AustLII Cloudflare-blocks direct PDF access)
+- **Australian government sites served as PDF** — finance.gov.au, accc.gov.au, supremecourt.nsw.gov.au, fedcourt.gov.au speech documents
+- **legislation.gov.au** legislation pages (including `/latest/text` ToC pattern which follows to the real document)
+- **State government and tribunal sites** (fairwork.gov.au, fedcourt.gov.au practice notes, apsc.gov.au, aemc.gov.au)
+
+The lookup command itself takes a question string and fetches URLs returned by Google CSE. To feed an existing document into the toolchain instead, use a command that accepts file paths directly (`extractfacts`, `counselnotes`, `digest`, `draft`, `brainstorm`, `barbrief`).
+
+### What you get citation-only stub content for
+- **AustLII PDF URLs without a full HTML sibling** — some journal articles (notably older issues of VUWLawRw, AukULawRw) publish only the PDF; the `.html` URL exists but contains only the title and journal citation. The CSE snippet plus the citation is what reaches the LLM.
+
+### What is unrecoverable
+- **AustLII bill explanatory memos** (`/legis/cth/bill_em/*.pdf`) — Cloudflare-blocked, no HTML sibling, returns 404
+- **Jade.io main domain** — skipped pending the planned cookie-reuse implementation (see TODO.md `[SOON]` entry). The `ndfv.jade.io` subdomain still works.
+
+### Behind-the-scenes mechanics
+You generally do not need to know these, but useful when interpreting audit logs in `logs/`:
+
+- Primary transport is `curl_cffi` with Chrome 136 TLS impersonation; Jina is fallback for Cloudflare challenges, SPA-rendered sites, and non-text payloads.
+- `fetch_attempt_*.md` audit logs record HTTP status, Cloudflare headers, content size, and rejection reason — enough to tell why a particular source contributed full text, a stub, or nothing.
+- Audit log file names are microsecond-resolution (`YYYYMMDD-HHMMSS-MICROSECONDS`) so the curl-failure record and the immediate-Jina-fallback record both survive on disk.
 
 ## Criminal Law Use Cases
 

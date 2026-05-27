@@ -6,6 +6,7 @@ and fetching full case content for verified citations.
 """
 
 import os
+from typing import Optional
 import click
 from litassist.citation.verify import verify_all_citations
 from litassist.citation_patterns import extract_citations
@@ -15,7 +16,7 @@ from litassist.utils.formatting import verifying_message, success_message, warni
 from .formatters import format_citation_report
 
 
-def verify_citations(content: str, file: str, output: str = None) -> tuple:
+def verify_citations(content: str, file: str, output: Optional[str] = None) -> tuple:
     """
     Verify citations in content and fetch full case content.
 

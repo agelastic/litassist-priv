@@ -8,6 +8,9 @@ and output generation for the lookup command.
 import click
 import time
 import os
+from concurrent.futures import ThreadPoolExecutor
+from typing import Any, cast
+from urllib.parse import urlsplit
 from litassist.logging import save_command_output, log_task_event
 from litassist.utils.formatting import (
     success_message,
@@ -20,7 +23,12 @@ from litassist.utils.formatting import (
 from litassist.logging import LOG_DIR
 from litassist.llm.factory import LLMClientFactory
 from litassist.prompts import PROMPTS
-from .fetchers import _fetch_url_content
+from .fetchers import PendingOcrContent, _fetch_url_content
+
+
+def _is_pdf_link(link: str) -> bool:
+    """Return True when a link path points to a PDF."""
+    return urlsplit(link).path.lower().endswith(".pdf")
 
 
 class LookupProcessor:
@@ -59,17 +67,21 @@ class LookupProcessor:
         max_time = self.config.max_fetch_time
         start_time = time.time()
 
-        # Prioritize AustLII and legislation.gov.au URLs (they work best)
+        # Fetch PDFs first so any OCR fallback can run while other sources
+        # continue fetching.
+        pdf_links = []
         prioritized_links = []
         other_links = []
         for link in links:
-            if "austlii.edu.au" in link.lower() or "legislation.gov.au" in link.lower():
+            if _is_pdf_link(link):
+                pdf_links.append(link)
+            elif "austlii.edu.au" in link.lower() or "legislation.gov.au" in link.lower():
                 prioritized_links.append(link)
             else:
                 other_links.append(link)
 
-        # Try prioritized links first, then others
-        ordered_links = prioritized_links + other_links
+        # Try PDF links first, then high-value legal hosts, then others.
+        ordered_links = pdf_links + prioritized_links + other_links
 
         # Track last fetch time per domain for rate limiting
         domain_last_fetch = {}
@@ -78,39 +90,11 @@ class LookupProcessor:
             f"  Attempting to fetch content from {len(ordered_links)} sources..."
         )
 
-        for i, link in enumerate(ordered_links):
-            # Safety check: don't run forever
-            if time.time() - start_time > max_time:
-                click.echo(
-                    f"  [⚠ Time limit reached, stopping after {fetched_count} successful fetches]"
-                )
-                break
-
-            # Skip jade.io URLs except ndfv.jade.io which we'll transform
-            if "jade.io" in link.lower():
-                # Allow ndfv.jade.io URLs (will be transformed to download URLs)
-                if "ndfv.jade.io" in link.lower():
-                    pass  # Continue to fetch this URL
-                else:
-                    click.echo(
-                        "  [→ Jade.io: Using search snippet only (site restrictions)]"
-                    )
-                    skipped_count += 1
-                    continue
-
-            # Domain-based rate limiting (0.5s between requests to same domain)
-            domain = link.split("/")[2]
-            if domain in domain_last_fetch:
-                elapsed = time.time() - domain_last_fetch[domain]
-                if elapsed < 0.5:
-                    time.sleep(0.5 - elapsed)
-            domain_last_fetch[domain] = time.time()
-
-            content = _fetch_url_content(link, timeout=self.config.fetch_timeout)
-
-            # Method determination (Jina fallback is handled inside _fetch_url_content)
-            method = "HTTP/Jina" if content else "Failed"
-
+        def record_content(link, content):
+            nonlocal fetched_count, skipped_count, pdf_count
+            method = (
+                getattr(content, "fetch_method", "unknown") if content else "Failed"
+            )
             if content:
                 # Save fetched page to logs
                 self._save_fetched_content(content, link)
@@ -119,7 +103,21 @@ class LookupProcessor:
 
                 # Check if it's PDF content for appropriate user message
                 if content.startswith("[PDF DOCUMENT EXTRACTED"):
-                    click.echo(f"  [✓ Extracted text from PDF at {link.split('/')[2]}]")
+                    click.echo(
+                        f"  [✓ Extracted text from PDF at {link.split('/')[2]} "
+                        f"via {method}]"
+                    )
+                    pdf_count += 1
+                elif content.startswith("[RTF DOCUMENT EXTRACTED"):
+                    click.echo(
+                        f"  [✓ Extracted text from RTF at {link.split('/')[2]} "
+                        f"via {method}]"
+                    )
+                elif content.startswith("[OCR DOCUMENT EXTRACTED"):
+                    click.echo(
+                        f"  [✓ OCR extracted text from PDF at {link.split('/')[2]} "
+                        f"via {method}]"
+                    )
                     pdf_count += 1
                 else:
                     click.echo(
@@ -129,6 +127,68 @@ class LookupProcessor:
             else:
                 click.echo(f"  [✗ Failed to fetch from {link.split('/')[2]}]")
                 skipped_count += 1
+
+        pending_ocr: list[tuple[str, PendingOcrContent]] = []
+        with ThreadPoolExecutor(max_workers=2) as ocr_executor:
+            for i, link in enumerate(ordered_links):
+                # Safety check: don't run forever
+                if time.time() - start_time > max_time:
+                    click.echo(
+                        f"  [⚠ Time limit reached, stopping after {fetched_count} successful fetches]"
+                    )
+                    break
+
+                # Skip jade.io URLs except ndfv.jade.io which we'll transform
+                if "jade.io" in link.lower():
+                    # Allow ndfv.jade.io URLs (will be transformed to download URLs)
+                    if "ndfv.jade.io" in link.lower():
+                        pass  # Continue to fetch this URL
+                    else:
+                        click.echo(
+                            "  [→ Jade.io: Using search snippet only (site restrictions)]"
+                        )
+                        skipped_count += 1
+                        continue
+
+                # Domain-based rate limiting (0.5s between requests to same domain)
+                domain = link.split("/")[2]
+                if domain in domain_last_fetch:
+                    elapsed = time.time() - domain_last_fetch[domain]
+                    if elapsed < 0.5:
+                        time.sleep(0.5 - elapsed)
+                domain_last_fetch[domain] = time.time()
+
+                content = _fetch_url_content(
+                    link,
+                    timeout=self.config.fetch_timeout,
+                    ocr_executor=ocr_executor,
+                )
+
+                if isinstance(content, PendingOcrContent):
+                    pending_ocr.append((link, content))
+                    continue
+
+                record_content(link, content)
+
+            if pending_ocr:
+                click.echo(
+                    f"  Waiting for OCR from {len(pending_ocr)} PDF document(s)..."
+                )
+            for link, pending in pending_ocr:
+                try:
+                    content = pending.future.result()
+                except Exception as e:
+                    click.echo(
+                        f"  ✗ OCR failed for {link.split('/')[2]}: {str(e)[:100]}"
+                    )
+                    content = ""
+                if content:
+                    record_content(link, content)
+                else:
+                    click.echo(
+                        f"  [✗ PDF skipped after OCR attempt at {link.split('/')[2]}]"
+                    )
+                    skipped_count += 1
 
         # Summary of fetch results
         if fetched_count > 0:
@@ -277,7 +337,7 @@ class LookupProcessor:
             else:
                 overrides = {"temperature": 0.5, "top_p": 0.9}
 
-        return LLMClientFactory.for_command("lookup", **overrides)
+        return LLMClientFactory.for_command("lookup", **cast(Any, overrides))
 
     def build_system_prompt(self, extract, comprehensive):
         """Build the system prompt based on mode and options."""
