@@ -8,14 +8,30 @@ The lookup command is a modular system at `litassist/commands/lookup/` that sear
 
 ### Implemented features
 
+#### User-facing options
 - `--mode irac|broad` -- structured IRAC analysis or wider discursive answer
 - `--extract citations|principles|checklist` -- extract a specific output type via prompt engineering
 - `--comprehensive` -- exhaustive analysis using up to 40 sources across Jade, AustLII, and secondary CSE
 - `--context` -- additional context string appended to the query
 - `--output` -- custom output filename prefix
 - `--no-fetch` -- skip content fetching, analyse URLs and search snippets only
-- Drop-largest truncation when content exceeds model context
-- Full audit logging of every LLM request and response
+
+#### Transport layer (May 2026 rework, see Fetcher chain below)
+- Cloudflare-resilient fetching via `curl_cffi` (Chrome 136 TLS impersonation) — defeats the TLS fingerprint detection that newly applied to AustLII
+- AustLII PDF URLs transparently rewritten to their `.html` siblings (Cloudflare blocks AustLII PDFs for all tested Python clients; HTML siblings stay reachable)
+- RTF document handling: URL fetches with RTF magic bytes and local `.rtf` files both extract via `striprtf` (via `litassist/utils/rtf.py`)
+- PDF extraction via `pdfplumber` (no page cap; binary truncation deferred to the orchestration layer)
+- legislation.gov.au `/latest/text` ToC-link follow with hostname-based safety check
+- SPA-shell detection (Angular / React / Vue / Next / Nuxt markers + text/HTML ratio) routes JS-rendered sites to Jina
+- Content-Type guard rejects non-text payloads before they reach BS4
+
+#### Audit and observability
+- Full audit logging of every LLM request, response, and fetch attempt
+- `fetch_attempt` markdown logs include `http_status`, `content_size`, `rejection_reason`, `cf_mitigated`, `cf_ray`, and `rewrite_target` fields — distinguishes real Cloudflare challenges (HTTP 403 + `cf-mitigated: challenge`) from detector false positives (HTTP 200 + no `cf-mitigated`)
+- Microsecond-resolution timestamps on audit log filenames prevent collisions between the curl_cffi-failure record and the immediate-Jina-fallback record
+- Drop-largest truncation when fetched content exceeds model context
+
+#### Infrastructure
 - Prompt templates in `litassist/prompts/lookup.yaml`
 - LLMClientFactory for centralised model configuration
 
