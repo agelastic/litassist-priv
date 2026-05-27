@@ -8,6 +8,8 @@ HTML pages, PDFs, and JavaScript-rendered sites.
 import logging
 import random
 import time
+from concurrent.futures import Executor, Future
+from dataclasses import dataclass
 from urllib.parse import urlsplit, urlunsplit
 
 import click
@@ -24,6 +26,9 @@ _AUSTLII_RTF_HTML_REWRITE_REASON = ".rtf -> .html sibling"
 _AUSTLII_RTF_INDEX_REWRITE_REASON = (
     ".rtf -> consolidated legislation index.html sibling"
 )
+_PDF_OCR_MAX_PAGES = 50
+_PDF_OCR_TIMEOUT_SECONDS = 180
+_PDF_OCR_JOBS = 2
 
 
 class FetchedContent(str):
@@ -42,6 +47,15 @@ def _with_fetch_method(content: str, fetch_method: str) -> str:
     if not content:
         return content
     return FetchedContent(content, fetch_method)
+
+
+@dataclass
+class PendingOcrContent:
+    """Background OCR work scheduled by the lookup processor."""
+
+    url: str
+    future: Future[str]
+    num_pages: int
 
 
 def _is_austlii_host(hostname: str) -> bool:
@@ -456,7 +470,185 @@ def _extract_text_from_html(html: str) -> str:
     return "\n".join(chunk for chunk in chunks if chunk)
 
 
-def _extract_pdf_text(url: str, pdf_bytes: bytes) -> str:
+def _extract_pdf_text_with_ocr(url: str, pdf_bytes: bytes, num_pages: int) -> str:
+    """
+    OCR image-only PDFs using ocrmypdf's sidecar text output when available.
+
+    This is intentionally best-effort. If the external OCR toolchain is not
+    installed or fails, callers treat the PDF as skipped.
+    """
+    import os
+    import shutil
+    import subprocess
+    import tempfile
+
+    if num_pages > _PDF_OCR_MAX_PAGES:
+        click.echo(
+            "  ✗ PDF OCR skipped: "
+            f"{num_pages} pages exceeds limit of {_PDF_OCR_MAX_PAGES}"
+        )
+        save_log(
+            "fetch_attempt",
+            {
+                "url": url,
+                "method": "ocr",
+                "status": "skipped",
+                "reason": f"PDF has {num_pages} pages; OCR limit is {_PDF_OCR_MAX_PAGES}",
+                "timestamp": time.time(),
+            },
+        )
+        return ""
+
+    ocrmypdf_path = shutil.which("ocrmypdf")
+    if not ocrmypdf_path:
+        click.echo("  ✗ PDF OCR skipped: ocrmypdf not installed")
+        save_log(
+            "fetch_attempt",
+            {
+                "url": url,
+                "method": "ocr",
+                "status": "skipped",
+                "reason": "ocrmypdf not installed",
+                "timestamp": time.time(),
+            },
+        )
+        return ""
+
+    click.echo("  → No embedded PDF text found; attempting OCR with ocrmypdf...")
+    try:
+        with tempfile.TemporaryDirectory(prefix="litassist-ocr-") as tmpdir:
+            input_path = os.path.join(tmpdir, "input.pdf")
+            output_path = os.path.join(tmpdir, "output.pdf")
+            sidecar_path = os.path.join(tmpdir, "sidecar.txt")
+
+            with open(input_path, "wb") as f:
+                f.write(pdf_bytes)
+
+            result = subprocess.run(
+                [
+                    ocrmypdf_path,
+                    "--skip-text",
+                    "--jobs",
+                    str(_PDF_OCR_JOBS),
+                    "--sidecar",
+                    sidecar_path,
+                    input_path,
+                    output_path,
+                ],
+                capture_output=True,
+                text=True,
+                timeout=_PDF_OCR_TIMEOUT_SECONDS,
+                check=False,
+            )
+
+            if result.returncode != 0:
+                error = (result.stderr or result.stdout or "").strip()
+                click.echo(
+                    "  ✗ PDF OCR failed"
+                    + (f": {error[:160]}" if error else "")
+                )
+                save_log(
+                    "fetch_attempt",
+                    {
+                        "url": url,
+                        "method": "ocr",
+                        "status": "failed",
+                        "error": error[:500],
+                        "timestamp": time.time(),
+                    },
+                )
+                return ""
+
+            with open(sidecar_path, "r", encoding="utf-8", errors="replace") as f:
+                ocr_text = f.read().strip()
+
+    except subprocess.TimeoutExpired:
+        click.echo(
+            f"  ✗ PDF OCR timed out after {_PDF_OCR_TIMEOUT_SECONDS}s"
+        )
+        save_log(
+            "fetch_attempt",
+            {
+                "url": url,
+                "method": "ocr",
+                "status": "failed",
+                "error": f"OCR timed out after {_PDF_OCR_TIMEOUT_SECONDS}s",
+                "timestamp": time.time(),
+            },
+        )
+        return ""
+    except Exception as e:
+        click.echo(f"  ✗ PDF OCR failed: {str(e)[:160]}")
+        save_log(
+            "fetch_attempt",
+            {
+                "url": url,
+                "method": "ocr",
+                "status": "failed",
+                "error": str(e)[:500],
+                "timestamp": time.time(),
+            },
+        )
+        return ""
+
+    if not ocr_text:
+        click.echo("  ✗ PDF OCR produced no text")
+        save_log(
+            "fetch_attempt",
+            {
+                "url": url,
+                "method": "ocr",
+                "status": "skipped",
+                "reason": "OCR produced no text",
+                "timestamp": time.time(),
+            },
+        )
+        return ""
+
+    header = f"[OCR DOCUMENT EXTRACTED - {num_pages} pages]\n"
+    header += f"[Source: {url}]\n"
+    header += "=" * 80 + "\n"
+    ocr_content = header + ocr_text + "\n" + "=" * 80 + "\n[END OF OCR]"
+
+    save_log(
+        "fetch_attempt",
+        {
+            "url": url,
+            "method": "ocr",
+            "status": "success",
+            "pdf_pages": num_pages,
+            "extracted_size": len(ocr_text),
+            "final_size": len(ocr_content),
+            "content": ocr_content,
+            "timestamp": time.time(),
+        },
+    )
+    click.echo(f"  ✓ OCR extracted PDF text: {len(ocr_text)} chars")
+    return _with_fetch_method(ocr_content, "ocrmypdf/Tesseract")
+
+
+def _run_or_schedule_pdf_ocr(
+    url: str,
+    pdf_bytes: bytes,
+    num_pages: int,
+    ocr_executor: Executor | None = None,
+) -> str | PendingOcrContent:
+    """Run OCR now or schedule it for background execution."""
+    if ocr_executor is None:
+        return _extract_pdf_text_with_ocr(url, pdf_bytes, num_pages)
+
+    click.echo(
+        "  → No embedded PDF text found; scheduling OCR while fetching continues..."
+    )
+    future = ocr_executor.submit(_extract_pdf_text_with_ocr, url, pdf_bytes, num_pages)
+    return PendingOcrContent(url=url, future=future, num_pages=num_pages)
+
+
+def _extract_pdf_text(
+    url: str,
+    pdf_bytes: bytes,
+    ocr_executor: Executor | None = None,
+) -> str | PendingOcrContent:
     """
     Extract text from PDF without OCR.
     Returns marked-up text or empty string if extraction fails.
@@ -509,6 +701,11 @@ def _extract_pdf_text(url: str, pdf_bytes: bytes) -> str:
                 if (
                     ratio < 0.0041
                 ):  # Lowered from 0.01 to accept more government documents
+                    ocr_content = _run_or_schedule_pdf_ocr(
+                        url, pdf_bytes, num_pages, ocr_executor
+                    )
+                    if ocr_content:
+                        return ocr_content
                     click.echo(
                         f"  ✗ PDF rejected: text/PDF ratio {ratio:.4f} (likely images/redacted)"
                     )
@@ -566,6 +763,11 @@ def _extract_pdf_text(url: str, pdf_bytes: bytes) -> str:
                 )
                 return _with_fetch_method(pdf_content, "pdfplumber")
             else:
+                ocr_content = _run_or_schedule_pdf_ocr(
+                    url, pdf_bytes, num_pages, ocr_executor
+                )
+                if ocr_content:
+                    return ocr_content
                 logging.info(f"PDF has no extractable text (may be scanned): {url}")
                 click.echo(
                     "  ✗ PDF skipped: no extractable text "
@@ -600,7 +802,11 @@ def _extract_pdf_text(url: str, pdf_bytes: bytes) -> str:
         )
 
 
-def _fetch_url_content(url: str, timeout: int = 10) -> str:
+def _fetch_url_content(
+    url: str,
+    timeout: int = 10,
+    ocr_executor: Executor | None = None,
+) -> str | PendingOcrContent:
     """
     Fetch content from URL via a generic chain. All HTTP sources go through
     curl_cffi first (defeats TLS fingerprinting). Responses that look like
@@ -837,7 +1043,7 @@ def _fetch_url_content(url: str, timeout: int = 10) -> str:
     # 6. PDF magic bytes (binary check first - response.text on a PDF is junk)
     if response.content.startswith(b"%PDF"):
         click.echo("  → curl_cffi returned PDF, extracting text...")
-        return _extract_pdf_text(url, response.content)
+        return _extract_pdf_text(url, response.content, ocr_executor)
 
     # 6b. RTF magic bytes (AustLII serves some cases as .rtf)
     from litassist.utils.rtf import looks_like_rtf, extract_rtf_text

@@ -189,6 +189,7 @@ class TestPdfExtractionReporting:
         fake_pdfplumber.open.return_value = FakePdf()
 
         with patch.dict("sys.modules", {"pdfplumber": fake_pdfplumber}), \
+                patch("shutil.which", return_value=None), \
                 patch.object(fetchers, "save_log") as save_log:
             content = fetchers._extract_pdf_text(
                 "https://example.gov.au/scanned.pdf", b"%PDF-1.4"
@@ -197,9 +198,55 @@ class TestPdfExtractionReporting:
         output = capsys.readouterr().out
         assert content == ""
         assert "PDF skipped: no extractable text" in output
-        save_log.assert_called_once()
+        assert save_log.call_count == 2
+        assert save_log.call_args.args[1]["method"] == "pdf"
         assert save_log.call_args.args[1]["status"] == "skipped"
         assert "no extractable text" in save_log.call_args.args[1]["reason"]
+
+    def test_pdf_without_extractable_text_uses_ocr_when_available(self, capsys):
+        class FakePage:
+            def extract_text(self):
+                return None
+
+        class FakePdf:
+            pages = [FakePage(), FakePage()]
+
+            def __enter__(self):
+                return self
+
+            def __exit__(self, exc_type, exc, tb):
+                return False
+
+        fake_pdfplumber = MagicMock()
+        fake_pdfplumber.open.return_value = FakePdf()
+
+        def fake_run(cmd, **kwargs):
+            sidecar_path = cmd[cmd.index("--sidecar") + 1]
+            with open(sidecar_path, "w", encoding="utf-8") as f:
+                f.write("OCR text from scanned PDF")
+            result = MagicMock()
+            result.returncode = 0
+            result.stderr = ""
+            result.stdout = ""
+            return result
+
+        with patch.dict("sys.modules", {"pdfplumber": fake_pdfplumber}), \
+                patch("shutil.which", return_value="/usr/bin/ocrmypdf"), \
+                patch("subprocess.run", side_effect=fake_run), \
+                patch.object(fetchers, "save_log") as save_log:
+            content = fetchers._extract_pdf_text(
+                "https://example.gov.au/scanned.pdf", b"%PDF-1.4"
+            )
+
+        output = capsys.readouterr().out
+        assert "OCR extracted PDF text" in output
+        assert isinstance(content, str)
+        assert "[OCR DOCUMENT EXTRACTED - 2 pages]" in content
+        assert "OCR text from scanned PDF" in content
+        assert getattr(content, "fetch_method") == "ocrmypdf/Tesseract"
+        save_log.assert_called_once()
+        assert save_log.call_args.args[1]["method"] == "ocr"
+        assert save_log.call_args.args[1]["status"] == "success"
 
 
 class TestJinaFailureLogRendering:
