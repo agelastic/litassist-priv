@@ -379,6 +379,26 @@ class LLMClient(LLMVerificationMixin):
                         "API request failed with error finish_reason but no error details"
                     )
 
+            # Surface length-truncated completions as errors. Returning the
+            # partial content as if it were a normal response lets callers act
+            # on a half-finished legal draft / verdict / answer.
+            if (
+                hasattr(response, "choices")
+                and response.choices
+                and hasattr(response.choices[0], "finish_reason")
+                and response.choices[0].finish_reason == "length"
+            ):
+                completion_tokens = None
+                try:
+                    completion_tokens = getattr(response.usage, "completion_tokens", None)
+                except Exception:
+                    pass
+                raise Exception(
+                    f"Model {self.model} returned a truncated completion "
+                    f"(finish_reason='length', completion_tokens={completion_tokens}). "
+                    "Increase max_tokens / output budget or shorten the prompt."
+                )
+
             # Validate response structure before accessing
             if not response:
                 raise Exception("Empty response from API")

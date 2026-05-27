@@ -288,6 +288,12 @@ def execute_api_call_with_retry(
         # Avoid circular import by importing locally
         from .parameter_handler import get_openrouter_params
 
+        # Work on a per-attempt copy: the OpenRouter-key extraction below
+        # uses pop(), so the outer filtered_params would be drained on attempt
+        # 1 and every retry would re-enter without extra_body (silently
+        # dropping reasoning/verbosity/etc).
+        local_params = dict(filtered_params)
+
         try:
             # Get the appropriate client
             client = get_openai_client_func(model_name)
@@ -310,8 +316,8 @@ def execute_api_call_with_retry(
             # Get OpenRouter-specific parameters from centralized definition
             openrouter_params = get_openrouter_params()
             for param in openrouter_params:
-                if param in filtered_params:
-                    extra_body[param] = filtered_params.pop(param)
+                if param in local_params:
+                    extra_body[param] = local_params.pop(param)
 
             # Create the request with extra_body for OpenRouter parameters
             if extra_body:
@@ -319,11 +325,11 @@ def execute_api_call_with_retry(
                     model=model_name,
                     messages=messages,
                     extra_body=extra_body,
-                    **filtered_params,
+                    **local_params,
                 )
             else:
                 resp = client.chat.completions.create(
-                    model=model_name, messages=messages, **filtered_params
+                    model=model_name, messages=messages, **local_params
                 )
 
             # Check for error in the response object (OpenRouter v1.x pattern)

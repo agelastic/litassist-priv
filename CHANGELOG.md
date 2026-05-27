@@ -83,6 +83,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+#### May 2026: LLM retry and truncation handling
+- `_call_with_streaming_wrap` now copies `filtered_params` per attempt before popping OpenRouter-specific keys into `extra_body`. Retries previously re-entered with the drained outer dict and silently dropped `reasoning`, `verbosity`, and other OpenRouter parameters from the second attempt onward. The retry/final-failure audit logs also now record the unmutated request.
+- Responses with `finish_reason == "length"` now raise an explicit truncation error naming the model and completion-token count. They were previously returned as if successful, letting callers act on partial legal drafts/answers without warning.
+
 #### May 2026: Accuracy-critical verification fixes
 - User-only LLM calls no longer bypass base Australian-law and anti-injection prompts. Both `_add_base_system_prompts` (system-capable models) and `_merge_system_into_user` (o1/o3 models) now inject base prompts when callers supply no system message. The Chain-of-Verification question step (`verification_chain.py`) previously slipped through this gap.
 - Legislation and UK/International citations now require positive source evidence. The `verify_single_citation()` function used to short-circuit to `exists=True` on pattern match alone, letting fabricated references (e.g. "Imaginary Aliens Act 2099 (Cth)", "[2099] UKSC 999") pass as verified. Category tagging is preserved in audit logs via a `_tag()` helper that prefixes the verification reason.
