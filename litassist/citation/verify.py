@@ -155,12 +155,20 @@ def verify_single_citation(citation: str) -> Tuple[bool, str, str, str]:
                 )
                 return True, url_austlii, tagged_reason, ""
 
-    except Exception:
-        pass  # Fall through to mark as unverified
+    except Exception as transient_err:
+        # Transient verification failure (network error, CSE quota, parser
+        # crash). Do NOT cache a negative result - the broad except used to
+        # poison the cache for the rest of the process so a recovered
+        # network never re-verified the citation. Return False without
+        # writing to the cache so the next call retries.
+        reason = _tag(
+            f"Transient verification failure: {type(transient_err).__name__}: "
+            f"{transient_err}"
+        )
+        return False, "", reason, ""
 
-    # If all verification attempts fail, mark as UNVERIFIED. Tag the reason
-    # so audit logs and downstream tooling can still identify
-    # international/legislation categories.
+    # If all verification attempts ran successfully but found nothing, mark
+    # as UNVERIFIED and cache that result so we don't re-query.
     reason = _tag("Citation not found in online databases")
     add_to_cache(normalized, exists=False, url="", reason=reason, snippet="")
     return False, "", reason, ""

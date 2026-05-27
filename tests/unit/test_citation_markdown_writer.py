@@ -47,4 +47,26 @@ class TestCitationValidationMarkdown:
         assert "**Online Enabled**: False" in buf.getvalue()
 
 
+class TestMarkdownWritersNoControlCharacters:
+    def test_module_source_has_no_control_characters(self):
+        # Regression: literal DC4 (0x14) characters used to appear inside
+        # markdown heading f-strings (between {tag} and {ts}), corrupting
+        # rendered audit logs. The source file must contain no ASCII control
+        # characters other than tab and newline.
+        import litassist.logging.markdown_writers as mw
+
+        with open(mw.__file__, "rb") as f:
+            data = f.read()
+        offenders = [
+            (i, b)
+            for i, b in enumerate(data)
+            if b < 0x20 and b not in (0x09, 0x0A)
+        ]
+        assert not offenders, (
+            f"markdown_writers.py contains {len(offenders)} ASCII control "
+            f"character(s); first at offset {offenders[0][0]} = "
+            f"0x{offenders[0][1]:02x}"
+        )
+
+
 pytestmark = [pytest.mark.unit, pytest.mark.offline]

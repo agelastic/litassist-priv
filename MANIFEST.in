@@ -1,8 +1,15 @@
 # Include template and documentation files
 include config.yaml.template
 include README.md
+include requirements.txt
 
 include *.md
+
+# Runtime YAML assets (prompts + model configs) loaded via PROMPTS.get /
+# load_yaml. Without these in the sdist, installed wheels fail with missing
+# prompt-key errors at command time.
+recursive-include litassist/prompts *.yaml
+recursive-include litassist/llm *.yaml
 
 # Include example files
 recursive-include examples *.txt *.pdf

@@ -1,0 +1,7 @@
+# Development and manual-test dependencies that are NOT installed by the
+# package (see requirements.txt for runtime deps).
+#
+# numpy is imported by test-scripts/test_quality.py for embedding-magnitude
+# and cosine-similarity checks. test-scripts/ are manual real-API checks and
+# not shipped in the wheel.
+numpy>=1.24

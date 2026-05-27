@@ -212,6 +212,49 @@ class TestCitationVerificationExistenceChecks:
     @patch("litassist.citation.verify.verify_via_austlii_direct")
     @patch("litassist.citation.verify.search_legal_database_via_cse")
     @patch("litassist.citation.verify.get_config")
+    def test_transient_verification_failure_does_not_poison_cache(
+        self, mock_get_config, mock_cse, mock_austlii
+    ):
+        # Regression: a network/CSE error during verification used to be
+        # swallowed by `except Exception: pass`, mark the citation as
+        # exists=False, and cache that negative for the rest of the process.
+        # A recovered network would never re-verify the citation.
+        self._clear_cache()
+        mock_config = Mock()
+        mock_config.cse_id = "test_cse"
+        mock_config.cse_id_comprehensive = None
+        mock_config.cse_id_austlii = None
+        mock_get_config.return_value = mock_config
+
+        # First call raises (transient network failure).
+        mock_cse.side_effect = ConnectionError("CSE timeout")
+
+        from litassist.citation.verify import verify_single_citation
+        from litassist.citation.cache import _citation_cache
+
+        exists1, _, reason1, _ = verify_single_citation("[2099] FCA 999")
+        assert exists1 is False
+        assert "transient" in reason1.lower(), (
+            f"Transient failure must be reported as such; got: {reason1!r}"
+        )
+        assert "[2099] FCA 999" not in _citation_cache, (
+            "Transient failure must not poison the cache; the next call "
+            "would otherwise short-circuit to the cached negative result"
+        )
+
+        # Network recovers - second call must actually retry CSE.
+        mock_cse.side_effect = None
+        mock_cse.return_value = (
+            True,
+            "https://www.austlii.edu.au/au/cases/cth/FCA/2099/999.html",
+            "Smith v Jones [2099] FCA 999",
+        )
+        exists2, _, _, _ = verify_single_citation("[2099] FCA 999")
+        assert exists2 is True
+
+    @patch("litassist.citation.verify.verify_via_austlii_direct")
+    @patch("litassist.citation.verify.search_legal_database_via_cse")
+    @patch("litassist.citation.verify.get_config")
     def test_known_legislation_verifies_when_cse_returns_hit(
         self, mock_get_config, mock_cse, mock_austlii
     ):

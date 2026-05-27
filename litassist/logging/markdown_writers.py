@@ -10,7 +10,7 @@ import time
 
 def write_citation_verification_markdown(f, tag: str, ts: str, payload: dict):
     """Write markdown for citation verification logs."""
-    f.write(f"# {tag}  {ts}\n\n")
+    f.write(f"# {tag} {ts}\n\n")
 
     # Summary section
     f.write("## Summary\n\n")
@@ -63,7 +63,7 @@ def write_citation_verification_markdown(f, tag: str, ts: str, payload: dict):
 
 def write_citation_validation_markdown(f, tag: str, ts: str, payload: dict):
     """Write markdown for citation validation logs."""
-    f.write(f"# {tag}  {ts}\n\n")
+    f.write(f"# {tag} {ts}\n\n")
     f.write("## Summary\n\n")
     f.write(
         f"- **Method**: `{payload.get('method', 'validate_citation_patterns')}`  \n"
@@ -87,7 +87,7 @@ def write_citation_validation_markdown(f, tag: str, ts: str, payload: dict):
 
 def write_http_validation_markdown(f, tag: str, ts: str, payload: dict):
     """Write markdown for HTTP validation logs."""
-    f.write(f"# {tag}  {ts}\n\n")
+    f.write(f"# {tag} {ts}\n\n")
     f.write("## HTTP Validation\n\n")
     f.write(f"- **Method**: `{payload.get('method', 'check_url_exists')}`  \n")
     f.write(f"- **URL**: `{payload.get('url', 'N/A')}`  \n")
@@ -100,7 +100,7 @@ def write_http_validation_markdown(f, tag: str, ts: str, payload: dict):
 
 def write_search_validation_markdown(f, tag: str, ts: str, payload: dict):
     """Write markdown for search validation logs."""
-    f.write(f"# {tag}  {ts}\n\n")
+    f.write(f"# {tag} {ts}\n\n")
     f.write("## Search Validation\n\n")
     f.write("- **Method**: `search_austlii`  \n")
     f.write(f"- **Citation**: `{payload.get('citation', 'N/A')}`  \n")
@@ -112,7 +112,7 @@ def write_search_validation_markdown(f, tag: str, ts: str, payload: dict):
 
 def write_command_output_markdown(f, tag: str, ts: str, payload: dict):
     """Write markdown for command output logs."""
-    f.write(f"# {tag}  {ts}\n\n")
+    f.write(f"# {tag} {ts}\n\n")
 
     # Inputs section
     if "inputs" in payload:
@@ -184,7 +184,7 @@ def write_command_output_markdown(f, tag: str, ts: str, payload: dict):
 
 def write_llm_messages_markdown(f, tag: str, ts: str, payload: dict):
     """Write markdown for LLM message logs."""
-    f.write(f"# {tag}  {ts}\n\n")
+    f.write(f"# {tag} {ts}\n\n")
 
     # Model information
     f.write("## Model Information\n\n")
@@ -276,7 +276,7 @@ def format_dict_as_markdown(d: dict, indent: int = 0) -> str:
 
 def write_fetch_log_markdown(f, tag: str, ts: str, payload: dict):
     """Write markdown for fetch attempt logs."""
-    f.write(f"# {tag}  {ts}\n\n")
+    f.write(f"# {tag} {ts}\n\n")
 
     # Summary section
     f.write("## Fetch Summary\n\n")
@@ -347,7 +347,7 @@ def write_fetch_log_markdown(f, tag: str, ts: str, payload: dict):
 
 def write_generic_markdown(f, tag: str, ts: str, payload: dict):
     """Write pure markdown for unknown log types - no JSON."""
-    f.write(f"# {tag}  {ts}\n\n")
+    f.write(f"# {tag} {ts}\n\n")
     f.write("## Log Data\n\n")
 
     # Convert the payload to pure markdown format

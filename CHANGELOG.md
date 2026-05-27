@@ -83,6 +83,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+#### May 2026: Packaging and cross-cutting trust/cache/format fixes
+- `setup.py` `package_data` now includes `litassist/prompts/*.yaml` and `litassist/llm/*.yaml`; matching `recursive-include` lines added to `MANIFEST.in`. Installed wheels previously omitted these runtime assets and commands failed with missing prompt-key errors.
+- `MANIFEST.in` now ships `requirements.txt` in the sdist. The fallback list in `setup.py::read_requirements` is removed (raises with a clear error if the file is missing) so installed packages cannot silently drift from the in-repo dependency manifest.
+- `find_packages(exclude=[...])` now excludes `tests`, `tests.*`, `test-scripts`, `test-scripts.*` from distribution builds.
+- `requirements-dev.txt` added declaring `numpy` for the manual `test-scripts/test_quality.py` checks (the only consumer; test-scripts are not shipped).
+- `lookup/processors.py` source prioritisation now uses the shared `is_trusted_legal_host` helper (parsed hostname) instead of substring matching against link URLs, so attacker URLs containing trusted-host substrings cannot jump the queue.
+- `verify_single_citation` no longer caches a negative result when verification raises (network error, CSE quota, parser crash). The previous broad `except Exception: pass` poisoned the cache for the rest of the process; transient failures now return False with a descriptive reason and skip the cache write so the next call retries.
+- `lookup/search.py` and `lookup/processors.py` log filenames now include a monotonic sub-second suffix to avoid same-second collisions between snippet/fetch saves.
+- Removed eight literal `0x14` (DC4) control characters from `litassist/logging/markdown_writers.py` heading f-strings that corrupted rendered audit log titles.
+
 #### May 2026: Logging, config, and CLI robustness
 - `litassist --help` and command discovery now work even when `config.yaml` is missing or broken. The CLI module no longer eagerly calls `load_config()` at import time; config is loaded lazily inside command handlers.
 - Tools-fallback LLM call now emits a second audit-log entry recording the actual `fallback_messages` and the fallback marker. The original log only recorded the pre-fallback (tools-bearing) request, so audit trails missed what the model actually received.
