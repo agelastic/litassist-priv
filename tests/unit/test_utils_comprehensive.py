@@ -75,6 +75,24 @@ class TestFileOperations:
         # Verify file written
         mock_file.assert_called_once()
 
+    def test_save_command_output_no_collision_within_same_second(self, tmp_path):
+        # Regression: command output filenames used second-resolution
+        # timestamps, so two calls within the same wall-clock second
+        # overwrote each other. Must persist both files distinctly.
+        a = save_command_output(
+            "digest", "content A", "slug", output_dir=str(tmp_path)
+        )
+        b = save_command_output(
+            "digest", "content B", "slug", output_dir=str(tmp_path)
+        )
+        assert a != b, (
+            f"save_command_output produced the same path for two calls: {a}"
+        )
+        with open(a) as f:
+            assert "content A" in f.read()
+        with open(b) as f:
+            assert "content B" in f.read()
+
     @patch("litassist.logging.output_saver.open", new_callable=mock_open)
     def test_save_command_output_sanitized_outcome(self, mock_file):
         """Test command output saving with sanitized outcome in filename."""

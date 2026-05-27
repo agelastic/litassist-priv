@@ -345,6 +345,24 @@ class LLMClient(LLMVerificationMixin):
                             else:
                                 fallback_messages.append(msg)
 
+                        # Log the actual fallback request being sent so the
+                        # audit trail reflects what the model received. The
+                        # earlier save_log entry recorded the original
+                        # tool-bearing messages and params, which differ.
+                        save_log(
+                            f"llm_{self.model.replace('/', '_')}_messages",
+                            {
+                                "model": self.model,
+                                "messages_sent": fallback_messages,
+                                "params": filtered_params,
+                                "fallback": True,
+                                "fallback_reason": (
+                                    "tools not supported - "
+                                    "switched to date-fallback messages"
+                                ),
+                                "timestamp": time.strftime("%Y-%m-%d %H:%M:%S"),
+                            },
+                        )
                         response = execute_api_call_with_retry(
                             model_name, fallback_messages, filtered_params
                         )

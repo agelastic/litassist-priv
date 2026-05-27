@@ -544,6 +544,59 @@ def test_commands_with_missing_required_arguments(test_config_file, mock_externa
         assert "'NoneType' object" not in result.output
 
 
+def test_cli_help_survives_broken_config():
+    """Regression: --help must work even when config loading would fail.
+
+    The CLI module used to call `CONFIG = load_config()` at import time, so a
+    missing or invalid config caused the entire CLI to crash before Click
+    could render `--help` or list commands. The fix lazy-loads config inside
+    the CLI handler.
+    """
+    import importlib
+    import sys
+
+    original_config_module = sys.modules.get("litassist.config")
+    original_cli_module = sys.modules.get("litassist.cli")
+
+    # Force a fresh import of the real config and cli modules so the
+    # import-time load_config call (if it still existed) would fire here.
+    for mod_name in ("litassist.cli", "litassist.config"):
+        if mod_name in sys.modules:
+            del sys.modules[mod_name]
+
+    try:
+        import litassist.config
+        from litassist.config import ConfigError
+
+        def _raise(*a, **kw):
+            raise ConfigError("simulated missing config")
+
+        with patch.object(litassist.config.Config, "__init__", _raise):
+            # Importing cli must NOT raise even though Config() will fail
+            # for any code path that actually tries to load it.
+            litassist_cli = importlib.import_module("litassist.cli")
+
+            runner = CliRunner()
+            result = runner.invoke(litassist_cli.cli, ["--help"])
+
+            assert result.exit_code == 0, (
+                f"--help must work with broken config; got exit_code="
+                f"{result.exit_code}, output={result.output!r}, "
+                f"exception={result.exception!r}"
+            )
+            assert "Usage" in result.output or "Commands" in result.output, (
+                f"--help must print usage/commands, got: {result.output!r}"
+            )
+    finally:
+        for mod_name in ("litassist.cli", "litassist.config"):
+            if mod_name in sys.modules:
+                del sys.modules[mod_name]
+        if original_config_module is not None:
+            sys.modules["litassist.config"] = original_config_module
+        if original_cli_module is not None:
+            sys.modules["litassist.cli"] = original_cli_module
+
+
 def test_config_missing_error_handling():
     """Test graceful failure when config file cannot be found."""
     # Save and clear any existing module

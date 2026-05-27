@@ -40,7 +40,11 @@ def save_command_output(
 
     os.makedirs(output_dir, exist_ok=True)
 
+    # Append a monotonic sub-second component to defeat same-second
+    # collisions. Two save_command_output calls within the same wall-clock
+    # second used to overwrite each other.
     timestamp = time.strftime("%Y%m%d_%H%M%S")
+    sub_second = f"{time.monotonic_ns() % 1_000_000_000:09d}"
 
     # Create filename based on whether a slug is provided
     slug = ""
@@ -49,10 +53,16 @@ def save_command_output(
         slug = re.sub(r"[-\s]+", "_", sanitized_slug)[:40].strip("_")
 
     if slug:
-        output_file = os.path.join(output_dir, f"{command_name}_{slug}_{timestamp}{suffix}.txt")
+        output_file = os.path.join(
+            output_dir,
+            f"{command_name}_{slug}_{timestamp}_{sub_second}{suffix}.txt",
+        )
     else:
         # This handles both cases: empty query_or_slug, or a slug that becomes empty after sanitization.
-        output_file = os.path.join(output_dir, f"{command_name}_{timestamp}{suffix}.txt")
+        output_file = os.path.join(
+            output_dir,
+            f"{command_name}_{timestamp}_{sub_second}{suffix}.txt",
+        )
 
     with open(output_file, "w", encoding="utf-8") as f:
         # Standard header

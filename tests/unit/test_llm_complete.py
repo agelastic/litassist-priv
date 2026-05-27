@@ -196,6 +196,72 @@ class TestLLMClientComplete:
         assert "CRITICAL ANTI-INJECTION" in combined
 
     @patch("litassist.config.CONFIG")
+    @patch("litassist.llm.client.save_log")
+    @patch("litassist.llm.client.execute_api_call_with_retry")
+    def test_complete_fallback_logs_actual_sent_request(
+        self, mock_execute, mock_save_log, mock_config
+    ):
+        # Regression: when the tools-enabled call fails with "tools not
+        # supported" and the client falls back to a tools-free request, the
+        # audit log used to record only the original messages + params. The
+        # fallback call's actual messages_sent must also be logged so audit
+        # trails accurately reflect what was sent.
+        mock_config.or_key = "test_key"
+        mock_config.openai_key = "test_key"
+
+        success_response = Mock()
+        success_response.choices = [Mock()]
+        success_response.choices[0].message = Mock(
+            content="Response", tool_calls=None
+        )
+        success_response.choices[0].finish_reason = "stop"
+        success_response.choices[0].error = None
+        success_response.usage = Mock(
+            total_tokens=10,
+            prompt_tokens=5,
+            completion_tokens=5,
+            model_dump=lambda: {
+                "total_tokens": 10,
+                "prompt_tokens": 5,
+                "completion_tokens": 5,
+            },
+        )
+
+        # First call raises "tools not supported", second call succeeds.
+        mock_execute.side_effect = [
+            Exception("model does not support tools or tool_choice"),
+            success_response,
+        ]
+
+        client = LLMClient(model="gpt-4", temperature=0.7)
+        client.complete([{"role": "user", "content": "Hello"}])
+
+        # Find audit-log call(s). The fix must emit a log entry whose
+        # `messages_sent` represents the fallback request actually sent.
+        message_logs = [
+            call.args[1] if len(call.args) > 1 else call.kwargs.get("data") or call.args[-1]
+            for call in mock_save_log.call_args_list
+            if call.args and isinstance(call.args[0], str) and "messages" in call.args[0]
+        ]
+        assert message_logs, (
+            "Expected at least one llm_*_messages save_log entry"
+        )
+        # At least one logged entry must mark the fallback path (a key such as
+        # "fallback" set True, or messages_sent that differs from the original
+        # tool-instruction-bearing version).
+        fallback_marked = any(
+            entry.get("fallback") is True
+            or entry.get("tools_disabled") is True
+            or "date_fallback" in str(entry).lower()
+            or "fallback_messages" in str(entry).lower()
+            for entry in message_logs
+        )
+        assert fallback_marked, (
+            "Fallback request was not separately logged. Audit log entries: "
+            f"{message_logs!r}"
+        )
+
+    @patch("litassist.config.CONFIG")
     @patch("litassist.llm.client.execute_api_call_with_retry")
     def test_complete_raises_on_length_truncation(self, mock_execute, mock_config):
         # Regression: responses with finish_reason='length' used to be treated

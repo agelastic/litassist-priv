@@ -83,6 +83,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+#### May 2026: Logging, config, and CLI robustness
+- `litassist --help` and command discovery now work even when `config.yaml` is missing or broken. The CLI module no longer eagerly calls `load_config()` at import time; config is loaded lazily inside command handlers.
+- Tools-fallback LLM call now emits a second audit-log entry recording the actual `fallback_messages` and the fallback marker. The original log only recorded the pre-fallback (tools-bearing) request, so audit trails missed what the model actually received.
+- Null or wrong-typed YAML sections (`openrouter:` with no body, scalar where a mapping is expected) now raise `ConfigError` with a clear message naming the offending section, instead of opaque `TypeError`/`AttributeError`.
+- `save_command_output` filenames now include a monotonic sub-second component (`time.monotonic_ns() % 1_000_000_000`) appended after the existing second-resolution timestamp. Two saves within the same wall-clock second no longer overwrite each other.
+- OpenRouter validation in `validate_credentials` now honours `config.or_base` when probing `/models`, so users pointing at a proxy or mirror don't silently validate against the public endpoint.
+- `expand_glob_patterns` callback now rejects literal directory arguments and filters directories out of glob matches. Downstream code reads file contents, so directory paths used to produce confusing errors deep inside the pipeline.
+- Citation-validation markdown writer now reads both `enable_online` (the source-of-truth key) and the legacy `online_enabled` so the flag is rendered correctly in audit logs.
+
 #### May 2026: Command-orchestration exit-code and isolation fixes
 - Draft RAG pipeline now isolates each run with a per-run Pinecone namespace (`draft-<uuid>`) and namespaced vector IDs. Deterministic IDs (`d1`, `d2`, ...) used to collide across runs and stale vectors from one matter could surface in a different matter's draft. The namespace is deleted in a `finally` block after retrieval (or on retrieval failure) to avoid leaks. `Retriever.retrieve()` accepts an optional `namespace` parameter.
 - `verify` command now accumulates per-stage failures and exits non-zero when any user-selected stage raises. Previously each stage was wrapped in a try/except, the error was logged, then the command printed "Verification complete. 0 reports generated." and exited zero — masking failures in CI and downstream scripts.

@@ -70,7 +70,12 @@ def write_citation_validation_markdown(f, tag: str, ts: str, payload: dict):
     )
     issues = payload.get("issues", [])
     f.write(f"- **Issues Found**: {len(issues)}  \n")
-    f.write(f"- **Online Enabled**: {payload.get('online_enabled', False)}  \n")
+    # Writer historically read `online_enabled` while citation_patterns
+    # wrote `enable_online`, so the flag silently rendered as False in audit
+    # markdown. Read both keys for backward compatibility, preferring the
+    # source-of-truth name.
+    online_flag = payload.get("enable_online", payload.get("online_enabled", False))
+    f.write(f"- **Online Enabled**: {online_flag}  \n")
     f.write(f"- **Timestamp**: {payload.get('timestamp', ts)}  \n\n")
 
     if issues:
