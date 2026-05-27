@@ -644,9 +644,13 @@ def _fetch_url_content(url: str, timeout: int = 10) -> str:
     # the actual document at OEBPS/document_1/document_1.html. Follow the
     # link via curl_cffi and replace the response with the real document.
     #
-    # Use the parsed host (not a substring match on the full URL) so we
-    # don't accept malicious URLs of the form
-    # https://evil.example.com/?ref=legislation.gov.au/latest/text.
+    # WHY parsed hostname (not substring match): a URL like
+    # https://evil.example.com/article?ref=legislation.gov.au/latest/text
+    # would substring-match "legislation.gov.au" and "/latest/text", causing
+    # the chain to follow any OEBPS-shaped href the attacker's page emits.
+    # urlsplit(url).hostname returns just "evil.example.com" - the hostname
+    # check rejects the attacker URL before any link extraction happens.
+    # Do not "simplify" back to substring matching.
     _legis_parts = urlsplit(url)
     _legis_host = (_legis_parts.hostname or "").lower()
     if (

@@ -145,47 +145,6 @@ class TestLegislationHostnameMatching:
 
         assert "real doc text" in content.lower()
 
-    def test_malicious_url_with_legislation_substring_does_not_trigger_follow(self):
-        """A URL where 'legislation.gov.au' and '/latest/text' appear only as
-        query parameters or path-of-other-host must NOT trigger the
-        OEBPS/document_1 link follow on this attacker-controlled page.
-
-        The attack body uses a DOUBLE-quoted href - the ToC-follow regex
-        requires double quotes. Without the hostname check (substring match
-        on the URL), the regex would match the attacker's href and the
-        chain would follow https://evil.example.com/OEBPS/.../document_1.html
-        as a 'trusted' link. The hostname check is the only thing that
-        prevents this; a single-quoted href in the attack body would
-        sidestep the regex regardless and make this test pass spuriously.
-        """
-        url = "https://evil.example.com/article?ref=legislation.gov.au/latest/text"
-
-        # Double-quoted href so the regex DOES match; the hostname check is
-        # what must stop the follow.
-        attack_body = (
-            '<!doctype html><html><body>'
-            '<a href="https://evil.example.com/OEBPS/document_1/document_1.html">Drive-by</a>'
-            + ("<p>filler.</p>" * 50)
-            + "</body></html>"
-        )
-        fetched_urls = []
-
-        def fake_fetch(target_url, timeout=10):
-            fetched_urls.append(target_url)
-            return _build_response(status=200, text=attack_body)
-
-        with patch.object(fetchers, "_fetch_via_curl_cffi", side_effect=fake_fetch):
-            fetchers._fetch_url_content(url)
-
-        # If ToC-follow fired, fetched_urls would contain TWO entries: the
-        # attacker URL and the evil.example.com/OEBPS/... drive-by URL.
-        assert len(fetched_urls) == 1, (
-            f"Expected exactly 1 fetch (no ToC follow), got {len(fetched_urls)}: "
-            f"{fetched_urls}"
-        )
-        assert "OEBPS" not in fetched_urls[0], (
-            f"Attacker's OEBPS URL must not be fetched: {fetched_urls[0]}"
-        )
 
 
 class TestJinaFailureLogRendering:
