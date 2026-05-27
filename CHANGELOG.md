@@ -83,6 +83,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+#### May 2026: Command-orchestration exit-code and isolation fixes
+- Draft RAG pipeline now isolates each run with a per-run Pinecone namespace (`draft-<uuid>`) and namespaced vector IDs. Deterministic IDs (`d1`, `d2`, ...) used to collide across runs and stale vectors from one matter could surface in a different matter's draft. The namespace is deleted in a `finally` block after retrieval (or on retrieval failure) to avoid leaks. `Retriever.retrieve()` accepts an optional `namespace` parameter.
+- `verify` command now accumulates per-stage failures and exits non-zero when any user-selected stage raises. Previously each stage was wrapped in a try/except, the error was logged, then the command printed "Verification complete. 0 reports generated." and exited zero — masking failures in CI and downstream scripts.
+- `verify-cove` command now exits non-zero when the CoVe pipeline raises. Fallback diagnostic saves still run so audit trails are preserved; the completion message is suppressed on failure.
+- `brainstorm --verify` now preserves the original brainstorm content when the verifier response is missing the `## Verified and Corrected Document` header. Previously the original was overwritten with the verifier's freeform text while the user-facing message claimed "using original output". Parse-and-fallback logic is extracted to `_extract_verified_document()`.
+- `digest` now exits non-zero and skips the output save when every input file fails to read or chunk. Previously digest still wrote an empty output file and reported "Files processed: 0" with exit zero, masking total failure.
+
 #### May 2026: LLM retry and truncation handling
 - `_call_with_streaming_wrap` now copies `filtered_params` per attempt before popping OpenRouter-specific keys into `extra_body`. Retries previously re-entered with the drained outer dict and silently dropped `reasoning`, `verbosity`, and other OpenRouter parameters from the second attempt onward. The retry/final-failure audit logs also now record the unmutated request.
 - Responses with `finish_reason == "length"` now raise an explicit truncation error naming the model and completion-token count. They were previously returned as if successful, letting callers act on partial legal drafts/answers without warning.

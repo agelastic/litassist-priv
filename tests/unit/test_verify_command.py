@@ -313,6 +313,29 @@ class TestVerifyCommand:
             assert "Citation verification failed" in result.output
             assert "API unavailable" in result.output
 
+    def test_verify_exits_nonzero_when_selected_stage_fails(
+        self, runner, temp_file, sample_legal_text
+    ):
+        # Regression: when a user explicitly selects --citations and that stage
+        # raises, the command used to print "Verification complete. 0 reports
+        # generated." and exit 0. Selected-stage failure must surface as a
+        # non-zero exit so downstream scripts and CI catch it.
+        with open(temp_file, "w") as f:
+            f.write(sample_legal_text)
+        with patch(
+            "litassist.commands.verify.citation_verifier.verify_all_citations"
+        ) as mock_citations:
+            mock_citations.side_effect = Exception("API unavailable")
+            result = runner.invoke(verify, [temp_file, "--citations"])
+
+            assert result.exit_code != 0, (
+                f"Selected-stage failure must exit non-zero, got "
+                f"exit_code={result.exit_code}, output={result.output!r}"
+            )
+            assert "Verification complete" not in result.output, (
+                "Failed runs must not print a normal completion message"
+            )
+
     def test_output_files_created(self, runner, temp_file, sample_legal_text):
         """Test that output files are created with correct names."""
         with open(temp_file, "w") as f:

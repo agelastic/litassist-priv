@@ -428,6 +428,37 @@ def digest(ctx, file, mode, context, output, verify, noverify):
         final_output += error_summary
         all_usage["errors"] = all_chunk_errors
 
+    # Abort before save if every input file failed. Previously digest still
+    # saved an empty output file and exited zero, which masked total failure
+    # in CI and downstream scripts.
+    if all_usage["files_processed"] == 0 and all_chunk_errors:
+        emergency_handler.disable()
+        try:
+            log_task_event(
+                "digest",
+                "init",
+                "end",
+                f"Digest command failed - 0 files processed, {len(all_chunk_errors)} errors"
+            )
+        except Exception:
+            pass
+        save_log(
+            "digest",
+            {
+                "command": "digest",
+                "mode": mode,
+                "files": list(file),
+                "context": context or f"{mode} analysis",
+                "usage": all_usage,
+                "errors": all_chunk_errors,
+                "outcome": "no_files_processed",
+            },
+        )
+        raise click.ClickException(
+            f"digest: all {len(all_chunk_errors)} input file(s) failed to read or chunk; "
+            "no output written."
+        )
+
     # Save the final output
     output_file = save_command_output(
         output or f"digest_{mode}",

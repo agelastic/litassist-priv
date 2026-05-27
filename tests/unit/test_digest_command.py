@@ -68,6 +68,44 @@ class TestDigestBasic:
         mock_show.assert_called_once()
         mock_log.assert_called_once()
 
+    @patch("litassist.commands.digest.core.show_command_completion")
+    @patch("litassist.commands.digest.core.save_log")
+    @patch("litassist.commands.digest.core.save_command_output")
+    @patch("litassist.commands.digest.core.LLMClientFactory")
+    @patch("litassist.commands.digest.core.prepare_chunks_for_processing")
+    def test_digest_exits_nonzero_when_all_files_fail_to_read(
+        self,
+        mock_prepare,
+        mock_factory,
+        mock_output,
+        mock_log,
+        mock_show,
+        tmp_path,
+    ):
+        # Regression: when every input file fails to read or chunk, digest
+        # used to save an empty output file and exit zero with "Files
+        # processed: 0". A total-failure run must exit non-zero and not
+        # write a zero-content output file.
+        mock_prepare.side_effect = RuntimeError("unreadable")
+        mock_client = Mock()
+        mock_client.model = "openai"
+        mock_factory.for_command.return_value = mock_client
+
+        f1 = tmp_path / "a.txt"
+        f1.write_text("text")
+        f2 = tmp_path / "b.txt"
+        f2.write_text("text")
+
+        result = self.runner.invoke(digest, [str(f1), str(f2)])
+
+        assert result.exit_code != 0, (
+            f"All-files-fail run must exit non-zero, got "
+            f"exit_code={result.exit_code}, output={result.output!r}"
+        )
+        assert not mock_output.called, (
+            "No output file must be saved when zero files were processed"
+        )
+
     def test_verify_flag_not_supported(self):
         """Test that --verify flag shows appropriate warning."""
         with tempfile.NamedTemporaryFile(mode="w", suffix=".txt", delete=False) as f:

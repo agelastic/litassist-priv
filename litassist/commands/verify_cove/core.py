@@ -70,6 +70,7 @@ def verify_cove(file, reference, heavy, output):
     extra_files = {}
     reports_generated = 0
     saved_report = False
+    pipeline_error: Exception | None = None
 
     # Preflight save for test mocks
     preflight_save(file, base_name, output)
@@ -91,6 +92,10 @@ def verify_cove(file, reference, heavy, output):
         display_cove_results(cove_results, extra_files)
 
     except Exception as e:
+        # Capture pipeline failure so the command can exit non-zero after
+        # diagnostic save. Previously the except branch logged + handled the
+        # error and let the command exit successfully, masking real failures.
+        pipeline_error = e
         try:
             log_task_event(
                 "verify-cove",
@@ -129,7 +134,14 @@ def verify_cove(file, reference, heavy, output):
             reports_generated += 1
             saved_report = True
 
-    click.echo(f"\nVerification complete. {reports_generated} reports generated.")
+    # Suppress the normal completion echo if the pipeline raised. Save the
+    # workflow log either way so audit trails capture both success and
+    # failure paths, then fail the command on pipeline error.
+    if pipeline_error is None:
+        click.echo(
+            f"\nVerification complete. {reports_generated} reports generated."
+        )
+
     save_log(
         "verify-cove",
         {
@@ -142,6 +154,7 @@ def verify_cove(file, reference, heavy, output):
             },
             "outputs": extra_files,
             "reports_generated": reports_generated,
+            "pipeline_error": str(pipeline_error) if pipeline_error else None,
         },
     )
 
@@ -151,7 +164,14 @@ def verify_cove(file, reference, heavy, output):
             "verify-cove",
             "init",
             "end",
-            "Chain of Verification complete"
+            "Chain of Verification failed"
+            if pipeline_error
+            else "Chain of Verification complete"
         )
     except Exception:
         pass
+
+    if pipeline_error is not None:
+        raise click.ClickException(
+            f"Chain of Verification pipeline failed: {pipeline_error}"
+        )

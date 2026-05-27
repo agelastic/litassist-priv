@@ -118,6 +118,59 @@ Third strategy text"""
             # Should trigger full verification
 
 
+class TestExtractVerifiedDocument:
+    """Regression tests for the brainstorm verification fallback.
+
+    When the verifier response does not contain the expected
+    `## Verified and Corrected Document` header, the original brainstorm
+    output must be preserved - not silently overwritten with the verifier's
+    freeform response."""
+
+    def test_header_present_returns_extracted_document(self):
+        from litassist.commands.brainstorm.core import _extract_verified_document
+
+        correction = (
+            "## Verifier Notes\nSome notes.\n\n"
+            "## Verified and Corrected Document\n"
+            "Strategy 1: corrected.\nStrategy 2: also corrected.\n"
+        )
+        original = "ORIGINAL BRAINSTORM"
+        content, parsed = _extract_verified_document(correction, original)
+        assert parsed is True
+        assert "Strategy 1: corrected." in content
+        assert "ORIGINAL BRAINSTORM" not in content
+
+    def test_header_missing_preserves_original(self):
+        # Verifier returned something useful-looking but without the expected
+        # section header. The original brainstorm content must be returned
+        # unchanged so we never substitute the verifier's text for it.
+        from litassist.commands.brainstorm.core import _extract_verified_document
+
+        correction = (
+            "I reviewed the document and identified several issues. "
+            "Please refer to the discussion above for details."
+        )
+        original = "Strategy 1: original.\nStrategy 2: original."
+        content, parsed = _extract_verified_document(correction, original)
+        assert parsed is False
+        assert content == original, (
+            "Header-missing branch must return the original brainstorm "
+            "content unchanged; previously it returned the verifier's "
+            "freeform response while telling the user 'using original output'."
+        )
+
+    def test_header_with_blank_body_returns_empty_string_but_parsed(self):
+        # Header is present but the body is empty: that's still a parse
+        # success - the empty result reflects the verifier's actual output.
+        from litassist.commands.brainstorm.core import _extract_verified_document
+
+        correction = "## Verified and Corrected Document\n"
+        original = "Original content"
+        content, parsed = _extract_verified_document(correction, original)
+        assert parsed is True
+        assert content == ""
+
+
 class TestStrategyExtraction:
     """Test strategy extraction patterns."""
 
