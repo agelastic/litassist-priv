@@ -1,10 +1,10 @@
 # Lookup Command Enhancement Roadmap
 
-Last updated: 18/02/2026
+Last updated: 27/05/2026
 
-## Current State (Feb 2026)
+## Current State (May 2026)
 
-The lookup command is a modular system at `litassist/commands/lookup/` that searches Jade and AustLII via Google CSE, fetches accessible content, and synthesises results with `google/gemini-2.5-pro`.
+The lookup command is a modular system at `litassist/commands/lookup/` that searches Jade and AustLII via Google CSE, fetches accessible content, and synthesises results with `google/gemini-3.5-flash` (per `litassist/llm/model_configs.yaml`).
 
 ### Implemented features
 
@@ -24,12 +24,43 @@ The lookup command is a modular system at `litassist/commands/lookup/` that sear
 ```
 __init__.py   -- CLI entry point, orchestration
 search.py     -- Google CSE queries (Jade, AustLII, secondary)
-fetchers.py   -- URL content fetching (HTTP, Jina Reader, PDF extraction)
+fetchers.py   -- URL content fetching: curl_cffi primary, Jina fallback,
+                 PDF/RTF magic-byte routing, AustLII PDF -> HTML rewrite,
+                 challenge / SPA-shell / Content-Type / gibberish detection
 processors.py -- Prompt building, LLM interaction, output saving
 error_handlers.py -- User-facing error guidance
 ```
 
 Configuration in `litassist/llm/model_configs.yaml` under the `lookup` key.
+
+### Fetcher chain (post May 2026 rework)
+
+The single-pipeline `_fetch_url_content` in `fetchers.py` handles every URL:
+
+1. **Local file path** → `read_document` (PDF via pdfplumber, RTF via `litassist/utils/rtf.py`, text directly).
+2. **`jade.io` main domain** → skipped (cookie-gated; future cookie-reuse work tracked in TODO.md `[SOON]` entry).
+3. **`ndfv.jade.io`** → Jina with `/download` URL rewrite.
+4. **AustLII `*.pdf` URL** → rewritten to `.html` sibling before the HTTP fetch. AustLII Cloudflare policy blocks PDF paths for all tested Python clients (curl_cffi multiple Chrome profiles, Playwright + playwright_stealth, patchright, nodriver, Camoufox — 16+ approaches all returned challenge body). The HTML sibling stays reachable. URL parsing uses `urlsplit` to preserve query strings and fragments.
+5. **AustLII rate limit** → 2–3 s random delay between requests (measured from previous request completion).
+6. **`curl_cffi` GET** with Chrome 136 TLS impersonation. Replaces direct `requests` calls; defeats Cloudflare's TLS fingerprint detection.
+7. **PDF magic bytes** (`%PDF`) → `_extract_pdf_text` via pdfplumber.
+8. **RTF magic bytes** (`{\rtf`) → `extract_rtf_text` via striprtf.
+9. **Content-Type guard** → non-text payloads (`application/javascript`, `application/json`, etc.) route to Jina; prevents long-garbage text passing through to BS4.
+10. **legislation.gov.au `/latest/text`** → follow the OEBPS document link via curl_cffi to retrieve the real document (the URL itself returns a ToC page). Hostname check via `urlsplit().hostname` (not substring) prevents attacker URLs with `legislation.gov.au` in query string from triggering the follow.
+11. **BS4 text extraction** (strip scripts, styles, meta, link, noscript).
+12. **Unusable response detection** → Jina fallback fires on:
+    - Cloudflare challenge markers (`_looks_like_challenge_page`) — phrase-level matches, not bare substrings (the bare `"captcha"` marker was false-positive-flagging fedcourt practice-note pages with Google reCAPTCHA widgets).
+    - SPA shell (`_looks_like_spa_shell`) — Angular/React/Vue/Next/Nuxt framework markers with short extracted text, or text/HTML ratio below 5%.
+    - Gibberish — extracted text under 100 chars. Newline-count heuristic dropped in May 2026 after rejecting Nuxt server-pre-rendered pages using Unicode word-joiner separators.
+13. **Otherwise** → return cleaned text.
+
+#### Audit logging
+Every step writes a `fetch_attempt` log entry. Markdown renderer in `litassist/logging/markdown_writers.py` includes `http_status`, `content_size`, `rejection_reason`, `cf_mitigated`, `cf_ray`, `rewrite_target` — enough to distinguish a real Cloudflare challenge (HTTP 403 + `cf-mitigated: challenge`) from a detector false positive (HTTP 200 + no `cf-mitigated`).
+
+#### Known limitations
+- **AustLII PDFs with no HTML sibling** (notably `legis/cth/bill_em/`) return 404 on the substitution and content is unrecoverable.
+- **Jade.io main domain** is skipped; awaiting cookie-reuse implementation.
+- **Jina's outbound IPs** are themselves Cloudflare-challenged on some AU government sites (notably AustLII PDFs), so Jina is not a guaranteed escape hatch.
 
 ---
 

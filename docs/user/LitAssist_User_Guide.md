@@ -1,6 +1,6 @@
 # LitAssist User Guide
 
-Last updated: 22/05/2026
+Last updated: 27/05/2026
 
 ## Overview
 
@@ -671,7 +671,12 @@ pinecone:
   index_name: "your-index-name"           # Required
 
 jina_reader:
-  api_key: "your-jina-key"               # Optional (higher rate limits)
+  api_key: "your-jina-key"               # Optional - fallback transport for
+                                         # JavaScript-rendered pages and
+                                         # Cloudflare-blocked content. Primary
+                                         # transport is curl_cffi (no key
+                                         # required); Jina key enables higher
+                                         # rate limits on the fallback path.
 
 general:
   heartbeat_interval: 20     # Seconds between "still working" messages

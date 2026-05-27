@@ -99,6 +99,7 @@ Last updated: 18/02/2026
 - Forbidden: `git filter-branch`, interactive rebases that rewrite history, `git reset --hard` without checking local work, any `push` without explicit permission, and `push --force`.
 - Allowed: `status`, `diff`, `log`, `branch`, `add`, `commit` only with explicit permission, help craft commit messages, explain workflows, use `gh` CLI to read.
 - Never modify history or push without permission.
+- Before creating a pull request, ensure all relevant user and developer documentation has been updated to reflect the branch's behavioural changes. If any docs are stale, propose the updates and complete them before opening the PR. Relevant docs typically include `CHANGELOG.md`, `architecture.md`, `docs/user/*.md`, `docs/development/*.md`, and `TODO.md`. Trivial fixes (typos, single-file refactors with no user-visible change) are exempt.
 
 ## Safety Compliance Check
 Before any action confirm:
