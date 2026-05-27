@@ -146,12 +146,23 @@ def _fetch_via_curl_cffi(url: str, timeout: int = 10):
     Defeats TLS fingerprint detection (e.g. Cloudflare) that flags
     python-requests. Returns the curl_cffi response object (shape-compatible
     with requests.Response: .status_code, .content, .text, .headers) on
-    success, or None on transport failure.
+    success, or None on transport failure or missing dependency.
 
     Note: curl_cffi defeats TLS fingerprints only. JavaScript-rendered SPAs
     still need Jina rendering.
     """
-    from curl_cffi import requests as curl_requests
+    try:
+        from curl_cffi import requests as curl_requests
+    except ImportError as e:
+        # curl_cffi is declared in requirements.txt but a user may have an
+        # existing install (e.g. pipx) that has not picked up the new dep.
+        # Degrade gracefully to the Jina fallback path instead of crashing
+        # the lookup command.
+        logging.warning(
+            f"curl_cffi not available ({e}); skipping primary transport. "
+            "Install dependencies: pip install -r requirements.txt"
+        )
+        return None
 
     try:
         return curl_requests.get(url, timeout=timeout, impersonate="chrome136")
@@ -552,7 +563,11 @@ def _fetch_url_content(url: str, timeout: int = 10) -> str:
     # string or fragment (e.g. .../5.pdf?download=1, .../5.pdf#page=2): we
     # rewrite only the path's .pdf suffix and reassemble.
     parts = urlsplit(url)
-    if (parts.hostname or "").lower().endswith("austlii.edu.au") and parts.path.lower().endswith(".pdf"):
+    _austlii_host = (parts.hostname or "").lower()
+    if (
+        (_austlii_host == "austlii.edu.au" or _austlii_host.endswith(".austlii.edu.au"))
+        and parts.path.lower().endswith(".pdf")
+    ):
         new_path = parts.path[:-4] + ".html"
         html_url = urlunsplit((parts.scheme, parts.netloc, new_path, parts.query, parts.fragment))
         click.echo(
@@ -660,12 +675,15 @@ def _fetch_url_content(url: str, timeout: int = 10) -> str:
         import re
         from urllib.parse import urljoin
 
+        # Accept both single- and double-quoted href attributes since
+        # legislation.gov.au markup varies; (?P<q>["']) captures the
+        # opening quote and the back-reference enforces the matching close.
         doc_match = re.search(
-            r'href="([^"]*?/OEBPS/document_1/document_1\.html[^"]*)"',
+            r"href=(?P<q>[\"'])(?P<u>[^\"']*?/OEBPS/document_1/document_1\.html[^\"']*)(?P=q)",
             response.text,
         )
         if doc_match:
-            doc_url = doc_match.group(1)
+            doc_url = doc_match.group("u")
             if not doc_url.startswith("http"):
                 doc_url = urljoin(url, doc_url)
             click.echo(f"  → Following legislation.gov.au document link: {doc_url}")
@@ -673,6 +691,27 @@ def _fetch_url_content(url: str, timeout: int = 10) -> str:
             if doc_response is not None and doc_response.status_code == 200:
                 url = doc_url
                 response = doc_response
+            else:
+                # doc_url fetch failed - falling through to parse the original
+                # ToC page would silently surface the ToC text as the
+                # 'document', which the loosened gibberish heuristic
+                # (text < 100 chars) would not catch. Route to Jina instead.
+                click.echo(
+                    "  ✗ legislation.gov.au document link fetch failed, "
+                    "falling back to Jina (avoiding ToC false positive)"
+                )
+                save_log(
+                    "fetch_attempt",
+                    {
+                        "url": doc_url,
+                        "method": "curl_cffi",
+                        "status": "failed",
+                        "rejection_reason": "legislation.gov.au doc link fetch failed; ToC would be a false positive",
+                        "timestamp": time.time(),
+                        **(_response_audit_fields(doc_response) if doc_response is not None else {}),
+                    },
+                )
+                return _fetch_via_jina(doc_url, timeout)
 
     raw_html = response.text
 
