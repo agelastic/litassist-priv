@@ -1,0 +1,15 @@
+Migration inventory:
+  inactive: instruction files - none found
+  inactive: skills - none found
+  inactive: command sources - none found
+  active: subagents - 1 found
+    - verification-flow-reviewer
+Migration surfaces:
+  inactive: AGENTS.md - No supported instruction file found.
+  inactive: skills - Not selected by CLI flags.
+  active: MCP config - 1 MCP server(s) converted into config.toml.
+  active: subagents - 1 subagent(s) converted.
+Migration report:
+  rewritten: .codex/hooks.json - Rewritten for Codex hooks; review behavior before relying on it. Codex hooks require `[features].hooks = true`, only execute `command` handlers, skip `async` / `prompt` / `agent` handlers, and do not preserve every Claude hook behavior.
+  rewritten: .codex/config.toml - Converted 1 MCP server entries.
+  rewritten: .codex/agents/verification-flow-reviewer.toml - Added read-only sandbox default; source tool list preserved as usage guidance.

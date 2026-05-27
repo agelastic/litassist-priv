@@ -142,6 +142,10 @@ test_inputs/
 claude_*
 !**/claude_*/
 
+# codex-generated files
+codex_*
+!**/codex_*/
+
 # --- Additional Python-related ---
 *.pyd
 *.pdb
