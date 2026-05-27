@@ -721,7 +721,7 @@ Commands that accept file paths (`extractfacts`, `counselnotes`, `digest`,
 `draft`, `brainstorm`, `barbrief`, `verify`) read these formats:
 
 - `.pdf` — extracted via `pdfplumber` (no OCR, so scanned PDFs without
-  underlying text return empty content)
+  underlying text are reported as skipped)
 - `.rtf` — extracted via `striprtf` (May 2026 addition; works for AustLII
   RTF case files and any local RTF document)
 - `.txt`, `.md` — read as UTF-8 text directly

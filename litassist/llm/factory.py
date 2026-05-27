@@ -73,7 +73,7 @@ class LLMClientFactory:
 
     @classmethod
     def for_command(
-        cls, command_name: str, sub_type: str = None, **overrides
+        cls, command_name: str, sub_type: str | None = None, **overrides: Any
     ) -> "LLMClient":
         """
         Create an LLMClient configured for a specific command.
@@ -140,7 +140,9 @@ class LLMClientFactory:
         return client
 
     @classmethod
-    def get_model_for_command(cls, command_name: str, sub_type: str = None) -> str:
+    def get_model_for_command(
+        cls, command_name: str, sub_type: str | None = None
+    ) -> str:
         """
         Get the model name configured for a specific command.
 
@@ -174,5 +176,3 @@ class LLMClientFactory:
             Dictionary of all command configurations
         """
         return _get_model_configs().copy()
-
-

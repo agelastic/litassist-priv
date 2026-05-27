@@ -56,10 +56,10 @@ The single-pipeline `_fetch_url_content` in `fetchers.py` handles every URL:
 1. **Local file path** → `read_document` (PDF via pdfplumber, RTF via `litassist/utils/rtf.py`, text directly).
 2. **`jade.io` main domain** → skipped (cookie-gated; future cookie-reuse work tracked in TODO.md `[SOON]` entry).
 3. **`ndfv.jade.io`** → Jina with `/download` URL rewrite.
-4. **AustLII `*.pdf` URL** → rewritten to `.html` sibling before the HTTP fetch. AustLII Cloudflare policy blocks PDF paths for all tested Python clients (curl_cffi multiple Chrome profiles, Playwright + playwright_stealth, patchright, nodriver, Camoufox — 16+ approaches all returned challenge body). The HTML sibling stays reachable. URL parsing uses `urlsplit` to preserve query strings and fragments.
+4. **AustLII URL normalisation** → `cgi-bin/viewdoc` / `viewdb` wrapper paths are rewritten to direct `/au/...` content paths; AustLII `*.pdf` URLs are rewritten to `.html` siblings; AustLII `*.rtf` URLs are rewritten to `.html` siblings for journals and `/index.html` siblings for consolidated legislation. If a binary URL's flat `.html` sibling returns 404, the fetcher retries the equivalent `/index.html` sibling. If both siblings return 404, the fetcher skips Jina because Jina would only render the same not-found page. AustLII Cloudflare policy blocks PDF/RTF paths for Python clients in common cases, while the HTML siblings stay reachable. URL parsing uses `urlsplit` to preserve query strings and fragments.
 5. **AustLII rate limit** → 2–3 s random delay between requests (measured from previous request completion).
 6. **`curl_cffi` GET** with Chrome 136 TLS impersonation. Replaces direct `requests` calls; defeats Cloudflare's TLS fingerprint detection.
-7. **PDF magic bytes** (`%PDF`) → `_extract_pdf_text` via pdfplumber.
+7. **PDF magic bytes** (`%PDF`) → `_extract_pdf_text` via pdfplumber. Text-empty/image-only PDFs are logged and reported as skipped, not network failures.
 8. **RTF magic bytes** (`{\rtf`) → `extract_rtf_text` via striprtf.
 9. **Content-Type guard** → non-text payloads (`application/javascript`, `application/json`, etc.) route to Jina; prevents long-garbage text passing through to BS4.
 10. **legislation.gov.au `/latest/text`** → follow the OEBPS document link via curl_cffi to retrieve the real document (the URL itself returns a ToC page). Hostname check via `urlsplit().hostname` (not substring) prevents attacker URLs with `legislation.gov.au` in query string from triggering the follow.
@@ -68,13 +68,21 @@ The single-pipeline `_fetch_url_content` in `fetchers.py` handles every URL:
     - Cloudflare challenge markers (`_looks_like_challenge_page`) — phrase-level matches, not bare substrings (the bare `"captcha"` marker was false-positive-flagging fedcourt practice-note pages with Google reCAPTCHA widgets).
     - SPA shell (`_looks_like_spa_shell`) — Angular/React/Vue/Next/Nuxt framework markers with short extracted text, or text/HTML ratio below 5%.
     - Gibberish — extracted text under 100 chars. Newline-count heuristic dropped in May 2026 after rejecting Nuxt server-pre-rendered pages using Unicode word-joiner separators.
+    - Non-404 HTTP failures and transport failures where Jina may still recover content. Confirmed HTTP 404s are terminal and skip Jina.
 13. **Otherwise** → return cleaned text.
+
+Successful fetches carry lightweight transport metadata used by the lookup
+processor's console output, so user-facing status lines report the actual path
+(`curl_cffi`, `Jina Reader`, `pdfplumber`, `striprtf`, or `local file`) rather
+than a generic HTTP/Jina label.
 
 #### Audit logging
 Every step writes a `fetch_attempt` log entry. Markdown renderer in `litassist/logging/markdown_writers.py` includes `http_status`, `content_size`, `rejection_reason`, `cf_mitigated`, `cf_ray`, `rewrite_target` — enough to distinguish a real Cloudflare challenge (HTTP 403 + `cf-mitigated: challenge`) from a detector false positive (HTTP 200 + no `cf-mitigated`).
 
+The rewrite method discriminator is `austlii_url_normalise` for the unified AustLII normalisation path. Earlier May 2026 PDF-only rewrites used `austlii_pdf_to_html`.
+
 #### Known limitations
-- **AustLII PDFs with no HTML sibling** (notably `legis/cth/bill_em/`) return 404 on the substitution and content is unrecoverable.
+- **AustLII PDFs/RTFs with no flat `.html` or `/index.html` sibling** return 404 on both substitutions, skip Jina, and content is unrecoverable.
 - **Jade.io main domain** is skipped; awaiting cookie-reuse implementation.
 - **Jina's outbound IPs** are themselves Cloudflare-challenged on some AU government sites (notably AustLII PDFs), so Jina is not a guaranteed escape hatch.
 

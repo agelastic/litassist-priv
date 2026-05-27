@@ -18,6 +18,114 @@ from litassist.logging import save_log
 # Track last AustLII request completion time for rate limiting
 _last_austlii_completion = 0
 
+_AUSTLII_CGI_REWRITE_REASON = "cgi wrapper -> direct content path"
+_AUSTLII_PDF_HTML_REWRITE_REASON = ".pdf -> .html sibling"
+_AUSTLII_RTF_HTML_REWRITE_REASON = ".rtf -> .html sibling"
+_AUSTLII_RTF_INDEX_REWRITE_REASON = (
+    ".rtf -> consolidated legislation index.html sibling"
+)
+
+
+class FetchedContent(str):
+    """String content with fetch transport metadata for caller status messages."""
+
+    fetch_method: str
+
+    def __new__(cls, value: str, fetch_method: str) -> "FetchedContent":
+        obj = str.__new__(cls, value)
+        obj.fetch_method = fetch_method
+        return obj
+
+
+def _with_fetch_method(content: str, fetch_method: str) -> str:
+    """Attach fetch method metadata while preserving normal str behaviour."""
+    if not content:
+        return content
+    return FetchedContent(content, fetch_method)
+
+
+def _is_austlii_host(hostname: str) -> bool:
+    """Return True for austlii.edu.au and its mirror/subdomain hosts."""
+    return hostname == "austlii.edu.au" or hostname.endswith(".austlii.edu.au")
+
+
+def _normalise_austlii_url(url: str) -> tuple[str, list[str]]:
+    """
+    Rewrite AustLII URLs into forms that are fetchable by curl_cffi.
+
+    Google CSE sometimes returns AustLII wrapper URLs such as
+    /cgi-bin/viewdoc/.../index.html or /cgi-bin/viewdb/.../s122.html. Those
+    wrappers can 404 even when the direct /au/... content path returns 200.
+
+    AustLII also blocks Python clients on some binary document paths. HTML
+    siblings at the same path are reachable and usually contain equivalent
+    text or at least a useful article/document stub.
+    """
+    parts = urlsplit(url)
+    host = (parts.hostname or "").lower()
+    if not _is_austlii_host(host):
+        return url, []
+
+    path = parts.path
+    reasons: list[str] = []
+
+    for prefix in ("/cgi-bin/viewdoc/", "/cgi-bin/viewdb/"):
+        if path.startswith(prefix):
+            path = "/" + path[len(prefix):].lstrip("/")
+            reasons.append(_AUSTLII_CGI_REWRITE_REASON)
+            break
+
+    lower_path = path.lower()
+    if lower_path.endswith(".pdf"):
+        path = path[:-4] + ".html"
+        reasons.append(_AUSTLII_PDF_HTML_REWRITE_REASON)
+    elif lower_path.endswith(".rtf"):
+        if "/consol_act/" in lower_path or "/consol_reg/" in lower_path:
+            path = path[:-4] + "/index.html"
+            reasons.append(_AUSTLII_RTF_INDEX_REWRITE_REASON)
+        else:
+            path = path[:-4] + ".html"
+            reasons.append(_AUSTLII_RTF_HTML_REWRITE_REASON)
+
+    if not reasons:
+        return url, []
+
+    rewritten = urlunsplit(
+        (parts.scheme, parts.netloc, path, parts.query, parts.fragment)
+    )
+    return rewritten, reasons
+
+
+def _austlii_index_fallback_url(url: str, rewrite_reasons: list[str]) -> str:
+    """
+    Return the /index.html sibling for AustLII binary URLs first rewritten to
+    flat .html, or "" when no targeted fallback should run.
+
+    Some AustLII categories expose HTML siblings as /name/index.html rather
+    than /name.html. Avoid broad retries for unrelated AustLII 404s: only
+    binary URL rewrites (.pdf/.rtf -> .html) get this second chance.
+    """
+    if not any(
+        reason in rewrite_reasons
+        for reason in (
+            _AUSTLII_PDF_HTML_REWRITE_REASON,
+            _AUSTLII_RTF_HTML_REWRITE_REASON,
+        )
+    ):
+        return ""
+
+    parts = urlsplit(url)
+    path = parts.path
+    lower_path = path.lower()
+    if not lower_path.endswith(".html") or lower_path.endswith("/index.html"):
+        return ""
+
+    index_path = path[:-5] + "/index.html"
+    return urlunsplit(
+        (parts.scheme, parts.netloc, index_path, parts.query, parts.fragment)
+    )
+
+
 # Markers that indicate the response is a bot-challenge / error interstitial
 # rather than the requested page content. Matched case-insensitively. Used on
 # both Jina-rendered responses and curl_cffi raw HTML responses.
@@ -182,10 +290,9 @@ def _fetch_via_jina(url: str, timeout: int = 15) -> str:
     Returns:
         Extracted text content or empty string if failed
     """
+    original_url = url
     try:
         # Apply URL tricks for known sites to get full content
-        original_url = url
-
         # Queensland legislation - use /whole to get full document
         if "legislation.qld.gov.au/view/html/inforce" in url and "/whole" not in url:
             url = url.rstrip("/") + "/whole"
@@ -241,7 +348,7 @@ def _fetch_via_jina(url: str, timeout: int = 15) -> str:
                     "timestamp": time.time(),
                 },
             )
-            return content
+            return _with_fetch_method(content, "Jina Reader")
         else:
             # Show error or empty response
             if response.status_code != 200:
@@ -457,9 +564,13 @@ def _extract_pdf_text(url: str, pdf_bytes: bytes) -> str:
                         "timestamp": time.time(),
                     },
                 )
-                return pdf_content
+                return _with_fetch_method(pdf_content, "pdfplumber")
             else:
                 logging.info(f"PDF has no extractable text (may be scanned): {url}")
+                click.echo(
+                    "  ✗ PDF skipped: no extractable text "
+                    "(likely scanned/image-only)"
+                )
                 save_log(
                     "fetch_attempt",
                     {
@@ -475,11 +586,17 @@ def _extract_pdf_text(url: str, pdf_bytes: bytes) -> str:
 
     except ImportError:
         logging.warning("pdfplumber not installed - cannot extract PDF text")
-        return f"[PDF DOCUMENT at {url}]\n[Note: PDF text extraction unavailable - pdfplumber not installed]\n"
+        return _with_fetch_method(
+            f"[PDF DOCUMENT at {url}]\n"
+            "[Note: PDF text extraction unavailable - pdfplumber not installed]\n",
+            "pdfplumber unavailable",
+        )
     except Exception as e:
         logging.warning(f"Failed to extract text from PDF {url}: {e}")
-        return (
-            f"[PDF DOCUMENT at {url}]\n[Note: PDF extraction failed - {str(e)[:100]}]\n"
+        return _with_fetch_method(
+            f"[PDF DOCUMENT at {url}]\n"
+            f"[Note: PDF extraction failed - {str(e)[:100]}]\n",
+            "pdfplumber error",
         )
 
 
@@ -493,9 +610,10 @@ def _fetch_url_content(url: str, timeout: int = 10) -> str:
       1.  Local file path        -> read_document
       2.  jade.io main domain    -> skip (cookie-gated)
       3.  ndfv.jade.io           -> Jina with /download URL rewrite
-      3b. AustLII PDF URL        -> rewrite to .html sibling
+      3b. AustLII URL normalise  -> direct path + .pdf/.rtf to .html sibling
       4.  AustLII rate-limit     -> 2-3s random delay
       5.  curl_cffi GET
+      5b. AustLII sibling retry  -> flat .html 404 tries /index.html
       6.  PDF magic bytes        -> _extract_pdf_text
       6b. RTF magic bytes        -> extract_rtf_text
       6c. Content-Type guard     -> non-text payload falls back to Jina
@@ -518,7 +636,7 @@ def _fetch_url_content(url: str, timeout: int = 10) -> str:
             content = read_document(url)
             if content:
                 click.echo(f"  ✓ Local file read: {len(content)} chars")
-                return f"[Source: {url}]\n\n{content}"
+                return _with_fetch_method(f"[Source: {url}]\n\n{content}", "local file")
             click.echo("  ✗ Local file is empty")
             return ""
         except Exception as e:
@@ -549,42 +667,26 @@ def _fetch_url_content(url: str, timeout: int = 10) -> str:
         )
         return ""
 
-    # 3b. AustLII PDF -> HTML substitution. AustLII serves PDFs behind a
-    # Cloudflare policy that blocks every Python transport tested (vanilla
-    # requests, curl_cffi across multiple impersonation profiles, Playwright
-    # with playwright_stealth, patchright, nodriver, Camoufox - 16+ approaches,
-    # all returned challenge body). The HTML sibling at the same path is on a
-    # relaxed Cloudflare policy that curl_cffi clears. Some journal articles
-    # have full HTML text; others have an HTML stub containing only the
-    # citation + title (still more than the CSE snippet); some PDFs have no
-    # HTML sibling and return 404 (legis/bill_em PDFs in particular).
-    #
-    # Use urlsplit so the substitution works when the URL carries a query
-    # string or fragment (e.g. .../5.pdf?download=1, .../5.pdf#page=2): we
-    # rewrite only the path's .pdf suffix and reassemble.
-    parts = urlsplit(url)
-    _austlii_host = (parts.hostname or "").lower()
-    if (
-        (_austlii_host == "austlii.edu.au" or _austlii_host.endswith(".austlii.edu.au"))
-        and parts.path.lower().endswith(".pdf")
-    ):
-        new_path = parts.path[:-4] + ".html"
-        html_url = urlunsplit((parts.scheme, parts.netloc, new_path, parts.query, parts.fragment))
+    # 3b. AustLII URL normalisation. URL parsing keeps query strings and
+    # fragments intact while rewriting only the path.
+    normalised_url, austlii_rewrite_reasons = _normalise_austlii_url(url)
+    if austlii_rewrite_reasons:
         click.echo(
-            f"  → AustLII PDF blocked by Cloudflare; substituting HTML sibling: {html_url}"
+            "  → Normalising AustLII URL "
+            f"({'; '.join(austlii_rewrite_reasons)}): {normalised_url}"
         )
         save_log(
             "fetch_attempt",
             {
                 "url": url,
-                "method": "austlii_pdf_to_html",
+                "method": "austlii_url_normalise",
                 "status": "rewrite",
-                "rewrite_target": html_url,
-                "reason": "AustLII Cloudflare policy blocks PDF paths; HTML sibling reachable",
+                "rewrite_target": normalised_url,
+                "reason": "; ".join(austlii_rewrite_reasons),
                 "timestamp": time.time(),
             },
         )
-        url = html_url
+        url = normalised_url
         lower_url = url.lower()
 
     # 4. AustLII rate limit
@@ -604,20 +706,133 @@ def _fetch_url_content(url: str, timeout: int = 10) -> str:
         return _fetch_via_jina(url, timeout)
 
     if response.status_code != 200:
-        click.echo(
-            f"  ✗ curl_cffi returned HTTP {response.status_code}, falling back to Jina"
-        )
-        save_log(
-            "fetch_attempt",
-            {
-                "url": url,
-                "method": "curl_cffi",
-                "status": "failed",
-                "timestamp": time.time(),
-                **_response_audit_fields(response),
-            },
-        )
-        return _fetch_via_jina(url, timeout)
+        index_fallback_url = ""
+        if response.status_code == 404:
+            index_fallback_url = _austlii_index_fallback_url(
+                url, austlii_rewrite_reasons
+            )
+
+        if index_fallback_url:
+            click.echo(
+                "  → AustLII flat HTML sibling returned 404; "
+                f"trying index sibling: {index_fallback_url}"
+            )
+            save_log(
+                "fetch_attempt",
+                {
+                    "url": url,
+                    "method": "curl_cffi",
+                    "status": "failed",
+                    "rejection_reason": "flat HTML sibling returned 404; retrying index.html sibling",
+                    "timestamp": time.time(),
+                    **_response_audit_fields(response),
+                },
+            )
+            save_log(
+                "fetch_attempt",
+                {
+                    "url": url,
+                    "method": "austlii_url_normalise",
+                    "status": "rewrite",
+                    "rewrite_target": index_fallback_url,
+                    "reason": "flat HTML sibling 404 -> index.html sibling",
+                    "timestamp": time.time(),
+                },
+            )
+            if is_austlii:
+                _rate_limit_austlii()
+
+            try:
+                retry_response = _fetch_via_curl_cffi(index_fallback_url, timeout)
+            finally:
+                if is_austlii:
+                    _last_austlii_completion = time.time()
+
+            if retry_response is not None and retry_response.status_code == 200:
+                url = index_fallback_url
+                lower_url = url.lower()
+                response = retry_response
+            else:
+                if retry_response is None:
+                    click.echo(
+                        "  ✗ AustLII index sibling retry returned no response, "
+                        "falling back to Jina"
+                    )
+                    save_log(
+                        "fetch_attempt",
+                        {
+                            "url": index_fallback_url,
+                            "method": "curl_cffi",
+                            "status": "failed",
+                            "rejection_reason": "index.html sibling retry returned no response",
+                            "timestamp": time.time(),
+                        },
+                    )
+                    return _fetch_via_jina(index_fallback_url, timeout)
+                if retry_response.status_code == 404:
+                    click.echo(
+                        "  ✗ AustLII index sibling also returned 404; "
+                        "skipping Jina"
+                    )
+                    save_log(
+                        "fetch_attempt",
+                        {
+                            "url": index_fallback_url,
+                            "method": "curl_cffi",
+                            "status": "failed",
+                            "rejection_reason": "confirmed 404 after flat and index HTML siblings",
+                            "timestamp": time.time(),
+                            **_response_audit_fields(retry_response),
+                        },
+                    )
+                    return ""
+                else:
+                    click.echo(
+                        "  ✗ AustLII index sibling retry returned HTTP "
+                        f"{retry_response.status_code}, falling back to Jina"
+                    )
+                    save_log(
+                        "fetch_attempt",
+                        {
+                            "url": index_fallback_url,
+                            "method": "curl_cffi",
+                            "status": "failed",
+                            "rejection_reason": "index.html sibling retry failed",
+                            "timestamp": time.time(),
+                            **_response_audit_fields(retry_response),
+                        },
+                    )
+                    return _fetch_via_jina(index_fallback_url, timeout)
+        else:
+            if response.status_code == 404:
+                click.echo("  ✗ curl_cffi returned HTTP 404; skipping Jina")
+                save_log(
+                    "fetch_attempt",
+                    {
+                        "url": url,
+                        "method": "curl_cffi",
+                        "status": "failed",
+                        "rejection_reason": "HTTP 404 not found; Jina skipped",
+                        "timestamp": time.time(),
+                        **_response_audit_fields(response),
+                    },
+                )
+                return ""
+
+            click.echo(
+                f"  ✗ curl_cffi returned HTTP {response.status_code}, falling back to Jina"
+            )
+            save_log(
+                "fetch_attempt",
+                {
+                    "url": url,
+                    "method": "curl_cffi",
+                    "status": "failed",
+                    "timestamp": time.time(),
+                    **_response_audit_fields(response),
+                },
+            )
+            return _fetch_via_jina(url, timeout)
 
     # 6. PDF magic bytes (binary check first - response.text on a PDF is junk)
     if response.content.startswith(b"%PDF"):
@@ -629,7 +844,13 @@ def _fetch_url_content(url: str, timeout: int = 10) -> str:
 
     if looks_like_rtf(response.content):
         click.echo("  → curl_cffi returned RTF, extracting text...")
-        return extract_rtf_text(url, response.content)
+        rtf_content = extract_rtf_text(url, response.content)
+        rtf_method = (
+            "striprtf"
+            if rtf_content.startswith("[RTF DOCUMENT EXTRACTED")
+            else "RTF extraction unavailable"
+        )
+        return _with_fetch_method(rtf_content, rtf_method)
 
     # 6c. Content-Type guard. If curl_cffi returned a non-HTML payload (e.g.
     # a script bundle from a misconfigured redirect, raw JSON, or a binary
@@ -804,4 +1025,4 @@ def _fetch_url_content(url: str, timeout: int = 10) -> str:
         },
     )
     click.echo(f"  ✓ curl_cffi fetch: {len(text)} chars")
-    return content
+    return _with_fetch_method(content, "curl_cffi")

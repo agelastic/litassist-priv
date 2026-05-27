@@ -4,6 +4,7 @@ Regression tests for review fixes 26/05/2026 (codex pass on fix-lookups).
 Each test pins one fix:
 - Content-Type guard rejects non-HTML payloads before BS4 extraction
 - legislation.gov.au ToC-follow uses parsed hostname, not substring match
+- HTTP 404 is terminal and does not spend a Jina fallback request
 - Jina failure logs render content_size and error in the markdown formatter
 """
 
@@ -14,7 +15,9 @@ from litassist.commands.lookup import fetchers
 from litassist.logging.markdown_writers import write_fetch_log_markdown
 
 
-def _build_response(status=200, text="", content=None, content_type="text/html"):
+def _build_response(
+    status=200, text="", content=None, content_type: str | None = "text/html"
+):
     r = MagicMock()
     r.status_code = status
     r.text = text
@@ -95,6 +98,7 @@ class TestContentTypeGuard:
 
         assert not captured["jina_called"], "text/html must NOT trigger fallback"
         assert "real content" in content.lower()
+        assert getattr(content, "fetch_method") == "curl_cffi"
 
     def test_missing_content_type_header_is_accepted(self):
         """Some responses lack Content-Type; chain must still process them
@@ -145,6 +149,57 @@ class TestLegislationHostnameMatching:
 
         assert "real doc text" in content.lower()
 
+
+class TestHttpNotFoundHandling:
+    def setup_method(self, _):
+        fetchers._last_austlii_completion = 0
+
+    def test_http_404_skips_jina_fallback(self):
+        url = "https://example.gov.au/dead-link"
+
+        def fake_curl(target_url, timeout=10):
+            return _build_response(
+                status=404, text="<!doctype html><title>Not found</title>"
+            )
+
+        with patch.object(fetchers, "_fetch_via_curl_cffi", side_effect=fake_curl), \
+                patch.object(fetchers, "_fetch_via_jina", return_value="") as jina:
+            content = fetchers._fetch_url_content(url, timeout=15)
+
+        jina.assert_not_called()
+        assert content == ""
+
+
+class TestPdfExtractionReporting:
+    def test_pdf_without_extractable_text_reports_skipped(self, capsys):
+        class FakePage:
+            def extract_text(self):
+                return None
+
+        class FakePdf:
+            pages = [FakePage()]
+
+            def __enter__(self):
+                return self
+
+            def __exit__(self, exc_type, exc, tb):
+                return False
+
+        fake_pdfplumber = MagicMock()
+        fake_pdfplumber.open.return_value = FakePdf()
+
+        with patch.dict("sys.modules", {"pdfplumber": fake_pdfplumber}), \
+                patch.object(fetchers, "save_log") as save_log:
+            content = fetchers._extract_pdf_text(
+                "https://example.gov.au/scanned.pdf", b"%PDF-1.4"
+            )
+
+        output = capsys.readouterr().out
+        assert content == ""
+        assert "PDF skipped: no extractable text" in output
+        save_log.assert_called_once()
+        assert save_log.call_args.args[1]["status"] == "skipped"
+        assert "no extractable text" in save_log.call_args.args[1]["reason"]
 
 
 class TestJinaFailureLogRendering:

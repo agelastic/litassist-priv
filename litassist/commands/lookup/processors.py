@@ -8,6 +8,7 @@ and output generation for the lookup command.
 import click
 import time
 import os
+from typing import Any, cast
 from litassist.logging import save_command_output, log_task_event
 from litassist.utils.formatting import (
     success_message,
@@ -108,8 +109,9 @@ class LookupProcessor:
 
             content = _fetch_url_content(link, timeout=self.config.fetch_timeout)
 
-            # Method determination (Jina fallback is handled inside _fetch_url_content)
-            method = "HTTP/Jina" if content else "Failed"
+            method = (
+                getattr(content, "fetch_method", "unknown") if content else "Failed"
+            )
 
             if content:
                 # Save fetched page to logs
@@ -119,8 +121,16 @@ class LookupProcessor:
 
                 # Check if it's PDF content for appropriate user message
                 if content.startswith("[PDF DOCUMENT EXTRACTED"):
-                    click.echo(f"  [✓ Extracted text from PDF at {link.split('/')[2]}]")
+                    click.echo(
+                        f"  [✓ Extracted text from PDF at {link.split('/')[2]} "
+                        f"via {method}]"
+                    )
                     pdf_count += 1
+                elif content.startswith("[RTF DOCUMENT EXTRACTED"):
+                    click.echo(
+                        f"  [✓ Extracted text from RTF at {link.split('/')[2]} "
+                        f"via {method}]"
+                    )
                 else:
                     click.echo(
                         f"  [✓ Fetched {len(content)} chars from {link.split('/')[2]} via {method}]"
@@ -277,7 +287,7 @@ class LookupProcessor:
             else:
                 overrides = {"temperature": 0.5, "top_p": 0.9}
 
-        return LLMClientFactory.for_command("lookup", **overrides)
+        return LLMClientFactory.for_command("lookup", **cast(Any, overrides))
 
     def build_system_prompt(self, extract, comprehensive):
         """Build the system prompt based on mode and options."""

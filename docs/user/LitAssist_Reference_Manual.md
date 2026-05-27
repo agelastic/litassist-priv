@@ -2403,7 +2403,7 @@ relying on citations for court filings.
 
 - Check that the Pinecone index is accessible (`litassist test`)
 - Verify that the `rag_max_chars` setting produces appropriately sized chunks
-- Ensure the PDF is text-based (not scanned images)
+- Ensure the PDF is text-based; scanned/image-only PDFs are reported as skipped
 
 ### 10.6 Command Validation Errors
 
