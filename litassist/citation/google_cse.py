@@ -10,6 +10,7 @@ import time
 
 from litassist.logging import save_log
 from litassist.config import get_config
+from .trust import is_trusted_legal_host
 
 
 def search_legal_database_via_cse(
@@ -86,14 +87,24 @@ def search_legal_database_via_cse(
             for item in res["items"]:
                 title = item.get("title", "").lower()
                 snippet = item.get("snippet", "").lower()
-                link = item.get("link", "").lower()
-                combined_text = f"{title} {snippet} {link}"
+                raw_link = item.get("link", "")
+                # Match against title + snippet only. The URL is excluded
+                # because it is attacker-controllable (a CSE result on an
+                # untrusted host can carry the citation tokens in its path or
+                # query string and otherwise spoof a match).
+                combined_text = f"{title} {snippet}"
+
+                # Trust gate: require the result link to resolve to a known
+                # authoritative legal host. Without this, a CSE hit on
+                # example.invalid would verify a fabricated citation.
+                if not is_trusted_legal_host(raw_link):
+                    continue
 
                 # Check for exact citation match in any variation
                 for variation in citation_variations:
                     if variation in combined_text:
                         success = True
-                        found_url = item.get("link", "")
+                        found_url = raw_link
                         found_snippet = item.get("snippet", "").replace("\n", " ")
                         break
 
@@ -113,7 +124,7 @@ def search_legal_database_via_cse(
                         and page in combined_text
                     ):
                         success = True
-                        found_url = item.get("link", "")
+                        found_url = raw_link
                         found_snippet = item.get("snippet", "").replace("\n", " ")
                         break
 

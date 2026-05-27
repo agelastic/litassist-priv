@@ -150,7 +150,9 @@ class TestCoVeRegeneration:
         2. Yes - June 3, 1992 is a valid date.
         """
 
-        mock_no_issues = "No issues found"
+        # Structured verdict required: literal "No issues found" used to pass
+        # by substring match alone, which leaked through quoted / negated text.
+        mock_no_issues = "Issues: none\nVERDICT: PASS"
 
         with patch("litassist.verification_chain.LLMClientFactory") as mock_factory:
             # Create mock clients
@@ -261,6 +263,87 @@ class TestCoVeRegeneration:
 
             # Verify LLM verification was called
             mock_factory.for_command.assert_called_with("verification")
+
+
+class TestCoVeVerdictParsing:
+    """Regression tests: CoVe must use structured VERDICT lines rather than
+    substring match against 'no issues found', which previously passed
+    quoted / negated text."""
+
+    def _run_cove_with_verify_response(self, verify_response: str):
+        from unittest.mock import Mock, patch
+        from litassist.verification_chain import run_cove_verification
+
+        with patch("litassist.verification_chain.LLMClientFactory") as mock_factory:
+            mock_questions_client = Mock()
+            mock_answers_client = Mock()
+            mock_verify_client = Mock()
+            mock_final_client = Mock()
+
+            mock_questions_client.complete.return_value = ("1. Q?", {"total_tokens": 1})
+            mock_questions_client.model = _MOCK_MODEL
+            mock_answers_client.complete.return_value = ("1. A.", {"total_tokens": 1})
+            mock_answers_client.model = _MOCK_MODEL
+            mock_verify_client.complete.return_value = (verify_response, {"total_tokens": 1})
+            mock_verify_client.model = _MOCK_MODEL
+            mock_final_client.complete.return_value = ("REGENERATED", {"total_tokens": 1})
+            mock_final_client.model = _MOCK_MODEL
+
+            def get_client(command):
+                return {
+                    "cove-questions": mock_questions_client,
+                    "cove-answers": mock_answers_client,
+                    "cove-verify": mock_verify_client,
+                    "cove-final": mock_final_client,
+                }[command]
+
+            mock_factory.for_command.side_effect = get_client
+
+            with patch("litassist.verification_chain.save_log"):
+                with patch(
+                    "litassist.verification_chain.fetch_citation_context"
+                ) as mock_fetch:
+                    mock_fetch.return_value = ({}, [])
+                    _, results = run_cove_verification("Some document", "test")
+            return results
+
+    def test_negated_no_issues_found_does_not_pass(self):
+        # Verifier text containing "no issues found" inside a negation must
+        # not be parsed as a PASS. Substring matching allowed this through.
+        response = (
+            'The verifier reports: the answer is not "no issues found".\n'
+            "Multiple inconsistencies were detected.\n"
+            "VERDICT: FAIL"
+        )
+        results = self._run_cove_with_verify_response(response)
+        assert results["cove"]["passed"] is False
+        assert results["cove"]["regenerated"] is True
+
+    def test_quoted_no_issues_found_does_not_pass(self):
+        response = (
+            'Issues: the headnote contains the phrase "no issues found" verbatim, '
+            "but several citations are incorrect.\n"
+            "VERDICT: FAIL"
+        )
+        results = self._run_cove_with_verify_response(response)
+        assert results["cove"]["passed"] is False
+
+    def test_missing_verdict_fails_closed(self):
+        # No VERDICT line at all: must fail closed (treat as FAIL) rather
+        # than accidentally passing.
+        response = "Reviewed the document. All clear."
+        results = self._run_cove_with_verify_response(response)
+        assert results["cove"]["passed"] is False, (
+            "Missing VERDICT line must fail closed; substring match used to "
+            "accidentally pass anything containing 'no issues found' or "
+            "anything without it (depending on phrasing)."
+        )
+
+    def test_structured_pass_verdict_passes(self):
+        response = "Issues: none\nVERDICT: PASS"
+        results = self._run_cove_with_verify_response(response)
+        assert results["cove"]["passed"] is True
+        assert results["cove"]["regenerated"] is False
 
 
 # Test markers

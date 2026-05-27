@@ -1,5 +1,6 @@
 """Minimal verification chain orchestrator - no overengineering."""
 
+import re
 import time
 import traceback
 from typing import Dict, Optional, Tuple
@@ -458,8 +459,17 @@ def run_cove_verification(
         "model": client_verify.model,
     }
 
-    # Determine if verification passed
-    passed = "no issues found" in issues.lower()
+    # Determine if verification passed using the structured VERDICT line.
+    # Substring matching against "no issues found" used to leak through quoted
+    # and negated text (e.g. 'not "no issues found"'). The verifier prompt now
+    # requires an explicit VERDICT: PASS|FAIL line and a missing line fails
+    # closed (treated as FAIL).
+    verdict_match = re.search(
+        r"^\s*VERDICT:\s*(PASS|FAIL)\s*$",
+        issues,
+        re.MULTILINE | re.IGNORECASE,
+    )
+    passed = bool(verdict_match) and verdict_match.group(1).upper() == "PASS"
 
     # Step 4: Generate final verified response (Meta paper's critical step)
     final_content = content

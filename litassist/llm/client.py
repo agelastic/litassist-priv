@@ -111,20 +111,18 @@ class LLMClient(LLMVerificationMixin):
     def _merge_system_into_user(
         self, messages: List[Dict[str, str]]
     ) -> List[Dict[str, str]]:
-        """Merge system messages into first user message for o1/o3 models."""
+        """Merge system messages (and base prompts) into first user message for o1/o3 models."""
         system_messages = [msg for msg in messages if msg.get("role") == "system"]
         non_system_messages = [msg for msg in messages if msg.get("role") != "system"]
 
-        if not system_messages:
-            # No system messages to merge
-            return messages
-
-        # Combine all system content
+        # Combine any incoming system content (may be empty for user-only calls).
         system_content = "\n".join([msg.get("content", "") for msg in system_messages])
         if "Australian English" not in system_content:
-            # Add base system prompts (Australian law, anti-injection, etc.)
+            # Inject base prompts (Australian law, anti-injection) for both
+            # explicit-system and user-only paths. The user-only case
+            # previously slipped through unguarded.
             base_prompts = PROMPTS.get("base.australian_law") + "\n\n" + PROMPTS.get("base.anti_injection")
-            system_content += "\n" + base_prompts
+            system_content = f"{system_content}\n{base_prompts}" if system_content else base_prompts
 
         # Find first user message and prepend system content
         modified_messages = []
@@ -156,6 +154,7 @@ class LLMClient(LLMVerificationMixin):
             base_prompts = f"{base_prompts}\n\n{anti_hallucination}"
 
         modified_messages = []
+        injected = False
         for msg in messages:
             if msg.get("role") == "system":
                 content = msg.get("content", "")
@@ -163,8 +162,16 @@ class LLMClient(LLMVerificationMixin):
                 if australian_law not in content:
                     content = f"{base_prompts}\n\n{content}"
                 modified_messages.append({"role": "system", "content": content})
+                injected = True
             else:
                 modified_messages.append(msg)
+
+        if not injected:
+            # User-only (or assistant-only) input: prepend a system message
+            # so base prompts apply even when callers omit a system entry.
+            # CoVe used to ship user-only messages here, silently bypassing
+            # the Australian-law and anti-injection guardrails.
+            modified_messages.insert(0, {"role": "system", "content": base_prompts})
 
         return modified_messages
 

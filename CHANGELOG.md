@@ -82,6 +82,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Enhanced prompt template system with centralized YAML management
 
 ### Fixed
+
+#### May 2026: Accuracy-critical verification fixes
+- User-only LLM calls no longer bypass base Australian-law and anti-injection prompts. Both `_add_base_system_prompts` (system-capable models) and `_merge_system_into_user` (o1/o3 models) now inject base prompts when callers supply no system message. The Chain-of-Verification question step (`verification_chain.py`) previously slipped through this gap.
+- Legislation and UK/International citations now require positive source evidence. The `verify_single_citation()` function used to short-circuit to `exists=True` on pattern match alone, letting fabricated references (e.g. "Imaginary Aliens Act 2099 (Cth)", "[2099] UKSC 999") pass as verified. Category tagging is preserved in audit logs via a `_tag()` helper that prefixes the verification reason.
+- CoVe verification now uses a structured `VERDICT: PASS|FAIL` line instead of substring-matching "no issues found". Quoted or negated occurrences (e.g. `the answer is not "no issues found"`) used to register as PASS. Missing or malformed VERDICT lines fail closed. Prompt at `verification.yaml::verification.cove.inconsistency_detection` updated to require the structured output.
+- Google CSE verification now requires the result link to resolve to a trusted legal host (austlii.edu.au, jade.io, legislation.gov.au, hcourt.gov.au, fedcourt.gov.au, ag.gov.au) AND the citation tokens to appear in title or snippet (not the link, which is attacker-controllable). New `litassist/citation/trust.py` centralises the parsed-hostname check.
+- `citation_context.py` URL trust filters switched from substring matching (`.gov.au` in link, `austlii.edu.au` in link) to the shared parsed-hostname helper. Hostnames like `austlii.edu.au.attacker.invalid` are now rejected.
+- Note: downstream `verify`/`brainstorm` runs will surface more "unverified" citations under the new existence checks. This is the intended outcome; placeholders should replace any unverifiable references.
+
+#### Previous fixes
 - Citation verification no longer flags valid NSW tribunal citations
 - Brainstorm command streaming API errors resolved
 - Barbrief command progress indicator issues fixed

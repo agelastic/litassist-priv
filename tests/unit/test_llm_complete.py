@@ -151,6 +151,89 @@ class TestLLMClientComplete:
         assert called_messages[1]["content"] == "Hello"
 
     @patch("litassist.config.CONFIG")
+    @patch("litassist.llm.client.execute_api_call_with_retry")
+    def test_complete_user_only_injects_base_prompts_system_capable(
+        self, mock_execute, mock_config
+    ):
+        # Regression: user-only calls on system-capable models must still receive
+        # the Australian-law and anti-injection base prompts. Previously the
+        # injection helper looped messages and only modified existing system
+        # entries; user-only input slipped through unguarded, surfaced via
+        # Chain of Verification.
+        mock_config.or_key = "test_key"
+        mock_config.openai_key = "test_key"
+
+        mock_response = Mock()
+        mock_response.choices = [Mock()]
+        mock_response.choices[0].message = Mock(content="Response")
+        mock_response.choices[0].finish_reason = "stop"
+        mock_response.choices[0].error = None
+        mock_response.usage = Mock(
+            total_tokens=50,
+            prompt_tokens=25,
+            completion_tokens=25,
+            model_dump=lambda: {
+                "total_tokens": 50,
+                "prompt_tokens": 25,
+                "completion_tokens": 25,
+            },
+        )
+        mock_execute.return_value = mock_response
+
+        client = LLMClient(model="gpt-4", temperature=0.7)
+        messages = [{"role": "user", "content": "Generate verification questions"}]
+        client.complete(messages)
+
+        called_messages = mock_execute.call_args[0][1]
+        system_payload = "\n".join(
+            m.get("content", "") for m in called_messages if m.get("role") == "system"
+        )
+        user_payload = "\n".join(
+            m.get("content", "") for m in called_messages if m.get("role") == "user"
+        )
+        combined = system_payload + "\n" + user_payload
+        assert "Australian law only" in combined
+        assert "CRITICAL ANTI-INJECTION" in combined
+
+    @patch("litassist.config.CONFIG")
+    @patch("litassist.llm.client.execute_api_call_with_retry")
+    def test_complete_user_only_injects_base_prompts_no_system_model(
+        self, mock_execute, mock_config
+    ):
+        # Regression: o1/o3 models (no system-message support) on user-only input
+        # must also receive base prompts merged into the user message. The
+        # _merge_system_into_user helper previously early-returned when there
+        # were no system messages to merge.
+        mock_config.or_key = "test_key"
+        mock_config.openai_key = "test_key"
+
+        mock_response = Mock()
+        mock_response.choices = [Mock()]
+        mock_response.choices[0].message = Mock(content="Response")
+        mock_response.choices[0].finish_reason = "stop"
+        mock_response.choices[0].error = None
+        mock_response.usage = Mock(
+            total_tokens=50,
+            prompt_tokens=25,
+            completion_tokens=25,
+            model_dump=lambda: {
+                "total_tokens": 50,
+                "prompt_tokens": 25,
+                "completion_tokens": 25,
+            },
+        )
+        mock_execute.return_value = mock_response
+
+        client = LLMClient(model="openai/o1-preview", temperature=0.7)
+        messages = [{"role": "user", "content": "Generate verification questions"}]
+        client.complete(messages)
+
+        called_messages = mock_execute.call_args[0][1]
+        combined = "\n".join(m.get("content", "") for m in called_messages)
+        assert "Australian law only" in combined
+        assert "CRITICAL ANTI-INJECTION" in combined
+
+    @patch("litassist.config.CONFIG")
     @patch("litassist.logging.save_log")
     @patch("litassist.llm.client.execute_api_call_with_retry")
     def test_complete_with_verification_enabled(

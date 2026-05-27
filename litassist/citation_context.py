@@ -15,6 +15,7 @@ from litassist.citation.cache import (
 )
 from litassist.citation.legislation import normalize_citation
 from litassist.citation.austlii import construct_austlii_url
+from litassist.citation.trust import is_trusted_legal_host
 import time
 import re
 import random
@@ -286,7 +287,7 @@ def fetch_citation_context(citations: List[str]) -> tuple[Dict[str, str], List[t
                         cse_comprehensive,
                         f"{citation} PDF",
                         citation,
-                        lambda link: ".gov.au" in link and (".pdf" in link.lower() or "/PDF/" in link),
+                        lambda link: is_trusted_legal_host(link) and (".pdf" in link.lower() or "/PDF/" in link),
                         "citation_pdf_validated",
                         "Validated PDF (rank {rank}/3): {url}",
                         apply_rate_limit=False,
@@ -299,7 +300,7 @@ def fetch_citation_context(citations: List[str]) -> tuple[Dict[str, str], List[t
                         cse_austlii,
                         normalize_citation(citation),
                         citation,
-                        lambda link: "/au/legis/" in link,
+                        lambda link: is_trusted_legal_host(link) and "/au/legis/" in link,
                         "citation_austlii_legis_validated",
                         "Validated AustLII legis (rank {rank}/3): {url}",
                         apply_rate_limit=True,
@@ -312,7 +313,7 @@ def fetch_citation_context(citations: List[str]) -> tuple[Dict[str, str], List[t
                         cse_comprehensive,
                         normalize_citation(citation),
                         citation,
-                        lambda link: ".gov.au" in link,
+                        lambda link: is_trusted_legal_host(link),
                         "citation_comprehensive_legis_validated",
                         "Validated comprehensive legis (rank {rank}/3): {url}",
                         apply_rate_limit=False,
@@ -325,7 +326,7 @@ def fetch_citation_context(citations: List[str]) -> tuple[Dict[str, str], List[t
                         cse_austlii,
                         normalize_citation(citation),
                         citation,
-                        lambda link: "/au/cases/" in link,
+                        lambda link: is_trusted_legal_host(link) and "/au/cases/" in link,
                         "citation_austlii_case_validated",
                         "Validated AustLII case (rank {rank}/3): {url}",
                         apply_rate_limit=True,
@@ -338,7 +339,7 @@ def fetch_citation_context(citations: List[str]) -> tuple[Dict[str, str], List[t
                         cse_comprehensive,
                         normalize_citation(citation),
                         citation,
-                        lambda link: ".gov.au" in link or "austlii.edu.au" in link,
+                        lambda link: is_trusted_legal_host(link),
                         "citation_comprehensive_case_validated",
                         "Validated comprehensive case (rank {rank}/3): {url}",
                         apply_rate_limit=False,

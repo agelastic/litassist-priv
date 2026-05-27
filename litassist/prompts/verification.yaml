@@ -289,7 +289,12 @@ verification:
       {content}
       === END ORIGINAL DOCUMENT ===
 
-      Output: List specific issues found in the ORIGINAL DOCUMENT, or "No issues found" if the document is consistent with the verification answers.
+      Output format (REQUIRED):
+      1. List specific issues found in the ORIGINAL DOCUMENT, one per line. If none, write "Issues: none".
+      2. End your response with a single line in this exact format on its own line:
+         VERDICT: PASS    (when the ORIGINAL DOCUMENT is consistent with every verification answer)
+         VERDICT: FAIL    (when the ORIGINAL DOCUMENT has any inconsistency or error)
+      A missing or malformed VERDICT line will be treated as FAIL.
     
     # USED BY: verification_chain.py run_cove_verification() - Stage 4: Regenerate if issues found
     # LOCATION: verification_chain.py:206
