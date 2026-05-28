@@ -98,11 +98,26 @@ def draft(ctx, documents, query, heavy, noverify, output):
     ]
 
     # Preflight: compare the assembled payload against the configured model's
-    # context window. Char-count is a conservative token proxy
-    # (~3.5 chars/token for legal English).
+    # context window before paying for an oversized LLM call. Char-count is
+    # a conservative token proxy (~3.5 chars/token for English legal text).
+    #
+    # HARD_INPUT_FRACTION = 0.70: caps user-supplied content at 70% of the
+    #   model window, reserving the remaining 30% for the system prompt,
+    #   the draft completion, and (for reasoning models like o3-pro) the
+    #   internal reasoning trace. Going above 70% has empirically caused
+    #   context_length_exceeded errors mid-draft on o3-pro because the
+    #   reasoning trace alone can consume 10-20% of the window. Tighten
+    #   if those errors recur; loosen only when the draft model is swapped
+    #   for one without an internal reasoning budget.
+    # SOFT_WARN_FRACTION = 0.70: of the hard limit (so ~49% of the window).
+    #   This is where we start telling the user "your input is large enough
+    #   that summarising first via `litassist digest --mode summary` would
+    #   probably improve draft quality" -- not a hard error, just a steer.
+    HARD_INPUT_FRACTION = 0.70
+    SOFT_WARN_FRACTION = 0.70  # of HARD, not of the window
     context_window_tokens = LLMClientFactory.get_context_window_for_command("draft")
-    hard_limit_chars = int(context_window_tokens * 3.5 * 0.7)
-    soft_limit_chars = int(hard_limit_chars * 0.7)
+    hard_limit_chars = int(context_window_tokens * 3.5 * HARD_INPUT_FRACTION)
+    soft_limit_chars = int(hard_limit_chars * SOFT_WARN_FRACTION)
     payload_chars = sum(len(m["content"]) for m in messages)
     if payload_chars >= hard_limit_chars:
         raise click.ClickException(
