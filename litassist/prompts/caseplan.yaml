@@ -187,8 +187,8 @@ commands:
          
          ## Phase 16: Draft Feasibility Memorandum (Day 10)
          Purpose: Create comprehensive assessment of all options
-         Commands: litassist draft case_facts.txt outputs/counselnotes_*.txt outputs/strategy_*.txt "Draft comprehensive feasibility memorandum analyzing all property recovery options with risk assessments and recommendations" --diversity 0.8 --verify
-         # Switch rationale: --diversity 0.8 for broad memorandum coverage, --verify for court document quality
+         Commands: litassist draft case_facts.txt outputs/counselnotes_*.txt outputs/strategy_*.txt "Draft comprehensive feasibility memorandum analyzing all property recovery options with risk assessments and recommendations" --verify
+         # Switch rationale: --verify for court document quality
          Cost: $5
          Output feeds: Client advice, litigation planning
          
@@ -277,13 +277,13 @@ commands:
       
       2F. SWITCH EXPLANATION REQUIREMENTS
          - After each command, provide a one-liner explaining technical switch choices
-         - Focus on non-obvious switches: --mode, --comprehensive, --extract, --diversity, --verify
+         - Focus on non-obvious switches: --mode, --comprehensive, --extract, --verify, --heavy
          - Format: # Switch rationale: [brief explanation of switch choices]
          - Examples:
            * # Switch rationale: --comprehensive for novel legal intersection, --mode irac for structured court analysis
            * # Switch rationale: --mode broad for cost strategy exploration, --extract citations for settlement letter
            * # Switch rationale: No --comprehensive (established tort), --extract citations for brief preparation
-           * # Switch rationale: --diversity 0.8 for comprehensive memorandum coverage
+           * # Switch rationale: --verify --heavy for filed-to-court drafts where max thinking effort is warranted
          - Do NOT explain obvious switches like --side, --area, --facts, --budget, filenames
          - Keep explanations under 15 words focusing on WHY not WHAT
 

@@ -52,22 +52,9 @@ system_feedback:
       file_too_large: |
         {file_type} file too large ({size:,} characters). Please provide a file under {max_size:,} characters (~{word_count:,} words).
 
-    # USED BY: retriever.py execute_search()
     external:
       search_error: |
         Search error: {error}
-      
-      embedding_error: |
-        Embedding error: {error}
-      
-      embedding_query_error: |
-        Embedding error for query: {error}
-      
-      pinecone_upsert_error: |
-        Pinecone upsert error: {error}
-      
-      pinecone_retrieval_error: |
-        Pinecone retrieval error: {error}
 
     # USED BY: config.py validate_config()
     config:
@@ -198,10 +185,6 @@ system_feedback:
       #   [TARGET] Generating option {attempt}...
       # regeneration_attempt: |
       #   [RETRY] Regeneration attempt {retry_attempt}: {count} strategies need fixing
-      # will_use_embedding: |
-      #   Will use embedding/retrieval for {doc_path}
-      # will_use_embedding_large: |
-      #   Will use embedding/retrieval for large {doc_path}
 
     # USED BY: command_runner.py finalize_command()  
     completion:
