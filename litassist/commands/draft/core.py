@@ -67,7 +67,8 @@ def draft(ctx, documents, query, heavy, noverify, output):
         query: The specific legal topic or argument to draft.
 
     Raises:
-        click.ClickException: If there are errors with file reading or LLM API calls.
+        click.ClickException: If there are errors with file reading or LLM API calls,
+                             or if the combined context exceeds the model's window.
     """
     # Command start log
     try:
@@ -95,6 +96,30 @@ def draft(ctx, documents, query, heavy, noverify, output):
         {"role": "system", "content": system_prompt},
         {"role": "user", "content": user_prompt},
     ]
+
+    # Preflight: compare the assembled payload against the configured model's
+    # context window. Char-count is a conservative token proxy
+    # (~3.5 chars/token for legal English).
+    context_window_tokens = LLMClientFactory.get_context_window_for_command("draft")
+    hard_limit_chars = int(context_window_tokens * 3.5 * 0.7)
+    soft_limit_chars = int(hard_limit_chars * 0.7)
+    payload_chars = sum(len(m["content"]) for m in messages)
+    if payload_chars >= hard_limit_chars:
+        raise click.ClickException(
+            f"Combined draft context is {payload_chars:,} characters, which "
+            f"exceeds the safe input budget ({hard_limit_chars:,} chars) for "
+            f"{LLMClientFactory.get_model_for_command('draft')}. "
+            f"Run `litassist digest --mode summary <file>` on the largest "
+            f"inputs and feed the summary to draft."
+        )
+    if payload_chars >= soft_limit_chars:
+        from litassist.utils.formatting import warning_message
+        click.echo(warning_message(
+            f"Draft context is {payload_chars:,} characters, approaching the "
+            f"model's input budget ({hard_limit_chars:,} chars). Consider "
+            f"running `litassist digest --mode summary <file>` on the largest "
+            f"inputs first."
+        ))
 
     # Generate draft with LLM
     client = LLMClientFactory.for_command("draft")
@@ -124,6 +149,22 @@ def draft(ctx, documents, query, heavy, noverify, output):
         except Exception:
             pass
     except Exception as e:
+        # Safety net: if the provider rejects on context length despite our
+        # preflight (e.g. token estimate undercounted), reframe with the same
+        # digest guidance instead of leaking a raw provider error.
+        err_text = str(e).lower()
+        if any(s in err_text for s in (
+            "context_length_exceeded",
+            "context length",
+            "maximum context",
+            "too long",
+            "exceeds the model",
+        )):
+            raise click.ClickException(
+                f"Provider rejected draft on context length: {e}\n"
+                f"Run `litassist digest --mode summary <file>` on the largest "
+                f"inputs and feed the summary to draft."
+            )
         raise click.ClickException(f"LLM draft error: {e}")
 
     # Note: Citation verification now handled automatically in LLMClient.complete()
