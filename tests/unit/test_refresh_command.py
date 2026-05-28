@@ -126,6 +126,48 @@ class TestBuildCapabilities:
         assert caps["free/preview-model"]["input_price_per_mtok"] is None
         assert caps["free/preview-model"]["output_price_per_mtok"] is None
 
+    def test_null_context_length_fails_loudly(self):
+        """OpenRouter occasionally lists preview / custom models with
+        `context_length: null`. Silently substituting 0 would cascade
+        into zero-sized chunk budgets everywhere downstream, so the
+        helper must fail with a message naming the offending model
+        (gemini-code-assist PR #77 review)."""
+        or_data = {
+            "data": [
+                {
+                    "id": "broken/preview-model",
+                    "context_length": None,
+                    "pricing": {"prompt": "0.0", "completion": "0.0"},
+                    "supported_parameters": [],
+                }
+            ]
+        }
+        with pytest.raises(click.ClickException) as exc_info:
+            _build_capabilities(["broken/preview-model"], or_data)
+        msg = str(exc_info.value.message)
+        assert "broken/preview-model" in msg
+        assert "missing context_length" in msg
+
+    def test_non_numeric_context_length_fails_loudly(self):
+        """If OpenRouter returns a non-numeric `context_length` (e.g.
+        the string \"unknown\" for a preview model), the loop must
+        surface the bad value rather than blowing up with TypeError
+        mid-iteration."""
+        or_data = {
+            "data": [
+                {
+                    "id": "weird/model",
+                    "context_length": "unknown",
+                    "pricing": {"prompt": "0.0", "completion": "0.0"},
+                    "supported_parameters": [],
+                }
+            ]
+        }
+        with pytest.raises(click.ClickException) as exc_info:
+            _build_capabilities(["weird/model"], or_data)
+        assert "weird/model" in str(exc_info.value.message)
+        assert "non-numeric context_length" in str(exc_info.value.message)
+
 
 @pytest.mark.unit
 @pytest.mark.offline
