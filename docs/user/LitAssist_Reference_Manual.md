@@ -212,8 +212,10 @@ web_scraping:
 
 **Key points:**
 
-- All keys under `openrouter`, `openai`, and `google_cse` are required (except
-  the two optional CSE IDs)
+- All keys under `openrouter` and `google_cse` are required (except the two
+  optional CSE IDs). There is no `openai:` block: OpenRouter is the sole LLM
+  gateway, and provider-level BYOK (e.g. for `openai/o3-pro`) is configured at
+  OpenRouter's integrations dashboard, not in this project's config.
 - The `jina_reader` section is entirely optional
 - The `general`, `citation_validation`, and `web_scraping` sections use sensible
   defaults if omitted
@@ -1898,8 +1900,13 @@ processing time.
 
 ```yaml
 general:
-  max_chars: 200000     # Chunk size for document processing (~50K tokens)
-  rag_max_chars: 8000   # Chunk size for RAG embeddings (~1600 words)
+  max_chars: 200000     # Chunk size for digest / extractfacts / counselnotes
+                        # multi-chunk processing (~50K tokens). Per-command
+                        # chunk size for digest is now derived from the
+                        # model's context window via
+                        # LLMClientFactory.get_input_budget_for_command(),
+                        # so this fallback only applies when no model
+                        # capability data is available.
 ```
 
 ### 6.8 Verification Modes and the --verify / --heavy / --noverify Switches
