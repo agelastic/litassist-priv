@@ -21,6 +21,12 @@ class TestIsTrustedLegalHost:
             "https://www.legislation.gov.au/C2004A02562/2025-02-21/2025-02-21/text/original/pdf",
             "https://www.hcourt.gov.au/judgments/2023.html",
             "https://www.fedcourt.gov.au/digital-law-library/judgments/2023.html",
+            # Schemeless URLs: urlparse used to treat these as paths and
+            # return hostname=None, so a real trusted host was rejected.
+            "austlii.edu.au/foo",
+            "www.austlii.edu.au/au/cases/cth/HCA/1992/23.html",
+            "//jade.io/article/12345",
+            "legislation.gov.au",
         ],
     )
     def test_trusted_hosts_are_accepted(self, url):

@@ -32,6 +32,12 @@ def is_trusted_legal_host(url: str) -> bool:
     if not url:
         return False
     try:
+        # `urlparse` treats schemeless input as a path, so its hostname is
+        # None for inputs like 'austlii.edu.au/foo'. Prepend '//' when no
+        # scheme is present (and the input doesn't already start with '//')
+        # so the hostname is extracted correctly.
+        if "://" not in url and not url.startswith("//"):
+            url = "//" + url
         host = (urlparse(url).hostname or "").lower()
     except (ValueError, AttributeError):
         return False
