@@ -29,7 +29,7 @@ class TestNoVerifyFlag:
         self.mock_client.validate_citations.return_value = []
         self.mock_client.model = "test-model"
 
-    @patch("litassist.commands.extractfacts.document_reader.get_config")
+    @patch("litassist.commands.extractfacts.document_reader.LLMClientFactory.get_input_budget_for_command")
     @patch("litassist.commands.extractfacts.core.LLMClientFactory.for_command")
     @patch("litassist.commands.extractfacts.core.verify_content_if_needed")
     @patch("litassist.commands.extractfacts.core.save_command_output")
@@ -39,9 +39,7 @@ class TestNoVerifyFlag:
     ):
         """Test that extractfacts with --noverify skips standard verification."""
         # Setup mocks
-        mock_config_obj = Mock()
-        mock_config_obj.max_chars = 10000  # Set as integer
-        mock_config.return_value = mock_config_obj
+        mock_config.return_value = 10000
         mock_factory.return_value = self.mock_client
         mock_prompts.get.return_value = "Test prompt"
         mock_prompts.get_format_template.return_value = "Format template"
@@ -67,7 +65,7 @@ class TestNoVerifyFlag:
         finally:
             Path(test_file).unlink()
 
-    @patch("litassist.commands.extractfacts.document_reader.get_config")
+    @patch("litassist.commands.extractfacts.document_reader.LLMClientFactory.get_input_budget_for_command")
     @patch("litassist.commands.extractfacts.core.LLMClientFactory.for_command")
     @patch("litassist.commands.extractfacts.core.verify_content_if_needed")
     @patch("litassist.commands.extractfacts.core.save_command_output")
@@ -77,9 +75,7 @@ class TestNoVerifyFlag:
     ):
         """Test that extractfacts without --noverify uses standard verification."""
         # Setup mocks
-        mock_config_obj = Mock()
-        mock_config_obj.max_chars = 10000  # Set as integer
-        mock_config.return_value = mock_config_obj
+        mock_config.return_value = 10000
         mock_factory.return_value = self.mock_client
         mock_prompts.get.return_value = "Test prompt"
         mock_prompts.get_format_template.return_value = "Format template"
@@ -236,7 +232,7 @@ class TestVerificationDefaults:
         self.mock_client.verify.return_value = ("Content", "model")
         self.mock_client.validate_citations.return_value = []
 
-    @patch("litassist.commands.extractfacts.document_reader.get_config")
+    @patch("litassist.commands.extractfacts.document_reader.LLMClientFactory.get_input_budget_for_command")
     @patch("litassist.commands.extractfacts.core.LLMClientFactory.for_command")
     @patch("litassist.commands.extractfacts.core.verify_content_if_needed")
     @patch("litassist.commands.extractfacts.core.save_command_output")
@@ -245,9 +241,7 @@ class TestVerificationDefaults:
         self, mock_prompts, mock_save, mock_verify, mock_factory, mock_config
     ):
         """Test that extractfacts enables verification by default."""
-        mock_config_obj = Mock()
-        mock_config_obj.max_chars = 10000
-        mock_config.return_value = mock_config_obj
+        mock_config.return_value = 10000
         mock_factory.return_value = self.mock_client
         mock_prompts.get.return_value = "Test"
         mock_prompts.get_format_template.return_value = "Format"

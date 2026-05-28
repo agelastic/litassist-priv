@@ -31,16 +31,14 @@ class TestCommandParameterPropagation:
 
     @patch("litassist.llm.factory.LLMClientFactory.for_command")
     @patch("litassist.utils.file_ops.read_document")
-    @patch("litassist.commands.extractfacts.document_reader.get_config")
+    @patch("litassist.commands.extractfacts.document_reader.LLMClientFactory.get_input_budget_for_command")
     def test_extractfacts_command_parameters(
         self, mock_config, mock_read, mock_factory
     ):
         """Test extractfacts command uses correct model and parameters."""
         mock_factory.return_value = self.mock_client
         mock_read.return_value = "Test document content"
-        mock_config_obj = Mock()
-        mock_config_obj.max_chars = 1000  # Add missing config attribute
-        mock_config.return_value = mock_config_obj
+        mock_config.return_value = 1000
 
         with self.runner.isolated_filesystem():
             with open("test.pdf", "w") as f:
