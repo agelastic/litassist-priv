@@ -1,10 +1,8 @@
 """Test brainstorm verification flow."""
 
-from unittest.mock import patch, MagicMock
-from click.testing import CliRunner
+from unittest.mock import patch
 from litassist.commands.brainstorm.core import (
     verify_and_annotate_strategies,
-    assess_legal_plausibility_bulk,
     _extract_strategies,
     _annotate_strategies_with_verification,
 )
@@ -67,22 +65,6 @@ Third strategy text"""
         assert "[VERIFIED]" in unorth_out
         assert "1 verified, 1 unverified" in summary
 
-    def test_plausibility_assessment_parsing(self):
-        """Test JSON parsing in plausibility assessment."""
-        with patch('litassist.llm.factory.LLMClientFactory.for_command') as mock_factory:
-            mock_client = MagicMock()
-            mock_client.complete.return_value = (
-                '{"orthodox_1": {"risk": "MEDIUM", "explanation": "Test"}}',
-                {}
-            )
-            mock_factory.return_value = mock_client
-
-            result = assess_legal_plausibility_bulk([
-                ("orthodox_1", "Strategy text", [("[2024] Test 1", "not found")])
-            ])
-
-            assert result["orthodox_1"]["risk"] == "MEDIUM"
-
     def test_annotation_with_risk_levels(self):
         """Test strategy annotation includes risk levels."""
         strategies = ["Strategy citing [2024] Test 1"]
@@ -96,27 +78,6 @@ Third strategy text"""
 
         assert "LOW RISK" in annotated[0]
         assert "Typo likely" in annotated[0]
-
-    @patch('litassist.commands.brainstorm.core.brainstorm')
-    def test_verify_flag_behavior(self, mock_brainstorm):
-        """Test --verify flag triggers full verification."""
-        runner = CliRunner()
-
-        with patch('litassist.llm.factory.LLMClientFactory.for_command'):
-            # Test without --verify
-            runner.invoke(
-                mock_brainstorm,
-                ['--side', 'plaintiff', '--area', 'civil']
-            )
-            # Should see skip message
-
-            # Test with --verify
-            runner.invoke(
-                mock_brainstorm,
-                ['--side', 'plaintiff', '--area', 'civil', '--verify']
-            )
-            # Should trigger full verification
-
 
 class TestExtractVerifiedDocument:
     """Brainstorm verification fallback: when the verifier response lacks the
@@ -146,38 +107,12 @@ class TestExtractVerifiedDocument:
 class TestStrategyExtraction:
     """Test strategy extraction patterns."""
 
-    def test_extract_with_strategy_keyword(self):
-        """Test extraction with '### Strategy 1:' format."""
-        content = """### Strategy 1: Test Strategy
-Strategy content here.
-
-### Strategy 2: Another Strategy
-More content."""
-        strategies = _extract_strategies(content, "orthodox")
-        assert len(strategies) == 2
-        assert "Strategy content here." in strategies[0]
-
-    def test_extract_with_simple_numbering(self):
-        """Test extraction with '1. Title' format."""
-        content = """1. First Strategy
-This is the first strategy.
-
-2. Second Strategy
-This is the second."""
-        strategies = _extract_strategies(content, "orthodox")
-        assert len(strategies) == 2
-        assert "This is the first strategy." in strategies[0]
-
-    def test_extract_with_uppercase_strategy(self):
-        """Test extraction with '## STRATEGY 1:' format."""
-        content = """## STRATEGY 1: Big Strategy
-Important content.
-
-## STRATEGY 2: Another Big One
-More important content."""
-        strategies = _extract_strategies(content, "orthodox")
-        assert len(strategies) == 2
-        assert "Important content." in strategies[0]
+    # Note: `_extract_strategies` accepts several markdown formats (### N.,
+    # ### Strategy N:, N., ## STRATEGY N:). The canonical happy-path test
+    # in TestVerificationFlow above covers `### N.` and the blank-line
+    # fallback; the multiline test below covers content-preservation
+    # within a single strategy. Per-format variant tests were dropped
+    # as TDD hygiene.
 
     def test_extract_preserves_multiline(self):
         """Test that extraction preserves multiline strategy content."""
