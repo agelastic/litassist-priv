@@ -9,7 +9,6 @@ import click
 import time
 import os
 from concurrent.futures import ThreadPoolExecutor
-from typing import Any, cast
 from urllib.parse import urlsplit
 from litassist.logging import save_command_output, log_task_event
 from litassist.utils.formatting import (
@@ -332,27 +331,28 @@ class LookupProcessor:
         return prompt
 
     def get_llm_client(self, mode, comprehensive):
-        """Get appropriately configured LLM client."""
-        # Set parameters based on mode and comprehensive flag
-        if comprehensive:
-            if mode == "irac":
-                overrides = {
-                    "temperature": 0,
-                    "top_p": 0.05,
-                }  # Maximum precision
-            else:  # broad
-                overrides = {
-                    "temperature": 0.3,
-                    "top_p": 0.7,
-                }  # Controlled creativity
-        else:
-            # Standard parameters
-            if mode == "irac":
-                overrides = {"temperature": 0, "top_p": 0.1}
-            else:
-                overrides = {"temperature": 0.5, "top_p": 0.9}
+        """Get appropriately configured LLM client.
 
-        return LLMClientFactory.for_command("lookup", **cast(Any, overrides))
+        The mode (irac | broad) selects the YAML sub-type
+        (`lookup-irac` | `lookup-broad`) in
+        `litassist/llm/model_configs.yaml`. All LLM parameters live there;
+        this function only routes by switch.
+
+        IMPORTANT: if a new switch is introduced that should change LLM
+        parameters (a third mode, an effort tier, etc.), add the
+        corresponding `lookup-<sub_type>` entry to `model_configs.yaml`
+        and extend the routing logic here. Do NOT reintroduce hardcoded
+        parameter overrides in this file -- the factory must resolve
+        parameters from YAML so they can be tuned without code edits.
+
+        The `comprehensive` flag still controls search depth (number of
+        CSE queries, result count) in `litassist/commands/lookup/search.py`
+        but no longer overrides LLM sampling parameters; the previous
+        comprehensive-vs-standard tweak was collapsed into the mode
+        baseline.
+        """
+        del comprehensive  # No LLM-parameter effect; see docstring.
+        return LLMClientFactory.for_command("lookup", mode)
 
     def build_system_prompt(self, extract, comprehensive):
         """Build the system prompt based on mode and options."""

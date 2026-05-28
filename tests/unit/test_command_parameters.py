@@ -179,10 +179,9 @@ class TestCommandParameterPropagation:
         # Check command executed successfully
         assert result.exit_code == 0
 
-        # Verify factory was called with correct command (lookup sets temperature/top_p based on mode)
-        mock_factory.assert_called_once_with(
-            "lookup", temperature=0, top_p=0.1
-        )
+        # lookup defaults to --mode irac; processors.get_llm_client routes the
+        # mode to the YAML sub-type so the factory resolves `lookup-irac`.
+        mock_factory.assert_called_once_with("lookup", "irac")
 
         # Check configuration
         from litassist.llm.factory import LLMClientFactory
@@ -190,6 +189,10 @@ class TestCommandParameterPropagation:
         configs = LLMClientFactory.list_configurations()
         assert configs["lookup"].get("model")
         assert "enforce_citations" in configs["lookup"]
+        assert configs["lookup-irac"]["temperature"] == 0
+        assert configs["lookup-irac"]["top_p"] == 0.1
+        assert configs["lookup-broad"]["temperature"] == 0.4
+        assert configs["lookup-broad"]["top_p"] == 0.8
 
     @patch("litassist.llm.factory.LLMClientFactory.for_command")
     @patch("litassist.utils.file_ops.read_document")

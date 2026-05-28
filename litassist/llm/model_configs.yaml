@@ -87,6 +87,30 @@ lookup:
   enforce_citations: false
   disable_tools: true
 
+# Lookup sub-types resolved by mode in litassist/commands/lookup/processors.py.
+# IMPORTANT: whenever a new switch is added to the lookup command that should
+# affect LLM parameters (a third mode beyond irac/broad, an effort tier, a
+# search-depth toggle, etc.), define the corresponding lookup-<sub_type>
+# entries here. Parameters do NOT live in Python -- the factory resolves
+# them by command-sub_type lookup against this file.
+lookup-irac:
+  model: "google/gemini-3.5-flash"
+  temperature: 0
+  top_p: 0.1                # tight sampling for structured Issue / Rule / Application / Conclusion analysis
+  thinking_effort: "low"
+  verbosity: "low"
+  enforce_citations: false
+  disable_tools: true
+
+lookup-broad:
+  model: "google/gemini-3.5-flash"
+  temperature: 0.4
+  top_p: 0.8                # broader sampling for exploratory case-law synthesis
+  thinking_effort: "low"
+  verbosity: "low"
+  enforce_citations: false
+  disable_tools: true
+
 verification:
   model: "openai/gpt-5.5"
   temperature: 0.2
