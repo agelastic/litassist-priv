@@ -372,7 +372,9 @@ The `counselnotes` command uses a preconfigured LLM setup optimised for strategi
 - **Reasoning Effort**: `high` for comprehensive strategic insights
 - **Verification**: Enabled for automatic citation verification and legal accountability
 
-This configuration requires BYOK (Bring Your Own Key) setup through OpenRouter.
+This configuration requires OpenAI BYOK setup through OpenRouter integrations.
+See `LitAssist_User_Guide.md` > "BYOK Setup" for the required OpenRouter
+dashboard steps.
 
 ## Support and Resources
 

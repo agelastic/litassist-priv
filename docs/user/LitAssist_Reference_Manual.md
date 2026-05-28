@@ -254,8 +254,16 @@ For step-by-step setup instructions, see
 ### 2.5 BYOK (Bring Your Own Key) for o3-pro
 
 Several commands use OpenAI's o3-pro model, which requires Bring Your Own Key
-(BYOK) through OpenRouter. When a BYOK command runs, OpenRouter passes the
-request directly to OpenAI using the `openai.api_key` from your config.yaml.
+(BYOK) through OpenRouter. LitAssist sends LLM requests using
+`openrouter.api_key`; setting `openai.api_key` locally does not configure
+OpenRouter BYOK by itself.
+
+To enable o3-pro:
+
+1. Put your OpenRouter API key in `openrouter.api_key`.
+2. Open `https://openrouter.ai/settings/integrations`.
+3. Add an OpenAI provider key in the OpenRouter integrations dashboard.
+4. Keep `openai.api_key` in `config.yaml` for non-routing OpenAI uses such as embeddings.
 
 **Commands requiring BYOK:**
 
@@ -267,8 +275,9 @@ request directly to OpenAI using the `openai.api_key` from your config.yaml.
 | `counselnotes` | Full analysis |
 | `barbrief` | Brief generation |
 
-If `openai.api_key` is set to a placeholder value, these commands will fail with
-a clear error message. Commands that use only non-BYOK models work without BYOK.
+If the OpenAI provider key is missing from OpenRouter integrations, o3-pro
+commands will fail with an authentication or model-access error. Commands that
+use only non-BYOK models work without BYOK.
 
 ### 2.6 Verifying Connectivity
 
@@ -2068,8 +2077,9 @@ All LLM calls route through OpenRouter's API. Model names follow the
 - `anthropic/claude-opus-4.7`
 
 OpenRouter handles authentication, rate limiting, and provider routing. BYOK
-commands (those using o3-pro) pass requests directly to OpenAI via OpenRouter
-using the `openai.api_key` from config.yaml.
+commands (those using o3-pro) require an OpenAI provider key added in the
+OpenRouter integrations dashboard; the local `openai.api_key` is not the bearer
+token for LLM requests.
 
 The `disable_tools: true` parameter is set on all model configurations to prevent
 models from attempting tool calls, which is not supported in LitAssist's pipeline.
@@ -2336,8 +2346,9 @@ BYOK required for o3-pro
 ```
 
 Commands using o3-pro (draft, counselnotes, barbrief, brainstorm analysis,
-strategy analysis) require a valid OpenAI API key. Set `openai.api_key` in
-config.yaml to your actual OpenAI key, not a placeholder.
+strategy analysis) require an OpenAI provider key in OpenRouter integrations.
+Open `https://openrouter.ai/settings/integrations`, add the OpenAI key there,
+and confirm `openrouter.api_key` is valid locally.
 
 **OpenRouter connection failures:**
 

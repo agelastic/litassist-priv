@@ -110,7 +110,7 @@ to its job. Six model families serve distinct roles across 28 command configurat
 - **Purpose**: Standard and heavy verification stages
 - **Key Features**: 6x fewer factual errors, 80% fewer hallucinations than o3
 - **Parameters**: GPT-5 family parameters; sampling params are filtered out before API calls
-- **BYOK**: Required on OpenRouter (Tier 4+ API key)
+- **BYOK**: Not required on OpenRouter
 - **Commands**: verification, verification-heavy, verify-soundness-heavy, verify-reasoning-heavy, cove-answers, cove-answers-heavy
 
 #### OpenAI o3-pro
@@ -169,7 +169,7 @@ MODEL_PATTERNS = {
 - ✅ **Allowed Parameters**: reasoning, verbosity, max_completion_tokens, structured outputs, tool fields
 - ✅ **Thinking Mode**: Supports `thinking_effort` parameter
 - ❌ **Sampling Parameters**: temperature and top_p are filtered out
-- ⚠️ **BYOK Required**: Must configure OpenAI API key in OpenRouter
+- **Access**: Standard OpenRouter model
 
 ### OpenRouter Configuration
 
@@ -180,8 +180,11 @@ openrouter:
   api_key: "your-openrouter-api-key"
 
 openai:
-  api_key: "your-openai-api-key"  # BYOK for o3-pro, GPT-5
+  api_key: "your-openai-api-key"  # Local OpenAI uses; does not configure OpenRouter BYOK
 ```
+
+For o3-pro, add the OpenAI provider key in the OpenRouter integrations
+dashboard: https://openrouter.ai/settings/integrations
 
 **For detailed configuration**, see `MODEL_CONFIGURATION.md`:
 - Complete COMMAND_CONFIGS dictionary

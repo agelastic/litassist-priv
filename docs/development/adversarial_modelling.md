@@ -80,7 +80,7 @@ Models available for adversarial features, routed through OpenRouter (BYOK avail
 |---|---|---|---|
 | GPT-5.2 | 400K | GDPval-AA 1462 Elo, GPQA Diamond 92-93%, LongBench v2 54.5% | $1.75 / $14 |
 | GPT-5.2 Pro | 400K | xhigh reasoning (5-10 min/decision), ARC-AGI-2 54.2%, newest deep-reasoning option | $21 / $168 |
-| GPT-5.5 | 400K | Used in project for verification-heavy (BYOK) | pricing varies |
+| GPT-5.5 | 400K | Used in project for verification-heavy; standard OpenRouter model | pricing varies |
 | o3-pro | 200K | Extended thinking, used in project for drafting/strategy (BYOK). Not deprecated but older (June 2025) | $20 / $80 |
 
 ### Google

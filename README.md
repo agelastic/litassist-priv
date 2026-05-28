@@ -141,19 +141,24 @@ general:
 
 ### OpenRouter Configuration
 
-OpenRouter is the primary API gateway for all LLM calls. Some models require BYOK (Bring Your Own Key) setup:
+OpenRouter is the primary API gateway for all LLM calls. LitAssist sends LLM
+requests with `openrouter.api_key`; it does not send `openai.api_key` as the
+request bearer token. Some OpenRouter models require a provider key attached in
+OpenRouter's integrations dashboard.
 
 **BYOK status:**
-- OpenAI o3-pro (draft, barbrief, counselnotes commands)
+- OpenAI o3-pro requires an OpenAI provider key in OpenRouter integrations (draft, barbrief, counselnotes, brainstorm-analysis, strategy-analysis)
 - OpenAI GPT-5.5 currently runs as a standard OpenRouter model
 - Claude Sonnet 4.6 available without BYOK
 
 **Quick BYOK Setup:**
-1. Go to [OpenRouter Settings](https://openrouter.ai/settings/integrations)
-2. Add your API keys under integrations:
-   - **OpenAI**: Requires API access for o3-pro where BYOK routing is used
-   - **Anthropic**: Any valid API key (Claude models available without BYOK on OpenRouter)
-3. Save and verify model availability on your dashboard
+1. Create or confirm your OpenRouter API key and put it in `openrouter.api_key`.
+2. Go to [OpenRouter Settings](https://openrouter.ai/settings/integrations).
+3. Add an OpenAI provider key under integrations for o3-pro access.
+4. Save and verify model availability on your OpenRouter dashboard.
+5. Keep `openai.api_key` in `config.yaml` for non-routing OpenAI uses such as embeddings; setting it locally does not attach the key to OpenRouter.
+
+Anthropic models currently run without BYOK on OpenRouter.
 
 ### Model Configuration & BYOK Requirements
 

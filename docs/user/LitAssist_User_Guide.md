@@ -590,10 +590,10 @@ Current model assignments are defined in `litassist/llm/model_configs.yaml`. Reg
 | draft | o3-pro | Yes |
 | counselnotes | o3-pro | Yes |
 | barbrief | o3-pro | Yes |
-| verification (standard) | GPT-5.5 | Yes |
-| verification (heavy) | GPT-5.5 | Yes |
+| verification (standard) | GPT-5.5 | No |
+| verification (heavy) | GPT-5.5 | No |
 | verify-soundness | Claude Opus 4.7 | No |
-| verify-soundness (heavy) | GPT-5.5 | Yes |
+| verify-soundness (heavy) | GPT-5.5 | No |
 | verify-reasoning | Claude Sonnet 4.6 | No |
 | CoVe questions/verify/final | Claude Sonnet 4.6 | No |
 | CoVe answers | GPT-5.5 | No |
@@ -605,9 +605,16 @@ All calls route through OpenRouter. Model assignments are defined in
 ### BYOK Setup
 
 Commands using o3-pro require an OpenAI API key configured for Bring Your Own
-Key (BYOK) through OpenRouter. Set `openai.api_key` in config.yaml to your
-OpenAI API key. OpenRouter passes o3-pro requests directly to OpenAI using
-your key.
+Key (BYOK) through OpenRouter. LitAssist sends all LLM requests to OpenRouter
+using `openrouter.api_key`; setting `openai.api_key` locally does not attach
+that key to OpenRouter.
+
+To enable o3-pro:
+
+1. Put your OpenRouter API key in `openrouter.api_key`.
+2. Open `https://openrouter.ai/settings/integrations`.
+3. Add an OpenAI provider key in the OpenRouter integrations dashboard.
+4. Keep `openai.api_key` in `config.yaml` for non-routing OpenAI uses such as embeddings.
 
 ---
 
@@ -715,8 +722,9 @@ BYOK required for o3-pro
 ```
 
 Commands using o3-pro (draft, counselnotes, barbrief, brainstorm-analysis,
-strategy-analysis) require a valid OpenAI API key. Set `openai.api_key` in
-config.yaml to your actual OpenAI key (not a placeholder).
+strategy-analysis) require an OpenAI provider key in OpenRouter integrations.
+Open `https://openrouter.ai/settings/integrations`, add the OpenAI key there,
+and confirm `openrouter.api_key` is valid locally.
 
 ### Supported Input File Formats
 

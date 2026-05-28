@@ -9,7 +9,9 @@ This document provides **detailed technical configuration** for LitAssist's LLM 
 
 LitAssist uses task-based model selection, matching each command to the model best suited for its job. Six model families serve distinct roles across 28 command configurations. The source of truth is `litassist/llm/model_configs.yaml`; this document explains that file.
 
-All models are accessed through OpenRouter as the primary routing service. o3-pro requires BYOK (Bring Your Own Key); GPT-5.5 currently runs as a standard OpenRouter model.
+All models are accessed through OpenRouter as the primary routing service.
+o3-pro requires provider-key setup through OpenRouter integrations. GPT-5.5
+currently runs as a standard OpenRouter model.
 
 **Related Documentation:**
 - **LLM_MODEL_STRATEGY.md** - Strategic overview, improvements, future opportunities
@@ -299,7 +301,7 @@ cove-final:
 
 **Primary Routing**: All models route through OpenRouter
 - Centralized API management
-- Multiple BYOK configurations attached
+- OpenAI BYOK integration required in OpenRouter for o3-pro
 - Access to premium models
 - Enhanced rate limits and capabilities
 
@@ -310,8 +312,11 @@ openrouter:
   api_key: "your-openrouter-api-key"
   
 openai:
-  api_key: "your-openai-api-key"  # Required for o3-pro BYOK
+  api_key: "your-openai-api-key"  # Local OpenAI uses; does not configure OpenRouter BYOK
 ```
+
+For o3-pro, add the OpenAI provider key in the OpenRouter integrations
+dashboard: https://openrouter.ai/settings/integrations
 
 ## Retry Logic Configuration
 
@@ -528,8 +533,8 @@ To add a new model, simply:
 - Check model-specific restrictions in llm.py
 
 ### Issue: BYOK Required
-- Ensure both OpenRouter AND provider API keys configured
-- Verify BYOK setup in OpenRouter dashboard
+- Ensure `openrouter.api_key` is configured locally
+- Add the OpenAI provider key in OpenRouter integrations for o3-pro
 - Check provider-specific requirements
 
 ## Best Practices
