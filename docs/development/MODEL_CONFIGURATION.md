@@ -506,10 +506,10 @@ To add a new model, simply:
 "strategy": "openai/o5-pro"  # Works automatically!
 ```
 
-**Adding a new Claude model**:
+**Adding a model from a new provider**:
 ```python
 # Just use it:
-"digest": "anthropic/claude-5-opus"  # Automatically gets Claude parameters
+"digest": "zai/glm-4.7"  # Pattern-routed by model_profiles.py classifier
 ```
 
 ### Benefits

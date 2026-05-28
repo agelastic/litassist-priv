@@ -14,7 +14,7 @@ from litassist.utils.file_ops import read_document
 # Model-aware chunk sizing - optimized for modern long-context models
 MODEL_CHUNK_LIMITS = {
     "google": 500000,  # ~150k tokens, 15% of Gemini 2.5 Pro's 1M context
-    "anthropic": 500000,  # ~150k tokens, 75% of Claude Sonnet's 200k context
+    "anthropic": 500000,  # ~150k tokens, leaves headroom on the active anthropic/claude-sonnet-4.6 (1M) and claude-opus-4.7 (1M) windows
     "openai": 500000,  # ~150k tokens, leaves headroom on the active openai/o3-pro (200k) and openai/gpt-5.5 (~1M) windows
     "x-ai": 500000,  # ~150k tokens, safe for Grok's context window
 }

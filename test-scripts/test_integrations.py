@@ -118,8 +118,8 @@ def test_openrouter_completion():
             base_url=OR_BASE
         )
 
-        # Use actual LitAssist model (not OpenAI model through OpenRouter)
-        model = "anthropic/claude-3-sonnet"
+        # Use actual LitAssist model (routed through OpenRouter)
+        model = "anthropic/claude-sonnet-4.6"
 
         # Simple legal question
         messages = [

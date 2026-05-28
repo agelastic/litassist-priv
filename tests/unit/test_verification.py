@@ -139,7 +139,7 @@ class TestCommandVerificationIntegration:
         from litassist.llm.client import LLMClient
 
         # Create a client like extractfacts does
-        client = LLMClient("anthropic/claude-3-sonnet", temperature=0, top_p=0.15)
+        client = LLMClient("anthropic/claude-sonnet-4.6", temperature=0, top_p=0.15)
         client.command_context = "extractfacts"
 
         # extractfacts should always auto-verify regardless of input
