@@ -5,6 +5,8 @@ Last updated: 18/02/2026
 **Prerequisite:** P0A-1 (Matter Memory Module)
 **Confidence:** 0.85
 
+**Current-state note:** This is an aspirational design reference. Active command registrations are in `litassist/commands/__init__.py`; active model assignments are in `litassist/llm/model_configs.yaml`. Model recommendations below must be validated by an eval harness before implementation.
+
 This document is the extended design reference for adversarial modelling in LitAssist. The ROADMAP entries P1-9 (Opponent Profiling System, 8-10h) and P3-22 (Simulated-Adversary Drafts, 8-10h) contain the scoped implementation plans derived from this design.
 
 ---
@@ -22,15 +24,15 @@ Before describing the full adversarial modelling vision, note what already exist
 **Orthodox/Unorthodox Strategy Generation (PRODUCTION)**
 - `litassist brainstorm` generates 15 orthodox (conservative, precedent-based) + 15 unorthodox (creative) strategies
 - These are YOUR strategies for YOUR side, not opponent simulation
-- Uses Claude Sonnet 4.6 (orthodox) + Grok-4 (unorthodox) with different temperature settings
+- Uses Claude Sonnet 4.6 (orthodox) + Grok 4.20 (unorthodox) with different temperature settings
 - Analysis/selection stage uses o3-pro with `thinking_effort: high`
 - See: `litassist/commands/brainstorm/`
 
 **Chain of Verification (CoVe) - PRODUCTION**
 - `litassist verify-cove` implements 4-stage verification loop
 - Questions --> Answers --> Critical verification --> Synthesis
-- Uses a multi-model pipeline: Claude Sonnet 4.6 for question generation and verification stages, GPT-5.1 for answer generation (per `model_configs.yaml`)
-- Soundness verification uses Claude Opus 4.1
+- Uses a multi-model pipeline: Claude Sonnet 4.6 for question generation and verification stages, GPT-5.5 for answer generation (per `model_configs.yaml`)
+- Soundness verification uses Claude Opus 4.7
 - See: `litassist/commands/verify_cove/`
 
 **Citation Verification - PRODUCTION**
@@ -78,7 +80,7 @@ Models available for adversarial features, routed through OpenRouter (BYOK avail
 |---|---|---|---|
 | GPT-5.2 | 400K | GDPval-AA 1462 Elo, GPQA Diamond 92-93%, LongBench v2 54.5% | $1.75 / $14 |
 | GPT-5.2 Pro | 400K | xhigh reasoning (5-10 min/decision), ARC-AGI-2 54.2%, newest deep-reasoning option | $21 / $168 |
-| GPT-5-pro | 400K | Used in project for verification-heavy (BYOK) | ~$1.25 / $10 |
+| GPT-5.5 | 400K | Used in project for verification-heavy; standard OpenRouter model | pricing varies |
 | o3-pro | 200K | Extended thinking, used in project for drafting/strategy (BYOK). Not deprecated but older (June 2025) | $20 / $80 |
 
 ### Google
@@ -94,8 +96,8 @@ Models available for adversarial features, routed through OpenRouter (BYOK avail
 
 | Model | Context | Key Benchmarks | Cost (input / output per M tokens) |
 |---|---|---|---|
-| Grok 4 | 256K | Creative/divergent reasoning, used in project for unorthodox brainstorming | $3 / $15 |
-| Grok 4.1 Fast | 2M | 65% fewer hallucinations vs Grok 4, near-Grok-4 quality at 1/15th cost | $0.20 / $0.50 |
+| Grok 4.20 | 256K | Creative/divergent reasoning, used in project for unorthodox brainstorming | $3 / $15 |
+| Grok 4.1 Fast | 2M | 65% fewer hallucinations vs Grok 4.20, near-Grok 4.20 quality at 1/15th cost | $0.20 / $0.50 |
 
 ### Open-source (via OpenRouter)
 
@@ -324,7 +326,7 @@ Given your draft (letter, submissions, affidavit), the tool can:
 * Model recommendations. Legal reasoning quality is critical -- these reviews inform documents before filing. Mirrors the project's existing use of GPT-5.x for verification tasks:
   * Fast: `openai/gpt-5.2` ($1.75/$14, GDPval-AA 1462 Elo, strong reasoning and structured output).
   * Balanced: `google/gemini-3-pro-preview` ($2/$12, 1M context holds full draft + profile + analysis, BigLaw Bench 87.9%).
-  * Max: `anthropic/claude-opus-4.6` with `thinking_effort: high` ($5/$25, GDPval-AA 1606 Elo, BigLaw Bench 90.2%). For filed-to-court documents, dual verification via P2-19 (e.g., Opus 4.6 + `openai/gpt-5-pro`) is available.
+  * Max: `anthropic/claude-opus-4.6` with `thinking_effort: high` ($5/$25, GDPval-AA 1606 Elo, BigLaw Bench 90.2%). For filed-to-court documents, dual verification via P2-19 (e.g., Opus 4.6 + `openai/gpt-5.5`) is available.
 
 * Structured output for the heat map: `{paragraphs: [{number, risk_level: "high"|"medium"|"low", attack_vector, opponent_reaction, suggested_rewrite}]}`. Enforced via `response_format`.
 

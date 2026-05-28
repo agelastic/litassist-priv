@@ -128,7 +128,7 @@ caseplan --> extractfacts --> lookup --> brainstorm --> strategy --> draft --> v
 - Python 3.10 or later
 - API keys for:
   - **OpenRouter** (required): Routes all LLM calls
-  - **OpenAI** (required): Embeddings and BYOK for o3-pro commands
+  - **OpenAI** (required): Embeddings and BYOK for o3-pro stages
   - **Google Custom Search** (required): Citation verification and legal research
   - **Pinecone** (required): Vector database for RAG pipeline
   - **Jina Reader** (optional): Fallback transport for JavaScript-rendered pages and Cloudflare-blocked content. The primary fetch transport is `curl_cffi` (no key required); a Jina API key enables the fallback path with higher rate limits.
@@ -181,7 +181,7 @@ openrouter:
   api_base: "https://openrouter.ai/api/v1"    # Default, rarely changed
 
 # --- OpenAI (required) ---
-# Used for embeddings (RAG pipeline) and BYOK for o3-pro commands
+# Used for embeddings (RAG pipeline) and BYOK for o3-pro stages
 openai:
   api_key: "sk-your-openai-key-here"          # Required
   embedding_model: "text-embedding-3-small"    # Default embedding model
@@ -254,8 +254,16 @@ For step-by-step setup instructions, see
 ### 2.5 BYOK (Bring Your Own Key) for o3-pro
 
 Several commands use OpenAI's o3-pro model, which requires Bring Your Own Key
-(BYOK) through OpenRouter. When a BYOK command runs, OpenRouter passes the request
-directly to OpenAI using the `openai.api_key` from your config.yaml.
+(BYOK) through OpenRouter. LitAssist sends LLM requests using
+`openrouter.api_key`; setting `openai.api_key` locally does not configure
+OpenRouter BYOK by itself.
+
+To enable o3-pro:
+
+1. Put your OpenRouter API key in `openrouter.api_key`.
+2. Open `https://openrouter.ai/settings/integrations`.
+3. Add an OpenAI provider key in the OpenRouter integrations dashboard.
+4. Keep `openai.api_key` in `config.yaml` for non-routing OpenAI uses such as embeddings.
 
 **Commands requiring BYOK:**
 
@@ -267,8 +275,9 @@ directly to OpenAI using the `openai.api_key` from your config.yaml.
 | `counselnotes` | Full analysis |
 | `barbrief` | Brief generation |
 
-If `openai.api_key` is set to a placeholder value, these commands will fail with
-a clear error message. All other commands work without BYOK.
+If the OpenAI provider key is missing from OpenRouter integrations, o3-pro
+commands will fail with an authentication or model-access error. Commands that
+use only non-BYOK models work without BYOK.
 
 ### 2.6 Verifying Connectivity
 
@@ -774,7 +783,7 @@ litassist extractfacts <files>... [OPTIONS]
 | Option | Type | Description |
 |--------|------|-------------|
 | `--verify` | flag | Enable self-critique verification pass (auto-enabled) |
-| `--heavy` | flag | Use GPT-5 Pro for verification instead of GPT-5.1 |
+| `--heavy` | flag | Use GPT-5.5 with maximum reasoning effort for verification |
 | `--noverify` | flag | Skip verification (not recommended for legal work) |
 | `--output` | text | Custom output filename prefix |
 
@@ -801,12 +810,12 @@ and `barbrief`. See Section 6.3 for the full explanation of each heading.
 Verification is auto-enabled by default. After extraction, a self-critique pass
 reviews the output for accuracy, completeness, and citation quality.
 
-- Standard verification uses GPT-5.1
-- Heavy verification (`--heavy`) uses GPT-5 Pro with maximum reasoning effort
+- Standard verification uses GPT-5.5
+- Heavy verification (`--heavy`) uses GPT-5.5 with maximum reasoning effort
 - Skip verification with `--noverify` (acceptable for iteration, not for final
   outputs)
 
-**Models:** Claude Sonnet 4.6 (extraction), GPT-5.1 or GPT-5 Pro (verification)
+**Models:** Claude Sonnet 4.6 (extraction), GPT-5.5 (verification)
 
 **Smith v Jones example:**
 
@@ -895,7 +904,7 @@ litassist brainstorm [OPTIONS]
    files are provided, these strategies are informed by actual authorities found
    via lookup.
 
-2. **Unorthodox strategies** (Grok-4): 15 creative, lateral-thinking approaches
+2. **Unorthodox strategies** (Grok 4.20): 15 creative, lateral-thinking approaches
    that a conventional analysis might overlook. Uses higher temperature and
    repetition penalty to encourage novel ideas.
 
@@ -914,7 +923,7 @@ Each citation is annotated with its verification status.
 Brainstorm saves separate reasoning files for the orthodox, unorthodox, and
 analysis stages. These show the logic behind strategy selection and ranking.
 
-**Models:** Claude Sonnet 4.6 (orthodox), Grok-4 (unorthodox), o3-pro (analysis)
+**Models:** Claude Sonnet 4.6 (orthodox), Grok 4.20 (unorthodox), o3-pro (analysis)
 **BYOK required:** Yes (analysis stage)
 
 **Smith v Jones example:**
@@ -989,7 +998,7 @@ litassist strategy <case_facts> [OPTIONS]
 | `--outcome` | text | Required: desired legal outcome (single sentence) |
 | `--strategies` | path | Optional brainstorm strategies file |
 | `--verify` | flag | Enable self-critique pass (auto-enabled) |
-| `--heavy` | flag | Use GPT-5 Pro for verification |
+| `--heavy` | flag | Use GPT-5.5 for verification |
 | `--noverify` | flag | Skip verification |
 | `--output` | text | Custom output filename prefix |
 
@@ -1016,7 +1025,7 @@ intelligently uses it:
 - Provides a coherent tactical plan anchored in both creative and conventional
   thinking
 
-**Models:** Claude Sonnet 4.6 (strategy), o3-pro (analysis)
+**Models:** Claude Opus 4.7 (strategy), o3-pro (analysis)
 **BYOK required:** Yes (analysis stage)
 
 **Smith v Jones example:**
@@ -1094,7 +1103,7 @@ litassist draft <documents>... <query> [OPTIONS]
 
 | Option | Type | Description |
 |--------|------|-------------|
-| `--heavy` | flag | Use GPT-5 Pro for verification |
+| `--heavy` | flag | Use GPT-5.5 for verification |
 | `--noverify` | flag | Skip verification (not recommended) |
 | `--diversity` | float | RAG search diversity, 0.0-1.0 (default varies; higher = more diverse results) |
 | `--output` | text | Custom output filename prefix |
@@ -1339,7 +1348,7 @@ litassist verify <file> [OPTIONS]
 | `--cove` | flag | Add Chain of Verification as final check |
 | `--reference` | glob | Reference files for context |
 | `--cove-reference` | glob | Reference files for CoVe answer stage (requires `--cove`) |
-| `--heavy` | flag | Use GPT-5 Pro for reasoning and soundness |
+| `--heavy` | flag | Use GPT-5.5 for reasoning and soundness |
 | `--output` | text | Custom output filename prefix |
 
 **Default behaviour:**
@@ -1350,12 +1359,12 @@ additional stage after the selected checks.
 
 **Three verification types:**
 
-1. **Citation verification** (GPT-5.1): Validates all citations against Jade.io
+1. **Citation verification** (GPT-5.5): Validates all citations against Jade.io
    via Google CSE. Reports each citation as verified, unverified, legislation
    (assumed valid), or international (recognised but not verifiable in Australian
    databases).
 
-2. **Legal soundness** (Claude Opus 4.1): Reviews the document for legal accuracy,
+2. **Legal soundness** (Claude Opus 4.7): Reviews the document for legal accuracy,
    correct application of Australian law, appropriate jurisdiction references, and
    logical consistency.
 
@@ -1365,7 +1374,7 @@ additional stage after the selected checks.
 
 **Heavy mode:**
 
-The `--heavy` flag substitutes GPT-5 Pro (with maximum reasoning effort) for the
+The `--heavy` flag substitutes GPT-5.5 (with maximum reasoning effort) for the
 reasoning and soundness stages. This provides the highest quality verification at
 higher cost.
 
@@ -1375,8 +1384,8 @@ The `--reference` option provides additional documents as context during
 verification. This is useful when the document being verified references exhibits,
 affidavits, or other materials that the verifier needs to see.
 
-**Models:** GPT-5.1 (citations), Claude Opus 4.1 (soundness), Claude Sonnet 4.6
-(reasoning), GPT-5 Pro (heavy mode)
+**Models:** GPT-5.5 (citations), Claude Opus 4.7 (soundness), Claude Sonnet 4.6
+(reasoning), GPT-5.5 (heavy mode)
 
 **Smith v Jones example:**
 
@@ -1462,7 +1471,7 @@ litassist verify-cove <file> [OPTIONS]
 | Option | Type | Description |
 |--------|------|-------------|
 | `--reference` | glob | Reference files for the answer stage |
-| `--heavy` | flag | Use GPT-5 Pro for the answers stage |
+| `--heavy` | flag | Use GPT-5.5 for the answers stage |
 | `--output` | text | Custom output filename prefix |
 
 **The four CoVe stages:**
@@ -1471,7 +1480,7 @@ litassist verify-cove <file> [OPTIONS]
    document and generates specific factual and legal questions that, if answered
    correctly, would confirm the document's accuracy.
 
-2. **Answer questions** (GPT-5.1 or GPT-5 Pro): A different model answers each
+2. **Answer questions** (GPT-5.5): A different model answers each
    question independently, without seeing the original document. If `--reference`
    files are provided, they are used as the sole factual source for answers.
 
@@ -1483,7 +1492,7 @@ litassist verify-cove <file> [OPTIONS]
    version of the document is produced. If no issues are detected, the original
    is confirmed as accurate.
 
-**Models:** Claude Sonnet 4.6 (questions, verify, final), GPT-5.1 or GPT-5 Pro
+**Models:** Claude Sonnet 4.6 (questions, verify, final), GPT-5.5
 (answers)
 
 **Smith v Jones example:**
@@ -1502,7 +1511,7 @@ litassist verify-cove outputs/draft_outline_submissions_20260223_143855.txt \
 - Use verify-cove for critical documents that will be filed with the court.
 - Provide reference documents via `--reference` whenever possible; this gives the
   answer stage a factual grounding independent of the LLM's training data.
-- Use `--heavy` (GPT-5 Pro) for the highest quality answers at the cost of higher
+- Use `--heavy` (GPT-5.5) for the highest quality answers at the cost of higher
   API usage.
 
 **See also:** Section 6.5 (Chain of Verification) for a detailed explanation of
@@ -1949,7 +1958,7 @@ by three switches:
 
 **--heavy:**
 
-Substitutes GPT-5 Pro (with maximum reasoning effort) for the standard
+Substitutes GPT-5.5 (with maximum reasoning effort) for the standard
 verification model. This provides the highest quality verification at higher cost.
 Available on: `extractfacts`, `brainstorm`, `strategy`, `draft`, `verify`,
 `verify-cove`.
@@ -1977,54 +1986,56 @@ verification when the output contains:
 
 LitAssist matches each command to the model best suited for its job:
 
+Current model assignments are defined in `litassist/llm/model_configs.yaml`. Registered commands are defined in `litassist/commands/__init__.py`.
+
 | Role | Purpose | Model | Commands |
 |------|---------|-------|----------|
-| **Legal Reasoning** | Analysis, extraction, strategy, lookup | Claude Sonnet 4.6 | 15 |
+| **Legal Reasoning** | Extraction, digest, case planning, light verification, CoVe scaffolding | Claude Sonnet 4.6 | 12 |
 | **Advanced Drafting** | Documents, briefs, deep analysis | o3-pro | 5 |
-| **Critical Verification** | Highest-stakes soundness checks | GPT-5 Pro | 4 |
-| **Standard Verification** | Self-critique, CoVe answers | GPT-5.1 | 2 |
-| **Soundness Checking** | Logical soundness analysis | Claude Opus 4.1 | 1 |
-| **Creative Ideation** | Unorthodox brainstorming | Grok 4 | 1 |
+| **Critical Verification** | Highest-stakes soundness checks | GPT-5.5 | 4 |
+| **Standard Verification** | Self-critique, CoVe answers | GPT-5.5 | 2 |
+| **Strategy and Soundness** | Strategic options and logical soundness analysis | Claude Opus 4.7 | 2 |
+| **Lookup Synthesis** | Case-law research synthesis | Gemini 3.5 Flash | 1 |
+| **Creative Ideation** | Unorthodox brainstorming | Grok 4.20 | 1 |
 
 **Rationale for task specialisation:**
 
-- **Verification** models (GPT-5 Pro, GPT-5.1) are chosen for their low
-  hallucination rates (<1% and 1.4% respectively), critical for court-ready
-  documents.
+- **Verification** stages use GPT-5.5 for both standard and heavy paths, with
+  reasoning effort increased for heavy modes.
 - **Legal reasoning** (Sonnet 4.6) handles the bulk of work at $3/$15 per M
   tokens with 1M context window and strong legal benchmarks.
 - **Drafting** (o3-pro) provides extended reasoning traces for structured
   document generation.
-- **Creative** (Grok 4) uses high temperature with auto-verification.
+- **Creative** (Grok 4.20) uses high temperature with auto-verification.
 
 ### 7.2 Complete Command-to-Model Assignment Table
 
 | Config Key | Model | Command / Stage | BYOK |
 |-----------|-------|-----------------|------|
 | `extractfacts` | Claude Sonnet 4.6 | Fact extraction | No |
-| `lookup` | Claude Sonnet 4.6 | Case law research | No |
+| `lookup` | Gemini 3.5 Flash | Case law research synthesis | No |
 | `digest-summary` | Claude Sonnet 4.6 | Document summary | No |
 | `digest-issues` | Claude Sonnet 4.6 | Issue identification | No |
 | `brainstorm-orthodox` | Claude Sonnet 4.6 | Orthodox strategies | No |
-| `brainstorm-unorthodox` | Grok-4 | Unorthodox strategies | No |
+| `brainstorm-unorthodox` | Grok 4.20 | Unorthodox strategies | No |
 | `brainstorm-analysis` | o3-pro | Strategy ranking and top 5 | Yes |
-| `strategy` | Claude Sonnet 4.6 | Strategic options | No |
+| `strategy` | Claude Opus 4.7 | Strategic options | No |
 | `strategy-analysis` | o3-pro | Strategy analysis | Yes |
 | `draft` | o3-pro | Document generation | Yes |
 | `counselnotes` | o3-pro | Advocate analysis | Yes |
 | `barbrief` | o3-pro | Barrister's brief | Yes |
 | `caseplan` | Claude Sonnet 4.6 | Full plan generation | No |
 | `caseplan-assessment` | Claude Sonnet 4.6 | Budget assessment | No |
-| `verification` | GPT-5.1 | Standard citation verification | No |
+| `verification` | GPT-5.5 | Standard citation verification | No |
 | `verification-light` | Claude Sonnet 4.6 | Quick verification checks | No |
-| `verification-heavy` | GPT-5 Pro | Heavy citation verification | No |
+| `verification-heavy` | GPT-5.5 | Heavy citation verification | No |
 | `verify-reasoning` | Claude Sonnet 4.6 | Reasoning trace analysis | No |
-| `verify-reasoning-heavy` | GPT-5 Pro | Heavy reasoning analysis | No |
-| `verify-soundness` | Claude Opus 4.1 | Legal soundness review | No |
-| `verify-soundness-heavy` | GPT-5 Pro | Heavy soundness review | No |
+| `verify-reasoning-heavy` | GPT-5.5 | Heavy reasoning analysis | No |
+| `verify-soundness` | Claude Opus 4.7 | Legal soundness review | No |
+| `verify-soundness-heavy` | GPT-5.5 | Heavy soundness review | No |
 | `cove-questions` | Claude Sonnet 4.6 | CoVe question generation | No |
-| `cove-answers` | GPT-5.1 | CoVe independent answers | No |
-| `cove-answers-heavy` | GPT-5 Pro | CoVe heavy answers | No |
+| `cove-answers` | GPT-5.5 | CoVe independent answers | No |
+| `cove-answers-heavy` | GPT-5.5 | CoVe heavy answers | No |
 | `cove-verify` | Claude Sonnet 4.6 | CoVe inconsistency detection | No |
 | `cove-final` | Claude Sonnet 4.6 | CoVe final output | No |
 
@@ -2042,8 +2053,8 @@ Each model configuration includes parameters that control its behaviour:
 | `disable_tools` | Prevents the model from attempting tool calls | Always `true` |
 | `enforce_citations` | Requires the model to include citations in output | `true` for extractfacts |
 | `verbosity` | Controls output detail level | `low`, `medium`, `high` |
-| `min_p` | Minimum probability threshold (Grok-4) | 0.05 |
-| `repetition_penalty` | Discourages repetitive output (Grok-4) | 1.2 |
+| `min_p` | Minimum probability threshold (Grok 4.20) | 0.05 |
+| `repetition_penalty` | Discourages repetitive output (Grok 4.20) | 1.2 |
 
 **Why parameters vary by command:**
 
@@ -2059,17 +2070,16 @@ Each model configuration includes parameters that control its behaviour:
 All LLM calls route through OpenRouter's API. Model names follow the
 `provider/model` convention with a `/` separator:
 
-- `anthropic/claude-sonnet-4.5`
 - `openai/o3-pro`
-- `openai/gpt-5.1`
-- `openai/gpt-5-pro`
+- `openai/gpt-5.5`
 - `anthropic/claude-sonnet-4.6`
-- `x-ai/grok-4`
-- `anthropic/claude-opus-4.1`
+- `x-ai/grok-4.20`
+- `anthropic/claude-opus-4.7`
 
 OpenRouter handles authentication, rate limiting, and provider routing. BYOK
-commands (those using o3-pro) pass requests directly to OpenAI via OpenRouter
-using the `openai.api_key` from config.yaml.
+commands (those using o3-pro) require an OpenAI provider key added in the
+OpenRouter integrations dashboard; the local `openai.api_key` is not the bearer
+token for LLM requests.
 
 The `disable_tools: true` parameter is set on all model configurations to prevent
 models from attempting tool calls, which is not supported in LitAssist's pipeline.
@@ -2213,7 +2223,7 @@ litassist verify draft.txt --heavy --cove \
   --reference 'exhibits/*.pdf'
 ```
 
-Uses GPT-5 Pro for all verification stages and provides reference documents for
+Uses GPT-5.5 for all verification stages and provides reference documents for
 both standard verification and CoVe.
 
 **Standalone CoVe for specific documents:**
@@ -2336,8 +2346,9 @@ BYOK required for o3-pro
 ```
 
 Commands using o3-pro (draft, counselnotes, barbrief, brainstorm analysis,
-strategy analysis) require a valid OpenAI API key. Set `openai.api_key` in
-config.yaml to your actual OpenAI key, not a placeholder.
+strategy analysis) require an OpenAI provider key in OpenRouter integrations.
+Open `https://openrouter.ai/settings/integrations`, add the OpenAI key there,
+and confirm `openrouter.api_key` is valid locally.
 
 **OpenRouter connection failures:**
 

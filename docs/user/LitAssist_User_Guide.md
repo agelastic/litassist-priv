@@ -146,7 +146,7 @@ litassist caseplan case_facts.txt
 litassist caseplan case_facts.txt --budget standard
 ```
 
-**Model:** Claude Sonnet 4.5
+**Model:** Claude Sonnet 4.6
 
 ---
 
@@ -180,7 +180,7 @@ litassist lookup "negligence principles" --comprehensive \
 litassist lookup "duty of care" --extract citations
 ```
 
-**Model:** Gemini 2.5 Pro
+**Model:** Gemini 3.5 Flash
 
 ---
 
@@ -213,7 +213,7 @@ litassist digest correspondence.pdf --mode summary \
   --context "Focus on payment obligations"
 ```
 
-**Model:** Claude Sonnet 4.5
+**Model:** Claude Sonnet 4.6
 
 ---
 
@@ -231,7 +231,7 @@ The `files` argument supports glob patterns.
 | Option | Type | Description |
 |--------|------|-------------|
 | `--verify` | flag | Enable self-critique verification pass (auto-enabled) |
-| `--heavy` | flag | Use GPT-5 Pro for verification instead of GPT-5.1 |
+| `--heavy` | flag | Use GPT-5.5 with maximum reasoning effort for verification |
 | `--noverify` | flag | Skip verification (not recommended) |
 | `--output` | text | Custom output filename prefix |
 
@@ -247,7 +247,7 @@ litassist extractfacts case_bundle.pdf
 litassist extractfacts brief.pdf affidavit.pdf --heavy
 ```
 
-**Model:** Claude Sonnet 4.5 (extraction), GPT-5.1 or GPT-5 Pro (verification)
+**Model:** Claude Sonnet 4.6 (extraction), GPT-5.5 (verification)
 
 ---
 
@@ -280,7 +280,7 @@ litassist brainstorm --side defendant --area family \
   --research 'outputs/lookup_*.txt' --facts case_facts.txt
 ```
 
-**Models:** Claude Sonnet 4.5 (orthodox), Grok-4 (unorthodox), o3-pro (analysis)
+**Models:** Claude Sonnet 4.6 (orthodox), Grok 4.20 (unorthodox), o3-pro (analysis)
 **BYOK required:** o3-pro (analysis stage)
 
 ---
@@ -299,7 +299,7 @@ litassist strategy <case_facts> [OPTIONS]
 | `--outcome` | text | Required: desired outcome (single sentence) |
 | `--strategies` | path | Optional brainstorm strategies file |
 | `--verify` | flag | Enable self-critique pass (auto-enabled) |
-| `--heavy` | flag | Use GPT-5 Pro for verification |
+| `--heavy` | flag | Use GPT-5.5 for verification |
 | `--noverify` | flag | Skip verification |
 | `--output` | text | Custom output filename prefix |
 
@@ -312,7 +312,7 @@ litassist strategy case_facts.txt \
   --strategies outputs/brainstorm_civil_plaintiff_*.txt
 ```
 
-**Models:** Claude Sonnet 4.5 (strategy), o3-pro (analysis)
+**Models:** Claude Opus 4.7 (strategy), o3-pro (analysis)
 **BYOK required:** o3-pro (analysis stage)
 
 ---
@@ -331,7 +331,7 @@ The `documents` argument supports glob patterns.
 
 | Option | Type | Description |
 |--------|------|-------------|
-| `--heavy` | flag | Use GPT-5 Pro for verification |
+| `--heavy` | flag | Use GPT-5.5 for verification |
 | `--noverify` | flag | Skip verification |
 | `--diversity` | float | RAG search diversity (0.0-1.0). Higher = more diverse results |
 | `--output` | text | Custom output filename prefix |
@@ -435,7 +435,7 @@ litassist verify <file> [OPTIONS]
 | `--cove` | flag | Add Chain of Verification as final check |
 | `--reference` | glob | Reference files for context |
 | `--cove-reference` | glob | Reference files for CoVe answer stage (requires `--cove`) |
-| `--heavy` | flag | Use GPT-5 Pro for reasoning and soundness |
+| `--heavy` | flag | Use GPT-5.5 for reasoning and soundness |
 | `--output` | text | Custom output filename prefix |
 
 With no flags, all three verifications run. Individual flags select specific
@@ -452,8 +452,8 @@ litassist verify outputs/draft_*.txt --citations --cove
 litassist verify outputs/draft_*.txt --heavy --reference 'exhibits/*.pdf'
 ```
 
-**Models:** GPT-5.1 (citation verification), Claude Opus 4.1 (soundness),
-Claude Sonnet 4.5 (reasoning), GPT-5 Pro (heavy mode)
+**Models:** GPT-5.5 (citation verification), Claude Opus 4.7 (soundness),
+Claude Sonnet 4.6 (reasoning), GPT-5.5 (heavy mode)
 
 ---
 
@@ -470,7 +470,7 @@ litassist verify-cove <file> [OPTIONS]
 | Option | Type | Description |
 |--------|------|-------------|
 | `--reference` | glob | Reference files for the answer stage |
-| `--heavy` | flag | Use GPT-5 Pro for the answers stage |
+| `--heavy` | flag | Use GPT-5.5 for the answers stage |
 | `--output` | text | Custom output filename prefix |
 
 ```bash
@@ -482,7 +482,7 @@ litassist verify-cove outputs/draft_*.txt \
   --reference 'exhibits/*.pdf' --heavy
 ```
 
-**Models:** Claude Sonnet 4.5 (questions, verify, final), GPT-5.1 or GPT-5 Pro
+**Models:** Claude Sonnet 4.6 (questions, verify, final), GPT-5.5
 (answers)
 
 ---
@@ -562,39 +562,42 @@ litassist verify draft.txt --heavy --cove --cove-reference 'exhibits/*.pdf'
 
 ### Task-Based Model Selection
 
+Current model assignments are defined in `litassist/llm/model_configs.yaml`. Registered commands are defined in `litassist/commands/__init__.py`.
+
 | Role | Purpose | Model | Commands |
 |------|---------|-------|----------|
-| Legal Reasoning | Analysis, extraction, strategy, lookup | Claude Sonnet 4.6 | 15 |
+| Legal Reasoning | Extraction, digest, case planning, light verification, CoVe scaffolding | Claude Sonnet 4.6 | 12 |
 | Advanced Drafting | Documents, briefs, deep analysis | o3-pro | 5 |
-| Critical Verification | Highest-stakes soundness checks | GPT-5 Pro | 4 |
-| Standard Verification | Self-critique, CoVe answers | GPT-5.1 | 2 |
-| Soundness Checking | Logical soundness analysis | Claude Opus 4.1 | 1 |
-| Creative Ideation | Unorthodox brainstorming | Grok 4 | 1 |
+| Critical Verification | Highest-stakes soundness checks | GPT-5.5 | 4 |
+| Standard Verification | Self-critique, CoVe answers | GPT-5.5 | 2 |
+| Strategy and Soundness | Strategic options and logical soundness analysis | Claude Opus 4.7 | 2 |
+| Lookup Synthesis | Case-law research synthesis | Gemini 3.5 Flash | 1 |
+| Creative Ideation | Unorthodox brainstorming | Grok 4.20 | 1 |
 
 ### Command-to-Model Assignments
 
 | Command | Model | BYOK Required |
 |---------|-------|---------------|
 | caseplan | Claude Sonnet 4.6 | No |
-| lookup | Claude Sonnet 4.6 | No |
+| lookup | Gemini 3.5 Flash | No |
 | digest | Claude Sonnet 4.6 | No |
 | extractfacts | Claude Sonnet 4.6 | No |
 | brainstorm (orthodox) | Claude Sonnet 4.6 | No |
-| brainstorm (unorthodox) | Grok 4 | No |
+| brainstorm (unorthodox) | Grok 4.20 | No |
 | brainstorm (analysis) | o3-pro | Yes |
-| strategy | Claude Sonnet 4.6 | No |
+| strategy | Claude Opus 4.7 | No |
 | strategy (analysis) | o3-pro | Yes |
 | draft | o3-pro | Yes |
 | counselnotes | o3-pro | Yes |
 | barbrief | o3-pro | Yes |
-| verification (standard) | GPT-5.1 | Yes |
-| verification (heavy) | GPT-5 Pro | Yes |
-| verify-soundness | Claude Opus 4.1 | No |
-| verify-soundness (heavy) | GPT-5 Pro | Yes |
+| verification (standard) | GPT-5.5 | No |
+| verification (heavy) | GPT-5.5 | No |
+| verify-soundness | Claude Opus 4.7 | No |
+| verify-soundness (heavy) | GPT-5.5 | No |
 | verify-reasoning | Claude Sonnet 4.6 | No |
 | CoVe questions/verify/final | Claude Sonnet 4.6 | No |
-| CoVe answers | GPT-5.1 | No |
-| CoVe answers (heavy) | GPT-5 Pro | No |
+| CoVe answers | GPT-5.5 | No |
+| CoVe answers (heavy) | GPT-5.5 | No |
 
 All calls route through OpenRouter. Model assignments are defined in
 `litassist/llm/model_configs.yaml`.
@@ -602,9 +605,16 @@ All calls route through OpenRouter. Model assignments are defined in
 ### BYOK Setup
 
 Commands using o3-pro require an OpenAI API key configured for Bring Your Own
-Key (BYOK) through OpenRouter. Set `openai.api_key` in config.yaml to your
-OpenAI API key. OpenRouter passes o3-pro requests directly to OpenAI using
-your key.
+Key (BYOK) through OpenRouter. LitAssist sends all LLM requests to OpenRouter
+using `openrouter.api_key`; setting `openai.api_key` locally does not attach
+that key to OpenRouter.
+
+To enable o3-pro:
+
+1. Put your OpenRouter API key in `openrouter.api_key`.
+2. Open `https://openrouter.ai/settings/integrations`.
+3. Add an OpenAI provider key in the OpenRouter integrations dashboard.
+4. Keep `openai.api_key` in `config.yaml` for non-routing OpenAI uses such as embeddings.
 
 ---
 
@@ -712,8 +722,9 @@ BYOK required for o3-pro
 ```
 
 Commands using o3-pro (draft, counselnotes, barbrief, brainstorm-analysis,
-strategy-analysis) require a valid OpenAI API key. Set `openai.api_key` in
-config.yaml to your actual OpenAI key (not a placeholder).
+strategy-analysis) require an OpenAI provider key in OpenRouter integrations.
+Open `https://openrouter.ai/settings/integrations`, add the OpenAI key there,
+and confirm `openrouter.api_key` is valid locally.
 
 ### Supported Input File Formats
 

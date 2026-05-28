@@ -263,7 +263,7 @@ click.echo(success_message(f"Citation verification complete: {verification_summa
 
 ### Outstanding Items:
 1. **Runtime validation** - Need to test with real LLM outputs to verify:
-   - Format adherence from Claude Sonnet 4.5 and Grok 4
+   - Format adherence from Claude Sonnet 4.6 and Grok 4.20
    - Extraction success rate with actual strategy content
    - Performance benchmarks (<10 second target)
 

@@ -1,6 +1,8 @@
 # Lookup Command Enhancement Roadmap
 
-Last updated: 27/05/2026
+Last updated: 28/05/2026
+
+Source of truth: lookup command registration is in `litassist/commands/__init__.py`; lookup model assignment is in `litassist/llm/model_configs.yaml`; active fetcher implementation is in `litassist/commands/lookup/fetchers.py`.
 
 ## Current State (May 2026)
 

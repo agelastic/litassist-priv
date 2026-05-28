@@ -1,9 +1,15 @@
 # LitAssist Architecture
 
-Last updated: 27/05/2026
+Last updated: 28/05/2026
 
 ## Overview
 LitAssist is a Python-based CLI tool for AI-powered litigation support in Australian law. It uses LLMs (via OpenRouter) and external search (Google CSE) to assist with legal research, document analysis, strategy generation, and drafting.
+
+## Sources of Truth
+- Command registration: `litassist/commands/__init__.py`
+- Model assignments: `litassist/llm/model_configs.yaml`
+- Strategic feature roadmap: `ROADMAP.md`
+- Active bugs, technical debt, and reliability work: `TODO.md`
 
 ## Project Structure
 ```
@@ -13,7 +19,7 @@ litassist/
   citation_context.py     # Citation full-text retrieval (cache, CSE, scraping)
   citation_patterns.py    # Offline citation format validation
   verification_chain.py   # Chain of Verification (CoVe) pipeline
-  commands/               # 12 command packages (each has __init__.py + core.py)
+  commands/               # 11 user-facing command packages (each has __init__.py + core.py)
     barbrief/
     brainstorm/
     caseplan/
@@ -47,10 +53,13 @@ Commands are organised as packages in `litassist/commands/`. Each command has:
 - `core.py`: Main logic.
 - Helper modules as needed (e.g., `brainstorm/` has `orthodox_generator.py`, `unorthodox_generator.py`, `analysis_generator.py`, `citation_regenerator.py`).
 
+The 11 registered user-facing commands are: `lookup`, `digest`, `extractfacts`, `brainstorm`, `strategy`, `draft`, `verify`, `verify-cove`, `counselnotes`, `barbrief`, and `caseplan`.
+
 ### 3. LLM Integration
 - **Factory Pattern**: `litassist/llm/factory.py` provides `LLMClientFactory.for_command("commandname")` to create configured clients.
 - **Configuration**: Model assignments in `litassist/llm/model_configs.yaml` (temperature, top_p, max_tokens per command).
 - **Client**: `litassist/llm/client.py` handles API interactions via OpenRouter. Base system prompts (Australian law, anti-injection, anti-hallucination) are automatically prepended.
+- **Current model families**: The active model configuration includes `anthropic/claude-sonnet-4.6`, `anthropic/claude-opus-4.7`, `openai/gpt-5.5`, `openai/o3-pro`, `google/gemini-3.5-flash`, and `x-ai/grok-4.20`. Older model references in historical changelog sections are not current-state configuration.
 
 ### 4. Citation Handling & Verification
 - **Offline Validation**: `litassist/citation_patterns.py` validates citation format (pattern matching, no network).

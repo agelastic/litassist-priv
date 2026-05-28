@@ -24,19 +24,18 @@ Primary files reviewed:
 - All traffic is routed through OpenRouter with provider/model identifiers.
 
 ### 1.2 Current model strategy
-LitAssist uses a **multi-model, multi-provider strategy** across 25 command configurations (source: `model_configs.yaml`):
+LitAssist uses a **multi-model, multi-provider strategy** across 28 command configurations. The active source of truth is `litassist/llm/model_configs.yaml`; recommendations in later sections are historical unless revalidated.
 
 | Model | Provider | Commands |
 |---|---|---|
-| Claude Sonnet 4.5 | Anthropic | extractfacts, strategy, brainstorm-orthodox, digest-summary, digest-issues, caseplan, caseplan-assessment, cove, cove-questions, cove-verify, cove-final, verification-light, verify-reasoning |
-| Claude Opus 4.1 | Anthropic | verify-soundness |
+| Claude Sonnet 4.6 | Anthropic | extractfacts, brainstorm-orthodox, digest-summary, digest-issues, caseplan, caseplan-assessment, cove, cove-questions, cove-verify, cove-final, verification-light, verify-reasoning |
+| Claude Opus 4.7 | Anthropic | strategy, verify-soundness |
 | o3-pro | OpenAI | strategy-analysis, brainstorm-analysis, draft, counselnotes, barbrief |
-| GPT-5.1 | OpenAI | verification, cove-answers |
-| GPT-5-pro | OpenAI | verification-heavy, verify-reasoning-heavy, verify-soundness-heavy, cove-answers-heavy |
-| Gemini 2.5 Pro | Google | lookup |
-| Grok 4 | xAI | brainstorm-unorthodox |
+| GPT-5.5 | OpenAI | verification, cove-answers, verification-heavy, verify-reasoning-heavy, verify-soundness-heavy, cove-answers-heavy |
+| Gemini 3.5 Flash | Google | lookup |
+| Grok 4.20 | xAI | brainstorm-unorthodox |
 
-**Provider distribution**: Anthropic 14 configs, OpenAI 9, Google 1, xAI 1.
+**Provider distribution**: Anthropic 14 configs, OpenAI 11, Google 1, xAI 1.
 
 ### 1.3 Strengths
 - Good task specialization (research, generation, verification split).
@@ -126,19 +125,11 @@ Notes on benchmark coverage:
 - **Grok 4.1 full model** is NOT available via API. Only the Fast variant is.
 - **o3-pro** is superseded by GPT-5.2 family per OpenAI. GPT-5.2 Thinking exceeds o3-pro on GPQA, GDPval, and FrontierMath while costing significantly less.
 
-### 4.2 Drop-in upgrades (no eval needed)
+### 4.2 Superseded drop-in upgrade notes
 
-These are same-provider, same-or-lower-price, strictly-better replacements:
+Earlier versions of this review recommended moving Sonnet 4.5 assignments to Sonnet 4.6 and updating verification models. Those changes are no longer pending recommendations; the active configuration already uses Sonnet 4.6 for the relevant stages, Opus 4.7 for strategy/soundness, GPT-5.5 for verification, Gemini 3.5 Flash for lookup, and Grok 4.20 for unorthodox brainstorming.
 
-**Sonnet 4.5 -> Sonnet 4.6** (13 configs):
-All current Sonnet 4.5 assignments should move to Sonnet 4.6. Same price ($3/$15), 1M context (was 200K -- 5x increase), BigLaw Bench 87.6%, improved benchmarks across the board. There is no reason to remain on 4.5.
-Affected: extractfacts, strategy, brainstorm-orthodox, digest-summary, digest-issues, caseplan, caseplan-assessment, cove, cove-questions, cove-verify, cove-final, verification-light, verify-reasoning.
-
-**Opus 4.1 -> Opus 4.6** (1 config):
-verify-soundness should move to Opus 4.6. BigLaw Bench 90.2% (highest recorded legal benchmark score). 1M context. Same price tier.
-
-**Gemini 2.5 Pro -> Gemini 3.1 Pro** (1 config):
-lookup should move to Gemini 3.1 Pro. GPQA Diamond 94.3% (highest of any model). Similar price. 1M context maintained. Case Law v2 accuracy jumped from 53.4% (Gemini 3 Pro) to 65.6%.
+Any future model swap should go through the eval harness described in P0.1 rather than relying on this dated snapshot.
 
 ### 4.3 Eval-required upgrades
 
@@ -164,23 +155,23 @@ Analysis tasks produce shorter output than drafting. Candidates ranked by genera
 
 Eval criteria: legal reasoning depth, novelty of analysis, citation accuracy.
 
-**GPT-5.1 replacement (verification, cove-answers)**
+**GPT-5.5 replacement (verification, cove-answers)**
 
-1. **GPT-5.2 Thinking** ($1.75/$14, 400K context). GPQA 92.4% (vs GPT-5.1 ~88%). GDPval SOTA. 400K context (up from ~128K). Strictly better reasoning than GPT-5.1.
+1. **GPT-5.2 Thinking** ($1.75/$14, 400K context). GPQA 92.4% (vs GPT-5.5 ~88%). GDPval SOTA. 400K context (up from ~128K). Strictly better reasoning than GPT-5.5.
 2. Also evaluate **GPT-5.2 Pro** if the eval harness shows meaningful accuracy gain on verification-specific tasks.
 
 Eval criteria: false positive/negative rates on seeded verification errors.
 
-**GPT-5-pro replacement (verification-heavy, verify-reasoning-heavy, verify-soundness-heavy, cove-answers-heavy)**
+**GPT-5.5 replacement (verification-heavy, verify-reasoning-heavy, verify-soundness-heavy, cove-answers-heavy)**
 
 **GPT-5.2 Pro** ($21/$168, 400K context). GPQA 93.2%. ARC-AGI-2 54.2%. The strongest general reasoning model available. These heavy configs run infrequently on high-stakes work where accuracy is paramount.
 
 Eval criteria: precision on critical legal errors, false negative rate.
 
-**Grok 4 replacement (brainstorm-unorthodox)**
+**Grok 4.20 replacement (brainstorm-unorthodox)**
 
-- **Grok 4.1 Fast** ($0.20/$0.50, 2M context). 65% hallucination reduction (xAI claim). Top LMArena ranking (1483 Elo, Thinking mode). 2M context (8x Grok 4).
-- Risk: “Fast” variant may sacrifice creative divergence quality compared to full Grok 4 ($3/$15, 256K). The full Grok 4.1 model is not available via API.
+- **Grok 4.1 Fast** ($0.20/$0.50, 2M context). 65% hallucination reduction (xAI claim). Top LMArena ranking (1483 Elo, Thinking mode). 2M context (8x Grok 4.20).
+- Risk: “Fast” variant may sacrifice creative divergence quality compared to full Grok 4.20 ($3/$15, 256K). The full Grok 4.1 model is not available via API.
 - Evaluate whether hallucination reduction improves “novel but legally plausible” outcomes, or whether reduced creativity defeats the purpose of the unorthodox mode.
 
 Eval criteria: novelty, legal plausibility, hallucination rate.
@@ -191,35 +182,35 @@ Every entry in `model_configs.yaml` is represented. “Recommended candidate” 
 
 | Command area | Commands | Current model | Recommended candidate |
 |---|---|---|---|
-| Extraction | extractfacts | Sonnet 4.5 | **Sonnet 4.6** (drop-in) |
-| Digest | digest-summary, digest-issues | Sonnet 4.5 | **Sonnet 4.6** (drop-in) |
-| Strategy | strategy | Sonnet 4.5 | **Sonnet 4.6** (drop-in) |
+| Extraction | extractfacts | Sonnet 4.6 | Keep unless eval shows improvement |
+| Digest | digest-summary, digest-issues | Sonnet 4.6 | Keep unless eval shows improvement |
+| Strategy | strategy | Opus 4.7 | Keep unless eval shows improvement |
 | Strategy analysis | strategy-analysis | o3-pro | **GPT-5.2 Pro** (eval) |
-| Brainstorm orthodox | brainstorm-orthodox | Sonnet 4.5 | **Sonnet 4.6** (drop-in) |
-| Brainstorm unorthodox | brainstorm-unorthodox | Grok 4 | **Grok 4.1 Fast** (eval) |
+| Brainstorm orthodox | brainstorm-orthodox | Sonnet 4.6 | Keep unless eval shows improvement |
+| Brainstorm unorthodox | brainstorm-unorthodox | Grok 4.20 | **Grok 4.1 Fast** (eval) |
 | Brainstorm analysis | brainstorm-analysis | o3-pro | **GPT-5.2 Pro** (eval) |
 | Drafting | draft, counselnotes, barbrief | o3-pro | **Opus 4.6** (eval) |
-| Lookup | lookup | Gemini 2.5 Pro | **Gemini 3.1 Pro** (drop-in) |
-| Case planning | caseplan, caseplan-assessment | Sonnet 4.5 | **Sonnet 4.6** (drop-in) |
-| Verification standard | verification | GPT-5.1 | **GPT-5.2 Thinking** (eval) |
-| Verification light | verification-light | Sonnet 4.5 | **Sonnet 4.6** (drop-in) |
-| Verification heavy | verification-heavy | GPT-5-pro | **GPT-5.2 Pro** (eval) |
-| Reasoning check | verify-reasoning | Sonnet 4.5 | **Sonnet 4.6** (drop-in) |
-| Reasoning check heavy | verify-reasoning-heavy | GPT-5-pro | **GPT-5.2 Pro** (eval) |
-| Soundness check | verify-soundness | Opus 4.1 | **Opus 4.6** (drop-in) |
-| Soundness check heavy | verify-soundness-heavy | GPT-5-pro | **GPT-5.2 Pro** (eval) |
-| CoVe pipeline | cove, cove-questions, cove-verify, cove-final | Sonnet 4.5 | **Sonnet 4.6** (drop-in) |
-| CoVe answers | cove-answers | GPT-5.1 | **GPT-5.2 Thinking** (eval) |
-| CoVe answers heavy | cove-answers-heavy | GPT-5-pro | **GPT-5.2 Pro** (eval) |
+| Lookup | lookup | Gemini 3.5 Flash | Eval before changing |
+| Case planning | caseplan, caseplan-assessment | Sonnet 4.6 | Keep unless eval shows improvement |
+| Verification standard | verification | GPT-5.5 | **GPT-5.2 Thinking** (eval) |
+| Verification light | verification-light | Sonnet 4.6 | Keep unless eval shows improvement |
+| Verification heavy | verification-heavy | GPT-5.5 | **GPT-5.2 Pro** (eval) |
+| Reasoning check | verify-reasoning | Sonnet 4.6 | Keep unless eval shows improvement |
+| Reasoning check heavy | verify-reasoning-heavy | GPT-5.5 | **GPT-5.2 Pro** (eval) |
+| Soundness check | verify-soundness | Opus 4.7 | Keep unless eval shows improvement |
+| Soundness check heavy | verify-soundness-heavy | GPT-5.5 | **GPT-5.2 Pro** (eval) |
+| CoVe pipeline | cove, cove-questions, cove-verify, cove-final | Sonnet 4.6 | Keep unless eval shows improvement |
+| CoVe answers | cove-answers | GPT-5.5 | **GPT-5.2 Thinking** (eval) |
+| CoVe answers heavy | cove-answers-heavy | GPT-5.5 | **GPT-5.2 Pro** (eval) |
 
 ### 4.5 Eval priority order
 
-1. **Drop-in upgrades** (Sonnet 4.6, Opus 4.6, Gemini 3.1 Pro) -- deploy immediately, 15 configs.
+1. **Eval harness first** -- no further model swaps should be defaulted without command-level regression data.
 2. **Drafting stack** -- evaluate Opus 4.6 vs GPT-5.2 Pro vs GPT-5.2 Thinking against o3-pro.
-3. **Heavy verification** -- evaluate GPT-5.2 Pro against GPT-5-pro.
-4. **Standard verification** -- evaluate GPT-5.2 Thinking against GPT-5.1.
+3. **Heavy verification** -- evaluate GPT-5.2 Pro against the active GPT-5.5 heavy-verification baseline.
+4. **Standard verification** -- evaluate GPT-5.2 Thinking against GPT-5.5.
 5. **Analysis sub-commands** -- evaluate GPT-5.2 Pro and Gemini 3.1 Pro against o3-pro.
-6. **Brainstorm unorthodox** -- evaluate Grok 4.1 Fast against Grok 4.
+6. **Brainstorm unorthodox** -- evaluate Grok 4.1 Fast against Grok 4.20.
 
 ---
 
@@ -259,7 +250,7 @@ Every entry in `model_configs.yaml` is represented. “Recommended candidate” 
 ## 7) Recommended immediate actions
 
 In priority order:
-1. **Deploy drop-in upgrades** -- Sonnet 4.5 -> 4.6 (13 configs), Opus 4.1 -> 4.6 (1 config), Gemini 2.5 Pro -> 3.1 Pro (1 config). No eval needed. Immediate accuracy and context window gains.
-2. **Build eval harness** (P0.1) -- required before any generation-change upgrade.
-3. **Evaluate drafting stack** -- Opus 4.6 and GPT-5.2 Pro/Thinking against o3-pro. Highest user-visible impact.
-4. **Evaluate heavy verification** -- GPT-5.2 Pro against GPT-5-pro. Highest accuracy-sensitivity.
+1. **Build eval harness** (P0.1) -- required before any generation-change upgrade.
+2. **Evaluate drafting stack** -- Opus 4.6 and GPT-5.2 Pro/Thinking against o3-pro. Highest user-visible impact.
+3. **Evaluate heavy verification** -- GPT-5.2 Pro against the active GPT-5.5 heavy-verification baseline. Highest accuracy-sensitivity.
+4. **Review lookup model candidates** -- benchmark any Gemini replacement against the active Gemini 3.5 Flash baseline.

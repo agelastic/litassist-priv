@@ -1,8 +1,17 @@
 # LitAssist Feature Roadmap
 
-Last updated: 22/05/2026
-**Status:** Strategic Planning Phase -- no features from this roadmap have been implemented yet
+Last updated: 28/05/2026
+**Status:** Strategic planning; roadmap items are aspirational unless marked DONE, PARTIALLY SUPERSEDED, or already implemented elsewhere
 **Confidence:** 0.88
+
+---
+
+## Sources of Truth
+
+- Registered commands: `litassist/commands/__init__.py`
+- Current model assignments: `litassist/llm/model_configs.yaml`
+- Active technical debt and reliability tasks: `TODO.md`
+- This roadmap: strategic feature sequencing, not current implementation state
 
 ---
 
@@ -10,7 +19,7 @@ Last updated: 22/05/2026
 
 This roadmap prioritizes features for litassist based on **active litigation needs** over FOI and government affairs. The goal is to provide lawyer-like smart advice for legal and government dealings, advising on what to do when and how, with precision as the priority.
 
-**Total Planned Work:** ~300-390 hours across 7 phases (updated Dec 2025)
+**Total Planned Work:** ~300-390 hours across 7 phases (updated Dec 2025; current model choices must be checked against `litassist/llm/model_configs.yaml` before implementation)
 
 **Key Principle:** Litigation > FOI > Other matters
 
@@ -154,7 +163,7 @@ Features are prioritized to support active litigation (ACT civil matters), profe
   - `la doctor --input draft_letter.md --recipient court`
   - `la doctor --input draft_email.md --recipient opposing-counsel`
   - `la doctor --input draft.md --bias-scan` (detailed bias analysis)
-- LLM: GPT-5 (critical analysis) + Claude Sonnet 4.5 (neutral rewrite)
+- LLM: GPT-5.5 (critical analysis) + Claude Sonnet 4.6 (neutral rewrite)
 - Output: Risk report + line-by-line suggestions + rewritten version + bias report (if --bias-scan)
 
 ---
@@ -192,7 +201,7 @@ Features are prioritized to support active litigation (ACT civil matters), profe
 - Commands:
   - `la analyze --input defense.pdf --type legal --opponent "Counsel A"`
   - `la analyze --input foi_decision.pdf --type government --agency DHA`
-- LLM: Claude Sonnet 4.5 + GPT-5 cross-check for critical documents
+- LLM: Claude Sonnet 4.6 + GPT-5.5 cross-check for critical documents
 - Output: Threat assessment + obligation checklist + strategic recommendation + deadline extraction
 
 ---
@@ -227,7 +236,7 @@ Features are prioritized to support active litigation (ACT civil matters), profe
   - `la next --matter LITIGATION-001` (specific matter)
   - `la next --urgent` (only critical deadlines)
 - Requires: Matter Memory from Sprint 1
-- LLM: Claude Sonnet 4.5 (strategic prioritization)
+- LLM: Claude Sonnet 4.6 (strategic prioritization)
 - Output: Prioritized action list + deadline table + procedural guidance + risk warnings
 
 ---
@@ -278,7 +287,7 @@ Features are prioritized to support active litigation (ACT civil matters), profe
   - `la respond --input application.pdf --matter LITIGATION-001 --type application`
   - `la respond --input defense.pdf --matter LITIGATION-001 --variants` (3-variant output)
 - Loads matter context from Matter Memory
-- LLM: Claude Sonnet 4.5 (strategic reasoning) + o3-pro (extended tactical analysis)
+- LLM: Claude Sonnet 4.6 (strategic reasoning) + o3-pro (extended tactical analysis)
 - Output: Strategic analysis + response options matrix + timing advice + draft templates + variant comparison
 
 ---
@@ -354,7 +363,7 @@ Features are prioritized to support active litigation (ACT civil matters), profe
   - `la profile --create "Opponent A" --type individual`
   - `la profile --update "Counsel A" --matter LITIGATION-001 --event "defense filed"`
   - `la profile --analyze "Opponent A"` (generate predictions)
-- LLM: Claude Sonnet 4.5 (pattern analysis)
+- LLM: Claude Sonnet 4.6 (pattern analysis)
 - Output: Opponent dossier + predicted tactics + recommended counter-tactics
 
 ---
@@ -390,7 +399,7 @@ Features are prioritized to support active litigation (ACT civil matters), profe
 - New module: `litassist/commands/negotiate/`
 - Commands:
   - `la negotiate --matter LITIGATION-001 --type settlement --stage pre-discovery`
-- LLM: Claude Sonnet 4.5 (strategic reasoning) + o3-pro (probability calculations)
+- LLM: Claude Sonnet 4.6 (strategic reasoning) + o3-pro (probability calculations)
 - Uses opponent profile for pattern analysis
 - Output: Negotiation strategy + BATNA analysis + concession matrix + scenario probabilities
 
@@ -453,7 +462,7 @@ Features are prioritized to support active litigation (ACT civil matters), profe
 - Flag disagreements for human review
 - Confidence scoring based on agreement
 - Model specialization:
-  - Claude Sonnet 4.5: Legal reasoning, strategy
+  - Claude Sonnet 4.6: Legal reasoning, strategy
   - GPT-5: Verification, fact-checking
   - o3-pro: Extended reasoning, probability
 
@@ -492,7 +501,7 @@ Features are prioritized to support active litigation (ACT civil matters), profe
 **Technical Implementation:**
 1. Google CSE: Search "citing:[CITATION]" on JADE
 2. Scraping: Fetch full text of citing cases
-3. LLM (Claude Sonnet 4.5): Analyze treatment
+3. LLM (Claude Sonnet 4.6): Analyze treatment
 4. Calculate TIS score: Recency + Treatment
 
 **Implementation:**
@@ -572,7 +581,7 @@ Features are prioritized to support active litigation (ACT civil matters), profe
 - Commands:
   - `la complaint --matter COMPLAINT-001 --stage investigation`
   - `la complaint --matter COMPLAINT-001 --evidence-compile`
-- LLM: Claude Sonnet 4.5 (process knowledge)
+- LLM: Claude Sonnet 4.6 (process knowledge)
 - Output: Process guidance + evidence checklist + strategic advice
 
 ---
@@ -615,7 +624,7 @@ Features are prioritized to support active litigation (ACT civil matters), profe
   - `la foi --type strategy --input agency_decision.pdf`
   - `la foi --type timeline --lodged 2025-01-15 --matter FOI-001`
   - `la foi --import foi_log.csv` (CSV import)
-- LLM: Claude Sonnet 4.5
+- LLM: Claude Sonnet 4.6
 - Output: Strategic advice + timeline table + draft correspondence
 
 **Stage 2 (QLD RTI):** 4-6 hours
@@ -650,7 +659,7 @@ Features are prioritized to support active litigation (ACT civil matters), profe
 - Commands:
   - `la admin --type complaint --agency DHA`
   - `la admin --draft --evidence-from matters/FOI-001/`
-- LLM: Claude Sonnet 4.5 + o3-pro (strategic timing)
+- LLM: Claude Sonnet 4.6 + o3-pro (strategic timing)
 - Output: Draft complaint + evidence checklist + strategic timing advice
 
 ---
@@ -717,7 +726,7 @@ Features are prioritized to support active litigation (ACT civil matters), profe
 - Commands:
   - `la verify --input strategy.md --divergence-check`
   - `la verify --input risk_assessment.md --divergence-check --models claude,gpt5,o3`
-- LLM: Run through Claude Sonnet 4.5, GPT-5, and optionally o3-pro
+- LLM: Run through Claude Sonnet 4.6, GPT-5.5, and optionally o3-pro
 - Output: Divergence report + agreement/disagreement matrix + confidence score + flagged sections
 
 ---
@@ -824,7 +833,7 @@ Features are prioritized to support active litigation (ACT civil matters), profe
   - `la adversary --input submission.md --matter LITIGATION-001`
   - `la adversary --input submission.md --opponent "Counsel A"` (uses profile)
   - `la draft --input case_facts.txt --adversary-test` (integrated mode)
-- LLM: Claude Sonnet 4.5 (adversarial reasoning) + GPT-5 (weakness identification)
+- LLM: Claude Sonnet 4.6 (adversarial reasoning) + GPT-5.5 (weakness identification)
 - Output: Adversary response + weakness report + strengthening recommendations
 
 ---
@@ -989,12 +998,12 @@ la profile --create "Agency A" --type government
 **Note:** For current model assignments and upgrade recommendations, see `LLM_USE_REVIEW_AND_MODEL_RECOMMENDATIONS_2026-02.md` (more recent and authoritative).
 
 **Strategic Reasoning & Legal Analysis:**
-- Model: Claude Sonnet 4.5
+- Model: Claude Sonnet 4.6
 - Use Cases: Correspondence analysis, legal reasoning, strategy generation
 - Rationale: Cost-effective, 80% cost reduction
 
 **Critical Verification:**
-- Model: GPT-5.1 / GPT-5 Pro
+- Model: GPT-5.5
 - Use Cases: Document verification, cross-checks
 - Rationale: <1% hallucination rate
 
@@ -1044,5 +1053,5 @@ la profile --create "Agency A" --type government
 ---
 
 Last updated: 22/05/2026
-**Status:** Strategic Planning Phase -- no features from this roadmap have been implemented yet
+**Status:** Strategic planning; roadmap items are aspirational unless marked DONE, PARTIALLY SUPERSEDED, or already implemented elsewhere
 **Next Review:** After Phase 1 completion

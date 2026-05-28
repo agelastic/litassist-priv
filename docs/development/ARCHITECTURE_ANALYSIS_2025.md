@@ -9,7 +9,7 @@ Last updated: 26/02/2026
 LitAssist is a CLI-based legal assistance tool that has evolved from a monolithic structure into a well-modularized system. This document provides a comprehensive architectural analysis, identifying design patterns, architectural decisions, and areas for improvement.
 
 **Key Findings:**
-- **Complete command modularization achieved (October 24, 2025)** - ALL 11 commands fully modularized
+- **Complete command modularization achieved (October 24, 2025)** - 11 commands fully modularized
 - Strong modularization with clear separation of concerns
 - Effective use of Factory and Strategy patterns for LLM management
 - Well-designed verification chain architecture
@@ -30,7 +30,7 @@ LitAssist is a CLI-based legal assistance tool that has evolved from a monolithi
 │                  Command Layer                              │
 │   litassist/commands/{brainstorm,digest,lookup,strategy}/   │
 │   litassist/commands/{verify,draft,extractfacts,etc}/       │
-│   ALL 11 commands modularized into packages (Oct 24, 2025) │
+│   11 commands modularized into packages (Oct 24, 2025) │
 └────────────────────────┬────────────────────────────────────┘
                          │
 ┌────────────────────────▼────────────────────────────────────┐
@@ -239,11 +239,11 @@ CRITICAL: NEVER HARDCODE PROMPTS IN PYTHON FILES
 **Location**: `litassist/llm/model_configs.yaml`
 
 **Decision**: Match each command to the model best suited for its task:
-- Claude Sonnet 4.6 for legal reasoning (15 commands, 80% cheaper than GPT-5 Pro)
+- Claude Sonnet 4.6 for extraction, digest, case planning, and CoVe scaffolding
 - o3-pro for advanced drafting (5 commands)
-- GPT-5 Pro for critical verification (<1% hallucination, 4 commands)
-- GPT-5.1 for standard verification (1.4% hallucination, 2 commands)
-- Claude Opus 4.1 for soundness checking, Grok 4 for creative ideation
+- GPT-5.5 for standard and heavy verification stages
+- GPT-5.5 for CoVe answer and verification stages
+- Claude Opus 4.7 for strategy and soundness checking, Gemini 3.5 Flash for lookup, Grok 4.20 for creative ideation
 
 **Why Excellent**:
 - Optimizes cost vs. accuracy tradeoff
@@ -272,7 +272,7 @@ brainstorm/
 - Single Responsibility Principle adherence
 - Easy to test individual components
 - Clear functional boundaries
-- **100% coverage: ALL 11 commands now follow this pattern (Oct 24, 2025)**
+- **100% coverage: 11 commands now follow this pattern (Oct 24, 2025)**
 
 **Files Refactored**:
 - Phase 1 (2025-10-22): brainstorm, digest, lookup, strategy, verify (all previously 1000+ lines)
@@ -338,7 +338,7 @@ you do not need fallback parsing.
 MODEL_PATTERNS = {
     "openai_reasoning": r"openai/o\d+",
     "gpt5.1": r"openai/gpt-5\.1",           # Added Nov 2025 (must precede gpt5-pro)
-    "gpt5-pro": r"openai/gpt-5-pro$",       # Added Nov 2025
+    "gpt5.5": r"openai/gpt-5\.5",          # Active GPT-5.5 family
     "gpt5": r"openai/gpt-5$",               # Now exact match only
     "claude4": r"anthropic/claude-(opus-4|sonnet-4)(\.\d+)?",
     ...
@@ -424,7 +424,7 @@ def get_model_parameters(model_name: str, requested_params: dict) -> dict:
 - ✅ `verify_cove.py` → `commands/verify_cove/` package (5 modules)
 - ✅ `verify.py` → `commands/verify/` package (6 modules)
 
-**Current State**: ALL 11 commands now follow modular package structure. Zero standalone command files remain.
+**Current State**: 11 commands now follow modular package structure. Zero standalone command files remain.
 
 **Impact**: This architectural inconsistency has been completely eliminated.
 
@@ -603,7 +603,7 @@ class EmergencySaveHandler:
 **Backward Compatibility Cleanup:**
 - ✅ Removed `lookup.py` shim - violated CLAUDE.md principle
 
-**Assessment**: **100% COMPLETE** - All 11 commands now follow the modular package pattern with consistent structure. Zero standalone command files remain. Total LOC: ~17,799 lines (up from 17,059 baseline due to modularization structure overhead, but vastly improved maintainability).
+**Assessment**: **100% COMPLETE** - 11 commands now follow the modular package pattern with consistent structure. Zero standalone command files remain. Total LOC: ~17,799 lines (up from 17,059 baseline due to modularization structure overhead, but vastly improved maintainability).
 
 ## Testing Architecture
 
@@ -689,7 +689,7 @@ class EmergencySaveHandler:
 "anthropic/claude-sonnet-4.6"
 "openai/o3-pro"
 "google/gemini-2.5-pro"
-"x-ai/grok-4"
+"x-ai/grok-4.20"
 ```
 
 **Strengths**:
@@ -923,7 +923,7 @@ Code must break instead of masking errors
 ### Overall Architecture Grade: A (Excellent) - Upgraded from A- after October 24, 2025 completion
 
 **Strengths**:
-- ✅ **100% command modularization complete (Oct 24, 2025)** - ALL 11 commands follow consistent package pattern
+- ✅ **100% command modularization complete (Oct 24, 2025)** - 11 commands follow consistent package pattern
 - ✅ **Zero standalone command files remain** - complete architectural consistency
 - ✅ Excellent use of Factory and Strategy patterns
 - ✅ YAML-based prompt management (best practice)
@@ -950,7 +950,7 @@ Code must break instead of masking errors
 
 ### Key Architectural Wins
 
-1. **100% Command Modularization** - ALL 11 commands now follow consistent package pattern (completed Oct 24, 2025)
+1. **100% Command Modularization** - 11 commands now follow consistent package pattern (completed Oct 24, 2025)
 2. **LLMClientFactory** - Textbook factory pattern implementation
 3. **Task-Based Model Selection** - Optimizes accuracy vs. cost (40-50% cost reduction)
 4. **YAML Prompt Management** - Eliminates "prompt soup" anti-pattern
@@ -989,6 +989,6 @@ Compared to typical CLI tools and LLM-powered applications, LitAssist demonstrat
 
 **Document Status**: This analysis supersedes `ARCHITECTURE.md` and `ARCHITECTURE_DESCRIPTION.md`. Those documents should be marked as "See ARCHITECTURE_ANALYSIS_2025.md for current analysis."
 
-**Major Update**: October 24, 2025 - Completed all remaining command modularizations. ALL 11 commands now follow consistent modular package structure. Zero standalone command files remain. Architecture grade upgraded from A- to A.
+**Major Update**: October 24, 2025 - Completed all remaining command modularizations. 11 commands now follow consistent modular package structure. Zero standalone command files remain. Architecture grade upgraded from A- to A.
 
 **Next Review**: Recommend review Q1 2026 or after next major architectural change (e.g., citation package consolidation, type checking enforcement).

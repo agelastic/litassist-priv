@@ -1,15 +1,17 @@
 # LitAssist Development TODO
 
-Last updated: 26/05/2026
+Last updated: 28/05/2026
 
 **Note:** Strategic feature planning (litigation support, advisory capabilities, new commands) is now in [ROADMAP.md](ROADMAP.md). This file focuses on bugs, technical debt, and code quality improvements.
+
+**Sources of truth:** command registration lives in `litassist/commands/__init__.py`; current model assignments live in `litassist/llm/model_configs.yaml`; strategic feature planning lives in `ROADMAP.md`.
 
 ---
 
 ## Current State Summary
 
 ### Completed Features [DONE]
-- All 11 core commands (lookup, digest, extractfacts, brainstorm, strategy, draft, verify, verify-cove, counselnotes, barbrief, caseplan)
+- 11 registered user-facing commands (lookup, digest, extractfacts, brainstorm, strategy, draft, verify, verify-cove, counselnotes, barbrief, caseplan)
 - Global installation via pipx
 - Single configuration approach
 - Outputs organized in `outputs/` directory
@@ -23,17 +25,15 @@ Last updated: 26/05/2026
 - Fixed all ruff linting errors and removed unused dependencies
 - CounselNotes command for strategic advocate analysis (January 2025)
 - Barbrief command for comprehensive barrister's briefs (January 2025)
-- **October 2025: Major LLM Model Upgrade** - Implemented three-tier strategy
-  - Tier 1: GPT-5 Pro for critical verification (<1% hallucination rate)
-  - Tier 2: GPT-5 for fast verification (1.4% hallucination rate)
-  - Tier 3: Claude Sonnet 4.5 for legal reasoning (state-of-the-art for litigation)
+- **October 2025: Historical LLM model upgrade** - Implemented the first three-tier strategy
+  - This section records the historical upgrade. Current model assignments are now in `litassist/llm/model_configs.yaml`.
   - Upgraded 20+ commands with 40-50% cost reduction while improving quality
   - All 407 unit tests passing
   - Comprehensive documentation updates across all user/dev docs
 - **November 2025: Verification System Enhancements & Tooling**
-  - Added --heavy flag to verify command for premium verification using gpt-5-pro
+  - Added --heavy flag to verify command for premium verification
   - Added --noverify flag to extractfacts, draft, and strategy commands for skipping verification
-  - Changed default verify-soundness from gpt-5-pro to claude-opus-4.1 (cost optimization)
+  - Changed default verify-soundness model for cost optimization
   - Fixed verify_content_if_needed() to properly respect verify_flag parameter
   - Citation validation improvements with header analysis for PDF content
   - PDF search validation with automatic retry logic (up to 3 attempts)
@@ -66,7 +66,7 @@ Last updated: 26/05/2026
 - [ ] Expose model configuration parameters via CLI/env vars
 - [ ] Develop "student mode" with newcomer-friendly explanations
 - [x] ~~Add thinking trace logging system~~ - COMPLETED (LegalReasoningTrace class exists and used throughout)
-- [x] ~~Integrate o3-pro coding standards~~ - COMPLETED (o3-pro model extensively integrated with proper parameter handling)
+- [x] ~~Integrate reasoning-model parameter standards~~ - COMPLETED (`o3-pro` and current GPT-5.5-style model handling are integrated with provider-specific parameter filtering)
 - [ ] Adopt Jules framework for test instrumentation (evaluate if still desired)
 - [ ] **Refactor verify_with_level (Option B)**: Replace with boolean parameter `verify(content, comprehensive=False)` where comprehensive=True uses heavy verification prompt and comprehensive=False uses standard verification. This simplifies the API and removes the unused "light" level and redundant "medium" wrapper. NOTE: --heavy flag (Nov 2025) may already satisfy this need - evaluate if refactoring still needed. [DEBT]
 - [ ] **Add optional reasoning trace file output**: Implement `--save-reasoning` flag for commands (strategy, draft, verify, etc.) to optionally save reasoning traces as separate files for auditing purposes. Currently reasoning traces are embedded in main output only. Implementation removed 2025-07-08 but may be useful for professional liability requirements.
