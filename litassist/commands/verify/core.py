@@ -149,6 +149,11 @@ def run_verification_workflow(
     soundness_result = None
     issues = None
     regen_file = None
+    # Track per-stage failures so that a user-selected stage raising an
+    # exception surfaces as a non-zero exit instead of "Verification
+    # complete. 0 reports generated." which used to mislead downstream
+    # scripts and CI.
+    failed_stages: list = []
 
     # 1. Citation Verification
     if citations:
@@ -159,6 +164,7 @@ def run_verification_workflow(
             reports_generated += 1
         except Exception as e:
             handle_verification_error("Citation verification", e)
+            failed_stages.append(("Citation verification", str(e)))
 
     # 2. Reasoning Trace Verification/Generation
     if reasoning:
@@ -171,6 +177,7 @@ def run_verification_workflow(
             reports_generated += 1
         except Exception as e:
             handle_verification_error("Reasoning trace verification", e)
+            failed_stages.append(("Reasoning trace verification", str(e)))
 
     # 3. Legal Soundness Verification
     if soundness:
@@ -184,6 +191,7 @@ def run_verification_workflow(
             reports_generated += 1
         except Exception as e:
             handle_verification_error("Legal soundness check", e)
+            failed_stages.append(("Legal soundness check", str(e)))
 
     # 4. Chain of Verification (Final Stage)
     if cove:
@@ -300,6 +308,46 @@ def run_verification_workflow(
                     pass
             except Exception as e:
                 handle_verification_error("Chain of Verification", e)
+                failed_stages.append(("Chain of Verification", str(e)))
+
+    if failed_stages:
+        # One or more selected stages raised. Save the workflow log so the
+        # failure is visible in audit trails, then fail the command. Don't
+        # print "Verification complete" - the outcome is the opposite.
+        save_log(
+            "verify",
+            {
+                "inputs": {
+                    "file": file,
+                    "options": {
+                        "citations": citations,
+                        "soundness": soundness,
+                        "reasoning": reasoning,
+                        "cove": cove,
+                        "reference": reference,
+                        "cove_reference": cove_reference,
+                    },
+                    "reference_files": reference_files,
+                    "cove_reference_files": cove_reference_files,
+                },
+                "outputs": extra_files,
+                "reports_generated": reports_generated,
+                "failed_stages": failed_stages,
+            },
+        )
+        try:
+            log_task_event(
+                "verify",
+                "init",
+                "end",
+                f"Verification command failed - {len(failed_stages)} stage(s) raised"
+            )
+        except Exception:
+            pass
+        names = ", ".join(name for name, _ in failed_stages)
+        raise click.ClickException(
+            f"Verification failed: {len(failed_stages)} stage(s) raised ({names})."
+        )
 
     click.echo(f"\nVerification complete. {reports_generated} reports generated.")
 

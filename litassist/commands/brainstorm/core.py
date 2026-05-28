@@ -47,6 +47,22 @@ from .unorthodox_generator import generate_unorthodox_strategies
 from .analysis_generator import generate_analysis
 
 
+def _extract_verified_document(correction: str, original: str) -> tuple[str, bool]:
+    """Return (content, parsed).
+
+    If `correction` contains the expected `## Verified and Corrected Document`
+    header, return the document body and True. Otherwise return `original`
+    unchanged and False - preserving the pre-verification brainstorm output
+    rather than silently overwriting it with the verifier's freeform text.
+    """
+    match = re.search(
+        r"## Verified and Corrected Document\s*\n(.*)", correction, re.DOTALL
+    )
+    if match:
+        return match.group(1).strip(), True
+    return original, False
+
+
 def _extract_strategies(content: str, strategy_type: str) -> list[str]:
     """Extract individual numbered strategies from content."""
     # Pattern: "### Strategy 1:" or "### 1." or "## STRATEGY 1:" or "1. Strategy Title"
@@ -661,24 +677,25 @@ def brainstorm(facts, side, area, research, verify, output):
 
         full_verification_result = correction  # Keep full result for critique
 
-        # Try to extract just the verified document part
-        match = re.search(
-            r"## Verified and Corrected Document\s*\n(.*)", correction, re.DOTALL
+        # Try to extract just the verified document part. On parse failure
+        # we must preserve the pre-verification brainstorm content rather
+        # than silently replacing it with the verifier's freeform output -
+        # the previous code overwrote combined_content with `correction`
+        # while telling the user it was "using original output".
+        combined_content, parsed_ok = _extract_verified_document(
+            correction, combined_content
         )
 
-        if match:
-            # Successfully extracted the document
-            combined_content = match.group(1).strip()
+        if parsed_ok:
             click.echo(success_message("Full content verification complete"))
         else:
-            # Could not find expected format - use whole output
             logging.warning(
-                "Could not extract verified document section - using complete verification output"
+                "Could not extract verified document section - "
+                "preserving original brainstorm output"
             )
-            combined_content = correction
             click.echo(
                 warning_message(
-                    "Verification format unexpected - using original output"
+                    "Verification format unexpected - preserving original output"
                 )
             )
 

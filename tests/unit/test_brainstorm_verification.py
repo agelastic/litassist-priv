@@ -118,6 +118,31 @@ Third strategy text"""
             # Should trigger full verification
 
 
+class TestExtractVerifiedDocument:
+    """Brainstorm verification fallback: when the verifier response lacks the
+    expected `## Verified and Corrected Document` header, the original
+    brainstorm output must be preserved instead of silently overwritten."""
+
+    def test_header_missing_preserves_original(self):
+        # Verifier returned something useful-looking but without the expected
+        # section header. The original brainstorm content must be returned
+        # unchanged so we never substitute the verifier's text for it.
+        from litassist.commands.brainstorm.core import _extract_verified_document
+
+        correction = (
+            "I reviewed the document and identified several issues. "
+            "Please refer to the discussion above for details."
+        )
+        original = "Strategy 1: original.\nStrategy 2: original."
+        content, parsed = _extract_verified_document(correction, original)
+        assert parsed is False
+        assert content == original, (
+            "Header-missing branch must return the original brainstorm "
+            "content unchanged; previously it returned the verifier's "
+            "freeform response while telling the user 'using original output'."
+        )
+
+
 class TestStrategyExtraction:
     """Test strategy extraction patterns."""
 

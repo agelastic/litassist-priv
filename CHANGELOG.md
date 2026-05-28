@@ -82,6 +82,46 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Enhanced prompt template system with centralized YAML management
 
 ### Fixed
+
+#### May 2026: Packaging and cross-cutting trust/cache/format fixes
+- `setup.py` `package_data` now includes `litassist/prompts/*.yaml` and `litassist/llm/*.yaml`; matching `recursive-include` lines added to `MANIFEST.in`. Installed wheels previously omitted these runtime assets and commands failed with missing prompt-key errors.
+- `MANIFEST.in` now ships `requirements.txt` in the sdist. The fallback list in `setup.py::read_requirements` is removed (raises with a clear error if the file is missing) so installed packages cannot silently drift from the in-repo dependency manifest.
+- `find_packages(exclude=[...])` now excludes `tests`, `tests.*`, `test-scripts`, `test-scripts.*` from distribution builds.
+- `requirements-dev.txt` added declaring `numpy` for the manual `test-scripts/test_quality.py` checks (the only consumer; test-scripts are not shipped).
+- `lookup/processors.py` source prioritisation now uses the shared `is_trusted_legal_host` helper (parsed hostname) instead of substring matching against link URLs, so attacker URLs containing trusted-host substrings cannot jump the queue.
+- `verify_single_citation` no longer caches a negative result when verification raises (network error, CSE quota, parser crash). The previous broad `except Exception: pass` poisoned the cache for the rest of the process; transient failures now return False with a descriptive reason and skip the cache write so the next call retries.
+- `lookup/search.py` and `lookup/processors.py` log filenames now include a monotonic sub-second suffix to avoid same-second collisions between snippet/fetch saves.
+- Removed eight literal `0x14` (DC4) control characters from `litassist/logging/markdown_writers.py` heading f-strings that corrupted rendered audit log titles.
+
+#### May 2026: Logging, config, and CLI robustness
+- `litassist --help` and command discovery now work even when `config.yaml` is missing or broken. The CLI module no longer eagerly calls `load_config()` at import time; config is loaded lazily inside command handlers.
+- Tools-fallback LLM call now emits a second audit-log entry recording the actual `fallback_messages` and the fallback marker. The original log only recorded the pre-fallback (tools-bearing) request, so audit trails missed what the model actually received.
+- Null or wrong-typed YAML sections (`openrouter:` with no body, scalar where a mapping is expected) now raise `ConfigError` with a clear message naming the offending section, instead of opaque `TypeError`/`AttributeError`.
+- `save_command_output` filenames now include a monotonic sub-second component (`time.monotonic_ns() % 1_000_000_000`) appended after the existing second-resolution timestamp. Two saves within the same wall-clock second no longer overwrite each other.
+- OpenRouter validation in `validate_credentials` now honours `config.or_base` when probing `/models`, so users pointing at a proxy or mirror don't silently validate against the public endpoint.
+- `expand_glob_patterns` callback now rejects literal directory arguments and filters directories out of glob matches. Downstream code reads file contents, so directory paths used to produce confusing errors deep inside the pipeline.
+- Citation-validation markdown writer now reads both `enable_online` (the source-of-truth key) and the legacy `online_enabled` so the flag is rendered correctly in audit logs.
+
+#### May 2026: Command-orchestration exit-code and isolation fixes
+- Draft RAG pipeline now isolates each run with a per-run Pinecone namespace (`draft-<uuid>`) and namespaced vector IDs. Deterministic IDs (`d1`, `d2`, ...) used to collide across runs and stale vectors from one matter could surface in a different matter's draft. The namespace is deleted in a `finally` block after retrieval (or on retrieval failure) to avoid leaks. `Retriever.retrieve()` accepts an optional `namespace` parameter.
+- `verify` command now accumulates per-stage failures and exits non-zero when any user-selected stage raises. Previously each stage was wrapped in a try/except, the error was logged, then the command printed "Verification complete. 0 reports generated." and exited zero — masking failures in CI and downstream scripts.
+- `verify-cove` command now exits non-zero when the CoVe pipeline raises. Fallback diagnostic saves still run so audit trails are preserved; the completion message is suppressed on failure.
+- `brainstorm --verify` now preserves the original brainstorm content when the verifier response is missing the `## Verified and Corrected Document` header. Previously the original was overwritten with the verifier's freeform text while the user-facing message claimed "using original output". Parse-and-fallback logic is extracted to `_extract_verified_document()`.
+- `digest` now exits non-zero and skips the output save when every input file fails to read or chunk. Previously digest still wrote an empty output file and reported "Files processed: 0" with exit zero, masking total failure.
+
+#### May 2026: LLM retry and truncation handling
+- `_call_with_streaming_wrap` now copies `filtered_params` per attempt before popping OpenRouter-specific keys into `extra_body`. Retries previously re-entered with the drained outer dict and silently dropped `reasoning`, `verbosity`, and other OpenRouter parameters from the second attempt onward. The retry/final-failure audit logs also now record the unmutated request.
+- Responses with `finish_reason == "length"` now raise an explicit truncation error naming the model and completion-token count. They were previously returned as if successful, letting callers act on partial legal drafts/answers without warning.
+
+#### May 2026: Accuracy-critical verification fixes
+- User-only LLM calls no longer bypass base Australian-law and anti-injection prompts. Both `_add_base_system_prompts` (system-capable models) and `_merge_system_into_user` (o1/o3 models) now inject base prompts when callers supply no system message. The Chain-of-Verification question step (`verification_chain.py`) previously slipped through this gap.
+- Legislation and UK/International citations now require positive source evidence. The `verify_single_citation()` function used to short-circuit to `exists=True` on pattern match alone, letting fabricated references (e.g. "Imaginary Aliens Act 2099 (Cth)", "[2099] UKSC 999") pass as verified. Category tagging is preserved in audit logs via a `_tag()` helper that prefixes the verification reason.
+- CoVe verification now uses a structured `VERDICT: PASS|FAIL` line instead of substring-matching "no issues found". Quoted or negated occurrences (e.g. `the answer is not "no issues found"`) used to register as PASS. Missing or malformed VERDICT lines fail closed. Prompt at `verification.yaml::verification.cove.inconsistency_detection` updated to require the structured output.
+- Google CSE verification now requires the result link to resolve to a trusted legal host (austlii.edu.au, jade.io, legislation.gov.au, hcourt.gov.au, fedcourt.gov.au, ag.gov.au) AND the citation tokens to appear in title or snippet (not the link, which is attacker-controllable). New `litassist/citation/trust.py` centralises the parsed-hostname check.
+- `citation_context.py` URL trust filters switched from substring matching (`.gov.au` in link, `austlii.edu.au` in link) to the shared parsed-hostname helper. Hostnames like `austlii.edu.au.attacker.invalid` are now rejected.
+- Note: downstream `verify`/`brainstorm` runs will surface more "unverified" citations under the new existence checks. This is the intended outcome; placeholders should replace any unverifiable references.
+
+#### Previous fixes
 - Citation verification no longer flags valid NSW tribunal citations
 - Brainstorm command streaming API errors resolved
 - Barbrief command progress indicator issues fixed

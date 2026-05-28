@@ -175,13 +175,21 @@ def expand_glob_patterns_callback(ctx, param, value):
 
     expanded_paths = []
     for pattern in value:
-        # Try literal path first - allows filenames containing [] characters
+        # Try literal path first - allows filenames containing [] characters.
+        # Reject directories explicitly: downstream code reads file contents,
+        # so a directory path would silently produce confusing errors.
         if os.path.exists(pattern):
+            if os.path.isdir(pattern):
+                raise click.BadParameter(
+                    f"Expected a file, got a directory: {pattern}"
+                )
             expanded_paths.append(pattern)
             continue
         # Otherwise treat as a glob if it contains glob characters
         if any(char in pattern for char in ["*", "?", "["]):
             matches = expand_glob_pattern(pattern)
+            # Filter out directories that the glob may have matched.
+            matches = [m for m in matches if os.path.isfile(m)]
             if not matches:
                 raise click.BadParameter(f"No files matching pattern: {pattern}")
             expanded_paths.extend(matches)

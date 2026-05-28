@@ -22,6 +22,7 @@ from litassist.utils.formatting import (
 )
 from litassist.logging import LOG_DIR
 from litassist.llm.factory import LLMClientFactory
+from litassist.citation.trust import is_trusted_legal_host
 from litassist.prompts import PROMPTS
 from .fetchers import PendingOcrContent, _fetch_url_content
 
@@ -75,7 +76,11 @@ class LookupProcessor:
         for link in links:
             if _is_pdf_link(link):
                 pdf_links.append(link)
-            elif "austlii.edu.au" in link.lower() or "legislation.gov.au" in link.lower():
+            elif is_trusted_legal_host(link):
+                # Use parsed-hostname trust check (austlii.edu.au,
+                # legislation.gov.au, jade.io, etc.) so prioritisation cannot
+                # be tricked by attacker URLs that mention a trusted host in
+                # query strings or paths.
                 prioritized_links.append(link)
             else:
                 other_links.append(link)
@@ -210,14 +215,24 @@ class LookupProcessor:
 
     def _save_fetched_content(self, content, link):
         """Save fetched content to log file."""
+        # Sub-second suffix prevents same-second filename collisions when the
+        # fetcher pulls multiple URLs from the same domain in quick
+        # succession (e.g. a curl_cffi failure followed by an immediate Jina
+        # fallback).
         timestamp = time.strftime("%Y%m%d-%H%M%S")
+        sub_second = f"{time.monotonic_ns() % 1_000_000_000:09d}"
         domain = link.split("/")[2].replace(".", "_")
 
         # Check if it's PDF content for appropriate file naming
         if content.startswith("[PDF DOCUMENT EXTRACTED"):
-            log_file = os.path.join(LOG_DIR, f"pdf_extracted_{domain}_{timestamp}.txt")
+            log_file = os.path.join(
+                LOG_DIR,
+                f"pdf_extracted_{domain}_{timestamp}_{sub_second}.txt",
+            )
         else:
-            log_file = os.path.join(LOG_DIR, f"fetched_{domain}_{timestamp}.html")
+            log_file = os.path.join(
+                LOG_DIR, f"fetched_{domain}_{timestamp}_{sub_second}.html"
+            )
 
         with open(log_file, "w", encoding="utf-8") as f:
             f.write(f"<!-- URL: {link} -->\n")

@@ -132,6 +132,7 @@ class Retriever:
         query_emb: List[float],
         top_k: int = 5,
         diversity_level: Optional[float] = None,
+        namespace: Optional[str] = None,
     ) -> List[str]:
         """
         Query Pinecone (with optional MMR) and return a list of passage texts.
@@ -142,12 +143,16 @@ class Retriever:
             diversity_level: Override the default diversity level for this query.
                              Controls the balance between relevance and diversity (0.0-1.0).
                              Lower values prioritize relevance, higher values prioritize diversity.
+            namespace: Pinecone namespace to scope the query to. Use a per-run
+                       namespace to isolate vectors from other runs/matters.
 
         Returns:
             A list of text passages retrieved from the vector store.
         """
         # Build query arguments
         query_kwargs = {"vector": query_emb, "top_k": top_k, "include_metadata": True}
+        if namespace:
+            query_kwargs["namespace"] = namespace
         # Enable Maximal Marginal Relevance if requested
         if getattr(self, "use_mmr", False):
             query_kwargs["use_mmr"] = True

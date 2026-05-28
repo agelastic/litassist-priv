@@ -195,14 +195,39 @@ class TestCommandParameterPropagation:
     @patch("litassist.utils.file_ops.read_document")
     @patch("litassist.citation.verify.verify_all_citations")
     @patch("litassist.citation_patterns.extract_citations")
+    @patch("litassist.commands.verify.citation_verifier.fetch_citation_context")
+    @patch("litassist.commands.verify.reasoning_handler.fetch_citation_context")
+    @patch("litassist.commands.verify.soundness_checker.fetch_citation_context")
     def test_verify_command_parameters(
-        self, mock_extract, mock_verify_all, mock_read, mock_factory
+        self,
+        mock_soundness_fetch,
+        mock_reasoning_fetch,
+        mock_citation_fetch,
+        mock_extract,
+        mock_verify_all,
+        mock_read,
+        mock_factory,
     ):
         """Test verify command parameters."""
-        mock_factory.return_value = self.mock_client
+        # Use a per-test client whose verify() returns the expected tuple.
+        # The shared self.mock_client.verify returns "" (an empty string),
+        # which tuple-unpacking in soundness_checker.py used to silently
+        # raise and be swallowed; the unswallowed failure now surfaces.
+        mock_client = Mock()
+        mock_client.model = "test/mock-model"
+        mock_client.complete.return_value = ("Test response", {"total_tokens": 10})
+        mock_client.verify.return_value = ("Verified", "test/mock-model")
+        mock_client.validate_citations.return_value = []
+        mock_factory.return_value = mock_client
+
         mock_read.return_value = "Legal document content"
         mock_extract.return_value = []
-        mock_verify_all.return_value = {"verified": [], "unverified": []}
+        # verify_all_citations returns (verified_list, unverified_list).
+        mock_verify_all.return_value = ([], [])
+        # fetch_citation_context returns (case_content_dict, failures_list).
+        mock_citation_fetch.return_value = ({}, [])
+        mock_reasoning_fetch.return_value = ({}, [])
+        mock_soundness_fetch.return_value = ({}, [])
 
         with self.runner.isolated_filesystem():
             with open("test.txt", "w") as f:
@@ -214,7 +239,10 @@ class TestCommandParameterPropagation:
                 result = self.runner.invoke(cli, ["verify", "test.txt"])
 
         # Check command executed successfully
-        assert result.exit_code == 0
+        assert result.exit_code == 0, (
+            f"exit_code={result.exit_code}\noutput={result.output!r}\n"
+            f"exception={result.exception!r}"
+        )
 
         # Verify factory was called
         assert mock_factory.called

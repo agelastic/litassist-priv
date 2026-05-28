@@ -108,6 +108,23 @@ class Config:
         Raises:
             ConfigError: If any required configuration is missing or invalid.
         """
+        # Validate that each required section is a mapping. An empty section
+        # header (e.g. `openrouter:` with no body) parses to None and
+        # subscripting it used to raise TypeError, which masked the real
+        # cause from the user.
+        for section in ("openrouter", "openai", "google_cse", "pinecone"):
+            value = self.cfg.get(section)
+            if value is None:
+                raise ConfigError(
+                    f"config '{section}' section is empty - add keys under it "
+                    "or remove the section header"
+                )
+            if not isinstance(value, dict):
+                raise ConfigError(
+                    f"config '{section}' section must be a mapping, got "
+                    f"{type(value).__name__}"
+                )
+
         # Extract required values with defaults
         try:
             self.or_key = self.cfg["openrouter"]["api_key"]

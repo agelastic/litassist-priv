@@ -175,8 +175,13 @@ def perform_cse_searches(question, comprehensive, context):
 
 def _save_search_snippets(all_snippets, question, context, comprehensive):
     """Save all search snippets to a log file for reference."""
+    # Sub-second suffix avoids collisions when two snippet saves land in the
+    # same wall-clock second (e.g. rapid retries).
     timestamp = time.strftime("%Y%m%d-%H%M%S")
-    snippet_file = os.path.join(LOG_DIR, f"cse_snippets_{timestamp}.txt")
+    sub_second = f"{time.monotonic_ns() % 1_000_000_000:09d}"
+    snippet_file = os.path.join(
+        LOG_DIR, f"cse_snippets_{timestamp}_{sub_second}.txt"
+    )
     with open(snippet_file, "w", encoding="utf-8") as f:
         f.write(f"Query: {question}\n")
         if context:

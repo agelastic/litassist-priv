@@ -12,8 +12,10 @@ import logging
 from litassist.config import load_config
 from litassist.commands import register_commands
 
-# Load configuration early so that CONFIG is populated before other modules
-CONFIG = load_config()
+# Config is loaded lazily inside command handlers (see `cli` below) so that
+# `--help`, command discovery and tab-completion still work when the user has
+# not yet created or has broken their config.yaml. Eager loading here used to
+# crash the entire CLI before Click could render help.
 
 
 @click.group()
@@ -161,9 +163,12 @@ def validate_credentials(show_progress=True):
                 "Authorization": f"Bearer {config.or_key}",
                 "Content-Type": "application/json",
             }
-            # Use the models endpoint which doesn't cost credits
+            # Use the models endpoint which doesn't cost credits. Honour the
+            # configured `or_base` so users pointing at a proxy/mirror don't
+            # silently validate against the public endpoint instead.
+            base = (config.or_base or "https://openrouter.ai/api/v1").rstrip("/")
             response = requests.get(
-                "https://openrouter.ai/api/v1/models", headers=headers, timeout=10
+                f"{base}/models", headers=headers, timeout=10
             )
             if response.status_code != 200:
                 raise Exception(f"HTTP {response.status_code}: {response.text}")

@@ -74,6 +74,38 @@ class TestVerifyCoveCommand:
         # Should save at least the CoVe report (and regenerated doc in this branch)
         assert mock_save.call_count >= 1
 
+    def test_verify_cove_exits_nonzero_when_pipeline_raises(self, tmp_path):
+        # Regression: verify-cove used to catch pipeline failures, save
+        # fallback diagnostics, then exit zero. A pipeline raise must surface
+        # as a non-zero exit so CI/scripts know the verification failed.
+        file_path = tmp_path / "document.txt"
+        file_path.write_text("Test content")
+
+        from litassist.cli import cli
+        from litassist.commands import register_commands
+
+        cli.commands = {}
+        register_commands(cli)
+
+        with (
+            patch("litassist.commands.verify_cove.document_reader.read_document") as mock_read,
+            patch("litassist.commands.verify_cove.cove_runner.run_cove_verification") as mock_cove,
+            patch("litassist.commands.verify_cove.core.save_log") as _mock_log,
+        ):
+            mock_read.return_value = "Original content to verify"
+            mock_cove.side_effect = RuntimeError("CoVe pipeline blew up")
+
+            runner = CliRunner()
+            result = runner.invoke(cli, ["verify-cove", str(file_path)])
+
+        assert result.exit_code != 0, (
+            f"Pipeline failure must exit non-zero, got exit_code={result.exit_code}, "
+            f"output={result.output!r}"
+        )
+        assert "Verification complete" not in result.output, (
+            "Failed runs must not print a normal completion message"
+        )
+
     def test_verify_cove_with_reference_option(self, tmp_path):
         """Verify that '--reference' is accepted and forwarded to processing."""
         file_path = tmp_path / "document.txt"

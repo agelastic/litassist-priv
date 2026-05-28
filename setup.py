@@ -20,16 +20,13 @@ def read_requirements():
     if os.path.exists(req_path):
         with open(req_path, 'r', encoding='utf-8') as f:
             return [line.strip() for line in f if line.strip() and not line.startswith('#')]
-    return [
-        "click>=8.0.0",
-        "openai==0.28.1", 
-        "pinecone-client==2.2.4",
-        "PyPDF2>=3.0.0",
-        "google-api-python-client>=2.0.0",
-        "pyyaml>=6.0",
-        "requests>=2.25.0",
-        "reportlab>=3.6.0"
-    ]
+    # If requirements.txt is missing from a sdist, fail loud rather than
+    # drifting from the in-repo manifest. The previous fallback list went
+    # stale and pinned wrong package versions.
+    raise RuntimeError(
+        "requirements.txt is missing from the source distribution. "
+        "Ensure MANIFEST.in includes it and rebuild the sdist."
+    )
 
 setup(
     name="litassist",
@@ -39,7 +36,9 @@ setup(
     long_description=read_readme(),
     long_description_content_type="text/markdown",
     url="https://github.com/agelastic/litassist",
-    packages=find_packages(),
+    packages=find_packages(
+        exclude=["tests", "tests.*", "test-scripts", "test-scripts.*"]
+    ),
     classifiers=[
         "Development Status :: 4 - Beta",
         "Intended Audience :: Legal Industry",
@@ -60,6 +59,11 @@ setup(
     include_package_data=True,
     package_data={
         "litassist": ["*.yaml", "*.md"],
+        # Prompt and model-config YAMLs are loaded at runtime via PROMPTS.get
+        # / load_yaml; installed wheels need them or commands fail with
+        # missing-key errors.
+        "litassist.prompts": ["*.yaml"],
+        "litassist.llm": ["*.yaml"],
         "": ["config.yaml.template", "README.md", "*.md"],
     },
     keywords="legal ai litigation australian law nlp",

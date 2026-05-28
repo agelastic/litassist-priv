@@ -35,6 +35,47 @@ class TestLLMRetryLogic:
         pass
 
     @patch("litassist.llm.api_handlers.get_openai_client")
+    def test_extra_body_preserved_across_retries(self, mock_get_client):
+        # Regression: filtered_params used to be mutated by pop() to move
+        # OpenRouter-specific keys into extra_body, so retries re-entered the
+        # call with an already-drained dict and dropped reasoning/verbosity.
+        success_response = Mock()
+        success_response.choices = [Mock()]
+        success_response.choices[0].message = Mock(content="ok")
+        success_response.choices[0].error = None
+
+        mock_client = MagicMock()
+        mock_get_client.return_value = mock_client
+        mock_client.chat.completions.create.side_effect = [
+            RateLimitError(
+                message="429",
+                response=Mock(status_code=429),
+                body={"error": {"message": "429"}},
+            ),
+            success_response,
+        ]
+
+        execute_api_call_with_retry(
+            "openai/gpt-4",
+            [{"role": "user", "content": "test"}],
+            {"reasoning": {"effort": "high"}, "verbosity": "medium", "temperature": 0.7},
+            get_openai_client_func=mock_get_client,
+        )
+
+        # Both attempts must carry the same extra_body containing OpenRouter
+        # keys; otherwise the retry silently downgrades the request.
+        assert mock_client.chat.completions.create.call_count == 2
+        for call in mock_client.chat.completions.create.call_args_list:
+            extra_body = call.kwargs.get("extra_body")
+            assert extra_body is not None, (
+                "Each attempt must pass extra_body; drop indicates filtered_params "
+                "was mutated by a prior attempt and reasoning/verbosity were lost."
+            )
+            assert "reasoning" in extra_body
+            assert extra_body["reasoning"] == {"effort": "high"}
+            assert extra_body.get("verbosity") == "medium"
+
+    @patch("litassist.llm.api_handlers.get_openai_client")
     def test_retry_on_rate_limit_error(self, mock_get_client):
         """Test that RateLimitError triggers retries and eventually succeeds."""
         # Create a proper response object

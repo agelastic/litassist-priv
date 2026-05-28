@@ -62,28 +62,22 @@ def verify_single_citation(citation: str) -> Tuple[bool, str, str, str]:
         )
         return True, file_path, "FOIA citation - using pre-downloaded local file", ""
 
-    # Check for UK/International citations first (these are valid but not Australian)
+    # Categorise the citation. The category drives the reason text but does
+    # NOT short-circuit verification: legislation and UK/International cites
+    # used to be marked exists=True on pattern match alone, which let
+    # fabricated references (e.g. "Imaginary Aliens Act 2099 (Cth)") slip
+    # through as verified.
     international_reason = check_international_citation(normalized)
-    if international_reason:
-        add_to_cache(
-            normalized,
-            exists=True,  # Valid but not Australian
-            url="",
-            reason=international_reason,
-            snippet="",
-        )
-        return True, "", international_reason, ""
+    is_leg = is_legislation_reference(normalized)
 
-    # Skip verification for legislation - Acts and Regulations aren't in case law databases
-    if is_legislation_reference(normalized):
-        add_to_cache(
-            normalized,
-            exists=True,  # Legislation is assumed valid
-            url="",
-            reason="Legislation reference - verification skipped",
-            snippet="",
-        )
-        return True, "", "Legislation reference - verification skipped", ""
+    def _tag(reason: str) -> str:
+        # Preserve "UK/International citation" / legislation tagging so the
+        # audit log in verify_all_citations can still detect category.
+        if international_reason:
+            return f"{international_reason} [{reason}]"
+        if is_leg:
+            return f"Legislation reference [{reason}]"
+        return reason
 
     # Check for format issues using offline validation
     format_issues = validate_citation_patterns(normalized, enable_online=False)
@@ -107,7 +101,7 @@ def verify_single_citation(citation: str) -> Tuple[bool, str, str, str]:
             normalized, cse_id=config.cse_id, cse_name="Jade.io", timeout=5
         )
         if exists_in_jade:
-            reason = "Verified via Jade.io CSE"
+            reason = _tag("Verified via Jade.io CSE")
             add_to_cache(
                 normalized, exists=True, url=url_jade, reason=reason, snippet=snippet_jade
             )
@@ -122,7 +116,7 @@ def verify_single_citation(citation: str) -> Tuple[bool, str, str, str]:
                 timeout=5,
             )
             if exists_in_comprehensive:
-                reason = "Verified via comprehensive legal sources CSE"
+                reason = _tag("Verified via comprehensive legal sources CSE")
                 add_to_cache(
                     normalized, exists=True, url=url_comp, reason=reason, snippet=snippet_comp
                 )
@@ -134,7 +128,7 @@ def verify_single_citation(citation: str) -> Tuple[bool, str, str, str]:
                 normalized, cse_id=config.cse_id_austlii, cse_name="AustLII", timeout=5
             )
             if exists_in_austlii:
-                reason = "Verified via AustLII CSE"
+                reason = _tag("Verified via AustLII CSE")
                 add_to_cache(
                     normalized,
                     exists=True,
@@ -151,20 +145,31 @@ def verify_single_citation(citation: str) -> Tuple[bool, str, str, str]:
                 normalized, timeout=5
             )
             if exists_via_austlii:
+                tagged_reason = _tag(reason_austlii)
                 add_to_cache(
                     normalized,
                     exists=True,
                     url=url_austlii,
-                    reason=reason_austlii,
+                    reason=tagged_reason,
                     snippet="",
                 )
-                return True, url_austlii, reason_austlii, ""
+                return True, url_austlii, tagged_reason, ""
 
-    except Exception:
-        pass  # Fall through to mark as unverified
+    except Exception as transient_err:
+        # Transient verification failure (network error, CSE quota, parser
+        # crash). Do NOT cache a negative result - the broad except used to
+        # poison the cache for the rest of the process so a recovered
+        # network never re-verified the citation. Return False without
+        # writing to the cache so the next call retries.
+        reason = _tag(
+            f"Transient verification failure: {type(transient_err).__name__}: "
+            f"{transient_err}"
+        )
+        return False, "", reason, ""
 
-    # If all verification attempts fail, mark as UNVERIFIED
-    reason = "Citation not found in online databases"
+    # If all verification attempts ran successfully but found nothing, mark
+    # as UNVERIFIED and cache that result so we don't re-query.
+    reason = _tag("Citation not found in online databases")
     add_to_cache(normalized, exists=False, url="", reason=reason, snippet="")
     return False, "", reason, ""
 
