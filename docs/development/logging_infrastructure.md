@@ -257,8 +257,6 @@ Include status for conditional operations:
 - `extraction` - Extracting information
 - `analysis` - Analyzing content
 - `fetching` - Fetching external data
-- `embedding` - Creating embeddings
-- `retrieval` - Retrieving from vector stores
 
 ### Specialized Stages
 - `citations` - Citation verification

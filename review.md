@@ -1,5 +1,16 @@
 # Caveman Review
 
+> **SUPERSEDED — 28/05/2026.** This review references files removed in
+> the `remove-pinecone-rag` branch (May 2026):
+> `helpers/retriever.py`, `helpers/pinecone_config.py`,
+> `commands/draft/rag_pipeline.py`, and the four-provider shape of
+> `validate_credentials()` in `litassist/cli.py`. Line numbers and
+> file paths in this document do not map to current source. Patterns
+> identified here (silent fallbacks, log truncation, hardcoded retry
+> counts, single-method classes) may still apply to other code paths;
+> re-run the review against current `HEAD` rather than acting on the
+> specific citations below.
+
 Last updated: 25/04/2026
 
 Axes: simplicity / over-engineering + correctness / bug risk. Format: `path:line - problem - fix`.

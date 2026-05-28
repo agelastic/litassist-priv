@@ -880,21 +880,14 @@ Features are prioritized to support active litigation (ACT civil matters), profe
 
 ---
 
-### P4-24: Retrieval Guardrails [KEEP P4]
-**Effort:** 4-6 hours
-**Priority:** LOW
-
-**Purpose:** Prevent hallucination in RAG-based drafting
-
-**Capabilities:**
-- Require resolvable authority IDs
-- Reject unverifiable claims
-- Track authority IDs used vs. generated
-
-**Implementation:**
-- Extend `litassist/commands/draft/rag.py`
-- Add `--strict-retrieval` flag
-- Output: Verification report
+### P4-24: Retrieval Guardrails [SUPERSEDED]
+**Status:** Obsolete. Removed when the RAG pipeline was deleted in the
+`remove-pinecone-rag` branch (May 2026). `draft` is now a single
+full-context call against the configured model; there is no retrieval
+stage to guard. If hallucination control in long-context drafts becomes
+a need, the right surface is the existing CoVe / citation-verification
+chain in `litassist/verification_chain.py`, not a re-introduced
+retrieval pipeline.
 
 ---
 
