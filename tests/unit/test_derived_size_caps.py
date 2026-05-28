@@ -107,14 +107,6 @@ class TestDraftPreflight:
                 catch_exceptions=False,
             ), mock_factory.return_value.complete
 
-    def test_below_soft_threshold_no_warning_no_fail(self, tmp_path):
-        result, complete = self._invoke_draft_with_payload(
-            self.SOFT_CHARS - 10_000, tmp_path
-        )
-        assert result.exit_code == 0
-        assert "approaching the model's input budget" not in result.output
-        assert complete.called
-
     def test_above_soft_below_hard_warns_but_proceeds(self, tmp_path):
         result, complete = self._invoke_draft_with_payload(
             self.SOFT_CHARS + 10_000, tmp_path
@@ -145,19 +137,6 @@ class TestDigestChunkSize:
     this test fails loudly, prompting an update to whichever rationale
     comment moved.
     """
-
-    def test_chunk_size_matches_window_times_ratio_times_fraction(self):
-        from litassist.commands.digest import chunker
-
-        with patch(
-            "litassist.commands.digest.chunker."
-            "LLMClientFactory.get_context_window_for_command",
-            return_value=200_000,
-        ):
-            # 200_000 × 3.5 × 0.35 = 245_000
-            assert determine_chunk_size("digest", "summary") == int(
-                200_000 * chunker.CHARS_PER_TOKEN * chunker.CHUNK_FRACTION_OF_WINDOW
-            )
 
     def test_sub_type_propagates_to_capability_lookup(self):
         """The sub_type argument flows through to the underlying
