@@ -203,3 +203,58 @@ class TestLLMClientFactoryIntegration:
                 client = LLMClientFactory.for_command(command)
                 assert client.model == configs[command]["model"]
                 assert "/" in client.model  # provider/model slug format
+
+
+class TestGetContextWindowForCommand:
+    """Tests for LLMClientFactory.get_context_window_for_command."""
+
+    def test_returns_context_window_for_known_command(self):
+        """Returns an int sourced from model_capabilities.yaml for a real command."""
+        window = LLMClientFactory.get_context_window_for_command("draft")
+        assert isinstance(window, int)
+        assert window > 0
+
+    def test_matches_capabilities_file_for_each_configured_model(self):
+        """For each configured command, the returned window equals the model's entry
+        in model_capabilities.yaml. Proves the model->capability lookup is correct."""
+        from litassist.llm.factory import _get_model_capabilities
+
+        configs = LLMClientFactory.list_configurations()
+        caps = _get_model_capabilities()
+        for command, cfg in configs.items():
+            model_id = cfg["model"]
+            assert model_id in caps, (
+                f"{model_id} (used by {command}) missing from model_capabilities.yaml"
+            )
+            expected = int(caps[model_id]["context_window"])
+            assert LLMClientFactory.get_context_window_for_command(
+                command.split("-")[0],
+                "-".join(command.split("-")[1:]) or None,
+            ) == expected
+
+    def test_raises_on_unknown_command(self):
+        """Unknown command -> KeyError from get_model_for_command (no fallback)."""
+        import pytest
+
+        with pytest.raises(KeyError) as exc_info:
+            LLMClientFactory.get_context_window_for_command("no_such_command")
+        assert "No model configuration found" in str(exc_info.value)
+
+    def test_raises_when_capability_missing_for_model(self, monkeypatch):
+        """If model_capabilities.yaml is missing the model id used by a command,
+        get_context_window_for_command raises KeyError pointing at the refresh
+        command. This guards against forgetting to run `litassist refresh` after
+        swapping a model in model_configs.yaml."""
+        import pytest
+        from litassist.llm import factory as factory_module
+
+        monkeypatch.setattr(
+            factory_module,
+            "_get_model_capabilities",
+            lambda: {"other/model": {"context_window": 12345}},
+        )
+        with pytest.raises(KeyError) as exc_info:
+            LLMClientFactory.get_context_window_for_command("draft")
+        msg = str(exc_info.value)
+        assert "No capability data" in msg
+        assert "litassist refresh" in msg or "refresh_model_capabilities" in msg

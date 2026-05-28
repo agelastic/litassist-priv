@@ -215,6 +215,7 @@ def test_command_registration(test_config_file, mock_external_apis):
         "draft",
         "extractfacts",
         "lookup",
+        "refresh",
         "strategy",
         "verify",
         "verify-cove",
@@ -264,6 +265,7 @@ def test_all_commands_show_help(test_config_file, mock_external_apis):
         "draft",
         "extractfacts",
         "lookup",
+        "refresh",
         "strategy",
         "verify",
         "verify-cove",  # 'test' is in cli.py directly

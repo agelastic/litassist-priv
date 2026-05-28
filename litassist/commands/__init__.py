@@ -20,6 +20,7 @@ from litassist.commands import (
     counselnotes,
     barbrief,
     caseplan,
+    refresh,
 )
 
 
@@ -41,3 +42,4 @@ def register_commands(cli: click.Group) -> None:
     cli.add_command(counselnotes.counselnotes)
     cli.add_command(barbrief.barbrief)
     cli.add_command(caseplan.caseplan)
+    cli.add_command(refresh.refresh)
