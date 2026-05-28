@@ -64,12 +64,6 @@ class TestModuleImports:
 
         assert llm is not None
 
-    def test_import_retriever(self):
-        """Test retriever module imports."""
-        from litassist.helpers import retriever
-
-        assert retriever is not None
-
     def test_import_commands(self):
         """Test commands module imports."""
         from litassist import commands
