@@ -412,10 +412,8 @@ Test objectives""")
 
     @patch("litassist.llm.factory.LLMClientFactory.for_command")
     @patch("litassist.utils.file_ops.read_document")
-    @patch("litassist.helpers.retriever.get_pinecone_client")
-    @patch("litassist.commands.draft.rag_pipeline.get_config")
     def test_draft_command_parameters(
-        self, mock_config, mock_pinecone, mock_read, mock_factory
+        self, mock_read, mock_factory
     ):
         """Test draft command uses its configured model."""
         # Create verification client mock
@@ -439,16 +437,6 @@ Test objectives""")
         ]
 
         mock_read.return_value = "Instructions"
-        mock_config_obj = Mock()
-        mock_config_obj.rag_max_chars = 8000
-        mock_config.return_value = mock_config_obj
-
-        # Mock pinecone
-        mock_pc_index = Mock()
-        mock_pc_index.describe_index_stats.return_value = Mock(
-            dimension=1536, total_vector_count=0
-        )
-        mock_pinecone.return_value = mock_pc_index
 
         with self.runner.isolated_filesystem():
             with open("instructions.txt", "w") as f:

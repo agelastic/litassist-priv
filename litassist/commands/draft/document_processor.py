@@ -41,43 +41,27 @@ def read_and_categorize_documents(documents: Tuple[str]) -> Dict:
     for doc_path in documents:
         text = read_document(doc_path)
 
-        # Categorize documents by type - separate file type check from size check
+        # Categorise by file type and (for text) by content.
+        # No size branching: every document feeds the full-context call.
         if is_text_file(doc_path):
-            # For text files, categorize by content and handle large files appropriately
             if "case_facts" in doc_path.lower():
-                if len(text) < 400000:
-                    structured_content["case_facts"] = text
-                    click.echo(
-                        f"Using {doc_path} as CASE FACTS ({len(text)} characters)"
-                    )
-                else:
-                    # Large case facts file - use embedding/retrieval
-                    structured_content["pdf_documents"].append((doc_path, text))
-                    click.echo(f"Will use embedding/retrieval for large {doc_path}")
+                structured_content["case_facts"] = text
+                click.echo(
+                    f"Using {doc_path} as CASE FACTS ({len(text)} characters)"
+                )
             elif "strategies" in doc_path.lower() or "# Legal Strategies" in text:
-                if len(text) < 400000:
-                    structured_content["strategies"] = text
-                    click.echo(
-                        f"Using {doc_path} as LEGAL STRATEGIES ({len(text)} characters)"
-                    )
-                else:
-                    # Large strategies file - use embedding/retrieval
-                    structured_content["pdf_documents"].append((doc_path, text))
-                    click.echo(f"Will use embedding/retrieval for large {doc_path}")
+                structured_content["strategies"] = text
+                click.echo(
+                    f"Using {doc_path} as LEGAL STRATEGIES ({len(text)} characters)"
+                )
             else:
-                if len(text) < 400000:
-                    structured_content["other_text"].append((doc_path, text))
-                    click.echo(
-                        f"Using {doc_path} as supporting document ({len(text)} characters)"
-                    )
-                else:
-                    # Large text file - use embedding/retrieval
-                    structured_content["pdf_documents"].append((doc_path, text))
-                    click.echo(f"Will use embedding/retrieval for large {doc_path}")
+                structured_content["other_text"].append((doc_path, text))
+                click.echo(
+                    f"Using {doc_path} as supporting document ({len(text)} characters)"
+                )
         else:
-            # PDF files always use embedding/retrieval
             structured_content["pdf_documents"].append((doc_path, text))
-            click.echo(f"Will use embedding/retrieval for {doc_path}")
+            click.echo(f"Using {doc_path} as PDF document ({len(text)} characters)")
 
     try:
         log_task_event(
@@ -121,6 +105,11 @@ def build_text_context(structured_content: Dict) -> str:
     for doc_path, text in structured_content["other_text"]:
         context_parts.append(
             f"=== SUPPORTING DOCUMENT: {doc_path} ===\n{text}\n=== END SUPPORTING DOCUMENT: {doc_path} ==="
+        )
+
+    for doc_path, text in structured_content["pdf_documents"]:
+        context_parts.append(
+            f"=== PDF DOCUMENT: {doc_path} ===\n{text}\n=== END PDF DOCUMENT: {doc_path} ==="
         )
 
     combined_text_context = "\n\n".join(context_parts) if context_parts else ""
