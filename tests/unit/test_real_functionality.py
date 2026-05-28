@@ -35,7 +35,7 @@ class TestActualFunctionality:
 
         # The config should be mocked by conftest.py
         assert CONFIG is not None
-        assert hasattr(CONFIG, "openai_api_key")
+        assert hasattr(CONFIG, "openrouter_api_key")
 
     def test_save_log_creates_file(self):
         """Test save_log creates actual files."""

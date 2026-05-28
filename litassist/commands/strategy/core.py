@@ -120,11 +120,13 @@ def strategy(case_facts, outcome, strategies, verify, heavy, noverify, output):
         click.echo(info_message("Reading strategies from brainstorm file..."))
         strategies_content = strategies.read()
 
-        # Check combined input size when strategies provided
+        # Check combined input size when strategies provided. Cap derives
+        # from the strategy model's input budget so it scales with the
+        # routed model.
         validate_file_size_limit(
             case_text + strategies_content,
-            600000,
-            "Combined case facts and strategies"
+            LLMClientFactory.get_input_budget_for_command("strategy"),
+            "Combined case facts and strategies",
         )
 
         parsed_strategies = parse_strategies_file(strategies_content)
@@ -148,8 +150,13 @@ def strategy(case_facts, outcome, strategies, verify, heavy, noverify, output):
                 "  - Warning: No strategies marked as 'most likely to succeed' found"
             )
     else:
-        # Check case facts size when no strategies file
-        validate_file_size_limit(case_text, 600000, "Case facts")
+        # Check case facts size when no strategies file. Cap derives from
+        # the strategy model's input window so it scales with model changes.
+        validate_file_size_limit(
+            case_text,
+            LLMClientFactory.get_input_budget_for_command("strategy"),
+            "Case facts",
+        )
 
     # Generate strategic options
     try:

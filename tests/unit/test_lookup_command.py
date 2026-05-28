@@ -255,27 +255,25 @@ class TestLookupCommand:
 
             runner = CliRunner()
 
-            # Test IRAC mode (default)
+            # Test IRAC mode (default).
+            # processors.get_llm_client routes the mode to the YAML sub-type;
+            # `lookup-irac` carries temperature=0, top_p=0.1.
             result = runner.invoke(lookup, ["test question"])
             assert result.exit_code == 0
 
-            # Should be called with low temperature for precision
             call_args = mock_factory.call_args
-            assert call_args[0][0] == "lookup"
-            assert call_args[1]["temperature"] == 0
-            assert call_args[1]["top_p"] == 0.1
+            assert call_args[0] == ("lookup", "irac")
 
             # Reset mock
             mock_factory.reset_mock()
 
-            # Test broad mode
+            # Test broad mode -- routes to `lookup-broad`
+            # (temperature=0.4, top_p=0.8 per model_configs.yaml).
             result = runner.invoke(lookup, ["test question", "--mode", "broad"])
             assert result.exit_code == 0
 
-            # Should be called with higher temperature for creativity
             call_args = mock_factory.call_args
-            assert call_args[1]["temperature"] == 0.5
-            assert call_args[1]["top_p"] == 0.9
+            assert call_args[0] == ("lookup", "broad")
 
     @patch.dict("os.environ", {"CSE_RATE_LIMIT_DELAY": "0"})
     @patch("litassist.commands.lookup.get_config")
@@ -389,16 +387,17 @@ class TestLookupCommandIntegration:
 
             runner = CliRunner()
 
-            # Test comprehensive + IRAC mode
+            # Test --comprehensive + --mode irac.
+            # The `--comprehensive` flag controls CSE search depth (in
+            # litassist/commands/lookup/search.py), not LLM parameters. The
+            # mode still routes to the YAML sub-type `lookup-irac`.
             result = runner.invoke(
                 lookup, ["test", "--comprehensive", "--mode", "irac"]
             )
             assert result.exit_code == 0
 
             call_args = mock_factory.call_args
-            # Should use maximum precision for comprehensive IRAC
-            assert call_args[1]["temperature"] == 0
-            assert call_args[1]["top_p"] == 0.05
+            assert call_args[0] == ("lookup", "irac")
 
     def test_no_engine_option_anymore(self):
         """Test that --engine option is no longer available."""

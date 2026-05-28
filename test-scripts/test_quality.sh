@@ -52,7 +52,6 @@ fi
 if [ $# -eq 0 ]; then
     echo -e "${BOLD}Available options:${NC}"
     echo "  --all          Run all quality tests (fast models only)"
-    echo "  --openai       Test OpenAI quality"
     echo "  --openrouter   Test OpenRouter quality (all models)"
     echo "  --jade         Test Jade quality"
     echo "  --google       Test Google CSE quality"

@@ -112,7 +112,7 @@ class Config:
         # header (e.g. `openrouter:` with no body) parses to None and
         # subscripting it used to raise TypeError, which masked the real
         # cause from the user.
-        for section in ("openrouter", "openai", "google_cse", "pinecone"):
+        for section in ("openrouter", "google_cse"):
             value = self.cfg.get(section)
             if value is None:
                 raise ConfigError(
@@ -131,24 +131,16 @@ class Config:
             self.or_base = self.cfg["openrouter"].get(
                 "api_base", "https://openrouter.ai/api/v1"
             )
-            self.oa_key = self.cfg["openai"]["api_key"]
-            self.emb_model = self.cfg["openai"].get(
-                "embedding_model", "text-embedding-3-small"
-            )
             self.g_key = self.cfg["google_cse"]["api_key"]
             self.cse_id = self.cfg["google_cse"]["cse_id"]
             self.cse_id_comprehensive = self.cfg["google_cse"].get(
                 "cse_id_comprehensive", None
             )
             self.cse_id_austlii = self.cfg["google_cse"].get("cse_id_austlii", None)
-            
+
             # Optional Jina Reader API key for higher rate limits
             jina_config = self.cfg.get("jina_reader", {})
             self.jina_api_key = jina_config.get("api_key", "") if jina_config else ""
-            
-            self.pc_key = self.cfg["pinecone"]["api_key"]
-            self.pc_env = self.cfg["pinecone"]["environment"]
-            self.pc_index = self.cfg["pinecone"]["index_name"]
 
             # Extract optional general settings with defaults
             general_config = self.cfg.get("general", {})
@@ -156,7 +148,6 @@ class Config:
                 general_config = {}
             self.heartbeat_interval = general_config.get("heartbeat_interval", 20)
             self.max_chars = general_config.get("max_chars", 200000)
-            self.rag_max_chars = general_config.get("rag_max_chars", 8000)
             self.log_format = general_config.get("log_format", "json")
 
             # Extract citation validation settings with defaults
@@ -178,13 +169,8 @@ class Config:
         # Validate required entries are non-empty strings
         required_configs = {
             "openrouter.api_key": self.or_key,
-            "openai.api_key": self.oa_key,
-            "openai.embedding_model": self.emb_model,
             "google_cse.api_key": self.g_key,
             "google_cse.cse_id": self.cse_id,
-            "pinecone.api_key": self.pc_key,
-            "pinecone.environment": self.pc_env,
-            "pinecone.index_name": self.pc_index,
         }
         for key, val in required_configs.items():
             if not isinstance(val, str) or not val.strip():
@@ -203,10 +189,7 @@ class Config:
             Dictionary of service names mapped to boolean indicating placeholder usage.
         """
         return {
-            "openai": "YOUR_" in self.oa_key,
             "openrouter": "YOUR_" in self.or_key,
-            "pinecone": "YOUR_PINECONE" in self.pc_key
-            or "YOUR_PINECONE" in self.pc_env,
             "google_cse": "YOUR_GOOGLE" in self.g_key or "YOUR_GOOGLE" in self.cse_id,
             "jade": False,  # Jade API is no longer used directly - switched to public endpoint
         }

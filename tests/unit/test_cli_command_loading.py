@@ -37,21 +37,13 @@ def test_config_file():
 openrouter:
   api_key: "TEST_OPENROUTER_KEY"
   api_base: "https://openrouter.ai/api/v1"
-openai:
-  api_key: "TEST_OPENAI_KEY"  
-  embedding_model: "text-embedding-3-small"
 google_cse:
   api_key: "TEST_GOOGLE_KEY"
   cse_id: "TEST_CSE_ID"
-pinecone:
-  api_key: "TEST_PINECONE_KEY"
-  environment: "TEST_ENV"
-  index_name: "test-index"
 llm:
 general:
   heartbeat_interval: 10
   max_chars: 200000
-  rag_max_chars: 8000
   log_format: "json"
 citation_validation:
   offline_validation: false
@@ -100,10 +92,6 @@ def mock_external_apis():
     ) as mock_openai, patch("requests.get") as mock_requests, patch(
         "requests.post"
     ) as mock_requests_post, patch(
-        "pinecone.init"
-    ) as mock_pinecone_init, patch(
-        "pinecone.Index"
-    ) as mock_pinecone_index, patch(
         "litassist.llm.factory.LLMClientFactory.for_command"
     ) as mock_llm_factory:
 
@@ -117,9 +105,6 @@ def mock_external_apis():
         # Setup mock OpenAI
         mock_openai_instance = Mock()
         mock_openai_instance.models.list.return_value = Mock(data=[])
-        mock_openai_instance.embeddings.create.return_value = Mock(
-            data=[Mock(embedding=[0.1] * 1536)]
-        )
         mock_openai.return_value = mock_openai_instance
 
         # Setup mock requests
@@ -135,8 +120,6 @@ def mock_external_apis():
             "openai": mock_openai,
             "requests": mock_requests,
             "requests_post": mock_requests_post,
-            "pinecone_init": mock_pinecone_init,
-            "pinecone_index": mock_pinecone_index,
             "llm_factory": mock_llm_factory,
             "llm_client": mock_client,
         }
@@ -173,7 +156,6 @@ def test_all_commands_import_with_real_config(test_config_file):
     assert hasattr(config, "max_chars"), "Config missing max_chars attribute"
     assert hasattr(config, "or_key"), "Config missing or_key attribute"
     assert hasattr(config, "log_format"), "Config missing log_format attribute"
-    assert hasattr(config, "oa_key"), "Config missing oa_key attribute"
 
     # Verify values from template
     assert config.max_chars == 200000, "max_chars should be 200000 from template"
@@ -215,6 +197,7 @@ def test_command_registration(test_config_file, mock_external_apis):
         "draft",
         "extractfacts",
         "lookup",
+        "refresh",
         "strategy",
         "verify",
         "verify-cove",
@@ -264,6 +247,7 @@ def test_all_commands_show_help(test_config_file, mock_external_apis):
         "draft",
         "extractfacts",
         "lookup",
+        "refresh",
         "strategy",
         "verify",
         "verify-cove",  # 'test' is in cli.py directly
@@ -289,19 +273,13 @@ def test_all_commands_show_help(test_config_file, mock_external_apis):
 # ============================================================================
 
 
-@patch("litassist.utils.text_processing.create_embeddings")
-@patch("litassist.helpers.retriever.get_pinecone_client")
 def test_file_processing_commands(
-    mock_pinecone, mock_embeddings, test_config_file, mock_external_apis, tmp_path
+    test_config_file, mock_external_apis, tmp_path
 ):
     """
     Test commands that process files: extractfacts, digest, counselnotes.
     Uses real files and real config loading.
     """
-    # Setup mocks
-    mock_embeddings.return_value = [Mock(embedding=[0.1] * 1536)]
-    mock_pinecone.return_value = Mock()
-
     from litassist.cli import cli
     from litassist.commands import register_commands
 
@@ -398,18 +376,14 @@ def test_question_based_commands(mock_fetch, mock_cse, test_config_file, mock_ex
     assert result.exit_code in [0, 1], f"lookup failed: {result.output}"
     assert "AttributeError" not in result.output
 
-    # Test draft with RAG - requires documents and query
-    with patch("litassist.helpers.retriever.Retriever"), patch(
-        "litassist.utils.text_processing.create_embeddings"
-    ):
-        # Create a test file
-        with runner.isolated_filesystem():
-            Path("case_facts.txt").write_text("Test facts")
-            result = runner.invoke(
-                cli, ["draft", "case_facts.txt", "draft a statement of claim"]
-            )
-            assert result.exit_code in [0, 1], f"draft failed: {result.output}"
-            assert "AttributeError" not in result.output
+    # Test draft - full-context call, no RAG mocks needed
+    with runner.isolated_filesystem():
+        Path("case_facts.txt").write_text("Test facts")
+        result = runner.invoke(
+            cli, ["draft", "case_facts.txt", "draft a statement of claim"]
+        )
+        assert result.exit_code in [0, 1], f"draft failed: {result.output}"
+        assert "AttributeError" not in result.output
 
 
 def test_verify_with_file(test_config_file, mock_external_apis, tmp_path):

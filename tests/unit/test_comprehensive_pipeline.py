@@ -346,18 +346,6 @@ Worst: Pay $100k progress payment plus costs
 """,
             # Mock LLM responses
             "llm_complete": "Mock LLM response for testing",
-            # Mock Pinecone responses
-            "pinecone_query": {
-                "matches": [
-                    {
-                        "id": "doc_001",
-                        "score": 0.92,
-                        "metadata": {
-                            "text": "Progress payments in building contracts require strict compliance with contractual milestones."
-                        },
-                    }
-                ]
-            },
             # Mock Google CSE response
             "google_cse": {
                 "items": [
@@ -398,14 +386,12 @@ Worst: Pay $100k progress payment plus costs
             patch("requests.get") as mock_requests_get,
             patch("requests.post") as mock_requests_post,
             patch("aiohttp.ClientSession"),
-            patch("litassist.helpers.pinecone_config.get_pinecone_client") as mock_get_pinecone_client,
             patch("litassist.commands.digest.processors.PROMPTS") as mock_prompts,
             patch("litassist.commands.strategy.core.PROMPTS") as mock_strategy_prompts,
             patch("litassist.commands.brainstorm.PROMPTS") as mock_brainstorm_prompts,
             patch("litassist.commands.lookup.processors.PROMPTS") as mock_lookup_prompts,
             patch.object(CONFIG, "max_chars", 10000),
             patch.object(CONFIG, "openrouter_key", "test_key"),
-            patch.object(CONFIG, "openai_key", "test_key"),
             patch.object(CONFIG, "or_base", "https://openrouter.ai/api/v1"),
             patch.object(CONFIG, "or_key", "test_key"),
             patch.object(CONFIG, "google_cse_key", "test_key"),
@@ -515,11 +501,6 @@ Worst: Pay $100k progress payment plus costs
                 return mock_resp
 
             mock_requests_get.side_effect = requests_get_side_effect
-
-            # Configure Pinecone mock
-            mock_index = Mock()
-            mock_index.query.return_value = self.mock_responses["pinecone_query"]
-            mock_get_pinecone_client.return_value = mock_index
 
             # Track all external calls
             external_calls = []

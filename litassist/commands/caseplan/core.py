@@ -7,6 +7,7 @@ and generates a customized, efficient litigation workflow plan.
 
 import click
 
+from litassist.llm.factory import LLMClientFactory
 from litassist.logging import log_task_event
 from litassist.timing import timed
 from litassist.utils.file_ops import validate_file_size_limit
@@ -91,7 +92,13 @@ def caseplan(case_facts, context, budget, output, verify, noverify):
         pass
 
     facts_content = case_facts.read()
-    validate_file_size_limit(facts_content, 600000, "Case facts")
+    # Cap derives from the caseplan model's input window so we don't blow
+    # the context when the user routes caseplan to a smaller-window model.
+    validate_file_size_limit(
+        facts_content,
+        LLMClientFactory.get_input_budget_for_command("caseplan"),
+        "Case facts",
+    )
 
     try:
         log_task_event(

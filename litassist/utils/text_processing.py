@@ -1,55 +1,15 @@
 """
 Text processing utilities.
 
-This module provides functions for text embedding, tokenization, chunking,
-and other text processing operations used throughout LitAssist.
+This module provides functions for tokenization, chunking, and other text
+processing operations used throughout LitAssist.
 """
 
 import re
 import logging
-from typing import List, TYPE_CHECKING
+from typing import List
 
 from litassist.timing import timed
-
-if TYPE_CHECKING:
-    from openai.types import Embedding
-
-
-@timed
-def create_embeddings(texts: List[str]) -> List["Embedding"]:
-    """
-    Create embeddings for a list of text inputs.
-
-    Args:
-        texts: List of text strings to embed.
-
-    Returns:
-        The embedding data from the OpenAI API response.
-
-    Raises:
-        Exception: If the embedding API call fails.
-        ValueError: If any text exceeds the model's token limit.
-    """
-    # Import here to avoid circular imports
-    from litassist.config import get_config
-
-    # Validate text lengths (8191 tokens ≈ 32000 chars for safety)
-    MAX_CHARS = 32000
-    for i, text in enumerate(texts):
-        if len(text) > MAX_CHARS:
-            raise ValueError(
-                f"Text at index {i} is too long ({len(text)} chars). "
-                f"Maximum is approximately {MAX_CHARS} characters. "
-                f"Use smaller chunks with chunk_text(text, max_chars=8000)."
-            )
-
-    # Use the model without custom dimensions since our index is 1536-dimensional
-    from openai import OpenAI
-
-    config = get_config()
-    client = OpenAI(api_key=config.oa_key)
-    response = client.embeddings.create(input=texts, model=config.emb_model)
-    return response.data
 
 
 def count_tokens_and_words(text: str) -> tuple[int, int]:

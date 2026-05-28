@@ -8,7 +8,7 @@ import os
 import click
 from typing import List, Dict, Tuple
 
-from litassist.config import get_config
+from litassist.llm.factory import LLMClientFactory
 from litassist.utils.file_ops import read_document
 from litassist.utils.text_processing import chunk_text
 from litassist.logging import log_task_event
@@ -82,10 +82,14 @@ def prepare_chunks(content: str) -> Tuple[List[str], str]:
     Returns:
         Tuple of (chunks, processing_mode)
     """
-    # Check if content needs chunking
-    if len(content) > get_config().max_chars:
+    # Chunk threshold derives from counselnotes' configured model window
+    # so larger-context models keep more content per call (one synthesis
+    # pass instead of chunked + reduce). Tracks model changes via
+    # `litassist refresh`.
+    max_chars = LLMClientFactory.get_input_budget_for_command("counselnotes")
+    if len(content) > max_chars:
         # For large content, chunk and process separately then synthesize
-        chunks = chunk_text(content, max_chars=get_config().max_chars)
+        chunks = chunk_text(content, max_chars=max_chars)
         processing_mode = "chunked"
     else:
         # Process all content together for better synthesis

@@ -229,16 +229,12 @@ def run_cove_verification(
                     },
                 )
 
-                # Warn if context is very large
-                if total_context_size > 100000:  # ~25k tokens
-                    save_log(
-                        "cove_large_context_warning",
-                        {
-                            "command": command,
-                            "size_chars": total_context_size,
-                            "message": "Large legal context may impact token usage",
-                        },
-                    )
+                # No size warning emitted here. The earlier `save_log` write
+                # was never surfaced to the user (file-only log entry), and
+                # the verification model's actual capacity is enforced by
+                # the underlying API -- if the call exceeds the model
+                # window the provider returns a clear error. A soft warn
+                # between "comfortable" and "hard cap" adds no signal.
 
             # Log failed citations
             if failed_citations:

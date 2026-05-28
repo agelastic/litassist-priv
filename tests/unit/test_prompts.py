@@ -365,7 +365,6 @@ class TestBasePromptInjection:
         # Create a minimal LLMClient instance
         with patch("litassist.config.CONFIG") as mock_config:
             mock_config.openrouter_key = "test_key"
-            mock_config.openai_key = "test_openai_key"
 
             from litassist.llm.client import LLMClient
 

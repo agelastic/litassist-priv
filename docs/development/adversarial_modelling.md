@@ -64,6 +64,8 @@ Before describing the full adversarial modelling vision, note what already exist
 
 ## Model Landscape (February 2026)
 
+> **Design-time snapshot.** Specific model picks below (Claude Opus 4.6, Gemini 2.5 Flash/Pro, Grok 4.1 Fast, etc.) were the OpenRouter inventory at the time this design was written and may not match the current active set in `litassist/llm/model_configs.yaml`. Re-validate against the current models when implementation starts. Provider families and the routing-tier framework (Fast / Balanced / Max Accuracy) remain valid; specific version pins do not.
+
 Models available for adversarial features, routed through OpenRouter (BYOK available for Anthropic, OpenAI, and xAI):
 
 ### Anthropic

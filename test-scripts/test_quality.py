@@ -7,7 +7,7 @@ by LitAssist, ensuring responses meet Australian legal standards and
 contain accurate information. Includes validation of the new verification system.
 
 Usage:
-    python test_quality.py [--all] [--openai] [--openrouter] [--jade] [--verification]
+    python test_quality.py [--all] [--openrouter] [--jade] [--verification]
 """
 
 import os
@@ -15,7 +15,7 @@ import sys
 import argparse
 import yaml
 import json
-from openai import OpenAI
+from openai import OpenAI  # used as HTTP client against OpenRouter
 import requests
 import contextlib
 import io
@@ -43,26 +43,17 @@ with open(CONFIG_PATH) as f:
 try:
     OR_KEY = cfg["openrouter"]["api_key"]
     OR_BASE = cfg["openrouter"].get("api_base", "https://openrouter.ai/api/v1")
-    OA_KEY = cfg["openai"]["api_key"]
-    EMB_MODEL = cfg["openai"]["embedding_model"]
     # Google CSE configuration - with fallback to None if missing
     GOOGLE_API_KEY = cfg.get("google_cse", {}).get("api_key", None)
     GOOGLE_CSE_ID = cfg.get("google_cse", {}).get("cse_id", None)
-    # Pinecone configuration - with fallback to None if missing
-    PC_KEY = cfg.get("pinecone", {}).get("api_key", None)
-    PC_ENV = cfg.get("pinecone", {}).get("environment", None)
-    PC_INDEX = cfg.get("pinecone", {}).get("index_name", "legal-rag")
 except KeyError as e:
     sys.exit(f"Error: config.yaml missing key {e}")
 
 # API placeholder settings for validation
 placeholder_values = [
     "YOUR_OPENROUTER_KEY",
-    "YOUR_OPENAI_KEY",
     "YOUR_GOOGLE_API_KEY",
     "YOUR_GOOGLE_CSE_ID",
-    "YOUR_PINECONE_KEY",
-    "YOUR_PINECONE_ENV",
 ]
 
 
@@ -73,8 +64,6 @@ def validate_credentials_for_quality_testing():
 
     if OR_KEY in placeholder_values:
         missing_creds.append("OpenRouter API key")
-    if OA_KEY in placeholder_values:
-        missing_creds.append("OpenAI API key")
     if GOOGLE_API_KEY in placeholder_values or GOOGLE_CSE_ID in placeholder_values:
         missing_creds.append("Google CSE credentials")
 
@@ -129,125 +118,9 @@ def suppress_expected_errors():
 # Enhanced error handling now provided by test_utils.py
 
 
-# ─── OpenAI Quality Tests ────────────────────────────────────────────────
-# OpenAI completion quality tests removed - LitAssist only uses OpenAI for embeddings
-# All LLM completion operations route through OpenRouter
-
-
-def test_openai_embedding_quality():
-    """Test OpenAI embedding quality with legal content"""
-    result = EnhancedTestResult("OpenAI", "Embedding Quality")
-
-    try:
-        # Require real credentials for quality testing
-        if OA_KEY in placeholder_values:
-            result.failure(
-                "OpenAI API key not configured - quality testing requires real credentials",
-                context={"api_key_status": "placeholder", "model": EMB_MODEL},
-            )
-            return result
-
-        print("Configuring OpenAI API connection...")
-        # Configure OpenAI with direct API
-        client = OpenAI(api_key=OA_KEY)
-
-        print("Testing embedding quality with legal documents...")
-
-        # Test with diverse legal content that should produce meaningful embeddings
-        test_documents = [
-            "The High Court of Australia established the implied freedom of political communication in Australian law",
-            "Contract law requires offer, acceptance, consideration and intention to create legal relations",
-            "Criminal liability requires both actus reus (guilty act) and mens rea (guilty mind) elements",
-            "The separation of powers doctrine divides government into legislative, executive and judicial branches",
-            "Negligence requires duty of care, breach of duty, causation and damage under tort law",
-        ]
-
-        # Generate embeddings
-        embeddings = []
-        for doc in test_documents:
-            response = client.embeddings.create(input=doc, model=EMB_MODEL)
-            embeddings.append(response.data[0].embedding)
-
-        # Quality checks for embeddings
-        import numpy as np
-
-        # Check embedding dimensions are consistent
-        dimensions = [len(emb) for emb in embeddings]
-        consistent_dimensions = len(set(dimensions)) == 1
-
-        # Check embeddings are different (not identical)
-        unique_embeddings = len(set(tuple(emb) for emb in embeddings)) == len(
-            embeddings
-        )
-
-        # Check embeddings have reasonable magnitude (not zero vectors)
-        magnitudes = [np.linalg.norm(emb) for emb in embeddings]
-        reasonable_magnitudes = all(mag > 0.1 for mag in magnitudes)
-
-        # Calculate similarity between related legal concepts
-        contract_emb = np.array(embeddings[1])  # Contract law
-        tort_emb = np.array(embeddings[4])  # Negligence (tort law)
-        constitutional_emb = np.array(embeddings[0])  # Constitutional law
-
-        # Contract and tort should be more similar than contract and constitutional
-        contract_tort_sim = np.dot(contract_emb, tort_emb) / (
-            np.linalg.norm(contract_emb) * np.linalg.norm(tort_emb)
-        )
-        contract_constitutional_sim = np.dot(contract_emb, constitutional_emb) / (
-            np.linalg.norm(contract_emb) * np.linalg.norm(constitutional_emb)
-        )
-
-        meaningful_similarities = contract_tort_sim > contract_constitutional_sim
-
-        quality_checks = {
-            "consistent_dimensions": bool(consistent_dimensions),
-            "unique_embeddings": bool(unique_embeddings),
-            "reasonable_magnitudes": bool(reasonable_magnitudes),
-            "meaningful_similarities": bool(meaningful_similarities),
-            "expected_dimension": bool(
-                dimensions[0] == 1536
-            ),  # Expected for text-embedding-3-small
-        }
-
-        quality_score = int(
-            sum(1 for check in quality_checks.values() if check)
-            * (100 / len(quality_checks))
-        )
-
-        if quality_score >= 80:
-            result.success(
-                quality_score=quality_score,
-                quality_checks=quality_checks,
-                embedding_dimension=dimensions[0],
-                documents_tested=len(test_documents),
-                average_magnitude=float(np.mean(magnitudes)),
-                contract_tort_similarity=float(contract_tort_sim),
-                contract_constitutional_similarity=float(contract_constitutional_sim),
-            )
-        else:
-            result.failure(
-                f"Embedding quality score ({quality_score}/100) below threshold. Quality checks: {quality_checks}",
-                context={
-                    "model": EMB_MODEL,
-                    "quality_score": quality_score,
-                    "documents_tested": len(test_documents),
-                    "embedding_dimension": dimensions[0] if dimensions else "unknown",
-                },
-            )
-
-    except Exception as e:
-        result.failure(
-            e,
-            context={
-                "model": EMB_MODEL,
-                "api_base": "https://api.openai.com/v1",
-                "documents_count": (
-                    len(test_documents) if "test_documents" in locals() else 0
-                ),
-            },
-        )
-
-    return result
+# OpenAI direct quality tests removed. LitAssist no longer talks to OpenAI
+# directly: there is no separate OpenAI key in config and no embedding pipeline.
+# All LLM operations route through OpenRouter.
 
 
 # ─── OpenRouter Quality Tests ────────────────────────────────────────────────
@@ -938,371 +811,6 @@ def test_jade_legal_content_quality():
     return result
 
 
-# ─── Pinecone Quality Tests ────────────────────────────────────────────────
-def test_pinecone_vector_operations():
-    """Test Pinecone vector database operations for embeddings and retrieval"""
-    result = EnhancedTestResult("Pinecone", "Vector Operations Quality")
-
-    try:
-        # Require real credentials for quality testing
-        if (
-            PC_KEY is None
-            or PC_ENV is None
-            or PC_KEY in placeholder_values
-            or PC_ENV in placeholder_values
-        ):
-            result.failure(
-                "Pinecone credentials not configured - quality testing requires real credentials",
-                context={
-                    "pc_key_status": (
-                        "placeholder" if PC_KEY in placeholder_values else "missing"
-                    ),
-                    "pc_env_status": (
-                        "placeholder" if PC_ENV in placeholder_values else "missing"
-                    ),
-                },
-            )
-            return result
-
-        from litassist.utils.text_processing import create_embeddings
-        from litassist.helpers.pinecone_config import PineconeWrapper
-
-        # Use PineconeWrapper - the pinecone-client package is broken
-        try:
-            index = PineconeWrapper(PC_KEY, PC_INDEX)
-            # Verify the connection works by getting stats
-            stats = index.describe_index_stats()
-            print(
-                f"\nSuccessfully connected to index '{PC_INDEX}' using PineconeWrapper"
-            )
-            print(
-                f"Index stats: dimension={stats.dimension}, vectors={stats.total_vector_count}"
-            )
-            print("Testing with real Pinecone index via PineconeWrapper...")
-            _using_wrapper = True
-            has_real_index = True
-            existing_indexes = [PC_INDEX]  # We know our index name
-        except Exception as wrapper_error:
-            print(f"\nPineconeWrapper failed: {wrapper_error}")
-            print("Using mock index for quality testing instead.")
-
-            # Import the MockPineconeIndex from retriever.py
-            from litassist.helpers.retriever import MockPineconeIndex
-
-            index = MockPineconeIndex()
-            print("Testing with mock Pinecone index...")
-            _using_wrapper = False
-            has_real_index = False
-            existing_indexes = []
-
-        # Test vector operations with legal content
-        test_documents = [
-            "The High Court of Australia established the implied freedom of political communication",
-            "Defamation law in Australia requires proof of publication, identification and defamatory meaning",
-            "Contract law requires offer, acceptance, consideration and intention to create legal relations",
-        ]
-
-        # Test embedding creation - create_embeddings uses CONFIG internally
-        embeddings = create_embeddings(test_documents)
-
-        # Test vector upsert
-        test_vectors = [
-            (f"test-{i}", embedding.embedding, {"text": doc, "test": True})
-            for i, (embedding, doc) in enumerate(zip(embeddings, test_documents))
-        ]
-
-        upsert_response = index.upsert(vectors=test_vectors)
-
-        # Test vector query/retrieval
-        query_embedding = embeddings[0].embedding
-        query_response = index.query(
-            vector=query_embedding,
-            filter={"test": True},
-            top_k=3,
-            include_metadata=True,
-        )
-
-        # Clean up test vectors
-        test_ids = [f"test-{i}" for i in range(len(test_documents))]
-        index.delete(ids=test_ids)
-
-        # Handle both real Pinecone objects and mock dictionary responses
-        # MockPineconeIndex returns a dict with 'matches' key, real Pinecone returns an object with matches attribute
-        matches = []
-        if isinstance(query_response, dict) and "matches" in query_response:
-            # Mock index response (dictionary)
-            matches = query_response["matches"]
-            print("Using mock index response format")
-        else:
-            # Real Pinecone index response (object with attributes)
-            matches = query_response.matches
-            print("Using real index response format")
-
-        # Add mock matches for testing if we're using the mock index and don't have any matches
-        if len(matches) == 0 and not has_real_index:
-            print("Adding mock matches for quality testing")
-
-            # Create mock matches that will pass the quality checks
-            class MockMatch:
-                def __init__(self, id, score, text):
-                    self.id = id
-                    self.score = score
-                    self.metadata = {"text": text}
-
-            # Create one mock match for each test document
-            matches = [
-                MockMatch(f"test-{i}", 0.95, doc)
-                for i, doc in enumerate(test_documents)
-            ]
-
-        # Quality checks for Pinecone operations
-        quality_checks = {
-            "embeddings_created": len(embeddings) == len(test_documents),
-            "upsert_successful": (
-                hasattr(upsert_response, "upserted_count")
-                and upsert_response.upserted_count > 0
-            )
-            or (
-                isinstance(upsert_response, dict)
-                and upsert_response.get("upserted_count", 0) > 0
-            )
-            or not has_real_index,  # Always pass this check for mock index
-            "query_returned_results": len(matches) > 0,
-            "metadata_preserved": any(
-                (hasattr(match, "metadata") and match.metadata.get("text"))
-                or (isinstance(match, dict) and match.get("metadata", {}).get("text"))
-                for match in matches
-            )
-            or not has_real_index,  # Always pass for mock index
-            "relevance_scores": all(
-                getattr(match, "score", 0) > 0.5 for match in matches
-            )
-            or not has_real_index,  # Always pass for mock index; lowered threshold for real index
-            "index_accessible": has_real_index
-            or not has_real_index,  # Always pass this check
-        }
-
-        quality_score = int(
-            sum(1 for check in quality_checks.values() if check)
-            * (100 / len(quality_checks))
-        )
-
-        if (
-            quality_score >= 60
-        ):  # Lower threshold for vector operations to handle varying server conditions
-            result.success(
-                quality_score=quality_score,
-                quality_checks=quality_checks,
-                index_name=PC_INDEX,
-                available_indexes=existing_indexes,
-                embeddings_count=len(embeddings),
-                query_results_count=len(matches),
-                sample_scores=[getattr(match, "score", 0.95) for match in matches[:3]],
-            )
-        else:
-            result.failure(
-                f"Pinecone vector operations quality score ({quality_score}/100) below threshold. Quality checks: {quality_checks}",
-                context={
-                    "index_name": PC_INDEX,
-                    "has_real_index": has_real_index,
-                    "embeddings_count": len(embeddings),
-                    "matches_count": len(matches),
-                },
-            )
-
-    except Exception as e:
-        result.failure(
-            e,
-            context={
-                "pc_index": PC_INDEX,
-                "pc_key": PC_KEY[:10] + "..." if PC_KEY else "None",
-                "pc_env": PC_ENV,
-            },
-        )
-
-    return result
-
-
-def test_pinecone_service_reliability():
-    """Test Pinecone service reliability with basic CRUD operations"""
-    result = EnhancedTestResult("Pinecone", "Service Reliability")
-
-    try:
-        # Require real credentials for service testing
-        if (
-            PC_KEY is None
-            or PC_ENV is None
-            or PC_KEY in placeholder_values
-            or PC_ENV in placeholder_values
-        ):
-            result.failure(
-                "Pinecone credentials not configured - service testing requires real credentials",
-                context={
-                    "pc_key_status": (
-                        "placeholder" if PC_KEY in placeholder_values else "missing"
-                    ),
-                    "pc_env_status": (
-                        "placeholder" if PC_ENV in placeholder_values else "missing"
-                    ),
-                },
-            )
-            return result
-
-        from litassist.helpers.pinecone_config import PineconeWrapper
-        import time
-        import numpy as np
-
-        print("Testing Pinecone service reliability with CRUD operations...")
-
-        # Use PineconeWrapper
-        try:
-            index = PineconeWrapper(PC_KEY, PC_INDEX)
-            _stats = index.describe_index_stats()
-            has_real_index = True
-        except Exception:
-            from litassist.helpers.retriever import MockPineconeIndex
-
-            index = MockPineconeIndex()
-            has_real_index = False
-
-        # Create simple test vectors (no domain-specific content)
-        test_vectors = []
-        test_embeddings = []
-
-        # Generate simple random vectors for testing
-        np.random.seed(42)  # For reproducible results
-        for i in range(5):
-            # Create random embedding vector (1536 dimensions like OpenAI)
-            embedding = np.random.random(1536).astype(np.float32)
-            test_embeddings.append(embedding)
-            test_vectors.append(
-                (
-                    f"reliability-test-{i}",
-                    embedding.tolist(),
-                    {"test_id": i, "content": f"test document {i}", "test": True},
-                )
-            )
-
-        namespace = "service_reliability_test"
-
-        # Test 1: Upsert Operation
-        print("Testing upsert operation...")
-        upsert_start = time.time()
-        try:
-            index.upsert(vectors=test_vectors, namespace=namespace)
-            upsert_time = time.time() - upsert_start
-            upsert_success = True
-        except Exception as e:
-            upsert_time = time.time() - upsert_start
-            upsert_success = False
-            print(f"Upsert failed: {e}")
-
-        # Test 2: Query Operation
-        print("Testing query operation...")
-        query_start = time.time()
-        try:
-            query_response = index.query(
-                vector=test_embeddings[0].tolist(),
-                namespace=namespace,
-                top_k=3,
-                include_metadata=True,
-            )
-            query_time = time.time() - query_start
-
-            # Validate response structure
-            if hasattr(query_response, "matches"):
-                matches = query_response.matches
-                query_success = True
-                valid_response = len(matches) > 0
-            elif isinstance(query_response, dict) and "matches" in query_response:
-                matches = query_response["matches"]
-                query_success = True
-                valid_response = len(matches) > 0
-            else:
-                query_success = False
-                valid_response = False
-                matches = []
-
-        except Exception as e:
-            query_time = time.time() - query_start
-            query_success = False
-            valid_response = False
-            matches = []
-            print(f"Query failed: {e}")
-
-        # Test 3: Delete Operation
-        print("Testing delete operation...")
-        delete_start = time.time()
-        try:
-            test_ids = [f"reliability-test-{i}" for i in range(5)]
-            index.delete(ids=test_ids, namespace=namespace)
-            delete_time = time.time() - delete_start
-            delete_success = True
-        except Exception as e:
-            delete_time = time.time() - delete_start
-            delete_success = False
-            print(f"Delete failed: {e}")
-
-        # Performance and reliability checks
-        reliability_checks = {
-            "upsert_completed": upsert_success,
-            "upsert_reasonable_time": upsert_time
-            < 30.0,  # Should complete within 30 seconds
-            "query_completed": query_success,
-            "query_reasonable_time": query_time
-            < 10.0,  # Should complete within 10 seconds
-            "query_valid_response": valid_response,
-            "delete_completed": delete_success,
-            "delete_reasonable_time": delete_time
-            < 15.0,  # Should complete within 15 seconds
-        }
-
-        # Calculate reliability score
-        reliability_score = int(
-            sum(1 for check in reliability_checks.values() if check)
-            * (100 / len(reliability_checks))
-        )
-
-        # Prepare timing metrics
-        timing_metrics = {
-            "upsert_time": round(upsert_time, 3),
-            "query_time": round(query_time, 3),
-            "delete_time": round(delete_time, 3),
-            "total_time": round(upsert_time + query_time + delete_time, 3),
-        }
-
-        if reliability_score >= 85:  # Higher threshold for service reliability
-            result.success(
-                reliability_score=reliability_score,
-                reliability_checks=reliability_checks,
-                timing_metrics=timing_metrics,
-                vectors_tested=len(test_vectors),
-                response_structure_valid=valid_response,
-                matches_returned=len(matches) if matches else 0,
-            )
-        else:
-            result.failure(
-                f"Service reliability score ({reliability_score}/100) below threshold. Checks: {reliability_checks}, Timing: {timing_metrics}",
-                context={
-                    "index_name": PC_INDEX,
-                    "has_real_index": has_real_index,
-                    "reliability_score": reliability_score,
-                    "timing_metrics": timing_metrics,
-                },
-            )
-
-    except Exception as e:
-        result.failure(
-            e,
-            context={
-                "pc_index": PC_INDEX,
-                "pc_key": PC_KEY[:10] + "..." if PC_KEY else "None",
-                "pc_env": PC_ENV,
-            },
-        )
-
-    return result
-
 
 # ─── Main Test Runner ────────────────────────────────────────────────
 def run_tests(args):
@@ -1315,12 +823,6 @@ def run_tests(args):
     print("=" * 60)
     print(f"Started at: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
     print("-" * 60 + "\n")
-
-    # OpenAI tests (embedding only)
-    if args.all or args.openai:
-        print("\nRunning OpenAI quality tests:")
-        print("-" * 40)
-        results.append(test_openai_embedding_quality())
 
     # OpenRouter tests
     if args.all or args.openrouter or args.slow:
@@ -1351,13 +853,6 @@ def run_tests(args):
         print("\nRunning Google CSE quality tests:")
         print("-" * 40)
         results.append(test_google_search_relevance())
-
-    # Pinecone tests
-    if args.all or args.pinecone:
-        print("\nRunning Pinecone quality tests:")
-        print("-" * 40)
-        results.append(test_pinecone_vector_operations())
-        results.append(test_pinecone_service_reliability())
 
     # Verification system tests - only run when explicitly requested (too slow/expensive)
     if args.verification:
@@ -1553,13 +1048,11 @@ if __name__ == "__main__":
         description="Quality validation tests for LitAssist integrations"
     )
     parser.add_argument("--all", action="store_true", help="Run all quality tests")
-    parser.add_argument("--openai", action="store_true", help="Test OpenAI quality")
     parser.add_argument(
         "--openrouter", action="store_true", help="Test OpenRouter quality"
     )
     parser.add_argument("--jade", action="store_true", help="Test Jade quality")
     parser.add_argument("--google", action="store_true", help="Test Google CSE quality")
-    parser.add_argument("--pinecone", action="store_true", help="Test Pinecone quality")
     parser.add_argument(
         "--verification", action="store_true", help="Test verification system quality"
     )
@@ -1572,11 +1065,9 @@ if __name__ == "__main__":
     # If no specific tests selected, run all tests
     if not (
         args.all
-        or args.openai
         or args.openrouter
         or args.jade
         or args.google
-        or args.pinecone
         or args.verification
         or args.slow
     ):

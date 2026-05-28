@@ -8,8 +8,6 @@ import click
 from typing import Tuple, Dict
 
 from litassist.utils.file_ops import read_document
-from litassist.utils.text_processing import count_tokens_and_words
-from litassist.utils.formatting import warning_message
 
 
 def read_all_documents(
@@ -73,29 +71,3 @@ def read_all_documents(
     }
 
 
-def estimate_input_size(content_dict: Dict[str, any]) -> None:
-    """
-    Estimate total input size and warn if large.
-
-    Args:
-        content_dict: Dictionary containing all document content
-    """
-    total_content = (
-        content_dict["case_facts_content"]
-        + "\n"
-        + content_dict["strategies_content"]
-        + "\n"
-        + "\n".join(content_dict["research_docs"])
-        + "\n"
-        + "\n".join(content_dict["supporting_docs"])
-    )
-    total_tokens, _ = count_tokens_and_words(total_content)
-
-    # Warn if large
-    if total_tokens > 80000:
-        click.echo(
-            warning_message(
-                f"Large input detected ({total_tokens:,} tokens). "
-                f"This may exceed API limits. Consider using fewer documents."
-            )
-        )

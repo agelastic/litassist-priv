@@ -45,8 +45,7 @@ class TestMockConfig:
         from litassist.config import CONFIG
 
         assert CONFIG is not None
-        assert CONFIG.oa_key == "test-openai-key"
-        assert CONFIG.get_openai_api_key() == "test-openai-key"
+        assert CONFIG.openrouter_api_key == "test-openrouter-key"
 
 
 class TestModuleImports:
@@ -63,12 +62,6 @@ class TestModuleImports:
         from litassist import llm
 
         assert llm is not None
-
-    def test_import_retriever(self):
-        """Test retriever module imports."""
-        from litassist.helpers import retriever
-
-        assert retriever is not None
 
     def test_import_commands(self):
         """Test commands module imports."""

@@ -116,39 +116,30 @@ openrouter:
   api_key:    "YOUR_OPENROUTER_KEY"
   api_base:   "https://openrouter.ai/api/v1"   # optional
 
-openai:
-  api_key:          "YOUR_OPENAI_KEY"  # For embeddings and o3-pro BYOK via OpenRouter
-  embedding_model:  "text-embedding-3-small"
-
 google_cse:
   api_key:                "YOUR_GOOGLE_API_KEY"         # API key for Google Custom Search
   cse_id:                 "YOUR_JADE_CSE_ID"           # Google CSE for Jade.io
   cse_id_comprehensive:   "YOUR_COMPREHENSIVE_CSE_ID"  # Optional: broader legal sources (gov.au etc.)
   cse_id_austlii:         "YOUR_AUSTLII_CSE_ID"        # Optional: AustLII CSE for Australian legal cases
 
-pinecone:
-  api_key:     "YOUR_PINECONE_KEY"
-  environment: "YOUR_PINECONE_ENV"   # e.g. "us-east-1-aws"
-  index_name:  "legal-rag"
-
 llm:
 
 general:
   heartbeat_interval: 10  # Progress indicator interval in seconds (default: 10)
   max_chars: 200000       # Document chunking: characters per chunk for digest/extractfacts (default: 200000 ≈ 50K tokens)
-  rag_max_chars: 8000     # Document chunking: characters per chunk for draft command embeddings (default: 8000 ≈ 1600 words)
 ```
 
 ### OpenRouter Configuration
 
-OpenRouter is the primary API gateway for all LLM calls. LitAssist sends LLM
-requests with `openrouter.api_key`; it does not send `openai.api_key` as the
-request bearer token. Some OpenRouter models require a provider key attached in
-OpenRouter's integrations dashboard.
+OpenRouter is the sole API gateway for all LLM calls. LitAssist sends every
+LLM request with `openrouter.api_key`. There is no separate OpenAI key in
+`config.yaml`; provider-specific BYOK (e.g. for `openai/o3-pro` access) is
+configured in OpenRouter's integrations dashboard, not in this project's
+config.
 
 **BYOK status:**
-- OpenAI o3-pro requires an OpenAI provider key in OpenRouter integrations (draft, barbrief, counselnotes, brainstorm-analysis, strategy-analysis)
-- OpenAI GPT-5.5 currently runs as a standard OpenRouter model
+- `openai/o3-pro` requires an OpenAI provider key in OpenRouter integrations (draft, barbrief, counselnotes, brainstorm-analysis, strategy-analysis)
+- `openai/gpt-5.5` currently runs as a standard OpenRouter model
 - Claude Sonnet 4.6 available without BYOK
 
 **Quick BYOK Setup:**
@@ -156,7 +147,6 @@ OpenRouter's integrations dashboard.
 2. Go to [OpenRouter Settings](https://openrouter.ai/settings/integrations).
 3. Add an OpenAI provider key under integrations for o3-pro access.
 4. Save and verify model availability on your OpenRouter dashboard.
-5. Keep `openai.api_key` in `config.yaml` for non-routing OpenAI uses such as embeddings; setting it locally does not attach the key to OpenRouter.
 
 Anthropic models currently run without BYOK on OpenRouter.
 

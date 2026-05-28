@@ -52,22 +52,9 @@ system_feedback:
       file_too_large: |
         {file_type} file too large ({size:,} characters). Please provide a file under {max_size:,} characters (~{word_count:,} words).
 
-    # USED BY: retriever.py execute_search()
     external:
       search_error: |
         Search error: {error}
-      
-      embedding_error: |
-        Embedding error: {error}
-      
-      embedding_query_error: |
-        Embedding error for query: {error}
-      
-      pinecone_upsert_error: |
-        Pinecone upsert error: {error}
-      
-      pinecone_retrieval_error: |
-        Pinecone retrieval error: {error}
 
     # USED BY: config.py validate_config()
     config:
@@ -129,32 +116,6 @@ system_feedback:
         Strategy command has a 100,000 character limit to ensure quality analysis.
         Please use 'extractfacts' first to create a structured summary.
 
-    # USED BY: config.py test_api_connections()
-    api:
-      key_placeholder: |
-        [ERROR] API key appears to be a placeholder value.
-        Please set your actual {service} API key in config.yaml or as an environment variable.
-      
-      byok_required_o1_pro: |
-        [ERROR] OpenAI o1-pro requires Bring Your Own Key (BYOK) setup.
-        
-        To use o1-pro:
-        1. Ensure you have o1-pro access on your OpenAI account
-        2. Set your OpenAI API key in config.yaml or environment
-        3. The key must have access to o1-pro model
-        
-        Note: o1-pro is expensive (~$15/call) and requires special access.
-      
-      byok_required_o3: |
-        [ERROR] OpenAI o3 requires Bring Your Own Key (BYOK) setup.
-        
-        To use o3:
-        1. Ensure you have o3 access on your OpenAI account (limited availability)
-        2. Set your OpenAI API key in config.yaml or environment
-        3. The key must have access to o3 model
-        
-        Note: o3 is extremely expensive and has very limited availability.
-
     # USED BY: citation_verify.py validate_citation_format()
     citation:
       not_found_header: |
@@ -198,10 +159,6 @@ system_feedback:
       #   [TARGET] Generating option {attempt}...
       # regeneration_attempt: |
       #   [RETRY] Regeneration attempt {retry_attempt}: {count} strategies need fixing
-      # will_use_embedding: |
-      #   Will use embedding/retrieval for {doc_path}
-      # will_use_embedding_large: |
-      #   Will use embedding/retrieval for large {doc_path}
 
     # USED BY: command_runner.py finalize_command()  
     completion:

@@ -16,7 +16,6 @@ class TestCommandParameterConfiguration:
     def test_extractfacts_configuration(self, mock_config):
         """Test extractfacts command configuration."""
         mock_config.openrouter_key = "test_key"
-        mock_config.openai_key = "test_key"
 
         configs = LLMClientFactory.list_configurations()
         assert "extractfacts" in configs
@@ -29,7 +28,6 @@ class TestCommandParameterConfiguration:
     def test_lookup_configuration(self, mock_config):
         """Test lookup command configuration."""
         mock_config.openrouter_key = "test_key"
-        mock_config.openai_key = "test_key"
 
         configs = LLMClientFactory.list_configurations()
         assert "lookup" in configs
@@ -44,7 +42,6 @@ class TestCommandParameterConfiguration:
     def test_strategy_configuration(self, mock_config):
         """Test strategy command configuration."""
         mock_config.openrouter_key = "test_key"
-        mock_config.openai_key = "test_key"
 
         configs = LLMClientFactory.list_configurations()
         assert "strategy" in configs
@@ -61,7 +58,6 @@ class TestCommandParameterConfiguration:
     def test_draft_configuration(self, mock_config):
         """Test draft command configuration."""
         mock_config.openrouter_key = "test_key"
-        mock_config.openai_key = "test_key"
 
         configs = LLMClientFactory.list_configurations()
         assert "draft" in configs
@@ -75,7 +71,6 @@ class TestCommandParameterConfiguration:
     def test_parameter_filtering_for_reasoning_family(self, mock_config):
         """Test that o-series reasoning models filter out unsupported sampling parameters."""
         mock_config.openrouter_key = "test_key"
-        mock_config.openai_key = "test_key"
 
         from litassist.llm.parameter_handler import get_model_family, get_model_parameters
 
@@ -97,7 +92,6 @@ class TestCommandParameterConfiguration:
     def test_default_command_configuration(self, mock_config):
         """Test commands without specific config raise KeyError (fail-fast)."""
         mock_config.openrouter_key = "test_key"
-        mock_config.openai_key = "test_key"
 
         import pytest
 
@@ -110,7 +104,6 @@ class TestCommandParameterConfiguration:
     def test_digest_requires_subtype(self, mock_config):
         """Test digest command requires sub-type (summary/issues) - NO FALLBACK."""
         mock_config.openrouter_key = "test_key"
-        mock_config.openai_key = "test_key"
 
         import pytest
 

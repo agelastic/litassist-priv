@@ -2,12 +2,12 @@
 """
 Test script for LitAssist integrations
 
-This script performs targeted tests of the OpenAI, Pinecone, and OpenRouter
-integrations used by LitAssist. It tests each service individually with
-lightweight operations to verify connectivity and basic functionality.
+This script performs targeted tests of the OpenAI, OpenRouter, Google CSE,
+and Jade integrations used by LitAssist. It tests each service individually
+with lightweight operations to verify connectivity and basic functionality.
 
 Usage:
-    python test_integrations.py [--all] [--openai] [--pinecone] [--openrouter]
+    python test_integrations.py [--all] [--openrouter] [--google] [--jade]
 """
 
 import os
@@ -19,18 +19,13 @@ import json
 # Add the project root to the Python path
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-try:
-    import pinecone
-except ImportError:
-    pinecone = None
-from litassist.helpers.pinecone_config import PineconeWrapper
 import requests
 
 from datetime import datetime
 from test_utils import EnhancedTestResult
 
 # Try importing required packages and report errors
-required_packages = ["openai", "pinecone"]
+required_packages = ["openai"]
 missing_packages = []
 
 for package in required_packages:
@@ -59,11 +54,6 @@ with open(CONFIG_PATH) as f:
 try:
     OR_KEY = cfg["openrouter"]["api_key"]
     OR_BASE = cfg["openrouter"].get("api_base", "https://openrouter.ai/api/v1")
-    OA_KEY = cfg["openai"]["api_key"]
-    EMB_MODEL = cfg["openai"]["embedding_model"]
-    PC_KEY = cfg["pinecone"]["api_key"]
-    PC_ENV = cfg["pinecone"]["environment"]
-    PC_INDEX = cfg["pinecone"]["index_name"]
     # Google CSE configuration - with fallback to placeholder if missing
     GOOGLE_API_KEY = cfg.get("google_cse", {}).get("api_key", "YOUR_GOOGLE_API_KEY")
     GOOGLE_CSE_ID = cfg.get("google_cse", {}).get("cse_id", "YOUR_GOOGLE_CSE_ID")
@@ -73,9 +63,6 @@ except KeyError as e:
 # API placeholder settings for validation
 placeholder_values = [
     "YOUR_OPENROUTER_KEY",
-    "YOUR_OPENAI_KEY",
-    "YOUR_PINECONE_KEY",
-    "YOUR_PINECONE_ENV",
     "YOUR_GOOGLE_API_KEY",
     "YOUR_GOOGLE_CSE_ID",
 ]
@@ -83,163 +70,6 @@ placeholder_values = [
 # Check for placeholder values
 if OR_KEY in placeholder_values:
     print("Warning: OpenRouter API key is a placeholder value")
-if OA_KEY in placeholder_values:
-    print("Warning: OpenAI API key is a placeholder value")
-if PC_KEY in placeholder_values or PC_ENV in placeholder_values:
-    print("Warning: Pinecone credentials contain placeholder values")
-
-
-# ─── OpenAI Tests ────────────────────────────────────────────────
-def test_openai_models():
-    """Test listing OpenAI models"""
-    result = EnhancedTestResult("OpenAI", "List Models")
-
-    try:
-        # Configure OpenAI with direct API (not through OpenRouter)
-        from openai import OpenAI
-        # Create OpenAI client with v1.0+ API
-        client = OpenAI(api_key=OA_KEY)
-
-        # List available models
-        response = client.models.list()
-        model_count = len(list(response.data))
-
-        # Check if we got a valid response with models
-        if model_count > 0:
-            # Success - extract some model IDs for the report
-            model_samples = [m.id for m in response.data[:3]]
-            result.success(model_count=model_count, sample_models=model_samples)
-        else:
-            result.failure("No models returned")
-
-    except Exception as e:
-        result.failure(e)
-
-    return result
-
-
-def test_openai_embedding():
-    """Test OpenAI embedding generation"""
-    result = EnhancedTestResult("OpenAI", "Generate Embedding")
-
-    try:
-        # Configure OpenAI with v1.0+ API
-        from openai import OpenAI
-        client = OpenAI(api_key=OA_KEY)
-
-        # Generate an embedding for a test sentence
-        test_text = (
-            "This is a test sentence for embedding generation in legal contexts."
-        )
-        response = client.embeddings.create(input=[test_text], model=EMB_MODEL)
-
-        # Check embedding dimensions
-        embedding = response.data[0].embedding
-        embedding_dims = len(embedding)
-        embedding_sample = embedding[:5]  # First 5 dimensions for display
-
-        # Check token usage
-        token_usage = response.usage.total_tokens
-
-        result.success(
-            embedding_dimensions=embedding_dims,
-            sample_values=embedding_sample,
-            tokens_used=token_usage,
-        )
-
-    except Exception as e:
-        result.failure(
-            e,
-            context={
-                "model": EMB_MODEL,
-                "api_base": "https://api.openai.com/v1",
-                "test_text": (
-                    test_text[:50] + "..." if len(test_text) > 50 else test_text
-                ),
-            },
-        )
-
-    return result
-
-
-# OpenAI completion testing removed - all LLM operations now route through OpenRouter
-
-
-# ─── Pinecone Tests ────────────────────────────────────────────────
-def test_pinecone_connection():
-    """Test basic Pinecone connection and index listing"""
-    result = EnhancedTestResult("Pinecone", "API Connection")
-
-    try:
-        # Use PineconeWrapper - the pinecone-client package is broken
-        PineconeWrapper(PC_KEY, PC_INDEX)
-        indexes = [PC_INDEX]  # We know our index name
-
-        result.success(available_indexes=indexes)
-
-    except Exception as e:
-        result.failure(
-            e,
-            context={
-                "pinecone_key": PC_KEY[:10] + "..." if PC_KEY else "None",
-                "pinecone_index": PC_INDEX,
-                "pinecone_env": PC_ENV,
-            },
-        )
-
-    return result
-
-
-def test_pinecone_basic_operations():
-    """Test basic Pinecone connectivity and simple operations"""
-    result = EnhancedTestResult("Pinecone", "Basic Operations")
-
-    try:
-        # Use PineconeWrapper - the pinecone-client package is broken
-        index = PineconeWrapper(PC_KEY, PC_INDEX)
-
-        # Test basic connection by getting stats
-        stats = index.describe_index_stats()
-        if not hasattr(stats, "dimension"):
-            result.success(
-                note="Index does not exist but connection works",
-                index_name=PC_INDEX,
-                solution="Create the index manually via Pinecone console",
-            )
-            return result
-
-        # Just test that basic operations work with minimal data
-        test_vector = [0.1] * 1536  # Simple test vector
-        test_id = "connectivity-test"
-
-        # Test upsert
-        index.upsert(vectors=[(test_id, test_vector, {"test": True})])
-
-        # Test query
-        query_response = index.query(vector=test_vector, top_k=1, include_metadata=True)
-
-        # Test delete
-        index.delete(ids=[test_id])
-
-        result.success(
-            dimensions=stats.dimension,
-            total_vectors=stats.total_vector_count,
-            operations_tested=["upsert", "query", "delete"],
-        )
-
-    except Exception as e:
-        result.failure(
-            e,
-            context={
-                "pinecone_index": PC_INDEX,
-                "test_vector_dims": (
-                    len(test_vector) if "test_vector" in locals() else "unknown"
-                ),
-                "operation": "basic_operations",
-            },
-        )
-
-    return result
 
 
 # ─── OpenRouter Tests ────────────────────────────────────────────────
@@ -288,8 +118,8 @@ def test_openrouter_completion():
             base_url=OR_BASE
         )
 
-        # Use actual LitAssist model (not OpenAI model through OpenRouter)
-        model = "anthropic/claude-3-sonnet"
+        # Use actual LitAssist model (routed through OpenRouter)
+        model = "anthropic/claude-sonnet-4.6"
 
         # Simple legal question
         messages = [
@@ -534,20 +364,6 @@ def run_tests(args):
     print(f"Started at: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
     print("-" * 60 + "\n")
 
-    # OpenAI tests
-    if args.all or args.openai:
-        print("\nRunning OpenAI tests:")
-        print("-" * 40)
-        results.append(test_openai_models())
-        results.append(test_openai_embedding())
-
-    # Pinecone tests
-    if args.all or args.pinecone:
-        print("\nRunning Pinecone tests:")
-        print("-" * 40)
-        results.append(test_pinecone_connection())
-        results.append(test_pinecone_basic_operations())
-
     # OpenRouter tests
     if args.all or args.openrouter:
         print("\nRunning OpenRouter tests:")
@@ -596,10 +412,6 @@ def run_tests(args):
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Test LitAssist integrations")
     parser.add_argument("--all", action="store_true", help="Run all tests")
-    parser.add_argument("--openai", action="store_true", help="Test OpenAI integration")
-    parser.add_argument(
-        "--pinecone", action="store_true", help="Test Pinecone integration"
-    )
     parser.add_argument(
         "--openrouter", action="store_true", help="Test OpenRouter integration"
     )
@@ -615,8 +427,6 @@ if __name__ == "__main__":
     # If no specific tests selected, run all tests
     if not (
         args.all
-        or args.openai
-        or args.pinecone
         or args.openrouter
         or args.google
         or args.jade

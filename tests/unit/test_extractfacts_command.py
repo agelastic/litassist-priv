@@ -22,7 +22,7 @@ class TestExtractFactsBasic:
             "total_tokens": 15,
         }
 
-    @patch("litassist.commands.extractfacts.document_reader.get_config")
+    @patch("litassist.commands.extractfacts.document_reader.LLMClientFactory.get_input_budget_for_command")
     @patch("litassist.commands.extractfacts.single_extractor.PROMPTS")
     @patch("litassist.commands.extractfacts.core.show_command_completion")
     @patch("litassist.commands.extractfacts.core.save_log")
@@ -53,9 +53,7 @@ class TestExtractFactsBasic:
         mock_prompts.get_format_template.return_value = "Format instructions"
         mock_prompts.get_system_prompt.return_value = "System prompt"
         mock_create_prompt.return_value = "Reasoned prompt"
-        mock_config_obj = Mock()
-        mock_config_obj.max_chars = 1000
-        mock_config.return_value = mock_config_obj
+        mock_config.return_value = 1000
         # Patch LLM client
         mock_client = Mock()
         mock_client.complete.return_value = ("Extracted content", self.mock_usage)

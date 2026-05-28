@@ -17,7 +17,7 @@ from litassist.logging import save_command_output, log_task_event
 from litassist.llm.factory import LLMClientFactory
 
 from .validator import validate_case_facts
-from .document_reader import read_all_documents, estimate_input_size
+from .document_reader import read_all_documents
 from .section_builder import prepare_brief_sections
 from .brief_generator import generate_brief, verify_citations_if_requested
 
@@ -114,9 +114,6 @@ def barbrief(
         raise click.ClickException(
             "Case facts must be in 10-heading format from extractfacts command"
         )
-
-    # Estimate input size and warn if large
-    estimate_input_size(content_dict)
 
     # Calculate total tokens for error messages
     total_content = (

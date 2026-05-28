@@ -19,9 +19,8 @@ The automated test suite uses pytest and runs completely offline.
 ### What We Mock
 
 1. **OpenRouter** -- mocked model access and completion via the OpenRouter gateway
-2. **OpenAI** -- mocked embedding generation and completion
-3. **Pinecone** -- mocked vector storage and retrieval
-4. **Google CSE** -- mocked case law lookup and search results
+2. **OpenAI** -- mocked completion (BYOK calls for o3-pro)
+3. **Google CSE** -- mocked case law lookup and search results
 
 All integrations are tested using mocks to ensure functionality without API costs.
 
@@ -50,7 +49,6 @@ Separate from pytest, manual validation scripts in `test-scripts/` test real API
 |---------|---------|
 | OpenRouter | Verify completions flow through the routing endpoint |
 | OpenAI | Verify API key works and required functionality is accessible |
-| Pinecone | Verify vector storage and basic operations work |
 | Google CSE | Verify Custom Search API is accessible for case law lookup |
 
 ### Running Manual Integration Scripts
@@ -63,9 +61,8 @@ python test_integrations.py
 
 # Run specific service tests
 python test_integrations.py --openrouter
-python test_integrations.py --openai
-python test_integrations.py --pinecone
 python test_integrations.py --google
+python test_integrations.py --jade
 ```
 
 Results are displayed in the terminal and saved as `test_results_YYYYMMDD-HHMMSS.json`.

@@ -1,0 +1,207 @@
+"""
+Refresh per-model capability data from OpenRouter.
+
+Reads distinct model ids from model_configs.yaml, fetches the OpenRouter
+/api/v1/models response, and writes a deterministic, sorted YAML mapping
+each model id to its context_window, prices, and supported_parameters.
+
+Exits non-zero if any model in model_configs.yaml is missing from the
+OpenRouter response (catches silent deprecation).
+"""
+
+import json
+import sys
+import urllib.request
+from datetime import datetime, timezone
+from pathlib import Path
+from typing import Any, Dict, List
+
+import click
+import yaml
+
+# Default endpoint used when the user has not configured an OpenRouter
+# proxy / mirror via `openrouter.api_base` in config.yaml. Users
+# pointing at a private gateway have their `or_base` honoured so they
+# don't silently refresh against the public catalogue while every
+# other call goes through their proxy.
+DEFAULT_OPENROUTER_MODELS_URL = "https://openrouter.ai/api/v1/models"
+
+
+def _resolve_models_url() -> str:
+    """Derive the models endpoint from the configured OpenRouter base
+    URL. Falls back to the public endpoint if config is unavailable
+    or `or_base` is unset."""
+    try:
+        from litassist.config import get_config
+
+        base = (get_config().or_base or "").rstrip("/")
+        if base:
+            return f"{base}/models"
+    except Exception:
+        # Config not loadable (e.g. running outside a configured env);
+        # fall through to the public default. The /models endpoint is
+        # unauthenticated so this still works without credentials.
+        pass
+    return DEFAULT_OPENROUTER_MODELS_URL
+
+
+def _distinct_model_ids(configs: Dict[str, Any]) -> List[str]:
+    return sorted({
+        entry["model"]
+        for entry in configs.values()
+        if isinstance(entry, dict) and "model" in entry
+    })
+
+
+def _fetch_openrouter_models(url: str, timeout: int = 30) -> Dict[str, Any]:
+    req = urllib.request.Request(
+        url, headers={"User-Agent": "litassist/refresh"}
+    )
+    with urllib.request.urlopen(req, timeout=timeout) as resp:
+        return json.load(resp)
+
+
+def _build_capabilities(
+    model_ids: List[str], or_data: Dict[str, Any]
+) -> Dict[str, Dict[str, Any]]:
+    by_id = {entry["id"]: entry for entry in or_data.get("data", [])}
+
+    missing = [m for m in model_ids if m not in by_id]
+    if missing:
+        raise click.ClickException(
+            "Models in model_configs.yaml not found on OpenRouter:\n  - "
+            + "\n  - ".join(missing)
+        )
+
+    capabilities: Dict[str, Dict[str, Any]] = {}
+    malformed: List[str] = []
+    for mid in sorted(model_ids):
+        entry = by_id[mid]
+        pricing = entry.get("pricing") or {}
+        prompt = pricing.get("prompt")
+        completion = pricing.get("completion")
+        # OpenRouter has occasionally listed preview / custom models
+        # with missing or null `context_length`. Silently substituting
+        # 0 would cascade into zero-sized chunk budgets across every
+        # consumer (digest, draft preflight, validate_file_size_limit
+        # callers), so collect the offending model ids and fail loudly
+        # at the end rather than producing a broken capabilities file.
+        ctx_len = entry.get("context_length")
+        if ctx_len is None:
+            malformed.append(f"{mid} (missing context_length)")
+            continue
+        try:
+            ctx_window = int(ctx_len)
+        except (TypeError, ValueError):
+            malformed.append(f"{mid} (non-numeric context_length: {ctx_len!r})")
+            continue
+
+        try:
+            # OpenRouter quotes prices in $/token; multiply by 1e6 to
+            # render the value as $/MTok which is what every user-
+            # facing pricing surface expects. 4-decimal rounding keeps
+            # diffs stable without losing sub-cent precision.
+            input_price = (
+                round(float(prompt) * 1_000_000, 4) if prompt is not None else None
+            )
+            output_price = (
+                round(float(completion) * 1_000_000, 4)
+                if completion is not None
+                else None
+            )
+        except (TypeError, ValueError) as exc:
+            malformed.append(f"{mid} (malformed pricing: {exc})")
+            continue
+
+        capabilities[mid] = {
+            "context_window": ctx_window,
+            "input_price_per_mtok": input_price,
+            "output_price_per_mtok": output_price,
+            "supported_parameters": sorted(entry.get("supported_parameters") or []),
+        }
+
+    if malformed:
+        raise click.ClickException(
+            "OpenRouter returned malformed entries for configured models:\n  - "
+            + "\n  - ".join(malformed)
+            + "\nRetry `litassist refresh` later, or remove the affected "
+              "models from model_configs.yaml."
+        )
+
+    return capabilities
+
+
+def _write_capabilities_yaml(
+    output_path: Path,
+    capabilities: Dict[str, Dict[str, Any]],
+    source_url: str,
+) -> None:
+    header = (
+        "---\n"
+        "# Auto-generated by `litassist refresh`.\n"
+        f"# Last regenerated: {datetime.now(timezone.utc).strftime('%Y-%m-%dT%H:%M:%SZ')}\n"
+        f"# Source: {source_url}\n"
+        "# DO NOT EDIT MANUALLY -- run `litassist refresh`.\n"
+        "\n"
+    )
+    body = yaml.safe_dump(capabilities, sort_keys=True, default_flow_style=False)
+    # Explicit UTF-8 because model ids / supported_parameter names from
+    # OpenRouter may contain non-ASCII characters; default locale-dependent
+    # encoding would silently break on systems with a non-UTF-8 locale.
+    output_path.write_text(header + body, encoding="utf-8")
+
+
+@click.command()
+def refresh() -> None:
+    """
+    Refresh per-model capability data from OpenRouter.
+
+    Updates litassist/llm/model_capabilities.yaml with each configured model's
+    context window, input/output prices, and supported parameters. Run after
+    swapping models in model_configs.yaml or when OpenRouter announces
+    pricing / context-window changes.
+
+    Honours `openrouter.api_base` in config.yaml when set so users
+    pointing at a proxy / mirror refresh against the same endpoint
+    every other LLM call uses.
+    """
+    from litassist.llm.factory import _load_model_configs
+
+    configs = _load_model_configs()
+    model_ids = _distinct_model_ids(configs)
+    models_url = _resolve_models_url()
+    click.echo(
+        f"Refreshing capabilities for {len(model_ids)} models "
+        f"from {models_url}"
+    )
+
+    # OSError covers urllib.error.URLError, socket.timeout, ConnectionError,
+    # DNS failures, etc. -- all surface as raw tracebacks without a wrapper.
+    # JSONDecodeError handles a non-JSON response body (HTML error page from
+    # a misconfigured proxy is the realistic case).
+    try:
+        or_data = _fetch_openrouter_models(models_url)
+    except OSError as exc:
+        raise click.ClickException(
+            f"Failed to fetch {models_url}: {exc}"
+        )
+    except json.JSONDecodeError as exc:
+        raise click.ClickException(
+            f"Response from {models_url} was not valid JSON: {exc}"
+        )
+
+    capabilities = _build_capabilities(model_ids, or_data)
+
+    factory_dir = Path(__file__).resolve().parents[2] / "llm"
+    output_path = factory_dir / "model_capabilities.yaml"
+    # Wrapping the write handles PermissionError (pipx / read-only install)
+    # and disk-full / cross-device errors with a clean message rather than
+    # a raw traceback.
+    try:
+        _write_capabilities_yaml(output_path, capabilities, models_url)
+    except OSError as exc:
+        raise click.ClickException(
+            f"Failed to write capabilities to {output_path}: {exc}"
+        )
+    click.echo(f"Wrote {output_path} ({len(capabilities)} models)")
+    sys.stdout.flush()

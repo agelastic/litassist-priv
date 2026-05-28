@@ -21,7 +21,6 @@ class TestLLMClientComplete:
         """Test basic complete call with successful response."""
         # Setup config
         mock_config.or_key = "test_key"
-        mock_config.openai_key = "test_key"
 
         # Setup mock response - ensure no error attribute
         mock_response = Mock()
@@ -64,7 +63,6 @@ class TestLLMClientComplete:
     ):
         """Test system message merging for models without system support."""
         mock_config.or_key = "test_key"
-        mock_config.openai_key = "test_key"
 
         mock_response = Mock()
         mock_response.choices = [Mock()]
@@ -110,7 +108,6 @@ class TestLLMClientComplete:
     ):
         """Test system message preserved for models with system support."""
         mock_config.or_key = "test_key"
-        mock_config.openai_key = "test_key"
 
         mock_response = Mock()
         mock_response.choices = [Mock()]
@@ -161,7 +158,6 @@ class TestLLMClientComplete:
         # entries; user-only input slipped through unguarded, surfaced via
         # Chain of Verification.
         mock_config.or_key = "test_key"
-        mock_config.openai_key = "test_key"
 
         mock_response = Mock()
         mock_response.choices = [Mock()]
@@ -205,7 +201,6 @@ class TestLLMClientComplete:
         import pytest
 
         mock_config.or_key = "test_key"
-        mock_config.openai_key = "test_key"
 
         mock_response = Mock()
         mock_response.choices = [Mock()]
@@ -240,7 +235,6 @@ class TestLLMClientComplete:
     ):
         """Test complete with verification enabled."""
         mock_config.or_key = "test_key"
-        mock_config.openai_key = "test_key"
 
         mock_response = Mock()
         mock_response.choices = [Mock()]
@@ -278,7 +272,6 @@ class TestLLMClientComplete:
     def test_complete_token_counting(self, mock_execute, mock_config):
         """Test token counting in response stats."""
         mock_config.or_key = "test_key"
-        mock_config.openai_key = "test_key"
 
         mock_response = Mock()
         mock_response.choices = [Mock()]
@@ -310,7 +303,6 @@ class TestLLMClientComplete:
     def test_complete_with_tools(self, mock_execute, mock_config):
         """Test complete with tool definitions."""
         mock_config.or_key = "test_key"
-        mock_config.openai_key = "test_key"
 
         mock_response = Mock()
         mock_response.choices = [Mock()]
@@ -351,7 +343,6 @@ class TestLLMClientComplete:
     def test_complete_strips_whitespace(self, mock_execute, mock_config):
         """Test that response content is stripped of whitespace."""
         mock_config.or_key = "test_key"
-        mock_config.openai_key = "test_key"
 
         mock_response = Mock()
         mock_response.choices = [Mock()]
@@ -383,7 +374,6 @@ class TestLLMClientComplete:
     def test_complete_empty_response_handling(self, mock_execute, mock_config):
         """Test handling of empty response content."""
         mock_config.or_key = "test_key"
-        mock_config.openai_key = "test_key"
 
         mock_response = Mock()
         mock_response.choices = [Mock()]
@@ -414,7 +404,6 @@ class TestLLMClientComplete:
     def test_complete_with_model_specific_params(self, mock_execute, mock_config):
         """Test that model-specific parameters are passed correctly."""
         mock_config.or_key = "test_key"
-        mock_config.openai_key = "test_key"
 
         mock_response = Mock()
         mock_response.choices = [Mock()]

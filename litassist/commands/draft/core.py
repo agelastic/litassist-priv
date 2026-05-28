@@ -1,10 +1,13 @@
 """
-Citation-rich drafting via RAG & GPT-4o.
+Citation-rich drafting via full-context LLM call.
 
-This module implements the 'draft' command which uses Retrieval-Augmented Generation
-to create well-supported legal drafts. The process embeds document chunks, stores them
-in Pinecone, retrieves relevant passages using MMR re-ranking, and generates a draft
-with GPT-4o that incorporates these citations.
+This module implements the 'draft' command. All provided documents (PDFs and
+text files) are concatenated with section markers and sent in a single
+LLM call. There is no retrieval, embedding, or vector store: legal drafting
+relies on every document being visible to the model.
+
+For documents that exceed the configured model's context window, use
+`litassist digest --mode summary <file>` first and feed the summary in.
 """
 
 import click
@@ -21,7 +24,6 @@ from litassist.utils.file_ops import expand_glob_patterns_callback as expand_glo
 from litassist.llm.factory import LLMClientFactory
 
 from .document_processor import read_and_categorize_documents, build_text_context
-from .rag_pipeline import process_documents_with_rag
 from .prompt_builder import build_system_prompt, build_user_prompt
 
 
@@ -44,27 +46,17 @@ from .prompt_builder import build_system_prompt, build_user_prompt
     is_flag=True,
     help="Skip verification stage (not recommended for legal work)",
 )
-@click.option(
-    "--diversity",
-    type=float,
-    help="Control diversity of search results (0.0-1.0)",
-    default=None,
-)
 @click.option("--output", type=str, help="Custom output filename prefix")
 @click.pass_context
 @timed
-def draft(ctx, documents, query, heavy, noverify, diversity, output):
+def draft(ctx, documents, query, heavy, noverify, output):
     """
-    Citation-rich drafting via RAG & GPT-4o.
+    Citation-rich drafting via full-context LLM call.
 
-    For text files under 400KB (like case_facts.txt), passes the entire content
-    directly to the LLM for comprehensive drafting. For PDFs or larger files,
-    implements a Retrieval-Augmented Generation workflow that embeds document
-    chunks, stores them in Pinecone, and retrieves relevant passages using
-    MMR re-ranking.
-
-    Accepts multiple documents to combine knowledge from different sources
-    (e.g., case_facts.txt and strategies.txt).
+    Concatenates every provided document into one context payload (PDFs and
+    text files alike) and sends a single LLM call. Accepts multiple documents
+    to combine knowledge from different sources (e.g., case_facts.txt and
+    strategies.txt).
 
     Args:
         documents: One or more paths to documents (PDF or text files) to use as knowledge base.
@@ -73,13 +65,10 @@ def draft(ctx, documents, query, heavy, noverify, diversity, output):
                   - litassist draft case_facts.txt strategies.txt "query"
                   - litassist draft bundle.pdf case_facts.txt "query"
         query: The specific legal topic or argument to draft.
-        diversity: Optional float (0.0-1.0) controlling the balance between
-                  relevance and diversity in retrieved passages. Higher values
-                  prioritize diversity over relevance. (Only used for PDFs/large files)
 
     Raises:
-        click.ClickException: If there are errors with file reading, embedding,
-                             vector storage, retrieval, or LLM API calls.
+        click.ClickException: If there are errors with file reading or LLM API calls,
+                             or if the combined context exceeds the model's window.
     """
     # Command start log
     try:
@@ -96,26 +85,8 @@ def draft(ctx, documents, query, heavy, noverify, diversity, output):
     # Process all documents
     structured_content = read_and_categorize_documents(documents)
 
-    # Build structured context for the LLM
-    combined_text_context = build_text_context(structured_content)
-
-    # Process PDFs with embedding/retrieval if any
-    retrieved_context = ""
-    if structured_content["pdf_documents"]:
-        retrieved_context = process_documents_with_rag(
-            structured_content["pdf_documents"],
-            query,
-            diversity
-        )
-
-    # Combine all context with proper === separation
-    context = combined_text_context
-    if retrieved_context:
-        if context:
-            # Retrieved context already has its own END marker from above
-            context = context + "\n\n" + retrieved_context
-        else:
-            context = retrieved_context
+    # Build a single full-context payload from every input document.
+    context = build_text_context(structured_content)
 
     # Build prompts
     system_prompt = build_system_prompt(structured_content)
@@ -125,6 +96,45 @@ def draft(ctx, documents, query, heavy, noverify, diversity, output):
         {"role": "system", "content": system_prompt},
         {"role": "user", "content": user_prompt},
     ]
+
+    # Preflight: compare the assembled payload against the configured model's
+    # context window before paying for an oversized LLM call. Char-count is
+    # a conservative token proxy (~3.5 chars/token for English legal text).
+    #
+    # HARD_INPUT_FRACTION = 0.70: caps user-supplied content at 70% of the
+    #   model window, reserving the remaining 30% for the system prompt,
+    #   the draft completion, and (for reasoning models like o3-pro) the
+    #   internal reasoning trace. Going above 70% has empirically caused
+    #   context_length_exceeded errors mid-draft on o3-pro because the
+    #   reasoning trace alone can consume 10-20% of the window. Tighten
+    #   if those errors recur; loosen only when the draft model is swapped
+    #   for one without an internal reasoning budget.
+    # SOFT_WARN_FRACTION = 0.70: of the hard limit (so ~49% of the window).
+    #   This is where we start telling the user "your input is large enough
+    #   that summarising first via `litassist digest --mode summary` would
+    #   probably improve draft quality" -- not a hard error, just a steer.
+    HARD_INPUT_FRACTION = 0.70
+    SOFT_WARN_FRACTION = 0.70  # of HARD, not of the window
+    context_window_tokens = LLMClientFactory.get_context_window_for_command("draft")
+    hard_limit_chars = int(context_window_tokens * 3.5 * HARD_INPUT_FRACTION)
+    soft_limit_chars = int(hard_limit_chars * SOFT_WARN_FRACTION)
+    payload_chars = sum(len(m["content"]) for m in messages)
+    if payload_chars >= hard_limit_chars:
+        raise click.ClickException(
+            f"Combined draft context is {payload_chars:,} characters, which "
+            f"exceeds the safe input budget ({hard_limit_chars:,} chars) for "
+            f"{LLMClientFactory.get_model_for_command('draft')}. "
+            f"Run `litassist digest --mode summary <file>` on the largest "
+            f"inputs and feed the summary to draft."
+        )
+    if payload_chars >= soft_limit_chars:
+        from litassist.utils.formatting import warning_message
+        click.echo(warning_message(
+            f"Draft context is {payload_chars:,} characters, approaching the "
+            f"model's input budget ({hard_limit_chars:,} chars). Consider "
+            f"running `litassist digest --mode summary <file>` on the largest "
+            f"inputs first."
+        ))
 
     # Generate draft with LLM
     client = LLMClientFactory.for_command("draft")
@@ -154,6 +164,22 @@ def draft(ctx, documents, query, heavy, noverify, diversity, output):
         except Exception:
             pass
     except Exception as e:
+        # Safety net: if the provider rejects on context length despite our
+        # preflight (e.g. token estimate undercounted), reframe with the same
+        # digest guidance instead of leaking a raw provider error.
+        err_text = str(e).lower()
+        if any(s in err_text for s in (
+            "context_length_exceeded",
+            "context length",
+            "maximum context",
+            "too long",
+            "exceeds the model",
+        )):
+            raise click.ClickException(
+                f"Provider rejected draft on context length: {e}\n"
+                f"Run `litassist digest --mode summary <file>` on the largest "
+                f"inputs and feed the summary to draft."
+            )
         raise click.ClickException(f"LLM draft error: {e}")
 
     # Note: Citation verification now handled automatically in LLMClient.complete()

@@ -75,55 +75,15 @@ def validate_credentials(show_progress=True):
     """
     Test API connections with provided credentials.
 
-    This function attempts to validate credentials for OpenAI, Pinecone, and Google CSE
-    by making test API calls. Invalid credentials will result in an early exit.
+    This function attempts to validate credentials for OpenRouter and
+    Google CSE by making test API calls. Invalid credentials will result
+    in an early exit.
     """
     config = load_config()
     placeholder_checks = config.using_placeholders()
 
     if show_progress:
         print("Verifying API connections...")
-
-    # Test OpenAI connectivity (only if not using placeholders)
-    if not placeholder_checks["openai"]:
-        try:
-            if show_progress:
-                print("  - Testing OpenAI API... ", end="", flush=True)
-            # Lazy import OpenAI only when needed
-            from openai import OpenAI
-            # Use the new OpenAI v1.0+ API
-            client = OpenAI(api_key=config.oa_key)
-            # List models to test the connection
-            client.models.list()
-            if show_progress:
-                print("OK")
-        except Exception as e:
-            if show_progress:
-                print("FAILED")
-            sys.exit(f"Error: OpenAI API test failed: {e}")
-    else:
-        if show_progress:
-            print("  - Skipping OpenAI connectivity test (placeholder credentials)")
-
-    # Test Pinecone connectivity (only if not using placeholders)
-    if not placeholder_checks["pinecone"]:
-        try:
-            if show_progress:
-                print("  - Testing Pinecone API... ", end="", flush=True)
-            # Lazy import Pinecone only when needed
-            import pinecone
-            # Initialize Pinecone before testing
-            pinecone.init(api_key=config.pc_key, environment=config.pc_env)
-            _ = pinecone.list_indexes()
-            if show_progress:
-                print("OK")
-        except Exception as e:
-            if show_progress:
-                print("FAILED")
-            sys.exit(f"Error: Pinecone API test failed: {e}")
-    else:
-        if show_progress:
-            print("  - Skipping Pinecone connectivity test (placeholder credentials)")
 
     # Test Google CSE connectivity (only if not using placeholder values)
     if not placeholder_checks["google_cse"]:
@@ -163,17 +123,34 @@ def validate_credentials(show_progress=True):
                 "Authorization": f"Bearer {config.or_key}",
                 "Content-Type": "application/json",
             }
-            # Use the models endpoint which doesn't cost credits. Honour the
-            # configured `or_base` so users pointing at a proxy/mirror don't
-            # silently validate against the public endpoint instead.
+            # /models is unauthenticated catalogue lookup -- doesn't cost
+            # credits or prove the key works. /auth/key requires the
+            # bearer token, so a 200 here proves the key authenticates,
+            # and the response body lists active BYOK providers (if any)
+            # which is the real risk for `openai/o3-pro`-using commands.
+            # Honour the configured `or_base` so users pointing at a
+            # proxy/mirror don't silently validate against the public
+            # endpoint instead.
             base = (config.or_base or "https://openrouter.ai/api/v1").rstrip("/")
+
+            # 1. Auth check + BYOK-provider visibility.
+            key_resp = requests.get(
+                f"{base}/auth/key", headers=headers, timeout=10
+            )
+            if key_resp.status_code != 200:
+                raise Exception(
+                    f"Auth check failed: HTTP {key_resp.status_code}: {key_resp.text}"
+                )
+
+            # 2. Catalogue check -- confirm every model in model_configs.yaml
+            # is currently visible on OpenRouter so a refresh-deferred
+            # deprecation doesn't surprise the user mid-command.
             response = requests.get(
                 f"{base}/models", headers=headers, timeout=10
             )
             if response.status_code != 200:
                 raise Exception(f"HTTP {response.status_code}: {response.text}")
 
-            # Verify configured models are available
             models = response.json().get("data", [])
             model_ids = {m.get("id", "") for m in models}
 
@@ -191,7 +168,10 @@ def validate_credentials(show_progress=True):
                 )
 
             if show_progress:
-                print("OK")
+                print(
+                    "OK (key authenticated; catalogue verified -- BYOK "
+                    "model access confirmed only on first command call)"
+                )
         except Exception as e:
             if show_progress:
                 print("FAILED")
@@ -296,7 +276,7 @@ def test():
     """
     Test API connectivity and web scraping capabilities.
 
-    This command validates credentials for OpenAI, OpenRouter, Pinecone, and Google CSE
+    This command validates credentials for OpenRouter and Google CSE
     by making test API calls and reports success or failure. It also tests web scraping
     functionality including Jina Reader and PDF fetching.
     """

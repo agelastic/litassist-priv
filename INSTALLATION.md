@@ -9,7 +9,7 @@ This guide provides comprehensive installation instructions for LitAssist, inclu
 - **Python 3.11+**
 - **Git** for cloning the repository
 - **Homebrew** (macOS) or equivalent package manager
-- **API Keys** for OpenAI, OpenRouter, Google CSE, and Pinecone
+- **API Keys** for OpenRouter and Google CSE (provider-level BYOK for e.g. `openai/o3-pro` is configured at OpenRouter, not in this project's config)
 
 ## Installation Methods
 
@@ -120,22 +120,17 @@ nano config.yaml
 
 **Required Services:**
 
-1. **OpenRouter** - For LLM access (Claude, Grok, etc.)
+1. **OpenRouter** - Sole API gateway for all LLM access (Claude, Grok, GPT, o3-pro, Gemini)
    - Get key at: https://openrouter.ai/
    - Used for: All text generation commands
+   - For BYOK access to specific provider models (e.g. `openai/o3-pro`), add the
+     provider key at https://openrouter.ai/settings/integrations -- not in
+     this project's config.yaml.
 
-2. **OpenAI** - For embeddings only
-   - Get key at: https://openai.com/api/
-   - Used for: Document vectorization
-
-3. **Google Custom Search** - For case law lookup
+2. **Google Custom Search** - For case law lookup
    - Get API key: https://developers.google.com/custom-search/v1/overview
    - Create CSE: https://cse.google.com/
    - Used for: `lookup` command
-
-4. **Pinecone** - For vector storage
-   - Get key at: https://www.pinecone.io/
-   - Used for: Document storage and retrieval
 
 ### Configuration Location
 

@@ -163,19 +163,19 @@ capabilities:
     Strategic Use: Transforms strategy into concrete legal documents
     Options:
       --verify: (flag) | Check citations, legal soundness, and compliance (auto-triggers for court docs)
-      --diversity: [float] | Control search result variety for PDFs/RAG retrieval (0.0-1.0, default: 0.5)
       --noverify: (flag) | Skip citation verification checks
       --cove: (flag) | Use Chain of Verification (experimental)
+      --heavy: (flag) | Use verification-heavy mode (max thinking effort)
       --output: [string] | Custom filename prefix for output files
     Best Practices:
       - Include all relevant source materials
       - Be specific in drafting instructions
       - Always use --verify for court documents
-      - Use --diversity 0.8 for comprehensive memoranda
+      - Run `litassist digest --mode summary <file>` first on oversize inputs
       - Essential for feasibility memoranda and recommendations
     Integration: Final step converting analysis into deliverables
     Cost: ~$2-5 (produces documents that would take hours manually)
-    Example: litassist draft case_facts.txt outputs/counselnotes_*.txt outputs/strategy_*.txt "Draft a comprehensive feasibility memorandum analyzing all available property recovery options with risk assessments" --diversity 0.8 --verify
+    Example: litassist draft case_facts.txt outputs/counselnotes_*.txt outputs/strategy_*.txt "Draft a comprehensive feasibility memorandum analyzing all available property recovery options with risk assessments" --verify
 
     ### caseplan - Litigation Workflow Generator
     Purpose: Analyzes case complexity and generates phased workflow plans tailored to case needs
@@ -229,7 +229,7 @@ capabilities:
     Best Practices:
       - Run after initial setup to verify configuration
       - Run if experiencing unexpected errors
-      - Checks OpenAI, OpenRouter, Pinecone, and Google CSE
+      - Checks OpenAI, OpenRouter, and Google CSE
     Integration: Standalone diagnostic tool
     Cost: Minimal (~$0.01 in API test calls)
     Example: litassist test

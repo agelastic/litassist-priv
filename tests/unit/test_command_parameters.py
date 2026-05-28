@@ -31,16 +31,14 @@ class TestCommandParameterPropagation:
 
     @patch("litassist.llm.factory.LLMClientFactory.for_command")
     @patch("litassist.utils.file_ops.read_document")
-    @patch("litassist.commands.extractfacts.document_reader.get_config")
+    @patch("litassist.commands.extractfacts.document_reader.LLMClientFactory.get_input_budget_for_command")
     def test_extractfacts_command_parameters(
         self, mock_config, mock_read, mock_factory
     ):
         """Test extractfacts command uses correct model and parameters."""
         mock_factory.return_value = self.mock_client
         mock_read.return_value = "Test document content"
-        mock_config_obj = Mock()
-        mock_config_obj.max_chars = 1000  # Add missing config attribute
-        mock_config.return_value = mock_config_obj
+        mock_config.return_value = 1000
 
         with self.runner.isolated_filesystem():
             with open("test.pdf", "w") as f:
@@ -179,10 +177,9 @@ class TestCommandParameterPropagation:
         # Check command executed successfully
         assert result.exit_code == 0
 
-        # Verify factory was called with correct command (lookup sets temperature/top_p based on mode)
-        mock_factory.assert_called_once_with(
-            "lookup", temperature=0, top_p=0.1
-        )
+        # lookup defaults to --mode irac; processors.get_llm_client routes the
+        # mode to the YAML sub-type so the factory resolves `lookup-irac`.
+        mock_factory.assert_called_once_with("lookup", "irac")
 
         # Check configuration
         from litassist.llm.factory import LLMClientFactory
@@ -190,6 +187,10 @@ class TestCommandParameterPropagation:
         configs = LLMClientFactory.list_configurations()
         assert configs["lookup"].get("model")
         assert "enforce_citations" in configs["lookup"]
+        assert configs["lookup-irac"]["temperature"] == 0
+        assert configs["lookup-irac"]["top_p"] == 0.1
+        assert configs["lookup-broad"]["temperature"] == 0.4
+        assert configs["lookup-broad"]["top_p"] == 0.8
 
     @patch("litassist.llm.factory.LLMClientFactory.for_command")
     @patch("litassist.utils.file_ops.read_document")
@@ -412,10 +413,8 @@ Test objectives""")
 
     @patch("litassist.llm.factory.LLMClientFactory.for_command")
     @patch("litassist.utils.file_ops.read_document")
-    @patch("litassist.helpers.retriever.get_pinecone_client")
-    @patch("litassist.commands.draft.rag_pipeline.get_config")
     def test_draft_command_parameters(
-        self, mock_config, mock_pinecone, mock_read, mock_factory
+        self, mock_read, mock_factory
     ):
         """Test draft command uses its configured model."""
         # Create verification client mock
@@ -439,16 +438,6 @@ Test objectives""")
         ]
 
         mock_read.return_value = "Instructions"
-        mock_config_obj = Mock()
-        mock_config_obj.rag_max_chars = 8000
-        mock_config.return_value = mock_config_obj
-
-        # Mock pinecone
-        mock_pc_index = Mock()
-        mock_pc_index.describe_index_stats.return_value = Mock(
-            dimension=1536, total_vector_count=0
-        )
-        mock_pinecone.return_value = mock_pc_index
 
         with self.runner.isolated_filesystem():
             with open("instructions.txt", "w") as f:
@@ -549,7 +538,6 @@ Test objectives""")
 
         with patch("litassist.config.CONFIG") as mock_config:
             mock_config.openrouter_key = "test_key"
-            mock_config.openai_key = "test_key"
 
             client = LLMClientFactory.for_command(
                 "strategy", temperature=0.9, top_p=0.95

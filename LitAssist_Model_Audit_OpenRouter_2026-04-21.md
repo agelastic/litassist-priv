@@ -1,5 +1,17 @@
 # LitAssist model audit against OpenRouter live catalogue
 
+> **SUPERSEDED — 28/05/2026.** This audit is a snapshot of the model
+> set as of 21/04/2026 and references models (`openai/gpt-5.1`,
+> `openai/gpt-5-pro`, `text-embedding-3-small`) that are no longer in
+> production. The live model set lives in
+> `litassist/llm/model_configs.yaml`; capability data is regenerated
+> by `litassist refresh` into `litassist/llm/model_capabilities.yaml`.
+> Use those two files as the authoritative source.
+>
+> The RAG / Pinecone embedding pipeline this audit references was
+> removed in the `remove-pinecone-rag` branch (May 2026). The
+> `text-embedding-3-small` row is no longer applicable.
+
 Last updated: 21/04/2026
 
 | Field | Value |

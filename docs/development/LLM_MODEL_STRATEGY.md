@@ -178,13 +178,11 @@ MODEL_PATTERNS = {
 # config.yaml
 openrouter:
   api_key: "your-openrouter-api-key"
-
-openai:
-  api_key: "your-openai-api-key"  # Local OpenAI uses; does not configure OpenRouter BYOK
 ```
 
-For o3-pro, add the OpenAI provider key in the OpenRouter integrations
-dashboard: https://openrouter.ai/settings/integrations
+For `openai/o3-pro` and other BYOK models, add the provider key in the
+OpenRouter integrations dashboard:
+https://openrouter.ai/settings/integrations
 
 **For detailed configuration**, see `MODEL_CONFIGURATION.md`:
 - Complete COMMAND_CONFIGS dictionary
@@ -450,7 +448,7 @@ Alternative paths:
 **Current Implementation**:
 - Model: `o3-pro`
 - thinking_effort: high, verbosity: high
-- Basic RAG with context
+- Full-context drafting (all inputs concatenated into one LLM call)
 - Dynamic prompts
 
 **Enhancement Opportunities**:
@@ -783,7 +781,7 @@ models:
 verification:
   light: ["anthropic/claude-sonnet-4.6"]
   standard: ["openai/gpt-5.5"]
-  heavy: ["openai/gpt-5.5", "x-ai/grok-4.20-turbo"]  # Ensemble
+  heavy: ["openai/gpt-5.5", "x-ai/grok-4.20"]  # Ensemble
 ```
 
 ### 3. Benchmark and Guardrails

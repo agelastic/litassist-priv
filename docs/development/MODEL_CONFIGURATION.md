@@ -310,13 +310,12 @@ cove-final:
 # config.yaml
 openrouter:
   api_key: "your-openrouter-api-key"
-  
-openai:
-  api_key: "your-openai-api-key"  # Local OpenAI uses; does not configure OpenRouter BYOK
 ```
 
-For o3-pro, add the OpenAI provider key in the OpenRouter integrations
-dashboard: https://openrouter.ai/settings/integrations
+For BYOK access to specific provider models such as `openai/o3-pro`, add the
+provider key in the OpenRouter integrations dashboard:
+https://openrouter.ai/settings/integrations. This project carries no direct
+OpenAI key.
 
 ## Retry Logic Configuration
 
@@ -507,10 +506,12 @@ To add a new model, simply:
 "strategy": "openai/o5-pro"  # Works automatically!
 ```
 
-**Adding a new Claude model**:
+**Adding a model from a new provider**:
 ```python
 # Just use it:
-"digest": "anthropic/claude-5-opus"  # Automatically gets Claude parameters
+"digest": "zai/glm-4.7"  # Falls to the "default" profile (safe sampling params)
+                         # until a zai/ pattern is added to MODEL_PATTERNS in
+                         # litassist/llm/model_profiles.py for richer routing.
 ```
 
 ### Benefits

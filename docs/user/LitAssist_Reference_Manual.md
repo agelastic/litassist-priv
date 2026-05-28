@@ -31,7 +31,7 @@ routed through OpenRouter.
 - **Document analysis** with neutral or strategic perspectives
 - **Structured fact extraction** into a standard 10-heading format
 - **Legal strategy generation** (orthodox, unorthodox, and analytical)
-- **Citation-rich document drafting** with RAG for large files
+- **Citation-rich document drafting** with full-context input (PDFs and text alike sent in one LLM call)
 - **Multi-stage citation verification** including Chain of Verification (CoVe)
 - **Automated workflow planning** with executable command scripts
 
@@ -46,7 +46,7 @@ pipeline:
 | `extractfacts` | Extract structured facts into the 10-heading format |
 | `brainstorm` | Generate orthodox, unorthodox, and analytically ranked strategies |
 | `strategy` | Develop tactical plans for a specific legal outcome |
-| `draft` | Create citation-rich legal documents using RAG |
+| `draft` | Create citation-rich legal documents using full-context input |
 | `counselnotes` | Strategic analysis from an advocate's perspective |
 | `barbrief` | Generate a structured barrister's brief |
 | `verify` | Post-hoc citation, soundness, and reasoning verification |
@@ -127,10 +127,10 @@ caseplan --> extractfacts --> lookup --> brainstorm --> strategy --> draft --> v
 
 - Python 3.10 or later
 - API keys for:
-  - **OpenRouter** (required): Routes all LLM calls
-  - **OpenAI** (required): Embeddings and BYOK for o3-pro stages
+  - **OpenRouter** (required): Sole gateway for all LLM calls. Provider-level
+    BYOK (e.g. for `openai/o3-pro`) is configured at OpenRouter, not in this
+    project's config.
   - **Google Custom Search** (required): Citation verification and legal research
-  - **Pinecone** (required): Vector database for RAG pipeline
   - **Jina Reader** (optional): Fallback transport for JavaScript-rendered pages and Cloudflare-blocked content. The primary fetch transport is `curl_cffi` (no key required); a Jina API key enables the fallback path with higher rate limits.
 
 ### 2.2 Installation Methods
@@ -180,12 +180,6 @@ openrouter:
   api_key: "sk-or-v1-your-key-here"          # Required
   api_base: "https://openrouter.ai/api/v1"    # Default, rarely changed
 
-# --- OpenAI (required) ---
-# Used for embeddings (RAG pipeline) and BYOK for o3-pro stages
-openai:
-  api_key: "sk-your-openai-key-here"          # Required
-  embedding_model: "text-embedding-3-small"    # Default embedding model
-
 # --- Google Custom Search (required) ---
 # Used for citation verification and the lookup command
 # See Google CSE setup.md for step-by-step CSE creation
@@ -194,13 +188,6 @@ google_cse:
   cse_id: "your-jade-cse-id"                  # Required: Jade.io search engine
   cse_id_austlii: "your-austlii-cse-id"       # Optional: AustLII search engine
   cse_id_comprehensive: "your-comp-cse-id"    # Optional: broader legal sources
-
-# --- Pinecone (required) ---
-# Vector database for the RAG pipeline used by the draft command
-pinecone:
-  api_key: "your-pinecone-key"                # Required
-  environment: "us-east-1-aws"                # Required: your Pinecone region
-  index_name: "legal-rag"                     # Required: your index name
 
 # --- Jina Reader (optional) ---
 # Provides higher rate limits for web content fetching
@@ -211,7 +198,6 @@ jina_reader:
 general:
   heartbeat_interval: 20     # Seconds between "still working" progress messages
   max_chars: 200000          # Document chunk size for processing (~50K tokens)
-  rag_max_chars: 8000        # RAG chunk size for draft embeddings (~1600 words)
   log_format: "json"         # Default audit log format: "json" or "markdown"
 
 # --- Citation validation ---
@@ -226,8 +212,10 @@ web_scraping:
 
 **Key points:**
 
-- All keys under `openrouter`, `openai`, `google_cse`, and `pinecone` are required
-  (except the two optional CSE IDs)
+- All keys under `openrouter` and `google_cse` are required (except the two
+  optional CSE IDs). There is no `openai:` block: OpenRouter is the sole LLM
+  gateway, and provider-level BYOK (e.g. for `openai/o3-pro`) is configured at
+  OpenRouter's integrations dashboard, not in this project's config.
 - The `jina_reader` section is entirely optional
 - The `general`, `citation_validation`, and `web_scraping` sections use sensible
   defaults if omitted
@@ -253,17 +241,16 @@ For step-by-step setup instructions, see
 
 ### 2.5 BYOK (Bring Your Own Key) for o3-pro
 
-Several commands use OpenAI's o3-pro model, which requires Bring Your Own Key
-(BYOK) through OpenRouter. LitAssist sends LLM requests using
-`openrouter.api_key`; setting `openai.api_key` locally does not configure
-OpenRouter BYOK by itself.
+Several commands use the `openai/o3-pro` model routed through OpenRouter,
+which requires Bring Your Own Key (BYOK) configured at OpenRouter. This
+project has no separate OpenAI key in `config.yaml` -- LitAssist sends every
+LLM request using only `openrouter.api_key`.
 
 To enable o3-pro:
 
 1. Put your OpenRouter API key in `openrouter.api_key`.
 2. Open `https://openrouter.ai/settings/integrations`.
 3. Add an OpenAI provider key in the OpenRouter integrations dashboard.
-4. Keep `openai.api_key` in `config.yaml` for non-routing OpenAI uses such as embeddings.
 
 **Commands requiring BYOK:**
 
@@ -287,9 +274,7 @@ litassist test
 
 This tests connectivity to all configured services:
 
-- **OpenAI**: API key validation and embedding model access
 - **OpenRouter**: API key validation and model routing
-- **Pinecone**: Index connectivity and write/read operations
 - **Google CSE**: Search API access
 - **Web scraping**: HTTP fetching, Jina Reader (if configured), and PDF retrieval
 
@@ -1083,8 +1068,8 @@ these commands.
 **Pipeline position:** Document creation
 
 **Purpose:** Generate well-supported legal documents with citation verification
-and hallucination detection. Supports both direct LLM processing for smaller files
-and a RAG (Retrieval-Augmented Generation) pipeline for PDFs and large files.
+and hallucination detection. All supplied documents are fed to the LLM in one
+full-context call.
 
 **Syntax:**
 
@@ -1103,28 +1088,25 @@ litassist draft <documents>... <query> [OPTIONS]
 
 | Option | Type | Description |
 |--------|------|-------------|
-| `--heavy` | flag | Use GPT-5.5 for verification |
+| `--heavy` | flag | Use verification-heavy mode (max thinking effort) |
 | `--noverify` | flag | Skip verification (not recommended) |
-| `--diversity` | float | RAG search diversity, 0.0-1.0 (default varies; higher = more diverse results) |
 | `--output` | text | Custom output filename prefix |
 
-**Two processing modes:**
+**Processing model:**
 
-1. **Direct LLM processing**: For text files under the size threshold. The file
-   content is passed directly to the LLM as context. This is faster and
-   preserves the full document structure.
-
-2. **RAG pipeline**: For PDFs and large files. Documents are chunked, embedded
-   via OpenAI's `text-embedding-3-small`, stored in Pinecone, and retrieved via
-   semantic search with Maximum Marginal Relevance (MMR) re-ranking. The
-   `--diversity` parameter controls the balance between relevance (0.0) and
-   diversity (1.0) in retrieved chunks.
+Every supplied document (text files and PDFs alike) is concatenated with section
+markers and sent to the LLM in a single full-context call. There is no
+retrieval, embedding, or vector store. For documents that exceed the configured
+draft model's context window, draft fails with a clear error pointing at
+`litassist digest --mode summary <file>`; feed the resulting summary back into
+draft.
 
 **Automatic document type detection:**
 
 The draft command recognises `case_facts.txt`, `strategies.txt`, and files
 containing structured headings. It adapts its prompting based on the document
 types provided, building appropriate context with `=== MARKER ===` separators.
+PDFs receive their own `=== PDF DOCUMENT: <path> ===` section.
 
 **Citation handling:**
 
@@ -1138,13 +1120,12 @@ flagged with explicit placeholders.
 **Smith v Jones example:**
 
 ```bash
-# Draft from text files (direct LLM processing)
+# Draft from text and PDF inputs (single full-context call)
 litassist draft case_facts.txt strategies.txt \
   "outline of submissions regarding relocation"
 
-# Draft from PDF with RAG
 litassist draft large_case_bundle.pdf \
-  "response to contravention application" --diversity 0.3
+  "response to contravention application"
 
 # Multiple source documents
 litassist draft case_facts.txt strategies.txt \
@@ -1154,17 +1135,12 @@ litassist draft case_facts.txt strategies.txt \
 
 **Best practices:**
 
-- Use text files (.txt) as input where possible for direct LLM processing. PDFs
-  trigger the RAG pipeline which is slower but handles larger documents.
 - Provide case facts and strategies as separate files for the best context
   building.
-- Use `--diversity 0.3` as a starting point for RAG. Increase if the output is
-  too narrowly focused; decrease if it is too scattered.
+- For very large bundles, summarise first with
+  `litassist digest --mode summary <file>` and feed the summary to draft.
 - Always verify draft output with `litassist verify` before relying on it for
   court filings.
-
-**See also:** Section 6.6 (RAG Pipeline) for a detailed explanation of how the
-RAG system works.
 
 ---
 
@@ -1533,9 +1509,7 @@ litassist test
 
 | Service | Check |
 |---------|-------|
-| OpenAI | API key validation, embedding model access |
 | OpenRouter | API key validation, model routing |
-| Pinecone | Index connectivity, write/read operations |
 | Google CSE | Search API access, Jade.io CSE query |
 | HTTP scraping | Direct HTTP fetching |
 | Jina Reader | Content fetching (if configured) |
@@ -1871,42 +1845,28 @@ self-reinforcing loop.
 - High-stakes matters where errors could have serious consequences
 - When standard verification flags concerns that need deeper investigation
 
-### 6.6 RAG Pipeline (Retrieval-Augmented Generation)
+### 6.6 Oversize Document Handling for draft
 
-The draft command uses a RAG pipeline for processing PDFs and large files that
-exceed the direct LLM context window.
+The draft command sends every supplied document (text and PDF alike) to the
+configured draft model in a single full-context call. There is no retrieval,
+embedding, or vector store.
 
-**How it works:**
+Before the LLM call, draft computes the assembled payload size and compares it
+against the model's context window (looked up from
+`litassist/llm/model_capabilities.yaml`, refreshable via `litassist refresh`):
 
-1. **Chunking**: The document is split into chunks of configurable size (default:
-   8,000 characters, set via `rag_max_chars` in config.yaml). Chunks preserve
-   paragraph boundaries where possible.
+- **Below the soft threshold** (~49% of the input budget): proceeds silently.
+- **Between soft and hard thresholds** (~49% to ~70%): prints a warning
+  suggesting `litassist digest --mode summary <file>`, then proceeds.
+- **At or above the hard threshold** (~70% of the input budget): raises a
+  `ClickException` with the same `digest` guidance. No API call is made.
 
-2. **Embedding**: Each chunk is embedded using OpenAI's `text-embedding-3-small`
-   model, producing a vector representation of the chunk's semantic content.
+The provider call is also wrapped in a safety net: if the upstream model
+rejects on context length despite our estimate, the error is reframed with
+the same `digest` guidance instead of leaking a raw provider message.
 
-3. **Storage**: Chunk embeddings are upserted to the Pinecone vector index
-   (configured via the `pinecone` section in config.yaml) with metadata including
-   the chunk text and source file path.
-
-4. **Retrieval**: When generating a draft, the query is embedded and used to search
-   Pinecone for the most relevant chunks. Retrieval uses Maximum Marginal Relevance
-   (MMR), which balances relevance to the query with diversity among retrieved
-   chunks.
-
-**The --diversity parameter:**
-
-- `0.0` -- Maximum relevance: retrieved chunks are the most semantically similar
-  to the query, but may be repetitive
-- `1.0` -- Maximum diversity: retrieved chunks cover a broader range of topics
-  from the document, but may be less directly relevant
-- A value around `0.3` is a reasonable starting point
-
-**When RAG activates:**
-
-- PDF files are always processed through RAG
-- Text files exceeding the size threshold are processed through RAG
-- Small text files (.txt) are passed directly to the LLM without RAG
+Use `litassist digest --mode summary <file>` to produce a compressed version
+of any oversize input, then feed the summary back into draft.
 
 ### 6.7 Large Document Handling and Chunking
 
@@ -1926,7 +1886,7 @@ LitAssist handles documents of any size through automatic chunking.
 |---------|-------------------|
 | digest | Per-file chunking, results consolidated |
 | extractfacts | Multi-file consolidation into structured output |
-| draft | RAG pipeline for PDFs/large files; direct for small text |
+| draft | Single full-context call; oversize inputs require `digest --mode summary` first (see 6.6) |
 | brainstorm | Research files passed as context (truncated if very large) |
 | strategy | Case facts validated; strategies passed as context |
 
@@ -1940,8 +1900,13 @@ processing time.
 
 ```yaml
 general:
-  max_chars: 200000     # Chunk size for document processing (~50K tokens)
-  rag_max_chars: 8000   # Chunk size for RAG embeddings (~1600 words)
+  max_chars: 200000     # Chunk size for digest / extractfacts / counselnotes
+                        # multi-chunk processing (~50K tokens). Per-command
+                        # chunk size for digest is now derived from the
+                        # model's context window via
+                        # LLMClientFactory.get_input_budget_for_command(),
+                        # so this fallback only applies when no model
+                        # capability data is available.
 ```
 
 ### 6.8 Verification Modes and the --verify / --heavy / --noverify Switches
@@ -2077,9 +2042,10 @@ All LLM calls route through OpenRouter's API. Model names follow the
 - `anthropic/claude-opus-4.7`
 
 OpenRouter handles authentication, rate limiting, and provider routing. BYOK
-commands (those using o3-pro) require an OpenAI provider key added in the
-OpenRouter integrations dashboard; the local `openai.api_key` is not the bearer
-token for LLM requests.
+commands (those using `openai/o3-pro`) require an OpenAI provider key added in
+the OpenRouter integrations dashboard. This project does not carry a separate
+OpenAI key in `config.yaml`; only `openrouter.api_key` is the bearer token for
+LLM requests.
 
 The `disable_tools: true` parameter is set on all model configurations to prevent
 models from attempting tool calls, which is not supported in LitAssist's pipeline.
@@ -2345,10 +2311,11 @@ YAML is sensitive to formatting.
 BYOK required for o3-pro
 ```
 
-Commands using o3-pro (draft, counselnotes, barbrief, brainstorm analysis,
-strategy analysis) require an OpenAI provider key in OpenRouter integrations.
-Open `https://openrouter.ai/settings/integrations`, add the OpenAI key there,
-and confirm `openrouter.api_key` is valid locally.
+Commands using `openai/o3-pro` (draft, counselnotes, barbrief,
+brainstorm-analysis, strategy-analysis) require an OpenAI provider key added
+to OpenRouter integrations. Open `https://openrouter.ai/settings/integrations`,
+add the OpenAI key there, and confirm `openrouter.api_key` is valid locally.
+This project does not carry a separate OpenAI key in `config.yaml`.
 
 **OpenRouter connection failures:**
 
@@ -2360,11 +2327,6 @@ Run `litassist test` to diagnose.
 The free tier provides 100 CSE requests per day. If exceeded, citation
 verification and lookup commands will fail. Either wait until the quota resets or
 enable paid usage in the Google Cloud console.
-
-**Pinecone index not found:**
-
-Verify that `pinecone.environment` and `pinecone.index_name` match your Pinecone
-dashboard. The index must exist before running the draft command with PDFs.
 
 ### 10.3 Large File Processing
 
@@ -2403,18 +2365,12 @@ relying on citations for court filings.
 
 **Sparse or unfocused output:**
 
-- Ensure input files use `.txt` extension for direct LLM processing. Files with
-  `.md` extension may not be processed as expected.
-- For RAG mode (PDFs), try adjusting `--diversity`. Lower values (0.1-0.3) produce
-  more focused output; higher values (0.5-0.8) produce broader coverage.
+- Ensure input files use `.txt` extension. Files with `.md` extension may not be
+  processed as expected.
 - Provide more context files (case facts, strategies, research) to give the model
   better grounding.
-
-**RAG producing thin results:**
-
-- Check that the Pinecone index is accessible (`litassist test`)
-- Verify that the `rag_max_chars` setting produces appropriately sized chunks
-- Ensure the PDF is text-based; scanned/image-only PDFs are reported as skipped
+- For very large bundles, summarise with `litassist digest --mode summary` first
+  and feed the summary to draft (see section 6.6 for the oversize-input policy).
 
 ### 10.6 Command Validation Errors
 
@@ -2442,9 +2398,8 @@ Some options are required for specific commands. Check the command reference
 | Error | Cause | Resolution |
 |-------|-------|------------|
 | `config.yaml missing key 'X'` | Required config section missing | Add the section to config.yaml |
-| `BYOK required for o3-pro` | OpenAI key is a placeholder | Set real OpenAI API key |
+| `BYOK required for o3-pro` | OpenAI provider key not configured at OpenRouter | Add it at https://openrouter.ai/settings/integrations |
 | `Google CSE quota exceeded` | 100 daily free requests used | Wait or enable paid usage |
-| `Pinecone index not found` | Wrong environment or index name | Check Pinecone dashboard |
 | `Invalid YAML in config.yaml` | Syntax error in config file | Fix YAML formatting |
 | `No config.yaml found` | Config not at expected path | Create at `~/.config/litassist/config.yaml` |
 | `Input file does not appear to follow the 10-heading structure` | strategy input missing headings | Use extractfacts or create manually |

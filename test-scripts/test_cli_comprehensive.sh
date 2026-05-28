@@ -634,29 +634,19 @@ test_connectivity() {
         "litassist --help 2>&1 | head -3" \
         "Usage|LitAssist"
     
-    # Test 2: OpenAI API (used for direct OpenAI model calls)
-    run_test "Connectivity - OpenAI API Direct" \
-        "python -c 'from openai import OpenAI; from litassist.config import get_config; cfg = get_config(); client = OpenAI(api_key=cfg.oa_key); response = client.chat.completions.create(model=\"gpt-3.5-turbo\", messages=[{\"role\": \"user\", \"content\": \"test\"}], max_tokens=5); print(\"OpenAI Direct API: OK\")' 2>&1" \
-        "OpenAI Direct API: OK"
-    
-    # Test 3: OpenRouter API (used for non-OpenAI models)
+    # Test 2: OpenRouter API (sole LLM gateway)
     run_test "Connectivity - OpenRouter API" \
         "python -c 'from openai import OpenAI; from litassist.config import get_config; cfg = get_config(); client = OpenAI(api_key=cfg.or_key, base_url=cfg.or_base); response = client.models.list(); print(\"OpenRouter API: OK\")' 2>&1" \
         "OpenRouter API: OK"
-    
-    # Test 4: Google CSE API for Jade.io search
+
+    # Test 3: Google CSE API for Jade.io search
     run_test "Connectivity - Google CSE (Jade.io search)" \
         "python -c 'from googleapiclient.discovery import build; from litassist.config import get_config; cfg = get_config(); service = build(\"customsearch\", \"v1\", developerKey=cfg.g_key, cache_discovery=False); result = service.cse().list(q=\"[2020] HCA 1\", cx=cfg.cse_id, num=1, siteSearch=\"jade.io\").execute(); print(\"Google CSE (Jade): OK - Found\", len(result.get(\"items\", [])), \"results\")' 2>&1" \
         "Google CSE (Jade): OK"
-    
-    # Test 5: Pinecone Vector DB (used by draft command)
-    run_test "Connectivity - Pinecone Vector DB" \
-        "python -c 'from litassist.helpers.pinecone_config import PineconeWrapper; from litassist.config import get_config; cfg = get_config(); wrapper = PineconeWrapper(cfg.pc_key, cfg.pc_index); stats = wrapper.describe_index_stats(); print(\"Pinecone API: OK - Dimension:\", stats.dimension)' 2>&1" \
-        "Pinecone API: OK"
-    
-    # Test 6: Verify all required API keys are present
+
+    # Test 4: Verify all required API keys are present
     run_test "Connectivity - API Keys Configuration" \
-        "python -c 'from litassist.config import get_config; cfg = get_config(); missing = []; apis = {\"OpenAI\": cfg.oa_key, \"OpenRouter\": cfg.or_key, \"Google\": cfg.g_key, \"Pinecone\": cfg.pc_key}; missing = [k for k,v in apis.items() if not v or v == \"YOUR_KEY_HERE\"]; print(\"API Keys:\", \"All configured\" if not missing else f\"Missing: {missing}\")' 2>&1" \
+        "python -c 'from litassist.config import get_config; cfg = get_config(); apis = {\"OpenRouter\": cfg.or_key, \"Google\": cfg.g_key}; missing = [k for k,v in apis.items() if not v or v == \"YOUR_KEY_HERE\"]; print(\"API Keys:\", \"All configured\" if not missing else f\"Missing: {missing}\")' 2>&1" \
         "API Keys: All configured"
 }
 

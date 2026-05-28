@@ -156,7 +156,6 @@ class TestPromptTemplates:
                     "warnings": {
                         "validation": dict,
                         "file_size": dict,
-                        "api": dict,
                         "citation": dict,
                     },
                     "status": {
