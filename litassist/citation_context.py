@@ -51,9 +51,20 @@ def _try_fetch_and_validate(url: str, citation: str) -> Optional[str]:
         Validated content or None
     """
     try:
-        from litassist.commands.lookup.fetchers import _fetch_url_content
+        from litassist.commands.lookup.fetchers import (
+            _fetch_url_content,
+            PendingOcrContent,
+        )
 
         content = _fetch_url_content(url, timeout=15)
+        # PendingOcrContent is an async OCR future from the lookup pipeline;
+        # synchronous citation validation cannot await it, so treat as miss.
+        if isinstance(content, PendingOcrContent):
+            save_log(
+                "citation_fetch_pending_ocr_skipped",
+                {"url": url, "citation": citation},
+            )
+            return None
         if content and _validate_citation_match(content, citation):
             return content
         else:
@@ -362,7 +373,7 @@ def fetch_citation_context(citations: List[str]) -> tuple[Dict[str, str], List[t
                     )
 
         # Process content if we got valid content
-        if content_valid and url:
+        if content_valid and url and content:
             # Clean up garbage at the end but keep full document
             cleaned_content = _clean_document(content)
 
