@@ -7,8 +7,7 @@ openrouter:
   safety_cutoff: 5          # Circuit breaker disables retries after N failures/hour
 
 openai:
-  api_key:          "YOUR_OPENAI_KEY"
-  embedding_model:  "text-embedding-3-small"
+  api_key:          "YOUR_OPENAI_KEY"   # BYOK for o3-pro and other OpenAI-direct calls
 
 google_cse:
   api_key:  "YOUR_GOOGLE_API_KEY"
@@ -16,17 +15,11 @@ google_cse:
   cse_id_comprehensive: "YOUR_COMPREHENSIVE_CSE_ID"  # Optional: CSE ID for broader legal sources (austlii.edu.au, *.gov.au, etc.)
   cse_id_austlii:          "YOUR_AUSTLII_CSE_ID"      # Optional: CSE ID for searching AustLII database
 
-pinecone:
-  api_key:     "YOUR_PINECONE_KEY"
-  environment: "YOUR_PINECONE_ENV"    # e.g. "us-east-1-aws"
-  index_name:  "legal-rag"
-
 llm:
 
 general:
   heartbeat_interval: 10    # Seconds between progress messages (default: 10)
   max_chars: 200000         # Maximum characters per chunk for document processing (default: 200000, ~50K tokens)
-  rag_max_chars: 8000       # Maximum characters per chunk for RAG retrieval (default: 8000)
   log_format: "markdown"        # Format for audit logs: "json" or "markdown" (default: markdown)
 
 citation_validation:

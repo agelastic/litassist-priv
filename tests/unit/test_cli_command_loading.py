@@ -38,20 +38,14 @@ openrouter:
   api_key: "TEST_OPENROUTER_KEY"
   api_base: "https://openrouter.ai/api/v1"
 openai:
-  api_key: "TEST_OPENAI_KEY"  
-  embedding_model: "text-embedding-3-small"
+  api_key: "TEST_OPENAI_KEY"
 google_cse:
   api_key: "TEST_GOOGLE_KEY"
   cse_id: "TEST_CSE_ID"
-pinecone:
-  api_key: "TEST_PINECONE_KEY"
-  environment: "TEST_ENV"
-  index_name: "test-index"
 llm:
 general:
   heartbeat_interval: 10
   max_chars: 200000
-  rag_max_chars: 8000
   log_format: "json"
 citation_validation:
   offline_validation: false
@@ -100,10 +94,6 @@ def mock_external_apis():
     ) as mock_openai, patch("requests.get") as mock_requests, patch(
         "requests.post"
     ) as mock_requests_post, patch(
-        "pinecone.init"
-    ) as mock_pinecone_init, patch(
-        "pinecone.Index"
-    ) as mock_pinecone_index, patch(
         "litassist.llm.factory.LLMClientFactory.for_command"
     ) as mock_llm_factory:
 
@@ -117,9 +107,6 @@ def mock_external_apis():
         # Setup mock OpenAI
         mock_openai_instance = Mock()
         mock_openai_instance.models.list.return_value = Mock(data=[])
-        mock_openai_instance.embeddings.create.return_value = Mock(
-            data=[Mock(embedding=[0.1] * 1536)]
-        )
         mock_openai.return_value = mock_openai_instance
 
         # Setup mock requests
@@ -135,8 +122,6 @@ def mock_external_apis():
             "openai": mock_openai,
             "requests": mock_requests,
             "requests_post": mock_requests_post,
-            "pinecone_init": mock_pinecone_init,
-            "pinecone_index": mock_pinecone_index,
             "llm_factory": mock_llm_factory,
             "llm_client": mock_client,
         }

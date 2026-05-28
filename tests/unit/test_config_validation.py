@@ -29,10 +29,6 @@ _REST_OK = (
     "google_cse:\n"
     "  api_key: 'x'\n"
     "  cse_id: 'x'\n"
-    "pinecone:\n"
-    "  api_key: 'x'\n"
-    "  environment: 'x'\n"
-    "  index_name: 'x'\n"
 )
 
 

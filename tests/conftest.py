@@ -17,9 +17,6 @@ mock_config.get_jade_api_key = Mock(return_value="test-jade-key")
 mock_config.openrouter_api_key = "test-openrouter-key"
 mock_config.google_api_key = "test-google-key"
 mock_config.google_cse_id = "test-cse-id"
-mock_config.pinecone_api_key = "test-pinecone-key"
-mock_config.pinecone_environment = "test-env"
-mock_config.pinecone_index = "test-index"
 mock_config.log_format = "json"
 mock_config.heartbeat_interval = 10
 mock_config.fetch_timeout = 10
@@ -58,28 +55,6 @@ def mock_openai():
 
 
 @pytest.fixture
-def mock_pinecone():
-    """Mock Pinecone client responses."""
-    with patch("pinecone.init") as mock_init:
-        with patch("pinecone.Index") as mock_index_cls:
-            mock_index = Mock()
-            mock_index_cls.return_value = mock_index
-
-            # Mock vector operations
-            mock_index.query.return_value = Mock(
-                matches=[
-                    Mock(
-                        id="test-id",
-                        score=0.95,
-                        metadata={"text": "Test passage", "source": "Test source"},
-                    )
-                ]
-            )
-
-            yield mock_init, mock_index
-
-
-@pytest.fixture
 def mock_llm_client():
     """Mock LLMClient for command tests."""
 
@@ -98,24 +73,6 @@ def mock_llm_client():
 
     with patch("litassist.llm.LLMClient", MockLLMClient):
         yield MockLLMClient
-
-
-@pytest.fixture
-def mock_retriever():
-    """Mock Retriever for command tests."""
-
-    class MockRetriever:
-        def __init__(self, *args, **kwargs):
-            pass
-
-        def retrieve(self, query_embedding, top_k=5):
-            return [
-                {"text": "Test passage 1", "source": "Source 1"},
-                {"text": "Test passage 2", "source": "Source 2"},
-            ]
-
-    with patch("litassist.retriever.Retriever", MockRetriever):
-        yield MockRetriever
 
 
 @pytest.fixture
@@ -183,6 +140,3 @@ def mock_env(monkeypatch):
     monkeypatch.setenv("OPENROUTER_API_KEY", "test-openrouter-key")
     monkeypatch.setenv("GOOGLE_API_KEY", "test-google-key")
     monkeypatch.setenv("GOOGLE_CSE_ID", "test-cse-id")
-    monkeypatch.setenv("PINECONE_API_KEY", "test-pinecone-key")
-    monkeypatch.setenv("PINECONE_ENVIRONMENT", "test-env")
-    monkeypatch.setenv("PINECONE_INDEX", "test-index")

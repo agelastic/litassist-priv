@@ -75,8 +75,9 @@ def validate_credentials(show_progress=True):
     """
     Test API connections with provided credentials.
 
-    This function attempts to validate credentials for OpenAI, Pinecone, and Google CSE
-    by making test API calls. Invalid credentials will result in an early exit.
+    This function attempts to validate credentials for OpenAI, OpenRouter,
+    and Google CSE by making test API calls. Invalid credentials will result
+    in an early exit.
     """
     config = load_config()
     placeholder_checks = config.using_placeholders()
@@ -104,26 +105,6 @@ def validate_credentials(show_progress=True):
     else:
         if show_progress:
             print("  - Skipping OpenAI connectivity test (placeholder credentials)")
-
-    # Test Pinecone connectivity (only if not using placeholders)
-    if not placeholder_checks["pinecone"]:
-        try:
-            if show_progress:
-                print("  - Testing Pinecone API... ", end="", flush=True)
-            # Lazy import Pinecone only when needed
-            import pinecone
-            # Initialize Pinecone before testing
-            pinecone.init(api_key=config.pc_key, environment=config.pc_env)
-            _ = pinecone.list_indexes()
-            if show_progress:
-                print("OK")
-        except Exception as e:
-            if show_progress:
-                print("FAILED")
-            sys.exit(f"Error: Pinecone API test failed: {e}")
-    else:
-        if show_progress:
-            print("  - Skipping Pinecone connectivity test (placeholder credentials)")
 
     # Test Google CSE connectivity (only if not using placeholder values)
     if not placeholder_checks["google_cse"]:
@@ -296,7 +277,7 @@ def test():
     """
     Test API connectivity and web scraping capabilities.
 
-    This command validates credentials for OpenAI, OpenRouter, Pinecone, and Google CSE
+    This command validates credentials for OpenAI, OpenRouter, and Google CSE
     by making test API calls and reports success or failure. It also tests web scraping
     functionality including Jina Reader and PDF fetching.
     """
