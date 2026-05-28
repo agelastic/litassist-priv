@@ -117,8 +117,7 @@ openrouter:
   api_base:   "https://openrouter.ai/api/v1"   # optional
 
 openai:
-  api_key:          "YOUR_OPENAI_KEY"  # For embeddings and o3-pro BYOK via OpenRouter
-  embedding_model:  "text-embedding-3-small"
+  api_key:          "YOUR_OPENAI_KEY"  # BYOK for o3-pro via OpenRouter
 
 google_cse:
   api_key:                "YOUR_GOOGLE_API_KEY"         # API key for Google Custom Search
@@ -126,17 +125,11 @@ google_cse:
   cse_id_comprehensive:   "YOUR_COMPREHENSIVE_CSE_ID"  # Optional: broader legal sources (gov.au etc.)
   cse_id_austlii:         "YOUR_AUSTLII_CSE_ID"        # Optional: AustLII CSE for Australian legal cases
 
-pinecone:
-  api_key:     "YOUR_PINECONE_KEY"
-  environment: "YOUR_PINECONE_ENV"   # e.g. "us-east-1-aws"
-  index_name:  "legal-rag"
-
 llm:
 
 general:
   heartbeat_interval: 10  # Progress indicator interval in seconds (default: 10)
   max_chars: 200000       # Document chunking: characters per chunk for digest/extractfacts (default: 200000 ≈ 50K tokens)
-  rag_max_chars: 8000     # Document chunking: characters per chunk for draft command embeddings (default: 8000 ≈ 1600 words)
 ```
 
 ### OpenRouter Configuration

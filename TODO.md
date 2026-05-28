@@ -95,7 +95,8 @@ _No critical bugs identified - all items below verified as already implemented o
 2. Consider implementing circuit-breaker enhancement for API retries
 3. Extend glob support to strategy --strategies (deferred glob-unification item; see Pending Tasks)
 4. Review ongoing prompt optimization opportunities (October 2025 model strategy implemented)
-5. See ROADMAP.md for strategic feature implementation planning
+5. **Pricing-aware features:** `litassist/llm/model_capabilities.yaml` already carries `input_price_per_mtok` and `output_price_per_mtok` per model (refreshable via `litassist refresh`). Consume them for per-call cost logging, a `--budget` flag, cost-aware model selection, and a cost field in the audit log. Capability data is already collected; consumers to be added.
+6. See ROADMAP.md for strategic feature implementation planning
 
 ## Future Plans
 

@@ -1,6 +1,6 @@
 # Changelog
 
-Last updated: 27/05/2026
+Last updated: 28/05/2026
 
 All notable changes to LitAssist will be documented in this file.
 
@@ -19,8 +19,22 @@ Historical dated sections preserve the model names that were current when those 
 - Barrister's brief generation command (barbrief)
 - Counsel notes strategic analysis command
 - Case plan generation for litigation planning
+- `litassist refresh` subcommand: pulls per-model context-window, prices, and supported-parameters from OpenRouter `/api/v1/models` and writes `litassist/llm/model_capabilities.yaml`. Fails loudly when any model in `model_configs.yaml` is missing from the OpenRouter response.
+- `LLMClientFactory.get_context_window_for_command()` lookup helper backed by the new capability file.
+- `draft` preflight oversize handling: soft warn + hard fail derived from the model's actual context window plus a provider-error reframe pointing users at `litassist digest --mode summary <file>`.
 
 ### Changed
+
+#### May 2026: RAG / Pinecone pipeline removed; `draft` becomes full-context
+- `draft` no longer routes PDFs or large text files into a Pinecone-backed retrieve-then-generate pipeline. Every supplied document is concatenated with section markers and sent to the configured draft model (`openai/o3-pro`) in a single full-context call.
+- For documents that exceed the model's context window, `draft` fails with a clear error pointing at `litassist digest --mode summary <file>`. Use the resulting summary as input to draft.
+- Removed: `--diversity` flag on `draft`; `litassist/commands/draft/rag_pipeline.py`; `litassist.helpers.pinecone_config` and `litassist.helpers.retriever`; the `helpers` package; `create_embeddings` helper in `litassist/utils/text_processing.py`.
+- Removed configuration: `pinecone.*` block, `openai.embedding_model`, and `general.rag_max_chars`. `openai.api_key` stays — `brainstorm-analysis`, `strategy-analysis`, `draft`, `counselnotes`, and `barbrief` BYOK against o3-pro.
+- Removed dependency: `pinecone-client==2.2.4`.
+- `litassist test` no longer checks Pinecone connectivity.
+- Prompts updated: `--diversity` references and Pinecone-error templates removed from `capabilities.yaml`, `caseplan.yaml`, and `system_feedback.yaml`.
+
+
 
 #### May 2026: Lookup fetcher chain rework (curl_cffi + Cloudflare resilience)
 - New transport: `curl_cffi` with Chrome 136 TLS impersonation replaces direct `requests` calls for all content fetching. Defeats Cloudflare's TLS fingerprint detection that newly applied to AustLII; HTML resources now return real content (verified end-to-end). Added as a project dependency.

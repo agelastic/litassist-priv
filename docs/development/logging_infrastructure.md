@@ -195,23 +195,14 @@ Commands with processing distributed across multiple modules:
 - `orthodox_generator.py`: Orthodox strategy generation logging
 - `unorthodox_generator.py`: Unorthodox strategy generation logging
 
-### 6. RAG Pipeline Commands (draft)
+### 6. Full-Context Drafting (draft)
 
-Commands with specialized pipeline stages:
+draft sends every input in a single LLM call; no retrieval stages exist.
 
 ```
 init/start
 ├── reading/start
 ├── reading/end
-├── [If using RAG]
-│   ├── indexing/start
-│   ├── embedding/start
-│   ├── embedding/end
-│   ├── pinecone/start
-│   ├── pinecone/end
-│   ├── retrieval/start
-│   ├── retrieval/end
-│   └── indexing/end
 ├── generation/llm_call
 ├── generation/llm_response
 ├── verification/start
@@ -441,7 +432,7 @@ All commands have comprehensive logging:
 | barbrief | ✅ Complete | 12 | init, reading, generation, verification |
 | extractfacts | ✅ Complete | 10 | init, reading, extraction, consolidation |
 | counselnotes | ✅ Complete | 10 | init, reading, extraction/analysis, consolidation |
-| draft | ✅ Complete | 15 | init, reading, indexing, RAG pipeline, generation |
+| draft | ✅ Complete | 10 | init, reading, generation, verification, hallucination |
 | verify-cove | ✅ Complete | 8 | init, reading, reference, cove pipeline |
 | verify | ✅ Complete | 18 | init, citations, reasoning, soundness, cove |
 | lookup | ✅ Complete | 15 | init, search, CSE, fetching, generation |

@@ -81,7 +81,6 @@ The 11 registered user-facing commands are: `lookup`, `digest`, `extractfacts`, 
 - **Google Custom Search Engine (CSE)**: Retrieves legal documents from Jade.io and AustLII.
 - **curl_cffi**: Primary content-fetch transport with Chrome 136 TLS impersonation. Defeats Cloudflare TLS fingerprint detection for HTML responses on AustLII and similar protected hosts. Direct `requests` is not used for content fetching.
 - **Jina Reader**: Fallback transport used by `litassist/commands/lookup/fetchers.py` when curl_cffi returns a Cloudflare challenge body, a JavaScript SPA shell, or non-HTML content. Also serves `ndfv.jade.io` URLs directly. Narrower role since the May 2026 fetcher rework (see CHANGELOG).
-- **Pinecone**: Vector database (configuration present; not actively used by current commands).
 
 ### Lookup fetcher chain
 The fetcher in `litassist/commands/lookup/fetchers.py` runs every URL through a single generic pipeline:

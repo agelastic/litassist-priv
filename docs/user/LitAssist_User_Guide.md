@@ -15,15 +15,14 @@ routed through OpenRouter.
 - **Document analysis** with neutral or strategic perspectives
 - **Structured fact extraction** into a standard 10-heading format
 - **Legal strategy generation** (orthodox, unorthodox, and analytical)
-- **Citation-rich document drafting** with RAG for large files
+- **Citation-rich document drafting** that feeds full source documents to the model in a single call
 - **Multi-stage citation verification** including Chain of Verification (CoVe)
 - **Automated workflow planning** with executable command scripts
 
 ### Prerequisites
 
 - Python 3.10 or later
-- API keys: OpenRouter, OpenAI, Google Custom Search, Pinecone
-- Optional: OpenAI BYOK key for o3-pro commands (draft, counselnotes, barbrief)
+- API keys: OpenRouter, OpenAI (BYOK for o3-pro: draft, counselnotes, barbrief, strategy-analysis, brainstorm-analysis), Google Custom Search
 
 ---
 
@@ -66,8 +65,8 @@ configuration.
 litassist test
 ```
 
-This tests OpenAI, OpenRouter, Pinecone, Google CSE, and web scraping
-capabilities. Placeholder credentials are detected and skipped automatically.
+This tests OpenAI, OpenRouter, Google CSE, and web scraping capabilities.
+Placeholder credentials are detected and skipped automatically.
 
 ---
 
@@ -319,9 +318,10 @@ litassist strategy case_facts.txt \
 
 ### draft
 
-Draft a citation-rich legal document. Small text files are passed directly to
-the LLM. PDFs and large files use Retrieval-Augmented Generation (RAG) via
-Pinecone embeddings with MMR re-ranking.
+Draft a citation-rich legal document. Every supplied document (text files and
+PDFs alike) is concatenated and sent to the LLM in one full-context call.
+For documents that exceed the draft model's context window, run
+`litassist digest --mode summary <file>` first and feed the summary to draft.
 
 ```bash
 litassist draft <documents>... <query> [OPTIONS]
@@ -331,20 +331,17 @@ The `documents` argument supports glob patterns.
 
 | Option | Type | Description |
 |--------|------|-------------|
-| `--heavy` | flag | Use GPT-5.5 for verification |
+| `--heavy` | flag | Use verification-heavy mode (max thinking effort) |
 | `--noverify` | flag | Skip verification |
-| `--diversity` | float | RAG search diversity (0.0-1.0). Higher = more diverse results |
 | `--output` | text | Custom output filename prefix |
 
 Includes automatic hallucination detection. Citations are verified against
 Jade.io via Google CSE.
 
 ```bash
-# Draft from text files (direct LLM)
+# Draft from text and PDF inputs (single full-context call)
 litassist draft case_facts.txt strategies.txt "statement of claim"
-
-# Draft from PDF with RAG
-litassist draft large_case_bundle.pdf "outline of submissions" --diversity 0.3
+litassist draft large_case_bundle.pdf "outline of submissions"
 ```
 
 **Model:** o3-pro
@@ -666,19 +663,13 @@ openrouter:
   api_base: "https://openrouter.ai/api/v1"  # Default
 
 openai:
-  api_key: "your-openai-key"              # Required (embeddings + BYOK)
-  embedding_model: "text-embedding-3-small"  # Default
+  api_key: "your-openai-key"              # Required (BYOK for o3-pro)
 
 google_cse:
   api_key: "your-google-api-key"          # Required
   cse_id: "your-jade-cse-id"             # Required (Jade.io)
   cse_id_austlii: "your-austlii-cse-id"  # Optional (AustLII)
   cse_id_comprehensive: "your-comp-cse-id"  # Optional (broader sources)
-
-pinecone:
-  api_key: "your-pinecone-key"            # Required
-  environment: "your-environment"          # Required
-  index_name: "your-index-name"           # Required
 
 jina_reader:
   api_key: "your-jina-key"               # Optional - fallback transport for
@@ -691,7 +682,6 @@ jina_reader:
 general:
   heartbeat_interval: 20     # Seconds between "still working" messages
   max_chars: 200000          # Document chunk size (~50K tokens)
-  rag_max_chars: 8000        # RAG chunk size (~1600 words)
   log_format: "json"         # Default log format (json or markdown)
 
 citation_validation:
@@ -740,8 +730,10 @@ Commands that accept file paths (`extractfacts`, `counselnotes`, `digest`,
 ### Large File Processing
 
 Files exceeding `max_chars` (default 200,000 characters) are automatically
-chunked. For very large PDFs, the RAG pipeline (draft command) embeds chunks
-into Pinecone for retrieval. Use `--diversity` to control result variety.
+chunked by digest / extractfacts / counselnotes. The draft command sends every
+input in one full-context call; if the combined payload exceeds the configured
+draft model's window, draft fails with a clear error pointing at
+`litassist digest --mode summary`.
 
 If processing is slow, the heartbeat indicator ("...still working...") confirms
 the command is active. Adjust `heartbeat_interval` in config.yaml.

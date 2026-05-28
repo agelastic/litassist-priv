@@ -12,8 +12,6 @@ litassist/
 ├── config.py               # Configuration management (API keys, service endpoints)
 ├── utils.py                # Core utilities (document reading, chunking, logging)
 ├── llm.py                  # LLM client wrapper with standard interface
-├── retriever.py            # Vector search with MMR re-ranking
-├── pinecone_config.py      # Pinecone index configuration
 ├── cli.py                  # CLI entry point and command registration
 └── commands/               # Individual command implementations
     ├── __init__.py         # Command registration mechanism
@@ -21,7 +19,7 @@ litassist/
     ├── digest.py           # Document digestion with Claude
     ├── brainstorm.py       # Legal strategy generation with Grok
     ├── extractfacts.py     # Case facts extraction under 10 headings
-    ├── draft.py            # RAG-based legal drafting with o3
+    ├── draft.py            # Full-context legal drafting with o3-pro
     ├── strategy.py         # Strategic options and document generation
     ├── verify.py           # Citation verification with Claude
     ├── counselnotes.py     # Strategic advocate analysis with Claude
@@ -47,18 +45,6 @@ content, usage = client.complete([
 
 # Optional self-verification
 corrections = client.verify(content)
-```
-
-### Retriever (retriever.py)
-
-Handles vector search with Maximal Marginal Relevance (MMR) for diversity:
-
-```python
-# Initialize with Pinecone index
-retriever = Retriever(pc_index, use_mmr=True, diversity_level=0.3)
-
-# Retrieve relevant passages with optional diversity
-passages = retriever.retrieve(query_embedding, top_k=5)
 ```
 
 ### Utilities (utils.py)

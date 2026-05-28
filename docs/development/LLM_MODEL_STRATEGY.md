@@ -450,7 +450,7 @@ Alternative paths:
 **Current Implementation**:
 - Model: `o3-pro`
 - thinking_effort: high, verbosity: high
-- Basic RAG with context
+- Full-context drafting (all inputs concatenated into one LLM call)
 - Dynamic prompts
 
 **Enhancement Opportunities**:
