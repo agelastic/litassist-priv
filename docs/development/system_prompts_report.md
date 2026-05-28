@@ -169,9 +169,9 @@ Used by multiple commands (verify, draft, barbrief, counselnotes, extractfacts, 
 
 **Models Used** (current - updated Feb 2026):
 - Questions: Claude Sonnet 4.6 (cove-questions client)
-- Answers: GPT-5.1 (cove-answers client) - updated Nov 2025
+- Answers: GPT-5.5 (cove-answers client) - updated Nov 2025
 - Verify: Claude Sonnet 4.6 (cove-verify client)
-- Final: Claude Sonnet 4.6 (cove-final client) - moved from GPT-5 Pro Nov 2025
+- Final: Claude Sonnet 4.6 (cove-final client) - moved from GPT-5.5 Nov 2025
 
 ### 12. Base/Fallback System Prompt
 
@@ -246,9 +246,9 @@ All prompts are defined in YAML files under `litassist/prompts/`:
 ## Key Changes Since January 2025
 
 ### October 2025 Model Upgrade
-- **Three-Tier Strategy**: Critical verification (GPT-5 Pro), Fast verification (GPT-5), Legal reasoning (Claude Sonnet 4.6)
+- **Three-Tier Strategy**: Heavy verification (GPT-5.5 with higher reasoning effort), standard verification (GPT-5.5), legal reasoning (Claude Sonnet 4.6 / Claude Opus 4.7)
 - **Verification Commands**: Split into verification, verification-heavy, verification-light
-- **CoVe Models**: Now uses GPT-5 family for answers and final stages (accuracy improvement)
+- **CoVe Models**: Uses GPT-5.5 for answers and Claude Sonnet 4.6 for question, verification, and final stages
 
 ### Prompt Management Architecture
 - **PromptManager**: Centralized singleton at `litassist/prompts.py`

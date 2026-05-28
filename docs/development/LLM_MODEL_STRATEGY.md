@@ -1,6 +1,6 @@
 # LitAssist LLM Model Strategy
 
-Last updated: 27/02/2026
+Last updated: 28/05/2026
 **Status**: Living Document
 **Purpose**: Comprehensive guide to LLM usage, model selection, and improvement strategies
 
@@ -21,16 +21,18 @@ Last updated: 27/02/2026
 
 ## Current Model Configuration
 
+Source of truth: `litassist/llm/model_configs.yaml`. Registered user-facing commands are in `litassist/commands/__init__.py`; roadmap-only model recommendations remain provisional until validated by an eval harness.
+
 ### Active Models by Purpose
 
 | Model | Commands Using It | Purpose | Hallucination Rate | Cost |
 |-------|------------------|---------|-------------------|------|
-| **Claude Sonnet 4.6** | strategy, extractfacts, digest-*, caseplan, brainstorm-orthodox, verification-light, cove-questions, cove-verify, cove-final, lookup | Legal reasoning, foundational tasks | ~2-3% | $3/$15 |
-| **Claude Opus 4.1** | verify-soundness | Soundness checking | ~2-3% | Moderate |
-| **OpenAI GPT-5 Pro** | verification-heavy, verify-soundness-heavy, verify-reasoning-heavy, cove-answers-heavy | Critical verification (<1% hallucination) | <1% | Premium |
-| **OpenAI GPT-5.1** | verification, cove-answers | Standard verification | 1.4-1.6% | Higher |
+| **Claude Sonnet 4.6** | extractfacts, digest-*, caseplan, brainstorm-orthodox, verification-light, verify-reasoning, cove, cove-questions, cove-verify, cove-final | Legal reasoning, foundational tasks | Model-dependent | $3/$15 |
+| **Claude Opus 4.7** | strategy, verify-soundness | Strategic reasoning and soundness checking | Model-dependent | Moderate |
+| **OpenAI GPT-5.5** | verification, verification-heavy, verify-soundness-heavy, verify-reasoning-heavy, cove-answers, cove-answers-heavy | Standard and heavy verification | Model-dependent | Premium |
 | **OpenAI o3-pro** | draft, counselnotes, barbrief, strategy-analysis, brainstorm-analysis | Advanced reasoning, superior drafting | ~15-20%* | Higher |
-| **xAI Grok 4** | brainstorm-unorthodox | Creative ideation | ~5-8% | Medium |
+| **xAI Grok 4.20** | brainstorm-unorthodox | Creative ideation | ~5-8% | Medium |
+| **Google Gemini 3.5 Flash** | lookup | Lookup synthesis over fetched sources | Model-dependent | Low |
 
 *\*o3-pro has higher hallucination rate but excels at structured reasoning and drafting*
 
@@ -49,11 +51,11 @@ Last updated: 27/02/2026
 ## Model Selection Strategy
 
 LitAssist uses task-based model selection: each command gets the model best suited
-to its job. Six models serve distinct roles across 28 command configurations.
+to its job. Six model families serve distinct roles across 28 command configurations.
 
-### Legal Reasoning (Claude Sonnet 4.6) -- 15 commands
-- strategy, extractfacts, digest-*, caseplan, brainstorm-orthodox, lookup,
-  verification-light, verify-reasoning, cove-questions, cove-verify, cove-final
+### Legal Reasoning (Claude Sonnet 4.6) -- 12 configurations
+- extractfacts, digest-*, caseplan, brainstorm-orthodox, verification-light,
+  verify-reasoning, cove, cove-questions, cove-verify, cove-final
 - 1M context, GDPval-AA 1633 Elo, BigLaw Bench 87.6%
 - $3/$15 per M tokens
 
@@ -62,19 +64,20 @@ to its job. Six models serve distinct roles across 28 command configurations.
 - Extended thinking with structured reasoning traces
 - Restricted parameters: `max_completion_tokens` and `reasoning_effort` only
 
-### Critical Verification (GPT-5 Pro) -- 4 commands
-- verification-heavy, verify-soundness-heavy, verify-reasoning-heavy, cove-answers-heavy
-- <1% hallucination rate; premium cost justified by professional liability requirements
+### Verification (GPT-5.5) -- 6 configurations
+- verification, verification-heavy, verify-soundness-heavy, verify-reasoning-heavy,
+  cove-answers, cove-answers-heavy
+- Heavy variants use higher reasoning effort for professional liability requirements
 
-### Standard Verification (GPT-5.1) -- 2 commands
-- verification, cove-answers
-- 1.4-1.6% hallucination rate; 6x better than o3
+### Strategy and Soundness (Claude Opus 4.7) -- 2 configurations
+- strategy, verify-soundness
+- Deep analysis for strategic options and legal soundness review
 
-### Soundness Checking (Claude Opus 4.1) -- 1 command
-- verify-soundness
-- Deep analysis at moderate cost
+### Lookup Synthesis (Gemini 3.5 Flash) -- 1 configuration
+- lookup
+- Fast synthesis over fetched case-law sources
 
-### Creative Brainstorming (Grok 4) -- 1 command
+### Creative Brainstorming (Grok 4.20) -- 1 command
 - brainstorm-unorthodox
 - High temperature (0.8) with auto-verification due to higher hallucination tendency
 
@@ -82,7 +85,7 @@ to its job. Six models serve distinct roles across 28 command configurations.
 
 - 40-50% cost reduction vs single-model approach
 - <2% hallucination rate on critical verification
-- Sonnet 4.6 handles most tasks at 80% lower cost than GPT-5 Pro
+- Sonnet 4.6 handles most tasks at 80% lower cost than GPT-5.5
 
 ---
 
@@ -100,15 +103,15 @@ to its job. Six models serve distinct roles across 28 command configurations.
 - **Key Features**: Extended thinking mode, strong instruction following
 - **Parameters**: temperature, top_p, thinking_effort (low/medium/high/max)
 - **BYOK**: Not required on OpenRouter
-- **Commands**: 15 total (strategy, extractfacts, digest, caseplan, lookup, verification-light, etc.)
+- **Commands**: extractfacts, digest stages, caseplan stages, brainstorm-orthodox, verification-light, verify-reasoning, and CoVe scaffold/final stages
 
-#### GPT-5 and GPT-5 Pro (August 2025)
-- **Model IDs**: `openai/gpt-5`, `openai/gpt-5-pro`
-- **Hallucination Rates**: GPT-5 (1.4-1.6%), GPT-5 Pro (<1%)
+#### GPT-5.5
+- **Model ID**: `openai/gpt-5.5`
+- **Purpose**: Standard and heavy verification stages
 - **Key Features**: 6x fewer factual errors, 80% fewer hallucinations than o3
-- **Parameters**: Standard OpenAI (temperature, top_p, max_tokens)
+- **Parameters**: GPT-5 family parameters; sampling params are filtered out before API calls
 - **BYOK**: Required on OpenRouter (Tier 4+ API key)
-- **Commands**: verification-heavy, verify-soundness-heavy, verify-reasoning-heavy, cove-answers-heavy (GPT-5 Pro); verification, cove-answers (GPT-5.1)
+- **Commands**: verification, verification-heavy, verify-soundness-heavy, verify-reasoning-heavy, cove-answers, cove-answers-heavy
 
 #### OpenAI o3-pro
 - **Model ID**: `openai/o3-pro`
@@ -119,8 +122,8 @@ to its job. Six models serve distinct roles across 28 command configurations.
 - **Max Output**: 32768 tokens (32K)
 - **Commands**: barbrief, counselnotes, draft, strategy-analysis, brainstorm-analysis
 
-#### Grok 4
-- **Model ID**: `x-ai/grok-4`
+#### Grok 4.20
+- **Model ID**: `x-ai/grok-4.20`
 - **Purpose**: Creative legal strategy generation
 - **Auto-verification**: Enabled due to higher hallucination tendency
 - **Parameters**: temperature (0.8), top_p (0.95), min_p (0.05) for creativity
@@ -133,9 +136,10 @@ LitAssist uses pattern-based parameter filtering:
 ```python
 MODEL_PATTERNS = {
     "openai_reasoning": r"openai/o\d+",      # o3, o3-pro, future o4, o5
-    "gpt5.1": r"openai/gpt-5\.1",             # GPT-5.1 (must precede gpt5-pro)
-    "gpt5-pro": r"openai/gpt-5-pro$",        # GPT-5 Pro specifically
-    "gpt5": r"openai/gpt-5$",                # GPT-5 base model
+    "gpt5.5": r"openai/gpt-5\.5",           # active GPT-5.5 family
+    "gpt5.1": r"openai/gpt-5\.1",           # legacy GPT-5.1 family
+    "gpt5-pro": r"openai/gpt-5-pro$",       # legacy GPT-5 Pro family
+    "gpt5": r"openai/gpt-5$",               # GPT-5 base model
     "claude4": r"anthropic/claude-(opus-4|sonnet-4)(\.\d+)?",  # Claude 4.x
     "anthropic": r"anthropic/claude",         # Other Claude models
     "google": r"google/(gemini|palm|bard)",
@@ -162,8 +166,9 @@ MODEL_PATTERNS = {
 - ⚠️ **Tool Calling**: May need `disable_tools: True` on OpenRouter (Sept 2025 issue)
 
 **GPT-5 Family**:
-- ✅ **Standard Parameters**: temperature, top_p, max_tokens
+- ✅ **Allowed Parameters**: reasoning, verbosity, max_completion_tokens, structured outputs, tool fields
 - ✅ **Thinking Mode**: Supports `thinking_effort` parameter
+- ❌ **Sampling Parameters**: temperature and top_p are filtered out
 - ⚠️ **BYOK Required**: Must configure OpenAI API key in OpenRouter
 
 ### OpenRouter Configuration
@@ -329,7 +334,7 @@ Example:
 
 **Current Implementation**:
 - Orthodox: Claude Sonnet 4.6 (temp 0.7)
-- Unorthodox: Grok 4 (temp 0.9)
+- Unorthodox: Grok 4.20 (temp 0.9)
 - Analysis: o3-pro (thinking_effort: high)
 - Auto-verification for Grok
 
@@ -472,9 +477,9 @@ Alternative paths:
 
 **Current Implementation**:
 - verification-light: Sonnet 4.6 (spelling/terminology)
-- verification: GPT-5.1 (standard verification)
-- verification-heavy: GPT-5 Pro (critical tasks <1% hallucination)
-- verify-soundness: Opus 4.1 (standard), GPT-5 Pro (heavy)
+- verification: GPT-5.5 (standard verification)
+- verification-heavy: GPT-5.5 (critical tasks <1% hallucination)
+- verify-soundness: Opus 4.7 (standard), GPT-5.5 (heavy)
 - Chain of Verification (CoVe): 4-stage pipeline
 
 **Enhancement Opportunities**:
@@ -517,7 +522,7 @@ Alternative paths:
 - Pattern matcher already covers `openai/o\d+` family
 - Test `max_completion_tokens` requirements
 
-#### 2. Grok 4 Turbo
+#### 2. Grok 4.20 Turbo
 
 **Potential Applications**:
 - Secondary verification cross-check
@@ -589,7 +594,7 @@ def multi_model_consensus(prompt, task_type):
     """Get consensus from multiple models for critical tasks."""
 
     models = {
-        "analytical": "openai/gpt-5.1",
+        "analytical": "openai/gpt-5.5",
         "creative": "anthropic/claude-sonnet-4.6",
         "precise": "anthropic/claude-sonnet-4.6"
     }
@@ -612,7 +617,7 @@ def multi_model_consensus(prompt, task_type):
     4. Create final version incorporating strengths of all
     """
 
-    return generate("openai/gpt-5.1", synthesis_prompt)
+    return generate("openai/gpt-5.5", synthesis_prompt)
 ```
 
 **Status**: Not implemented, HIGH COST, use only for critical tasks
@@ -756,9 +761,9 @@ Reference relevant practice directions and court guides.
 # config.yaml
 models:
   commands:
-    strategy: "anthropic/claude-sonnet-4.6"  # Override default
-    verification-heavy: "openai/gpt-5.1"     # When available
-    lookup: "google/gemini-2.5-flash-thinking"  # Cost optimization
+    strategy: "anthropic/claude-opus-4.7"    # Override default
+    verification-heavy: "openai/gpt-5.5"     # When available
+    lookup: "google/gemini-3.5-flash"       # Active lookup model
 ```
 
 **Benefits**:
@@ -774,8 +779,8 @@ models:
 ```yaml
 verification:
   light: ["anthropic/claude-sonnet-4.6"]
-  standard: ["openai/gpt-5.1"]
-  heavy: ["openai/gpt-5-pro", "x-ai/grok-4-turbo"]  # Ensemble
+  standard: ["openai/gpt-5.5"]
+  heavy: ["openai/gpt-5.5", "x-ai/grok-4.20-turbo"]  # Ensemble
 ```
 
 ### 3. Benchmark and Guardrails

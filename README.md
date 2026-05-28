@@ -1,6 +1,6 @@
 # LitAssist
 
-Last updated: 18/02/2026
+Last updated: 28/05/2026
 
 **LitAssist** is a comprehensive legal workflow automation tool designed for Australian legal practice. It provides a structured end-to-end pipeline for litigation support:
 
@@ -50,6 +50,8 @@ graph TD
 
 ## Core Commands
 
+**Sources of truth:** registered commands are defined in `litassist/commands/__init__.py`; current model assignments are defined in `litassist/llm/model_configs.yaml`; strategic feature planning lives in `ROADMAP.md`; active technical debt lives in `TODO.md`.
+
 ### Start Here: CasePlan
 - **CasePlan**: START HERE! Automated phased workflow planning with executable scripts
   - Generates complete litigation roadmaps tailored to your case
@@ -58,11 +60,11 @@ graph TD
   - Adapts to case complexity: minimal, standard, or comprehensive workflows
 
 ### Primary Workflow Commands
-- **Lookup**: Rapid case-law research (Jade.io database via Google Custom Search + Gemini 2.5 Pro or Claude Sonnet 4.6)
+- **Lookup**: Rapid case-law research (Jade.io/AustLII via Google Custom Search + Gemini 3.5 Flash)
 - **Digest**: Mass document processing (chronological summaries or issue-spotting via Claude Sonnet 4.6)
 - **ExtractFacts**: Automatic extraction of case facts into a structured file (Claude Sonnet 4.6)
-- **Brainstorm**: Creative legal strategy generation (unorthodox strategies via Grok 4, analysis via o3-pro)
-- **Strategy**: Targeted legal options with probability assessments (state-of-the-art litigation reasoning via Claude Sonnet 4.6)
+- **Brainstorm**: Creative legal strategy generation (unorthodox strategies via Grok 4.20, analysis via o3-pro)
+- **Strategy**: Targeted legal options with probability assessments (Claude Opus 4.7 with o3-pro analysis)
 - **Draft**: Citation-rich document creation (superior technical writing via o3-pro)
 
 ### Specialized Commands
@@ -115,7 +117,7 @@ openrouter:
   api_base:   "https://openrouter.ai/api/v1"   # optional
 
 openai:
-  api_key:          "YOUR_OPENAI_KEY"  # For embeddings and o3-pro/GPT-5 BYOK via OpenRouter
+  api_key:          "YOUR_OPENAI_KEY"  # For embeddings and o3-pro/GPT-5.5 BYOK via OpenRouter
   embedding_model:  "text-embedding-3-small"
 
 google_cse:
@@ -143,13 +145,13 @@ OpenRouter is the primary API gateway for all LLM calls. Some models require BYO
 
 **Models requiring BYOK:**
 - OpenAI o3-pro (draft, barbrief, counselnotes commands)
-- OpenAI GPT-5 and GPT-5 Pro (critical verification commands)
+- OpenAI GPT-5.5 (verification and heavy verification commands)
 - Claude Sonnet 4.6 available without BYOK
 
 **Quick BYOK Setup:**
 1. Go to [OpenRouter Settings](https://openrouter.ai/settings/integrations)
 2. Add your API keys under integrations:
-   - **OpenAI**: Requires Tier 4+ API key with o3-pro and GPT-5 access (standard keys won't work)
+   - **OpenAI**: Requires API access for o3-pro and GPT-5.5 where BYOK routing is used
    - **Anthropic**: Any valid API key (Claude models available without BYOK on OpenRouter)
 3. Save and verify model availability on your dashboard
 
@@ -157,26 +159,26 @@ OpenRouter is the primary API gateway for all LLM calls. Some models require BYO
 
 LitAssist uses task-based model selection, matching each command to the model best suited for its job:
 
-- **Legal Reasoning** - Claude Sonnet 4.6 (15 commands: analysis, extraction, strategy, lookup)
-- **Advanced Drafting** - o3-pro (5 commands: draft, barbrief, counselnotes, analysis stages)
-- **Critical Verification** - GPT-5 Pro (<1% hallucination rate, 4 heavy verification commands)
-- **Standard Verification** - GPT-5.1 (1.4% hallucination rate, verification + cove-answers)
-- **Soundness Checking** - Claude Opus 4.1 (verify-soundness)
-- **Creative Ideation** - Grok 4 (brainstorm-unorthodox)
+- **Claude Sonnet 4.6** - extraction, digest, case planning, CoVe scaffolding, light/reasoning verification
+- **Claude Opus 4.7** - primary strategy generation and legal soundness checking
+- **OpenAI GPT-5.5** - standard and heavy verification, heavy reasoning, and CoVe answer stages
+- **OpenAI o3-pro** - drafting, briefs, counsel notes, and analysis stages
+- **Google Gemini 3.5 Flash** - lookup synthesis over fetched research sources
+- **xAI Grok 4.20** - unorthodox brainstorm generation
 
 | Command | Model | BYOK Required | Purpose |
 |---------|-------|--------------|---------|
 | **caseplan** | Claude Sonnet 4.6 | No | Workflow planning - START HERE! |
-| **lookup** | Claude Sonnet 4.6 | No | Case-law research with 1M context |
+| **lookup** | Gemini 3.5 Flash | No | Case-law research synthesis |
 | **digest** | Claude Sonnet 4.6 | No | Document analysis and issue identification |
 | **extractfacts** | Claude Sonnet 4.6 | No | Structured fact extraction with citations |
-| **brainstorm** | Claude Sonnet 4.6 / Grok 4 | No | Legal strategies + creative ideation |
-| **strategy** | Claude Sonnet 4.6 | No | State-of-the-art legal reasoning |
+| **brainstorm** | Claude Sonnet 4.6 / Grok 4.20 | No | Legal strategies + creative ideation |
+| **strategy** | Claude Opus 4.7 / o3-pro | Yes for analysis stage | Strategic options and analysis |
 | **draft** | OpenAI o3-pro | **Yes** | Superior technical legal writing |
 | **counselnotes** | OpenAI o3-pro | **Yes** | Strategic advocate analysis |
 | **barbrief** | OpenAI o3-pro | **Yes** | Comprehensive barrister's briefs |
-| **verify (critical)** | GPT-5 Pro | **Yes** | Critical soundness verification |
-| **verify (standard)** | GPT-5.1 | **Yes** | Fast verification with high accuracy |
+| **verify** | GPT-5.5 / Claude Opus 4.7 / Claude Sonnet 4.6 | Yes for GPT-5.5 stages | Citation, soundness, and reasoning verification |
+| **verify-cove** | Claude Sonnet 4.6 / GPT-5.5 | Yes for GPT-5.5 stages | Chain-of-Verification pipeline |
 
 #### Why These Models?
 
@@ -186,7 +188,7 @@ LitAssist uses task-based model selection, matching each command to the model be
 - 80% cost reduction vs previous models
 - Extended thinking mode for multi-step analysis
 
-**GPT-5 and GPT-5 Pro** (August 2025):
+**GPT-5.5**:
 - Industry-leading accuracy: <1.6% hallucination rate
 - 6x fewer factual errors than previous models
 - Critical for legal verification where accuracy is paramount

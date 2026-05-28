@@ -60,21 +60,21 @@ Last updated: 18/02/2026
 
 ```yaml
 # Verification family - sourced from litassist/llm/model_configs.yaml
-verification:          openai/gpt-5.1, temp=0.2, top_p=0.3, thinking_effort=medium
-verification-heavy:    openai/gpt-5-pro, temp=0.2, top_p=0.3, thinking_effort=max (<1% hallucination)
-verification-light:    anthropic/claude-sonnet-4.5, temp=0.2, top_p=0.2, thinking_effort=medium
-verify-soundness:      anthropic/claude-opus-4.1, temp=0.2, top_p=0.3, thinking_effort=high  # Nov 2025: cost opt.
-verify-soundness-heavy: openai/gpt-5-pro, temp=0.2, top_p=0.3, thinking_effort=max
-verify-reasoning:      anthropic/claude-sonnet-4.5, temp=0.2, top_p=0.3, thinking_effort=high
-verify-reasoning-heavy: openai/gpt-5-pro, temp=0.2, top_p=0.3, thinking_effort=max
-cove-questions:        anthropic/claude-sonnet-4.5, temp=0.6, top_p=0.95, thinking_effort=low
-cove-answers:          openai/gpt-5.1, temp=0.5, top_p=0.8, thinking_effort=high
-cove-verify:           anthropic/claude-sonnet-4.5, temp=0.2, top_p=0.3, thinking_effort=high
-cove-final:            anthropic/claude-sonnet-4.5, temp=0.2, top_p=0.4, thinking_effort=medium
-cove-answers-heavy:    openai/gpt-5-pro, temp=0.5, top_p=0.8, thinking_effort=max
+verification:          openai/gpt-5.5, temp=0.2, top_p=0.3, thinking_effort=medium
+verification-heavy:    openai/gpt-5.5, temp=0.2, top_p=0.3, thinking_effort=max (<1% hallucination)
+verification-light:    anthropic/claude-sonnet-4.6, temp=0.2, top_p=0.2, thinking_effort=medium
+verify-soundness:      anthropic/claude-opus-4.7, temp=0.2, top_p=0.3, thinking_effort=high
+verify-soundness-heavy: openai/gpt-5.5, temp=0.2, top_p=0.3, thinking_effort=max
+verify-reasoning:      anthropic/claude-sonnet-4.6, temp=0.2, top_p=0.3, thinking_effort=high
+verify-reasoning-heavy: openai/gpt-5.5, temp=0.2, top_p=0.3, thinking_effort=max
+cove-questions:        anthropic/claude-sonnet-4.6, temp=0.6, top_p=0.95, thinking_effort=low
+cove-answers:          openai/gpt-5.5, temp=0.5, top_p=0.8, thinking_effort=high
+cove-verify:           anthropic/claude-sonnet-4.6, temp=0.2, top_p=0.3, thinking_effort=high
+cove-final:            anthropic/claude-sonnet-4.6, temp=0.2, top_p=0.4, thinking_effort=medium
+cove-answers-heavy:    openai/gpt-5.5, temp=0.5, top_p=0.8, thinking_effort=max
 ```
 
-**November 2025 changes**: `verify-soundness` moved from `gpt-5-pro` to `claude-opus-4.1` (cost optimisation; heavy variant retains gpt-5-pro). `verification` and `cove-answers` upgraded from `gpt-5` to `gpt-5.1`. `cove-final` moved from `gpt-5-pro` to `claude-sonnet-4.5`.
+**Current-state note**: These values are sourced from `litassist/llm/model_configs.yaml`. Historical upgrade notes in the changelog may mention earlier GPT-5 or Claude Opus versions, but they are not the active configuration.
 
 ### Important Architecture Decisions
 

@@ -78,7 +78,7 @@ client = LLMClientFactory.for_command("verification")
 corrected_content, _ = client.verify(content, citation_context, reasoning_context)
 ```
 - **Purpose**: Semantic verification and correction
-- **Model**: GPT-5 for standard verification, GPT-5 Pro for critical verification (October 2025)
+- **Model**: GPT-5 for standard verification, GPT-5.5 for critical verification (October 2025)
 - **Parameters**: Temperature=0.2, top_p=0.3 (near-deterministic with minimal creativity)
 - **Context**: Can include citation and reasoning reports
 - **Output**: Corrected document with issues fixed
@@ -301,48 +301,48 @@ def verify(file, citations, soundness, reasoning, cove):
 ### Verification Model Selection (October 2025)
 
 ```yaml
-# Current values from litassist/llm/model_configs.yaml (updated Feb 2026)
-# November 2025: verification/cove-answers upgraded gpt-5->gpt-5.1;
-#   verify-soundness moved gpt-5-pro->claude-opus-4.1; cove-final moved gpt-5-pro->claude-sonnet-4.5
+# Current values from litassist/llm/model_configs.yaml.
+# Historical upgrade notes may mention earlier GPT-5 or Claude model versions;
+# the table below is the active configuration.
 commands:
   verification:
-    model: openai/gpt-5.1  # Fast verification (was gpt-5, Nov 2025)
+    model: openai/gpt-5.5  # Standard verification
     temperature: 0.2
     top_p: 0.3
     thinking_effort: medium
 
   verification-heavy:
-    model: openai/gpt-5-pro  # Critical verification (<1% hallucination rate)
+    model: openai/gpt-5.5  # Critical verification (<1% hallucination rate)
     temperature: 0.2
     top_p: 0.3
     thinking_effort: max
 
   verification-light:
-    model: anthropic/claude-sonnet-4.5  # Spelling/terminology only
+    model: anthropic/claude-sonnet-4.6  # Spelling/terminology only
     temperature: 0.2
     top_p: 0.2
     thinking_effort: medium
 
   cove-questions:
-    model: anthropic/claude-sonnet-4.5
+    model: anthropic/claude-sonnet-4.6
     temperature: 0.6  # Creative question generation
     top_p: 0.95
     thinking_effort: low
 
   cove-answers:
-    model: openai/gpt-5.1  # Fast accurate answers (was gpt-5, Nov 2025)
+    model: openai/gpt-5.5  # Accurate independent answers
     temperature: 0.5
     top_p: 0.8
     thinking_effort: high
 
   cove-verify:
-    model: anthropic/claude-sonnet-4.5
+    model: anthropic/claude-sonnet-4.6
     temperature: 0.2  # Deterministic comparison
     top_p: 0.3
     thinking_effort: high
 
   cove-final:
-    model: anthropic/claude-sonnet-4.5  # Cost opt. Nov 2025 (was gpt-5-pro)
+    model: anthropic/claude-sonnet-4.6
     temperature: 0.2
     top_p: 0.4
     thinking_effort: medium
@@ -448,7 +448,7 @@ Skip Verification
         "prompt": "[FULL PROMPT]",
         "prompt_truncated": "[FIRST 500 CHARS]",
         "response": "[QUESTIONS]",
-        "model": "anthropic/claude-sonnet-4.5",
+        "model": "anthropic/claude-sonnet-4.6",
         "usage": {"total_tokens": 2500}
       },
       "answers": {...},

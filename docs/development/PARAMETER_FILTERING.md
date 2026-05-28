@@ -26,8 +26,9 @@ model_configs.yaml          model_profiles.py            parameter_handler.py   
 ```
 MODEL_PATTERNS = {
     "openai_reasoning":  r"openai/o\d+"                              # o1, o3, o3-pro, o4 ...
-    "gpt5.1":            r"openai/gpt-5\.1"                          # must precede gpt5-pro
-    "gpt5-pro":          r"openai/gpt-5-pro$"                        # must precede gpt5
+    "gpt5.5":            r"openai/gpt-5\.5"                          # active GPT-5.5 family
+    "gpt5.1":            r"openai/gpt-5\.1"                          # legacy GPT-5.1 family
+    "gpt5-pro":          r"openai/gpt-5-pro$"                        # legacy GPT-5 Pro family
     "gpt5":              r"openai/gpt-5$"
     "claude4":           r"anthropic/claude-(opus-4|sonnet-4)(\.\d+)?"
     "anthropic":         r"anthropic/claude"                          # catch-all Claude
@@ -42,10 +43,10 @@ MODEL_PATTERNS = {
 ```
 
 Examples:
-- `anthropic/claude-sonnet-4.5` matches `claude4`
+- `anthropic/claude-sonnet-4.6` matches `claude4`
 - `anthropic/claude-3-sonnet` matches `anthropic` (the broader catch-all)
 - `openai/o3-pro` matches `openai_reasoning`
-- `openai/gpt-5-pro` matches `gpt5-pro` (not `gpt5` or `openai_standard`)
+- `openai/gpt-5.5` matches `gpt5.5` (not `gpt5` or `openai_standard`)
 
 If nothing matches, the family defaults to `"default"`.
 
@@ -61,7 +62,7 @@ Each family key maps to an entry in `PARAMETER_PROFILES` (same file). A profile 
 
 Key differences between families:
 
-- **openai_reasoning / gpt5 / gpt5-pro / gpt5.1** -- no `temperature` or `top_p` in the allowlist; `max_tokens` is transformed to `max_completion_tokens`.
+- **openai_reasoning / gpt5 / gpt5.1 / gpt5.5 / gpt5-pro** -- no `temperature` or `top_p` in the allowlist; `max_tokens` is transformed to `max_completion_tokens`.
 - **anthropic / claude4** -- allow `temperature`, `top_p`, `max_tokens`, `top_k`, `min_p`, `top_a`, `repetition_penalty`.
 - **xai** -- allows `temperature` and `top_p`; OpenRouter-specific sampling params (`min_p`, `top_a`, `repetition_penalty`) are not in the allowlist but pass through as OpenRouter params (see below).
 - **cohere** -- transforms `top_k` -> `k`, `top_p` -> `p`, `stop` -> `stop_sequences`.
@@ -113,12 +114,12 @@ If no OpenRouter params exist, the call omits `extra_body` entirely.
 
 ## Worked example
 
-Command `brainstorm-unorthodox` with model `x-ai/grok-4`:
+Command `brainstorm-unorthodox` with model `x-ai/grok-4.20`:
 
 ```yaml
 # model_configs.yaml
 brainstorm-unorthodox:
-  model: "x-ai/grok-4"
+  model: "x-ai/grok-4.20"
   temperature: 0.8
   top_p: 0.95
   min_p: 0.05
@@ -128,7 +129,7 @@ brainstorm-unorthodox:
 ```
 
 1. `factory.py` pops `model`, `enforce_citations`, `disable_tools`. Remaining params: `{temperature: 0.8, top_p: 0.95, min_p: 0.05, repetition_penalty: 1.2}`.
-2. `get_model_family("x-ai/grok-4")` matches `"xai"`.
+2. `get_model_family("x-ai/grok-4.20")` matches `"xai"`.
 3. No `thinking_effort` or `verbosity` to handle.
 4. Per-parameter filtering against the xai profile:
    - `temperature` -- in `allowed` -- kept.
@@ -137,9 +138,9 @@ brainstorm-unorthodox:
    - `repetition_penalty` -- not in `allowed`, but is in OpenRouter params set -- kept.
 5. Filtered result: `{temperature: 0.8, top_p: 0.95, min_p: 0.05, repetition_penalty: 1.2}`.
 6. In `api_handlers.py`, `min_p` and `repetition_penalty` move to `extra_body`.
-7. Final API call: `create(model="x-ai/grok-4", messages=[...], extra_body={min_p: 0.05, repetition_penalty: 1.2}, temperature=0.8, top_p=0.95)`.
+7. Final API call: `create(model="x-ai/grok-4.20", messages=[...], extra_body={min_p: 0.05, repetition_penalty: 1.2}, temperature=0.8, top_p=0.95)`.
 
-If the same config were used with `openai/gpt-5-pro`, steps 4-5 would drop `temperature`, `top_p`, `min_p`, and `repetition_penalty` entirely (none are in the gpt5-pro allowlist or transforms).
+If the same config were used with `openai/gpt-5.5`, steps 4-5 would drop `temperature`, `top_p`, `min_p`, and `repetition_penalty` entirely (none are in the gpt5-pro allowlist or transforms).
 
 ## Files
 
