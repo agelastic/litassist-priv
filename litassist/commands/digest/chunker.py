@@ -1,55 +1,50 @@
 """
 Document chunking functionality for the digest command.
 
-This module handles splitting large documents into manageable chunks
-based on model-specific token limits.
+This module derives chunk size from the configured model's context window
+(via `LLMClientFactory.get_context_window_for_command` + the per-model
+`context_window` field in `litassist/llm/model_capabilities.yaml`,
+refreshable with `litassist refresh`). When digest is pointed at a
+different model in `model_configs.yaml`, the chunk size tracks
+automatically.
 """
 
-from typing import List, Tuple
+from typing import List, Optional, Tuple
 import click
+from litassist.llm.factory import LLMClientFactory
 from litassist.utils.text_processing import chunk_text
 from litassist.utils.file_ops import read_document
 
 
-# Model-aware chunk sizing - optimized for modern long-context models
-MODEL_CHUNK_LIMITS = {
-    "google": 500000,  # ~150k tokens, 15% of Gemini 2.5 Pro's 1M context
-    "anthropic": 500000,  # ~150k tokens, leaves headroom on the active anthropic/claude-sonnet-4.6 (1M) and claude-opus-4.7 (1M) windows
-    "openai": 500000,  # ~150k tokens, leaves headroom on the active openai/o3-pro (200k) and openai/gpt-5.5 (~1M) windows
-    "x-ai": 500000,  # ~150k tokens, safe for Grok's context window
-}
+# Fraction of the model's input window to use per chunk. The remainder
+# covers the system prompt, the per-chunk summary output, and reasoning
+# tokens (for reasoning-family models). 35% is conservative for digest's
+# summary-style outputs which are typically <20% of input length.
+CHUNK_FRACTION_OF_WINDOW = 0.35
+
+# Conservative chars-per-token ratio for legal English. Char-count is a
+# safe over-estimate of token count, so chunks fit comfortably.
+CHARS_PER_TOKEN = 3.5
 
 
-def determine_chunk_size(model_family: str) -> int:
+def determine_chunk_size(
+    command_name: str = "digest", sub_type: Optional[str] = None
+) -> int:
     """
-    Determine appropriate chunk size based on model family.
+    Derive chunk size from the configured model's context window.
 
     Args:
-        model_family: The model family identifier
+        command_name: Click command name (default "digest").
+        sub_type: Sub-type passed to LLMClientFactory (e.g. digest's "summary"
+            or "issues" mode).
 
     Returns:
-        Maximum chunk size in characters
+        Maximum chunk size in characters.
     """
-    return MODEL_CHUNK_LIMITS.get(
-        model_family, 100000
-    )  # Default 100K for unknown models
-
-
-def warn_if_reduced_chunk_size(model_family: str, model_chunk_limit: int) -> None:
-    """
-    Warn user if using reduced chunk size for their model.
-
-    Args:
-        model_family: The model family being used
-        model_chunk_limit: The chunk limit for this model
-    """
-    if model_family == "google" and model_chunk_limit < 100000:
-        click.echo(
-            click.style(
-                f"Note: Using reduced chunk size ({model_chunk_limit:,} chars) for Gemini model stability",
-                fg="yellow",
-            )
-        )
+    window_tokens = LLMClientFactory.get_context_window_for_command(
+        command_name, sub_type
+    )
+    return int(window_tokens * CHARS_PER_TOKEN * CHUNK_FRACTION_OF_WINDOW)
 
 
 def read_and_chunk_document(

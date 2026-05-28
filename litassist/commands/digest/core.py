@@ -17,7 +17,6 @@ from litassist.prompts import PROMPTS
 
 from .chunker import (
     determine_chunk_size,
-    warn_if_reduced_chunk_size,
     calculate_total_document_size,
     warn_if_large_processing,
     prepare_chunks_for_processing,
@@ -114,14 +113,9 @@ def digest(ctx, file, mode, context, output, verify, noverify):
     except Exception:
         pass
 
-    # Determine chunk size based on model
-    model_family = (
-        llm_client.model.split("/")[0] if "/" in llm_client.model else "openai"
-    )
-    model_chunk_limit = determine_chunk_size(model_family)
-
-    # Warn user if using reduced chunk size
-    warn_if_reduced_chunk_size(model_family, model_chunk_limit)
+    # Derive chunk size from the configured model's context window
+    # (via model_capabilities.yaml; refreshable with `litassist refresh`).
+    model_chunk_limit = determine_chunk_size("digest", mode)
 
     # Collect comprehensive log data for all files
     all_usage = {
