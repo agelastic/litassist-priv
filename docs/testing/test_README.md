@@ -61,7 +61,6 @@ python test_integrations.py
 
 # Run specific service tests
 python test_integrations.py --openrouter
-python test_integrations.py --openai
 python test_integrations.py --google
 python test_integrations.py --jade
 ```
