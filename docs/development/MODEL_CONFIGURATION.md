@@ -509,7 +509,9 @@ To add a new model, simply:
 **Adding a model from a new provider**:
 ```python
 # Just use it:
-"digest": "zai/glm-4.7"  # Pattern-routed by model_profiles.py classifier
+"digest": "zai/glm-4.7"  # Falls to the "default" profile (safe sampling params)
+                         # until a zai/ pattern is added to MODEL_PATTERNS in
+                         # litassist/llm/model_profiles.py for richer routing.
 ```
 
 ### Benefits
