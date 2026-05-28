@@ -291,19 +291,13 @@ def test_all_commands_show_help(test_config_file, mock_external_apis):
 # ============================================================================
 
 
-@patch("litassist.utils.text_processing.create_embeddings")
-@patch("litassist.helpers.retriever.get_pinecone_client")
 def test_file_processing_commands(
-    mock_pinecone, mock_embeddings, test_config_file, mock_external_apis, tmp_path
+    test_config_file, mock_external_apis, tmp_path
 ):
     """
     Test commands that process files: extractfacts, digest, counselnotes.
     Uses real files and real config loading.
     """
-    # Setup mocks
-    mock_embeddings.return_value = [Mock(embedding=[0.1] * 1536)]
-    mock_pinecone.return_value = Mock()
-
     from litassist.cli import cli
     from litassist.commands import register_commands
 
@@ -400,18 +394,14 @@ def test_question_based_commands(mock_fetch, mock_cse, test_config_file, mock_ex
     assert result.exit_code in [0, 1], f"lookup failed: {result.output}"
     assert "AttributeError" not in result.output
 
-    # Test draft with RAG - requires documents and query
-    with patch("litassist.helpers.retriever.Retriever"), patch(
-        "litassist.utils.text_processing.create_embeddings"
-    ):
-        # Create a test file
-        with runner.isolated_filesystem():
-            Path("case_facts.txt").write_text("Test facts")
-            result = runner.invoke(
-                cli, ["draft", "case_facts.txt", "draft a statement of claim"]
-            )
-            assert result.exit_code in [0, 1], f"draft failed: {result.output}"
-            assert "AttributeError" not in result.output
+    # Test draft - full-context call, no RAG mocks needed
+    with runner.isolated_filesystem():
+        Path("case_facts.txt").write_text("Test facts")
+        result = runner.invoke(
+            cli, ["draft", "case_facts.txt", "draft a statement of claim"]
+        )
+        assert result.exit_code in [0, 1], f"draft failed: {result.output}"
+        assert "AttributeError" not in result.output
 
 
 def test_verify_with_file(test_config_file, mock_external_apis, tmp_path):
