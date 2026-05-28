@@ -35,7 +35,7 @@ Centralized client that provides a standardized interface to various LLM provide
 
 ```python
 # Initialize with model ID and parameters
-client = LLMClient("anthropic/claude-3-sonnet", temperature=0.2)
+client = LLMClient("anthropic/claude-sonnet-4.6", temperature=0.2)
 
 # Standard message format for all models
 content, usage = client.complete([

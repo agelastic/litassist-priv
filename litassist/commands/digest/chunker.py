@@ -15,7 +15,7 @@ from litassist.utils.file_ops import read_document
 MODEL_CHUNK_LIMITS = {
     "google": 500000,  # ~150k tokens, 15% of Gemini 2.5 Pro's 1M context
     "anthropic": 500000,  # ~150k tokens, 75% of Claude Sonnet's 200k context
-    "openai": 500000,  # ~150k tokens, 37% of GPT-4/o3's 400k context
+    "openai": 500000,  # ~150k tokens, leaves headroom on the active openai/o3-pro (200k) and openai/gpt-5.5 (~1M) windows
     "x-ai": 500000,  # ~150k tokens, safe for Grok's context window
 }
 

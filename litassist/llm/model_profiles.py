@@ -5,8 +5,22 @@ This module contains configuration data for different LLM model families,
 including regex patterns for model detection and allowed parameter profiles.
 """
 
-# Model family patterns for dynamic parameter handling
-# Ordering matters: more specific patterns must precede general ones in this dict.
+# Model family patterns for dynamic parameter handling.
+#
+# DO NOT REDUCE THE SET OF MODELS THIS TABLE SUPPORTS. This file is
+# intentionally universal -- it must translate parameters for ANY model
+# reachable through OpenRouter, including providers/families that no
+# active command in `model_configs.yaml` currently uses. The user may
+# swap any command to any OpenRouter model at any time without touching
+# this code.
+#
+# The only legitimate reason to edit MODEL_PATTERNS or PARAMETER_PROFILES
+# is when OpenRouter's API surface for a family changes (new parameter
+# added, existing parameter renamed, response format changed). Removing
+# entries because "we don't use that model today" breaks the contract
+# of universal coverage.
+#
+# Ordering matters: more specific patterns must precede general ones.
 MODEL_PATTERNS = {
     "openai_reasoning": r"openai/o\d+",
     "gpt5.5": r"openai/gpt-5\.5",

@@ -781,7 +781,7 @@ models:
 verification:
   light: ["anthropic/claude-sonnet-4.6"]
   standard: ["openai/gpt-5.5"]
-  heavy: ["openai/gpt-5.5", "x-ai/grok-4.20-turbo"]  # Ensemble
+  heavy: ["openai/gpt-5.5", "x-ai/grok-4.20"]  # Ensemble
 ```
 
 ### 3. Benchmark and Guardrails
