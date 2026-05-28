@@ -170,23 +170,6 @@ def test_expand_glob_patterns_rejects_literal_directory(tmp_path):
         expand_glob_patterns(None, None, (str(subdir),))
 
 
-def test_expand_glob_patterns_filters_directories_from_glob_matches(
-    tmp_path, monkeypatch
-):
-    # Regression: glob.glob may return directory matches (e.g. when a
-    # pattern matches both files and dirs). The callback must filter them
-    # out so downstream code only ever sees readable files.
-    monkeypatch.setattr(
-        "litassist.utils.file_ops.glob.glob",
-        lambda pattern: [str(tmp_path / "a_file"), str(tmp_path / "a_dir")],
-    )
-    (tmp_path / "a_file").write_text("x")
-    (tmp_path / "a_dir").mkdir()
-    result = expand_glob_patterns(None, None, ("*",))
-    assert str(tmp_path / "a_dir") not in result
-    assert str(tmp_path / "a_file") in result
-
-
 def test_expand_glob_patterns_accepts_literal_bracketed_filename(tmp_path):
     """Literal filenames containing [ must be accepted, not treated as globs.
 

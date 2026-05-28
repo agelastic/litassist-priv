@@ -10,6 +10,10 @@ import time
 
 def write_citation_verification_markdown(f, tag: str, ts: str, payload: dict):
     """Write markdown for citation verification logs."""
+    # Heading template: plain space between `{tag}` and `{ts}`. Earlier
+    # revisions of this file contained literal 0x14 (DC4) characters here
+    # that corrupted rendered audit-log titles; keep this and the matching
+    # line in write_citation_validation_markdown ASCII-clean.
     f.write(f"# {tag} {ts}\n\n")
 
     # Summary section

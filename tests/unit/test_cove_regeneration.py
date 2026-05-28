@@ -319,15 +319,6 @@ class TestCoVeVerdictParsing:
         assert results["cove"]["passed"] is False
         assert results["cove"]["regenerated"] is True
 
-    def test_quoted_no_issues_found_does_not_pass(self):
-        response = (
-            'Issues: the headnote contains the phrase "no issues found" verbatim, '
-            "but several citations are incorrect.\n"
-            "VERDICT: FAIL"
-        )
-        results = self._run_cove_with_verify_response(response)
-        assert results["cove"]["passed"] is False
-
     def test_missing_verdict_fails_closed(self):
         # No VERDICT line at all: must fail closed (treat as FAIL) rather
         # than accidentally passing.

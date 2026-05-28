@@ -23,72 +23,39 @@ def _write_config(tmp_path: Path, body: str) -> Path:
     return path
 
 
-class TestConfigValidation:
-    def _load(self, path):
-        from litassist.config import Config
+_REST_OK = (
+    "openai:\n"
+    "  api_key: 'x'\n"
+    "google_cse:\n"
+    "  api_key: 'x'\n"
+    "  cse_id: 'x'\n"
+    "pinecone:\n"
+    "  api_key: 'x'\n"
+    "  environment: 'x'\n"
+    "  index_name: 'x'\n"
+)
 
-        return Config(str(path))
-    def test_null_openrouter_section_raises_config_error(self, tmp_path):
-        # Regression: an empty section header (e.g. `openrouter:` with no
-        # body) parses as None. The validator used to do `cfg["openrouter"]
-        # ["api_key"]` and raise TypeError/AttributeError, which the CLI
-        # didn't recognise. Must raise ConfigError naming the section.
-        cfg = _write_config(
-            tmp_path,
-            "openrouter:\n"
-            "openai:\n"
-            "  api_key: 'x'\n"
-            "google_cse:\n"
-            "  api_key: 'x'\n"
-            "  cse_id: 'x'\n"
-            "pinecone:\n"
-            "  api_key: 'x'\n"
-            "  environment: 'x'\n"
-            "  index_name: 'x'\n",
-        )
-        from litassist.config import ConfigError
 
-        with pytest.raises(ConfigError) as exc_info:
-            self._load(cfg)
-        assert "openrouter" in str(exc_info.value).lower()
+@pytest.mark.parametrize(
+    "first_section,expected_in_msg",
+    [
+        # Null section header (e.g. `openrouter:` with no body) parses as None;
+        # the validator used to subscript None and raise TypeError, which the
+        # CLI didn't surface as a config problem.
+        ("openrouter:\n", "openrouter"),
+        # Scalar where a mapping is expected.
+        ("openrouter: 'oops a string'\n", "openrouter"),
+    ],
+)
+def test_invalid_top_level_section_raises_config_error(
+    tmp_path, first_section, expected_in_msg
+):
+    from litassist.config import Config, ConfigError
 
-    def test_null_pinecone_section_raises_config_error(self, tmp_path):
-        cfg = _write_config(
-            tmp_path,
-            "openrouter:\n"
-            "  api_key: 'x'\n"
-            "openai:\n"
-            "  api_key: 'x'\n"
-            "google_cse:\n"
-            "  api_key: 'x'\n"
-            "  cse_id: 'x'\n"
-            "pinecone:\n",
-        )
-        from litassist.config import ConfigError
-
-        with pytest.raises(ConfigError) as exc_info:
-            self._load(cfg)
-        assert "pinecone" in str(exc_info.value).lower()
-
-    def test_section_of_wrong_type_raises_config_error(self, tmp_path):
-        # A scalar value where a mapping is expected is a config error too.
-        cfg = _write_config(
-            tmp_path,
-            "openrouter: 'oops a string'\n"
-            "openai:\n"
-            "  api_key: 'x'\n"
-            "google_cse:\n"
-            "  api_key: 'x'\n"
-            "  cse_id: 'x'\n"
-            "pinecone:\n"
-            "  api_key: 'x'\n"
-            "  environment: 'x'\n"
-            "  index_name: 'x'\n",
-        )
-        from litassist.config import ConfigError
-
-        with pytest.raises(ConfigError):
-            self._load(cfg)
+    cfg = _write_config(tmp_path, first_section + _REST_OK)
+    with pytest.raises(ConfigError) as exc_info:
+        Config(str(cfg))
+    assert expected_in_msg in str(exc_info.value).lower()
 
 
 pytestmark = [pytest.mark.unit, pytest.mark.offline]

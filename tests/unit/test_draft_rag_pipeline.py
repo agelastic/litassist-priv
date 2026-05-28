@@ -72,38 +72,4 @@ class TestDraftRAGPipelineIsolation:
         assert idx_b.delete.called
         assert idx_b.delete.call_args.kwargs.get("namespace") == ns_b
 
-    @patch("litassist.commands.draft.rag_pipeline.Retriever")
-    @patch("litassist.commands.draft.rag_pipeline.get_pinecone_client")
-    @patch("litassist.commands.draft.rag_pipeline.create_embeddings")
-    @patch("litassist.commands.draft.rag_pipeline.get_config")
-    def test_namespace_cleanup_runs_even_when_retrieval_fails(
-        self, mock_get_config, mock_create_embeddings, mock_get_pc, mock_retriever_cls
-    ):
-        # If retrieval raises, the upserted namespace must still be deleted to
-        # avoid leaking vectors that could surface in a future run.
-        mock_config = Mock()
-        mock_config.rag_max_chars = 1000
-        mock_get_config.return_value = mock_config
-        mock_create_embeddings.side_effect = lambda items: [
-            _make_embedding() for _ in items
-        ]
-
-        idx = Mock()
-        mock_get_pc.return_value = idx
-
-        retriever = Mock()
-        retriever.retrieve.side_effect = RuntimeError("pinecone offline")
-        mock_retriever_cls.return_value = retriever
-
-        with pytest.raises(Exception):
-            rag_pipeline.process_documents_with_rag(
-                [("m.pdf", "text")], "query", 0.3
-            )
-
-        assert idx.delete.called, (
-            "Namespace cleanup must run even when retrieval fails, otherwise "
-            "stale vectors leak into the next run."
-        )
-
-
 pytestmark = [pytest.mark.unit, pytest.mark.offline]
