@@ -128,7 +128,7 @@ caseplan --> extractfacts --> lookup --> brainstorm --> strategy --> draft --> v
 - Python 3.10 or later
 - API keys for:
   - **OpenRouter** (required): Routes all LLM calls
-  - **OpenAI** (required): Embeddings and BYOK for o3-pro and GPT-5.5 stages
+  - **OpenAI** (required): Embeddings and BYOK for o3-pro stages
   - **Google Custom Search** (required): Citation verification and legal research
   - **Pinecone** (required): Vector database for RAG pipeline
   - **Jina Reader** (optional): Fallback transport for JavaScript-rendered pages and Cloudflare-blocked content. The primary fetch transport is `curl_cffi` (no key required); a Jina API key enables the fallback path with higher rate limits.
@@ -181,7 +181,7 @@ openrouter:
   api_base: "https://openrouter.ai/api/v1"    # Default, rarely changed
 
 # --- OpenAI (required) ---
-# Used for embeddings (RAG pipeline) and BYOK for o3-pro and GPT-5.5 stages
+# Used for embeddings (RAG pipeline) and BYOK for o3-pro stages
 openai:
   api_key: "sk-your-openai-key-here"          # Required
   embedding_model: "text-embedding-3-small"    # Default embedding model
@@ -251,12 +251,11 @@ queries.
 For step-by-step setup instructions, see
 [Google CSE setup.md](Google%20CSE%20setup.md).
 
-### 2.5 BYOK (Bring Your Own Key) for OpenAI models
+### 2.5 BYOK (Bring Your Own Key) for o3-pro
 
-Several commands use OpenAI's o3-pro and GPT-5.5 models, which require Bring
-Your Own Key (BYOK) through OpenRouter. When a BYOK command runs, OpenRouter
-passes the request directly to OpenAI using the `openai.api_key` from your
-config.yaml.
+Several commands use OpenAI's o3-pro model, which requires Bring Your Own Key
+(BYOK) through OpenRouter. When a BYOK command runs, OpenRouter passes the
+request directly to OpenAI using the `openai.api_key` from your config.yaml.
 
 **Commands requiring BYOK:**
 
@@ -267,8 +266,6 @@ config.yaml.
 | `draft` | Document generation |
 | `counselnotes` | Full analysis |
 | `barbrief` | Brief generation |
-| `verify` | GPT-5.5 verification stages |
-| `verify-cove` | GPT-5.5 answer stages |
 
 If `openai.api_key` is set to a placeholder value, these commands will fail with
 a clear error message. Commands that use only non-BYOK models work without BYOK.
@@ -2020,16 +2017,16 @@ Current model assignments are defined in `litassist/llm/model_configs.yaml`. Reg
 | `barbrief` | o3-pro | Barrister's brief | Yes |
 | `caseplan` | Claude Sonnet 4.6 | Full plan generation | No |
 | `caseplan-assessment` | Claude Sonnet 4.6 | Budget assessment | No |
-| `verification` | GPT-5.5 | Standard citation verification | Yes |
+| `verification` | GPT-5.5 | Standard citation verification | No |
 | `verification-light` | Claude Sonnet 4.6 | Quick verification checks | No |
-| `verification-heavy` | GPT-5.5 | Heavy citation verification | Yes |
+| `verification-heavy` | GPT-5.5 | Heavy citation verification | No |
 | `verify-reasoning` | Claude Sonnet 4.6 | Reasoning trace analysis | No |
-| `verify-reasoning-heavy` | GPT-5.5 | Heavy reasoning analysis | Yes |
+| `verify-reasoning-heavy` | GPT-5.5 | Heavy reasoning analysis | No |
 | `verify-soundness` | Claude Opus 4.7 | Legal soundness review | No |
-| `verify-soundness-heavy` | GPT-5.5 | Heavy soundness review | Yes |
+| `verify-soundness-heavy` | GPT-5.5 | Heavy soundness review | No |
 | `cove-questions` | Claude Sonnet 4.6 | CoVe question generation | No |
-| `cove-answers` | GPT-5.5 | CoVe independent answers | Yes |
-| `cove-answers-heavy` | GPT-5.5 | CoVe heavy answers | Yes |
+| `cove-answers` | GPT-5.5 | CoVe independent answers | No |
+| `cove-answers-heavy` | GPT-5.5 | CoVe heavy answers | No |
 | `cove-verify` | Claude Sonnet 4.6 | CoVe inconsistency detection | No |
 | `cove-final` | Claude Sonnet 4.6 | CoVe final output | No |
 

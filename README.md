@@ -117,7 +117,7 @@ openrouter:
   api_base:   "https://openrouter.ai/api/v1"   # optional
 
 openai:
-  api_key:          "YOUR_OPENAI_KEY"  # For embeddings and o3-pro/GPT-5.5 BYOK via OpenRouter
+  api_key:          "YOUR_OPENAI_KEY"  # For embeddings and o3-pro BYOK via OpenRouter
   embedding_model:  "text-embedding-3-small"
 
 google_cse:
@@ -143,15 +143,15 @@ general:
 
 OpenRouter is the primary API gateway for all LLM calls. Some models require BYOK (Bring Your Own Key) setup:
 
-**Models requiring BYOK:**
+**BYOK status:**
 - OpenAI o3-pro (draft, barbrief, counselnotes commands)
-- OpenAI GPT-5.5 (verification and heavy verification commands)
+- OpenAI GPT-5.5 currently runs as a standard OpenRouter model
 - Claude Sonnet 4.6 available without BYOK
 
 **Quick BYOK Setup:**
 1. Go to [OpenRouter Settings](https://openrouter.ai/settings/integrations)
 2. Add your API keys under integrations:
-   - **OpenAI**: Requires API access for o3-pro and GPT-5.5 where BYOK routing is used
+   - **OpenAI**: Requires API access for o3-pro where BYOK routing is used
    - **Anthropic**: Any valid API key (Claude models available without BYOK on OpenRouter)
 3. Save and verify model availability on your dashboard
 
@@ -177,8 +177,8 @@ LitAssist uses task-based model selection, matching each command to the model be
 | **draft** | OpenAI o3-pro | **Yes** | Superior technical legal writing |
 | **counselnotes** | OpenAI o3-pro | **Yes** | Strategic advocate analysis |
 | **barbrief** | OpenAI o3-pro | **Yes** | Comprehensive barrister's briefs |
-| **verify** | GPT-5.5 / Claude Opus 4.7 / Claude Sonnet 4.6 | Yes for GPT-5.5 stages | Citation, soundness, and reasoning verification |
-| **verify-cove** | Claude Sonnet 4.6 / GPT-5.5 | Yes for GPT-5.5 stages | Chain-of-Verification pipeline |
+| **verify** | GPT-5.5 / Claude Opus 4.7 / Claude Sonnet 4.6 | No | Citation, soundness, and reasoning verification |
+| **verify-cove** | Claude Sonnet 4.6 / GPT-5.5 | No | Chain-of-Verification pipeline |
 
 #### Why These Models?
 
@@ -200,7 +200,7 @@ LitAssist uses task-based model selection, matching each command to the model be
 
 #### Required BYOK Setup
 
-Commands using restricted models (`draft`, `barbrief`, `counselnotes`, verification) require BYOK setup on OpenRouter. Without BYOK, these commands will fail with authentication errors.
+Commands using restricted models (`draft`, `barbrief`, `counselnotes`, and o3-pro analysis stages) require BYOK setup on OpenRouter. Without BYOK, these commands will fail with authentication errors.
 
 **Note:** Check the [OpenRouter Models page](https://openrouter.ai/models) to verify which models are available with your API key vs. requiring BYOK.
 
