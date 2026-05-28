@@ -229,23 +229,12 @@ def run_cove_verification(
                     },
                 )
 
-                # Warn if context is very large relative to the verification
-                # model's input budget. Threshold derives from
-                # `get_input_budget_for_command("verification")` so it tracks
-                # the active model rather than a stale 100k-char constant.
-                warn_threshold = LLMClientFactory.get_input_budget_for_command(
-                    "verification", fraction=0.30
-                )
-                if total_context_size > warn_threshold:
-                    save_log(
-                        "cove_large_context_warning",
-                        {
-                            "command": command,
-                            "size_chars": total_context_size,
-                            "warn_threshold": warn_threshold,
-                            "message": "Large legal context may impact token usage",
-                        },
-                    )
+                # No size warning emitted here. The earlier `save_log` write
+                # was never surfaced to the user (file-only log entry), and
+                # the verification model's actual capacity is enforced by
+                # the underlying API -- if the call exceeds the model
+                # window the provider returns a clear error. A soft warn
+                # between "comfortable" and "hard cap" adds no signal.
 
             # Log failed citations
             if failed_citations:

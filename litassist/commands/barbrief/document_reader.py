@@ -7,10 +7,7 @@ Handles reading of case facts, strategies, research, and supporting documents.
 import click
 from typing import Tuple, Dict
 
-from litassist.llm.factory import LLMClientFactory
 from litassist.utils.file_ops import read_document
-from litassist.utils.text_processing import count_tokens_and_words
-from litassist.utils.formatting import warning_message
 
 
 def read_all_documents(
@@ -74,36 +71,3 @@ def read_all_documents(
     }
 
 
-def estimate_input_size(content_dict: Dict[str, any]) -> None:
-    """
-    Estimate total input size and warn if large.
-
-    Args:
-        content_dict: Dictionary containing all document content
-    """
-    total_content = (
-        content_dict["case_facts_content"]
-        + "\n"
-        + content_dict["strategies_content"]
-        + "\n"
-        + "\n".join(content_dict["research_docs"])
-        + "\n"
-        + "\n".join(content_dict["supporting_docs"])
-    )
-    total_tokens, _ = count_tokens_and_words(total_content)
-
-    # Warn if large relative to the barbrief model's input window. Threshold
-    # derives from `get_input_budget_for_command("barbrief")` so it scales
-    # with whatever model is currently routed (o3-pro at 200k tokens today,
-    # any other OpenRouter model tomorrow).
-    barbrief_token_budget = int(
-        LLMClientFactory.get_context_window_for_command("barbrief") * 0.40
-    )
-    if total_tokens > barbrief_token_budget:
-        click.echo(
-            warning_message(
-                f"Large input detected ({total_tokens:,} tokens, "
-                f"warn threshold {barbrief_token_budget:,}). "
-                f"This may exceed API limits. Consider using fewer documents."
-            )
-        )
