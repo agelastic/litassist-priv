@@ -140,7 +140,7 @@ brainstorm-unorthodox:
 6. In `api_handlers.py`, `min_p` and `repetition_penalty` move to `extra_body`.
 7. Final API call: `create(model="x-ai/grok-4.20", messages=[...], extra_body={min_p: 0.05, repetition_penalty: 1.2}, temperature=0.8, top_p=0.95)`.
 
-If the same config were used with `openai/gpt-5.5`, steps 4-5 would drop `temperature`, `top_p`, `min_p`, and `repetition_penalty` entirely (none are in the gpt5-pro allowlist or transforms).
+If the same config were used with `openai/gpt-5.5`, steps 4-5 would drop `temperature`, `top_p`, `min_p`, and `repetition_penalty` entirely (none are in the gpt5.5 allowlist or transforms).
 
 ## Files
 

@@ -201,7 +201,7 @@ Features are prioritized to support active litigation (ACT civil matters), profe
 - Commands:
   - `la analyze --input defense.pdf --type legal --opponent "Counsel A"`
   - `la analyze --input foi_decision.pdf --type government --agency DHA`
-- LLM: Claude Sonnet 4.6 + GPT-5 cross-check for critical documents
+- LLM: Claude Sonnet 4.6 + GPT-5.5 cross-check for critical documents
 - Output: Threat assessment + obligation checklist + strategic recommendation + deadline extraction
 
 ---

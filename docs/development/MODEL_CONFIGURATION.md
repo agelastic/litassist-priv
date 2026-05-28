@@ -354,7 +354,7 @@ See `LLM_MODEL_STRATEGY.md` for the full strategy description and model grouping
 
 4. **Verification Tasks** (temperature: 0-0.2)
    - Critical: GPT-5.5 (<1% hallucination)
-   - Standard: GPT-5.5 (1.4% hallucination)
+   - Standard: GPT-5.5 (<1% hallucination)
    - Light: Claude Sonnet 4.6 (spelling/terminology)
 
 ### Cost-Performance Balance
