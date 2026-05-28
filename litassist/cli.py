@@ -75,8 +75,8 @@ def validate_credentials(show_progress=True):
     """
     Test API connections with provided credentials.
 
-    This function attempts to validate credentials for OpenAI, OpenRouter,
-    and Google CSE by making test API calls. Invalid credentials will result
+    This function attempts to validate credentials for OpenRouter and
+    Google CSE by making test API calls. Invalid credentials will result
     in an early exit.
     """
     config = load_config()
@@ -84,27 +84,6 @@ def validate_credentials(show_progress=True):
 
     if show_progress:
         print("Verifying API connections...")
-
-    # Test OpenAI connectivity (only if not using placeholders)
-    if not placeholder_checks["openai"]:
-        try:
-            if show_progress:
-                print("  - Testing OpenAI API... ", end="", flush=True)
-            # Lazy import OpenAI only when needed
-            from openai import OpenAI
-            # Use the new OpenAI v1.0+ API
-            client = OpenAI(api_key=config.oa_key)
-            # List models to test the connection
-            client.models.list()
-            if show_progress:
-                print("OK")
-        except Exception as e:
-            if show_progress:
-                print("FAILED")
-            sys.exit(f"Error: OpenAI API test failed: {e}")
-    else:
-        if show_progress:
-            print("  - Skipping OpenAI connectivity test (placeholder credentials)")
 
     # Test Google CSE connectivity (only if not using placeholder values)
     if not placeholder_checks["google_cse"]:
@@ -277,7 +256,7 @@ def test():
     """
     Test API connectivity and web scraping capabilities.
 
-    This command validates credentials for OpenAI, OpenRouter, and Google CSE
+    This command validates credentials for OpenRouter and Google CSE
     by making test API calls and reports success or failure. It also tests web scraping
     functionality including Jina Reader and PDF fetching.
     """

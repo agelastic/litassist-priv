@@ -55,7 +55,6 @@ class TestLLMClientVerification:
         # Setup proper CONFIG values
         mock_config.or_base = "https://openrouter.ai/api/v1"
         mock_config.or_key = "test-key"
-        mock_config.openai_key = "test-key"
 
         # Mock the OpenAI client
         mock_client = MagicMock()
@@ -95,7 +94,6 @@ class TestLLMClientVerification:
         # Setup proper CONFIG values
         mock_config.or_base = "https://openrouter.ai/api/v1"
         mock_config.or_key = "test-key"
-        mock_config.openai_key = "test-key"
 
         # Mock the OpenAI client
         mock_client = MagicMock()

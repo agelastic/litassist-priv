@@ -13,7 +13,6 @@ class TestLLMClientFactory:
         """Test factory creates lookup client wired to its configured model."""
         with patch("litassist.config.CONFIG") as mock_config:
             mock_config.openrouter_key = "test_key"
-            mock_config.openai_key = "test_openai_key"
 
             configs = LLMClientFactory.list_configurations()
             client = LLMClientFactory.for_command("lookup")
@@ -26,7 +25,6 @@ class TestLLMClientFactory:
         """Test factory requires sub-type for brainstorm - NO FALLBACK."""
         with patch("litassist.config.CONFIG") as mock_config:
             mock_config.openrouter_key = "test_key"
-            mock_config.openai_key = "test_openai_key"
 
             # brainstorm without sub-type should raise KeyError - NO FALLBACKS
             import pytest
@@ -44,7 +42,6 @@ class TestLLMClientFactory:
         """Test factory creates strategy client wired to its configured model."""
         with patch("litassist.config.CONFIG") as mock_config:
             mock_config.openrouter_key = "test_key"
-            mock_config.openai_key = "test_openai_key"
 
             configs = LLMClientFactory.list_configurations()
             client = LLMClientFactory.for_command("strategy")
@@ -57,7 +54,6 @@ class TestLLMClientFactory:
         """Test factory creates draft client wired to its configured model."""
         with patch("litassist.config.CONFIG") as mock_config:
             mock_config.openrouter_key = "test_key"
-            mock_config.openai_key = "test_openai_key"
 
             configs = LLMClientFactory.list_configurations()
             client = LLMClientFactory.for_command("draft")
@@ -70,7 +66,6 @@ class TestLLMClientFactory:
         """Test factory applies parameter overrides correctly."""
         with patch("litassist.config.CONFIG") as mock_config:
             mock_config.openrouter_key = "test_key"
-            mock_config.openai_key = "test_openai_key"
 
             client = LLMClientFactory.for_command(
                 "lookup", temperature=0.8, max_tokens=4096
@@ -83,7 +78,6 @@ class TestLLMClientFactory:
         """Test factory fails fast on unknown commands - NO FALLBACK."""
         with patch("litassist.config.CONFIG") as mock_config:
             mock_config.openrouter_key = "test_key"
-            mock_config.openai_key = "test_openai_key"
 
             # Should raise KeyError for unknown commands - NO FALLBACKS
             import pytest
@@ -110,7 +104,6 @@ class TestLLMClientFactory:
         """Test that enforce_citations flags are set correctly for different commands."""
         with patch("litassist.config.CONFIG") as mock_config:
             mock_config.openrouter_key = "test_key"
-            mock_config.openai_key = "test_openai_key"
 
             # Just verify that various commands have the enforce_citations attribute
             # Don't assert specific values as these may change based on requirements
@@ -125,7 +118,6 @@ class TestLLMClientFactory:
         """Test that command clients carry the parameters defined in their config."""
         with patch("litassist.config.CONFIG") as mock_config:
             mock_config.openrouter_key = "test_key"
-            mock_config.openai_key = "test_openai_key"
 
             strategy_client = LLMClientFactory.for_command("strategy")
             strategy_params = strategy_client.default_params
@@ -150,7 +142,6 @@ class TestLLMClientFactoryIntegration:
         """Test that factory creates clients that can be used."""
         with patch("litassist.config.CONFIG") as mock_config:
             mock_config.openrouter_key = "test_key"
-            mock_config.openai_key = "test_openai_key"
 
             # Test simple commands (no sub-type required)
             commands = [
@@ -177,7 +168,6 @@ class TestLLMClientFactoryIntegration:
         """Test that parameters are inherited from config and can be overridden."""
         with patch("litassist.config.CONFIG") as mock_config:
             mock_config.openrouter_key = "test_key"
-            mock_config.openai_key = "test_openai_key"
 
             # Test base parameters from config
             client1 = LLMClientFactory.for_command("lookup")
@@ -194,7 +184,6 @@ class TestLLMClientFactoryIntegration:
         """Test factory wires each configured command to the model named in its config."""
         with patch("litassist.config.CONFIG") as mock_config:
             mock_config.openrouter_key = "test_key"
-            mock_config.openai_key = "test_openai_key"
 
             configs = LLMClientFactory.list_configurations()
             configured_commands = ["lookup", "strategy", "draft", "extractfacts"]

@@ -7,7 +7,7 @@ and Jade integrations used by LitAssist. It tests each service individually
 with lightweight operations to verify connectivity and basic functionality.
 
 Usage:
-    python test_integrations.py [--all] [--openai] [--openrouter] [--google] [--jade]
+    python test_integrations.py [--all] [--openrouter] [--google] [--jade]
 """
 
 import os
@@ -54,7 +54,6 @@ with open(CONFIG_PATH) as f:
 try:
     OR_KEY = cfg["openrouter"]["api_key"]
     OR_BASE = cfg["openrouter"].get("api_base", "https://openrouter.ai/api/v1")
-    OA_KEY = cfg["openai"]["api_key"]
     # Google CSE configuration - with fallback to placeholder if missing
     GOOGLE_API_KEY = cfg.get("google_cse", {}).get("api_key", "YOUR_GOOGLE_API_KEY")
     GOOGLE_CSE_ID = cfg.get("google_cse", {}).get("cse_id", "YOUR_GOOGLE_CSE_ID")
@@ -64,7 +63,6 @@ except KeyError as e:
 # API placeholder settings for validation
 placeholder_values = [
     "YOUR_OPENROUTER_KEY",
-    "YOUR_OPENAI_KEY",
     "YOUR_GOOGLE_API_KEY",
     "YOUR_GOOGLE_CSE_ID",
 ]
@@ -72,40 +70,6 @@ placeholder_values = [
 # Check for placeholder values
 if OR_KEY in placeholder_values:
     print("Warning: OpenRouter API key is a placeholder value")
-if OA_KEY in placeholder_values:
-    print("Warning: OpenAI API key is a placeholder value")
-
-
-# ─── OpenAI Tests ────────────────────────────────────────────────
-def test_openai_models():
-    """Test listing OpenAI models"""
-    result = EnhancedTestResult("OpenAI", "List Models")
-
-    try:
-        # Configure OpenAI with direct API (not through OpenRouter)
-        from openai import OpenAI
-        # Create OpenAI client with v1.0+ API
-        client = OpenAI(api_key=OA_KEY)
-
-        # List available models
-        response = client.models.list()
-        model_count = len(list(response.data))
-
-        # Check if we got a valid response with models
-        if model_count > 0:
-            # Success - extract some model IDs for the report
-            model_samples = [m.id for m in response.data[:3]]
-            result.success(model_count=model_count, sample_models=model_samples)
-        else:
-            result.failure("No models returned")
-
-    except Exception as e:
-        result.failure(e)
-
-    return result
-
-
-# OpenAI completion testing removed - all LLM operations now route through OpenRouter
 
 
 # ─── OpenRouter Tests ────────────────────────────────────────────────
@@ -400,12 +364,6 @@ def run_tests(args):
     print(f"Started at: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
     print("-" * 60 + "\n")
 
-    # OpenAI tests
-    if args.all or args.openai:
-        print("\nRunning OpenAI tests:")
-        print("-" * 40)
-        results.append(test_openai_models())
-
     # OpenRouter tests
     if args.all or args.openrouter:
         print("\nRunning OpenRouter tests:")
@@ -454,7 +412,6 @@ def run_tests(args):
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Test LitAssist integrations")
     parser.add_argument("--all", action="store_true", help="Run all tests")
-    parser.add_argument("--openai", action="store_true", help="Test OpenAI integration")
     parser.add_argument(
         "--openrouter", action="store_true", help="Test OpenRouter integration"
     )
@@ -470,7 +427,6 @@ if __name__ == "__main__":
     # If no specific tests selected, run all tests
     if not (
         args.all
-        or args.openai
         or args.openrouter
         or args.google
         or args.jade

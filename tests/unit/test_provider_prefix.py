@@ -59,7 +59,6 @@ def test_openai_provider_prefix_preserved_for_openrouter(slug):
     with patch("litassist.config.CONFIG") as mock_config:
         mock_config.or_base = "https://openrouter.ai/api/v1"
         mock_config.or_key = "test_key"
-        mock_config.openai_key = "test_key"
 
         client = LLMClient(slug)
         # Bypass tool-handling complexity; routes through the no-tools branch

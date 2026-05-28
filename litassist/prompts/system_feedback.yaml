@@ -123,23 +123,25 @@ system_feedback:
         Please set your actual {service} API key in config.yaml or as an environment variable.
       
       byok_required_o1_pro: |
-        [ERROR] OpenAI o1-pro requires Bring Your Own Key (BYOK) setup.
-        
+        [ERROR] The o1-pro model requires Bring Your Own Key (BYOK) configured at OpenRouter.
+
         To use o1-pro:
-        1. Ensure you have o1-pro access on your OpenAI account
-        2. Set your OpenAI API key in config.yaml or environment
-        3. The key must have access to o1-pro model
-        
+        1. Ensure you have o1-pro access on your provider account
+        2. Add the provider key to OpenRouter's integrations dashboard
+           (https://openrouter.ai/settings/integrations)
+        3. OpenRouter routes openai/o1-pro through your BYOK provider
+
         Note: o1-pro is expensive (~$15/call) and requires special access.
-      
+
       byok_required_o3: |
-        [ERROR] OpenAI o3 requires Bring Your Own Key (BYOK) setup.
-        
+        [ERROR] The o3 model requires Bring Your Own Key (BYOK) configured at OpenRouter.
+
         To use o3:
-        1. Ensure you have o3 access on your OpenAI account (limited availability)
-        2. Set your OpenAI API key in config.yaml or environment
-        3. The key must have access to o3 model
-        
+        1. Ensure you have o3 access on your provider account (limited availability)
+        2. Add the provider key to OpenRouter's integrations dashboard
+           (https://openrouter.ai/settings/integrations)
+        3. OpenRouter routes openai/o3 through your BYOK provider
+
         Note: o3 is extremely expensive and has very limited availability.
 
     # USED BY: citation_verify.py validate_citation_format()

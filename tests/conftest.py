@@ -11,8 +11,6 @@ from pathlib import Path
 import sys
 
 mock_config = Mock()
-mock_config.oa_key = "test-openai-key"
-mock_config.get_openai_api_key = Mock(return_value="test-openai-key")
 mock_config.get_jade_api_key = Mock(return_value="test-jade-key")
 mock_config.openrouter_api_key = "test-openrouter-key"
 mock_config.google_api_key = "test-google-key"
@@ -136,7 +134,6 @@ Damages and injunction
 @pytest.fixture
 def mock_env(monkeypatch):
     """Mock environment variables."""
-    monkeypatch.setenv("OPENAI_API_KEY", "test-openai-key")
     monkeypatch.setenv("OPENROUTER_API_KEY", "test-openrouter-key")
     monkeypatch.setenv("GOOGLE_API_KEY", "test-google-key")
     monkeypatch.setenv("GOOGLE_CSE_ID", "test-cse-id")

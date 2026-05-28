@@ -54,7 +54,6 @@ class TestLLMClient:
         mock_config.api_key = "test-key"
         mock_config.or_base = "https://openrouter.ai/api/v1"
         mock_config.or_key = "test-key"
-        mock_config.openai_key = "test-key"
 
         # Mock the OpenAI client
         mock_client = MagicMock()
@@ -101,7 +100,6 @@ class TestLLMClient:
         mock_config.api_key = "test-key"
         mock_config.or_base = "https://openrouter.ai/api/v1"
         mock_config.or_key = "test-key"
-        mock_config.openai_key = "test-key"
 
         # Mock the OpenAI client
         mock_client = MagicMock()
@@ -143,7 +141,6 @@ class TestLLMClient:
         mock_config.api_key = "test-key"
         mock_config.or_base = "https://openrouter.ai/api/v1"
         mock_config.or_key = "test-key"
-        mock_config.openai_key = "test-key"
 
         # Mock the OpenAI client
         mock_client = MagicMock()
@@ -185,7 +182,6 @@ class TestLLMClient:
         mock_config.api_key = "test-key"
         mock_config.or_base = "https://openrouter.ai/api/v1"
         mock_config.or_key = "test-key"
-        mock_config.openai_key = "test-key"
 
         # Mock the OpenAI client
         mock_client = MagicMock()
@@ -290,7 +286,6 @@ class TestPromptIntegration:
         mock_config.api_key = "test-key"
         mock_config.or_base = "https://openrouter.ai/api/v1"
         mock_config.or_key = "test-key"
-        mock_config.openai_key = "test-key"
 
         # Mock prompts
         mock_prompts.get.return_value = "Test system prompt"
@@ -336,7 +331,6 @@ class TestErrorHandling:
         mock_config.api_key = "test-key"
         mock_config.or_base = "https://openrouter.ai/api/v1"
         mock_config.or_key = "test-key"
-        mock_config.openai_key = "test-key"
 
         # Mock the OpenAI client to raise an error
         mock_client = MagicMock()
@@ -360,7 +354,6 @@ class TestErrorHandling:
         mock_config.api_key = "test-key"
         mock_config.or_base = "https://openrouter.ai/api/v1"
         mock_config.or_key = "test-key"
-        mock_config.openai_key = "test-key"
 
         # Mock the OpenAI client to return empty response
         mock_client = MagicMock()

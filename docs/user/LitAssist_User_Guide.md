@@ -22,7 +22,7 @@ routed through OpenRouter.
 ### Prerequisites
 
 - Python 3.10 or later
-- API keys: OpenRouter, OpenAI (BYOK for o3-pro: draft, counselnotes, barbrief, strategy-analysis, brainstorm-analysis), Google Custom Search
+- API keys: OpenRouter (sole gateway for all LLM calls) and Google Custom Search. Provider-level BYOK for `openai/o3-pro` etc. is configured at OpenRouter's integrations dashboard, not in this project's config.
 
 ---
 
@@ -65,7 +65,7 @@ configuration.
 litassist test
 ```
 
-This tests OpenAI, OpenRouter, Google CSE, and web scraping capabilities.
+This tests OpenRouter, Google CSE, and web scraping capabilities.
 Placeholder credentials are detected and skipped automatically.
 
 ---
@@ -601,17 +601,16 @@ All calls route through OpenRouter. Model assignments are defined in
 
 ### BYOK Setup
 
-Commands using o3-pro require an OpenAI API key configured for Bring Your Own
-Key (BYOK) through OpenRouter. LitAssist sends all LLM requests to OpenRouter
-using `openrouter.api_key`; setting `openai.api_key` locally does not attach
-that key to OpenRouter.
+Commands using `openai/o3-pro` route through OpenRouter and require a provider
+key (BYOK) configured at OpenRouter, NOT in this project's config. LitAssist
+sends every LLM request to OpenRouter using `openrouter.api_key`; there is no
+separate OpenAI key in `config.yaml`.
 
 To enable o3-pro:
 
 1. Put your OpenRouter API key in `openrouter.api_key`.
 2. Open `https://openrouter.ai/settings/integrations`.
 3. Add an OpenAI provider key in the OpenRouter integrations dashboard.
-4. Keep `openai.api_key` in `config.yaml` for non-routing OpenAI uses such as embeddings.
 
 ---
 
@@ -661,9 +660,6 @@ and costs. Format is controlled by `--log-format` (CLI) or `log_format`
 openrouter:
   api_key: "your-openrouter-key"          # Required
   api_base: "https://openrouter.ai/api/v1"  # Default
-
-openai:
-  api_key: "your-openai-key"              # Required (BYOK for o3-pro)
 
 google_cse:
   api_key: "your-google-api-key"          # Required

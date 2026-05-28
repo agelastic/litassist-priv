@@ -6,9 +6,6 @@ openrouter:
   max_retry_delay: 10       # Max delay (seconds) between attempts
   safety_cutoff: 5          # Circuit breaker disables retries after N failures/hour
 
-openai:
-  api_key:          "YOUR_OPENAI_KEY"   # BYOK for o3-pro and other OpenAI-direct calls
-
 google_cse:
   api_key:  "YOUR_GOOGLE_API_KEY"
   cse_id:   "YOUR_JADE_CSE_ID"    # Google CSE ID for searching Jade.io legal database

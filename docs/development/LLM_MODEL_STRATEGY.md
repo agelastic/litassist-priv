@@ -178,13 +178,11 @@ MODEL_PATTERNS = {
 # config.yaml
 openrouter:
   api_key: "your-openrouter-api-key"
-
-openai:
-  api_key: "your-openai-api-key"  # Local OpenAI uses; does not configure OpenRouter BYOK
 ```
 
-For o3-pro, add the OpenAI provider key in the OpenRouter integrations
-dashboard: https://openrouter.ai/settings/integrations
+For `openai/o3-pro` and other BYOK models, add the provider key in the
+OpenRouter integrations dashboard:
+https://openrouter.ai/settings/integrations
 
 **For detailed configuration**, see `MODEL_CONFIGURATION.md`:
 - Complete COMMAND_CONFIGS dictionary

@@ -127,8 +127,9 @@ caseplan --> extractfacts --> lookup --> brainstorm --> strategy --> draft --> v
 
 - Python 3.10 or later
 - API keys for:
-  - **OpenRouter** (required): Routes all LLM calls
-  - **OpenAI** (required): BYOK for o3-pro stages (draft, counselnotes, barbrief, strategy-analysis, brainstorm-analysis)
+  - **OpenRouter** (required): Sole gateway for all LLM calls. Provider-level
+    BYOK (e.g. for `openai/o3-pro`) is configured at OpenRouter, not in this
+    project's config.
   - **Google Custom Search** (required): Citation verification and legal research
   - **Jina Reader** (optional): Fallback transport for JavaScript-rendered pages and Cloudflare-blocked content. The primary fetch transport is `curl_cffi` (no key required); a Jina API key enables the fallback path with higher rate limits.
 
@@ -178,13 +179,6 @@ cp config.yaml.template ~/.config/litassist/config.yaml
 openrouter:
   api_key: "sk-or-v1-your-key-here"          # Required
   api_base: "https://openrouter.ai/api/v1"    # Default, rarely changed
-
-# --- OpenAI (required) ---
-# BYOK for o3-pro stages (draft, counselnotes, barbrief, strategy-analysis,
-# brainstorm-analysis). The OpenAI key is used directly for these calls;
-# all other LLM traffic flows through OpenRouter.
-openai:
-  api_key: "sk-your-openai-key-here"          # Required
 
 # --- Google Custom Search (required) ---
 # Used for citation verification and the lookup command
@@ -245,17 +239,16 @@ For step-by-step setup instructions, see
 
 ### 2.5 BYOK (Bring Your Own Key) for o3-pro
 
-Several commands use OpenAI's o3-pro model, which requires Bring Your Own Key
-(BYOK) through OpenRouter. LitAssist sends LLM requests using
-`openrouter.api_key`; setting `openai.api_key` locally does not configure
-OpenRouter BYOK by itself.
+Several commands use the `openai/o3-pro` model routed through OpenRouter,
+which requires Bring Your Own Key (BYOK) configured at OpenRouter. This
+project has no separate OpenAI key in `config.yaml` -- LitAssist sends every
+LLM request using only `openrouter.api_key`.
 
 To enable o3-pro:
 
 1. Put your OpenRouter API key in `openrouter.api_key`.
 2. Open `https://openrouter.ai/settings/integrations`.
 3. Add an OpenAI provider key in the OpenRouter integrations dashboard.
-4. Keep `openai.api_key` in `config.yaml` for non-routing OpenAI uses such as embeddings.
 
 **Commands requiring BYOK:**
 
@@ -279,7 +272,6 @@ litassist test
 
 This tests connectivity to all configured services:
 
-- **OpenAI**: API key validation
 - **OpenRouter**: API key validation and model routing
 - **Google CSE**: Search API access
 - **Web scraping**: HTTP fetching, Jina Reader (if configured), and PDF retrieval
@@ -1515,7 +1507,6 @@ litassist test
 
 | Service | Check |
 |---------|-------|
-| OpenAI | API key validation |
 | OpenRouter | API key validation, model routing |
 | Google CSE | Search API access, Jade.io CSE query |
 | HTTP scraping | Direct HTTP fetching |
@@ -2044,9 +2035,10 @@ All LLM calls route through OpenRouter's API. Model names follow the
 - `anthropic/claude-opus-4.7`
 
 OpenRouter handles authentication, rate limiting, and provider routing. BYOK
-commands (those using o3-pro) require an OpenAI provider key added in the
-OpenRouter integrations dashboard; the local `openai.api_key` is not the bearer
-token for LLM requests.
+commands (those using `openai/o3-pro`) require an OpenAI provider key added in
+the OpenRouter integrations dashboard. This project does not carry a separate
+OpenAI key in `config.yaml`; only `openrouter.api_key` is the bearer token for
+LLM requests.
 
 The `disable_tools: true` parameter is set on all model configurations to prevent
 models from attempting tool calls, which is not supported in LitAssist's pipeline.
@@ -2312,10 +2304,11 @@ YAML is sensitive to formatting.
 BYOK required for o3-pro
 ```
 
-Commands using o3-pro (draft, counselnotes, barbrief, brainstorm analysis,
-strategy analysis) require an OpenAI provider key in OpenRouter integrations.
-Open `https://openrouter.ai/settings/integrations`, add the OpenAI key there,
-and confirm `openrouter.api_key` is valid locally.
+Commands using `openai/o3-pro` (draft, counselnotes, barbrief,
+brainstorm-analysis, strategy-analysis) require an OpenAI provider key added
+to OpenRouter integrations. Open `https://openrouter.ai/settings/integrations`,
+add the OpenAI key there, and confirm `openrouter.api_key` is valid locally.
+This project does not carry a separate OpenAI key in `config.yaml`.
 
 **OpenRouter connection failures:**
 
@@ -2327,11 +2320,6 @@ Run `litassist test` to diagnose.
 The free tier provides 100 CSE requests per day. If exceeded, citation
 verification and lookup commands will fail. Either wait until the quota resets or
 enable paid usage in the Google Cloud console.
-
-**Pinecone index not found:**
-
-Verify that `pinecone.environment` and `pinecone.index_name` match your Pinecone
-dashboard. The index must exist before running the draft command with PDFs.
 
 ### 10.3 Large File Processing
 
@@ -2370,18 +2358,12 @@ relying on citations for court filings.
 
 **Sparse or unfocused output:**
 
-- Ensure input files use `.txt` extension for direct LLM processing. Files with
-  `.md` extension may not be processed as expected.
-- For RAG mode (PDFs), try adjusting `--diversity`. Lower values (0.1-0.3) produce
-  more focused output; higher values (0.5-0.8) produce broader coverage.
+- Ensure input files use `.txt` extension. Files with `.md` extension may not be
+  processed as expected.
 - Provide more context files (case facts, strategies, research) to give the model
   better grounding.
-
-**RAG producing thin results:**
-
-- Check that the Pinecone index is accessible (`litassist test`)
-- Verify that the `rag_max_chars` setting produces appropriately sized chunks
-- Ensure the PDF is text-based; scanned/image-only PDFs are reported as skipped
+- For very large bundles, summarise with `litassist digest --mode summary` first
+  and feed the summary to draft (see section 6.6 for the oversize-input policy).
 
 ### 10.6 Command Validation Errors
 
@@ -2409,9 +2391,8 @@ Some options are required for specific commands. Check the command reference
 | Error | Cause | Resolution |
 |-------|-------|------------|
 | `config.yaml missing key 'X'` | Required config section missing | Add the section to config.yaml |
-| `BYOK required for o3-pro` | OpenAI key is a placeholder | Set real OpenAI API key |
+| `BYOK required for o3-pro` | OpenAI provider key not configured at OpenRouter | Add it at https://openrouter.ai/settings/integrations |
 | `Google CSE quota exceeded` | 100 daily free requests used | Wait or enable paid usage |
-| `Pinecone index not found` | Wrong environment or index name | Check Pinecone dashboard |
 | `Invalid YAML in config.yaml` | Syntax error in config file | Fix YAML formatting |
 | `No config.yaml found` | Config not at expected path | Create at `~/.config/litassist/config.yaml` |
 | `Input file does not appear to follow the 10-heading structure` | strategy input missing headings | Use extractfacts or create manually |

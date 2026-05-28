@@ -537,7 +537,6 @@ Test objectives""")
 
         with patch("litassist.config.CONFIG") as mock_config:
             mock_config.openrouter_key = "test_key"
-            mock_config.openai_key = "test_key"
 
             client = LLMClientFactory.for_command(
                 "strategy", temperature=0.9, top_p=0.95

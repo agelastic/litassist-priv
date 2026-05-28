@@ -91,7 +91,7 @@ Last updated: 18/02/2026
 - Remove tests that no longer test meaningful behaviour.
 
 ## Configuration Management
-- Required keys: OpenRouter, OpenAI (for o3-pro BYOK), Google CSE (Jade verification), Pinecone.
+- Required keys: OpenRouter (sole gateway for all LLM calls; provider-level BYOK for e.g. `openai/o3-pro` is configured at OpenRouter, not in this project's config) and Google CSE (Jade verification).
 - Configuration precedence: environment variables, then `config.yaml`, then code defaults.
 - Never edit any file named `config.yaml` via automation.
 

@@ -37,8 +37,6 @@ def test_config_file():
 openrouter:
   api_key: "TEST_OPENROUTER_KEY"
   api_base: "https://openrouter.ai/api/v1"
-openai:
-  api_key: "TEST_OPENAI_KEY"
 google_cse:
   api_key: "TEST_GOOGLE_KEY"
   cse_id: "TEST_CSE_ID"
@@ -158,7 +156,6 @@ def test_all_commands_import_with_real_config(test_config_file):
     assert hasattr(config, "max_chars"), "Config missing max_chars attribute"
     assert hasattr(config, "or_key"), "Config missing or_key attribute"
     assert hasattr(config, "log_format"), "Config missing log_format attribute"
-    assert hasattr(config, "oa_key"), "Config missing oa_key attribute"
 
     # Verify values from template
     assert config.max_chars == 200000, "max_chars should be 200000 from template"

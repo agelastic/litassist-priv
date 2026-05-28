@@ -310,13 +310,12 @@ cove-final:
 # config.yaml
 openrouter:
   api_key: "your-openrouter-api-key"
-  
-openai:
-  api_key: "your-openai-api-key"  # Local OpenAI uses; does not configure OpenRouter BYOK
 ```
 
-For o3-pro, add the OpenAI provider key in the OpenRouter integrations
-dashboard: https://openrouter.ai/settings/integrations
+For BYOK access to specific provider models such as `openai/o3-pro`, add the
+provider key in the OpenRouter integrations dashboard:
+https://openrouter.ai/settings/integrations. This project carries no direct
+OpenAI key.
 
 ## Retry Logic Configuration
 

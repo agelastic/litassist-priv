@@ -40,7 +40,6 @@ def test_streaming_error_retry(monkeypatch):
     with patch("litassist.config.CONFIG") as mock_config:
         mock_config.or_base = "https://openrouter.ai/api/v1"
         mock_config.or_key = "test_key"
-        mock_config.openai_key = "test_key"
 
         client = LLMClient("test/mock-model")
 
@@ -71,7 +70,6 @@ def test_streaming_error_max_retries(monkeypatch):
     with patch("litassist.config.CONFIG") as mock_config:
         mock_config.or_base = "https://openrouter.ai/api/v1"
         mock_config.or_key = "test_key"
-        mock_config.openai_key = "test_key"
 
         client = LLMClient("test/mock-model")
 

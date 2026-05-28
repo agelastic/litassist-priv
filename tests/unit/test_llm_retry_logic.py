@@ -24,7 +24,6 @@ class TestLLMRetryLogic:
         # Create client with minimal setup
         with patch("litassist.config.CONFIG") as mock_config:
             mock_config.openrouter_key = "test_key"
-            mock_config.openai_key = "test_key"
             mock_config.or_base = "https://openrouter.ai/api/v1"
             mock_config.or_key = "test_key"
             self.client = LLMClient("openai/gpt-4")

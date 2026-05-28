@@ -112,7 +112,7 @@ class Config:
         # header (e.g. `openrouter:` with no body) parses to None and
         # subscripting it used to raise TypeError, which masked the real
         # cause from the user.
-        for section in ("openrouter", "openai", "google_cse"):
+        for section in ("openrouter", "google_cse"):
             value = self.cfg.get(section)
             if value is None:
                 raise ConfigError(
@@ -131,7 +131,6 @@ class Config:
             self.or_base = self.cfg["openrouter"].get(
                 "api_base", "https://openrouter.ai/api/v1"
             )
-            self.oa_key = self.cfg["openai"]["api_key"]
             self.g_key = self.cfg["google_cse"]["api_key"]
             self.cse_id = self.cfg["google_cse"]["cse_id"]
             self.cse_id_comprehensive = self.cfg["google_cse"].get(
@@ -170,7 +169,6 @@ class Config:
         # Validate required entries are non-empty strings
         required_configs = {
             "openrouter.api_key": self.or_key,
-            "openai.api_key": self.oa_key,
             "google_cse.api_key": self.g_key,
             "google_cse.cse_id": self.cse_id,
         }
@@ -191,7 +189,6 @@ class Config:
             Dictionary of service names mapped to boolean indicating placeholder usage.
         """
         return {
-            "openai": "YOUR_" in self.oa_key,
             "openrouter": "YOUR_" in self.or_key,
             "google_cse": "YOUR_GOOGLE" in self.g_key or "YOUR_GOOGLE" in self.cse_id,
             "jade": False,  # Jade API is no longer used directly - switched to public endpoint

@@ -53,7 +53,7 @@ Added **50+ comprehensive pytest test cases** covering the most critical functio
 
 **What they test:**
 - LLM client factory pattern for different command types
-- OpenAI API integration and error handling
+- OpenRouter API integration and error handling
 - Citation validation and pattern matching
 - Reasoning trace extraction and formatting
 - Rate limiting and authentication error handling
@@ -99,7 +99,7 @@ Added **50+ comprehensive pytest test cases** covering the most critical functio
 ## Test Quality Features
 
 ### Comprehensive Mocking
-- All external dependencies mocked (OpenAI API, file I/O, etc.)
+- All external dependencies mocked (OpenRouter API, file I/O, etc.)
 - Tests run completely offline
 - Consistent mock patterns across test files
 

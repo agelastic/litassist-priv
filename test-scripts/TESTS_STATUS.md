@@ -28,7 +28,7 @@ Located in `tests/unit/` - ALL run offline with mocks:
 ## Manual Integration Validation Scripts [WARNING]
 Located in `test-scripts/` - These make REAL API calls:
 - `test_connectivity.py` - **REAL API** basic connectivity to external services
-- `test_integrations.py` - **REAL API** integration with OpenAI, OpenRouter, Google CSE, Jade
+- `test_integrations.py` - **REAL API** integration with OpenRouter, Google CSE, Jade
 - `test_quality.py` - **REAL API** response quality validation
 - `test_barbrief_integration.py` - Integration tests (needs verification if real API)
 - `test_cli_comprehensive.sh` - **REAL API** CLI testing with mock files but real LLM calls
@@ -52,7 +52,7 @@ python -m pytest --cov=litassist tests/unit/
 cd test-scripts/
 python test_integrations.py --all
 # Or for specific services
-python test_integrations.py --openai --openrouter
+python test_integrations.py --openrouter
 ```
 
 ## Test Design Philosophy

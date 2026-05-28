@@ -392,7 +392,6 @@ Worst: Pay $100k progress payment plus costs
             patch("litassist.commands.lookup.processors.PROMPTS") as mock_lookup_prompts,
             patch.object(CONFIG, "max_chars", 10000),
             patch.object(CONFIG, "openrouter_key", "test_key"),
-            patch.object(CONFIG, "openai_key", "test_key"),
             patch.object(CONFIG, "or_base", "https://openrouter.ai/api/v1"),
             patch.object(CONFIG, "or_key", "test_key"),
             patch.object(CONFIG, "google_cse_key", "test_key"),

@@ -24,8 +24,6 @@ def _write_config(tmp_path: Path, body: str) -> Path:
 
 
 _REST_OK = (
-    "openai:\n"
-    "  api_key: 'x'\n"
     "google_cse:\n"
     "  api_key: 'x'\n"
     "  cse_id: 'x'\n"
