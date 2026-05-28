@@ -247,3 +247,40 @@ class TestGetContextWindowForCommand:
         msg = str(exc_info.value)
         assert "No capability data" in msg
         assert "litassist refresh" in msg or "refresh_model_capabilities" in msg
+
+
+class TestGetInputBudgetForCommand:
+    """Tests for LLMClientFactory.get_input_budget_for_command."""
+
+    def test_returns_int_chars_for_known_command(self):
+        budget = LLMClientFactory.get_input_budget_for_command("draft")
+        assert isinstance(budget, int)
+        assert budget > 0
+
+    def test_default_fraction_matches_formula(self):
+        """At the default fraction (0.30), budget == window * CHARS_PER_TOKEN * 0.30."""
+        window = LLMClientFactory.get_context_window_for_command("draft")
+        expected = int(window * LLMClientFactory.CHARS_PER_TOKEN * 0.30)
+        assert LLMClientFactory.get_input_budget_for_command("draft") == expected
+
+    def test_fraction_argument_scales_linearly(self):
+        """Halving the fraction halves the budget (within int truncation)."""
+        full = LLMClientFactory.get_input_budget_for_command("draft", fraction=0.40)
+        half = LLMClientFactory.get_input_budget_for_command("draft", fraction=0.20)
+        # Allow off-by-one from int() truncation.
+        assert abs(full - 2 * half) <= 1
+
+    def test_sub_type_resolves_subtyped_entry(self):
+        """Sub-type lookup hits the suffixed YAML key, e.g. brainstorm-orthodox.
+        Verifies sub_type plumbing through to the underlying capability lookup."""
+        budget = LLMClientFactory.get_input_budget_for_command(
+            "brainstorm", "orthodox"
+        )
+        assert isinstance(budget, int)
+        assert budget > 0
+
+    def test_unknown_command_raises(self):
+        import pytest
+
+        with pytest.raises(KeyError):
+            LLMClientFactory.get_input_budget_for_command("no_such_command")

@@ -148,8 +148,13 @@ def strategy(case_facts, outcome, strategies, verify, heavy, noverify, output):
                 "  - Warning: No strategies marked as 'most likely to succeed' found"
             )
     else:
-        # Check case facts size when no strategies file
-        validate_file_size_limit(case_text, 600000, "Case facts")
+        # Check case facts size when no strategies file. Cap derives from
+        # the strategy model's input window so it scales with model changes.
+        validate_file_size_limit(
+            case_text,
+            LLMClientFactory.get_input_budget_for_command("strategy"),
+            "Case facts",
+        )
 
     # Generate strategic options
     try:

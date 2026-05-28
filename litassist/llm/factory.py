@@ -211,8 +211,8 @@ class LLMClientFactory:
         a given command.
 
         Capability data comes from model_capabilities.yaml, which is regenerated
-        from OpenRouter by scripts/refresh_model_capabilities.sh. No fallbacks:
-        a missing model id raises KeyError.
+        from OpenRouter by `litassist refresh`. No fallbacks: a missing model
+        id raises KeyError.
         """
         model_id = cls.get_model_for_command(command_name, sub_type)
         caps = _get_model_capabilities()
@@ -222,9 +222,44 @@ class LLMClientFactory:
                 f"No capability data for model '{model_id}' "
                 f"(needed by command '{command_name}').\n"
                 f"Available models: {available}\n"
-                "Run scripts/refresh_model_capabilities.sh to refresh."
+                "Run `litassist refresh` to refresh."
             )
         return int(caps[model_id]["context_window"])
+
+    # Conservative chars-per-token ratio for English legal text. Char-count
+    # is a safe over-estimate of token count, so derived char budgets fit
+    # comfortably inside the actual model token window.
+    CHARS_PER_TOKEN: float = 3.5
+
+    @classmethod
+    def get_input_budget_for_command(
+        cls,
+        command_name: str,
+        sub_type: str | None = None,
+        fraction: float = 0.30,
+    ) -> int:
+        """
+        Get a recommended input-size budget in CHARACTERS for a command.
+
+        Computed as `context_window_tokens * CHARS_PER_TOKEN * fraction`.
+        Use the returned value as a file-size cap or a "context is getting
+        large" warning threshold instead of hardcoding magic numbers. The
+        default 0.30 leaves ~70% of the model window for system prompt,
+        completion, and reasoning tokens; tighten with a smaller `fraction`
+        for commands that emit long outputs or use heavy reasoning.
+
+        Args:
+            command_name: The command name.
+            sub_type: Optional sub-type passed through to the underlying
+                capability lookup.
+            fraction: Fraction of the model's input window to reserve for
+                user-supplied content (default 0.30).
+
+        Returns:
+            Recommended input budget in characters.
+        """
+        window_tokens = cls.get_context_window_for_command(command_name, sub_type)
+        return int(window_tokens * cls.CHARS_PER_TOKEN * fraction)
 
     @classmethod
     def list_configurations(cls) -> Dict[str, Dict[str, Any]]:

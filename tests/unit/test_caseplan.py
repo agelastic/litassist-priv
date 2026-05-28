@@ -97,9 +97,18 @@ class TestCaseplanCommand:
         )
 
     def test_file_size_validation(self, tmp_path):
-        """Test rejection of oversized files."""
+        """Test rejection of oversized files.
+
+        The cap derives from the caseplan model's input window via
+        LLMClientFactory.get_input_budget_for_command, so build an input
+        deliberately larger than that runtime cap rather than hardcoding a
+        size that may drift as models change.
+        """
+        from litassist.llm.factory import LLMClientFactory
+
+        budget = LLMClientFactory.get_input_budget_for_command("caseplan")
         case_facts = tmp_path / "case_facts.txt"
-        case_facts.write_text("A" * 700000)  # 700K chars (exceeds 600K limit)
+        case_facts.write_text("A" * (budget + 1000))
 
         runner = CliRunner()
         result = runner.invoke(caseplan, [str(case_facts)])

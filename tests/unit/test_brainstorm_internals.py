@@ -165,6 +165,7 @@ Pursue misleading conduct claim while simultaneously filing ombudsman complaint.
             self.mock_verification_client,  # Second call for verification
         ]
         mock_factory_analysis.for_command.return_value = self.mock_analysis_client
+        mock_factory_core.get_input_budget_for_command.return_value = 10_000_000
         mock_factory_core.for_command.side_effect = [
             self.mock_orthodox_client,  # For regeneration if needed
             self.mock_unorthodox_client,  # For regeneration if needed
@@ -257,6 +258,7 @@ Pursue misleading conduct claim while simultaneously filing ombudsman complaint.
         ]
         mock_factory_analysis.for_command.return_value = self.mock_analysis_client
         mock_factory_core.for_command.return_value = self.mock_analysis_client
+        mock_factory_core.get_input_budget_for_command.return_value = 10_000_000
 
         with self.runner.isolated_filesystem():
             with open("facts.txt", "w") as f:
@@ -310,6 +312,7 @@ Pursue misleading conduct claim while simultaneously filing ombudsman complaint.
         ]
         mock_factory_analysis.for_command.return_value = self.mock_analysis_client
         mock_factory_core.for_command.return_value = self.mock_analysis_client
+        mock_factory_core.get_input_budget_for_command.return_value = 10_000_000
 
         with self.runner.isolated_filesystem():
             # Create facts and research files
@@ -418,6 +421,7 @@ Pursue misleading conduct claim while simultaneously filing ombudsman complaint.
         ]
         mock_factory_analysis.for_command.return_value = self.mock_analysis_client
         mock_factory_core.for_command.return_value = self.mock_analysis_client
+        mock_factory_core.get_input_budget_for_command.return_value = 10_000_000
 
         with self.runner.isolated_filesystem():
             # Create the default file
