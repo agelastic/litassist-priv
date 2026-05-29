@@ -291,8 +291,10 @@ def test():
     Test API connectivity and web scraping capabilities.
 
     This command validates credentials for OpenRouter and Google CSE
-    by making test API calls and reports success or failure. It also tests web scraping
-    functionality including Jina Reader and PDF fetching.
+    by making test API calls and reports success or failure. It also tests
+    web scraping functionality (direct HTTP fetching and PDF retrieval),
+    and prints a BYOK reminder for configured models that require a
+    user-supplied provider key at OpenRouter.
     """
     validate_credentials(show_progress=True)
     test_scraping_capabilities()
