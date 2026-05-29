@@ -203,7 +203,16 @@ class TestAuditLog:
 
     @patch("litassist.commands.lookup.get_config")
     @patch("litassist.commands.lookup.search.get_config")
-    @patch("litassist.commands.lookup.fetchers._fetch_url_content", return_value="")
+    # `processors.py:26` imports `_fetch_url_content` directly from
+    # `.fetchers` at module load, binding it into the `processors`
+    # namespace. Patching at `fetchers` leaves the in-processors
+    # reference untouched, so the patch must target the
+    # `processors`-side binding. Today's CSE stub returns zero items
+    # so `_fetch_url_content` is not actually called; pinning the
+    # correct patch target prevents a silent real-HTTP regression if
+    # the test later exercises the link-fetch path (gemini-code-assist
+    # PR #79 review).
+    @patch("litassist.commands.lookup.processors._fetch_url_content", return_value="")
     @patch("litassist.commands.lookup.search.time.sleep")
     @patch("googleapiclient.discovery.build")
     @patch("litassist.llm.factory.LLMClientFactory.for_command")

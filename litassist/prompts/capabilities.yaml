@@ -10,7 +10,7 @@ capabilities:
 
     ### lookup - Rapid Case Law Research Engine
     Purpose: Searches Australian case law via Jade.io and AustLII for precedents, principles, and citations
-    Inputs: A SHORT, focused legal question (target ~80 chars, hard ceiling ~150 chars). Treat it like a Google search box: name the doctrine + jurisdiction + key statute or term. Do NOT keyword-stuff (a long bag of nouns scores worse on CSE than a focused phrase). Do NOT paste case narratives into the question; that is what `--context` is for, within its own length limits.
+    Inputs: A SHORT, focused legal question (target ~80 chars, hard ceiling ~150 chars). Treat it like a Google search box: name the doctrine + jurisdiction + key statute or term. Do NOT keyword-stuff (a long bag of nouns scores worse on CSE than a focused phrase). Do NOT paste case narratives into the question; case-specific facts (parties, amounts, dates, invoice numbers) belong in `--guidance`, which is LLM-only and never reaches the CSE query.
     Outputs: IRAC-structured analysis or broad research report with verified citations
     Strategic Use: Foundation for all legal arguments; use early and often for authority
     Options:

@@ -496,7 +496,6 @@ Analyzing case to recommend appropriate budget level...
 ============================================================
 BUDGET RECOMMENDATION
 ============================================================
-============================================================
 
 [SAVED] Recommendation saved to: "caseplan-assessment_2026-05-29_HHMMSS.md"
 
