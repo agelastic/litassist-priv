@@ -277,6 +277,7 @@ This tests connectivity to all configured services:
 - **OpenRouter**: API key validation and model routing
 - **Google CSE**: Search API access
 - **Web scraping**: HTTP fetching and PDF retrieval (Jina Reader is a fallback transport and is not probed here — its health surfaces on the first `lookup` that hits a Cloudflare challenge)
+- **BYOK reminder**: lists each configured model that requires a user-supplied provider key at OpenRouter (currently `openai/o3-pro`) and points at https://openrouter.ai/settings/integrations. OpenRouter does not expose BYOK status programmatically, so the reminder cannot verify the provider key is actually configured — that surfaces on the first command call.
 
 Placeholder credentials are detected and skipped automatically. The test command
 reports which services are operational and which need attention.
@@ -1513,6 +1514,7 @@ litassist test
 | Google CSE | Search API access, Jade.io CSE query |
 | HTTP scraping | Direct HTTP fetching |
 | PDF fetching | PDF download and extraction |
+| BYOK reminder | Lists configured models that require BYOK at OpenRouter (e.g. `openai/o3-pro`) and points at the OpenRouter integrations dashboard. Does not verify BYOK actually works — OpenRouter exposes no programmatic BYOK status check; misconfiguration surfaces on first command call. |
 
 Placeholder credentials (containing `YOUR_`) are detected and skipped
 automatically. The test reports which services are operational and which need

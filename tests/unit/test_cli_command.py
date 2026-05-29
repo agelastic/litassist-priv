@@ -131,3 +131,101 @@ class TestAuthEndpoint:
             "Auth probe must not target the legacy /auth/key alias; "
             f"saw: {called_urls!r}"
         )
+
+
+@pytest.mark.unit
+@pytest.mark.offline
+class TestBYOKReminder:
+    """`validate_credentials` must print a BYOK reminder block listing
+    each configured model that appears in `BYOK_REQUIRED_MODELS`,
+    alongside the commands that route to it. When no configured model
+    is BYOK-required the block must stay silent.
+
+    OpenRouter does not surface BYOK status via the API. The reminder
+    is a static lookup against a hand-maintained set; misconfigured
+    BYOK still fails at first call, but the reminder flags the risk
+    up-front."""
+
+    def test_reminder_fires_for_configured_byok_model(
+        self, monkeypatch, capsys
+    ):
+        """openai/o3-pro configured for `draft` -> reminder block prints
+        the model id and at least the `draft` command name."""
+        from litassist import cli
+
+        _stub_auth_and_catalogue(
+            monkeypatch,
+            ["openai/o3-pro", "anthropic/claude-sonnet-4.6"],
+        )
+        monkeypatch.setattr(
+            "litassist.llm.factory.LLMClientFactory.list_configurations",
+            lambda: {
+                "draft": {"model": "openai/o3-pro"},
+                "extractfacts": {"model": "anthropic/claude-sonnet-4.6"},
+            },
+        )
+
+        cli.validate_credentials(show_progress=True)
+
+        out = capsys.readouterr().out
+        assert "BYOK reminder" in out, (
+            f"Reminder block must print when a BYOK model is configured; "
+            f"output was:\n{out}"
+        )
+        assert "openai/o3-pro" in out
+        assert "draft" in out
+        assert (
+            "openrouter.ai/settings/integrations" in out
+        ), "Reminder must point at the OpenRouter integrations URL."
+
+    def test_reminder_silent_when_no_byok_models_configured(
+        self, monkeypatch, capsys
+    ):
+        """When every configured model is non-BYOK (e.g. all routed to
+        anthropic/claude-sonnet-4.6), no reminder block should print."""
+        from litassist import cli
+
+        _stub_auth_and_catalogue(
+            monkeypatch, ["anthropic/claude-sonnet-4.6"]
+        )
+        monkeypatch.setattr(
+            "litassist.llm.factory.LLMClientFactory.list_configurations",
+            lambda: {
+                "draft": {"model": "anthropic/claude-sonnet-4.6"},
+                "extractfacts": {"model": "anthropic/claude-sonnet-4.6"},
+            },
+        )
+
+        cli.validate_credentials(show_progress=True)
+
+        out = capsys.readouterr().out
+        assert "BYOK reminder" not in out, (
+            f"No BYOK-required model is configured; reminder block must "
+            f"stay silent. Output was:\n{out}"
+        )
+
+    def test_reminder_groups_multiple_commands_under_one_model(
+        self, monkeypatch, capsys
+    ):
+        """openai/o3-pro routed by multiple commands -> all command
+        names appear on the same line, not in separate blocks."""
+        from litassist import cli
+
+        _stub_auth_and_catalogue(monkeypatch, ["openai/o3-pro"])
+        monkeypatch.setattr(
+            "litassist.llm.factory.LLMClientFactory.list_configurations",
+            lambda: {
+                "draft": {"model": "openai/o3-pro"},
+                "counselnotes": {"model": "openai/o3-pro"},
+                "barbrief": {"model": "openai/o3-pro"},
+            },
+        )
+
+        cli.validate_credentials(show_progress=True)
+
+        out = capsys.readouterr().out
+        # Model id appears once; commands all appear on a single line.
+        assert out.count("openai/o3-pro is configured for") == 1
+        assert "draft" in out
+        assert "counselnotes" in out
+        assert "barbrief" in out

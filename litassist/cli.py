@@ -12,6 +12,20 @@ import logging
 from litassist.config import load_config
 from litassist.commands import register_commands
 
+# OpenRouter routes some models only via user-supplied provider keys
+# (BYOK). OpenRouter does not expose this status programmatically -- it
+# is published on per-model pages, not in `/api/v1/models` or
+# `/api/v1/models/{id}/endpoints` (verified 29/05/2026: no `byok` field
+# in either response). Maintain this set by hand; add an entry only
+# after confirming on the model's OpenRouter page. Removing an entry is
+# cheap (the reminder just stops printing). Each entry below has a
+# one-line rationale per CLAUDE.md's constant-rationale rule.
+BYOK_REQUIRED_MODELS = {
+    # openai/o3-pro: BYOK-required per https://openrouter.ai/openai/o3-pro
+    # (model page lists "Bring your own key" as the only access path).
+    "openai/o3-pro",
+}
+
 # Config is loaded lazily inside command handlers (see `cli` below) so that
 # `--help`, command discovery and tab-completion still work when the user has
 # not yet created or has broken their config.yaml. Eager loading here used to
@@ -159,9 +173,10 @@ def validate_credentials(show_progress=True):
 
             from litassist.llm.factory import LLMClientFactory
 
+            configurations = LLMClientFactory.list_configurations()
             configured_models = {
                 cfg["model"]
-                for cfg in LLMClientFactory.list_configurations().values()
+                for cfg in configurations.values()
                 if cfg.get("model")
             }
             missing = configured_models - model_ids
@@ -170,11 +185,31 @@ def validate_credentials(show_progress=True):
                     f"OpenRouter missing configured models: {sorted(missing)}"
                 )
 
+            # Group BYOK-required configured commands by model id so the
+            # reminder lists each model once with the commands that route
+            # to it. Built from `configurations` (already in hand) so no
+            # extra YAML round-trip.
+            configured_byok: dict[str, list[str]] = {}
+            for cfg_key, cfg in configurations.items():
+                if cfg.get("model") in BYOK_REQUIRED_MODELS:
+                    configured_byok.setdefault(cfg["model"], []).append(
+                        cfg_key
+                    )
+
             if show_progress:
-                print(
-                    "OK (key authenticated; catalogue verified -- BYOK "
-                    "model access confirmed only on first command call)"
-                )
+                print("OK (key authenticated; catalogue verified)")
+                if configured_byok:
+                    print("  - BYOK reminder:")
+                    for byok_model, cmds in sorted(configured_byok.items()):
+                        print(
+                            f"      {byok_model} is configured for "
+                            f"{', '.join(sorted(cmds))}."
+                        )
+                    print(
+                        "      OpenRouter does not expose BYOK status "
+                        "programmatically; verify provider key(s) at "
+                        "https://openrouter.ai/settings/integrations."
+                    )
         except Exception as e:
             if show_progress:
                 print("FAILED")
