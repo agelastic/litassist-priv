@@ -322,6 +322,13 @@ Features are prioritized to support active litigation (ACT civil matters), profe
 - Output: Current workflow bash script + NEW SECTION: Tactical Advisory
 - Integration: Loads matter context, past strategic decisions
 
+**Status (29/05/2026):** Prerequisite hardening of the existing `caseplan`
+landed (generated-command safety via shlex round-trip, fail-loud extraction,
+assessment `--context`, empty-file guard, Opus full-plan model). The `--tactical`
+layer itself remains DEFERRED: without matter state it overlaps the `strategy`
+command, so it is blocked on P0A-1 (Matter Memory). Build `--tactical` together
+with `--matter` once P0A-1 exists.
+
 ---
 
 ## PHASE 3: STRATEGIC DEPTH (Sprint 3-4)

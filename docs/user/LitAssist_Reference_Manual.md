@@ -480,7 +480,7 @@ litassist caseplan <case_facts> [OPTIONS]
   technical choices (e.g., why `--comprehensive` was selected, why `--mode irac`
   was chosen over `--mode broad`).
 
-**Model:** Claude Sonnet 4.6
+**Model:** Claude Opus 4.7 (full plan); Claude Sonnet 4.6 (budget assessment)
 
 **Smith v Jones example:**
 
@@ -2020,7 +2020,7 @@ Current model assignments are defined in `litassist/llm/model_configs.yaml`. Reg
 | `draft` | o3-pro | Document generation | Yes |
 | `counselnotes` | o3-pro | Advocate analysis | Yes |
 | `barbrief` | o3-pro | Barrister's brief | Yes |
-| `caseplan` | Claude Sonnet 4.6 | Full plan generation | No |
+| `caseplan` | Claude Opus 4.7 | Full plan generation | No |
 | `caseplan-assessment` | Claude Sonnet 4.6 | Budget assessment | No |
 | `verification` | GPT-5.5 | Standard citation verification | No |
 | `verification-light` | Claude Sonnet 4.6 | Quick verification checks | No |

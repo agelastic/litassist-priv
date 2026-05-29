@@ -28,6 +28,14 @@ Historical dated sections preserve the model names that were current when those 
 
 ### Changed
 
+#### May 2026: `caseplan` generated-command safety, fail-loud extraction, Opus full-plan
+- Generated commands are now validated before the runnable script is written. `extract_cli_commands` (`litassist/commands/caseplan/command_extractor.py`) tokenises each candidate with `shlex.split` and re-renders it with `shlex.join`, so shell control characters in LLM output (`;`, `|`, `&&`, `$(...)`, redirections) cannot survive as live operators; only lines whose first parsed token is exactly `litassist` are accepted (a leading `Commands:` label is stripped first), and candidates that fail validation are reported as rejected. It now returns `(script, accepted_count, rejected)`.
+- Full-plan mode fails loud instead of silently saving a header-only script: when no commands are accepted, `plan_generator` warns and skips both the command file and the `bash <file>` tip; rejected commands are listed.
+- Budget-assessment mode now includes `--context` in the LLM prompt (previously the argument was accepted but never used) under the same `USER ANALYSIS GUIDANCE (NOT case facts)` framing as full-plan mode.
+- Empty or whitespace-only case facts files are rejected up front with a `ClickException` before any LLM call.
+- Full-plan generation routes to `anthropic/claude-opus-4.7` for heavier strategic reasoning; the `caseplan-assessment` sub-type stays on Sonnet 4.6. The command docstring and user docs are reconciled to match (`model_configs.yaml` is the source of truth).
+- The plan system prompt gained a COMMAND OUTPUT FORMAT block (one complete `litassist` command per line, `[MANUAL TASK]` items as prose, no shell control characters) and a note that litassist expands globs itself so patterns need quoting only for paths with spaces. Nested `@timed` decorators on the plan/assessment worker functions were removed (the command-level timer already covers them).
+
 #### May 2026: `caseplan` budget assessment body moved off console; banner kept on both surfaces
 - `litassist caseplan` (without `--budget`) no longer echoes the assessment **body** to the console — only the `BUDGET RECOMMENDATION` banner remains there, plus the `Saved to` pointer and the next-step tip. The same banner is now prepended (and a closing divider appended) around the assessment body in the saved file so the on-disk recommendation has a self-describing header section above the LLM body. No other commands had the dump-after-save anti-pattern (verified by sweep). Banner divider width is 60 characters, matching the prior on-screen header.
 
