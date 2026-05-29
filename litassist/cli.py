@@ -124,18 +124,21 @@ def validate_credentials(show_progress=True):
                 "Content-Type": "application/json",
             }
             # /models is unauthenticated catalogue lookup -- doesn't cost
-            # credits or prove the key works. /auth/key requires the
-            # bearer token, so a 200 here proves the key authenticates,
-            # and the response body lists active BYOK providers (if any)
-            # which is the real risk for `openai/o3-pro`-using commands.
-            # Honour the configured `or_base` so users pointing at a
-            # proxy/mirror don't silently validate against the public
-            # endpoint instead.
+            # credits or prove the key works. /key requires the bearer
+            # token, so a 200 here proves the key authenticates. The
+            # response body returns rate-limit + label metadata only; it
+            # does NOT surface BYOK provider status (OpenRouter exposes
+            # BYOK requirements only on per-model pages, not via the
+            # API). Honour the configured `or_base` so users pointing
+            # at a proxy/mirror don't silently validate against the
+            # public endpoint instead.
             base = (config.or_base or "https://openrouter.ai/api/v1").rstrip("/")
 
-            # 1. Auth check + BYOK-provider visibility.
+            # 1. Auth check. /key is the current canonical endpoint per
+            # OpenRouter's API reference; the legacy /auth/key alias
+            # still resolves but /key is what current docs publish.
             key_resp = requests.get(
-                f"{base}/auth/key", headers=headers, timeout=10
+                f"{base}/key", headers=headers, timeout=10
             )
             if key_resp.status_code != 200:
                 raise Exception(

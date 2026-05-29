@@ -8,6 +8,51 @@ from unittest.mock import MagicMock
 import pytest
 
 
+def _fake_config():
+    cfg = MagicMock()
+    cfg.or_key = "test-or-key"
+    cfg.or_base = "https://openrouter.ai/api/v1"
+    cfg.g_key = "test-g-key"
+    cfg.cse_id = "test-cse-id"
+    cfg.using_placeholders.return_value = {
+        "openrouter": False,
+        "google_cse": False,
+    }
+    return cfg
+
+
+def _stub_auth_and_catalogue(monkeypatch, configured_model_ids):
+    """Wire up `requests.get` and Google CSE so
+    `validate_credentials` runs through all probes against a synthetic
+    OpenRouter catalogue containing exactly `configured_model_ids`."""
+    called_urls: list[str] = []
+
+    def fake_get(url, **_kw):
+        called_urls.append(url)
+        resp = MagicMock()
+        resp.status_code = 200
+        if url.endswith("/models"):
+            resp.json.return_value = {
+                "data": [{"id": m} for m in configured_model_ids]
+            }
+        else:
+            resp.json.return_value = {"data": {"label": "test"}}
+        resp.text = ""
+        return resp
+
+    monkeypatch.setattr("requests.get", fake_get)
+
+    fake_service = MagicMock()
+    monkeypatch.setattr(
+        "googleapiclient.discovery.build", lambda *_a, **_kw: fake_service
+    )
+    # `validate_credentials` calls `load_config()` (imported as a bare
+    # name from `litassist.config`); patch the name as it lives in
+    # `litassist.cli` so the alias inside the function is hit.
+    monkeypatch.setattr("litassist.cli.load_config", _fake_config)
+    return called_urls
+
+
 @pytest.mark.unit
 @pytest.mark.offline
 class TestJinaProbeRemoved:
@@ -52,4 +97,37 @@ class TestJinaProbeRemoved:
             "Jina probe must not be invoked from `litassist test`; the "
             "fallback transport's health surfaces on the first lookup "
             "that hits a Cloudflare challenge."
+        )
+
+
+@pytest.mark.unit
+@pytest.mark.offline
+class TestAuthEndpoint:
+    """`validate_credentials` must probe OpenRouter's current `/key`
+    endpoint, not the legacy `/auth/key` alias. Both still resolve;
+    the migration aligns with current OpenRouter API docs."""
+
+    def test_auth_probe_targets_key_not_auth_key(self, monkeypatch):
+        from litassist import cli
+
+        called_urls = _stub_auth_and_catalogue(monkeypatch, [])
+        # Catalogue check needs to find every configured model. Empty
+        # configured set means the missing-models guard never fires.
+        monkeypatch.setattr(
+            "litassist.llm.factory.LLMClientFactory.list_configurations",
+            lambda: {},
+        )
+
+        cli.validate_credentials(show_progress=False)
+
+        # Auth probe hits /key (no /models, no /auth/key suffix).
+        auth_calls = [u for u in called_urls if u.endswith("/key")]
+        legacy_calls = [u for u in called_urls if u.endswith("/auth/key")]
+        assert auth_calls, (
+            "Expected at least one GET to OpenRouter's /key endpoint; "
+            f"saw: {called_urls!r}"
+        )
+        assert not legacy_calls, (
+            "Auth probe must not target the legacy /auth/key alias; "
+            f"saw: {called_urls!r}"
         )
