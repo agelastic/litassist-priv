@@ -12,6 +12,20 @@ import logging
 from litassist.config import load_config
 from litassist.commands import register_commands
 
+# OpenRouter routes some models only via user-supplied provider keys
+# (BYOK). OpenRouter does not expose this status programmatically -- it
+# is published on per-model pages, not in `/api/v1/models` or
+# `/api/v1/models/{id}/endpoints` (verified 29/05/2026: no `byok` field
+# in either response). Maintain this set by hand; add an entry only
+# after confirming on the model's OpenRouter page. Removing an entry is
+# cheap (the reminder just stops printing). Each entry below has a
+# one-line rationale per CLAUDE.md's constant-rationale rule.
+BYOK_REQUIRED_MODELS = {
+    # openai/o3-pro: BYOK-required per https://openrouter.ai/openai/o3-pro
+    # (model page lists "Bring your own key" as the only access path).
+    "openai/o3-pro",
+}
+
 # Config is loaded lazily inside command handlers (see `cli` below) so that
 # `--help`, command discovery and tab-completion still work when the user has
 # not yet created or has broken their config.yaml. Eager loading here used to
@@ -124,18 +138,21 @@ def validate_credentials(show_progress=True):
                 "Content-Type": "application/json",
             }
             # /models is unauthenticated catalogue lookup -- doesn't cost
-            # credits or prove the key works. /auth/key requires the
-            # bearer token, so a 200 here proves the key authenticates,
-            # and the response body lists active BYOK providers (if any)
-            # which is the real risk for `openai/o3-pro`-using commands.
-            # Honour the configured `or_base` so users pointing at a
-            # proxy/mirror don't silently validate against the public
-            # endpoint instead.
+            # credits or prove the key works. /key requires the bearer
+            # token, so a 200 here proves the key authenticates. The
+            # response body returns rate-limit + label metadata only; it
+            # does NOT surface BYOK provider status (OpenRouter exposes
+            # BYOK requirements only on per-model pages, not via the
+            # API). Honour the configured `or_base` so users pointing
+            # at a proxy/mirror don't silently validate against the
+            # public endpoint instead.
             base = (config.or_base or "https://openrouter.ai/api/v1").rstrip("/")
 
-            # 1. Auth check + BYOK-provider visibility.
+            # 1. Auth check. /key is the current canonical endpoint per
+            # OpenRouter's API reference; the legacy /auth/key alias
+            # still resolves but /key is what current docs publish.
             key_resp = requests.get(
-                f"{base}/auth/key", headers=headers, timeout=10
+                f"{base}/key", headers=headers, timeout=10
             )
             if key_resp.status_code != 200:
                 raise Exception(
@@ -156,9 +173,10 @@ def validate_credentials(show_progress=True):
 
             from litassist.llm.factory import LLMClientFactory
 
+            configurations = LLMClientFactory.list_configurations()
             configured_models = {
                 cfg["model"]
-                for cfg in LLMClientFactory.list_configurations().values()
+                for cfg in configurations.values()
                 if cfg.get("model")
             }
             missing = configured_models - model_ids
@@ -167,11 +185,32 @@ def validate_credentials(show_progress=True):
                     f"OpenRouter missing configured models: {sorted(missing)}"
                 )
 
+            # Group BYOK-required configured commands by model id so the
+            # reminder lists each model once with the commands that route
+            # to it. Built from `configurations` (already in hand) so no
+            # extra YAML round-trip.
+            configured_byok: dict[str, list[str]] = {}
+            for cfg_key, cfg in configurations.items():
+                model_name = cfg.get("model")
+                if model_name in BYOK_REQUIRED_MODELS:
+                    configured_byok.setdefault(model_name, []).append(
+                        cfg_key
+                    )
+
             if show_progress:
-                print(
-                    "OK (key authenticated; catalogue verified -- BYOK "
-                    "model access confirmed only on first command call)"
-                )
+                print("OK (key authenticated; catalogue verified)")
+                if configured_byok:
+                    print("  - BYOK reminder:")
+                    for byok_model, cmds in sorted(configured_byok.items()):
+                        print(
+                            f"      {byok_model} is configured for "
+                            f"{', '.join(sorted(cmds))}."
+                        )
+                    print(
+                        "      OpenRouter does not expose BYOK status "
+                        "programmatically; verify provider key(s) at "
+                        "https://openrouter.ai/settings/integrations."
+                    )
         except Exception as e:
             if show_progress:
                 print("FAILED")
@@ -216,29 +255,14 @@ def test_scraping_capabilities():
         print("FAILED")
         print(f"    {error_message(f'HTTP scraping error: {e}')}")
 
-    # Test Jina Reader API
-    print("  - Testing Jina Reader API... ", end="", flush=True)
-    try:
-        from litassist.commands.lookup.fetchers import _fetch_via_jina
-        
-        # Test with a reliable site
-        test_url = "https://www.austlii.edu.au/au/cases/cth/HCA/2020/45.html"
-        content = _fetch_via_jina(test_url, timeout=10)
-        
-        if content and len(content) > 5000:
-            # Check for markdown formatting
-            has_markdown = '#' in content or '**' in content or '[' in content
-            if has_markdown:
-                print(f"OK (fetched {len(content)} chars with markdown)")
-            else:
-                print(f"OK (fetched {len(content)} chars)")
-        else:
-            print("FAILED")
-            print(f"    {error_message('Jina Reader could not fetch content')}")
-    except Exception as e:
-        logging.error(f"Jina Reader error: {e}")
-        print("FAILED")
-        print(f"    {error_message(f'Jina Reader error: {str(e)[:100]}')}")
+    # NOTE: no Jina Reader probe here by design. Jina is a fallback
+    # transport in lookup/fetchers.py, only exercised on Cloudflare
+    # challenges, SPA shells, or non-HTML payloads. Free-tier
+    # r.jina.ai has tight rate limits and routinely timed out at the
+    # 10-second probe budget, producing false-negative FAILED lines
+    # that taught users to ignore the test command. Health of the
+    # Jina fallback surfaces on the first `lookup` that hits a
+    # Cloudflare challenge. Do not re-add the probe.
 
     # Test PDF fetching
     print("  - Testing PDF fetching... ", end="", flush=True)
@@ -277,8 +301,10 @@ def test():
     Test API connectivity and web scraping capabilities.
 
     This command validates credentials for OpenRouter and Google CSE
-    by making test API calls and reports success or failure. It also tests web scraping
-    functionality including Jina Reader and PDF fetching.
+    by making test API calls and reports success or failure. It also tests
+    web scraping functionality (direct HTTP fetching and PDF retrieval),
+    and prints a BYOK reminder for configured models that require a
+    user-supplied provider key at OpenRouter.
     """
     validate_credentials(show_progress=True)
     test_scraping_capabilities()
