@@ -68,20 +68,47 @@ if [ $# -eq 0 ]; then
     echo "  --openrouter  Run OpenRouter tests only"
     echo "  --google      Run Google CSE tests only"
     echo "  --jade        Run Jade public endpoint tests only"
+    echo "  --citations   Run citation fetching tests only (Google CSE / Jade)"
     echo ""
     echo -e "\033[1mUsage examples:\033[0m"
     echo "  ./run_tests.sh --all"
     echo "  ./run_tests.sh --openrouter --google"
     echo "  ./run_tests.sh --jade"
+    echo "  ./run_tests.sh --citations"
     echo ""
     echo -e "\033[1mRunning all tests by default...\033[0m"
 fi
 
-# Execute the test with passed arguments (or without arguments for all tests)
-python test-scripts/test_integrations.py "$@"
+# Decide what to run. Citation fetching (real Google CSE / Jade) is not covered
+# by test_integrations.py, so it runs on a full run (no args or --all) or on its
+# own via --citations. A targeted service filter (--openrouter/--google/--jade)
+# without --all runs integrations only.
+RUN_INTEGRATIONS=1
+RUN_CITATIONS=0
+case " $* " in
+    *" --citations "*) RUN_INTEGRATIONS=0; RUN_CITATIONS=1 ;;
+esac
+if [ $# -eq 0 ] || [[ " $* " == *" --all "* ]]; then
+    RUN_CITATIONS=1
+fi
 
-# Check exit code
-EXIT_CODE=$?
+EXIT_CODE=0
+
+# Execute integration tests with passed arguments (or all by default)
+if [ $RUN_INTEGRATIONS -eq 1 ]; then
+    python test-scripts/test_integrations.py "$@"
+    EXIT_CODE=$?
+fi
+
+# Execute citation fetching tests (real Google CSE / Jade)
+if [ $RUN_CITATIONS -eq 1 ]; then
+    echo -e "\n\033[1mRunning citation fetching tests (real Google CSE / Jade)...\033[0m"
+    python test-scripts/test_citation_fetching.py
+    CITATION_EXIT=$?
+    [ $CITATION_EXIT -ne 0 ] && EXIT_CODE=$CITATION_EXIT
+fi
+
+# Report
 if [ $EXIT_CODE -eq 0 ]; then
     echo -e "\n\033[1;32mAll tests completed successfully!\033[0m"
 else
@@ -89,7 +116,7 @@ else
     echo "See test_results_*.json for complete results."
 fi
 
-# Remind about test README
-echo -e "\n\033[1mFor more information about these tests, see test_README.md\033[0m"
+# Remind about test status doc
+echo -e "\n\033[1mFor more information about these tests, see TESTS_STATUS.md\033[0m"
 
 exit $EXIT_CODE
