@@ -303,10 +303,11 @@ class TestClaude4ParameterHandling:
     def test_opus_47_strips_sampling(self):
         filtered = get_model_parameters(
             "anthropic/claude-opus-4.7",
-            {"temperature": 0.7, "top_p": 0.95, "max_tokens": 1000},
+            {"temperature": 0.7, "top_p": 0.95, "top_k": 40, "max_tokens": 1000},
         )
         assert "temperature" not in filtered
         assert "top_p" not in filtered
+        assert "top_k" not in filtered
         assert filtered["max_tokens"] == 1000
 
     def test_opus_48_strips_sampling(self):
@@ -352,3 +353,117 @@ class TestClaude4ParameterHandling:
         assert convert_thinking_effort("xhigh", "anthropic/claude-sonnet-4.6") == {
             "reasoning": {"effort": "high"}
         }
+
+
+class TestRecentModelParameterMapping:
+    """Parameter/effort handling for GPT-5+, o3, Grok 4.x and Gemini.
+
+    Covers recent provider changes: GPT-5.5 added the xhigh effort tier; o3
+    reasoning models accept no sampling or verbosity; Grok 4.20 dropped
+    verbosity and the penalty params (sampling stays); Gemini keeps temperature
+    and top_p.
+    """
+
+    def test_gpt55_supports_xhigh(self):
+        assert convert_thinking_effort("xhigh", "openai/gpt-5.5") == {
+            "reasoning": {"effort": "xhigh"}
+        }
+        # GPT-5's top tier is xhigh, so the universal "max" maps there.
+        assert convert_thinking_effort("max", "openai/gpt-5.5") == {
+            "reasoning": {"effort": "xhigh"}
+        }
+
+    def test_gpt51_caps_at_high(self):
+        # Only GPT-5.5 exposes xhigh; older GPT-5 variants cap to high.
+        assert convert_thinking_effort("xhigh", "openai/gpt-5.1") == {
+            "reasoning": {"effort": "high"}
+        }
+        assert convert_thinking_effort("max", "openai/gpt-5.1") == {
+            "reasoning": {"effort": "high"}
+        }
+
+    def test_o3_strips_sampling_and_verbosity(self):
+        filtered = get_model_parameters(
+            "openai/o3-pro",
+            {"temperature": 0.7, "top_p": 0.95, "verbosity": "high", "thinking_effort": "high"},
+        )
+        assert "temperature" not in filtered
+        assert "top_p" not in filtered
+        assert "verbosity" not in filtered
+        assert filtered["reasoning"] == {"effort": "high"}
+
+    def test_o3_has_no_xhigh(self):
+        assert convert_thinking_effort("max", "openai/o3-pro") == {
+            "reasoning": {"effort": "high"}
+        }
+
+    def test_grok_keeps_sampling_and_reasoning_drops_verbosity(self):
+        filtered = get_model_parameters(
+            "x-ai/grok-4.20",
+            {
+                "temperature": 0.8,
+                "top_p": 0.95,
+                "verbosity": "high",
+                "frequency_penalty": 0.5,
+                "thinking_effort": "high",
+            },
+        )
+        assert filtered["temperature"] == 0.8
+        assert filtered["top_p"] == 0.95
+        assert "verbosity" not in filtered
+        assert "frequency_penalty" not in filtered
+        assert filtered["reasoning"] == {"effort": "high"}
+
+    def test_grok_keeps_min_p_best_effort(self):
+        # min_p / repetition_penalty ride extra_body (OpenRouter-specific) and are
+        # kept as best-effort even though grok-4.20 ignores them.
+        filtered = get_model_parameters(
+            "x-ai/grok-4.20", {"min_p": 0.05, "repetition_penalty": 1.2}
+        )
+        assert filtered["min_p"] == 0.05
+        assert filtered["repetition_penalty"] == 1.2
+
+    def test_gemini_keeps_sampling_drops_verbosity(self):
+        # Gemini honours temperature/top_p but does not accept verbosity (the
+        # lookup configs set it); it must be dropped, not forwarded.
+        filtered = get_model_parameters(
+            "google/gemini-3.5-flash",
+            {"temperature": 0.2, "top_p": 0.4, "verbosity": "low"},
+        )
+        assert filtered["temperature"] == 0.2
+        assert filtered["top_p"] == 0.4
+        assert "verbosity" not in filtered
+
+    def test_direct_reasoning_effort_capped_for_o3(self):
+        # A directly-passed reasoning.effort must be normalised to a tier the
+        # model accepts, not forwarded raw.
+        filtered = get_model_parameters(
+            "openai/o3-pro", {"reasoning": {"effort": "max"}}
+        )
+        assert filtered["reasoning"] == {"effort": "high"}
+
+    def test_direct_reasoning_effort_xhigh_for_gpt55(self):
+        filtered = get_model_parameters(
+            "openai/gpt-5.5", {"reasoning": {"effort": "max"}}
+        )
+        assert filtered["reasoning"] == {"effort": "xhigh"}
+
+    def test_direct_reasoning_effort_capped_for_sonnet(self):
+        filtered = get_model_parameters(
+            "anthropic/claude-sonnet-4.6", {"reasoning": {"effort": "xhigh"}}
+        )
+        assert filtered["reasoning"] == {"effort": "high"}
+
+    def test_direct_reasoning_none_drops_reasoning(self):
+        filtered = get_model_parameters(
+            "openai/o3-pro", {"reasoning": {"effort": "none"}}
+        )
+        assert "reasoning" not in filtered
+
+    def test_direct_reasoning_null_effort_does_not_enable_medium(self):
+        # reasoning={"effort": None} means no effort requested; it must not be
+        # coerced into medium reasoning by the effort_map default.
+        filtered = get_model_parameters(
+            "anthropic/claude-sonnet-4.6", {"reasoning": {"effort": None}}
+        )
+        assert "reasoning" not in filtered

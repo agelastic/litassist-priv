@@ -37,10 +37,17 @@ def convert_thinking_effort(effort: str, model_name: str) -> dict:
             "low": "low",
             "medium": "medium",
             "high": "high",
-            "xhigh": "high",  # Extended tier only on Opus 4.7+; cap elsewhere
+            "xhigh": "high",  # Default cap; GPT-5.5 overrides below
             "max": "high",  # Map max to highest available
         }
         mapped_effort = effort_map.get(effort, "medium")
+
+        # GPT-5.5 exposes an xhigh reasoning tier (none/low/medium/high/xhigh);
+        # "max" maps to that ceiling. Older GPT-5 variants and o-series cap at
+        # high. REMINDER: re-check this when adding a new GPT-5.x / o-series model
+        # in case its effort tiers differ.
+        if model_family == "gpt5.5" and effort in ("xhigh", "max"):
+            mapped_effort = "xhigh"
 
         # Only include minimal for GPT-5 and o4-mini
         if (
@@ -198,11 +205,34 @@ def get_model_parameters(model_name: str, requested_params: dict) -> dict:
         params_to_process.pop("thinking", None)
         params_to_process.pop("thinking_config", None)
 
-    # Handle verbosity parameter (GPT-5 family only, not o-series)
+    # Normalize a directly-supplied reasoning.effort through the same per-family
+    # mapping used for thinking_effort, so a caller passing `reasoning` directly
+    # cannot smuggle an effort tier the model rejects (e.g. xhigh/max to o3 or
+    # sonnet). Only runs when thinking_effort did not already own reasoning.
+    direct_reasoning = params_to_process.get("reasoning")
+    if isinstance(direct_reasoning, dict) and "effort" in direct_reasoning:
+        effort_value = direct_reasoning["effort"]
+        if effort_value is None or effort_value == "none":
+            # No effort requested -> drop the reasoning object rather than
+            # letting the effort_map default coerce it to medium.
+            params_to_process.pop("reasoning", None)
+        else:
+            normalized = convert_thinking_effort(effort_value, model_name)
+            if normalized.get("reasoning"):
+                params_to_process["reasoning"] = {
+                    **direct_reasoning,
+                    **normalized["reasoning"],
+                }
+            else:
+                params_to_process.pop("reasoning", None)
+
+    # Handle verbosity parameter. Supported by the GPT-5 family and Anthropic
+    # Claude (their OpenRouter entries list it); NOT accepted by o-series
+    # reasoning models, Grok 4.x, or Gemini, so it is skipped for those.
+    # REMINDER: re-check this skip set when adding a model.
     if "verbosity" in params_to_process and params_to_process["verbosity"] is not None:
         verbosity = params_to_process.pop("verbosity")
-        # Skip verbosity for o-series models - they don't support it
-        if model_family != "openai_reasoning":
+        if model_family not in ("openai_reasoning", "xai", "google"):
             verbosity_params = convert_verbosity(verbosity, model_name)
             filtered.update(verbosity_params)
 

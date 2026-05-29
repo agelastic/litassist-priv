@@ -21,6 +21,13 @@ including regex patterns for model detection and allowed parameter profiles.
 # of universal coverage.
 #
 # Ordering matters: more specific patterns must precede general ones.
+#
+# REMINDER: whenever a model is added to model_configs.yaml, check whether it
+# needs a new entry here and a matching PARAMETER_PROFILES profile + effort map
+# in parameter_handler.py. Providers change accepted parameters between versions
+# (e.g. Opus 4.7 removed sampling, GPT-5.5 added the xhigh effort tier, Grok 4.x
+# dropped verbosity) - verify against the model's OpenRouter page / `litassist
+# refresh` before assuming the default profile is correct.
 MODEL_PATTERNS = {
     "openai_reasoning": r"openai/o\d+",
     "gpt5.5": r"openai/gpt-5\.5",
@@ -247,20 +254,29 @@ PARAMETER_PROFILES = {
         ],
     },
     "xai": {
-        # OpenRouter-specific parameters (min_p, top_a, repetition_penalty) are handled
-        # through extra_body in api_handlers.py, not as direct parameters
+        # Grok 4.x (e.g. grok-4.20): honours sampling (temperature/top_p), seed,
+        # logprobs, tools/structured outputs, and reasoning enable/disable. It
+        # does NOT accept verbosity or the frequency/presence penalties, so those
+        # are not allowed (verbosity is additionally skipped in
+        # get_model_parameters). min_p/top_a/repetition_penalty ride extra_body
+        # as best-effort via the OpenRouter-specific param set.
+        # REMINDER: re-check against the model's OpenRouter page when adding a new
+        # Grok model (parameter support changed between grok-4 and grok-4.x).
         "allowed": [
             "temperature",
             "top_p",
             "max_tokens",
-            "stop",
-            "frequency_penalty",
-            "presence_penalty",
+            "seed",
+            "logprobs",
+            "top_logprobs",
+            "tools",
+            "tool_choice",
+            "structured_outputs",
+            "response_format",
+            "reasoning",
             "stream",
-            "reasoning",  # Grok models support reasoning
-            "verbosity",
-            # OpenRouter-specific params removed from here, handled via extra_body
         ],
+        "transforms": {},
     },
     "meta": {
         "allowed": [
