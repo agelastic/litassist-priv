@@ -62,7 +62,8 @@ class TestCaseplanCommand:
 
         mock_client = MagicMock()
         mock_client.complete.return_value = (
-            "# Litigation Plan\n## Case Assessment\nComplexity: MEDIUM...",
+            "# Litigation Plan\n## Case Assessment\nComplexity: MEDIUM\n\n"
+            '```bash\nlitassist lookup "contract breach" --mode irac\n```\n',
             {"total_tokens": 1000},
         )
         mock_factory.for_command.return_value = mock_client
@@ -90,7 +91,8 @@ class TestCaseplanCommand:
 
         mock_client = MagicMock()
         mock_client.complete.return_value = (
-            "# Litigation Plan\n## Case Assessment\nComplexity: MEDIUM...",
+            "# Litigation Plan\n## Case Assessment\nComplexity: MEDIUM\n\n"
+            '```bash\nlitassist lookup "contract breach" --mode irac\n```\n',
             {"total_tokens": 1000},
         )
         mock_factory.for_command.return_value = mock_client
@@ -207,3 +209,30 @@ class TestCaseplanCommand:
         assert result.exit_code == 0
         assert "--noverify not supported" in result.output
         assert "no verification to skip" in result.output
+
+    @patch("litassist.commands.caseplan.plan_generator.LLMClientFactory")
+    @patch("litassist.commands.caseplan.plan_generator.save_command_output")
+    @patch("litassist.commands.caseplan.plan_generator.save_log")
+    def test_zero_commands_warns_and_skips_script(
+        self, mock_save_log, mock_save_output, mock_factory, tmp_path
+    ):
+        """A plan with no executable commands must warn and not save a script."""
+        case_facts = tmp_path / "case_facts.txt"
+        case_facts.write_text("Parties: Test v Test\nBackground: Dispute...")
+
+        mock_client = MagicMock()
+        mock_client.complete.return_value = (
+            "# Litigation Plan\nNarrative only, no runnable commands.",
+            {"total_tokens": 1000},
+        )
+        mock_factory.for_command.return_value = mock_client
+        mock_save_output.return_value = "outputs/caseplan_123.txt"
+
+        runner = CliRunner()
+        result = runner.invoke(caseplan, [str(case_facts), "--budget", "minimal"])
+
+        assert result.exit_code == 0
+        # Only the plan is saved, not a header-only command script.
+        assert mock_save_output.call_count == 1
+        assert "Execute commands: bash" not in result.output
+        assert "no executable commands" in result.output.lower()
