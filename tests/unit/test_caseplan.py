@@ -266,3 +266,14 @@ class TestCaseplanCommand:
         assert any(
             "USER ANALYSIS GUIDANCE" in c and "property dispute" in c for c in user_msgs
         )
+
+    def test_empty_case_facts_rejected(self, tmp_path):
+        """An empty/whitespace case facts file must fail before any LLM call."""
+        case_facts = tmp_path / "case_facts.txt"
+        case_facts.write_text("   \n\t\n")
+
+        runner = CliRunner()
+        result = runner.invoke(caseplan, [str(case_facts)])
+
+        assert result.exit_code == 1
+        assert "empty" in result.output.lower()

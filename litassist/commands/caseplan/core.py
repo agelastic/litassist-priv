@@ -92,6 +92,8 @@ def caseplan(case_facts, context, budget, output, verify, noverify):
         pass
 
     facts_content = case_facts.read()
+    if not facts_content.strip():
+        raise click.ClickException("Case facts file is empty.")
     # Cap derives from the caseplan model's input window so we don't blow
     # the context when the user routes caseplan to a smaller-window model.
     validate_file_size_limit(
