@@ -191,8 +191,9 @@ def validate_credentials(show_progress=True):
             # extra YAML round-trip.
             configured_byok: dict[str, list[str]] = {}
             for cfg_key, cfg in configurations.items():
-                if cfg.get("model") in BYOK_REQUIRED_MODELS:
-                    configured_byok.setdefault(cfg["model"], []).append(
+                model_name = cfg.get("model")
+                if model_name in BYOK_REQUIRED_MODELS:
+                    configured_byok.setdefault(model_name, []).append(
                         cfg_key
                     )
 
