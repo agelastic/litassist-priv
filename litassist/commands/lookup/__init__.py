@@ -34,7 +34,23 @@ from .processors import LookupProcessor
 @click.option(
     "--context",
     type=str,
-    help="Contextual information to guide the lookup analysis",
+    help=(
+        "Short search-side hint (target ~60 chars, hard ceiling ~150). "
+        "Concatenated to the Google CSE query under --comprehensive and "
+        "framed as a SEARCH CONTEXT block in the LLM prompt. Use a "
+        "topic or jurisdiction label, never a case narrative."
+    ),
+)
+@click.option(
+    "--guidance",
+    type=str,
+    help=(
+        "Optional add-on to --context. LLM-only case narrative (long "
+        "form) wrapped in a USER GUIDANCE block above the analysis "
+        "prompt. Never touches the CSE query. Use this for "
+        "case-specific facts (parties, amounts, dates) that would "
+        "degrade CSE recall if put in --context."
+    ),
 )
 @click.option("--output", type=str, help="Custom output filename prefix")
 @click.option("--no-fetch", is_flag=True, help="Skip content fetching, use URLs only")
@@ -50,7 +66,7 @@ from .processors import LookupProcessor
 )
 @timed
 def lookup(
-    question, mode, extract, comprehensive, context, output, no_fetch, verify, noverify
+    question, mode, extract, comprehensive, context, guidance, output, no_fetch, verify, noverify
 ):
     """
     Rapid case-law lookup via Jade CSE + Gemini.
@@ -163,7 +179,7 @@ def lookup(
     try:
         content, usage = processor.execute_llm_request(
             client, system_content, question, mode, extract, comprehensive,
-            context, links, contents
+            context, guidance, links, contents
         )
     except Exception as e:
         import traceback
@@ -195,7 +211,7 @@ def lookup(
 
     # Save the output
     output_file = processor.save_output(
-        content, question, mode, extract, comprehensive, context, output
+        content, question, mode, extract, comprehensive, context, guidance, output
     )
 
     # Save audit log
@@ -213,6 +229,7 @@ def lookup(
                 "question": question,
                 "links": "\n".join(links),
                 "context": context,
+                "guidance": guidance,
             },
             "response": content,
             "usage": usage,
@@ -222,7 +239,7 @@ def lookup(
 
     # Display completion summary
     processor.display_completion_summary(
-        output_file, question, extract, comprehensive, context, links
+        output_file, question, extract, comprehensive, context, guidance, links
     )
     
     # Command end log

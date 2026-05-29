@@ -94,11 +94,29 @@ analysis:
   # LOCATION: Formats question with search result links
   lookup:
     question_prompt: "Question: {question}\nLinks:\n{links}\n\nContent from these links could not be fetched. Answer using your own legal knowledge, referencing the links above where relevant."
-    # USED BY: lookup.py - lines 135-138 (adding context to prompt)
-    # LOCATION: Prepends context information to search prompt
+    # USED BY: litassist/commands/lookup/processors.py:build_prompt
+    # LOCATION: Prepends a SEARCH CONTEXT block above the analysis prompt.
+    # CARRIES: `--context` (short search-side topic / jurisdiction label).
+    # Wording is intentionally cold and label-shaped because the same
+    # string is concatenated to the Google CSE query under
+    # `--comprehensive`; framing it as a topic, not a narrative, keeps
+    # the LLM and the search engine looking at the same thing.
     context_prompt: |
+      === SEARCH CONTEXT ===
+      The user is researching within this topic / jurisdiction: {context}
+      === END SEARCH CONTEXT ===
+
+      {prompt}
+    # USED BY: litassist/commands/lookup/processors.py:build_prompt
+    # LOCATION: Prepends a USER GUIDANCE block above the analysis prompt
+    # (and above the SEARCH CONTEXT block when both flags are set).
+    # CARRIES: `--guidance` (long LLM-only case narrative). Never touches
+    # the CSE query. The "NOT facts from sources" caveat tells the model
+    # to reason WITH the guidance but cite only what it finds in the
+    # fetched content / links.
+    guidance_prompt: |
       === USER GUIDANCE (NOT facts from sources) ===
-      The user wants you to consider: {context}
+      The user wants you to consider: {guidance}
       === END USER GUIDANCE ===
-      
+
       {prompt}

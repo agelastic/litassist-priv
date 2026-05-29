@@ -592,7 +592,8 @@ litassist lookup <question> [OPTIONS]
 |--------|------|-------------|
 | `--mode` | `irac` / `broad` | Answer format (default: `irac`) |
 | `--comprehensive` | flag | Search up to 10 results per source (vs 5) |
-| `--context` | text | Contextual information to guide analysis |
+| `--context` | text | Short search-side hint (~60 chars). Concatenated to the Google CSE query under `--comprehensive` and rendered as a SEARCH CONTEXT block in the LLM prompt. Use a topic / jurisdiction label, never a case narrative. |
+| `--guidance` | text | Optional add-on to `--context`. Long LLM-only case narrative wrapped in a USER GUIDANCE block above the analysis prompt. Never touches the CSE query. Use this for case-specific facts (parties, amounts, dates) that would degrade CSE recall if put in `--context`. |
 | `--extract` | `citations` / `principles` / `checklist` | Extract specific elements as structured output |
 | `--no-fetch` | flag | Skip content fetching, use URLs only |
 | `--output` | text | Custom output filename prefix |
@@ -624,11 +625,14 @@ The `--extract` option produces structured output instead of a narrative analysi
 **Smith v Jones example:**
 
 ```bash
-# IRAC analysis of relocation principles
-litassist lookup "best interests paramount consideration when parent \
-  relocates interstate with children" --mode irac \
-  --context "Family law, mother relocated from Sydney to Brisbane \
-  with children aged 14 and 10"
+# IRAC analysis of relocation principles -- short --context for CSE,
+# long --guidance for the LLM's case briefing.
+litassist lookup "best interests paramount consideration parent relocation" \
+  --mode irac \
+  --context "Family law relocation NSW QLD" \
+  --guidance "Mother relocated from Sydney to Brisbane in 2026 with \
+children aged 14 and 10; father seeks to vary interim orders; assess \
+weight of children's views given Emily's age and maturity"
 ```
 
 Sample output (saved to `outputs/lookup_best_interests_20260223_143156.txt`):
@@ -678,7 +682,12 @@ litassist lookup "whether allegations of parental alienation require \
 
 - Use `--mode irac` for questions with established legal principles; use
   `--mode broad` for emerging or contested areas.
-- Add `--context` to focus results on your specific factual scenario.
+- For real case work, pass BOTH `--context` (short search-side topic) AND
+  `--guidance` (long LLM-only case narrative). The short `--context` keeps
+  Google's recall high; the long `--guidance` gives the LLM the case
+  detail it needs to answer accurately. Putting a paragraph-long
+  narrative into `--context` alone fragments the CSE query and returns
+  fewer hits.
 - Use `--comprehensive` for critical research where coverage matters more than
   cost.
 - Lookup output files can be passed to brainstorm via `--research` to ground

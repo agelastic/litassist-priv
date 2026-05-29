@@ -17,22 +17,23 @@ capabilities:
       --mode: irac, broad | Choose structured IRAC analysis or broader exploratory format
       --comprehensive: (flag) | Comprehensive mode yields up to 10 results each from Jade, AustLII, and a secondary CSE (standard yields up to 5 each from Jade and AustLII)
       --extract: citations, principles, checklist | Format output for specific workflows (court briefs/advice/preparation)
-      --context: [string] | A SHORT search-guidance phrase (target ~60 chars, hard ceiling ~150 chars). It is appended verbatim to the CSE query in --comprehensive mode (`question + " " + context`), and prepended to the LLM analysis prompt as user guidance in all modes. Use it to NAME the jurisdiction or sub-topic (e.g. "NSW solicitor costs dispute" or "Family Court interim orders") -- NOT to paste a case narrative. Long --context strings (party names, invoice numbers, dollar figures, dates) destroy CSE match rates because Google scores fewer keyword matches against an over-long query.
+      --context: [string] | SHORT search-side hint (target ~60 chars, hard ceiling ~150 chars). Concatenated verbatim to the CSE query under --comprehensive (`question + " " + context`) AND wrapped in a SEARCH CONTEXT block in the LLM prompt. Use it to NAME the jurisdiction or sub-topic (e.g. "NSW solicitor costs dispute"). NEVER embed case-specific facts (party names, amounts, dates, invoice numbers) -- those go in `--guidance`.
+      --guidance: [string] | LONG LLM-only case narrative. Wrapped in a USER GUIDANCE block above the analysis prompt. NEVER touches the CSE query. This is where case-specific facts belong (parties, amounts, dates, invoice numbers, claims and counter-claims). Pair with --context: --context is the search-engine handle; --guidance is the LLM's case briefing.
       --output: [string] | Custom filename prefix for output files
       --no-fetch: (flag) | Skip content fetching, use URLs only
       --verify: (flag) | Not supported - lookup results are not verified. Use `litassist verify` for verification.
       --noverify: (flag) | Not supported - lookup has no internal verification.
     Best Practices:
       - Keep the question SHORT and focused: name the doctrine, key statute, and jurisdiction. Never embed case-specific facts (party names, amounts, dates, invoice numbers).
-      - Keep --context to a few words that NAME the jurisdiction or sub-topic. Never embed case-specific facts here either; that is the LLM's job downstream (brainstorm/counselnotes/barbrief consume those).
-      - Use --comprehensive for novel legal issues requiring extensive authority -- but be extra careful with --context length under --comprehensive (it joins the CSE query verbatim).
+      - For real case work, emit BOTH `--context "<short topic label>"` AND `--guidance "<full case narrative>"`. The short context keeps the Google CSE happy; the long guidance gives the LLM the case detail it needs to answer accurately.
+      - Use --comprehensive for novel legal issues requiring extensive authority -- under --comprehensive, --context joins the CSE query verbatim, so still keep --context short.
       - Use --extract citations when preparing court documents
       - Combine multiple related queries for complete coverage (10-15 for standard cases). Split one giant question into several focused ones.
       - Be specific with terminology to improve Jade.io search results
     Integration: Feeds into brainstorm --research, counselnotes synthesis, barbrief --research
     Cost: ~$0.50-2.00 per search (high ROI - authoritative citations)
-    Example (GOOD - focused question, terse context): litassist lookup "Legal Profession Uniform Law s 178 disclosure non-compliance" --mode irac --comprehensive --context "NSW solicitor costs dispute" --output "research_lpul_s178"
-    Anti-example (DO NOT produce -- keyword-stuffed question + case-narrative --context degrades CSE recall): litassist lookup "Legal Profession Uniform Law s 178 consequences non-compliance disclosure costs agreement void assessment reduction" --mode irac --context "NSW solicitor costs dispute; client seeks write-off of invoice 372763 on basis that revised estimate on 3 March 2026 did not comply with s 174; also argues costs are not fair and reasonable under s 172 given total fees of approximately AUD 113,000 for a AUD 25,000 asset claim settled without recovery"
+    Example (GOOD - split fields): litassist lookup "Legal Profession Uniform Law s 178 disclosure non-compliance" --mode irac --comprehensive --context "NSW solicitor costs dispute" --guidance "Client seeks write-off of invoice 372763 on basis that revised estimate on 3 March 2026 did not comply with s 174; total fees approximately AUD 113,000 for a AUD 25,000 asset claim settled without recovery" --output "research_lpul_s178"
+    Anti-example (DO NOT produce -- keyword-stuffed question + case-narrative crammed into --context degrades CSE recall): litassist lookup "Legal Profession Uniform Law s 178 consequences non-compliance disclosure costs agreement void assessment reduction" --mode irac --context "NSW solicitor costs dispute; client seeks write-off of invoice 372763 on basis that revised estimate on 3 March 2026 did not comply with s 174; also argues costs are not fair and reasonable under s 172 given total fees of approximately AUD 113,000 for a AUD 25,000 asset claim settled without recovery"
 
     ### digest - Document Intelligence Processor
     Purpose: Extracts key facts, issues, and evidence from large document sets
