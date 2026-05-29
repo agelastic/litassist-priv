@@ -11,6 +11,7 @@ from litassist.llm.parameter_handler import (
     convert_thinking_effort,
     get_model_family,
     get_model_parameters,
+    supports_system_messages,
 )
 
 
@@ -422,6 +423,17 @@ class TestRecentModelParameterMapping:
         )
         assert filtered["min_p"] == 0.05
         assert filtered["repetition_penalty"] == 1.2
+
+    def test_supports_system_messages(self):
+        # o-series reasoning models do not accept system messages; everything
+        # else (incl. the default profile) does. Gates message-array
+        # construction for the o3-pro commands (draft/counselnotes/barbrief/etc).
+        assert supports_system_messages("openai/o3-pro") is False
+        assert supports_system_messages("openai/o1-preview") is False
+        assert supports_system_messages("anthropic/claude-opus-4.7") is True
+        assert supports_system_messages("openai/gpt-5.5") is True
+        assert supports_system_messages("google/gemini-3.5-flash") is True
+        assert supports_system_messages("unknown/model") is True
 
     def test_gemini_keeps_sampling_drops_verbosity(self):
         # Gemini honours temperature/top_p but does not accept verbosity (the

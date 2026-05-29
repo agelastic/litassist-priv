@@ -222,6 +222,36 @@ class TestCaseplanCommand:
         assert "Execute commands: bash" not in result.output
         assert "no executable commands" in result.output.lower()
 
+    @patch("litassist.commands.caseplan.plan_generator.LLMClientFactory")
+    @patch("litassist.commands.caseplan.plan_generator.save_command_output")
+    @patch("litassist.commands.caseplan.plan_generator.save_log")
+    def test_rejected_commands_are_reported(
+        self, mock_save_log, mock_save_output, mock_factory, tmp_path
+    ):
+        """A plan with a valid command + an unsafe one saves the script and warns."""
+        case_facts = tmp_path / "case_facts.txt"
+        case_facts.write_text("Parties: Test v Test\nBackground: Dispute...")
+
+        mock_client = MagicMock()
+        mock_client.complete.return_value = (
+            "# Plan\n\n```bash\n"
+            'litassist lookup "ok" --mode irac\n'
+            'litassist lookup "unbalanced\n'
+            "```\n",
+            {"total_tokens": 1000},
+        )
+        mock_factory.for_command.return_value = mock_client
+        mock_save_output.return_value = "outputs/caseplan_123.txt"
+
+        runner = CliRunner()
+        result = runner.invoke(caseplan, [str(case_facts), "--budget", "minimal"])
+
+        assert result.exit_code == 0
+        # Valid command extracted -> plan + commands file both saved.
+        assert mock_save_output.call_count == 2
+        assert "dropped as unsafe" in result.output
+        assert 'litassist lookup "unbalanced' in result.output
+
     @patch("litassist.commands.caseplan.budget_assessor.LLMClientFactory")
     @patch("litassist.commands.caseplan.budget_assessor.save_command_output")
     @patch("litassist.commands.caseplan.budget_assessor.save_log")

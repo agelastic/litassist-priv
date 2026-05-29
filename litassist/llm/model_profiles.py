@@ -36,10 +36,11 @@ MODEL_PATTERNS = {
     "gpt5": r"openai/gpt-5$",
     # Opus 4.7/4.8 are reasoning models that removed sampling params and use the
     # extended effort scale; matched before the general Claude-4 pattern.
-    # Anchored with a non-digit lookahead so 4.7/4.8 match exactly and never a
-    # hypothetical 4.7x sub-version (there is no such Claude release).
-    "claude_opus_4_8": r"anthropic/claude-opus-4\.8(?!\d)",
-    "claude_opus_4_7": r"anthropic/claude-opus-4\.7(?!\d)",
+    # End-anchored to the exact model id: 4.7/4.8 match only those releases,
+    # never a 4.7x/4.8x sub-version or a "-preview"/":thinking" suffix variant
+    # (there is no such Claude release; add an entry here if one ships).
+    "claude_opus_4_8": r"anthropic/claude-opus-4\.8$",
+    "claude_opus_4_7": r"anthropic/claude-opus-4\.7$",
     "claude4_sampling": r"anthropic/claude-(opus-4|sonnet-4)(\.\d+)?",
     "anthropic": r"anthropic/claude",
     "google": r"google/(gemini|palm|bard)",

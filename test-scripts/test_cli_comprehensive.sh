@@ -547,7 +547,7 @@ test_verify_command() {
     # --cove with both --reference and --cove-reference, --heavy, --output.
     run_test "Verify - All switches (citations, soundness, reasoning, cove, refs, heavy)" \
         "litassist verify test_inputs/mock_case_facts.txt --citations --soundness --reasoning --cove --reference 'test_inputs/*.txt' --cove-reference 'test_inputs/*.txt' --heavy --output test_output" \
-        "Citation verification complete|Legal soundness check complete|Reasoning trace|reports generated"
+        "Citation verification complete|Legal soundness check complete"
 }
 
 test_counselnotes_command() {
@@ -556,7 +556,7 @@ test_counselnotes_command() {
     # All switches: --extract all (broadest extraction mode) + --verify + --output.
     run_test "Counselnotes - All switches (extract all, verify, output)" \
         "litassist counselnotes test_inputs/mock_case_facts.txt --extract all --verify --output test_output" \
-        "Counselnotes complete|complete|saved to"
+        "Counsel notes generation complete"
 }
 
 test_barbrief_command() {
@@ -566,7 +566,7 @@ test_barbrief_command() {
     # --verify --output.
     run_test "Barbrief - All switches (hearing-type, strategies, research, documents, context, verify, output)" \
         "litassist barbrief test_inputs/mock_10heading_case_facts.txt --hearing-type trial --strategies test_inputs/mock_strategies.txt --research test_inputs/mock_research_output.txt --documents test_inputs/mock_affidavit.txt --context 'Focus on jurisdiction issues' --verify --output test_output" \
-        "Barristers Brief Generated complete|saved to"
+        "Generated brief"
 }
 
 test_caseplan_command() {
