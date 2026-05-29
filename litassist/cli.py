@@ -255,6 +255,15 @@ def test_scraping_capabilities():
         print("FAILED")
         print(f"    {error_message(f'HTTP scraping error: {e}')}")
 
+    # NOTE: no Jina Reader probe here by design. Jina is a fallback
+    # transport in lookup/fetchers.py, only exercised on Cloudflare
+    # challenges, SPA shells, or non-HTML payloads. Free-tier
+    # r.jina.ai has tight rate limits and routinely timed out at the
+    # 10-second probe budget, producing false-negative FAILED lines
+    # that taught users to ignore the test command. Health of the
+    # Jina fallback surfaces on the first `lookup` that hits a
+    # Cloudflare challenge. Do not re-add the probe.
+
     # Test PDF fetching
     print("  - Testing PDF fetching... ", end="", flush=True)
     try:
