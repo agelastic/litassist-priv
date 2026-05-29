@@ -1,6 +1,6 @@
 # LitAssist Reference Manual
 
-Last updated: 27/05/2026
+Last updated: 29/05/2026
 
 ---
 
@@ -276,7 +276,7 @@ This tests connectivity to all configured services:
 
 - **OpenRouter**: API key validation and model routing
 - **Google CSE**: Search API access
-- **Web scraping**: HTTP fetching, Jina Reader (if configured), and PDF retrieval
+- **Web scraping**: HTTP fetching and PDF retrieval (Jina Reader is a fallback transport and is not probed here — its health surfaces on the first `lookup` that hits a Cloudflare challenge)
 
 Placeholder credentials are detected and skipped automatically. The test command
 reports which services are operational and which need attention.
@@ -1512,7 +1512,6 @@ litassist test
 | OpenRouter | API key validation, model routing |
 | Google CSE | Search API access, Jade.io CSE query |
 | HTTP scraping | Direct HTTP fetching |
-| Jina Reader | Content fetching (if configured) |
 | PDF fetching | PDF download and extraction |
 
 Placeholder credentials (containing `YOUR_`) are detected and skipped

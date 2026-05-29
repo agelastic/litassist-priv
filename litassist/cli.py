@@ -216,30 +216,6 @@ def test_scraping_capabilities():
         print("FAILED")
         print(f"    {error_message(f'HTTP scraping error: {e}')}")
 
-    # Test Jina Reader API
-    print("  - Testing Jina Reader API... ", end="", flush=True)
-    try:
-        from litassist.commands.lookup.fetchers import _fetch_via_jina
-        
-        # Test with a reliable site
-        test_url = "https://www.austlii.edu.au/au/cases/cth/HCA/2020/45.html"
-        content = _fetch_via_jina(test_url, timeout=10)
-        
-        if content and len(content) > 5000:
-            # Check for markdown formatting
-            has_markdown = '#' in content or '**' in content or '[' in content
-            if has_markdown:
-                print(f"OK (fetched {len(content)} chars with markdown)")
-            else:
-                print(f"OK (fetched {len(content)} chars)")
-        else:
-            print("FAILED")
-            print(f"    {error_message('Jina Reader could not fetch content')}")
-    except Exception as e:
-        logging.error(f"Jina Reader error: {e}")
-        print("FAILED")
-        print(f"    {error_message(f'Jina Reader error: {str(e)[:100]}')}")
-
     # Test PDF fetching
     print("  - Testing PDF fetching... ", end="", flush=True)
     try:

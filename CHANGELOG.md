@@ -1,6 +1,6 @@
 # Changelog
 
-Last updated: 28/05/2026
+PR Last updated: 29/05/2026
 
 All notable changes to LitAssist will be documented in this file.
 
@@ -27,6 +27,9 @@ Historical dated sections preserve the model names that were current when those 
 - `draft` preflight oversize handling: soft warn + hard fail derived from the model's actual context window plus a provider-error reframe pointing users at `litassist digest --mode summary <file>`.
 
 ### Changed
+
+#### May 2026: `litassist test` cleanup
+- Removed Jina Reader API probe from `litassist test`. Jina is a fallback transport used only on Cloudflare challenge bodies, SPA shells, or non-HTML payloads; failures on free-tier `r.jina.ai` were not diagnostic of LitAssist health and the 10-second timeout produced false negatives on healthy systems.
 
 #### May 2026: RAG / Pinecone pipeline removed; `draft` becomes full-context
 - `draft` no longer routes PDFs or large text files into a Pinecone-backed retrieve-then-generate pipeline. Every supplied document is concatenated with section markers and sent to the configured draft model (`openai/o3-pro`) in a single full-context call.
