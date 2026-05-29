@@ -1,6 +1,6 @@
 # Test Status
 
-Last updated: 18/02/2026
+Last updated: 29/05/2026
 
 ## Important Testing Policy
 
@@ -26,14 +26,23 @@ Located in `tests/unit/` - ALL run offline with mocks:
 - `test_verification.py` - Content verification testing
 
 ## Manual Integration Validation Scripts [WARNING]
-Located in `test-scripts/` - These make REAL API calls:
-- `test_connectivity.py` - **REAL API** basic connectivity to external services
-- `test_integrations.py` - **REAL API** integration with OpenRouter, Google CSE, Jade
-- `test_quality.py` - **REAL API** response quality validation
-- `test_barbrief_integration.py` - Integration tests (needs verification if real API)
-- `test_cli_comprehensive.sh` - **REAL API** CLI testing with mock files but real LLM calls
+Located in `test-scripts/` - these make REAL API calls and incur cost:
+- `run_tests.sh` - wrapper that runs `test_integrations.py`
+- `test_integrations.py` - **REAL API** connectivity: OpenRouter, Google CSE, Jade
+- `test_quality.py` / `test_quality.sh` - **REAL API** response-quality validation
+- `test_citation_fetching.py` - **REAL API** citation fetching via Google CSE / Jade (not covered by the mocked unit citation tests)
+- `test_cli_comprehensive.sh` - **REAL API** CLI smoke for every registered command, each invocation stuffed with as many switches as the command accepts (`./test_cli_comprehensive.sh all`)
+- `test_utils.py` - shared `ErrorHandler` helper imported by the scripts above (not a test itself)
 
 **WARNING**: These scripts incur API costs! Run manually and sparingly.
+
+**MAINTENANCE**: when a command is added to litassist, add it to
+`test_cli_comprehensive.sh` (test function + `run_test_group` dispatch + the
+`all` runner + the help menu), stuffed with switches. Offline, print-only
+diagnostics do not belong here -- the offline pytest suite under `tests/unit/`
+is the assert-based source of truth (it absorbed the former
+`test_prompts.py`/`test_dynamic_parameters.py`/`test_barbrief_integration.py`
+scripts).
 
 ## Running Tests
 
