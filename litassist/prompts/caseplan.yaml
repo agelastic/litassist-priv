@@ -142,13 +142,13 @@ commands:
          ## Phase 4-8: Comprehensive Legal Research (Days 3-5)
          Purpose: Build authoritative foundation across all legal theories
          Commands:
-           litassist lookup "valid elements of a gift including delivery, acceptance and donative intent for motor vehicles" --mode irac --comprehensive
-           # Switch rationale: --comprehensive for complex gift doctrine, --mode irac for structured analysis
-           litassist lookup "incomplete gift doctrine and presumed resulting trust based on vehicle registration and ownership" --mode irac --comprehensive
-           litassist lookup "presumption of advancement in de facto relationships including same-sex couples and property rights" --mode irac --comprehensive
-           litassist lookup "detinue action for motor vehicle possession and wrongful detention under ACT law" --mode irac
+           litassist lookup "elements of gift delivery acceptance donative intent motor vehicle" --mode irac --comprehensive
+           # Switch rationale: --comprehensive for complex gift doctrine, --mode irac for structured analysis; question stays SHORT and focused for CSE recall
+           litassist lookup "incomplete gift presumed resulting trust vehicle registration" --mode irac --comprehensive
+           litassist lookup "presumption of advancement de facto relationship property" --mode irac --comprehensive
+           litassist lookup "detinue motor vehicle wrongful detention ACT" --mode irac
            # Switch rationale: No --comprehensive (established tort), --mode irac for court-ready format
-           litassist lookup "conversion and trespass to goods for motor vehicles and damages calculation in ACT" --mode irac
+           litassist lookup "conversion trespass to goods motor vehicle damages ACT" --mode irac
          Cost: $8 total
          Output feeds: Brainstorm research context, counselnotes synthesis
          
@@ -220,15 +220,25 @@ commands:
          - Include dates, parties, or specific issues in filenames
          
          CASE-SPECIFIC PARAMETERS:
-         - Extract actual details from case_facts.txt for all parameters:
-           * --context: Must reference specific evidence, dates, parties, legal issues, claims and amounts from the case
-         - Examples based on case content:
-           * GOOD: --context "analyze the $40000 vehicle purchase by Victor Orlov on 3 June 2023"
-           * BAD: --context "focus on vehicle ownership"
-           * GOOD: --context "Focus on Martin Wong's claim of gift despite registration in Orlov's name"
-           * BAD: --context "Focus on ownership dispute"
-         
-         RESEARCH QUERY CONSTRUCTION:
+         `--context` semantics differ by command. Use the rule that matches the command you are emitting:
+
+         * `digest --context`, `brainstorm --research/--facts`, `strategy --outcome/--strategies`, `draft "<instruction>"`, `barbrief --context`, `counselnotes` inputs:
+             - These flow into LLM-only analysis prompts.
+             - DO reference specific evidence, dates, parties, claims, and amounts from case_facts.txt.
+             - GOOD: digest --context "analyze the $40000 vehicle purchase by Victor Orlov on 3 June 2023"
+             - BAD:  digest --context "focus on vehicle ownership"
+             - GOOD: draft "Draft memorandum analysing feasibility of recovering $40000 from Martin Wong"
+             - BAD:  draft "Draft feasibility memorandum"
+
+         * `lookup --context` (and the lookup QUESTION itself):
+             - These feed a Google CSE search; under `--comprehensive` `--context` is concatenated to the query string verbatim (`question + " " + context`).
+             - Keep `--context` SHORT (target ~60 chars, hard ceiling ~150 chars). Use it to NAME the jurisdiction or sub-topic only.
+             - Keep the QUESTION SHORT and focused (target ~80 chars, hard ceiling ~150 chars). Name the doctrine + key statute + jurisdiction. Do NOT keyword-stuff; a long bag of nouns scores worse on CSE than a focused phrase.
+             - NEVER embed case-specific facts (party names, amounts, dates, invoice numbers) in the lookup question or in `lookup --context`. Those facts live in case_facts.txt and are consumed by downstream commands (brainstorm/counselnotes/barbrief/draft), not by Google.
+             - GOOD: lookup "Legal Profession Uniform Law s 178 disclosure non-compliance" --mode irac --comprehensive --context "NSW solicitor costs dispute"
+             - BAD:  lookup "Legal Profession Uniform Law s 178 consequences non-compliance disclosure costs agreement void assessment reduction" --context "NSW solicitor costs dispute; client seeks write-off of invoice 372763 on basis that revised estimate on 3 March 2026 did not comply with s 174..."
+
+         RESEARCH QUERY CONSTRUCTION (for `lookup`):
          - Base queries on three sources from case_facts.txt:
            1. EVIDENCE AVAILABLE: What documents/proof do we have?
            2. LEGAL ISSUES: What are our arguments that need support?
@@ -237,24 +247,22 @@ commands:
            * Verify strength of our legal position
            * Find weaknesses in opponent's arguments
            * Discover precedents for similar evidence patterns
-         - Examples:
-           * "de facto relationship property rights when gift presumption meets advancement doctrine and vehicle registration in sole name"
-           * "incomplete gift of motor vehicle when keys delivered but donor retains control"
-           * "detinue and conversion damages calculation using market value and depreciation"
-         
+         - SPLIT one mega-question into several focused ones rather than producing a giant keyword-stuffed query.
+         - Examples (each one short, focused, search-engine-friendly):
+           * "presumption of advancement de facto relationship vehicle registration"
+           * "incomplete gift motor vehicle keys delivered control retained"
+           * "detinue conversion damages market value depreciation"
+
          OPPOSING ARGUMENT ANALYSIS WORKFLOW:
          - Dedicate specific phases to systematically address each opposing claim
          - For each opposing argument identified in case_facts.txt:
-           1. Research query to find contrary authority
-           2. Document analysis to find contradictory evidence
+           1. Research query to find contrary authority (use `lookup` with a SHORT focused question, per the lookup rule above)
+           2. Document analysis to find contradictory evidence (use `digest --context` with case-specific narrative; that path is LLM-only)
            3. Strategy development to counter the argument
          - Example phases:
-           * Phase 5: Counter "Gift Claim" - Research incomplete gift elements
-           * Phase 6: Analyze financial records contradicting gift intent
+           * Phase 5: Counter "Gift Claim" - lookup "incomplete gift motor vehicle key delivery" (no --context needed)
+           * Phase 6: digest financial_records.pdf --mode issues --context "identify evidence contradicting Martin Wong's gift claim from June 2023"
            * Phase 7: Develop strategy to prove retained control over vehicle
-         - Use --context parameters that specifically target opposing claims:
-           * --context "identify evidence contradicting Martin Wong's gift claim from June 2023"
-           * --context "analyze retained control indicators despite key handover"
          
          FINAL DOCUMENT SPECIFICITY:
          - Draft commands must target specific case objectives with amounts/parties:
