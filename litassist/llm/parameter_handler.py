@@ -14,7 +14,9 @@ def convert_thinking_effort(effort: str, model_name: str) -> dict:
     Convert universal thinking_effort to OpenRouter's reasoning object format.
 
     Args:
-        effort: Universal effort level (none, minimal, low, medium, high, max)
+        effort: Universal effort level (none, minimal, low, medium, high, xhigh,
+            max). xhigh/max only pass through for Opus 4.7/4.8; other families
+            cap them to high.
         model_name: Full model identifier (provider/model slug)
 
     Returns:
@@ -35,6 +37,7 @@ def convert_thinking_effort(effort: str, model_name: str) -> dict:
             "low": "low",
             "medium": "medium",
             "high": "high",
+            "xhigh": "high",  # Extended tier only on Opus 4.7+; cap elsewhere
             "max": "high",  # Map max to highest available
         }
         mapped_effort = effort_map.get(effort, "medium")
@@ -64,13 +67,30 @@ def convert_thinking_effort(effort: str, model_name: str) -> dict:
         else:
             return {"reasoning": {"effort": mapped_effort}}
 
-    elif model_family in ["claude4", "anthropic"]:
-        # Anthropic models - use effort-based reasoning (OpenRouter transforms to budget_tokens)
+    elif model_family in ["claude_opus_4_7", "claude_opus_4_8"]:
+        # Opus 4.7/4.8 support the extended effort scale: low..high..xhigh..max.
         effort_map = {
             "minimal": "low",
             "low": "low",
             "medium": "medium",
             "high": "high",
+            "xhigh": "xhigh",
+            "max": "max",
+        }
+        # 4.7 defaults to xhigh, 4.8 to high (per Anthropic); only used when an
+        # unrecognised effort string is passed.
+        default = "xhigh" if model_family == "claude_opus_4_7" else "high"
+        return {"reasoning": {"effort": effort_map.get(effort, default)}}
+
+    elif model_family in ["claude4_sampling", "anthropic"]:
+        # Older Claude (opus 4.0-4.6, sonnet 4.x, claude-3.x) has no xhigh/max
+        # effort tier - cap to high.
+        effort_map = {
+            "minimal": "low",
+            "low": "low",
+            "medium": "medium",
+            "high": "high",
+            "xhigh": "high",
             "max": "high",
         }
         return {"reasoning": {"effort": effort_map.get(effort, "medium")}}
@@ -82,6 +102,7 @@ def convert_thinking_effort(effort: str, model_name: str) -> dict:
             "low": "low",
             "medium": "medium",
             "high": "high",
+            "xhigh": "high",
             "max": "high",
         }
         return {"reasoning": {"effort": effort_map.get(effort, "medium")}}
@@ -205,6 +226,17 @@ def get_model_parameters(model_name: str, requested_params: dict) -> dict:
             filtered[param] = value
         # Silently drop other unsupported parameters
         # Note: We don't add universal parameters automatically to maintain model-specific restrictions
+
+    # Anthropic Claude 4.x (since 4.1) rejects temperature and top_p when both
+    # are specified together. Keep temperature (primary control) and drop top_p.
+    # Opus 4.7+ has no sampling params at all (handled by its profile), so this
+    # only applies to the sampling-capable Claude 4.x family.
+    if (
+        model_family == "claude4_sampling"
+        and "temperature" in filtered
+        and "top_p" in filtered
+    ):
+        del filtered["top_p"]
 
     return filtered
 

@@ -58,13 +58,13 @@ currently runs as a standard OpenRouter model.
 | **lookup** | `google/gemini-3.5-flash` | Rapid case law research synthesis | temperature: 0.2, top_p: 0.4, thinking_effort: low |
 | **digest-summary** | `anthropic/claude-sonnet-4.6` | Document summarization | temperature: 0.2, top_p: 0.3, thinking_effort: medium |
 | **digest-issues** | `anthropic/claude-sonnet-4.6` | Issue identification | temperature: 0.5, top_p: 0.8, thinking_effort: high |
-| **caseplan** | `anthropic/claude-sonnet-4.6` | Workflow planning | temperature: 0.7, top_p: 0.95 |
+| **caseplan** | `anthropic/claude-opus-4.7` | Workflow planning | temperature: 0.7, top_p: 0.95† |
 | **caseplan-assessment** | `anthropic/claude-sonnet-4.6` | Budget assessment | temperature: 0.7, top_p: 0.95 |
 | **extractfacts** | `anthropic/claude-sonnet-4.6` | Structured fact extraction | temperature: 0, top_p: 0.15, thinking_effort: high |
 | **brainstorm-orthodox** | `anthropic/claude-sonnet-4.6` | Conservative legal strategies | temperature: 0.7, top_p: 0.95, thinking_effort: medium |
 | **brainstorm-unorthodox** | `x-ai/grok-4.20` | Creative strategy generation | temperature: 0.8, top_p: 0.95, min_p: 0.05 |
 | **brainstorm-analysis** | `openai/o3-pro` | Strategy analysis & ranking | temperature: 0.7, top_p: 0.9, thinking_effort: high* |
-| **strategy** | `anthropic/claude-opus-4.7` | Legal strategy planning | temperature: 0.7, top_p: 0.95, thinking_effort: max |
+| **strategy** | `anthropic/claude-opus-4.7` | Legal strategy planning | temperature: 0.7, top_p: 0.95, thinking_effort: max† |
 | **strategy-analysis** | `openai/o3-pro` | Strategy assessment | temperature: 0.7, top_p: 0.95, thinking_effort: max* |
 | **draft** | `openai/o3-pro` | Legal document drafting | temperature: 0.7, top_p: 0.95, thinking_effort: high, verbosity: high* |
 | **counselnotes** | `openai/o3-pro` | Strategic advocate analysis | temperature: 0.7, top_p: 0.95, thinking_effort: high* |
@@ -72,7 +72,7 @@ currently runs as a standard OpenRouter model.
 | **verification** | `openai/gpt-5.5` | Standard verification | temperature: 0.2, top_p: 0.3, thinking_effort: medium |
 | **verification-heavy** | `openai/gpt-5.5` | Critical verification | temperature: 0.2, top_p: 0.3, thinking_effort: max |
 | **verification-light** | `anthropic/claude-sonnet-4.6` | Spelling/terminology | temperature: 0.2, top_p: 0.2, thinking_effort: medium |
-| **verify-soundness** | `anthropic/claude-opus-4.7` | Soundness checking | temperature: 0.2, top_p: 0.3, thinking_effort: high |
+| **verify-soundness** | `anthropic/claude-opus-4.7` | Soundness checking | temperature: 0.2, top_p: 0.3, thinking_effort: high† |
 | **verify-soundness-heavy** | `openai/gpt-5.5` | Critical soundness checking | temperature: 0.2, top_p: 0.3, thinking_effort: max |
 | **verify-reasoning** | `anthropic/claude-sonnet-4.6` | Reasoning extraction | temperature: 0.2, top_p: 0.3, thinking_effort: high |
 | **verify-reasoning-heavy** | `openai/gpt-5.5` | Critical reasoning check | temperature: 0.2, top_p: 0.3, thinking_effort: max |
@@ -84,6 +84,8 @@ currently runs as a standard OpenRouter model.
 | **cove-final** | `anthropic/claude-sonnet-4.6` | CoVe final validation | temperature: 0.2, top_p: 0.4, thinking_effort: medium |
 
 *\*o3-pro rows show YAML values; `temperature` and `top_p` are stripped by the dynamic parameter filter before the API call. Effective parameters passed to o3-pro are `max_completion_tokens` and `reasoning_effort` (derived from `thinking_effort` mapping). See "Dynamic Parameter System" below.*
+
+*†Opus 4.7/4.8 rows show YAML values; `temperature`/`top_p`/`top_k` are removed before the API call (Opus 4.7+ returns 400 on non-default sampling). `thinking_effort` uses the extended effort scale -- `xhigh`/`max` pass through (default `xhigh` on 4.7, `high` on 4.8). For other Claude 4.x (sonnet-4.x, older opus), `temperature` and `top_p` are never sent together (Anthropic since 4.1; `top_p` is dropped when both are set).*
 
 ### Model Capabilities & Restrictions
 

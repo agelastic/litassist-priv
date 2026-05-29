@@ -7,7 +7,11 @@ Tests cover:
 - Parameter restrictions for different model families
 """
 
-from litassist.llm.parameter_handler import get_model_family, get_model_parameters
+from litassist.llm.parameter_handler import (
+    convert_thinking_effort,
+    get_model_family,
+    get_model_parameters,
+)
 
 
 class TestGetModelFamily:
@@ -28,10 +32,16 @@ class TestGetModelFamily:
 
     def test_claude_models(self):
         """Test identification of Claude models."""
-        # Claude 4 models get special family
-        assert get_model_family("anthropic/claude-opus-4") == "claude4"
-        assert get_model_family("anthropic/claude-opus-4.1") == "claude4"
-        assert get_model_family("anthropic/claude-sonnet-4.6") == "claude4"
+        # Opus 4.7 / 4.8 are reasoning models that dropped sampling params and
+        # gained the extended effort scale; each gets its own family.
+        assert get_model_family("anthropic/claude-opus-4.7") == "claude_opus_4_7"
+        assert get_model_family("anthropic/claude-opus-4.8") == "claude_opus_4_8"
+
+        # Other Claude 4.x (older opus, all sonnet-4.x) still honour sampling but
+        # reject temperature+top_p together.
+        assert get_model_family("anthropic/claude-opus-4") == "claude4_sampling"
+        assert get_model_family("anthropic/claude-opus-4.1") == "claude4_sampling"
+        assert get_model_family("anthropic/claude-sonnet-4.6") == "claude4_sampling"
 
         # Claude 3 and other models are standard anthropic
         assert get_model_family("anthropic/claude-3-opus") == "anthropic"
@@ -280,3 +290,65 @@ class TestGetModelParameters:
         assert "reasoning" in filtered
         assert "max_completion_tokens" in filtered
         assert filtered["reasoning"] == {"effort": "high"}
+
+
+class TestClaude4ParameterHandling:
+    """Sampling-parameter and effort handling for Claude 4.x models.
+
+    Opus 4.7+ removed temperature/top_p/top_k (non-default values 400). All
+    Claude 4.x (since 4.1) reject temperature and top_p specified together.
+    Opus 4.7/4.8 added the extended effort scale low..high..xhigh..max.
+    """
+
+    def test_opus_47_strips_sampling(self):
+        filtered = get_model_parameters(
+            "anthropic/claude-opus-4.7",
+            {"temperature": 0.7, "top_p": 0.95, "max_tokens": 1000},
+        )
+        assert "temperature" not in filtered
+        assert "top_p" not in filtered
+        assert filtered["max_tokens"] == 1000
+
+    def test_opus_48_strips_sampling(self):
+        filtered = get_model_parameters(
+            "anthropic/claude-opus-4.8", {"temperature": 0.7, "top_p": 0.95}
+        )
+        assert "temperature" not in filtered
+        assert "top_p" not in filtered
+
+    def test_sonnet_drops_top_p_when_both_present(self):
+        # Anthropic rejects temperature and top_p together; keep temperature.
+        filtered = get_model_parameters(
+            "anthropic/claude-sonnet-4.6", {"temperature": 0, "top_p": 0.15}
+        )
+        assert filtered["temperature"] == 0
+        assert "top_p" not in filtered
+
+    def test_sonnet_keeps_top_p_when_alone(self):
+        filtered = get_model_parameters(
+            "anthropic/claude-sonnet-4.6", {"top_p": 0.5}
+        )
+        assert filtered["top_p"] == 0.5
+        assert "temperature" not in filtered
+
+    def test_opus_48_extended_effort_levels(self):
+        assert convert_thinking_effort("xhigh", "anthropic/claude-opus-4.8") == {
+            "reasoning": {"effort": "xhigh"}
+        }
+        assert convert_thinking_effort("max", "anthropic/claude-opus-4.8") == {
+            "reasoning": {"effort": "max"}
+        }
+
+    def test_opus_47_supports_xhigh(self):
+        assert convert_thinking_effort("xhigh", "anthropic/claude-opus-4.7") == {
+            "reasoning": {"effort": "xhigh"}
+        }
+
+    def test_sonnet_effort_caps_at_high(self):
+        # Sonnet 4.x has no xhigh/max effort; both cap to high.
+        assert convert_thinking_effort("max", "anthropic/claude-sonnet-4.6") == {
+            "reasoning": {"effort": "high"}
+        }
+        assert convert_thinking_effort("xhigh", "anthropic/claude-sonnet-4.6") == {
+            "reasoning": {"effort": "high"}
+        }

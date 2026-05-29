@@ -27,7 +27,11 @@ MODEL_PATTERNS = {
     "gpt5.1": r"openai/gpt-5\.1",
     "gpt5-pro": r"openai/gpt-5-pro$",
     "gpt5": r"openai/gpt-5$",
-    "claude4": r"anthropic/claude-(opus-4|sonnet-4)(\.\d+)?",
+    # Opus 4.7/4.8 are reasoning models that removed sampling params and use the
+    # extended effort scale; matched before the general Claude-4 pattern.
+    "claude_opus_4_8": r"anthropic/claude-opus-4\.8",
+    "claude_opus_4_7": r"anthropic/claude-opus-4\.7",
+    "claude4_sampling": r"anthropic/claude-(opus-4|sonnet-4)(\.\d+)?",
     "anthropic": r"anthropic/claude",
     "google": r"google/(gemini|palm|bard)",
     "openai_standard": r"openai/(gpt|chatgpt)",
@@ -132,6 +136,58 @@ PARAMETER_PROFILES = {
             "max_tokens": "max_completion_tokens",
         },
         "system_message_support": True,
+    },
+    "claude_opus_4_8": {
+        # Opus 4.8: adaptive thinking, extended effort scale (low..high..xhigh..
+        # max). Sampling params (temperature/top_p/top_k) were removed and return
+        # 400 on non-default values, so they are not allowed here.
+        "allowed": [
+            "max_tokens",
+            "stop",
+            "reasoning",  # OpenRouter reasoning object
+            "response_format",
+            "structured_outputs",
+            "tools",
+            "tool_choice",
+            "stream",
+        ],
+        "transforms": {},
+    },
+    "claude_opus_4_7": {
+        # Opus 4.7: same sampling removal as 4.8 (xhigh-default reasoning).
+        "allowed": [
+            "max_tokens",
+            "stop",
+            "reasoning",
+            "response_format",
+            "structured_outputs",
+            "tools",
+            "tool_choice",
+            "stream",
+        ],
+        "transforms": {},
+    },
+    "claude4_sampling": {
+        # Other Claude 4.x (older opus, all sonnet-4.x): sampling honoured, but
+        # temperature and top_p cannot both be sent (Anthropic since 4.1; the
+        # not-both rule is enforced in get_model_parameters).
+        "allowed": [
+            "temperature",
+            "top_p",
+            "top_k",
+            "max_tokens",
+            "stop",
+            "reasoning",
+            "response_format",
+            "structured_outputs",
+            "tools",
+            "tool_choice",
+            "stream",
+            "min_p",
+            "top_a",
+            "repetition_penalty",
+        ],
+        "transforms": {},
     },
     "anthropic": {
         "allowed": [
