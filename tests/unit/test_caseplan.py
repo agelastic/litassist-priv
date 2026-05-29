@@ -152,25 +152,10 @@ class TestCaseplanCommand:
         # Accept either our error message or a KeyError from missing prompt
         assert "Budget assessment error" in result.output
 
-    def test_command_registration(self):
-        """Test that caseplan is properly registered as a CLI command."""
-        from litassist.cli import cli
-        from litassist.commands import register_commands
-
-        register_commands(cli)
-        command_names = list(cli.commands.keys())
-        assert "caseplan" in command_names
-
-    def test_invalid_budget_choice(self, tmp_path):
-        """Test Click validation of budget choices."""
-        case_facts = tmp_path / "case_facts.txt"
-        case_facts.write_text("Parties: Test v Test\nBackground: Dispute...")
-
-        runner = CliRunner()
-        result = runner.invoke(caseplan, [str(case_facts), "--budget", "invalid"])
-
-        assert result.exit_code == 2
-        assert "Invalid value for '--budget'" in result.output
+    # Removed test_command_registration (duplicate of
+    # test_cli_command_loading.py::test_command_registration) and
+    # test_invalid_budget_choice (exercised Click's own Choice validation, not
+    # any caseplan logic).
 
     @patch("litassist.commands.caseplan.budget_assessor.LLMClientFactory")
     def test_verify_flag_not_supported(self, mock_factory, tmp_path):
