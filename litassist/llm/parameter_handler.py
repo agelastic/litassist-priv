@@ -14,7 +14,9 @@ def convert_thinking_effort(effort: str, model_name: str) -> dict:
     Convert universal thinking_effort to OpenRouter's reasoning object format.
 
     Args:
-        effort: Universal effort level (none, minimal, low, medium, high, max)
+        effort: Universal effort level (none, minimal, low, medium, high, xhigh,
+            max). xhigh/max only pass through for Opus 4.7/4.8; other families
+            cap them to high.
         model_name: Full model identifier (provider/model slug)
 
     Returns:
@@ -35,9 +37,17 @@ def convert_thinking_effort(effort: str, model_name: str) -> dict:
             "low": "low",
             "medium": "medium",
             "high": "high",
+            "xhigh": "high",  # Default cap; GPT-5.5 overrides below
             "max": "high",  # Map max to highest available
         }
         mapped_effort = effort_map.get(effort, "medium")
+
+        # GPT-5.5 exposes an xhigh reasoning tier (none/low/medium/high/xhigh);
+        # "max" maps to that ceiling. Older GPT-5 variants and o-series cap at
+        # high. REMINDER: re-check this when adding a new GPT-5.x / o-series model
+        # in case its effort tiers differ.
+        if model_family == "gpt5.5" and effort in ("xhigh", "max"):
+            mapped_effort = "xhigh"
 
         # Only include minimal for GPT-5 and o4-mini
         if (
@@ -64,13 +74,30 @@ def convert_thinking_effort(effort: str, model_name: str) -> dict:
         else:
             return {"reasoning": {"effort": mapped_effort}}
 
-    elif model_family in ["claude4", "anthropic"]:
-        # Anthropic models - use effort-based reasoning (OpenRouter transforms to budget_tokens)
+    elif model_family in ["claude_opus_4_7", "claude_opus_4_8"]:
+        # Opus 4.7/4.8 support the extended effort scale: low..high..xhigh..max.
         effort_map = {
             "minimal": "low",
             "low": "low",
             "medium": "medium",
             "high": "high",
+            "xhigh": "xhigh",
+            "max": "max",
+        }
+        # 4.7 defaults to xhigh, 4.8 to high (per Anthropic); only used when an
+        # unrecognised effort string is passed.
+        default = "xhigh" if model_family == "claude_opus_4_7" else "high"
+        return {"reasoning": {"effort": effort_map.get(effort, default)}}
+
+    elif model_family in ["claude4_sampling", "anthropic"]:
+        # Older Claude (opus 4.0-4.6, sonnet 4.x, claude-3.x) has no xhigh/max
+        # effort tier - cap to high.
+        effort_map = {
+            "minimal": "low",
+            "low": "low",
+            "medium": "medium",
+            "high": "high",
+            "xhigh": "high",
             "max": "high",
         }
         return {"reasoning": {"effort": effort_map.get(effort, "medium")}}
@@ -82,6 +109,7 @@ def convert_thinking_effort(effort: str, model_name: str) -> dict:
             "low": "low",
             "medium": "medium",
             "high": "high",
+            "xhigh": "high",
             "max": "high",
         }
         return {"reasoning": {"effort": effort_map.get(effort, "medium")}}
@@ -177,11 +205,36 @@ def get_model_parameters(model_name: str, requested_params: dict) -> dict:
         params_to_process.pop("thinking", None)
         params_to_process.pop("thinking_config", None)
 
-    # Handle verbosity parameter (GPT-5 family only, not o-series)
+    # Normalize a directly-supplied reasoning.effort through the same per-family
+    # mapping used for thinking_effort, so a caller passing `reasoning` directly
+    # cannot smuggle an effort tier the model rejects (e.g. xhigh/max to o3 or
+    # sonnet). Only runs when thinking_effort did not already own reasoning.
+    direct_reasoning = params_to_process.get("reasoning")
+    if isinstance(direct_reasoning, dict) and "effort" in direct_reasoning:
+        effort_value = direct_reasoning["effort"]
+        if effort_value is None or effort_value == "none":
+            # No effort requested -> drop the reasoning object rather than
+            # letting the effort_map default coerce it to medium.
+            params_to_process.pop("reasoning", None)
+        else:
+            normalized = convert_thinking_effort(effort_value, model_name)
+            if normalized.get("reasoning"):
+                params_to_process["reasoning"] = {
+                    **direct_reasoning,
+                    **normalized["reasoning"],
+                }
+            else:
+                params_to_process.pop("reasoning", None)
+
+    # Handle verbosity parameter. Supported by the GPT-5 family (per OpenAI docs;
+    # the OpenRouter capability snapshot may omit it, e.g. gpt-5.5) and by
+    # Anthropic Claude; NOT accepted by o-series reasoning models, Grok 4.x, or
+    # Gemini, so it is skipped for those. Because the capabilities file can be
+    # incomplete for verbosity, it is NOT gated on supported_parameters here.
+    # REMINDER: re-check this skip set when adding a model.
     if "verbosity" in params_to_process and params_to_process["verbosity"] is not None:
         verbosity = params_to_process.pop("verbosity")
-        # Skip verbosity for o-series models - they don't support it
-        if model_family != "openai_reasoning":
+        if model_family not in ("openai_reasoning", "xai", "google"):
             verbosity_params = convert_verbosity(verbosity, model_name)
             filtered.update(verbosity_params)
 
@@ -205,6 +258,17 @@ def get_model_parameters(model_name: str, requested_params: dict) -> dict:
             filtered[param] = value
         # Silently drop other unsupported parameters
         # Note: We don't add universal parameters automatically to maintain model-specific restrictions
+
+    # Anthropic Claude 4.x (since 4.1) rejects temperature and top_p when both
+    # are specified together. Keep temperature (primary control) and drop top_p.
+    # Opus 4.7+ has no sampling params at all (handled by its profile), so this
+    # only applies to the sampling-capable Claude 4.x family.
+    if (
+        model_family == "claude4_sampling"
+        and "temperature" in filtered
+        and "top_p" in filtered
+    ):
+        del filtered["top_p"]
 
     return filtered
 

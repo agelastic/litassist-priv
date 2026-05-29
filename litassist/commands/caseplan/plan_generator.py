@@ -5,12 +5,16 @@ Handles complete litigation plan generation using Claude Opus.
 """
 
 import click
-from typing import Dict, Tuple
+from typing import Dict, Optional, Tuple
 
 from litassist.logging import save_log, save_command_output, log_task_event
-from litassist.timing import timed
 from litassist.llm.factory import LLMClientFactory
-from litassist.utils.formatting import saved_message, tip_message, success_message
+from litassist.utils.formatting import (
+    saved_message,
+    tip_message,
+    success_message,
+    warning_message,
+)
 from litassist.prompts import PROMPTS
 
 from .command_extractor import extract_cli_commands
@@ -22,7 +26,7 @@ def generate_full_plan(
     context: str,
     budget: str,
     output: str
-) -> Tuple[str, str, Dict]:
+) -> Tuple[str, Optional[str], Dict]:
     """
     Generate full litigation plan and extract commands.
 
@@ -73,9 +77,8 @@ def generate_full_plan(
     prompt_parts.append(PROMPTS.get(analysis_prompt_key))
     user_prompt = "\n\n".join(prompt_parts)
 
-    @timed
     def _generate_plan():
-        """Execute plan generation LLM call with timing."""
+        """Execute plan generation LLM call (timed by the caseplan command)."""
         try:
             log_task_event(
                 "caseplan",
@@ -123,27 +126,48 @@ def generate_full_plan(
         metadata=metadata,
     )
 
-    # Extract and save CLI commands
-    extracted_commands = extract_cli_commands(plan_content)
-
-    # Count the number of litassist commands extracted
-    command_count = extracted_commands.count("litassist")
+    # Extract and validate CLI commands. Each accepted command is round-tripped
+    # through shlex so shell metacharacters in the LLM output cannot run as live
+    # operators in the saved script (see command_extractor).
+    extracted_commands, command_count, rejected_commands = extract_cli_commands(
+        plan_content
+    )
     try:
         log_task_event(
             "caseplan",
             "plan",
             "commands_extracted",
-            f"Extracted {command_count} CLI commands from plan"
+            f"Extracted {command_count} CLI commands; {len(rejected_commands)} rejected",
         )
     except Exception:
         pass
 
-    commands_file = save_command_output(
-        f"{output}_commands" if output else f"caseplan_commands_{budget}",
-        extracted_commands,
-        "" if output else case_facts_name,
-        metadata={"Type": "Executable Commands", "Budget": budget},
-    )
+    commands_file = None
+    if command_count == 0:
+        # Fail loud rather than save a header-only script the user is told to run.
+        click.echo(
+            warning_message(
+                "No executable commands could be extracted from the plan. "
+                "Review the saved plan and run the workflow steps manually."
+            )
+        )
+    else:
+        commands_file = save_command_output(
+            f"{output}_commands" if output else f"caseplan_commands_{budget}",
+            extracted_commands,
+            "" if output else case_facts_name,
+            metadata={"Type": "Executable Commands", "Budget": budget},
+        )
+        if rejected_commands:
+            click.echo(
+                warning_message(
+                    f"{len(rejected_commands)} line(s) in command blocks were not "
+                    "runnable litassist commands and were excluded from the script "
+                    "(review them):"
+                )
+            )
+            for rejected in rejected_commands:
+                click.echo(f"  - {rejected}")
 
     save_log(
         "caseplan",
@@ -158,14 +182,16 @@ def generate_full_plan(
             # Response content removed - already logged by LLMClient separately
             "output_file": output_file,
             "commands_file": commands_file,
+            "rejected_commands": rejected_commands,
         },
     )
 
     click.echo(f"\n{success_message('Litigation plan generated successfully!')}")
     click.echo(saved_message(f'Plan saved to: "{output_file}"'))
-    click.echo(saved_message(f'Executable commands saved to: "{commands_file}"'))
-    msg = tip_message(f'Execute commands: bash "{commands_file}"')
-    click.echo(f"\n{msg}")
+    if commands_file:
+        click.echo(saved_message(f'Executable commands saved to: "{commands_file}"'))
+        msg = tip_message(f'Execute commands: bash "{commands_file}"')
+        click.echo(f"\n{msg}")
 
     try:
         log_task_event(

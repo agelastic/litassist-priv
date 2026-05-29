@@ -186,7 +186,9 @@ barbrief:
   disable_tools: true
 
 caseplan:
-  model: "anthropic/claude-sonnet-4.6"
+  # Full-plan generation uses Opus for heavier strategic reasoning; the cheaper
+  # caseplan-assessment sub-type below stays on Sonnet for rapid scoping.
+  model: "anthropic/claude-opus-4.7"
   temperature: 0.7
   top_p: 0.95
   enforce_citations: false

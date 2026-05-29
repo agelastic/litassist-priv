@@ -62,7 +62,8 @@ class TestCaseplanCommand:
 
         mock_client = MagicMock()
         mock_client.complete.return_value = (
-            "# Litigation Plan\n## Case Assessment\nComplexity: MEDIUM...",
+            "# Litigation Plan\n## Case Assessment\nComplexity: MEDIUM\n\n"
+            '```bash\nlitassist lookup "contract breach" --mode irac\n```\n',
             {"total_tokens": 1000},
         )
         mock_factory.for_command.return_value = mock_client
@@ -90,7 +91,8 @@ class TestCaseplanCommand:
 
         mock_client = MagicMock()
         mock_client.complete.return_value = (
-            "# Litigation Plan\n## Case Assessment\nComplexity: MEDIUM...",
+            "# Litigation Plan\n## Case Assessment\nComplexity: MEDIUM\n\n"
+            '```bash\nlitassist lookup "contract breach" --mode irac\n```\n',
             {"total_tokens": 1000},
         )
         mock_factory.for_command.return_value = mock_client
@@ -150,25 +152,10 @@ class TestCaseplanCommand:
         # Accept either our error message or a KeyError from missing prompt
         assert "Budget assessment error" in result.output
 
-    def test_command_registration(self):
-        """Test that caseplan is properly registered as a CLI command."""
-        from litassist.cli import cli
-        from litassist.commands import register_commands
-
-        register_commands(cli)
-        command_names = list(cli.commands.keys())
-        assert "caseplan" in command_names
-
-    def test_invalid_budget_choice(self, tmp_path):
-        """Test Click validation of budget choices."""
-        case_facts = tmp_path / "case_facts.txt"
-        case_facts.write_text("Parties: Test v Test\nBackground: Dispute...")
-
-        runner = CliRunner()
-        result = runner.invoke(caseplan, [str(case_facts), "--budget", "invalid"])
-
-        assert result.exit_code == 2
-        assert "Invalid value for '--budget'" in result.output
+    # Removed test_command_registration (duplicate of
+    # test_cli_command_loading.py::test_command_registration) and
+    # test_invalid_budget_choice (exercised Click's own Choice validation, not
+    # any caseplan logic).
 
     @patch("litassist.commands.caseplan.budget_assessor.LLMClientFactory")
     def test_verify_flag_not_supported(self, mock_factory, tmp_path):
@@ -207,3 +194,112 @@ class TestCaseplanCommand:
         assert result.exit_code == 0
         assert "--noverify not supported" in result.output
         assert "no verification to skip" in result.output
+
+    @patch("litassist.commands.caseplan.plan_generator.LLMClientFactory")
+    @patch("litassist.commands.caseplan.plan_generator.save_command_output")
+    @patch("litassist.commands.caseplan.plan_generator.save_log")
+    def test_zero_commands_warns_and_skips_script(
+        self, mock_save_log, mock_save_output, mock_factory, tmp_path
+    ):
+        """A plan with no executable commands must warn and not save a script."""
+        case_facts = tmp_path / "case_facts.txt"
+        case_facts.write_text("Parties: Test v Test\nBackground: Dispute...")
+
+        mock_client = MagicMock()
+        mock_client.complete.return_value = (
+            "# Litigation Plan\nNarrative only, no runnable commands.",
+            {"total_tokens": 1000},
+        )
+        mock_factory.for_command.return_value = mock_client
+        mock_save_output.return_value = "outputs/caseplan_123.txt"
+
+        runner = CliRunner()
+        result = runner.invoke(caseplan, [str(case_facts), "--budget", "minimal"])
+
+        assert result.exit_code == 0
+        # Only the plan is saved, not a header-only command script.
+        assert mock_save_output.call_count == 1
+        assert "Execute commands: bash" not in result.output
+        assert "no executable commands" in result.output.lower()
+
+    @patch("litassist.commands.caseplan.plan_generator.LLMClientFactory")
+    @patch("litassist.commands.caseplan.plan_generator.save_command_output")
+    @patch("litassist.commands.caseplan.plan_generator.save_log")
+    def test_rejected_commands_are_reported(
+        self, mock_save_log, mock_save_output, mock_factory, tmp_path
+    ):
+        """A plan with a valid command + an unsafe one saves the script and warns."""
+        case_facts = tmp_path / "case_facts.txt"
+        case_facts.write_text("Parties: Test v Test\nBackground: Dispute...")
+
+        mock_client = MagicMock()
+        mock_client.complete.return_value = (
+            "# Plan\n\n```bash\n"
+            'litassist lookup "ok" --mode irac\n'
+            'litassist lookup "unbalanced\n'
+            "```\n",
+            {"total_tokens": 1000},
+        )
+        mock_factory.for_command.return_value = mock_client
+        mock_save_output.return_value = "outputs/caseplan_123.txt"
+
+        runner = CliRunner()
+        result = runner.invoke(caseplan, [str(case_facts), "--budget", "minimal"])
+
+        assert result.exit_code == 0
+        # Valid command extracted -> plan + commands file both saved.
+        assert mock_save_output.call_count == 2
+        assert "excluded from the script" in result.output
+        assert 'litassist lookup "unbalanced' in result.output
+
+    @patch("litassist.commands.caseplan.budget_assessor.LLMClientFactory")
+    @patch("litassist.commands.caseplan.budget_assessor.save_command_output")
+    @patch("litassist.commands.caseplan.budget_assessor.save_log")
+    def test_assessment_includes_context(
+        self, mock_save_log, mock_save_output, mock_factory, tmp_path
+    ):
+        """Assessment mode must pass --context to the LLM as analysis guidance."""
+        case_facts = tmp_path / "case_facts.txt"
+        case_facts.write_text("Parties: Test v Test\nBackground: Dispute...")
+
+        mock_client = MagicMock()
+        mock_client.complete.return_value = ("assessment body", {"total_tokens": 100})
+        mock_factory.for_command.return_value = mock_client
+        mock_save_output.return_value = "outputs/caseplan_assessment_123.txt"
+
+        runner = CliRunner()
+        result = runner.invoke(
+            caseplan, [str(case_facts), "--context", "property dispute"]
+        )
+
+        assert result.exit_code == 0
+        user_msgs = [
+            m["content"]
+            for m in mock_client.complete.call_args[0][0]
+            if m["role"] == "user"
+        ]
+        assert any(
+            "USER ANALYSIS GUIDANCE" in c and "property dispute" in c for c in user_msgs
+        )
+
+    def test_empty_case_facts_rejected(self, tmp_path):
+        """An empty/whitespace case facts file must fail before any LLM call."""
+        case_facts = tmp_path / "case_facts.txt"
+        case_facts.write_text("   \n\t\n")
+
+        runner = CliRunner()
+        result = runner.invoke(caseplan, [str(case_facts)])
+
+        assert result.exit_code == 1
+        assert "empty" in result.output.lower()
+
+    def test_full_plan_routes_to_opus(self):
+        """Full plan mode must use an Opus model; assessment stays Sonnet."""
+        from pathlib import Path
+        import yaml
+        import litassist.llm
+
+        cfg_path = Path(litassist.llm.__file__).parent / "model_configs.yaml"
+        data = yaml.safe_load(cfg_path.read_text())
+        assert "opus" in data["caseplan"]["model"].lower()
+        assert "sonnet" in data["caseplan-assessment"]["model"].lower()

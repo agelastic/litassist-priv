@@ -135,7 +135,12 @@ litassist caseplan <case_facts> [OPTIONS]
 When `--budget` is omitted, performs a rapid assessment and recommends a budget
 level. When specified, generates a full plan with phased command sequences.
 Each command in the plan includes a `# Switch rationale:` comment explaining
-technical choices.
+technical choices. `--context` guides both modes.
+
+Generated commands are validated before the runnable script is saved: each is
+parsed and re-rendered so shell control characters cannot run as live operators.
+If no executable commands can be extracted, the plan is still saved and you are
+warned to action the steps manually rather than handed an empty script.
 
 ```bash
 # Get budget recommendation
@@ -145,7 +150,7 @@ litassist caseplan case_facts.txt
 litassist caseplan case_facts.txt --budget standard
 ```
 
-**Model:** Claude Sonnet 4.6
+**Model:** Claude Opus 4.7 (full plan); Claude Sonnet 4.6 (budget assessment)
 
 ---
 
@@ -575,7 +580,7 @@ Current model assignments are defined in `litassist/llm/model_configs.yaml`. Reg
 
 | Command | Model | BYOK Required |
 |---------|-------|---------------|
-| caseplan | Claude Sonnet 4.6 | No |
+| caseplan | Claude Opus 4.7 (full plan) / Sonnet 4.6 (assessment) | No |
 | lookup | Gemini 3.5 Flash | No |
 | digest | Claude Sonnet 4.6 | No |
 | extractfacts | Claude Sonnet 4.6 | No |

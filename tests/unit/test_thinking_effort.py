@@ -48,12 +48,13 @@ class TestThinkingEffortConversion:
             "reasoning": {"effort": "low"}
         }
 
-        # GPT-5.5 family must emit reasoning effort (regression: previously dropped)
+        # GPT-5.5 family must emit reasoning effort (regression: previously dropped).
+        # GPT-5.5 added the xhigh tier, so "max" maps to xhigh (its ceiling).
         assert convert_thinking_effort("medium", "openai/gpt-5.5") == {
             "reasoning": {"effort": "medium"}
         }
         assert convert_thinking_effort("max", "openai/gpt-5.5") == {
-            "reasoning": {"effort": "high"}
+            "reasoning": {"effort": "xhigh"}
         }
 
         # GPT-5 Pro family must emit reasoning effort (regression: previously dropped)

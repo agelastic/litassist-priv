@@ -3,8 +3,8 @@
 
 commands:
   caseplan:
-    # USED BY: litassist/commands/caseplan.py - system prompt for workflow generation
-    # LOCATION: litassist/commands/caseplan.py:199
+    # USED BY: litassist/commands/caseplan/plan_generator.py - system prompt for workflow generation
+    # LOCATION: litassist/commands/caseplan/plan_generator.py:56
     system: |
       CRITICAL: Generate commands using ONLY the exact syntax and options listed in litassist_capabilities. Never use options not explicitly listed. If uncertain, use the simplest form.
 
@@ -21,6 +21,12 @@ commands:
       - Build systematically toward feasibility memoranda
       - Emphasize synthesis through multiple counselnotes phases
       - Focus on deliverables that enable informed decision-making
+
+      COMMAND OUTPUT FORMAT (commands are auto-extracted into a runnable bash script):
+      - Write every runnable command on its own line beginning with "litassist". For a step with multiple commands, put one complete command per line.
+      - Never split one command across lines or join commands with shell control characters (;, |, &&, > redirects); each line must be a single complete litassist invocation.
+      - Mark non-command steps as "[MANUAL TASK] ..." - these are prose for the reader, not executable commands.
+      - litassist expands glob patterns itself, so quote a pattern only when the path contains spaces (e.g. "Car Docs 2025/*.pdf"); otherwise quoting is optional.
 
     # USED BY: litassist/commands/caseplan.py - when budget == "comprehensive"
     # LOCATION: litassist/commands/caseplan.py:213

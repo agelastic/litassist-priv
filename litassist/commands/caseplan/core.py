@@ -42,9 +42,9 @@ def caseplan(case_facts, context, budget, output, verify, noverify):
     """
     Generate customized litigation workflow plan based on case facts.
 
-    If --budget is not specified, performs a rapid assessment using Claude Sonnet 4
-    and outputs a short summary, budget recommendation, and justification.
-    If --budget is specified, generates a full plan using Claude Opus 4.
+    If --budget is not specified, performs a rapid assessment using Claude Sonnet
+    4.6 and outputs a short summary, budget recommendation, and justification.
+    If --budget is specified, generates a full plan using Claude Opus 4.7.
 
     Args:
         case_facts: Path to case facts file (10-heading structure)
@@ -92,6 +92,8 @@ def caseplan(case_facts, context, budget, output, verify, noverify):
         pass
 
     facts_content = case_facts.read()
+    if not facts_content.strip():
+        raise click.ClickException("Case facts file is empty.")
     # Cap derives from the caseplan model's input window so we don't blow
     # the context when the user routes caseplan to a smaller-window model.
     validate_file_size_limit(

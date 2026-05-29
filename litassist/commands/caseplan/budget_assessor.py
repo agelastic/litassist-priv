@@ -8,7 +8,6 @@ import click
 from typing import Dict, Tuple
 
 from litassist.logging import save_log, save_command_output, log_task_event
-from litassist.timing import timed
 from litassist.llm.factory import LLMClientFactory
 from litassist.utils.formatting import saved_message, tip_message
 from litassist.prompts import PROMPTS
@@ -61,13 +60,20 @@ def assess_budget(
         facts_content=facts_content
     )
 
+    # Mirror full-plan mode: --context is analysis guidance, not case facts.
+    if context:
+        user_prompt += (
+            f"\n\nUSER ANALYSIS GUIDANCE (NOT case facts): {context}\n"
+            "IMPORTANT: This is guidance for your assessment, not factual "
+            "information from the case."
+        )
+
     user_prompt += (
         f"\n\n{PROMPTS.get('commands.caseplan.budget_assessment_instructions')}"
     )
 
-    @timed
     def _assess_budget():
-        """Execute budget assessment LLM call with timing."""
+        """Execute budget assessment LLM call (timed by the caseplan command)."""
         try:
             log_task_event(
                 "caseplan",

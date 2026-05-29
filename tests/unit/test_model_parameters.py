@@ -7,7 +7,12 @@ Tests cover:
 - Parameter restrictions for different model families
 """
 
-from litassist.llm.parameter_handler import get_model_family, get_model_parameters
+from litassist.llm.parameter_handler import (
+    convert_thinking_effort,
+    get_model_family,
+    get_model_parameters,
+    supports_system_messages,
+)
 
 
 class TestGetModelFamily:
@@ -28,10 +33,16 @@ class TestGetModelFamily:
 
     def test_claude_models(self):
         """Test identification of Claude models."""
-        # Claude 4 models get special family
-        assert get_model_family("anthropic/claude-opus-4") == "claude4"
-        assert get_model_family("anthropic/claude-opus-4.1") == "claude4"
-        assert get_model_family("anthropic/claude-sonnet-4.6") == "claude4"
+        # Opus 4.7 / 4.8 are reasoning models that dropped sampling params and
+        # gained the extended effort scale; each gets its own family.
+        assert get_model_family("anthropic/claude-opus-4.7") == "claude_opus_4_7"
+        assert get_model_family("anthropic/claude-opus-4.8") == "claude_opus_4_8"
+
+        # Other Claude 4.x (older opus, all sonnet-4.x) still honour sampling but
+        # reject temperature+top_p together.
+        assert get_model_family("anthropic/claude-opus-4") == "claude4_sampling"
+        assert get_model_family("anthropic/claude-opus-4.1") == "claude4_sampling"
+        assert get_model_family("anthropic/claude-sonnet-4.6") == "claude4_sampling"
 
         # Claude 3 and other models are standard anthropic
         assert get_model_family("anthropic/claude-3-opus") == "anthropic"
@@ -280,3 +291,191 @@ class TestGetModelParameters:
         assert "reasoning" in filtered
         assert "max_completion_tokens" in filtered
         assert filtered["reasoning"] == {"effort": "high"}
+
+
+class TestClaude4ParameterHandling:
+    """Sampling-parameter and effort handling for Claude 4.x models.
+
+    Opus 4.7+ removed temperature/top_p/top_k (non-default values 400). All
+    Claude 4.x (since 4.1) reject temperature and top_p specified together.
+    Opus 4.7/4.8 added the extended effort scale low..high..xhigh..max.
+    """
+
+    def test_opus_47_strips_sampling(self):
+        filtered = get_model_parameters(
+            "anthropic/claude-opus-4.7",
+            {"temperature": 0.7, "top_p": 0.95, "top_k": 40, "max_tokens": 1000},
+        )
+        assert "temperature" not in filtered
+        assert "top_p" not in filtered
+        assert "top_k" not in filtered
+        assert filtered["max_tokens"] == 1000
+
+    def test_opus_48_strips_sampling(self):
+        filtered = get_model_parameters(
+            "anthropic/claude-opus-4.8", {"temperature": 0.7, "top_p": 0.95}
+        )
+        assert "temperature" not in filtered
+        assert "top_p" not in filtered
+
+    def test_sonnet_drops_top_p_when_both_present(self):
+        # Anthropic rejects temperature and top_p together; keep temperature.
+        filtered = get_model_parameters(
+            "anthropic/claude-sonnet-4.6", {"temperature": 0, "top_p": 0.15}
+        )
+        assert filtered["temperature"] == 0
+        assert "top_p" not in filtered
+
+    def test_sonnet_keeps_top_p_when_alone(self):
+        filtered = get_model_parameters(
+            "anthropic/claude-sonnet-4.6", {"top_p": 0.5}
+        )
+        assert filtered["top_p"] == 0.5
+        assert "temperature" not in filtered
+
+    def test_opus_48_extended_effort_levels(self):
+        assert convert_thinking_effort("xhigh", "anthropic/claude-opus-4.8") == {
+            "reasoning": {"effort": "xhigh"}
+        }
+        assert convert_thinking_effort("max", "anthropic/claude-opus-4.8") == {
+            "reasoning": {"effort": "max"}
+        }
+
+    def test_opus_47_supports_xhigh(self):
+        assert convert_thinking_effort("xhigh", "anthropic/claude-opus-4.7") == {
+            "reasoning": {"effort": "xhigh"}
+        }
+
+    def test_sonnet_effort_caps_at_high(self):
+        # Sonnet 4.x has no xhigh/max effort; both cap to high.
+        assert convert_thinking_effort("max", "anthropic/claude-sonnet-4.6") == {
+            "reasoning": {"effort": "high"}
+        }
+        assert convert_thinking_effort("xhigh", "anthropic/claude-sonnet-4.6") == {
+            "reasoning": {"effort": "high"}
+        }
+
+
+class TestRecentModelParameterMapping:
+    """Parameter/effort handling for GPT-5+, o3, Grok 4.x and Gemini.
+
+    Covers recent provider changes: GPT-5.5 added the xhigh effort tier; o3
+    reasoning models accept no sampling or verbosity; Grok 4.20 dropped
+    verbosity and the penalty params (sampling stays); Gemini keeps temperature
+    and top_p.
+    """
+
+    def test_gpt55_supports_xhigh(self):
+        assert convert_thinking_effort("xhigh", "openai/gpt-5.5") == {
+            "reasoning": {"effort": "xhigh"}
+        }
+        # GPT-5's top tier is xhigh, so the universal "max" maps there.
+        assert convert_thinking_effort("max", "openai/gpt-5.5") == {
+            "reasoning": {"effort": "xhigh"}
+        }
+
+    def test_gpt51_caps_at_high(self):
+        # Only GPT-5.5 exposes xhigh; older GPT-5 variants cap to high.
+        assert convert_thinking_effort("xhigh", "openai/gpt-5.1") == {
+            "reasoning": {"effort": "high"}
+        }
+        assert convert_thinking_effort("max", "openai/gpt-5.1") == {
+            "reasoning": {"effort": "high"}
+        }
+
+    def test_o3_strips_sampling_and_verbosity(self):
+        filtered = get_model_parameters(
+            "openai/o3-pro",
+            {"temperature": 0.7, "top_p": 0.95, "verbosity": "high", "thinking_effort": "high"},
+        )
+        assert "temperature" not in filtered
+        assert "top_p" not in filtered
+        assert "verbosity" not in filtered
+        assert filtered["reasoning"] == {"effort": "high"}
+
+    def test_o3_has_no_xhigh(self):
+        assert convert_thinking_effort("max", "openai/o3-pro") == {
+            "reasoning": {"effort": "high"}
+        }
+
+    def test_grok_keeps_sampling_and_reasoning_drops_verbosity(self):
+        filtered = get_model_parameters(
+            "x-ai/grok-4.20",
+            {
+                "temperature": 0.8,
+                "top_p": 0.95,
+                "verbosity": "high",
+                "frequency_penalty": 0.5,
+                "thinking_effort": "high",
+            },
+        )
+        assert filtered["temperature"] == 0.8
+        assert filtered["top_p"] == 0.95
+        assert "verbosity" not in filtered
+        assert "frequency_penalty" not in filtered
+        assert filtered["reasoning"] == {"effort": "high"}
+
+    def test_grok_keeps_min_p_best_effort(self):
+        # min_p / repetition_penalty ride extra_body (OpenRouter-specific) and are
+        # kept as best-effort even though grok-4.20 ignores them.
+        filtered = get_model_parameters(
+            "x-ai/grok-4.20", {"min_p": 0.05, "repetition_penalty": 1.2}
+        )
+        assert filtered["min_p"] == 0.05
+        assert filtered["repetition_penalty"] == 1.2
+
+    def test_supports_system_messages(self):
+        # o-series reasoning models do not accept system messages; everything
+        # else (incl. the default profile) does. Gates message-array
+        # construction for the o3-pro commands (draft/counselnotes/barbrief/etc).
+        assert supports_system_messages("openai/o3-pro") is False
+        assert supports_system_messages("openai/o1-preview") is False
+        assert supports_system_messages("anthropic/claude-opus-4.7") is True
+        assert supports_system_messages("openai/gpt-5.5") is True
+        assert supports_system_messages("google/gemini-3.5-flash") is True
+        assert supports_system_messages("unknown/model") is True
+
+    def test_gemini_keeps_sampling_drops_verbosity(self):
+        # Gemini honours temperature/top_p but does not accept verbosity (the
+        # lookup configs set it); it must be dropped, not forwarded.
+        filtered = get_model_parameters(
+            "google/gemini-3.5-flash",
+            {"temperature": 0.2, "top_p": 0.4, "verbosity": "low"},
+        )
+        assert filtered["temperature"] == 0.2
+        assert filtered["top_p"] == 0.4
+        assert "verbosity" not in filtered
+
+    def test_direct_reasoning_effort_capped_for_o3(self):
+        # A directly-passed reasoning.effort must be normalised to a tier the
+        # model accepts, not forwarded raw.
+        filtered = get_model_parameters(
+            "openai/o3-pro", {"reasoning": {"effort": "max"}}
+        )
+        assert filtered["reasoning"] == {"effort": "high"}
+
+    def test_direct_reasoning_effort_xhigh_for_gpt55(self):
+        filtered = get_model_parameters(
+            "openai/gpt-5.5", {"reasoning": {"effort": "max"}}
+        )
+        assert filtered["reasoning"] == {"effort": "xhigh"}
+
+    def test_direct_reasoning_effort_capped_for_sonnet(self):
+        filtered = get_model_parameters(
+            "anthropic/claude-sonnet-4.6", {"reasoning": {"effort": "xhigh"}}
+        )
+        assert filtered["reasoning"] == {"effort": "high"}
+
+    def test_direct_reasoning_none_drops_reasoning(self):
+        filtered = get_model_parameters(
+            "openai/o3-pro", {"reasoning": {"effort": "none"}}
+        )
+        assert "reasoning" not in filtered
+
+    def test_direct_reasoning_null_effort_does_not_enable_medium(self):
+        # reasoning={"effort": None} means no effort requested; it must not be
+        # coerced into medium reasoning by the effort_map default.
+        filtered = get_model_parameters(
+            "anthropic/claude-sonnet-4.6", {"reasoning": {"effort": None}}
+        )
+        assert "reasoning" not in filtered

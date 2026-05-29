@@ -1,102 +1,148 @@
 """
 CLI command extraction from caseplan output.
 
-Handles parsing of markdown plan output to extract executable bash commands.
+Parses markdown plan output and extracts the executable litassist commands.
+Because the result is saved as a script the user is told to run with bash, every
+accepted command is round-tripped through shlex: tokens are parsed with
+shlex.split and re-rendered with shlex.join, so shell control characters in the
+LLM output (;, |, &&, $(...), redirections) cannot survive as live operators.
 """
 
+import shlex
+from typing import List, Optional, Tuple
 
-def extract_cli_commands(plan_content: str) -> str:
-    """
-    Extract all CLI commands from the caseplan output.
+# Only bash/sh fences delimit command regions; the fence lines themselves are
+# skipped. A leading "Commands:" label (used by older prompt examples) is
+# stripped before tokenisation.
+_COMMANDS_LABEL = "Commands:"
 
-    Returns a formatted string with commands and their phase context.
+
+def _phase_from_line(stripped_line: str, current_phase: str) -> str:
+    """Derive a phase label from a heading line, else keep the current phase."""
+    if "PHASE" in stripped_line.upper() and ":" in stripped_line:
+        phase_num, phase_desc = stripped_line.split(":", 1)
+        return f"{phase_num.replace('#', '').strip()}: {phase_desc.strip()}"
+    return current_phase
+
+
+def _safe_command(raw_line: str, rejected: List[str]) -> Optional[str]:
+    """Return a shlex-normalised ``litassist ...`` command, or None.
+
+    Lines that do not start a litassist command return None silently (prose,
+    headings, manual tasks). Lines that look like a command but fail validation
+    (unbalanced quotes, first token not exactly ``litassist``) are recorded in
+    ``rejected`` so the caller can surface them instead of writing unsafe shell.
     """
-    commands = [
+    candidate = raw_line.strip()
+    if candidate.startswith(_COMMANDS_LABEL):
+        candidate = candidate[len(_COMMANDS_LABEL):].strip()
+    if not candidate.startswith("litassist"):
+        return None
+    try:
+        tokens = shlex.split(candidate)
+    except ValueError:
+        rejected.append(candidate)
+        return None
+    if not tokens or tokens[0] != "litassist":
+        rejected.append(candidate)
+        return None
+    return shlex.join(tokens)
+
+
+def _merge_continuations(lines: List[str]) -> List[str]:
+    """Collapse trailing-backslash continuations into single logical lines.
+
+    A trailing backslash is the only thing that continues a command across lines
+    in bash, so it is the only continuation honoured here. Fence markers are
+    preserved (extract_cli_commands tracks fence state); a backslash continuation
+    that runs into a fence flushes rather than absorbing the fence as an argument.
+    """
+    merged: List[str] = []
+    buffer = ""
+    for line in lines:
+        if line.strip().startswith("```"):
+            if buffer:
+                merged.append(buffer.rstrip())
+                buffer = ""
+            merged.append(line)
+            continue
+        if line.rstrip().endswith("\\"):
+            buffer += line.rstrip()[:-1].rstrip() + " "
+            continue
+        merged.append(buffer + line)
+        buffer = ""
+    if buffer:
+        merged.append(buffer.rstrip())
+    return merged
+
+
+def extract_cli_commands(plan_content: str) -> Tuple[str, int, List[str]]:
+    """
+    Extract executable litassist commands from the caseplan output.
+
+    Returns a tuple of:
+        - the formatted bash script (always at least the header/footer),
+        - the number of accepted commands,
+        - the list of rejected command strings (looked like commands but failed
+          safety validation).
+    """
+    header = [
         "#!/bin/bash",
         "# Extracted CLI commands from caseplan",
+        "# Review every command before running - generated from LLM output.",
         "# Execute commands in order, reviewing output between phases",
         "",
     ]
-
-    lines = plan_content.split("\n")
-    lines_iter = iter(enumerate(lines))
+    body: List[str] = []
+    rejected: List[str] = []
+    accepted = 0
     current_phase = "Initial Setup"
+    last_phase: Optional[str] = None
+    in_fence = False
 
-    for idx, line in lines_iter:
-        stripped_line = line.strip()
+    def accept(command: str) -> None:
+        nonlocal accepted, last_phase
+        if current_phase != last_phase:
+            body.append(f"\n# {current_phase}")
+            last_phase = current_phase
+        body.append(command)
+        accepted += 1
 
-        # Track current phase/section - handle various formats
-        if "PHASE" in stripped_line.upper() and ":" in stripped_line:
-            # Extract phase name after colon for better formatting
-            phase_parts = stripped_line.split(":", 1)
-            if len(phase_parts) > 1:
-                # Clean up the phase number part and description
-                phase_num = phase_parts[0].replace("#", "").strip()
-                phase_desc = phase_parts[1].strip()
-                current_phase = f"{phase_num}: {phase_desc}"
-            else:
-                current_phase = stripped_line.replace("#", "").strip()
+    for line in _merge_continuations(plan_content.split("\n")):
+        stripped = line.strip()
 
-        # Look for bash code blocks
-        if stripped_line == "```bash":
-            block_content = []
-            current_command = []
+        if stripped.startswith("```"):
+            # Toggle: a bash/sh fence opens a command region; any fence closes.
+            in_fence = (not in_fence) and stripped.startswith(("```bash", "```sh"))
+            continue
 
-            # Collect all lines within the code block
-            for _, block_line in lines_iter:
-                if block_line.strip() == "```":
-                    # Save any pending command
-                    if current_command:
-                        block_content.append(" ".join(current_command))
-                    break
+        if in_fence:
+            # A command is a single logical line (trailing-backslash wraps are
+            # already joined). Blank lines and `#` comments are skipped. A
+            # litassist command is accepted; any other line in the fence is a
+            # separate (would-be) shell line, NOT part of the command - it is
+            # surfaced in `rejected` so it is neither merged into the command nor
+            # silently dropped.
+            if not stripped or stripped.startswith("#"):
+                continue
+            command = _safe_command(line, rejected)
+            if command is not None:
+                accept(command)
+            elif stripped not in rejected:
+                rejected.append(stripped)
+            continue
 
-                # Check if this line starts a new command or continues the previous one
-                if block_line.strip().startswith("litassist"):
-                    # Save previous command if exists
-                    if current_command:
-                        block_content.append(" ".join(current_command))
-                    # Start new command
-                    current_command = [block_line.rstrip()]
-                elif current_command and (
-                    block_line.startswith("  ")
-                    or block_line.endswith("\\")
-                    or block_line.strip().startswith("--")
-                    or block_line.strip().startswith('"')
-                ):
-                    # This is a continuation of the current command
-                    # Remove trailing backslash if present
-                    cleaned_line = block_line.rstrip()
-                    if cleaned_line.endswith("\\"):
-                        cleaned_line = cleaned_line[:-1].rstrip()
-                    current_command.append(cleaned_line.strip())
+        # Outside fences: one command per line (bare or `Commands:`-labelled);
+        # non-command lines are plan prose and only update the phase label.
+        command = _safe_command(line, rejected)
+        if command is None:
+            current_phase = _phase_from_line(stripped, current_phase)
+            continue
+        accept(command)
 
-            # Add commands from this block
-            if block_content:
-                commands.append(f"\n# {current_phase}")
-                commands.extend(block_content)
-
-        # Fallback for commands not in a block
-        elif stripped_line.startswith("litassist"):
-            commands.append(f"\n# {current_phase}")
-            # Check if this is a multi-line command
-            full_command = [line.rstrip()]
-            next_idx = idx + 1
-            while next_idx < len(lines) and (
-                lines[next_idx].startswith("  ")
-                or lines[next_idx].rstrip().endswith("\\")
-            ):
-                cleaned_line = lines[next_idx].rstrip()
-                if cleaned_line.endswith("\\"):
-                    cleaned_line = cleaned_line[:-1].rstrip()
-                full_command.append(cleaned_line.strip())
-                next_idx += 1
-            commands.append(" ".join(full_command))
-
-    commands.extend(
-        [
-            "\n# End of extracted commands",
-            "# Remember to update case_facts.txt after digest phases",
-        ]
-    )
-
-    return "\n".join(commands)
+    footer = [
+        "\n# End of extracted commands",
+        "# Remember to update case_facts.txt after digest phases",
+    ]
+    script = "\n".join(header + body + footer)
+    return script, accepted, rejected
