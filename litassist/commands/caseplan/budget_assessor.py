@@ -135,8 +135,14 @@ def assess_budget(
         },
     )
 
+    # banner_header already ends with _BANNER_DIVIDER, so a single echo
+    # produces the full open-divider/header/close-divider block. The
+    # earlier trailing `click.echo(_BANNER_DIVIDER)` was a leftover
+    # closer from when the body line lived between the dividers; with
+    # the body now in the saved file, the trailing closer rendered as
+    # a visually-redundant doubled `=` on the console (gemini-code-assist
+    # PR #79 review).
     click.echo(banner_header)
-    click.echo(_BANNER_DIVIDER)
     msg = saved_message(f'Recommendation saved to: "{output_file}"')
     click.echo(f"\n{msg}")
     click.echo(
