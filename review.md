@@ -332,9 +332,9 @@ litassist/commands/barbrief/section_builder.py:7 - `@timed` on dict-construction
 ### litassist/commands/caseplan
 
 #### litassist/commands/caseplan/plan_generator.py
-litassist/commands/caseplan/plan_generator.py:83-115 - nested `@timed` on `_generate_plan` inside already-timed `generate_full_plan` - remove inner
+[FIXED] litassist/commands/caseplan/plan_generator.py - nested `@timed` on `_generate_plan` removed; the `caseplan` command remains `@timed`.
 #### litassist/commands/caseplan/budget_assessor.py
-litassist/commands/caseplan/budget_assessor.py:62-94 - same nested `@timed` pattern - same fix
+[FIXED] litassist/commands/caseplan/budget_assessor.py - nested `@timed` on `_assess_budget` removed; same fix.
 
 ---
 

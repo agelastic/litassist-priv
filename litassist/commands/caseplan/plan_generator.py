@@ -8,7 +8,6 @@ import click
 from typing import Dict, Optional, Tuple
 
 from litassist.logging import save_log, save_command_output, log_task_event
-from litassist.timing import timed
 from litassist.llm.factory import LLMClientFactory
 from litassist.utils.formatting import (
     saved_message,
@@ -78,9 +77,8 @@ def generate_full_plan(
     prompt_parts.append(PROMPTS.get(analysis_prompt_key))
     user_prompt = "\n\n".join(prompt_parts)
 
-    @timed
     def _generate_plan():
-        """Execute plan generation LLM call with timing."""
+        """Execute plan generation LLM call (timed by the caseplan command)."""
         try:
             log_task_event(
                 "caseplan",
