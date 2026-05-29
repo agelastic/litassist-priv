@@ -61,6 +61,14 @@ def assess_budget(
         facts_content=facts_content
     )
 
+    # Mirror full-plan mode: --context is analysis guidance, not case facts.
+    if context:
+        user_prompt += (
+            f"\n\nUSER ANALYSIS GUIDANCE (NOT case facts): {context}\n"
+            "IMPORTANT: This is guidance for your assessment, not factual "
+            "information from the case."
+        )
+
     user_prompt += (
         f"\n\n{PROMPTS.get('commands.caseplan.budget_assessment_instructions')}"
     )

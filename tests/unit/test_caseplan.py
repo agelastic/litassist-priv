@@ -236,3 +236,33 @@ class TestCaseplanCommand:
         assert mock_save_output.call_count == 1
         assert "Execute commands: bash" not in result.output
         assert "no executable commands" in result.output.lower()
+
+    @patch("litassist.commands.caseplan.budget_assessor.LLMClientFactory")
+    @patch("litassist.commands.caseplan.budget_assessor.save_command_output")
+    @patch("litassist.commands.caseplan.budget_assessor.save_log")
+    def test_assessment_includes_context(
+        self, mock_save_log, mock_save_output, mock_factory, tmp_path
+    ):
+        """Assessment mode must pass --context to the LLM as analysis guidance."""
+        case_facts = tmp_path / "case_facts.txt"
+        case_facts.write_text("Parties: Test v Test\nBackground: Dispute...")
+
+        mock_client = MagicMock()
+        mock_client.complete.return_value = ("assessment body", {"total_tokens": 100})
+        mock_factory.for_command.return_value = mock_client
+        mock_save_output.return_value = "outputs/caseplan_assessment_123.txt"
+
+        runner = CliRunner()
+        result = runner.invoke(
+            caseplan, [str(case_facts), "--context", "property dispute"]
+        )
+
+        assert result.exit_code == 0
+        user_msgs = [
+            m["content"]
+            for m in mock_client.complete.call_args[0][0]
+            if m["role"] == "user"
+        ]
+        assert any(
+            "USER ANALYSIS GUIDANCE" in c and "property dispute" in c for c in user_msgs
+        )
