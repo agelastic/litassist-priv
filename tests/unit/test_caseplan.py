@@ -31,8 +31,14 @@ class TestCaseplanCommand:
         result = runner.invoke(caseplan, [str(case_facts)])
 
         assert result.exit_code == 0
-        assert "BUDGET RECOMMENDATION" in result.output
-        assert "RECOMMENDATION: standard" in result.output
+        # Assessment text is no longer echoed to the console -- it is
+        # written to the output file and the user is pointed at the
+        # file path. Pin both the file-pointer message and the fact
+        # that the assessment body did reach `save_command_output`.
+        assert "Recommendation saved to" in result.output
+        assert "BUDGET RECOMMENDATION" not in result.output
+        saved_content = mock_save_output.call_args[0][1]
+        assert "RECOMMENDATION: standard" in saved_content
         mock_factory.for_command.assert_called_once_with("caseplan", "assessment")
         mock_save_output.assert_called_once()
         mock_save_log.assert_called_once()

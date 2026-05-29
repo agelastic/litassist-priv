@@ -1,6 +1,6 @@
 # LitAssist Reference Manual
 
-Last updated: 27/05/2026
+Last updated: 29/05/2026
 
 ---
 
@@ -488,7 +488,18 @@ litassist caseplan <case_facts> [OPTIONS]
 litassist caseplan case_facts_skeleton.txt
 ```
 
-Sample output:
+Console output:
+
+```
+Analyzing case to recommend appropriate budget level...
+
+[SAVED] Recommendation saved to: "caseplan-assessment_2026-05-29_HHMMSS.md"
+
+[TIP] To generate full plan, run again with recommended budget:
+   e.g., litassist caseplan case_facts.txt --budget standard
+```
+
+Sample contents of the saved recommendation file:
 
 ```
 COMPLEXITY SCORING:

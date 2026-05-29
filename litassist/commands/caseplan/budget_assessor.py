@@ -116,11 +116,6 @@ def assess_budget(
         },
     )
 
-    click.echo("\n" + "=" * 60)
-    click.echo("BUDGET RECOMMENDATION")
-    click.echo("=" * 60)
-    click.echo(assessment)
-    click.echo("=" * 60)
     msg = saved_message(f'Recommendation saved to: "{output_file}"')
     click.echo(f"\n{msg}")
     click.echo(

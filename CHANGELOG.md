@@ -1,6 +1,6 @@
 # Changelog
 
-Last updated: 28/05/2026
+Last updated: 29/05/2026
 
 All notable changes to LitAssist will be documented in this file.
 
@@ -27,6 +27,9 @@ Historical dated sections preserve the model names that were current when those 
 - `draft` preflight oversize handling: soft warn + hard fail derived from the model's actual context window plus a provider-error reframe pointing users at `litassist digest --mode summary <file>`.
 
 ### Changed
+
+#### May 2026: `caseplan` budget assessment no longer dumps to console
+- `litassist caseplan` (without `--budget`) previously printed the full budget recommendation to the console between `=====` separators in addition to writing it to the output file. The console dump is removed; the command now prints only `Recommendation saved to: "<file>"` plus the existing tip pointing at the follow-up `--budget` invocation. Read the recommendation by opening the saved file. No other commands had the same dump-after-save anti-pattern (verified by sweep).
 
 #### May 2026: RAG / Pinecone pipeline removed; `draft` becomes full-context
 - `draft` no longer routes PDFs or large text files into a Pinecone-backed retrieve-then-generate pipeline. Every supplied document is concatenated with section markers and sent to the configured draft model (`openai/o3-pro`) in a single full-context call.
