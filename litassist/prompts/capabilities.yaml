@@ -1,5 +1,5 @@
 capabilities:
-  # USED BY: litassist/commands/caseplan.py:200 - Injected into system prompt for caseplan command
+  # USED BY: litassist/commands/caseplan/plan_generator.py:57 - Injected into the caseplan full-plan system prompt as the `litassist_capabilities` template variable so the LLM only recommends real commands and flags.
   litassist_capabilities: |
     # LitAssist Command Reference
 
@@ -9,25 +9,31 @@ capabilities:
     ## Available Commands
 
     ### lookup - Rapid Case Law Research Engine
-    Purpose: Searches Australian case law via Jade.io database for precedents, principles, and citations
-    Inputs: Legal questions as text strings (be specific and use legal terminology)
+    Purpose: Searches Australian case law via Jade.io and AustLII for precedents, principles, and citations
+    Inputs: A SHORT, focused legal question (target ~80 chars, hard ceiling ~150 chars). Treat it like a Google search box: name the doctrine + jurisdiction + key statute or term. Do NOT keyword-stuff (a long bag of nouns scores worse on CSE than a focused phrase). Do NOT paste case narratives into the question; case-specific facts (parties, amounts, dates, invoice numbers) belong in `--guidance`, which is LLM-only and never reaches the CSE query.
     Outputs: IRAC-structured analysis or broad research report with verified citations
     Strategic Use: Foundation for all legal arguments; use early and often for authority
     Options:
       --mode: irac, broad | Choose structured IRAC analysis or broader exploratory format
-      --comprehensive: Use exhaustive analysis (40+ sources for novel issues) | Enable deep research for complex/novel legal questions
+      --comprehensive: (flag) | Comprehensive mode yields up to 10 results each from Jade, AustLII, and a secondary CSE (standard yields up to 5 each from Jade and AustLII)
       --extract: citations, principles, checklist | Format output for specific workflows (court briefs/advice/preparation)
-      --context: [string] | Provide contextual information to focus and guide the analysis
+      --context: [string] | SHORT search-side hint (target ~60 chars, hard ceiling ~150 chars). Concatenated verbatim to the CSE query under --comprehensive (`question + " " + context`) AND wrapped in a SEARCH CONTEXT block in the LLM prompt. Use it to NAME the jurisdiction or sub-topic (e.g. "NSW solicitor costs dispute"). NEVER embed case-specific facts (party names, amounts, dates, invoice numbers) -- those go in `--guidance`.
+      --guidance: [string] | LONG LLM-only case narrative. Wrapped in a USER GUIDANCE block above the analysis prompt. NEVER touches the CSE query. This is where case-specific facts belong (parties, amounts, dates, invoice numbers, claims and counter-claims). Pair with --context: --context is the search-engine handle; --guidance is the LLM's case briefing.
       --output: [string] | Custom filename prefix for output files
       --no-fetch: (flag) | Skip content fetching, use URLs only
+      --verify: (flag) | Not supported - lookup results are not verified. Use `litassist verify` for verification.
+      --noverify: (flag) | Not supported - lookup has no internal verification.
     Best Practices:
-      - Use --comprehensive for novel legal issues requiring extensive authority
+      - Keep the question SHORT and focused: name the doctrine, key statute, and jurisdiction. Never embed case-specific facts (party names, amounts, dates, invoice numbers).
+      - For real case work, emit BOTH `--context "<short topic label>"` AND `--guidance "<full case narrative>"`. The short context keeps the Google CSE happy; the long guidance gives the LLM the case detail it needs to answer accurately.
+      - Use --comprehensive for novel legal issues requiring extensive authority -- under --comprehensive, --context joins the CSE query verbatim, so still keep --context short.
       - Use --extract citations when preparing court documents
-      - Combine multiple related queries for complete coverage (10-15 for standard cases)
+      - Combine multiple related queries for complete coverage (10-15 for standard cases). Split one giant question into several focused ones.
       - Be specific with terminology to improve Jade.io search results
     Integration: Feeds into brainstorm --research, counselnotes synthesis, barbrief --research
     Cost: ~$0.50-2.00 per search (high ROI - authoritative citations)
-    Example: litassist lookup "presumption of advancement in de facto relationships and property rights" --mode irac --comprehensive
+    Example (GOOD - split fields): litassist lookup "Legal Profession Uniform Law s 178 disclosure non-compliance" --mode irac --comprehensive --context "NSW solicitor costs dispute" --guidance "Client seeks write-off of invoice 372763 on basis that revised estimate on 3 March 2026 did not comply with s 174; total fees approximately AUD 113,000 for a AUD 25,000 asset claim settled without recovery" --output "research_lpul_s178"
+    Anti-example (DO NOT produce -- keyword-stuffed question + case-narrative crammed into --context degrades CSE recall): litassist lookup "Legal Profession Uniform Law s 178 consequences non-compliance disclosure costs agreement void assessment reduction" --mode irac --context "NSW solicitor costs dispute; client seeks write-off of invoice 372763 on basis that revised estimate on 3 March 2026 did not comply with s 174; also argues costs are not fair and reasonable under s 172 given total fees of approximately AUD 113,000 for a AUD 25,000 asset claim settled without recovery"
 
     ### digest - Document Intelligence Processor
     Purpose: Extracts key facts, issues, and evidence from large document sets
@@ -39,7 +45,8 @@ capabilities:
       --mode: summary, issues | Choose chronological summary or legal issue-spotting analysis
       --context: [string] | Additional context to guide the analysis (e.g., "analyze financial discrepancies in bank statements", "identify timeline conflicts in witness statements")
       --output: [string] | Custom filename prefix for output files
-      --noverify: (flag) | Skip standard verification checks
+      --verify: (flag) | Not supported - digest summaries are not verified. Use `litassist verify` for verification.
+      --noverify: (flag) | Not supported - digest has no internal verification.
     Best Practices:
       - Use --mode issues with --context for targeted fact discovery
       - Process related documents together for contextual understanding
@@ -56,8 +63,9 @@ capabilities:
     Outputs: Properly structured case_facts.txt ready for strategic analysis
     Strategic Use: Essential first step - creates foundation for all downstream analysis
     Options:
-      --verify: (flag) | Always enabled - ensures accuracy of structured fact extraction (ignored if specified)
-      --noverify: (flag) | Skip standard verification checks
+      --verify: (flag) | Auto-enabled by default; explicit flag is a no-op
+      --heavy: (flag) | Use verification-heavy mode (max thinking effort)
+      --noverify: (flag) | Skip verification stage (not recommended for legal work)
       --output: [string] | Custom filename prefix for output files
     Best Practices:
       - Process primary evidence documents first
@@ -80,6 +88,7 @@ capabilities:
       --area: criminal, civil, family, commercial, administrative (REQUIRED) | Define the legal jurisdiction/area
       --facts: [file(s)] | Structured case facts file(s) to analyze (default: case_facts.txt, supports glob)
       --research: [file(s)] | Include lookup reports for precedent-backed strategies (supports glob)
+      --verify: (flag) | Add LLM content verification for legal accuracy. Recommended for final versions; citations are always verified regardless.
       --output: [string] | Custom filename prefix for output files
     Best Practices:
       - Always run WITHOUT research first (creative freedom)
@@ -99,7 +108,9 @@ capabilities:
     Options:
       --outcome: [string] (REQUIRED) | Single sentence describing the specific legal outcome to achieve
       --strategies: [file] | Use brainstorm output to inform tactical planning (single file, no glob)
-      --verify: (flag) | Always enabled - ensures strategic analysis accuracy (ignored if specified)
+      --verify: (flag) | Auto-enabled by default; explicit flag is a no-op
+      --heavy: (flag) | Use verification-heavy mode (max thinking effort)
+      --noverify: (flag) | Skip verification stage (not recommended for legal work)
       --output: [string] | Custom filename prefix for output files
     Best Practices:
       - Run separately for each major objective
@@ -120,7 +131,6 @@ capabilities:
       --extract: all, citations, principles, checklist | Generate structured JSON output for workflows
       --verify: (flag) | Enable real-time citation verification against Jade.io database
       --output: [string] | Custom filename prefix for output files (default: counselnotes)
-      --cove: (flag) | Apply Chain of Verification for enhanced quality checking
     Best Practices:
       - Use after accumulating 5+ source documents
       - Combine different types (research + strategies + evidence)
@@ -144,7 +154,6 @@ capabilities:
       --documents: [file(s)] | Include supporting evidence and materials (supports glob)
       --context: [string] | Additional context to guide the analysis
       --verify: (flag) | Enable citation verification for all included authorities
-      --cove: (flag) | Apply Chain of Verification for enhanced quality checking
       --output: [string] | Custom filename prefix for output files
     Best Practices:
       - Include ALL relevant materials using glob patterns
@@ -162,20 +171,18 @@ capabilities:
     Outputs: Publication-ready legal documents with verified citations
     Strategic Use: Transforms strategy into concrete legal documents
     Options:
-      --verify: (flag) | Check citations, legal soundness, and compliance (auto-triggers for court docs)
-      --noverify: (flag) | Skip citation verification checks
-      --cove: (flag) | Use Chain of Verification (experimental)
+      --noverify: (flag) | Skip verification stage (not recommended for legal work)
       --heavy: (flag) | Use verification-heavy mode (max thinking effort)
       --output: [string] | Custom filename prefix for output files
     Best Practices:
       - Include all relevant source materials
       - Be specific in drafting instructions
-      - Always use --verify for court documents
+      - Verification runs by default; omit --noverify for court documents
       - Run `litassist digest --mode summary <file>` first on oversize inputs
       - Essential for feasibility memoranda and recommendations
     Integration: Final step converting analysis into deliverables
     Cost: ~$2-5 (produces documents that would take hours manually)
-    Example: litassist draft case_facts.txt outputs/counselnotes_*.txt outputs/strategy_*.txt "Draft a comprehensive feasibility memorandum analyzing all available property recovery options with risk assessments" --verify
+    Example: litassist draft case_facts.txt outputs/counselnotes_*.txt outputs/strategy_*.txt "Draft a comprehensive feasibility memorandum analyzing all available property recovery options with risk assessments"
 
     ### caseplan - Litigation Workflow Generator
     Purpose: Analyzes case complexity and generates phased workflow plans tailored to case needs
@@ -209,6 +216,9 @@ capabilities:
       --soundness: (flag) | Check only legal reasoning and argument validity
       --reasoning: (flag) | Generate only structured reasoning traces for accountability
       --cove: (flag) | Add Chain of Verification as final check
+      --reference: [string] | Glob pattern for reference files to include as context (e.g. '*.txt', 'docs/*.pdf'). Supports PDF and text files.
+      --cove-reference: [string] | Glob pattern for reference files to include in the CoVe answer stage (requires --cove)
+      --heavy: (flag) | Use verification-heavy mode (max thinking effort for reasoning and soundness stages)
       --output: [string] | Custom filename prefix for output files
     Best Practices:
       - Always verify court documents and formal correspondence
@@ -218,6 +228,24 @@ capabilities:
     Integration: Final quality gate before document release
     Cost: ~$1-2 (prevents embarrassing errors, strengthens credibility)
     Example: litassist verify outputs/draft_memorandum_*.txt --citations --soundness
+
+    ### verify-cove - Chain of Verification Document Regenerator
+    Purpose: Standalone Chain of Verification pass over an existing document; regenerates the document by drafting CoVe questions and answering them against the original (and optional reference) context
+    Syntax: litassist verify-cove FILE [options]
+    Inputs: Any generated legal document
+    Outputs: Regenerated document plus a CoVe report listing question/answer pairs
+    Strategic Use: Tighten an already-drafted document before filing; complementary to `litassist verify --cove` (use this when you only need the CoVe pass, not citation/soundness verification)
+    Options:
+      --reference: [string] | Glob pattern for reference files to include in the CoVe answer stage (e.g. 'exhibits/*.pdf', 'affidavits/*.txt')
+      --heavy: (flag) | Use verification-heavy mode (max thinking effort for the answers stage)
+      --output: [string] | Custom filename prefix for output files
+    Best Practices:
+      - Pair with --reference when the original document depends on documents not in its body
+      - Use --heavy for high-stakes documents (court filings, formal advices)
+      - Run after `litassist verify` for layered quality assurance
+    Integration: Polish step between draft / counselnotes and final filing
+    Cost: ~$1-3 (proportional to document length and reference set)
+    Example: litassist verify-cove outputs/draft_memorandum.txt --reference 'exhibits/*.pdf' --heavy
 
     ### test - API Connectivity Checker
     Purpose: Validates all API credentials and service connectivity before starting work
@@ -229,10 +257,21 @@ capabilities:
     Best Practices:
       - Run after initial setup to verify configuration
       - Run if experiencing unexpected errors
-      - Checks OpenAI, OpenRouter, and Google CSE
+      - Checks OpenRouter and Google CSE (OpenRouter is the sole LLM gateway; BYOK for models like openai/o3-pro is configured at https://openrouter.ai/settings/integrations)
     Integration: Standalone diagnostic tool
     Cost: Minimal (~$0.01 in API test calls)
     Example: litassist test
+
+    ### refresh - Model Capability Cache Updater (Administrative)
+    Purpose: Refresh `litassist/llm/model_capabilities.yaml` with the latest per-model context window, prices, and supported parameters from OpenRouter's `/api/v1/models` endpoint
+    Syntax: litassist refresh
+    Inputs: None (reads `litassist/llm/model_configs.yaml`, fetches OpenRouter live)
+    Outputs: Overwrites `litassist/llm/model_capabilities.yaml` deterministically (sorted, dated header)
+    Strategic Use: ADMINISTRATIVE — not part of a litigation workflow. Run only after swapping a model in `model_configs.yaml` or when OpenRouter announces pricing / context-window changes. Do NOT include in a caseplan output.
+    Options: None
+    Integration: Standalone admin tool; the caseplan LLM should never recommend this in a phased plan.
+    Cost: Free (catalogue endpoint is unauthenticated)
+    Example: litassist refresh
 
     ## Command Selection Principles for Comprehensive Planning
     

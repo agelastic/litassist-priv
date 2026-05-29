@@ -273,13 +273,21 @@ class LookupProcessor:
         extract,
         comprehensive,
         context,
+        guidance,
         links,
         documents,
     ):
         """Build the appropriate prompt based on available content and options.
-        
+
         Args:
             documents: List of (source, content) tuples
+
+        --context and --guidance are wrapped in their own separately-framed
+        blocks (SEARCH CONTEXT and USER GUIDANCE respectively) and
+        prepended independently. Context is prepended first and guidance
+        second so the final layout reads `USER GUIDANCE -> SEARCH CONTEXT
+        -> question/links/content` from top to bottom -- the more-specific
+        narrative gets top billing.
         """
         if documents:
             # Build content text from documents
@@ -294,7 +302,7 @@ class LookupProcessor:
                         f"=== ACTUAL CONTENT FROM: {source} ===\n{content}\n=== END OF CONTENT FROM: {source} ==="
                     )
             content_text = "\n\n".join(content_sections)
-            
+
             # Create a rich prompt with actual content
             prompt = PROMPTS.get("lookup.content_qa").format(
                 question=question,
@@ -311,6 +319,10 @@ class LookupProcessor:
         if context:
             prompt = PROMPTS.get("analysis.lookup.context_prompt").format(
                 context=context, prompt=prompt
+            )
+        if guidance:
+            prompt = PROMPTS.get("analysis.lookup.guidance_prompt").format(
+                guidance=guidance, prompt=prompt
             )
 
         # Add extraction-specific instructions
@@ -382,26 +394,26 @@ class LookupProcessor:
             return f"{base_system}\n\n{standard_instructions}"
 
     def execute_llm_request(
-        self, client, system_content, question, mode, extract, comprehensive, 
-        context, links, documents
+        self, client, system_content, question, mode, extract, comprehensive,
+        context, guidance, links, documents
     ):
         """Execute LLM request with retry logic and drop-largest truncation.
-        
+
         Args:
             documents: List of (source, content) tuples that will be managed for truncation
         """
         from litassist.utils.truncation import execute_with_truncation
         from litassist.utils.formatting import warning_message
         from litassist.logging import save_log
-        
+
         if documents:
             click.echo(info_message(f"Processing {len(documents)} documents for analysis..."))
-        
+
         def build_prompt_fn(current_documents):
             """Build prompt with current set of documents."""
             return self.build_prompt(
-                question, mode, extract, comprehensive, 
-                context, links, current_documents
+                question, mode, extract, comprehensive,
+                context, guidance, links, current_documents
             )
         
         def execute_fn(prompt):
@@ -461,8 +473,8 @@ class LookupProcessor:
         # If no documents, just execute directly without truncation
         if not documents:
             prompt = self.build_prompt(
-                question, mode, extract, comprehensive, 
-                context, links, documents
+                question, mode, extract, comprehensive,
+                context, guidance, links, documents
             )
             return execute_fn(prompt)
         
@@ -490,9 +502,15 @@ class LookupProcessor:
             raise
 
     def save_output(
-        self, content, question, mode, extract, comprehensive, context, output
+        self, content, question, mode, extract, comprehensive, context, guidance, output
     ):
-        """Save the lookup output with appropriate metadata."""
+        """Save the lookup output with appropriate metadata.
+
+        `Context:` and `Guidance:` are recorded as separate metadata
+        entries so the audit trail preserves which path each input fed
+        (CSE-side vs LLM-only), even though both end up in the same
+        analysis prompt.
+        """
         if extract:
             command_name = f"{output}_{extract}" if output else f"lookup_{extract}"
         else:
@@ -503,6 +521,8 @@ class LookupProcessor:
             metadata["Extract"] = extract
         if context:
             metadata["Context"] = context
+        if guidance:
+            metadata["Guidance"] = guidance
         if comprehensive:
             metadata["Comprehensive"] = "True"
 
@@ -514,7 +534,7 @@ class LookupProcessor:
         )
 
     def display_completion_summary(
-        self, output_file, question, extract, comprehensive, context, links
+        self, output_file, question, extract, comprehensive, context, guidance, links
     ):
         """Display completion summary and statistics."""
         # Show summary instead of full content
@@ -534,6 +554,8 @@ class LookupProcessor:
         # Show context if provided
         if context:
             click.echo(info_message(f"Context: '{context}'"))
+        if guidance:
+            click.echo(info_message(f"Guidance: '{guidance}'"))
 
         # Show links that were searched
         if comprehensive:

@@ -62,6 +62,7 @@ class TestYAMLPromptValidation:
             "question",
             "links",
             "context",
+            "guidance",
             "prompt",
             # Error and status placeholders
             "operation",

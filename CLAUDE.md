@@ -11,7 +11,7 @@ Last updated: 18/02/2026
 - Read the code first. Map each function's purpose and dependencies. Propose only changes you can justify from the codebase. Verify behaviour after edits. Do not guess.
 
 ### Git Commit Standards
-- Never add attribution or AI footers. Commit messages contain only a technical description. No self-promotion. Applies to all commits.
+- Never add self-attribution. Commit messages contain only a technical description. Never mention yourself in commits or PRs.
 
 ### Code Quality Standards
 - Code must pass `ruff check`.
@@ -103,7 +103,7 @@ Last updated: 18/02/2026
 
 ## Safety Compliance Check
 Before any action confirm:
-1) Compliance with this file. 2) Minimal changes. 3) No emojis. 4) No commits or pushes without permission. 5) Australian legal requirements satisfied where relevant. 6) No over-engineering.
+1) Compliance with this file. 2) Minimal changes. 3) No emojis. 4) No pushes without permission. 5) Australian legal requirements satisfied where relevant. 6) No over-engineering.
 
 ## Performance and Cost
 - Time long-running tasks, log metrics, and keep debug logs.

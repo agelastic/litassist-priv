@@ -13,6 +13,12 @@ from litassist.llm.factory import LLMClientFactory
 from litassist.utils.formatting import saved_message, tip_message
 from litassist.prompts import PROMPTS
 
+# Banner width chosen to match the original assess-budget console
+# header (60 chars). Reused for both the on-screen marker and the
+# header section prepended to the saved file so the console and the
+# file share one visual convention.
+_BANNER_DIVIDER = "=" * 60
+
 
 def assess_budget(
     facts_content: str,
@@ -98,9 +104,22 @@ def assess_budget(
     except Exception as e:
         raise click.ClickException(f"Budget assessment error: {e}")
 
+    # Banner wraps the LLM body in both the file and the console:
+    #   - On disk, the file opens with the divider/header/divider block,
+    #     contains the assessment body, and closes with a final divider.
+    #   - On console, the same four banner lines render WITHOUT the body
+    #     so the user sees a clear "done" marker but the file remains
+    #     the single source of the recommendation text.
+    banner_header = (
+        f"\n{_BANNER_DIVIDER}\nBUDGET RECOMMENDATION\n{_BANNER_DIVIDER}"
+    )
+    wrapped_assessment = (
+        f"{banner_header}\n{assessment}\n{_BANNER_DIVIDER}"
+    )
+
     output_file = save_command_output(
         f"{output}_assessment" if output else "caseplan-assessment",
-        assessment,
+        wrapped_assessment,
         "" if output else case_facts_name,
         metadata={"Type": "Budget Assessment"},
     )
@@ -116,11 +135,14 @@ def assess_budget(
         },
     )
 
-    click.echo("\n" + "=" * 60)
-    click.echo("BUDGET RECOMMENDATION")
-    click.echo("=" * 60)
-    click.echo(assessment)
-    click.echo("=" * 60)
+    # banner_header already ends with _BANNER_DIVIDER, so a single echo
+    # produces the full open-divider/header/close-divider block. The
+    # earlier trailing `click.echo(_BANNER_DIVIDER)` was a leftover
+    # closer from when the body line lived between the dividers; with
+    # the body now in the saved file, the trailing closer rendered as
+    # a visually-redundant doubled `=` on the console (gemini-code-assist
+    # PR #79 review).
+    click.echo(banner_header)
     msg = saved_message(f'Recommendation saved to: "{output_file}"')
     click.echo(f"\n{msg}")
     click.echo(
