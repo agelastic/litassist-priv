@@ -479,30 +479,36 @@ EOF
     echo -e "${GREEN}[OK] Mock files created successfully${NC}"
 }
 
+# MAINTENANCE: every litassist command must have a test function here, wired into
+# run_test_group()'s case dispatch AND the "all" runner AND show_help. Stuff each
+# invocation with as many switches as the command accepts (this is the online,
+# real-API bulk smoke that exercises per-model parameter translation end to end).
+# When a command or a new switch is added, update this script in the same change.
 test_lookup_command() {
     print_section "Testing LOOKUP Command"
-    
-    # Comprehensive test with multiple flags to minimize LLM calls, including new --context flag
-    run_test "Lookup - Comprehensive with all options including context" \
-        "litassist lookup 'contract formation requirements' --comprehensive --mode broad --extract citations --context 'mock context for commercial contract dispute'" \
+
+    # All compatible switches: search-side (--comprehensive --mode --extract
+    # --context) + LLM-only (--guidance) + the unsupported-verify warning path.
+    run_test "Lookup - All switches (comprehensive, mode, extract, context, guidance, verify)" \
+        "litassist lookup 'contract formation requirements' --comprehensive --mode broad --extract citations --context 'commercial contract dispute' --guidance 'Parties dispute formation of a 2023 supply contract; need offer/acceptance/consideration elements' --verify --output test_output" \
         "Exhaustive search|sources analyzed|complete|saved to|citations|Context"
 }
 
 test_extractfacts_command() {
     print_section "Testing EXTRACTFACTS Command"
 
-    # Comprehensive test with all options
-    run_test "ExtractFacts - Comprehensive with all options" \
-        "litassist extractfacts test_inputs/mock_case_facts.txt --verify --output test_output" \
+    # All switches: --verify + --heavy (heavier verification model) + --output.
+    run_test "ExtractFacts - All switches (verify, heavy, output)" \
+        "litassist extractfacts test_inputs/mock_case_facts.txt --verify --heavy --output test_output" \
         "complete|saved to|case_facts|verification"
 }
 
 test_strategy_command() {
     print_section "Testing STRATEGY Command"
 
-    # Comprehensive test with all options
-    run_test "Strategy - Comprehensive with all options" \
-        "litassist strategy test_inputs/mock_case_facts.txt --outcome 'Win breach of contract case' --strategies test_inputs/mock_strategy_headers.txt --verify --output test_output" \
+    # All switches: --outcome --strategies --verify --heavy --output.
+    run_test "Strategy - All switches (outcome, strategies, verify, heavy, output)" \
+        "litassist strategy test_inputs/mock_case_facts.txt --outcome 'Win breach of contract case' --strategies test_inputs/mock_strategy_headers.txt --verify --heavy --output test_output" \
         "complete|saved to|strategy|verification"
 }
 
@@ -518,55 +524,64 @@ test_brainstorm_command() {
 test_digest_command() {
     print_section "Testing DIGEST Command"
 
-    # Comprehensive test with all options
-    run_test "Digest - Comprehensive with all options" \
-        "litassist digest test_inputs/mock_case_facts.txt --mode issues --context 'Focus on contractual obligations' --output test_output" \
+    # All switches: --mode --context --output + the unsupported-verify warning.
+    run_test "Digest - All switches (mode, context, verify, output)" \
+        "litassist digest test_inputs/mock_case_facts.txt --mode issues --context 'Focus on contractual obligations' --verify --output test_output" \
         "complete|saved to|digest"
 }
 
 test_draft_command() {
     print_section "Testing DRAFT Command"
 
-    # Comprehensive test with all options
-    run_test "Draft - Comprehensive with all options" \
-        "litassist draft test_inputs/mock_case_facts.txt test_inputs/mock_strategy_headers.txt 'Draft Statement of Claim for breach of contract' --output test_output" \
+    # All switches: positional docs + instruction, --heavy (heavier model/verify),
+    # --output. (draft auto-verifies; --noverify is the mutually-exclusive opt-out.)
+    run_test "Draft - All switches (docs, instruction, heavy, output)" \
+        "litassist draft test_inputs/mock_case_facts.txt test_inputs/mock_strategy_headers.txt 'Draft Statement of Claim for breach of contract' --heavy --output test_output" \
         "complete|saved to|draft|verification"
 }
 
 test_verify_command() {
     print_section "Testing VERIFY Command"
 
-    # Comprehensive test with all options
-    run_test "Verify - Comprehensive with all options" \
-        "litassist verify test_inputs/mock_case_facts.txt --cove --reference 'test_inputs/*.txt' --output test_output" \
-        "Citation verification complete|Legal soundness check complete|Reasoning trace|4 reports generated"
+    # All switches: every check toggle (--citations --soundness --reasoning),
+    # --cove with both --reference and --cove-reference, --heavy, --output.
+    run_test "Verify - All switches (citations, soundness, reasoning, cove, refs, heavy)" \
+        "litassist verify test_inputs/mock_case_facts.txt --citations --soundness --reasoning --cove --reference 'test_inputs/*.txt' --cove-reference 'test_inputs/*.txt' --heavy --output test_output" \
+        "Citation verification complete|Legal soundness check complete|Reasoning trace|reports generated"
 }
 
 test_counselnotes_command() {
     print_section "Testing COUNSELNOTES Command"
 
-    # Single comprehensive test with all options
-    run_test "Counselnotes - Comprehensive with all options" \
-        "litassist counselnotes test_inputs/mock_case_facts.txt --extract citations --output test_output" \
+    # All switches: --extract all (broadest extraction mode) + --verify + --output.
+    run_test "Counselnotes - All switches (extract all, verify, output)" \
+        "litassist counselnotes test_inputs/mock_case_facts.txt --extract all --verify --output test_output" \
         "Counselnotes complete|complete|saved to"
 }
 
 test_barbrief_command() {
     print_section "Testing BARBRIEF Command"
 
-    # Single comprehensive test with all options
-    run_test "Barbrief - Comprehensive with all options" \
-        "litassist barbrief test_inputs/mock_10heading_case_facts.txt --hearing-type trial --strategies test_inputs/mock_strategies.txt --research test_inputs/mock_research_output.txt --documents test_inputs/mock_affidavit.txt --context 'Focus on jurisdiction issues' --verify" \
+    # All switches: --hearing-type --strategies --research --documents --context
+    # --verify --output.
+    run_test "Barbrief - All switches (hearing-type, strategies, research, documents, context, verify, output)" \
+        "litassist barbrief test_inputs/mock_10heading_case_facts.txt --hearing-type trial --strategies test_inputs/mock_strategies.txt --research test_inputs/mock_research_output.txt --documents test_inputs/mock_affidavit.txt --context 'Focus on jurisdiction issues' --verify --output test_output" \
         "Barristers Brief Generated complete|saved to"
 }
 
 test_caseplan_command() {
     print_section "Testing CASEPLAN Command"
 
-    # Comprehensive test with all options
-    run_test "Caseplan - Comprehensive with all options" \
-        "litassist caseplan test_inputs/mock_10heading_case_facts.txt --budget comprehensive --context 'Commercial dispute with international elements' --output test_output" \
+    # Full-plan mode: --budget + --context + --output + the unsupported-verify
+    # warning (warn-and-proceed). Routes to Opus 4.7.
+    run_test "Caseplan - Full plan, all switches (budget, context, verify, output)" \
+        "litassist caseplan test_inputs/mock_10heading_case_facts.txt --budget comprehensive --context 'Commercial dispute with international elements' --verify --output test_output" \
         "complete|saved to|caseplan"
+
+    # Assessment mode: omitting --budget routes to the Sonnet budget recommendation.
+    run_test "Caseplan - Assessment mode (no budget) with context" \
+        "litassist caseplan test_inputs/mock_10heading_case_facts.txt --context 'Commercial dispute with international elements'" \
+        "BUDGET RECOMMENDATION|Recommendation saved|saved to"
 }
 
 test_verify_cove_command() {
@@ -576,6 +591,19 @@ test_verify_cove_command() {
     run_test "Verify-CoVe - Comprehensive with all options" \
         "litassist verify-cove test_inputs/mock_case_facts.txt --reference 'test_inputs/*.txt' --heavy --output test_output" \
         "complete|cove"
+}
+
+test_refresh_command() {
+    print_section "Testing REFRESH Command"
+
+    # refresh takes no switches; it pulls supported_parameters/context/prices for
+    # every configured model from OpenRouter and rewrites
+    # litassist/llm/model_capabilities.yaml. NOTE: this real run overwrites that
+    # file with live data. It fails loudly if a configured model is missing from
+    # the OpenRouter response.
+    run_test "Refresh - Pull model capabilities from OpenRouter" \
+        "litassist refresh" \
+        "Refreshing capabilities|Wrote|model_capabilities|models)"
 }
 
 test_error_conditions() {
@@ -703,6 +731,7 @@ show_help() {
     echo "  barbrief      Test barbrief command"
     echo "  caseplan      Test caseplan command"
     echo "  verifycove    Test verify-cove command"
+    echo "  refresh       Test refresh command"
     echo "  errors        Test error conditions"
     echo "  all           Run all tests"
     echo ""
@@ -762,6 +791,9 @@ run_test_group() {
         verifycove)
             test_verify_cove_command
             ;;
+        refresh)
+            test_refresh_command
+            ;;
         errors)
             test_error_conditions
             ;;
@@ -779,6 +811,7 @@ run_test_group() {
             test_barbrief_command
             test_caseplan_command
             test_verify_cove_command
+            test_refresh_command
             test_error_conditions
             ;;
         *)
