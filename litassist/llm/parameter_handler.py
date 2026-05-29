@@ -226,9 +226,11 @@ def get_model_parameters(model_name: str, requested_params: dict) -> dict:
             else:
                 params_to_process.pop("reasoning", None)
 
-    # Handle verbosity parameter. Supported by the GPT-5 family and Anthropic
-    # Claude (their OpenRouter entries list it); NOT accepted by o-series
-    # reasoning models, Grok 4.x, or Gemini, so it is skipped for those.
+    # Handle verbosity parameter. Supported by the GPT-5 family (per OpenAI docs;
+    # the OpenRouter capability snapshot may omit it, e.g. gpt-5.5) and by
+    # Anthropic Claude; NOT accepted by o-series reasoning models, Grok 4.x, or
+    # Gemini, so it is skipped for those. Because the capabilities file can be
+    # incomplete for verbosity, it is NOT gated on supported_parameters here.
     # REMINDER: re-check this skip set when adding a model.
     if "verbosity" in params_to_process and params_to_process["verbosity"] is not None:
         verbosity = params_to_process.pop("verbosity")

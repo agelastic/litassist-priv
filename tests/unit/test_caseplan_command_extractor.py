@@ -62,6 +62,17 @@ class TestExtractCliCommands:
         _, accepted_count, _ = extract_cli_commands(plan)
         assert accepted_count == 0
 
+    def test_trailing_backslash_before_fence_not_absorbed(self):
+        # A command line ending with a stray backslash right before the closing
+        # fence must not merge the fence into the command as an argument.
+        plan = _join(
+            ["```bash", 'litassist lookup "contract breach" --mode irac \\', "```"]
+        )
+        script, accepted_count, _ = extract_cli_commands(plan)
+        assert accepted_count == 1
+        assert "```" not in script.split("# End of extracted commands")[0]
+        assert "litassist lookup 'contract breach' --mode irac" in script
+
     def test_glob_pattern_is_quoted_for_internal_expansion(self):
         raw = "litassist counselnotes outputs/lookup_*.txt --extract all"
         plan = _join(["```bash", raw, "```"])

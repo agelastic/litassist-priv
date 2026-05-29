@@ -50,10 +50,21 @@ def _safe_command(raw_line: str, rejected: List[str]) -> Optional[str]:
 
 
 def _merge_continuations(lines: List[str]) -> List[str]:
-    """Collapse trailing-backslash line continuations into single logical lines."""
+    """Collapse trailing-backslash line continuations into single logical lines.
+
+    Fence markers (triple backticks) never take part in a command or its
+    continuation: a command line ending with a stray trailing backslash
+    immediately before a closing fence must not absorb the fence as an argument.
+    So a fence flushes any pending continuation buffer and is then dropped.
+    """
     merged: List[str] = []
     buffer = ""
     for line in lines:
+        if line.strip().startswith("```"):
+            if buffer:
+                merged.append(buffer.rstrip())
+                buffer = ""
+            continue
         if line.rstrip().endswith("\\"):
             buffer += line.rstrip()[:-1].rstrip() + " "
             continue

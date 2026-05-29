@@ -576,12 +576,12 @@ test_caseplan_command() {
     # warning (warn-and-proceed). Routes to Opus 4.7.
     run_test "Caseplan - Full plan, all switches (budget, context, verify, output)" \
         "litassist caseplan test_inputs/mock_10heading_case_facts.txt --budget comprehensive --context 'Commercial dispute with international elements' --verify --output test_output" \
-        "complete|saved to|caseplan"
+        "Litigation plan generated successfully|Plan saved to"
 
     # Assessment mode: omitting --budget routes to the Sonnet budget recommendation.
     run_test "Caseplan - Assessment mode (no budget) with context" \
         "litassist caseplan test_inputs/mock_10heading_case_facts.txt --context 'Commercial dispute with international elements'" \
-        "BUDGET RECOMMENDATION|Recommendation saved|saved to"
+        "BUDGET RECOMMENDATION|Recommendation saved to"
 }
 
 test_verify_cove_command() {
