@@ -50,12 +50,12 @@ def _safe_command(raw_line: str, rejected: List[str]) -> Optional[str]:
 
 
 def _merge_continuations(lines: List[str]) -> List[str]:
-    """Collapse trailing-backslash line continuations into single logical lines.
+    """Collapse trailing-backslash continuations into single logical lines.
 
-    Fence markers (triple backticks) never take part in a command or its
-    continuation: a command line ending with a stray trailing backslash
-    immediately before a closing fence must not absorb the fence as an argument.
-    So a fence flushes any pending continuation buffer and is then dropped.
+    A trailing backslash is the only thing that continues a command across lines
+    in bash, so it is the only continuation honoured here. Fence markers are
+    preserved (extract_cli_commands tracks fence state); a backslash continuation
+    that runs into a fence flushes rather than absorbing the fence as an argument.
     """
     merged: List[str] = []
     buffer = ""
@@ -64,6 +64,7 @@ def _merge_continuations(lines: List[str]) -> List[str]:
             if buffer:
                 merged.append(buffer.rstrip())
                 buffer = ""
+            merged.append(line)
             continue
         if line.rstrip().endswith("\\"):
             buffer += line.rstrip()[:-1].rstrip() + " "
@@ -97,20 +98,47 @@ def extract_cli_commands(plan_content: str) -> Tuple[str, int, List[str]]:
     accepted = 0
     current_phase = "Initial Setup"
     last_phase: Optional[str] = None
+    in_fence = False
 
-    for line in _merge_continuations(plan_content.split("\n")):
-        stripped = line.strip()
-        if stripped.startswith("```"):
-            continue
-        command = _safe_command(line, rejected)
-        if command is None:
-            current_phase = _phase_from_line(stripped, current_phase)
-            continue
+    def accept(command: str) -> None:
+        nonlocal accepted, last_phase
         if current_phase != last_phase:
             body.append(f"\n# {current_phase}")
             last_phase = current_phase
         body.append(command)
         accepted += 1
+
+    for line in _merge_continuations(plan_content.split("\n")):
+        stripped = line.strip()
+
+        if stripped.startswith("```"):
+            # Toggle: a bash/sh fence opens a command region; any fence closes.
+            in_fence = (not in_fence) and stripped.startswith(("```bash", "```sh"))
+            continue
+
+        if in_fence:
+            # A command is a single logical line (trailing-backslash wraps are
+            # already joined). Blank lines and `#` comments are skipped. A
+            # litassist command is accepted; any other line in the fence is a
+            # separate (would-be) shell line, NOT part of the command - it is
+            # surfaced in `rejected` so it is neither merged into the command nor
+            # silently dropped.
+            if not stripped or stripped.startswith("#"):
+                continue
+            command = _safe_command(line, rejected)
+            if command is not None:
+                accept(command)
+            elif stripped not in rejected:
+                rejected.append(stripped)
+            continue
+
+        # Outside fences: one command per line (bare or `Commands:`-labelled);
+        # non-command lines are plan prose and only update the phase label.
+        command = _safe_command(line, rejected)
+        if command is None:
+            current_phase = _phase_from_line(stripped, current_phase)
+            continue
+        accept(command)
 
     footer = [
         "\n# End of extracted commands",

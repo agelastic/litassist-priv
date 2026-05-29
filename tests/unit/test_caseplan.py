@@ -249,7 +249,7 @@ class TestCaseplanCommand:
         assert result.exit_code == 0
         # Valid command extracted -> plan + commands file both saved.
         assert mock_save_output.call_count == 2
-        assert "dropped as unsafe" in result.output
+        assert "excluded from the script" in result.output
         assert 'litassist lookup "unbalanced' in result.output
 
     @patch("litassist.commands.caseplan.budget_assessor.LLMClientFactory")

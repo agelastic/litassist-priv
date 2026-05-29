@@ -161,8 +161,9 @@ def generate_full_plan(
         if rejected_commands:
             click.echo(
                 warning_message(
-                    f"{len(rejected_commands)} generated command(s) were dropped as "
-                    "unsafe and excluded from the script:"
+                    f"{len(rejected_commands)} line(s) in command blocks were not "
+                    "runnable litassist commands and were excluded from the script "
+                    "(review them):"
                 )
             )
             for rejected in rejected_commands:
