@@ -277,3 +277,14 @@ class TestCaseplanCommand:
 
         assert result.exit_code == 1
         assert "empty" in result.output.lower()
+
+    def test_full_plan_routes_to_opus(self):
+        """Full plan mode must use an Opus model; assessment stays Sonnet."""
+        from pathlib import Path
+        import yaml
+        import litassist.llm
+
+        cfg_path = Path(litassist.llm.__file__).parent / "model_configs.yaml"
+        data = yaml.safe_load(cfg_path.read_text())
+        assert "opus" in data["caseplan"]["model"].lower()
+        assert "sonnet" in data["caseplan-assessment"]["model"].lower()
