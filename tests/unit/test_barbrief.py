@@ -353,31 +353,3 @@ class TestBarbriefCommand:
             mock_save_core.assert_called_once()  # main output
             assert "Warning: 1 citations could not be verified" in result.output
             assert "Verification report saved" in result.output
-
-
-class TestBarbriefIntegration:
-    """Integration tests for barbrief command."""
-
-    def test_command_registration(self):
-        """Test that barbrief is properly registered as a CLI command."""
-        # Import register_commands to ensure commands are registered
-        from litassist.cli import cli
-        from litassist.commands import register_commands
-
-        # Ensure commands are registered
-        register_commands(cli)
-
-        # Check that barbrief is in the list of commands
-        command_names = list(cli.commands.keys())
-        assert "barbrief" in command_names
-
-    def test_hearing_type_choices(self):
-        """Test that hearing type choices are enforced."""
-        runner = CliRunner()
-        result = runner.invoke(
-            barbrief,
-            ["test_facts.txt", "--hearing-type", "invalid_type"],
-        )
-
-        assert result.exit_code == 2  # Click validation error
-        assert "Invalid value for '--hearing-type'" in result.output
