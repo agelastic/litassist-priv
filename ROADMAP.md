@@ -1,6 +1,6 @@
 # LitAssist Feature Roadmap
 
-Last updated: 28/05/2026
+Last updated: 29/05/2026
 **Status:** Strategic planning; roadmap items are aspirational unless marked DONE, PARTIALLY SUPERSEDED, or already implemented elsewhere
 **Confidence:** 0.88
 
@@ -323,11 +323,16 @@ Features are prioritized to support active litigation (ACT civil matters), profe
 - Integration: Loads matter context, past strategic decisions
 
 **Status (29/05/2026):** Prerequisite hardening of the existing `caseplan`
-landed (generated-command safety via shlex round-trip, fail-loud extraction,
-assessment `--context`, empty-file guard, Opus full-plan model). The `--tactical`
-layer itself remains DEFERRED: without matter state it overlaps the `strategy`
-command, so it is blocked on P0A-1 (Matter Memory). Build `--tactical` together
-with `--matter` once P0A-1 exists.
+shipped on the `caseplan-upgrade` branch: generated-command safety (shlex
+round-trip), fail-loud extraction, assessment `--context`, empty-file guard,
+Opus 4.7 full-plan model, and a canonical command-output rule in the plan
+prompt. That work also drove a per-model parameter-translation overhaul (Opus
+4.7/4.8 drop sampling and gain the xhigh/max effort tier; GPT-5.5 xhigh;
+Grok 4.20 / Gemini / o3 verbosity handling). The `--tactical` / `--matter` layer
+itself is NOT built and remains DEFERRED: without matter state it overlaps the
+`strategy` command, so it is blocked on **P0A-1 (Matter Memory)**. When built,
+route tactical to its own model-config key (o3-pro per this item), not the
+standard full-plan model, and ship `--tactical` together with `--matter`.
 
 ---
 

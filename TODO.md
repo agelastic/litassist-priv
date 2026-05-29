@@ -1,6 +1,6 @@
 # LitAssist Development TODO
 
-Last updated: 28/05/2026
+Last updated: 29/05/2026
 
 **Note:** Strategic feature planning (litigation support, advisory capabilities, new commands) is now in [ROADMAP.md](ROADMAP.md). This file focuses on bugs, technical debt, and code quality improvements.
 
@@ -47,6 +47,11 @@ Last updated: 28/05/2026
   - Quality prioritized over cost - models use API defaults for comprehensive outputs
   - Deprecation warnings added for old config files
   - All 390 tests passing
+- **May 2026: Caseplan hardening + parameter-translation correctness** (caseplan-upgrade branch)
+  - caseplan: generated commands validated via a `shlex` round-trip (shell control characters in LLM output cannot become live operators in the saved script) with fail-loud on zero extracted commands; assessment mode now honours `--context`; empty case facts rejected before any LLM call; full-plan routed to Opus 4.7; nested `@timed` removed; plan prompt gained a canonical command-output rule and a fence/continuation fix.
+  - LLM parameter translation corrected per model in `model_profiles.py`/`parameter_handler.py`: Opus 4.7/4.8 strip sampling (`temperature`/`top_p`/`top_k`) and use the extended effort scale (`xhigh`/`max`); other Claude 4.x never send `temperature` and `top_p` together; GPT-5.5 `xhigh` tier; o3 / Grok 4.20 / Gemini verbosity handling; a directly-supplied `reasoning.effort` is normalised. Added `test_model_config_sampling.py` (config-vs-capabilities guard) and a `supports_system_messages` test.
+  - test-scripts: online CLI harness (`test_cli_comprehensive.sh`) stuffed with every command's switches + a `refresh` case + an output-saved assertion per command; superseded print-only scripts removed (`test_dynamic_parameters.py`, `test_prompts.py`, `test_barbrief_integration.py`); citation fetching wired into `run_tests.sh`.
+  - Full offline suite green (537 tests).
 
 ### Pending Tasks [IN PROGRESS]
 - [x] ~~Fix lookup `--comprehensive` help/behavior mismatch~~ - Already correct (verified Oct 2025)
