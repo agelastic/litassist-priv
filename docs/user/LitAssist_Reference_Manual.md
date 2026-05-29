@@ -493,15 +493,25 @@ Console output:
 ```
 Analyzing case to recommend appropriate budget level...
 
+============================================================
+BUDGET RECOMMENDATION
+============================================================
+============================================================
+
 [SAVED] Recommendation saved to: "caseplan-assessment_2026-05-29_HHMMSS.md"
 
 [TIP] To generate full plan, run again with recommended budget:
    e.g., litassist caseplan case_facts.txt --budget standard
 ```
 
-Sample contents of the saved recommendation file:
+The console shows the `BUDGET RECOMMENDATION` banner as a "done"
+marker; the recommendation body itself is written to the saved file,
+wrapped in the same banner so the on-disk file is self-describing:
 
 ```
+============================================================
+BUDGET RECOMMENDATION
+============================================================
 COMPLEXITY SCORING:
 - Legal Complexity: 7/10 (interstate relocation, parental alienation allegations)
 - Factual Complexity: 6/10 (competing narratives, psychological factors)
@@ -513,6 +523,7 @@ BUDGET RECOMMENDATION: comprehensive
 JUSTIFICATION: Interstate relocation with alienation allegations requires
 extensive research on recent authorities. High-conflict nature demands multiple
 strategic approaches. Tight timeframes necessitate parallel workflows.
+============================================================
 ```
 
 ```bash

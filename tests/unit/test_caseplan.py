@@ -31,13 +31,20 @@ class TestCaseplanCommand:
         result = runner.invoke(caseplan, [str(case_facts)])
 
         assert result.exit_code == 0
-        # Assessment text is no longer echoed to the console -- it is
-        # written to the output file and the user is pointed at the
-        # file path. Pin both the file-pointer message and the fact
-        # that the assessment body did reach `save_command_output`.
+        # Console keeps the BUDGET RECOMMENDATION banner so users see a
+        # clear "done" marker, but the assessment body itself is no
+        # longer echoed -- the body lives in the saved file. Pin all
+        # three behaviours:
+        #   1. file-pointer message is on the console
+        #   2. banner header is on the console
+        #   3. assessment body is NOT on the console
+        # Then pin that the saved content carries both the banner and
+        # the body.
         assert "Recommendation saved to" in result.output
-        assert "BUDGET RECOMMENDATION" not in result.output
+        assert "BUDGET RECOMMENDATION" in result.output
+        assert "RECOMMENDATION: standard" not in result.output
         saved_content = mock_save_output.call_args[0][1]
+        assert "BUDGET RECOMMENDATION" in saved_content
         assert "RECOMMENDATION: standard" in saved_content
         mock_factory.for_command.assert_called_once_with("caseplan", "assessment")
         mock_save_output.assert_called_once()
