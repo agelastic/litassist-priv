@@ -6,6 +6,9 @@ plain own-line style, so that downstream commands (strategy, barbrief) do not
 reject genuine extractfacts output.
 """
 
+import os
+import time
+
 import click
 import pytest
 
@@ -84,10 +87,24 @@ class TestResolveCaseFactsFile:
             (tmp_path / name).write_text("x")
         assert resolve_case_facts_file() == "case_facts_20260530_101500.txt"
 
-    def test_timestamped_preferred_over_plain(self, tmp_path, monkeypatch):
+    def test_recent_plain_beats_old_timestamped(self, tmp_path, monkeypatch):
+        # A freshly-edited case_facts.txt must NOT be shadowed by an older
+        # timestamped version (the lexical-sort stale-pick bug).
         monkeypatch.chdir(tmp_path)
-        (tmp_path / "case_facts.txt").write_text("x")
-        (tmp_path / "case_facts_20260530_101500.txt").write_text("x")
+        (tmp_path / "case_facts_20200101_000000.txt").write_text("x")
+        (tmp_path / "case_facts.txt").write_text("x")  # mtime = now
+        assert resolve_case_facts_file() == "case_facts.txt"
+
+    def test_filename_timestamp_beats_mtime(self, tmp_path, monkeypatch):
+        # Among timestamped files the filename timestamp is authoritative, even
+        # if an older-named file was touched more recently.
+        monkeypatch.chdir(tmp_path)
+        older = tmp_path / "case_facts_20260101_000000.txt"
+        newer = tmp_path / "case_facts_20260530_101500.txt"
+        older.write_text("x")
+        newer.write_text("x")
+        future = time.time() + 10_000
+        os.utime(older, (future, future))  # older name, newest mtime
         assert resolve_case_facts_file() == "case_facts_20260530_101500.txt"
 
     def test_prints_chosen_file(self, tmp_path, monkeypatch, capsys):

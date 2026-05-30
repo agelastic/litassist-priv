@@ -8,11 +8,35 @@ to use when one is not given on the command line.
 """
 
 import glob
+import os
 import re
+from datetime import datetime
 
 import click
 
 from litassist.utils.formatting import info_message
+
+# Generated outputs embed a zero-padded YYYYMMDD_HHMMSS timestamp, so case-facts
+# files may be named e.g. case_facts_20260530_101500.txt.
+_FILENAME_TIMESTAMP = re.compile(r"\d{8}_\d{6}")
+
+
+def _case_facts_recency(path: str) -> float:
+    """Recency sort key for a case-facts file (higher = newer).
+
+    Uses the timestamp embedded in the filename when present (so explicitly
+    versioned files rank by their own stamp regardless of when they were copied),
+    and falls back to the file's modification time otherwise. The mtime fallback
+    is what stops an OLD timestamped file from shadowing a freshly-edited plain
+    `case_facts.txt` (which carries no filename timestamp).
+    """
+    match = _FILENAME_TIMESTAMP.search(os.path.basename(path))
+    if match:
+        try:
+            return datetime.strptime(match.group(0), "%Y%m%d_%H%M%S").timestamp()
+        except ValueError:
+            pass
+    return os.path.getmtime(path)
 
 
 def validate_case_facts_format(text: str) -> bool:
@@ -68,10 +92,11 @@ def resolve_case_facts_file() -> str:
     Pick the case-facts file to use when one was not given on the command line.
 
     Globs ``case_facts*.txt`` in the current (launch) directory and returns the
-    latest. Our generated filenames embed a zero-padded ``YYYYMMDD_HHMMSS``
-    timestamp and ``"."`` sorts before ``"_"``, so the lexically greatest name is
-    the newest timestamped version (e.g. ``case_facts_20260530_101500.txt``); a
-    lone ``case_facts.txt`` is returned as-is. The chosen file is printed.
+    most recent by :func:`_case_facts_recency` - the timestamp embedded in the
+    filename (e.g. ``case_facts_20260530_101500.txt``) where present, otherwise
+    the file's modification time. So the newest timestamped version wins, but a
+    freshly-edited plain ``case_facts.txt`` is not shadowed by an older
+    timestamped file. The chosen file is printed.
 
     Returns:
         Path (relative to the launch directory) of the chosen case-facts file.
@@ -87,6 +112,7 @@ def resolve_case_facts_file() -> str:
             "'litassist extractfacts' to create one."
         )
 
-    chosen = candidates[-1]
+    # sorted() first so equal-recency ties resolve deterministically (lexically).
+    chosen = max(candidates, key=_case_facts_recency)
     click.echo(info_message(f"Using case facts: {chosen}"))
     return chosen
