@@ -10,6 +10,7 @@ import click
 from litassist.llm.factory import LLMClientFactory
 from litassist.logging import log_task_event
 from litassist.timing import timed
+from litassist.utils.case_facts import resolve_case_facts_file
 from litassist.utils.file_ops import validate_file_size_limit
 from litassist.utils.formatting import warning_message
 
@@ -18,7 +19,7 @@ from .plan_generator import generate_full_plan
 
 
 @click.command()
-@click.argument("case_facts", type=click.File("r"))
+@click.argument("case_facts", required=False, type=click.File("r"))
 @click.option("--context", help="Additional context to guide the analysis")
 @click.option(
     "--budget",
@@ -47,12 +48,14 @@ def caseplan(case_facts, context, budget, output, verify, noverify):
     If --budget is specified, generates a full plan using Claude Opus 4.7.
 
     Args:
-        case_facts: Path to case facts file (10-heading structure)
+        case_facts: Path to case facts file (10-heading structure). Optional - if
+            omitted, the latest case_facts*.txt in the current directory is used.
 
     Examples:
+        litassist caseplan                       # auto-selects latest case_facts*.txt
         litassist caseplan case_facts.txt
         litassist caseplan case_facts.txt --context "property dispute"
-        litassist caseplan case_facts.txt --budget minimal
+        litassist caseplan --budget minimal
     """
     # Handle unsupported verification flags
     if verify:
@@ -90,6 +93,9 @@ def caseplan(case_facts, context, budget, output, verify, noverify):
         )
     except Exception:
         pass
+
+    if case_facts is None:
+        case_facts = open(resolve_case_facts_file())
 
     facts_content = case_facts.read()
     if not facts_content.strip():

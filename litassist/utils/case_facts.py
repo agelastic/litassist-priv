@@ -1,14 +1,18 @@
 """
-Shared case-facts validation.
+Shared case-facts helpers.
 
 The 10-heading structure produced by `extractfacts` is the required input shape
 for several commands (`strategy`, `barbrief`). This module is the single source
-of truth for that check so the commands cannot drift apart.
+of truth both for validating that shape and for resolving which case-facts file
+to use when one is not given on the command line.
 """
 
+import glob
 import re
 
 import click
+
+from litassist.utils.formatting import info_message
 
 
 def validate_case_facts_format(text: str) -> bool:
@@ -57,3 +61,32 @@ def validate_case_facts_format(text: str) -> bool:
         return False
 
     return True
+
+
+def resolve_case_facts_file() -> str:
+    """
+    Pick the case-facts file to use when one was not given on the command line.
+
+    Globs ``case_facts*.txt`` in the current (launch) directory and returns the
+    latest. Our generated filenames embed a zero-padded ``YYYYMMDD_HHMMSS``
+    timestamp and ``"."`` sorts before ``"_"``, so the lexically greatest name is
+    the newest timestamped version (e.g. ``case_facts_20260530_101500.txt``); a
+    lone ``case_facts.txt`` is returned as-is. The chosen file is printed.
+
+    Returns:
+        Path (relative to the launch directory) of the chosen case-facts file.
+
+    Raises:
+        click.ClickException: If no ``case_facts*.txt`` exists in the directory.
+    """
+    candidates = sorted(glob.glob("case_facts*.txt"))
+    if not candidates:
+        raise click.ClickException(
+            "No case facts file provided and no case_facts*.txt found in the "
+            "current directory. Pass the file explicitly, or run "
+            "'litassist extractfacts' to create one."
+        )
+
+    chosen = candidates[-1]
+    click.echo(info_message(f"Using case facts: {chosen}"))
+    return chosen

@@ -6,8 +6,14 @@ plain own-line style, so that downstream commands (strategy, barbrief) do not
 reject genuine extractfacts output.
 """
 
+import click
+import pytest
+
 from litassist.prompts import PROMPTS
-from litassist.utils.case_facts import validate_case_facts_format
+from litassist.utils.case_facts import (
+    validate_case_facts_format,
+    resolve_case_facts_file,
+)
 
 _HEADINGS = [
     "Parties",
@@ -53,3 +59,39 @@ def test_does_not_match_heading_word_mid_prose():
     content = "\n".join(f"{h}:\nx" for h in _HEADINGS if h != "Parties")
     content += "\nthe parties later agreed to settle"  # not a heading line
     assert validate_case_facts_format(content) is False
+
+
+class TestResolveCaseFactsFile:
+    """resolve_case_facts_file picks the case_facts file when none is given."""
+
+    def test_none_present_raises(self, tmp_path, monkeypatch):
+        monkeypatch.chdir(tmp_path)
+        with pytest.raises(click.ClickException):
+            resolve_case_facts_file()
+
+    def test_single_file_used(self, tmp_path, monkeypatch):
+        monkeypatch.chdir(tmp_path)
+        (tmp_path / "case_facts.txt").write_text("x")
+        assert resolve_case_facts_file() == "case_facts.txt"
+
+    def test_latest_timestamp_chosen(self, tmp_path, monkeypatch):
+        monkeypatch.chdir(tmp_path)
+        for name in (
+            "case_facts_20260101_000000.txt",
+            "case_facts_20260530_101500.txt",
+            "case_facts_20260315_120000.txt",
+        ):
+            (tmp_path / name).write_text("x")
+        assert resolve_case_facts_file() == "case_facts_20260530_101500.txt"
+
+    def test_timestamped_preferred_over_plain(self, tmp_path, monkeypatch):
+        monkeypatch.chdir(tmp_path)
+        (tmp_path / "case_facts.txt").write_text("x")
+        (tmp_path / "case_facts_20260530_101500.txt").write_text("x")
+        assert resolve_case_facts_file() == "case_facts_20260530_101500.txt"
+
+    def test_prints_chosen_file(self, tmp_path, monkeypatch, capsys):
+        monkeypatch.chdir(tmp_path)
+        (tmp_path / "case_facts.txt").write_text("x")
+        resolve_case_facts_file()
+        assert "case_facts.txt" in capsys.readouterr().out
