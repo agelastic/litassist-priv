@@ -64,6 +64,14 @@ def test_does_not_match_heading_word_mid_prose():
     assert validate_case_facts_format(content) is False
 
 
+def test_does_not_match_heading_word_starting_a_prose_line():
+    """A line that STARTS with a heading word but is prose (no heading
+    terminator like ':' / markdown / end-of-line) is not a heading."""
+    content = "\n".join(f"{h}:\nx" for h in _HEADINGS if h != "Parties")
+    content += "\nParties met on Tuesday to discuss the matter"  # prose, not a heading
+    assert validate_case_facts_format(content) is False
+
+
 class TestResolveCaseFactsFile:
     """resolve_case_facts_file picks the case_facts file when none is given."""
 

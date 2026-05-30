@@ -70,12 +70,13 @@ def validate_case_facts_format(text: str) -> bool:
     missing_headings = []
     for heading in required_headings:
         # The heading must be the first alphabetic token on its line, after an
-        # optional non-alphabetic prefix (numbering, markdown bold, whitespace).
-        # Anything may follow (a colon + inline description, or nothing), so this
-        # accepts every form extractfacts produces: "Parties", "## Parties",
-        # "PARTIES:", and "1. **Parties**: ...". The trailing word-boundary stops
-        # "Partiesxyz" from counting.
-        pattern = r"^\s*[^a-zA-Z]*" + re.escape(heading) + r"\b"
+        # optional non-alphabetic prefix (numbering, markdown bold, whitespace),
+        # and be immediately followed by a heading terminator: a colon, a markdown
+        # marker (`*`/`#`), or end-of-line. This accepts every form extractfacts
+        # produces - "Parties", "## Parties", "PARTIES:", "1. **Parties**: ..." -
+        # while rejecting a prose line that merely starts with the word, e.g.
+        # "Parties met on Tuesday ..." (a bare word-boundary would wrongly match).
+        pattern = r"^\s*[^a-zA-Z]*" + re.escape(heading) + r"\s*(?:[:*#]|$)"
         if not re.search(pattern, text, re.MULTILINE | re.IGNORECASE):
             missing_headings.append(heading)
 
