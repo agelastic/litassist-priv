@@ -5,10 +5,8 @@ Handles preparation of sections and content for the barrister's brief.
 """
 
 from typing import List, Optional, Dict, Any
-from litassist.timing import timed
 
 
-@timed
 def prepare_brief_sections(
     case_facts: str,
     strategies: Optional[str],

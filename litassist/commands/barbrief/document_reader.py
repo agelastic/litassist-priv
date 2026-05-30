@@ -5,7 +5,7 @@ Handles reading of case facts, strategies, research, and supporting documents.
 """
 
 import click
-from typing import Tuple, Dict
+from typing import Tuple, Dict, Any
 
 from litassist.utils.file_ops import read_document
 
@@ -15,7 +15,7 @@ def read_all_documents(
     strategies: Tuple[str, ...],
     research: Tuple[str, ...],
     documents: Tuple[str, ...]
-) -> Dict[str, any]:
+) -> Dict[str, Any]:
     """
     Read and consolidate all input documents.
 
@@ -51,17 +51,24 @@ def read_all_documents(
                 )
             strategies_content = "\n\n".join(strategy_parts)
 
-    # Read research documents
+    # Read research documents (tag each with its source filename so the brief's
+    # ANNEXURES section can list them - mirrors the multi-strategy handling above)
     research_docs = []
     for research_file in research:
         click.echo(f"Reading research: {research_file}")
-        research_docs.append(read_document(research_file))
+        content = read_document(research_file)
+        research_docs.append(
+            f"=== SOURCE: {research_file} ===\n{content}\n=== END SOURCE: {research_file} ==="
+        )
 
-    # Read supporting documents
+    # Read supporting documents (tagged with source filename, as above)
     supporting_docs = []
     for doc_file in documents:
         click.echo(f"Reading document: {doc_file}")
-        supporting_docs.append(read_document(doc_file))
+        content = read_document(doc_file)
+        supporting_docs.append(
+            f"=== SOURCE: {doc_file} ===\n{content}\n=== END SOURCE: {doc_file} ==="
+        )
 
     return {
         "case_facts_content": case_facts_content,
