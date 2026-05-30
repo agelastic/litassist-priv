@@ -1,6 +1,6 @@
 # LitAssist Reference Manual
 
-Last updated: 29/05/2026
+Last updated: 30/05/2026
 
 ---
 
@@ -44,6 +44,7 @@ pipeline:
 | `lookup` | Search Australian case law via Jade.io and AustLII |
 | `digest` | Analyse documents with chronological summaries or issue identification |
 | `extractfacts` | Extract structured facts into the 10-heading format |
+| `updatefacts` | Merge source documents into the 10-heading case_facts file (update or create) |
 | `brainstorm` | Generate orthodox, unorthodox, and analytically ranked strategies |
 | `strategy` | Develop tactical plans for a specific legal outcome |
 | `draft` | Create citation-rich legal documents using full-context input |
@@ -99,10 +100,10 @@ LitAssist commands form a structured pipeline. While commands can be used
 independently, they are most effective when used in sequence:
 
 ```
-caseplan --> extractfacts --> lookup --> brainstorm --> strategy --> draft --> verify
-                 |                ^                       ^
-                 |                |                       |
-                 +--- digest ----+--- counselnotes ------+
+caseplan --> extractfacts --> updatefacts --> lookup --> brainstorm --> strategy --> draft --> verify
+                 |                  ^                                    ^
+                 |                  |                                    |
+                 +----- digest -----+------------ counselnotes ---------+
 ```
 
 **Data flow between commands:**
@@ -111,6 +112,8 @@ caseplan --> extractfacts --> lookup --> brainstorm --> strategy --> draft --> v
   commands
 - `extractfacts` processes raw documents into the structured 10-heading format
   required by `brainstorm`, `strategy`, and `barbrief`
+- `updatefacts` (optional) merges `extractfacts`/`digest` output into an
+  auto-discoverable `case_facts_<timestamp>.txt`, removing the manual copy step
 - `lookup` produces research reports that feed into `brainstorm` via `--research`
 - `brainstorm` generates strategies that feed into `strategy` via `--strategies`
 - `strategy` produces strategic options and draft documents for `verify`
@@ -798,7 +801,6 @@ litassist extractfacts <files>... [OPTIONS]
 
 | Option | Type | Description |
 |--------|------|-------------|
-| `--verify` | flag | Enable self-critique verification pass (auto-enabled) |
 | `--heavy` | flag | Use GPT-5.5 with maximum reasoning effort for verification |
 | `--noverify` | flag | Skip verification (not recommended for legal work) |
 | `--output` | text | Custom output filename prefix |
@@ -885,6 +887,73 @@ providing for a week-about arrangement...
   commands.
 - Use `--heavy` for matters heading to court; use standard verification for early
   drafts.
+
+---
+
+### 5.4.1 updatefacts -- Merging Facts into case_facts
+
+**Pipeline position:** Structuring stage (sits between extractfacts/digest and the
+downstream commands)
+
+**Purpose:** Fold source documents into the same 10-heading structure, either
+updating an existing case-facts file or creating one from scratch. This removes
+the manual step of copying `extractfacts` (or `digest`) output into
+`case_facts.txt`: `updatefacts` writes a fresh `case_facts_<timestamp>.txt`
+directly into the current directory, where `brainstorm`, `strategy`, `draft`, and
+`barbrief` discover it automatically.
+
+**Syntax:**
+
+```bash
+litassist updatefacts <files>... [OPTIONS]
+```
+
+**Arguments:**
+
+| Argument | Description |
+|----------|-------------|
+| `files` | One or more source documents to fold in (PDF or text), glob supported |
+
+**Options:**
+
+| Option | Type | Description |
+|--------|------|-------------|
+| `--facts` | path | Existing case facts file to update. Default: the latest `case_facts*.txt` in the current directory; created from scratch if none. |
+
+**Behaviour:**
+
+- The ten headings are preserved; existing facts are kept unless the new material
+  directly corrects them, and conflicting sources are flagged.
+- Anything that does not fit a heading -- plus the merge model's observations and
+  any source conflicts -- is collected under a final **Notes** section. The
+  10-heading validator tolerates this extra section.
+- Source files are never modified. Each run emits a new timestamped file; the
+  recency resolver then selects the newest.
+- No verification pass runs: merging already-condensed text is mechanical, so
+  this stays a single cheap call.
+- If the merge comes back missing any of the ten headings, the command fails and
+  saves the raw output to `outputs/updatefacts_invalid_*.txt` for review -- it is
+  deliberately NOT written as `case_facts_*.txt`, so a bad merge can never shadow
+  good facts in downstream auto-selection.
+
+**Models:** Gemini 3.5 Flash (cheap, fast merge)
+
+**Smith v Jones example:**
+
+```bash
+# Build case facts from extractfacts + digest output in one step
+litassist updatefacts extractfacts_smith_*.txt digest_issues_*.txt
+
+# Fold a newly received affidavit into the current case facts
+litassist updatefacts affidavit_jones_feb2026.pdf --facts case_facts.txt
+```
+
+**Best practices:**
+
+- Feed it condensed material (extractfacts/digest output) rather than raw bundles.
+- Re-run as new documents are processed; the latest timestamped file wins.
+- Review the Notes section -- it surfaces gaps and conflicts the merge could not
+  resolve.
 
 ---
 
@@ -1013,7 +1082,6 @@ litassist strategy <case_facts> [OPTIONS]
 |--------|------|-------------|
 | `--outcome` | text | Required: desired legal outcome (single sentence) |
 | `--strategies` | path | Optional brainstorm strategies file |
-| `--verify` | flag | Enable self-critique pass (auto-enabled) |
 | `--heavy` | flag | Use GPT-5.5 for verification |
 | `--noverify` | flag | Skip verification |
 | `--output` | text | Custom output filename prefix |
@@ -1947,10 +2015,12 @@ by three switches:
 
 **--verify (auto-enabled on some commands):**
 
-- On `extractfacts` and `strategy`, verification is auto-enabled. The `--verify`
-  flag is accepted but produces a reminder that verification is already active.
+- On `extractfacts`, `strategy`, and `draft`, verification is auto-enabled and
+  there is no `--verify` flag; use `--noverify` to skip it.
 - On `brainstorm`, `counselnotes`, and `barbrief`, `--verify` explicitly enables
   citation verification.
+- On `lookup`, `digest`, and `caseplan`, `--verify` is not supported (no internal
+  verification); the flag returns a pointer to the `litassist verify` command.
 
 **--heavy:**
 
@@ -2009,6 +2079,7 @@ Current model assignments are defined in `litassist/llm/model_configs.yaml`. Reg
 | Config Key | Model | Command / Stage | BYOK |
 |-----------|-------|-----------------|------|
 | `extractfacts` | Claude Sonnet 4.6 | Fact extraction | No |
+| `updatefacts` | Gemini 3.5 Flash | Merge sources into case_facts | No |
 | `lookup` | Gemini 3.5 Flash | Case law research synthesis | No |
 | `digest-summary` | Claude Sonnet 4.6 | Document summary | No |
 | `digest-issues` | Claude Sonnet 4.6 | Issue identification | No |

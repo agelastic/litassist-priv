@@ -52,6 +52,16 @@ def test_accepts_own_line_headings():
     assert validate_case_facts_format(content) is True
 
 
+def test_accepts_extra_notes_section():
+    """An extra 11th 'Notes' section (added by updatefacts) must not break the
+    10-heading validation - the validator checks presence, not exact count."""
+    content = "\n".join(
+        f"{i}. **{h}**: detail" for i, h in enumerate(_HEADINGS, 1)
+    )
+    content += "\n11. **Notes**: anything that did not fit a heading above"
+    assert validate_case_facts_format(content) is True
+
+
 def test_rejects_missing_heading():
     content = "\n".join(f"{h}:\nx" for h in _HEADINGS if h != "Jurisdiction")
     assert validate_case_facts_format(content) is False
@@ -128,3 +138,19 @@ class TestResolveCaseFactsFile:
         (tmp_path / "case_facts.txt").write_text("x")
         resolve_case_facts_file()
         assert "case_facts.txt" in capsys.readouterr().out
+
+    def test_same_second_tie_is_deterministic(self, tmp_path, monkeypatch):
+        # updatefacts writes case_facts_<YYYYMMDD_HHMMSS>_<subsec>.txt. Two such
+        # files sharing the same whole-second stamp have EQUAL recency (the
+        # recency key ignores the sub-second suffix), so the pick falls back to
+        # sorted()+max, which deterministically returns the lexically smallest
+        # name. This is a pre-existing edge case (a human CLI cannot realistically
+        # produce two case_facts files in the same second); pin it so the
+        # behaviour cannot silently change.
+        monkeypatch.chdir(tmp_path)
+        (tmp_path / "case_facts_20260530_101500_000000001.txt").write_text("x")
+        (tmp_path / "case_facts_20260530_101500_000000002.txt").write_text("x")
+        assert (
+            resolve_case_facts_file()
+            == "case_facts_20260530_101500_000000001.txt"
+        )

@@ -1,6 +1,6 @@
 # LitAssist Development TODO
 
-Last updated: 29/05/2026
+Last updated: 30/05/2026
 
 **Note:** Strategic feature planning (litigation support, advisory capabilities, new commands) is now in [ROADMAP.md](ROADMAP.md). This file focuses on bugs, technical debt, and code quality improvements.
 
@@ -11,7 +11,7 @@ Last updated: 29/05/2026
 ## Current State Summary
 
 ### Completed Features [DONE]
-- 11 registered user-facing commands (lookup, digest, extractfacts, brainstorm, strategy, draft, verify, verify-cove, counselnotes, barbrief, caseplan)
+- 12 registered user-facing commands (lookup, digest, extractfacts, updatefacts, brainstorm, strategy, draft, verify, verify-cove, counselnotes, barbrief, caseplan)
 - Global installation via pipx
 - Single configuration approach
 - Outputs organized in `outputs/` directory

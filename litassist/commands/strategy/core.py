@@ -46,9 +46,6 @@ from .file_handler import save_strategy_outputs, save_strategy_log
     help="Optional strategies file from brainstorm command",
 )
 @click.option(
-    "--verify", is_flag=True, help="Enable self-critique pass (default: auto-enabled)"
-)
-@click.option(
     "--heavy",
     is_flag=True,
     help="Use verification-heavy mode (max thinking effort)",
@@ -60,7 +57,7 @@ from .file_handler import save_strategy_outputs, save_strategy_log
 )
 @click.option("--output", type=str, help="Custom output filename prefix")
 @timed
-def strategy(case_facts, outcome, strategies, verify, heavy, noverify, output):
+def strategy(case_facts, outcome, strategies, heavy, noverify, output):
     """
     Generate legal strategy options and draft documents for Australian civil matters.
 
@@ -73,7 +70,6 @@ def strategy(case_facts, outcome, strategies, verify, heavy, noverify, output):
             directory is used.
         outcome: Desired legal outcome (single sentence description)
         strategies: Optional strategies file from brainstorm command
-        verify: Enable self-critique pass (always on by default)
         heavy: Use verification-heavy mode (max thinking effort)
         output: Custom output filename prefix
 

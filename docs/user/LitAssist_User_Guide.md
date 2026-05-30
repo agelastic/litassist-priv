@@ -1,6 +1,6 @@
 # LitAssist User Guide
 
-Last updated: 27/05/2026
+Last updated: 30/05/2026
 
 ## Overview
 
@@ -236,10 +236,11 @@ The `files` argument supports glob patterns.
 
 | Option | Type | Description |
 |--------|------|-------------|
-| `--verify` | flag | Enable self-critique verification pass (auto-enabled) |
 | `--heavy` | flag | Use GPT-5.5 with maximum reasoning effort for verification |
 | `--noverify` | flag | Skip verification (not recommended) |
 | `--output` | text | Custom output filename prefix |
+
+Verification is auto-enabled; use `--noverify` to skip it.
 
 The 10-heading structure covers: Parties, Background, Key Events, Legal Issues,
 Evidence Available, Opposing Arguments, Procedural History, Jurisdiction,
@@ -254,6 +255,40 @@ litassist extractfacts brief.pdf affidavit.pdf --heavy
 ```
 
 **Model:** Claude Sonnet 4.6 (extraction), GPT-5.5 (verification)
+
+---
+
+### updatefacts
+
+Fold source documents into the same 10-heading case facts structure, updating an
+existing case-facts file or creating one from scratch. This removes the manual
+copy-paste step after `extractfacts` or `digest`: it writes a fresh,
+auto-discoverable `case_facts_<timestamp>.txt` into the current directory that
+brainstorm, strategy, draft, and barbrief pick up automatically.
+
+```bash
+litassist updatefacts <files>... [OPTIONS]
+```
+
+The `files` argument (the source material to fold in) supports glob patterns.
+
+| Option | Type | Description |
+|--------|------|-------------|
+| `--facts` | path | Existing case facts file to update. Default: the latest `case_facts*.txt` in the current directory; created from scratch if none. |
+
+Anything that does not fit one of the ten headings (plus the merge model's own
+observations and any source conflicts) is collected under a final **Notes**
+section. Source files are never modified; each run emits a new timestamped file.
+
+```bash
+# Build/refresh case facts from extractfacts and digest output
+litassist updatefacts extractfacts_*.txt digest_issues_*.txt
+
+# Update a specific existing case-facts file with new material
+litassist updatefacts new_affidavit.pdf --facts case_facts.txt
+```
+
+**Model:** Gemini 3.5 Flash (cheap, fast merge)
 
 ---
 
@@ -304,7 +339,6 @@ litassist strategy <case_facts> [OPTIONS]
 |--------|------|-------------|
 | `--outcome` | text | Required: desired outcome (single sentence) |
 | `--strategies` | path | Optional brainstorm strategies file |
-| `--verify` | flag | Enable self-critique pass (auto-enabled) |
 | `--heavy` | flag | Use GPT-5.5 for verification |
 | `--noverify` | flag | Skip verification |
 | `--output` | text | Custom output filename prefix |
@@ -498,11 +532,15 @@ litassist verify-cove outputs/draft_*.txt \
 The full pipeline from documents to verified output:
 
 ```
-extractfacts --> brainstorm --> strategy --> draft --> verify
-     |               ^                       ^
-     |               |                       |
-     +--- lookup ----+--- counselnotes ------+
+extractfacts --> updatefacts --> brainstorm --> strategy --> draft --> verify
+     |               ^                            ^
+     |               |                            |
+     +--- digest ----+--- lookup --- counselnotes +
 ```
+
+`updatefacts` is optional but convenient: it merges `extractfacts`/`digest`
+output into an auto-discoverable `case_facts_<timestamp>.txt` so the downstream
+commands find it without a manual copy.
 
 1. **Extract facts** from case documents into 10-heading structure
 2. **Research** relevant case law via lookup
@@ -586,6 +624,7 @@ Current model assignments are defined in `litassist/llm/model_configs.yaml`. Reg
 | lookup | Gemini 3.5 Flash | No |
 | digest | Claude Sonnet 4.6 | No |
 | extractfacts | Claude Sonnet 4.6 | No |
+| updatefacts | Gemini 3.5 Flash | No |
 | brainstorm (orthodox) | Claude Sonnet 4.6 | No |
 | brainstorm (unorthodox) | Grok 4.20 | No |
 | brainstorm (analysis) | o3-pro | Yes |
@@ -644,6 +683,7 @@ Files follow the pattern `{command}_{descriptor}_{YYYYMMDD}_{HHMMSS}.txt`:
 | lookup | `lookup_duty_of_care_20260218_143156.txt` |
 | digest | `digest_summary_brief_20260218_143340.txt` |
 | extractfacts | `extractfacts_brief_20260218_143502.txt` |
+| updatefacts | `case_facts_20260218_143515_004821093.txt` (written to the current directory) |
 | brainstorm | `brainstorm_civil_plaintiff_20260218_143622.txt` |
 | strategy | `strategy_summary_judgement_20260218_143740.txt` |
 | draft | `draft_statement_of_claim_20260218_143855.txt` |

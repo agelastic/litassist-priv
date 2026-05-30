@@ -516,19 +516,33 @@ test_lookup_command() {
 test_extractfacts_command() {
     print_section "Testing EXTRACTFACTS Command"
 
-    # All switches: --verify + --heavy (heavier verification model) + --output.
-    run_test "ExtractFacts - All switches (verify, heavy, output)" \
-        "litassist extractfacts test_inputs/mock_case_facts.txt --verify --heavy --output test_output" \
+    # All switches: --heavy (heavier verification model) + --output. (--verify
+    # was removed; verification is auto-enabled, --noverify is the opt-out.)
+    run_test "ExtractFacts - All switches (heavy, output)" \
+        "litassist extractfacts test_inputs/mock_case_facts.txt --heavy --output test_output" \
         "complete|saved to|case_facts|verification" \
         "yes"
+}
+
+test_updatefacts_command() {
+    print_section "Testing UPDATEFACTS Command"
+
+    # All switches: multiple SOURCE files (glob-capable positional) + --facts
+    # base. Output goes to cwd as case_facts_<ts>.txt (NOT outputs/), so the
+    # outputs/-snapshot check is intentionally not used; the 'saved to' /
+    # 'case_facts' patterns prove a file was written.
+    run_test "UpdateFacts - All switches (multiple sources, --facts base)" \
+        "litassist updatefacts test_inputs/mock_affidavit.txt test_inputs/mock_research_output.txt --facts test_inputs/mock_case_facts.txt" \
+        "complete|saved to|case_facts"
 }
 
 test_strategy_command() {
     print_section "Testing STRATEGY Command"
 
-    # All switches: --outcome --strategies --verify --heavy --output.
-    run_test "Strategy - All switches (outcome, strategies, verify, heavy, output)" \
-        "litassist strategy test_inputs/mock_case_facts.txt --outcome 'Win breach of contract case' --strategies test_inputs/mock_strategy_headers.txt --verify --heavy --output test_output" \
+    # All switches: --outcome --strategies --heavy --output. (--verify removed;
+    # verification is auto-enabled, --noverify is the opt-out.)
+    run_test "Strategy - All switches (outcome, strategies, heavy, output)" \
+        "litassist strategy test_inputs/mock_case_facts.txt --outcome 'Win breach of contract case' --strategies test_inputs/mock_strategy_headers.txt --heavy --output test_output" \
         "complete|saved to|strategy|verification" \
         "yes"
 }
@@ -800,6 +814,9 @@ run_test_group() {
         extractfacts)
             test_extractfacts_command
             ;;
+        updatefacts)
+            test_updatefacts_command
+            ;;
         strategy)
             test_strategy_command
             ;;
@@ -838,6 +855,7 @@ run_test_group() {
             test_connectivity
             test_lookup_command
             test_extractfacts_command
+            test_updatefacts_command
             test_strategy_command
             test_brainstorm_command
             test_digest_command
