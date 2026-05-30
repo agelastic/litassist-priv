@@ -154,7 +154,14 @@ def verify_citations_if_requested(
         pass
 
     click.echo("\nVerifying citations...")
-    verified, unverified = verify_all_citations(content)
+    try:
+        verified, unverified = verify_all_citations(content)
+    except Exception as e:
+        # A verification hiccup (e.g. a network error during Jade lookup) must not
+        # discard the brief that was already generated and saved - warn and skip
+        # the report, mirroring how unverified citations are merely warned about.
+        click.echo(f"Citation verification error: {e}")
+        return None
 
     verify_file = None
     if unverified:
