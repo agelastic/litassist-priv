@@ -275,6 +275,20 @@ class TestLegalIssuesExtraction:
         assert "1. Contract breach" in issues
         assert "2. Negligence claim" in issues
 
+    def test_extract_legal_issues_numbered_bold_inline(self):
+        """extractfacts numbered/bold format with the issue inline on the heading
+        line: capture the inline issue and stop at the next (also inline) heading
+        rather than grabbing subsequent sections."""
+        content = (
+            "1. **Parties**: Smith v Jones\n"
+            "2. **Background**: A contract dispute\n"
+            "4. **Legal Issues**: Whether the contract was breached\n"
+            "5. **Evidence Available**: The signed contract and emails\n"
+            "6. **Opposing Arguments**: Denies breach\n"
+        )
+        issues = extract_legal_issues(content)
+        assert issues == ["Whether the contract was breached"]
+
 
 class TestStrategyGeneration:
     """Test strategy generation functionality."""
