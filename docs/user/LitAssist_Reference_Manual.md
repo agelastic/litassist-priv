@@ -1270,14 +1270,14 @@ document following Australian legal conventions.
 **Syntax:**
 
 ```bash
-litassist barbrief <case_facts> [OPTIONS]
+litassist barbrief [case_facts] [OPTIONS]
 ```
 
 **Arguments:**
 
 | Argument | Description |
 |----------|-------------|
-| `case_facts` | Path to structured case facts (10-heading format) |
+| `case_facts` | Path to structured case facts (10-heading format); optional - the latest `case_facts*.txt` in the current directory is auto-selected if omitted |
 
 **Options:**
 

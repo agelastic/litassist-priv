@@ -397,7 +397,7 @@ Create a structured barrister's brief combining case facts, strategies, research
 and supporting documents. Follows Australian legal conventions.
 
 ```bash
-litassist barbrief <case_facts> [OPTIONS]
+litassist barbrief [case_facts] [OPTIONS]
 ```
 
 | Option | Type | Description |

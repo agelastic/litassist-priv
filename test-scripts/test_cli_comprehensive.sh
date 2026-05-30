@@ -594,6 +594,12 @@ test_barbrief_command() {
         "litassist barbrief test_inputs/mock_10heading_case_facts.txt --hearing-type trial --strategies test_inputs/mock_strategies.txt --research test_inputs/mock_research_output.txt --documents test_inputs/mock_affidavit.txt --context 'Focus on jurisdiction issues' --verify --output test_output" \
         "Generated brief" \
         "yes"
+
+    # Second hearing type to exercise a different prompt branch (only trial above).
+    run_test "Barbrief - Interlocutory hearing (different prompt branch)" \
+        "litassist barbrief test_inputs/mock_10heading_case_facts.txt --hearing-type interlocutory --output test_output" \
+        "Generated brief" \
+        "yes"
 }
 
 test_caseplan_command() {
