@@ -4,82 +4,7 @@ from unittest.mock import patch, MagicMock
 from click.testing import CliRunner
 
 from litassist.commands.barbrief import barbrief
-from litassist.commands.barbrief.validator import validate_case_facts
 from litassist.commands.barbrief.section_builder import prepare_brief_sections
-
-
-class TestValidateCaseFacts:
-    """Test case facts validation."""
-
-    def test_valid_case_facts(self):
-        """Test validation with all required headings."""
-        content = """
-        # Case Facts
-        
-        ## Parties
-        John Smith (Plaintiff) v ABC Corp (Defendant)
-        
-        ## Background
-        Contract dispute arising from...
-        
-        ## Key Events
-        1. January 2024: Contract signed
-        
-        ## Legal Issues
-        - Breach of contract
-        - Damages
-        
-        ## Evidence Available
-        - Contract document
-        - Emails
-        
-        ## Opposing Arguments
-        Defendant claims...
-        
-        ## Procedural History
-        Filed in Supreme Court...
-        
-        ## Jurisdiction
-        Supreme Court of Victoria
-        
-        ## Applicable Law
-        Contract Act, common law
-        
-        ## Client Objectives
-        Seek damages and costs
-        """
-        assert validate_case_facts(content) is True
-
-    def test_invalid_case_facts_missing_heading(self):
-        """Test validation with missing required heading."""
-        content = """
-        ## Parties
-        John v Jane
-        
-        ## Background
-        Dispute about property
-        
-        ## Legal Issues
-        Property settlement
-        """
-        # Missing most required headings
-        assert validate_case_facts(content) is False
-
-    def test_case_insensitive_validation(self):
-        """Test that validation is case-insensitive."""
-        content = """
-        parties: John v Jane
-        BACKGROUND: Dispute
-        Key Events: Listed
-        legal issues: Settlement
-        Evidence Available: Documents
-        opposing arguments: None
-        Procedural History: Filed
-        JURISDICTION: Federal
-        applicable law: Family Law Act
-        Client OBJECTIVES: Resolution
-        """
-        assert validate_case_facts(content) is True
 
 
 class TestPrepareBriefSections:
@@ -144,16 +69,26 @@ class TestBarbriefCommand:
         """Test barbrief with minimal required arguments."""
         # Setup mocks
         valid_case_facts = """
-        Parties: A v B
-        Background: Test
-        Key Events: Test
-        Legal Issues: Test
-        Evidence Available: Test
-        Opposing Arguments: Test
-        Procedural History: Test
-        Jurisdiction: Test
-        Applicable Law: Test
-        Client Objectives: Test
+        Parties:
+        A v B
+        Background:
+        Test
+        Key Events:
+        Test
+        Legal Issues:
+        Test
+        Evidence Available:
+        Test
+        Opposing Arguments:
+        Test
+        Procedural History:
+        Test
+        Jurisdiction:
+        Test
+        Applicable Law:
+        Test
+        Client Objectives:
+        Test
         """
         mock_read.return_value = valid_case_facts
 
@@ -224,16 +159,26 @@ class TestBarbriefCommand:
         """Test barbrief with all optional arguments."""
         # Setup mocks
         valid_case_facts = """
-        Parties: A v B
-        Background: Test
-        Key Events: Test
-        Legal Issues: Test
-        Evidence Available: Test
-        Opposing Arguments: Test
-        Procedural History: Test
-        Jurisdiction: Test
-        Applicable Law: Test
-        Client Objectives: Test
+        Parties:
+        A v B
+        Background:
+        Test
+        Key Events:
+        Test
+        Legal Issues:
+        Test
+        Evidence Available:
+        Test
+        Opposing Arguments:
+        Test
+        Procedural History:
+        Test
+        Jurisdiction:
+        Test
+        Applicable Law:
+        Test
+        Client Objectives:
+        Test
         """
 
         mock_read.side_effect = [
@@ -307,16 +252,26 @@ class TestBarbriefCommand:
         """Test barbrief with citation verification enabled."""
         # Setup mocks
         valid_case_facts = """
-        Parties: A v B
-        Background: Test
-        Key Events: Test
-        Legal Issues: Test
-        Evidence Available: Test
-        Opposing Arguments: Test
-        Procedural History: Test
-        Jurisdiction: Test
-        Applicable Law: Test
-        Client Objectives: Test
+        Parties:
+        A v B
+        Background:
+        Test
+        Key Events:
+        Test
+        Legal Issues:
+        Test
+        Evidence Available:
+        Test
+        Opposing Arguments:
+        Test
+        Procedural History:
+        Test
+        Jurisdiction:
+        Test
+        Applicable Law:
+        Test
+        Client Objectives:
+        Test
         """
         mock_read.return_value = valid_case_facts
 

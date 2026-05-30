@@ -7,50 +7,13 @@ and extracting legal issues from case documents.
 
 import re
 from typing import List
-import click
 
+# Single source of truth for the 10-heading check, shared with barbrief.
+# Re-exported here so existing `strategy.validators.validate_case_facts_format`
+# importers keep working.
+from litassist.utils.case_facts import validate_case_facts_format
 
-def validate_case_facts_format(text: str) -> bool:
-    """
-    Validates that the case facts file follows the required 10-heading structure.
-
-    Args:
-        text: The content of the case facts file.
-
-    Returns:
-        True if valid, False if not valid.
-    """
-    required_headings = [
-        "Parties",
-        "Background",
-        "Key Events",
-        "Legal Issues",
-        "Evidence Available",
-        "Opposing Arguments",
-        "Procedural History",
-        "Jurisdiction",
-        "Applicable Law",
-        "Client Objectives",
-    ]
-
-    missing_headings = []
-
-    # Check if all required headings exist in the text (less restrictive)
-    for heading in required_headings:
-        # Look for heading with flexible formatting:
-        # - Can have non-alphabetical chars before/after
-        # - Case insensitive
-        # - Must be on its own line (but can have punctuation)
-        pattern = r"^\s*[^a-zA-Z]*" + re.escape(heading) + r"[^a-zA-Z]*\s*$"
-        if not re.search(pattern, text, re.MULTILINE | re.IGNORECASE):
-            missing_headings.append(heading)
-
-    if missing_headings:
-        click.echo(f"Missing required headings: {', '.join(missing_headings)}")
-        click.echo("Note: Headings are now case-insensitive and can have punctuation.")
-        return False
-
-    return True
+__all__ = ["validate_case_facts_format", "extract_legal_issues"]
 
 
 def extract_legal_issues(case_text: str) -> List[str]:

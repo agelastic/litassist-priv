@@ -16,7 +16,7 @@ from litassist.utils.text_processing import count_tokens_and_words
 from litassist.logging import save_command_output, log_task_event
 from litassist.llm.factory import LLMClientFactory
 
-from .validator import validate_case_facts
+from litassist.utils.case_facts import validate_case_facts_format
 from .document_reader import read_all_documents
 from .section_builder import prepare_brief_sections
 from .brief_generator import generate_brief, verify_citations_if_requested
@@ -110,7 +110,7 @@ def barbrief(
     content_dict = read_all_documents(case_facts, strategies, research, documents)
 
     # Validate case facts
-    if not validate_case_facts(content_dict["case_facts_content"]):
+    if not validate_case_facts_format(content_dict["case_facts_content"]):
         raise click.ClickException(
             "Case facts must be in 10-heading format from extractfacts command"
         )
