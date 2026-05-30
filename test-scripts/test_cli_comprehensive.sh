@@ -595,7 +595,7 @@ test_barbrief_command() {
         "Generated brief" \
         "yes"
 
-    # Second hearing type to exercise a different prompt branch (only trial above).
+    # Second invocation with a different hearing type (only trial above).
     run_test "Barbrief - Interlocutory hearing (different prompt branch)" \
         "litassist barbrief test_inputs/mock_10heading_case_facts.txt --hearing-type interlocutory --output test_output" \
         "Generated brief" \

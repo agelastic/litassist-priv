@@ -444,6 +444,20 @@ class TestBarbriefCommand:
         )
         rendered = PROMPTS.get("barbrief.main", **sections)
         assert isinstance(rendered, str)
-        assert "{" not in rendered  # no unfilled placeholder remains
+        # no unfilled placeholder remains for any section key
+        for key in sections:
+            assert "{" + key + "}" not in rendered
         assert "trial" in rendered
         assert isinstance(PROMPTS.get("barbrief.system"), str)
+
+    @patch("litassist.commands.barbrief.document_reader.read_document")
+    def test_read_all_documents_tags_sources(self, mock_read):
+        """research/supporting docs are wrapped with SOURCE markers so the brief
+        can name them in the ANNEXURES section."""
+        from litassist.commands.barbrief.document_reader import read_all_documents
+
+        mock_read.side_effect = lambda p: f"body-of-{p}"
+        result = read_all_documents("cf.txt", (), ("research1.txt",), ("doc1.txt",))
+        assert "=== SOURCE: research1.txt ===" in result["research_docs"][0]
+        assert "body-of-research1.txt" in result["research_docs"][0]
+        assert "=== SOURCE: doc1.txt ===" in result["supporting_docs"][0]

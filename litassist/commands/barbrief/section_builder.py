@@ -35,9 +35,12 @@ def prepare_brief_sections(
         "has_strategies": bool(strategies),
         "strategies": strategies or "",
         "research_count": len(research_docs),
-        "research_content": "\n\n---\n\n".join(research_docs),
+        # Each document is already delimited by its own "=== SOURCE: <file> ==="
+        # markers (from document_reader), so join with blank lines only - no "---"
+        # separator, per the repo's "=== NAME ===" only marker convention.
+        "research_content": "\n\n".join(research_docs),
         "supporting_count": len(supporting_docs),
-        "supporting_content": "\n\n---\n\n".join(supporting_docs),
+        "supporting_content": "\n\n".join(supporting_docs),
         "context": context or "No specific context provided.",
     }
 
