@@ -16,14 +16,17 @@ from litassist.utils.text_processing import count_tokens_and_words
 from litassist.logging import save_command_output, log_task_event
 from litassist.llm.factory import LLMClientFactory
 
-from .validator import validate_case_facts
+from litassist.utils.case_facts import (
+    validate_case_facts_format,
+    resolve_case_facts_file,
+)
 from .document_reader import read_all_documents
 from .section_builder import prepare_brief_sections
 from .brief_generator import generate_brief, verify_citations_if_requested
 
 
 @click.command()
-@click.argument("case_facts", type=click.Path(exists=True))
+@click.argument("case_facts", required=False, type=click.Path(exists=True))
 @click.option(
     "--strategies",
     multiple=True,
@@ -83,7 +86,8 @@ def barbrief(
     legal conventions and includes proper citation formatting.
 
     Args:
-        case_facts: Path to structured case facts (10-heading format)
+        case_facts: Path to structured case facts (10-heading format). Optional -
+            if omitted, the latest case_facts*.txt in the current directory is used.
         strategies: Optional path to brainstormed strategies
         research: Optional research/lookup reports (multiple allowed)
         documents: Optional supporting documents (multiple allowed)
@@ -107,10 +111,13 @@ def barbrief(
         pass
 
     # Read all documents
+    if case_facts is None:
+        case_facts = resolve_case_facts_file()
+
     content_dict = read_all_documents(case_facts, strategies, research, documents)
 
     # Validate case facts
-    if not validate_case_facts(content_dict["case_facts_content"]):
+    if not validate_case_facts_format(content_dict["case_facts_content"]):
         raise click.ClickException(
             "Case facts must be in 10-heading format from extractfacts command"
         )

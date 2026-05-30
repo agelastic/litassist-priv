@@ -475,7 +475,7 @@ Test objectives""")
 
     @patch("litassist.llm.factory.LLMClientFactory.for_command")
     @patch("litassist.commands.barbrief.core.save_command_output")
-    @patch("litassist.commands.barbrief.core.validate_case_facts")
+    @patch("litassist.commands.barbrief.core.validate_case_facts_format")
     @patch("litassist.commands.barbrief.document_reader.read_document")
     def test_barbrief_command_parameters(self, mock_read, mock_validate, mock_save, mock_factory):
         """Test barbrief command parameters."""

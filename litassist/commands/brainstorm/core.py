@@ -5,7 +5,6 @@ Coordinates generation of orthodox, unorthodox, and analysis strategies.
 """
 
 import click
-import os
 import logging
 import re
 import json
@@ -36,6 +35,7 @@ from litassist.logging import (
 )
 from litassist.llm.factory import LLMClientFactory
 from litassist.prompts import PROMPTS
+from litassist.utils.case_facts import resolve_case_facts_file
 
 # Import from submodules
 from .research_handler import analyze_research_size
@@ -481,17 +481,9 @@ def brainstorm(facts, side, area, research, verify, output):
     except Exception:
         pass
 
-    # Handle facts files - use default case_facts.txt if no facts provided
+    # Handle facts files - auto-select the latest case_facts*.txt if none given.
     if not facts:
-        default_facts = "case_facts.txt"
-        if os.path.exists(default_facts):
-            facts = (default_facts,)
-            click.echo(f"Using default facts file: {default_facts}")
-        else:
-            raise click.ClickException(
-                "No facts files provided and case_facts.txt not found in current directory. "
-                "Use --facts to specify one or more facts files."
-            )
+        facts = (resolve_case_facts_file(),)
 
     # Combine multiple facts files if provided
     facts_contents = []

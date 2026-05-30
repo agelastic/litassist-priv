@@ -282,6 +282,30 @@ class TestCaseplanCommand:
             "USER ANALYSIS GUIDANCE" in c and "property dispute" in c for c in user_msgs
         )
 
+    @patch("litassist.commands.caseplan.budget_assessor.LLMClientFactory")
+    @patch("litassist.commands.caseplan.budget_assessor.save_command_output")
+    @patch("litassist.commands.caseplan.budget_assessor.save_log")
+    def test_autoselects_case_facts_when_omitted(
+        self, mock_save_log, mock_save_output, mock_factory
+    ):
+        """No positional case_facts -> resolve the latest case_facts*.txt in cwd."""
+        mock_client = MagicMock()
+        mock_client.complete.return_value = (
+            "RECOMMENDATION: standard",
+            {"total_tokens": 100},
+        )
+        mock_factory.for_command.return_value = mock_client
+        mock_save_output.return_value = "outputs/caseplan_assessment_1.txt"
+
+        runner = CliRunner()
+        with runner.isolated_filesystem():
+            with open("case_facts.txt", "w") as f:
+                f.write("Parties: A v B\nBackground: dispute")
+            result = runner.invoke(caseplan, [])
+
+        assert result.exit_code == 0
+        assert "Using case facts: case_facts.txt" in result.output
+
     def test_empty_case_facts_rejected(self, tmp_path):
         """An empty/whitespace case facts file must fail before any LLM call."""
         case_facts = tmp_path / "case_facts.txt"

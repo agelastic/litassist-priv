@@ -29,6 +29,7 @@ from litassist.utils.formatting import (
 from litassist.llm.factory import LLMClientFactory
 from litassist.prompts import PROMPTS
 from litassist.logging import log_task_event, save_command_output
+from litassist.utils.case_facts import resolve_case_facts_file
 
 from .validators import validate_case_facts_format, extract_legal_issues
 from .ranker import create_consolidated_reasoning_trace
@@ -37,7 +38,7 @@ from .file_handler import save_strategy_outputs, save_strategy_log
 
 
 @click.command()
-@click.argument("case_facts", type=click.File("r"))
+@click.argument("case_facts", required=False, type=click.File("r"))
 @click.option("--outcome", required=True, help="Desired outcome (single sentence)")
 @click.option(
     "--strategies",
@@ -67,7 +68,9 @@ def strategy(case_facts, outcome, strategies, verify, heavy, noverify, output):
     outcome, including recommended next steps and a draft legal document.
 
     Args:
-        case_facts: Path to case facts file following the 10-heading structure
+        case_facts: Path to case facts file following the 10-heading structure.
+            Optional - if omitted, the latest case_facts*.txt in the current
+            directory is used.
         outcome: Desired legal outcome (single sentence description)
         strategies: Optional strategies file from brainstorm command
         verify: Enable self-critique pass (always on by default)
@@ -94,6 +97,8 @@ def strategy(case_facts, outcome, strategies, verify, heavy, noverify, output):
         pass
 
     # Read and validate case facts
+    if case_facts is None:
+        case_facts = open(resolve_case_facts_file())
     click.echo(info_message("Validating case facts format..."))
     case_text = case_facts.read()
 

@@ -123,8 +123,10 @@ litassist [--log-format json|markdown] [--verbose] COMMAND [OPTIONS]
 Generate a customised litigation workflow plan with executable command scripts.
 
 ```bash
-litassist caseplan <case_facts> [OPTIONS]
+litassist caseplan [case_facts] [OPTIONS]
 ```
+
+`case_facts` is optional: if omitted, the latest `case_facts*.txt` in the current directory is auto-selected (and printed). This applies to `strategy`, `barbrief`, `brainstorm --facts`, and `draft` too.
 
 | Option | Type | Description |
 |--------|------|-------------|
@@ -395,7 +397,7 @@ Create a structured barrister's brief combining case facts, strategies, research
 and supporting documents. Follows Australian legal conventions.
 
 ```bash
-litassist barbrief <case_facts> [OPTIONS]
+litassist barbrief [case_facts] [OPTIONS]
 ```
 
 | Option | Type | Description |

@@ -21,6 +21,7 @@ from litassist.utils.legal_reasoning import (
 )
 from litassist.utils.core import show_command_completion
 from litassist.utils.file_ops import expand_glob_patterns_callback as expand_glob_patterns
+from litassist.utils.case_facts import resolve_case_facts_file
 from litassist.llm.factory import LLMClientFactory
 
 from .document_processor import read_and_categorize_documents, build_text_context
@@ -31,7 +32,7 @@ from .prompt_builder import build_system_prompt, build_user_prompt
 @click.argument(
     "documents",
     nargs=-1,
-    required=True,
+    required=False,
     type=click.Path(),
     callback=expand_glob_patterns,
 )
@@ -59,8 +60,11 @@ def draft(ctx, documents, query, heavy, noverify, output):
     strategies.txt).
 
     Args:
-        documents: One or more paths to documents (PDF or text files) to use as knowledge base.
+        documents: One or more paths to documents (PDF or text files) to use as
+                  knowledge base. Optional - if none are given, the latest
+                  case_facts*.txt in the current directory is used.
                   Examples:
+                  - litassist draft "query"   # uses latest case_facts*.txt
                   - litassist draft case_facts.txt "query"
                   - litassist draft case_facts.txt strategies.txt "query"
                   - litassist draft bundle.pdf case_facts.txt "query"
@@ -81,6 +85,10 @@ def draft(ctx, documents, query, heavy, noverify, output):
         )
     except Exception:
         pass
+
+    # Auto-select the latest case_facts*.txt when no documents are given.
+    if not documents:
+        documents = (resolve_case_facts_file(),)
 
     # Process all documents
     structured_content = read_and_categorize_documents(documents)

@@ -4,82 +4,24 @@ from unittest.mock import patch, MagicMock
 from click.testing import CliRunner
 
 from litassist.commands.barbrief import barbrief
-from litassist.commands.barbrief.validator import validate_case_facts
 from litassist.commands.barbrief.section_builder import prepare_brief_sections
+from litassist.prompts import PROMPTS
 
-
-class TestValidateCaseFacts:
-    """Test case facts validation."""
-
-    def test_valid_case_facts(self):
-        """Test validation with all required headings."""
-        content = """
-        # Case Facts
-        
-        ## Parties
-        John Smith (Plaintiff) v ABC Corp (Defendant)
-        
-        ## Background
-        Contract dispute arising from...
-        
-        ## Key Events
-        1. January 2024: Contract signed
-        
-        ## Legal Issues
-        - Breach of contract
-        - Damages
-        
-        ## Evidence Available
-        - Contract document
-        - Emails
-        
-        ## Opposing Arguments
-        Defendant claims...
-        
-        ## Procedural History
-        Filed in Supreme Court...
-        
-        ## Jurisdiction
-        Supreme Court of Victoria
-        
-        ## Applicable Law
-        Contract Act, common law
-        
-        ## Client Objectives
-        Seek damages and costs
-        """
-        assert validate_case_facts(content) is True
-
-    def test_invalid_case_facts_missing_heading(self):
-        """Test validation with missing required heading."""
-        content = """
-        ## Parties
-        John v Jane
-        
-        ## Background
-        Dispute about property
-        
-        ## Legal Issues
-        Property settlement
-        """
-        # Missing most required headings
-        assert validate_case_facts(content) is False
-
-    def test_case_insensitive_validation(self):
-        """Test that validation is case-insensitive."""
-        content = """
-        parties: John v Jane
-        BACKGROUND: Dispute
-        Key Events: Listed
-        legal issues: Settlement
-        Evidence Available: Documents
-        opposing arguments: None
-        Procedural History: Filed
-        JURISDICTION: Federal
-        applicable law: Family Law Act
-        Client OBJECTIVES: Resolution
-        """
-        assert validate_case_facts(content) is True
+_VALID_FACTS = "\n".join(
+    f"{h}: placeholder"
+    for h in [
+        "Parties",
+        "Background",
+        "Key Events",
+        "Legal Issues",
+        "Evidence Available",
+        "Opposing Arguments",
+        "Procedural History",
+        "Jurisdiction",
+        "Applicable Law",
+        "Client Objectives",
+    ]
+)
 
 
 class TestPrepareBriefSections:
@@ -144,16 +86,26 @@ class TestBarbriefCommand:
         """Test barbrief with minimal required arguments."""
         # Setup mocks
         valid_case_facts = """
-        Parties: A v B
-        Background: Test
-        Key Events: Test
-        Legal Issues: Test
-        Evidence Available: Test
-        Opposing Arguments: Test
-        Procedural History: Test
-        Jurisdiction: Test
-        Applicable Law: Test
-        Client Objectives: Test
+        Parties:
+        A v B
+        Background:
+        Test
+        Key Events:
+        Test
+        Legal Issues:
+        Test
+        Evidence Available:
+        Test
+        Opposing Arguments:
+        Test
+        Procedural History:
+        Test
+        Jurisdiction:
+        Test
+        Applicable Law:
+        Test
+        Client Objectives:
+        Test
         """
         mock_read.return_value = valid_case_facts
 
@@ -224,16 +176,26 @@ class TestBarbriefCommand:
         """Test barbrief with all optional arguments."""
         # Setup mocks
         valid_case_facts = """
-        Parties: A v B
-        Background: Test
-        Key Events: Test
-        Legal Issues: Test
-        Evidence Available: Test
-        Opposing Arguments: Test
-        Procedural History: Test
-        Jurisdiction: Test
-        Applicable Law: Test
-        Client Objectives: Test
+        Parties:
+        A v B
+        Background:
+        Test
+        Key Events:
+        Test
+        Legal Issues:
+        Test
+        Evidence Available:
+        Test
+        Opposing Arguments:
+        Test
+        Procedural History:
+        Test
+        Jurisdiction:
+        Test
+        Applicable Law:
+        Test
+        Client Objectives:
+        Test
         """
 
         mock_read.side_effect = [
@@ -307,16 +269,26 @@ class TestBarbriefCommand:
         """Test barbrief with citation verification enabled."""
         # Setup mocks
         valid_case_facts = """
-        Parties: A v B
-        Background: Test
-        Key Events: Test
-        Legal Issues: Test
-        Evidence Available: Test
-        Opposing Arguments: Test
-        Procedural History: Test
-        Jurisdiction: Test
-        Applicable Law: Test
-        Client Objectives: Test
+        Parties:
+        A v B
+        Background:
+        Test
+        Key Events:
+        Test
+        Legal Issues:
+        Test
+        Evidence Available:
+        Test
+        Opposing Arguments:
+        Test
+        Procedural History:
+        Test
+        Jurisdiction:
+        Test
+        Applicable Law:
+        Test
+        Client Objectives:
+        Test
         """
         mock_read.return_value = valid_case_facts
 
@@ -353,3 +325,139 @@ class TestBarbriefCommand:
             mock_save_core.assert_called_once()  # main output
             assert "Warning: 1 citations could not be verified" in result.output
             assert "Verification report saved" in result.output
+
+    @patch("litassist.commands.barbrief.document_reader.read_document")
+    def test_barbrief_omitted_case_facts_none_present(self, mock_read):
+        """No case_facts arg and no case_facts*.txt in cwd -> ClickException."""
+        runner = CliRunner()
+        with runner.isolated_filesystem():
+            result = runner.invoke(barbrief, ["--hearing-type", "trial"])
+        assert result.exit_code != 0
+        assert "case facts" in result.output.lower()
+        mock_read.assert_not_called()
+
+    @patch("litassist.commands.barbrief.document_reader.read_document")
+    @patch("litassist.commands.barbrief.core.LLMClientFactory")
+    @patch("litassist.commands.barbrief.core.save_command_output")
+    def test_barbrief_generation_failure_surfaces_clickexception(
+        self, mock_save, mock_factory, mock_read
+    ):
+        """An LLM failure surfaces as a ClickException, not a raw traceback."""
+        mock_read.return_value = _VALID_FACTS
+        client = MagicMock()
+        client.complete.side_effect = Exception("upstream boom")
+        mock_factory.for_command.return_value = client
+        runner = CliRunner()
+        with runner.isolated_filesystem():
+            with open("facts.txt", "w") as f:
+                f.write("dummy")
+            result = runner.invoke(barbrief, ["facts.txt", "--hearing-type", "trial"])
+        assert result.exit_code == 1
+        assert "LLM API error" in result.output
+
+    @patch("litassist.commands.barbrief.brief_generator.verify_all_citations")
+    @patch("litassist.commands.barbrief.document_reader.read_document")
+    @patch("litassist.commands.barbrief.core.LLMClientFactory")
+    @patch("litassist.commands.barbrief.core.save_command_output")
+    def test_barbrief_verification_exception_is_handled(
+        self, mock_save, mock_factory, mock_read, mock_verify
+    ):
+        """If citation verification raises, the command warns and still succeeds."""
+        mock_read.return_value = _VALID_FACTS
+        mock_save.return_value = "outputs/barbrief_trial.txt"
+        client = MagicMock()
+        client.complete.return_value = ("Brief body", {"total_tokens": 100})
+        mock_factory.for_command.return_value = client
+        mock_verify.side_effect = Exception("verifier down")
+        runner = CliRunner()
+        with runner.isolated_filesystem():
+            with open("facts.txt", "w") as f:
+                f.write("dummy")
+            result = runner.invoke(
+                barbrief, ["facts.txt", "--hearing-type", "trial", "--verify"]
+            )
+        assert result.exit_code == 0
+        assert "Citation verification error" in result.output
+
+    @patch("litassist.commands.barbrief.document_reader.read_document")
+    @patch("litassist.commands.barbrief.core.LLMClientFactory")
+    @patch("litassist.commands.barbrief.core.save_command_output")
+    def test_barbrief_all_hearing_types(self, mock_save, mock_factory, mock_read):
+        """Every --hearing-type choice runs (only trial/appeal were covered)."""
+        mock_read.return_value = _VALID_FACTS
+        mock_save.return_value = "outputs/barbrief.txt"
+        client = MagicMock()
+        client.complete.return_value = ("Brief body", {"total_tokens": 100})
+        mock_factory.for_command.return_value = client
+        runner = CliRunner()
+        for hearing in ("trial", "directions", "interlocutory", "appeal"):
+            with runner.isolated_filesystem():
+                with open("facts.txt", "w") as f:
+                    f.write("dummy")
+                result = runner.invoke(
+                    barbrief, ["facts.txt", "--hearing-type", hearing]
+                )
+            assert result.exit_code == 0, f"{hearing}: {result.output}"
+
+    @patch("litassist.commands.barbrief.document_reader.read_document")
+    @patch("litassist.commands.barbrief.core.LLMClientFactory")
+    @patch("litassist.commands.barbrief.core.save_command_output")
+    def test_barbrief_optional_files_partial(self, mock_save, mock_factory, mock_read):
+        """Partial optional-file combinations (strategies-only, research-only) run."""
+        mock_save.return_value = "outputs/barbrief.txt"
+        client = MagicMock()
+        client.complete.return_value = ("Brief body", {"total_tokens": 100})
+        mock_factory.for_command.return_value = client
+        runner = CliRunner()
+        # strategies only
+        mock_read.side_effect = [_VALID_FACTS, "strategy content"]
+        with runner.isolated_filesystem():
+            for name in ("facts.txt", "strat.txt"):
+                with open(name, "w") as f:
+                    f.write("dummy")
+            result = runner.invoke(
+                barbrief,
+                ["facts.txt", "--hearing-type", "trial", "--strategies", "strat.txt"],
+            )
+        assert result.exit_code == 0, result.output
+        # research only
+        mock_read.side_effect = [_VALID_FACTS, "research content"]
+        with runner.isolated_filesystem():
+            for name in ("facts.txt", "res.txt"):
+                with open(name, "w") as f:
+                    f.write("dummy")
+            result = runner.invoke(
+                barbrief,
+                ["facts.txt", "--hearing-type", "trial", "--research", "res.txt"],
+            )
+        assert result.exit_code == 0, result.output
+
+    def test_barbrief_main_prompt_renders_with_section_keys(self):
+        """barbrief.main placeholders stay in sync with prepare_brief_sections."""
+        sections = prepare_brief_sections(
+            case_facts="facts",
+            strategies=None,
+            research_docs=[],
+            supporting_docs=[],
+            context=None,
+            hearing_type="trial",
+        )
+        rendered = PROMPTS.get("barbrief.main", **sections)
+        assert isinstance(rendered, str)
+        # no unfilled placeholder remains for any section key
+        for key in sections:
+            assert "{" + key + "}" not in rendered
+        assert "trial" in rendered
+        assert isinstance(PROMPTS.get("barbrief.system"), str)
+
+    @patch("litassist.commands.barbrief.document_reader.read_document")
+    def test_read_all_documents_tags_sources(self, mock_read):
+        """research/supporting docs are wrapped with SOURCE markers so the brief
+        can name them in the ANNEXURES section."""
+        from litassist.commands.barbrief.document_reader import read_all_documents
+
+        mock_read.side_effect = lambda p: f"body-of-{p}"
+        result = read_all_documents("cf.txt", (), ("research1.txt",), ("doc1.txt",))
+        assert "=== SOURCE: research1.txt ===" in result["research_docs"][0]
+        assert "body-of-research1.txt" in result["research_docs"][0]
+        assert "=== SOURCE: doc1.txt ===" in result["supporting_docs"][0]

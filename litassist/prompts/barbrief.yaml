@@ -2,8 +2,8 @@
 # Creates comprehensive briefs for Australian litigation
 
 barbrief:
-  # USED BY: litassist/commands/barbrief.py barbrief() as system prompt
-  # LOCATION: litassist/commands/barbrief.py:276
+  # USED BY: barbrief brief_generator.generate_brief() as the system prompt
+  # LOCATION: litassist/commands/barbrief/brief_generator.py:57
   system: |
     You are a senior solicitor preparing a comprehensive barrister's brief for Australian litigation. 
     Create a professional, well-structured brief that complies with Australian court rules and legal conventions.
@@ -11,7 +11,7 @@ barbrief:
     Key requirements:
     - Use Australian English spelling and legal terminology
     - Follow proper Australian citation format
-    - Organize content logically for counsel's quick reference
+    - Organise content logically for counsel's quick reference
     - Include all relevant case materials and strategic considerations
     - Ensure internal consistency and cross-references
     - Highlight critical issues requiring counsel's attention
@@ -35,8 +35,11 @@ barbrief:
     
     The brief must be practical, actionable, and suitable for immediate use in proceedings.
 
-  # USED BY: litassist/commands/barbrief.py barbrief() as user prompt
-  # LOCATION: litassist/commands/barbrief.py:267
+  # USED BY: barbrief brief_generator.generate_brief() as the user prompt
+  # LOCATION: litassist/commands/barbrief/brief_generator.py:37
+  # PLACEHOLDERS (filled by section_builder.prepare_brief_sections): hearing_type,
+  #   case_facts, strategies, research_count, research_content, supporting_count,
+  #   supporting_content, context
   main: |
     Generate a comprehensive barrister's brief for a {hearing_type} hearing using the following materials:
 
@@ -90,7 +93,7 @@ barbrief:
        - Issues agreed between parties (if any)
 
     6. **EVIDENCE SUMMARY**
-       - Available evidence organized by issue
+       - Available evidence organised by issue
        - Witness statements/affidavits
        - Documentary evidence
        - Expert evidence (if applicable)
