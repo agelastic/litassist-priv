@@ -72,6 +72,14 @@ def test_does_not_match_heading_word_starting_a_prose_line():
     assert validate_case_facts_format(content) is False
 
 
+def test_does_not_match_bolded_heading_word_in_prose():
+    """A markdown-bold heading word that continues into prose (closing `**`
+    followed by more words, not a colon/EOL) is not a heading line."""
+    content = "\n".join(f"{h}:\nx" for h in _HEADINGS if h != "Parties")
+    content += "\n**Parties** were later notified of the claim"  # bold prose
+    assert validate_case_facts_format(content) is False
+
+
 class TestResolveCaseFactsFile:
     """resolve_case_facts_file picks the case_facts file when none is given."""
 
