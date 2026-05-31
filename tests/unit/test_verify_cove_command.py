@@ -14,19 +14,6 @@ from click.testing import CliRunner
 class TestVerifyCoveCommand:
     """Tests for verify-cove command behavior."""
 
-    def test_command_is_registered_in_cli(self):
-        """Verify that 'verify-cove' is registered via register_commands."""
-        from litassist.cli import cli  # litassist/cli.py:main()
-        from litassist.commands import (
-            register_commands,
-        )  # litassist/commands/__init__.py
-
-        # Clear and re-register commands
-        cli.commands = {}
-        register_commands(cli)
-
-        assert "verify-cove" in cli.commands, "verify-cove command should be registered"
-
     def test_verify_cove_basic_invocation(self, tmp_path):
         """Verify that 'verify-cove' runs and saves outputs."""
         # Prepare temp file

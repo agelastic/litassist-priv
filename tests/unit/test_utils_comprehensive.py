@@ -633,34 +633,6 @@ class TestContentVerification:
         mock_client.validate_citations.assert_not_called()
 
 
-class TestUtilityHelpers:
-    """Test miscellaneous utility helper functions."""
-
-    def test_file_encoding_detection(self):
-        """Test automatic file encoding detection."""
-        # This would test a utility function for detecting file encoding
-        # Implementation depends on whether such functionality exists
-        pass
-
-    def test_text_normalization(self):
-        """Test text normalization utilities."""
-        # Test for text cleaning, whitespace normalization, etc.
-        # Implementation depends on available utility functions
-        pass
-
-    def test_chunking_algorithms(self):
-        """Test text chunking for large content."""
-        # Test for breaking large content into manageable chunks
-        # Implementation depends on chunking utilities
-        pass
-
-    def test_token_counting_utilities(self):
-        """Test token counting functionality."""
-        # Test for estimating token usage before LLM calls
-        # Implementation depends on token counting utilities
-        pass
-
-
 class TestErrorHandling:
     """Test error handling in utility functions."""
 
@@ -691,12 +663,6 @@ class TestErrorHandling:
             with pytest.raises(OSError):
                 save_command_output("test", "content", "outcome")
 
-    def test_concurrent_file_access(self):
-        """Test handling of concurrent file access."""
-        # This would test file locking and concurrent access handling
-        # Implementation depends on concurrency requirements
-        pass
-
 
 class TestPerformanceEdgeCases:
     """Test performance-related edge cases."""
@@ -722,12 +688,6 @@ class TestPerformanceEdgeCases:
                     save_command_output(f"test_{i}", f"content_{i}", f"outcome_{i}")
 
                 # Should complete without significant performance degradation
-
-    def test_memory_usage_patterns(self):
-        """Test memory usage patterns in utility functions."""
-        # This would test for memory leaks or excessive usage
-        # Implementation depends on memory profiling requirements
-        pass
 
 
 # Integration test markers

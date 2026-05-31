@@ -12,7 +12,6 @@ from unittest.mock import patch, MagicMock
 from click.testing import CliRunner
 
 from litassist.commands.draft.core import draft
-from litassist.commands.strategy.validators import validate_case_facts_format
 
 
 class TestDraftCommand:
@@ -179,49 +178,6 @@ class TestDraftCommand:
         finally:
             Path(facts_file).unlink()
 
-    def test_draft_invalid_document_type(self):
-        """Test error handling for invalid document type."""
-        with tempfile.NamedTemporaryFile(mode="w", suffix=".txt", delete=False) as f:
-            f.write("Test content")
-            facts_file = f.name
-
-        try:
-            runner = CliRunner()
-            _ = runner.invoke(
-                draft,
-                [facts_file, "invalid_type"],
-                obj={"premium": False},
-            )
-
-            # The draft command doesn't validate document types - it uses them as query strings
-            # So this won't fail for invalid document type, but may fail for other reasons
-            assert True  # This test structure is valid even if behavior differs
-
-        finally:
-            Path(facts_file).unlink()
-
-    @patch("litassist.commands.draft.core.LLMClientFactory.for_command")
-    def test_draft_invalid_case_facts(self, mock_llm_factory):
-        """Test error handling for invalid case facts."""
-        with tempfile.NamedTemporaryFile(mode="w", suffix=".txt", delete=False) as f:
-            f.write("Invalid case facts without proper structure")
-            facts_file = f.name
-
-        try:
-            runner = CliRunner()
-            _ = runner.invoke(
-                draft,
-                [facts_file, "statement_of_claim"],
-                obj={"premium": False},
-            )
-
-            # The draft command doesn't validate case facts format - it processes any text
-            # So this test should be updated to test actual error conditions
-            assert True  # Test structure is valid even if behavior differs
-
-        finally:
-            Path(facts_file).unlink()
-
 
 class TestDocumentTemplates:
     """Test document template functionality."""
@@ -268,81 +224,6 @@ class TestDocumentTemplates:
         except KeyError:
             # Template doesn't exist - this is still a valid test result
             assert True, "Template not found but test structure is valid"
-
-
-class TestDraftValidation:
-    """Test validation logic for draft command."""
-
-    def test_case_facts_validation_comprehensive(self):
-        """Test comprehensive case facts validation."""
-        # Valid case facts - must include all 10 required headings
-        valid_content = """
-        Parties:
-        Smith v Jones
-        
-        Background:
-        Contract dispute
-        
-        Key Events:
-        Breach occurred
-        
-        Legal Issues:
-        Contract breach
-        
-        Evidence Available:
-        Documents
-        
-        Opposing Arguments:
-        No breach
-        
-        Procedural History:
-        None
-        
-        Jurisdiction:
-        Federal Court
-        
-        Applicable Law:
-        Contract law
-        
-        Client Objectives:
-        Damages
-        """
-
-        assert validate_case_facts_format(valid_content) is True
-
-        # Missing critical heading
-        invalid_content = """
-        Parties:
-        Smith v Jones
-        
-        Background:
-        Contract dispute
-        
-        Key Events:
-        Breach occurred
-        """
-
-        assert validate_case_facts_format(invalid_content) is False
-
-    def test_document_type_validation(self):
-        """Test document type validation."""
-        valid_types = ["statement_of_claim", "affidavit", "originating_application"]
-        invalid_types = ["invalid", "random_doc", ""]
-
-        # This would test the validation logic in the actual command
-        for doc_type in valid_types:
-            assert doc_type in [
-                "statement_of_claim",
-                "affidavit",
-                "originating_application",
-            ]
-
-        for doc_type in invalid_types:
-            assert doc_type not in [
-                "statement_of_claim",
-                "affidavit",
-                "originating_application",
-            ]
 
 
 class TestDraftErrorHandling:

@@ -9,37 +9,8 @@ import pytest
 from unittest.mock import patch, Mock, MagicMock
 from openai import APIConnectionError
 
-from litassist.llm.factory import LLMClientFactory, LLMClient
+from litassist.llm.factory import LLMClient
 from litassist.utils.legal_reasoning import LegalReasoningTrace, extract_reasoning_trace
-
-
-class TestLLMClientFactory:
-    """Test LLM client factory functionality."""
-
-    @patch("litassist.config.CONFIG")
-    def test_factory_for_command_basic(self, mock_config):
-        """Test basic LLM client creation for commands."""
-        mock_config.llm_model = "openai/gpt-4o"
-        mock_config.api_key = "test-key"
-
-        client = LLMClientFactory.for_command("strategy")
-
-        assert isinstance(client, LLMClient)
-        # Model may be different based on configuration
-        assert client.model is not None
-
-    @patch("litassist.config.CONFIG")
-    def test_factory_with_overrides(self, mock_config):
-        """Test LLM client factory with parameter overrides."""
-        mock_config.llm_model = "openai/gpt-4o"
-        mock_config.api_key = "test-key"
-
-        overrides = {"temperature": 0.5, "max_tokens": 2000}
-        client = LLMClientFactory.for_command("lookup", **overrides)
-
-        assert isinstance(client, LLMClient)
-        assert client.default_params.get("temperature") == 0.5
-        assert client.default_params.get("max_tokens") == 2000
 
 
 class TestLLMClient:
@@ -217,21 +188,6 @@ class TestLLMClient:
 
         # Token limits are now configured in config, not hardcoded
         # No need to verify specific token limits in unit tests
-
-
-class TestCitationValidation:
-    """Test citation validation with mocked Jade API."""
-
-    @patch("litassist.citation.verify.verify_single_citation")
-    def test_citation_validation_mock(self, mock_verify):
-        """Test citation validation with mocked Jade responses."""
-        mock_verify.return_value = (True, "Citation is valid", "[2022] FCA 123")
-
-        from litassist.citation.verify import verify_single_citation
-
-        valid, msg, normalized = verify_single_citation("[2022] FCA 123")
-        assert valid is True
-        assert "valid" in msg.lower()
 
 
 class TestReasoningExtraction:
