@@ -298,7 +298,7 @@ litassist updatefacts 'outputs/extractfacts_*.txt' 'outputs/digest_*.txt'
 # Update a specific existing case-facts file
 litassist updatefacts new_affidavit.pdf --facts case_facts.txt
 
-# Creates: case_facts_YYYYMMDD_HHMMSS_[subsecond].txt in the current directory
+# Creates: case_facts_YYYYMMDD_HHMMSS.txt in the current directory
 #          (auto-discovered by brainstorm/strategy/draft/barbrief)
 ```
 
@@ -405,7 +405,7 @@ All commands now save their output to timestamped text files without overwriting
 - **digest**: `digest_[mode]_[filename_slug]_YYYYMMDD_HHMMSS.txt`
 - **brainstorm**: `brainstorm_[area]_[side]_YYYYMMDD_HHMMSS.txt`
 - **extractfacts**: `extractfacts_[filename_slug]_YYYYMMDD_HHMMSS.txt`
-- **updatefacts**: `case_facts_YYYYMMDD_HHMMSS_[subsecond].txt` (written to the current directory, not `outputs/`)
+- **updatefacts**: `case_facts_YYYYMMDD_HHMMSS.txt` (written to the current directory, not `outputs/`)
 - **strategy**: `strategy_[outcome_slug]_YYYYMMDD_HHMMSS.txt`
 - **draft**: `draft_[query_slug]_YYYYMMDD_HHMMSS.txt`
 - **counselnotes**: `counselnotes_[filename_slug]_YYYYMMDD_HHMMSS.txt`

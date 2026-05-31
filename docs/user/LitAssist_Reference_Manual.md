@@ -322,7 +322,7 @@ Files are never overwritten. Each run creates a new timestamped file.
 | lookup | `lookup_duty_of_care_20260223_143156.txt` |
 | digest | `digest_summary_brief_20260223_143340.txt` |
 | extractfacts | `extractfacts_brief_20260223_143502.txt` |
-| updatefacts | `case_facts_20260223_143515_004821093.txt` (written to the current directory; no `--output`) |
+| updatefacts | `case_facts_20260223_143515.txt` (written to the current directory; no `--output`) |
 | brainstorm | `brainstorm_family_plaintiff_20260223_143622.txt` |
 | strategy | `strategy_summary_judgement_20260223_143740.txt` |
 | draft | `draft_statement_of_claim_20260223_143855.txt` |

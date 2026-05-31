@@ -683,7 +683,7 @@ Files follow the pattern `{command}_{descriptor}_{YYYYMMDD}_{HHMMSS}.txt`:
 | lookup | `lookup_duty_of_care_20260218_143156.txt` |
 | digest | `digest_summary_brief_20260218_143340.txt` |
 | extractfacts | `extractfacts_brief_20260218_143502.txt` |
-| updatefacts | `case_facts_20260218_143515_004821093.txt` (written to the current directory) |
+| updatefacts | `case_facts_20260218_143515.txt` (written to the current directory) |
 | brainstorm | `brainstorm_civil_plaintiff_20260218_143622.txt` |
 | strategy | `strategy_summary_judgement_20260218_143740.txt` |
 | draft | `draft_statement_of_claim_20260218_143855.txt` |
