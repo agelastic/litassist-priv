@@ -50,9 +50,9 @@ capabilities:
     Best Practices:
       - Use --mode issues with --context for targeted fact discovery
       - Process related documents together for contextual understanding
-      - Always follow with manual case_facts.txt updates
+      - Follow with 'updatefacts' to fold findings into case_facts.txt (or update manually)
       - Group documents logically (financial, correspondence, legal)
-    Integration: Findings must be manually incorporated into case_facts.txt before brainstorm/strategy
+    Integration: Fold findings into case_facts.txt with 'updatefacts' (or manually) before brainstorm/strategy
     Cost: ~$1-3 per set (saves hours of manual review)
     Example: litassist digest "Bank Statements/*.pdf" "Emails/*.pdf" --mode issues --context "trace financial contributions and their impact on ownership claims"
 
@@ -60,10 +60,9 @@ capabilities:
     Purpose: Converts raw documents into structured 10-heading case facts format
     Syntax: litassist extractfacts FILE [FILE...] [options] (FILE arguments support glob patterns)
     Inputs: Source documents (witness statements, affidavits, chronologies) - NOT case_facts.txt
-    Outputs: Properly structured case_facts.txt ready for strategic analysis
+    Outputs: Structured 10-heading facts saved as outputs/extractfacts_*.txt; run 'updatefacts' on it to produce the downstream-ready case_facts file
     Strategic Use: Essential first step - creates foundation for all downstream analysis
     Options:
-      --verify: (flag) | Auto-enabled by default; explicit flag is a no-op
       --heavy: (flag) | Use verification-heavy mode (max thinking effort)
       --noverify: (flag) | Skip verification stage (not recommended for legal work)
       --output: [string] | Custom filename prefix for output files
@@ -72,10 +71,25 @@ capabilities:
       - Run iteratively as new documents arrive
       - Combine with digest for comprehensive fact gathering
       - NEVER use case_facts.txt as input (it's the output!)
-    Integration: Output becomes primary input for brainstorm, strategy, draft, barbrief
+    Integration: Feed the output to 'updatefacts' to build case_facts; brainstorm, strategy, draft, barbrief then pick it up automatically
     Limit: <1MB per file
     Cost: ~$1-2 (prevents errors in all subsequent phases)
     Example: litassist extractfacts witness_statement.pdf police_report.pdf medical_records.pdf
+
+    ### updatefacts - Case Facts Merger
+    Purpose: Folds source documents (digest/extractfacts output or any text) into the 10-heading case_facts format, updating an existing file or creating one
+    Syntax: litassist updatefacts SOURCE [SOURCE...] [--facts FILE] (SOURCE arguments support glob patterns)
+    Inputs: Source documents to merge in; optional --facts existing case-facts file (defaults to the latest case_facts*.txt in the current directory)
+    Outputs: A fresh, auto-discoverable case_facts_<timestamp>.txt in the current directory, with the 10 headings plus a Notes section for overflow
+    Strategic Use: Removes manual copy-paste when assembling case facts from digest/extractfacts results; safe to re-run as new material arrives
+    Options:
+      --facts: [file] | Existing case facts file to update (default: latest case_facts*.txt; created from scratch if none)
+    Best Practices:
+      - Feed it condensed material (digest or extractfacts output) rather than raw bundles
+      - Re-run as new documents are processed; each run writes a new timestamped file
+    Integration: Output is picked up automatically by brainstorm, strategy, draft, barbrief
+    Cost: ~$0.10-0.30 (cheap merge model)
+    Example: litassist updatefacts 'outputs/digest_issues_*.txt' 'outputs/extractfacts_*.txt'
 
     ### brainstorm - Creative Strategy Generator
     Purpose: Generates 20+ legal strategies (10 orthodox, 10 unorthodox) using Grok's creativity
@@ -108,7 +122,6 @@ capabilities:
     Options:
       --outcome: [string] (REQUIRED) | Single sentence describing the specific legal outcome to achieve
       --strategies: [file] | Use brainstorm output to inform tactical planning (single file, no glob)
-      --verify: (flag) | Auto-enabled by default; explicit flag is a no-op
       --heavy: (flag) | Use verification-heavy mode (max thinking effort)
       --noverify: (flag) | Skip verification stage (not recommended for legal work)
       --output: [string] | Custom filename prefix for output files
@@ -282,6 +295,6 @@ capabilities:
     5. One strategy per outcome: Generate separate tactical plans for each objective
     6. Quote glob patterns: Always use quotes around patterns like 'outputs/*.txt'
     7. Build Toward Memoranda: Every phase should contribute to final feasibility assessment
-    8. Iterative Enhancement: Update case_facts.txt after digest discoveries
+    8. Iterative Enhancement: Fold digest/extractfacts discoveries into case_facts.txt with updatefacts
     9. Verify High-Stakes Documents: Always use verify for court documents and memoranda
     10. Cost-Benefit Focus: Each command should advance case understanding significantly

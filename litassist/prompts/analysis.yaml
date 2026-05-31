@@ -120,3 +120,34 @@ analysis:
       === END USER GUIDANCE ===
 
       {prompt}
+
+  # Updatefacts merge prompt
+  # USED BY: litassist/commands/updatefacts/core.py
+  # Folds new source material into an existing (possibly empty) case_facts file.
+  # Reuses the shared formats.case_facts_10_heading template via
+  # {format_instructions} and adds an 11th Notes section for overflow/comments.
+  updatefacts:
+    merge_prompt: |
+      Update the case facts below by folding in the new source material. Output
+      the COMPLETE case facts document under exactly these ten headings:
+      {format_instructions}
+
+      Then add one final section:
+      11. **Notes**: anything that does not fit a heading above, conflicts between
+      sources, and items needing confirmation. If a Notes section already exists,
+      refresh it rather than duplicating.
+
+      Rules:
+      - Preserve facts already present unless the new material directly corrects them.
+      - When sources conflict, keep both and flag the conflict under Notes.
+      - Do not invent facts. Use bracketed placeholders for missing specifics
+        (e.g. [DATE TO BE CONFIRMED], [ADDRESS TO BE CONFIRMED]).
+      - Keep all ten headings even when empty; write 'Not specified' where nothing is known.
+
+      === CURRENT CASE FACTS ===
+      {existing_facts}
+      === END CURRENT CASE FACTS ===
+
+      === NEW SOURCE MATERIAL ===
+      {new_material}
+      === END NEW SOURCE MATERIAL ===

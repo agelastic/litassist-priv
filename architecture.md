@@ -1,6 +1,6 @@
 # LitAssist Architecture
 
-Last updated: 28/05/2026
+Last updated: 30/05/2026
 
 ## Overview
 LitAssist is a Python-based CLI tool for AI-powered litigation support in Australian law. It uses LLMs (via OpenRouter) and external search (Google CSE) to assist with legal research, document analysis, strategy generation, and drafting.
@@ -19,7 +19,7 @@ litassist/
   citation_context.py     # Citation full-text retrieval (cache, CSE, scraping)
   citation_patterns.py    # Offline citation format validation
   verification_chain.py   # Chain of Verification (CoVe) pipeline
-  commands/               # 11 user-facing command packages (each has __init__.py + core.py)
+  commands/               # 12 user-facing command packages (each has __init__.py + core.py)
     barbrief/
     brainstorm/
     caseplan/
@@ -27,6 +27,7 @@ litassist/
     digest/
     draft/
     extractfacts/
+    updatefacts/
     lookup/
     strategy/
     verify/
@@ -53,7 +54,7 @@ Commands are organised as packages in `litassist/commands/`. Each command has:
 - `core.py`: Main logic.
 - Helper modules as needed (e.g., `brainstorm/` has `orthodox_generator.py`, `unorthodox_generator.py`, `analysis_generator.py`, `citation_regenerator.py`).
 
-The 11 registered user-facing commands are: `lookup`, `digest`, `extractfacts`, `brainstorm`, `strategy`, `draft`, `verify`, `verify-cove`, `counselnotes`, `barbrief`, and `caseplan`.
+The 12 registered user-facing commands are: `lookup`, `digest`, `extractfacts`, `updatefacts`, `brainstorm`, `strategy`, `draft`, `verify`, `verify-cove`, `counselnotes`, `barbrief`, and `caseplan`.
 
 ### 3. LLM Integration
 - **Factory Pattern**: `litassist/llm/factory.py` provides `LLMClientFactory.for_command("commandname")` to create configured clients.

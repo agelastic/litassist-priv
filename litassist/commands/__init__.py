@@ -13,6 +13,7 @@ from litassist.commands import (
     digest,
     brainstorm,
     extractfacts,
+    updatefacts,
     draft,
     strategy,
     verify,
@@ -35,6 +36,7 @@ def register_commands(cli: click.Group) -> None:
     cli.add_command(digest.digest)
     cli.add_command(brainstorm.brainstorm)
     cli.add_command(extractfacts.extractfacts)
+    cli.add_command(updatefacts.updatefacts)
     cli.add_command(draft.draft)
     cli.add_command(strategy.strategy)
     cli.add_command(verify.verify)

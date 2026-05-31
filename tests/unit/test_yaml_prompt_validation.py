@@ -42,6 +42,9 @@ class TestYAMLPromptValidation:
             "outcome",
             "legal_issues",
             "facts",
+            # updatefacts merge prompt
+            "existing_facts",
+            "new_material",
             "side",
             "area",
             "research",

@@ -13,6 +13,21 @@ extractfacts:
   enforce_citations: true
   disable_tools: true
 
+# updatefacts: mechanical merge of already-condensed source material (digest /
+# extractfacts output) into the 10-heading case_facts structure. Uses the
+# cheapest configured model because the work is reorganisation, not heavy
+# reasoning; gemini-3.5-flash's 1M window also suits folding in several files at
+# once. enforce_citations off - citations arrive pre-verified from upstream
+# commands and merging must not re-trigger verification on placeholder text.
+# Low temperature/top_p to keep the merge faithful to the source facts.
+updatefacts:
+  model: "google/gemini-3.5-flash"
+  temperature: 0.2
+  top_p: 0.3
+  thinking_effort: "low"
+  enforce_citations: false
+  disable_tools: true
+
 strategy:
   model: "anthropic/claude-opus-4.7"
   temperature: 0.7

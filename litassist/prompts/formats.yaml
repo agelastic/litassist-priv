@@ -2,8 +2,12 @@
 # These templates define the structure for various command outputs
 
 formats:
-  # 10-heading case facts structure used by extractfacts and strategy commands
-  # NOT USED - Template not referenced in codebase
+  # 10-heading case facts structure - the output contract for case facts.
+  # USED BY: extractfacts single_extractor.py:30 and multi_extractor.py:120, and
+  # updatefacts core.py:133, all via PROMPTS.get_format_template("case_facts_10_heading").
+  # Paired with the validator litassist/utils/case_facts.py:57-68
+  # (validate_case_facts_format); keep the 10 heading names in sync with it.
+  # Guarded by tests/unit/test_case_facts_validator.py.
   case_facts_10_heading: |
     1. **Parties**: Identify all parties involved in the matter, including their roles and relevant characteristics
     2. **Background**: Provide context about the relationship between parties and circumstances leading to the dispute

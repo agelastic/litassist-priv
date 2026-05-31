@@ -1,6 +1,6 @@
 # LitAssist Logging Infrastructure Documentation
 
-Last updated: 27/05/2026
+Last updated: 31/05/2026
 
 ## Overview
 
@@ -87,7 +87,7 @@ except Exception:
 
 ## Command-Specific Implementations
 
-### 1. Simple Commands (extractfacts, counselnotes)
+### 1. Simple Commands (extractfacts, updatefacts, counselnotes)
 
 Basic linear flow with clear stages:
 
@@ -429,6 +429,7 @@ All commands have comprehensive logging:
 | brainstorm | ✅ Complete | 20+ | init, reading, orthodox, unorthodox, consolidation |
 | barbrief | ✅ Complete | 12 | init, reading, generation, verification |
 | extractfacts | ✅ Complete | 10 | init, reading, extraction, consolidation |
+| updatefacts | ✅ Complete | 4 | init, reading, merge |
 | counselnotes | ✅ Complete | 10 | init, reading, extraction/analysis, consolidation |
 | draft | ✅ Complete | 10 | init, reading, generation, verification, hallucination |
 | verify-cove | ✅ Complete | 8 | init, reading, reference, cove pipeline |

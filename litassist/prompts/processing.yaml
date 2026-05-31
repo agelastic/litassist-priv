@@ -266,7 +266,8 @@ processing:
       
       Just extract the raw facts found in this excerpt:
     
-    # NOT USED - Template not referenced in codebase
+    # USED BY: extractfacts - per-chunk extraction system prompt
+    # LOCATION: multi_extractor.py:67
     chunk_system_prompt: |
       Extract facts from this document excerpt. Be comprehensive but only include information actually present in this excerpt.
     

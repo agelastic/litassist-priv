@@ -1,8 +1,10 @@
 """
 Main CLI orchestration for extractfacts command.
 
-Auto-generates case_facts.txt under ten structured headings by processing
-documents and organizing facts using single-chunk or multi-chunk extraction.
+Produces structured 10-heading case facts (saved as outputs/extractfacts_*.txt) by
+processing documents and organizing facts using single-chunk or multi-chunk
+extraction. The usual next step is the 'updatefacts' command, which folds this
+output into a downstream-ready case_facts file.
 """
 
 import click
@@ -12,7 +14,8 @@ from litassist.utils.core import (
     show_command_completion,
 )
 from litassist.utils.legal_reasoning import verify_content_if_needed
-from litassist.utils.formatting import info_message
+from litassist.utils.formatting import info_message, warning_message
+from litassist.utils.case_facts import validate_case_facts_format
 from litassist.utils.file_ops import expand_glob_patterns_callback as expand_glob_patterns
 from litassist.logging import (
     save_log,
@@ -31,9 +34,6 @@ from .multi_extractor import extract_multi_chunk
     "file", nargs=-1, required=True, type=click.Path(), callback=expand_glob_patterns
 )
 @click.option(
-    "--verify", is_flag=True, help="Enable self-critique pass (default: auto-enabled)"
-)
-@click.option(
     "--heavy",
     is_flag=True,
     help="Use verification-heavy mode (max thinking effort)",
@@ -45,17 +45,17 @@ from .multi_extractor import extract_multi_chunk
 )
 @click.option("--output", type=str, help="Custom output filename prefix")
 @timed
-def extractfacts(file, verify, heavy, noverify, output):
+def extractfacts(file, heavy, noverify, output):
     """
-    Auto-generate case_facts.txt under ten structured headings.
+    Produce structured 10-heading case facts from one or more documents.
 
-    Processes one or more documents to extract relevant case facts and organizes them
-    into a structured format with ten standard headings. This provides a
-    foundation for other commands like 'brainstorm' and 'strategy' which require structured facts.
+    Extracts relevant facts and organizes them under the ten standard headings,
+    saving the result as outputs/extractfacts_*.txt. The usual next step is
+    'updatefacts' to fold this into a downstream-ready case_facts file for
+    commands like 'brainstorm', 'strategy', and 'barbrief'.
 
     Args:
         file: Path(s) to the document(s) (PDF or text) to extract facts from.
-        verify: Whether to run a self-critique verification pass on the extracted facts.
 
     Raises:
         click.ClickException: If there are errors reading the file, processing chunks,
@@ -104,7 +104,6 @@ def extractfacts(file, verify, heavy, noverify, output):
 
     # Warn if both --noverify and --heavy are specified
     if noverify and heavy:
-        from litassist.utils.formatting import warning_message
         click.echo(warning_message("--heavy flag ignored when --noverify is specified"))
 
     if noverify:
@@ -160,6 +159,17 @@ def extractfacts(file, verify, heavy, noverify, output):
         final_metadata["Verification"] = "Skipped (--noverify)"
         final_metadata["Model"] = client.model
 
+    # Producer-side check: warn (but still save) if the extracted facts are
+    # missing any of the ten required headings, so the user can fix them before
+    # feeding the file to downstream commands that reject the wrong shape.
+    if not validate_case_facts_format(combined):
+        click.echo(
+            warning_message(
+                "Extracted facts are missing one or more required headings (see "
+                "above). Saving anyway - review before using downstream."
+            )
+        )
+
     # Save final output using utility (reasoning trace remains inline)
     output_file = save_command_output(
         output if output else "extractfacts",
@@ -192,7 +202,7 @@ def extractfacts(file, verify, heavy, noverify, output):
     source_desc = ", ".join(source_files[:3])
     if len(source_files) > 3:
         source_desc += f" + {len(source_files) - 3} more"
-    # Use verification status from metadata (correctly set at lines 142 or 157)
+    # Use verification status from metadata (set in the verification block above)
     verification_status = final_metadata["Verification"]
     stats = {
         "Sources": (

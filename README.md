@@ -1,6 +1,6 @@
 # LitAssist
 
-Last updated: 28/05/2026
+Last updated: 31/05/2026
 
 **LitAssist** is a comprehensive legal workflow automation tool designed for Australian legal practice. It provides a structured end-to-end pipeline for litigation support:
 
@@ -18,8 +18,9 @@ graph TD
     CP --> C["ExtractFacts<br/>Structure"]
     
     A --> D["Brainstorm<br/>Generate Options"]
-    B --> D
-    C --> D
+    B --> UF["UpdateFacts<br/>Merge into case_facts"]
+    C --> UF
+    UF --> D
     
     D --> E["Strategy<br/>Plan Approach"]
     E --> F["Draft<br/>Create Documents"]
@@ -44,6 +45,7 @@ graph TD
     style D fill:#fff3e0
     style E fill:#fff3e0
     style F fill:#e8f5e9
+    style UF fill:#e1f5fe
     style CN fill:#f3e5f5
     style BB fill:#f3e5f5
 ```
@@ -63,6 +65,7 @@ graph TD
 - **Lookup**: Rapid case-law research (Jade.io/AustLII via Google Custom Search + Gemini 3.5 Flash)
 - **Digest**: Mass document processing (chronological summaries or issue-spotting via Claude Sonnet 4.6)
 - **ExtractFacts**: Automatic extraction of case facts into a structured file (Claude Sonnet 4.6)
+- **UpdateFacts**: Merge extractfacts/digest output (or any notes) into the structured case_facts file, removing manual copy-paste (Google Gemini 3.5 Flash)
 - **Brainstorm**: Creative legal strategy generation (unorthodox strategies via Grok 4.20, analysis via o3-pro)
 - **Strategy**: Targeted legal options with probability assessments (Claude Opus 4.7 with o3-pro analysis)
 - **Draft**: Citation-rich document creation (superior technical writing via o3-pro)
@@ -158,7 +161,7 @@ LitAssist uses task-based model selection, matching each command to the model be
 - **Claude Opus 4.7** - primary strategy generation and legal soundness checking
 - **OpenAI GPT-5.5** - standard and heavy verification, heavy reasoning, and CoVe answer stages
 - **OpenAI o3-pro** - drafting, briefs, counsel notes, and analysis stages
-- **Google Gemini 3.5 Flash** - lookup synthesis over fetched research sources
+- **Google Gemini 3.5 Flash** - lookup synthesis over fetched research sources, and case-facts merging (updatefacts)
 - **xAI Grok 4.20** - unorthodox brainstorm generation
 
 | Command | Model | BYOK Required | Purpose |
@@ -167,6 +170,7 @@ LitAssist uses task-based model selection, matching each command to the model be
 | **lookup** | Gemini 3.5 Flash | No | Case-law research synthesis |
 | **digest** | Claude Sonnet 4.6 | No | Document analysis and issue identification |
 | **extractfacts** | Claude Sonnet 4.6 | No | Structured fact extraction with citations |
+| **updatefacts** | Gemini 3.5 Flash | No | Merge source documents into the case_facts file |
 | **brainstorm** | Claude Sonnet 4.6 / Grok 4.20 | No | Legal strategies + creative ideation |
 | **strategy** | Claude Opus 4.7 / o3-pro | Yes for analysis stage | Strategic options and analysis |
 | **draft** | OpenAI o3-pro | **Yes** | Superior technical legal writing |
@@ -282,7 +286,20 @@ litassist extractfacts document.pdf
 litassist extractfacts file1.pdf file2.txt file3.pdf
 
 # Creates: extractfacts_[combined_slugs]_YYYYMMDD_HHMMSS.txt
-# Note: case_facts.txt must be created or edited manually
+# Note: run 'updatefacts' to fold this into case_facts.txt (or edit manually)
+```
+
+### 4.5 updatefacts - Merge source documents into the case_facts file
+
+```bash
+# Fold extractfacts/digest output (or any text) into case_facts.txt
+litassist updatefacts 'outputs/extractfacts_*.txt' 'outputs/digest_*.txt'
+
+# Update a specific existing case-facts file
+litassist updatefacts new_affidavit.pdf --facts case_facts.txt
+
+# Creates: case_facts_YYYYMMDD_HHMMSS.txt in the current directory
+#          (auto-discovered by brainstorm/strategy/draft/barbrief)
 ```
 
 ### 5. brainstorm - Generate comprehensive legal strategies with reasoning traces
@@ -388,6 +405,7 @@ All commands now save their output to timestamped text files without overwriting
 - **digest**: `digest_[mode]_[filename_slug]_YYYYMMDD_HHMMSS.txt`
 - **brainstorm**: `brainstorm_[area]_[side]_YYYYMMDD_HHMMSS.txt`
 - **extractfacts**: `extractfacts_[filename_slug]_YYYYMMDD_HHMMSS.txt`
+- **updatefacts**: `case_facts_YYYYMMDD_HHMMSS.txt` (written to the current directory, not `outputs/`)
 - **strategy**: `strategy_[outcome_slug]_YYYYMMDD_HHMMSS.txt`
 - **draft**: `draft_[query_slug]_YYYYMMDD_HHMMSS.txt`
 - **counselnotes**: `counselnotes_[filename_slug]_YYYYMMDD_HHMMSS.txt`
@@ -396,7 +414,7 @@ All commands now save their output to timestamped text files without overwriting
 Each output file includes metadata headers with command parameters and timestamps.
 
 ### Output Organization
-- Command outputs are automatically stored in the `outputs/` directory
+- Command outputs are automatically stored in the `outputs/` directory (the exception is `updatefacts`, which writes `case_facts_<ts>.txt` to the current directory so downstream commands auto-discover it)
 - Detailed logs are saved in `logs/<command>_YYYYMMDD-HHMMSS.{json|md}`
 - Progress indicators keep you informed during long-running operations (configurable heartbeat interval)
 - Network errors are caught and displayed with user-friendly messages

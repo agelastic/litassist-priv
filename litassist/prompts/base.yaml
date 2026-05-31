@@ -45,10 +45,17 @@ base:
 # Deprecated not ok to remove without modifying tests - sowhere in LLM client code specific "system" prompts are mandated for each command, need to fix there
 commands:
   # Extractfacts command
-  # DEPRECATED: Not used in codebase
+  # USED BY: extractfacts - system prompt, resolved by get_system_prompt("extractfacts")
+  # (prompts.py:137 -> commands.extractfacts.system)
+  # LOCATION: single_extractor.py:54, multi_extractor.py:145
   extractfacts:
     system: "Extract factual information precisely under the requested headings. If information is not available for a heading, write 'Not specified' or 'To be determined'."
-  
+
+  # Updatefacts command
+  # USED BY: litassist/commands/updatefacts/core.py (merge LLM call)
+  updatefacts:
+    system: "Maintain a precise, structured case-facts file. Merge new information into the existing headings without discarding facts already present. Where information is unavailable, write 'Not specified' or use bracketed placeholders. Never fabricate."
+
   # Lookup command
   # DEPRECATED: Not used in codebase
   lookup:

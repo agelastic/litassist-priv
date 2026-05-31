@@ -1,6 +1,6 @@
 # Changelog
 
-Last updated: 29/05/2026
+Last updated: 30/05/2026
 
 All notable changes to LitAssist will be documented in this file.
 
@@ -12,6 +12,7 @@ Historical dated sections preserve the model names that were current when those 
 ## [Unreleased]
 
 ### Added
+- `updatefacts` command: folds source documents (digest/extractfacts output or any text) into the 10-heading case_facts structure, updating an existing case-facts file (auto-resolved from the latest `case_facts*.txt`, or set with `--facts`) or creating one from scratch, with an extra Notes section for material that does not fit a heading. Writes a fresh, auto-discoverable `case_facts_<timestamp>.txt` into the working directory, removing the manual copy-to-`case_facts.txt` step. Uses a cheap merge model (`google/gemini-3.5-flash`).
 - Comprehensive citation verification system with real-time Jade.io validation
 - Reasoning trace capture across all commands for accountability
 - Heartbeat progress indicators for long-running operations
@@ -27,6 +28,9 @@ Historical dated sections preserve the model names that were current when those 
 - `draft` preflight oversize handling: soft warn + hard fail derived from the model's actual context window plus a provider-error reframe pointing users at `litassist digest --mode summary <file>`.
 
 ### Changed
+
+#### May 2026: dropped the no-op `--verify` flag from extractfacts and strategy
+- `extractfacts` and `strategy` ran verification unconditionally (the call site hard-coded `verify_flag=True`), so their `--verify` flag did nothing but print a "verification already active" reminder. The flag is removed from both commands. Verification remains auto-enabled; use `--noverify` to skip it. `draft` already followed this pattern. The functional `--verify` on `brainstorm`, `counselnotes`, and `barbrief` (which genuinely toggles citation/content verification) is unchanged, as is the unsupported-flag guard on `lookup`, `digest`, and `caseplan`.
 
 #### May 2026: case facts file is optional - latest case_facts*.txt auto-selected
 - The case facts input is now optional for `caseplan`, `strategy`, `barbrief` (positional), `brainstorm` (`--facts`), and `draft` (`documents`). When omitted, the new shared `resolve_case_facts_file()` (`litassist/utils/case_facts.py`) picks the most recent `case_facts*.txt` in the launch directory and prints which file it chose. Recency is the `YYYYMMDD_HHMMSS` timestamp embedded in the filename (e.g. `case_facts_20260530_101500.txt`) when present, otherwise the file's modification time - so the newest timestamped version wins, but a freshly-edited plain `case_facts.txt` is not shadowed by an older timestamped file. If no `case_facts*.txt` exists, the command fails with a clear message. `brainstorm`'s previous bespoke `case_facts.txt`-only default is replaced by this shared resolver. Commands that produce or do not consume case facts (`extractfacts`, `lookup`, `digest`, `counselnotes`, `verify`, `verify-cove`) are unchanged.
