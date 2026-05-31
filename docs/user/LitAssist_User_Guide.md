@@ -282,7 +282,7 @@ section. Source files are never modified; each run emits a new timestamped file.
 
 ```bash
 # Build/refresh case facts from extractfacts and digest output
-litassist updatefacts extractfacts_*.txt digest_issues_*.txt
+litassist updatefacts 'outputs/extractfacts_*.txt' 'outputs/digest_issues_*.txt'
 
 # Update a specific existing case-facts file with new material
 litassist updatefacts new_affidavit.pdf --facts case_facts.txt
