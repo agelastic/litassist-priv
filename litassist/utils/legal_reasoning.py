@@ -240,7 +240,7 @@ def verify_content_if_needed(
     verify_flag: bool = False,
     citation_already_verified: bool = False,
     heavy: bool = False,
-) -> tuple[str, bool]:
+) -> tuple[str, bool, Optional[str]]:
     """
     Handle verification and citation validation.
 
@@ -253,21 +253,29 @@ def verify_content_if_needed(
         heavy: Use verification-heavy mode (max thinking effort)
 
     Returns:
-        Tuple of (possibly modified content, whether verification was performed)
+        Tuple of (possibly modified content, whether corrections were made,
+        short-circuit reason or None). The reason is set when the verification
+        chain bailed before its LLM stage (citation pattern / database issues),
+        so callers can report that the content was NOT fully verified rather
+        than claiming verification was applied.
     """
     # Verification chain for high-risk commands (respects verify_flag)
     if command_name in ["extractfacts", "strategy", "draft"]:
         # Skip verification if user specified --noverify
         if not verify_flag:
-            return content, False
+            return content, False, None
 
         from litassist.verification_chain import run_verification_chain
 
         verified_content, results = run_verification_chain(content, command_name, heavy=heavy)
+        short_circuit = results.get("short_circuit")
+        if short_circuit:
+            # Chain bailed before the LLM stage; content was not fully verified.
+            return content, False, short_circuit
         if results.get("llm", {}).get("corrections_made"):
-            return verified_content, True
-        # If no corrections were made, return original content
-        return content, False
+            return verified_content, True, None
+        # Verification ran to completion with no corrections.
+        return content, False, None
 
     # Check if auto-verification is needed
     auto_verify = client.should_auto_verify(content, command_name)
@@ -323,4 +331,4 @@ def verify_content_if_needed(
         except Exception as e:
             raise click.ClickException(f"Verification error during {command_name}: {e}")
 
-    return content, needs_verification
+    return content, needs_verification, None

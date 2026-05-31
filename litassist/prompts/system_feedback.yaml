@@ -1,3 +1,4 @@
+---
 # Unified system feedback messages
 # Consolidates errors, warnings, and status messages
 # Contains CLI output messages, errors, warnings, and status updates
@@ -23,7 +24,7 @@ system_feedback:
       # digest_chunk_error: |
       #   LLM error in digest chunk {chunk_idx}: {error}
 
-    # USED BY: file_operations.py save/load methods  
+    # USED BY: file_operations.py save/load methods
     file:
       # not_found: |
       #   File not found: {path}
@@ -38,17 +39,17 @@ system_feedback:
       # save_markdown_failed: |
       #   Failed to save Markdown log {path}: {error}
 
-    # USED BY: processing.py process_facts()  
+    # USED BY: processing.py process_facts()
     processing:
       facts_extraction_failed: |
         Error extracting facts: {error}
-      
+
       chunk_processing_failed: |
         Error processing chunk {chunk_idx}: {error}
-      
+
       facts_organization_failed: |
         Error organizing facts: {error}
-      
+
       file_too_large: |
         {file_type} file too large ({size:,} characters). Please provide a file under {max_size:,} characters (~{word_count:,} words).
 
@@ -60,16 +61,16 @@ system_feedback:
     config:
       file_not_found: |
         Configuration file not found: {config_path}
-      
+
       invalid_yaml: |
         Invalid YAML in {config_path}: {error}
-      
+
       missing_key: |
         config.yaml missing key {key}
-      
+
       invalid_value: |
         config '{key}' must be a non-empty string
-      
+
       api_test_failed: |
         {service} API test failed: {error}
 
@@ -77,29 +78,29 @@ system_feedback:
     citation:
       multiple_attempts_failed: |
         CRITICAL: Multiple attempts to generate content with verified citations failed. The AI model is consistently generating unverifiable legal citations. Manual intervention required.
-      
+
       verification_failed_critical: |
         [CRITICAL] Citation verification failed:
-        
+
         {categorized_issues}
-        
+
         [ACTION REQUIRED] These citations appear to be AI hallucinations.
         Remove these citations and regenerate, or verify them independently.
 
-  # USED BY: warning_service.py generate_warnings()  
+  # USED BY: warning_service.py generate_warnings()
   warnings:
     # USED BY: validation.py check_case_facts()
     validation:
       citation_validation_header: |
         [WARNING] CITATION VALIDATION WARNING
-        
+
         The following potential issues were detected in the generated content:
-      
+
       case_facts_missing_headings: |
         [WARNING] case_facts.txt appears incomplete.
         Expected 10 headings but found only {found}.
         Missing headings may result in less comprehensive analysis.
-      
+
       side_area_mismatch: |
         [WARNING] '{side}' typically applies to {expected_area} law matters.
         The specified area is '{area}'. Please verify this combination is correct.
@@ -110,7 +111,7 @@ system_feedback:
         [WARNING] Large case facts file ({size:,} characters).
         Brainstorm command works best with files under 50,000 characters.
         Consider using 'extractfacts' first to create a structured summary.
-      
+
       strategy: |
         [WARNING] Very large case facts file ({size:,} characters).
         Strategy command has a 100,000 character limit to ensure quality analysis.
@@ -120,36 +121,36 @@ system_feedback:
     citation:
       not_found_header: |
         [NOT FOUND] CASES NOT FOUND IN DATABASE:
-      
+
       format_issues_header: |
         [WARNING] CITATION FORMAT ISSUES:
-      
+
       verification_problems_header: |
         [VERIFICATION] VERIFICATION PROBLEMS:
-      
+
       error_item: |
            • {citation}
              -> {reason}
-      
+
       strict_mode_failed: |
         [ERROR] {error}
-      
+
       retrying_with_instructions: |
         [RETRY] Retrying with enhanced citation instructions...
-      
+
       retry_also_failed: |
         [FAILED] Retry also failed: {error}
-      
+
       citation_verification_warning: |
         [WARNING] Citation verification: {issue}
-      
+
       retry_successful: |
         [SUCCESS] Retry successful: {issue}
-      
+
       all_citations_verified: |
         [SUCCESS] Retry successful: All citations verified
 
-  # USED BY: status_reporter.py update_status()  
+  # USED BY: status_reporter.py update_status()
   status:
     # USED BY: strategy_analyzer.py track_progress()
     progress:
@@ -160,7 +161,7 @@ system_feedback:
       # regeneration_attempt: |
       #   [RETRY] Regeneration attempt {retry_attempt}: {count} strategies need fixing
 
-    # USED BY: command_runner.py finalize_command()  
+    # USED BY: command_runner.py finalize_command()
     completion:
       strategy_verified: |
         [SUCCESS] Strategy {strategy_num}: Citations verified
@@ -183,144 +184,144 @@ system_feedback:
       # strategies_with_issues: |
       #   [WARNING] {count} {strategy_type} strategies still have citation issues after {max_retries} attempts
 
-    # USED BY: file_operations.py log_file_activity()  
+    # USED BY: file_operations.py log_file_activity()
     file_ops:
       using_case_facts: |
         Using {doc_path} as CASE FACTS ({length} characters)
-      
+
       using_legal_strategies: |
         Using {doc_path} as LEGAL STRATEGIES ({length} characters)
-      
+
       using_supporting_document: |
         Using {doc_path} as supporting document ({length} characters)
-      
+
       preview_line_long: |
         {line_preview}...
-      
+
       preview_line_short: |
         {line}
 
-    # USED BY: lookup_command.py display_results()  
+    # USED BY: lookup_command.py display_results()
     search:
       link_item: |
         - {link}
-      
+
       numbered_link: |
         {index}. {link}
-      
+
       exhaustive_search: |
         [SEARCH] Exhaustive search: {count} sources analyzed
-      
+
       standard_search: |
         [SEARCH] Standard search: {count} sources analyzed
-      
+
       extract_type_summary: |
         [STATS] {extract_type} extracted from search results
-      
+
       analysis_type_summary: |
         [STATS] {analysis_type} legal analysis for: {question}
 
-    # USED BY: strategy.py analyze_strategies()  
+    # USED BY: strategy.py analyze_strategies()
     strategy_analysis:
       using_brainstorm_strategies: |
         Using strategies from brainstorm:
-      
+
       orthodox_count: |
         - {count} orthodox strategies
-      
+
       unorthodox_count: |
         - {count} unorthodox strategies
-      
+
       most_likely_count: |
         - {count} marked as most likely to succeed
-      
+
       generated_for_context: |
         - Generated for: {side} in {area} law
-      
+
       missing_headings: |
         Missing required headings: {missing_list}
-      
+
       headings_case_insensitive_note: |
         Note: Headings are now case-insensitive and can have punctuation.
-      
+
       strategies_excluded: |
         [INFO] Excluding these strategies: {strategy_numbers}
-      
+
       final_result: |
         [STATS] Final result: {count} verified {strategy_type} strategies
-      
+
       options_generated: |
         [STATS] Successfully generated {count} verified strategic options
-      
+
       no_options_after_attempts: |
         [WARNING] Could not generate any options with verified citations after {max_attempts} attempts
-      
+
       total_options_for_outcome: |
         [STATS] Generated {count} strategic options for: {outcome}
-      
+
       option_title: |
         {index}. {title}
 
-    # USED BY: cli.py show_completion_summary()  
+    # USED BY: cli.py show_completion_summary()
     command_completion:
       command_complete: |
         [SUCCESS] {command_name} complete!
-      
+
       output_saved: |
         [SAVED] Output saved to: "{output_file}"
-      
+
       stat_item: |
         {key}: {value}
-      
+
       strategies_summary: |
         [STATS] Generated strategies for {side} in {area} law:
-      
+
       orthodox_summary: |
         • Orthodox strategies: {count}
-      
+
       unorthodox_summary: |
         • Unorthodox strategies: {count}
-      
+
       most_likely_summary: |
         • Most likely to succeed: {count}
 
-    # USED BY: debug_logger.py log_execution_metrics()  
+    # USED BY: debug_logger.py log_execution_metrics()
     debug:
       function_execution_time: |
         Function {function_name} execution time: {duration:.3f} seconds
-      
+
       function_started: |
         - Started: {start_timestamp}
-      
+
       function_ended: |
         - Ended: {end_timestamp}
-      
+
       function_failed: |
         Function {function_name} failed after {duration:.3f} seconds
-      
+
       log_saved: |
         {log_type} log saved: {path}
-      
+
       config_key_not_found: |
         [WARNING] No configuration found for '{config_key}', using defaults
-      
+
       using_env_model: |
         [INFO] Using model from environment: {model}
-      
+
       offline_validation_issues: |
         [WARNING] Offline validation found {count} potential issues
 
-    # USED BY: citation_processor.py handle_citations()  
+    # USED BY: citation_processor.py handle_citations()
     citation_processing:
       citation_warnings_found: |
         [FIXING] Found {count} citation issues in {strategy_type} strategies - fixing...
-      
+
       categorized_error_header: |
         {error_type} ERRORS:
-      
+
       citation_error_detail: |
         • {citation}
           -> {reason}
-      
+
       unverified_citations_removed: |
         CITATION VERIFICATION WARNING: {count} citations removed as unverified

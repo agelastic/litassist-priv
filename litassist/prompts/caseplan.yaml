@@ -1,3 +1,4 @@
+---
 # Caseplan command specific prompt templates
 # Used for generating comprehensive litigation workflow plans
 
@@ -40,13 +41,13 @@ commands:
             - Factual Density Score (1-10): Volume of evidence, disputed facts, timeline complexity
             - Procedural Complexity Score (1-10): Court rules, time limits, interlocutory issues
             - Strategic Difficulty Score (1-10): Opponent sophistication, public interest, precedent impact
-         
+
          B. Issue Identification:
             - Primary Legal Issues: List 3-5 key legal questions
             - Secondary Issues: Supporting or procedural matters
             - Factual Disputes: Key contested facts requiring evidence
             - Strategic Challenges: Opponent strengths, weaknesses in case
-         
+
          C. Resource Projections:
             - Estimated Total Cost: $X,XXX - $XX,XXX (range based on complexity)
             - Time to Resolution: X-XX months
@@ -54,7 +55,7 @@ commands:
             - Risk Factors: What could increase cost/time
 
       2. PHASED WORKFLOW - EVIDENCE-DRIVEN SYNTHESIS FOCUS
-         
+
          WORKFLOW PHILOSOPHY:
          - Phases 1-5: Evidence Gathering & Document Analysis (40% of effort)
            * Focus on documentary evidence from case_facts.txt
@@ -65,19 +66,19 @@ commands:
          - Phases 11-15: Strategic Synthesis & Goal-Specific Memoranda (20% of effort)
            * Synthesize evidence + research into actionable intelligence
            * Draft documents targeting specific monetary/legal outcomes
-         
+
          The goal is to build from available evidence, test all legal positions,
          systematically counter opposing arguments, and produce goal-specific deliverables.
-         
+
          For each phase include:
          - Phase number and descriptive name (specific to case issues)
          - Purpose and value delivered (mention specific evidence/claims)
-         
+
          ### COMMAND:
          ```bash
          litassist [exact command with case-specific parameters]
          ```
-         
+
          - Information flow (what specific evidence/research feeds in)
          - Cost estimate for phase
          - Time estimate
@@ -125,15 +126,15 @@ commands:
          - case_facts.txt is only ever the OUTPUT of extractfacts, and the INPUT to brainstorm/strategy/draft/barbrief.
 
       2C. ONE-SHOT EXAMPLE: VEHICLE OWNERSHIP DISPUTE COMPREHENSIVE PLAN
-         
+
          This example demonstrates proper workflow for a property/contract dispute with extensive research needs:
-         
+
          ## Phase 1: Initial Fact Extraction (Day 1)
          Purpose: Create structured case_facts.txt from primary documents
          Commands: litassist extractfacts bank_statements.pdf vehicle_registration.pdf text_messages.pdf
          Cost: $2
          Output feeds: All subsequent phases requiring case_facts.txt
-         
+
          ## Phase 2: Document Intelligence Gathering (Day 1-2)
          Purpose: Deep analysis of financial and ownership evidence
          Commands: litassist digest "Car Docs for civil case 2025/*.pdf" --mode issues --context "analyze ownership disputes, gift claims, presumption of advancement, and financial contributions"
@@ -146,7 +147,7 @@ commands:
          Commands: litassist updatefacts 'outputs/digest_*.txt'
          Cost: $0.20
          Output feeds: Enhanced case_facts.txt for all strategic analysis
-         
+
          ## Phase 4-8: Comprehensive Legal Research (Days 3-5)
          Purpose: Build authoritative foundation across all legal theories
          Commands:
@@ -159,25 +160,25 @@ commands:
            litassist lookup "conversion trespass to goods motor vehicle damages ACT" --mode irac --context "ACT chattel torts" --guidance "Alternative claim if detinue fails; calculate market value and depreciation since wrongful retention began"
          Cost: $8 total
          Output feeds: Brainstorm research context, counselnotes synthesis
-         
+
          ## Phase 9: Initial Strategy Generation (Day 6)
          Purpose: Generate creative approaches without research constraints
          Commands: litassist brainstorm --side plaintiff --area civil --facts case_facts.txt
          Cost: $4
          Output feeds: Strategy development, counselnotes synthesis
-         
+
          ## Phase 10: Research-Informed Strategy (Day 6)
          Purpose: Generate precedent-backed strategies
          Commands: litassist brainstorm --side plaintiff --area civil --facts case_facts.txt --research 'outputs/lookup_*.txt'
          Cost: $5
          Output feeds: Enhanced strategy options for analysis
-         
+
          ## Phase 11: First Synthesis - Research & Strategies (Day 7)
          Purpose: Combine all research and strategies into coherent analysis
          Commands: litassist counselnotes outputs/lookup_*.txt outputs/brainstorm_*.txt --extract all
          Cost: $4
          Output feeds: Draft memoranda, further strategy refinement
-         
+
          ## Phase 12-14: Tactical Implementation Plans (Day 8)
          Purpose: Convert strategies to actionable plans
          Commands:
@@ -186,34 +187,34 @@ commands:
            litassist strategy case_facts.txt --outcome "Rebut presumption of advancement and prove incomplete gift" --strategies outputs/brainstorm_20250713_133724.txt
          Cost: $9 total
          Output feeds: Final synthesis and memoranda
-         
+
          ## Phase 15: Comprehensive Multi-Source Synthesis (Day 9)
          Purpose: Synthesize ALL materials into strategic assessment
          Commands: litassist counselnotes outputs/brainstorm_*.txt outputs/lookup_*.txt outputs/digest_*.txt outputs/strategy_*.txt --extract all --verify
          Cost: $4
          Output feeds: Final memoranda drafting
-         
+
          ## Phase 16: Draft Feasibility Memorandum (Day 10)
          Purpose: Create comprehensive assessment of all options
          Commands: litassist draft case_facts.txt outputs/counselnotes_*.txt outputs/strategy_*.txt "Draft comprehensive feasibility memorandum analyzing all property recovery options with risk assessments and recommendations" --verify
          # Switch rationale: --verify for court document quality
          Cost: $5
          Output feeds: Client advice, litigation planning
-         
+
          ## Phase 17: Draft Strategic Recommendation (Day 10)
          Purpose: Executive summary with clear recommendations
          Commands: litassist draft outputs/counselnotes_*.txt "Draft executive strategic recommendation memorandum highlighting recommended approach and implementation timeline"
          Cost: $3
          Output feeds: Decision-making, client conference
-         
+
          Total Cost: $50-60
          Total Time: 10 days
          Key Deliverables: Feasibility memorandum, Strategic recommendation, 15+ research reports
 
       2E. EVIDENCE-BASED COMMAND GENERATION RULES
-         
+
          CRITICAL: Every command must be tailored to the specific case facts, not generic templates.
-         
+
          DOCUMENT PLACEHOLDER REQUIREMENTS:
          - Create descriptive filenames that indicate document content and relevance
          - Examples of GOOD placeholders:
@@ -226,7 +227,7 @@ commands:
            * evidence.pdf
            * financial_records.pdf
          - Include dates, parties, or specific issues in filenames
-         
+
          CASE-SPECIFIC PARAMETERS:
          `--context` semantics differ by command. Use the rule that matches the command you are emitting:
 
@@ -273,26 +274,26 @@ commands:
            * Phase 5: Counter "Gift Claim" - lookup "incomplete gift motor vehicle key delivery" --mode irac --context "ACT chattels and gift law" --guidance "Need to defeat Martin Wong's claim that handover of keys in June 2023 completed the gift; emphasise donor's retained control over registration and use"
            * Phase 6: digest financial_records.pdf --mode issues --context "identify evidence contradicting Martin Wong's gift claim from June 2023"
            * Phase 7: Develop strategy to prove retained control over vehicle
-         
+
          FINAL DOCUMENT SPECIFICITY:
          - Draft commands must target specific case objectives with amounts/parties:
            * GOOD: "Draft memorandum analyzing feasibility of recovering $40000 from Martin Wong"
            * BAD: "Draft feasibility memorandum"
            * GOOD: "Draft originating application for declaration Victor Orlov owns 2023 BMW"
            * BAD: "Draft originating application"
-         
+
          COMMAND FORMATTING FOR PROMINENCE:
          - ALWAYS format commands as:
-         
+
          ### COMMAND:
          ```bash
          litassist [command] [specific args based on case]
          ```
-         
+
          - Add blank line before and after command blocks
          - Use bash syntax highlighting in markdown
          - Group related commands under clear phase headers
-      
+
       2F. SWITCH EXPLANATION REQUIREMENTS
          - After each command, provide a one-liner explaining technical switch choices
          - Focus on non-obvious switches: --mode, --comprehensive, --extract, --verify, --heavy
@@ -307,32 +308,32 @@ commands:
 
       3. ADAPTIVE STRUCTURE
          - Simple cases: 4-6 essential phases
-         - Medium cases: 7-10 phases  
+         - Medium cases: 7-10 phases
          - Complex cases: 10-15 phases
          - Budget constraints respected
 
       3A. INFORMATION SYNTHESIS METHODOLOGY
-         
+
          SYNTHESIS PHILOSOPHY:
          Information synthesis through counselnotes is the KEY to transforming raw data into strategic intelligence.
          Think of litigation as an information pyramid:
          - Base: Raw documents, evidence, case law (Phases 1-5)
-         - Middle: Analyzed and organized information (Phases 6-10)  
+         - Middle: Analyzed and organized information (Phases 6-10)
          - Peak: Strategic memoranda and recommendations (Phases 11-15)
-         
+
          SYNTHESIS PATTERNS:
          1. Vertical Synthesis: Combine same-type information (all research, all strategies)
          2. Horizontal Synthesis: Combine different types (research + strategies + evidence)
          3. Iterative Synthesis: Multiple counselnotes passes with different combinations
          4. Final Synthesis: Everything combined for comprehensive memoranda
-         
+
          COUNSELNOTES AS SYNTHESIS ENGINE:
          - First Pass: Combine all lookup research -> Legal framework document
          - Second Pass: Combine all strategies -> Strategic options assessment
          - Third Pass: Combine research + strategies -> Integrated analysis
          - Fourth Pass: Add evidence digests -> Complete factual and legal picture
          - Final Pass: Everything combined -> Feasibility memorandum foundation
-         
+
          MEMORANDA FOCUS:
          The entire workflow builds toward two key deliverables:
          1. Comprehensive Feasibility Memorandum (10-20 pages)
@@ -341,15 +342,15 @@ commands:
             - Cost-benefit analysis
             - Timeline projections
             - Recommended approach with rationale
-         
+
          2. Executive Strategic Recommendation (2-3 pages)
             - Clear recommended path forward
             - Key risks and mitigation strategies
             - Implementation timeline
             - Success metrics
-         
+
       3B. ENHANCED WORKFLOW SEQUENCING
-         
+
          PHASE GROUP 1 - FOUNDATION BUILDING (Days 1-3):
          Essential Phases:
          - Extract facts from all source documents
@@ -357,7 +358,7 @@ commands:
          - case_facts.txt enhancement via updatefacts (folds in extractfacts/digest output)
          - Additional extractfacts if new documents discovered
          Goal: Rock-solid factual foundation
-         
+
          PHASE GROUP 2 - COMPREHENSIVE RESEARCH (Days 4-6):
          Essential Phases:
          - 10-15 targeted lookup queries covering all legal theories
@@ -365,7 +366,7 @@ commands:
          - Gap analysis and additional research
          - Final research synthesis
          Goal: Complete legal authority foundation
-         
+
          PHASE GROUP 3 - STRATEGIC DEVELOPMENT (Days 7-8):
          Essential Phases:
          - Initial creative brainstorm
@@ -373,7 +374,7 @@ commands:
          - Multiple strategy commands for different outcomes
          - Strategic synthesis via counselnotes
          Goal: Full range of strategic options analyzed
-         
+
          PHASE GROUP 4 - SYNTHESIS & ANALYSIS (Days 9-10):
          Essential Phases:
          - Multi-source counselnotes (research + strategies + evidence)
@@ -381,7 +382,7 @@ commands:
          - Final comprehensive synthesis
          - Risk and feasibility analysis
          Goal: Transform information into actionable intelligence
-         
+
          PHASE GROUP 5 - DELIVERABLE CREATION (Days 11-12):
          Essential Phases:
          - Draft comprehensive feasibility memorandum
@@ -391,27 +392,27 @@ commands:
          Goal: Professional, actionable deliverables for decision-making
 
       4. COMPREHENSIVE INFORMATION GATHERING PRINCIPLES
-         
+
          RESEARCH DEPTH:
          - Minimal budget: 5-8 lookup queries covering core issues
          - Standard budget: 10-15 queries for comprehensive coverage
          - Comprehensive budget: 15-25 queries leaving no stone unturned
-         
+
          STRATEGIC GENERATION:
          - Always run initial brainstorm WITHOUT research (creative freedom)
          - Always run second brainstorm WITH research (precedent-backed)
          - Consider defendant perspective brainstorm for settlement leverage
-         
+
          SYNTHESIS REQUIREMENTS:
          - Counselnotes after EVERY major information gathering phase
          - Multiple synthesis passes with different document combinations
          - Final synthesis must include ALL generated materials
-         
+
          DOCUMENT SELECTION:
          - Include ALL relevant documents in digest phases
          - Process documents in logical groups (financial, correspondence, legal)
          - Re-run extractfacts whenever significant new facts discovered
-         
+
          MEMORANDA STANDARDS:
          - Feasibility memorandum must analyze minimum 3 approaches
          - Each approach requires legal authority, risk assessment, timeline
@@ -484,13 +485,13 @@ commands:
          Each phase must follow this structure:
          - Phase X: [Name - specific to case issue, not generic]
          - Purpose: [Value delivered - mention specific evidence/arguments addressed]
-         
+
          ### COMMAND:
          ```bash
          litassist [command with case-specific filenames and parameters]
          ```
          # Switch rationale: [Explain key switch choices like --mode, --comprehensive, --extract]
-         
+
          - Information flow: [What specific evidence/findings feed into this]
          - Primary Recipient: [SOLICITOR/BARRISTER/REFERENCE]
          - Secondary Recipients: [Others who might need it]
@@ -546,24 +547,24 @@ commands:
          - Timeline: 5-7 days
 
       2. STREAMLINED WORKFLOW (5-7 phases maximum)
-         
+
          PHASE STRUCTURE:
          - Phase 1-2: Essential Evidence Review (extractfacts + digest)
          - Phase 3-4: Core Legal Research (5-8 targeted queries)
          - Phase 5: Quick Strategy Generation (single brainstorm)
          - Phase 6: Basic Synthesis (one counselnotes pass)
          - Phase 7: Single Deliverable (feasibility memorandum)
-         
+
          For each phase include:
          - Phase number and name
          - Purpose (focus on core issue only)
-         
+
          ### COMMAND:
          ```bash
          litassist [command with essential parameters only]
          ```
          # Switch rationale: [Explain key switch choices like --mode, --comprehensive, --extract]
-         
+
          - Cost: [estimate]
          - Tag: ESSENTIAL (all phases essential in minimal plan)
 
@@ -585,7 +586,7 @@ commands:
          - One brainstorm command (without research)
          - One counselnotes combining all materials
          - Skip multiple synthesis iterations
-         
+
       6. FOCUSED DELIVERABLE
          - Single draft command for feasibility memorandum
          - Target specific outcome with amount/party
@@ -612,24 +613,24 @@ commands:
          - Timeline: 10-12 days
 
       2. BALANCED WORKFLOW (10-12 phases)
-         
+
          PHASE GROUPS:
          - Phases 1-3: Evidence Gathering (extractfacts, digest, case_facts update)
          - Phases 4-7: Targeted Legal Research (10-15 queries with synthesis)
          - Phases 8-9: Strategic Development (dual brainstorm approach)
          - Phase 10: Primary Strategy Planning
          - Phases 11-12: Synthesis & Dual Deliverables
-         
+
          For each phase include:
          - Phase number and descriptive name
          - Purpose (mention specific issues/evidence)
-         
+
          ### COMMAND:
          ```bash
          litassist [command with case-specific parameters]
          ```
          # Switch rationale: [Explain key switch choices like --mode, --comprehensive, --extract]
-         
+
          - Information flow: [what feeds into this phase]
          - Cost: [estimate]
          - Tag: [ESSENTIAL/OPTIONAL]
@@ -644,7 +645,7 @@ commands:
       4. COMPREHENSIVE RESEARCH
          - 10-15 queries covering:
            * Each major legal issue (5-6 queries)
-           * Main opposing arguments (3-4 queries)  
+           * Main opposing arguments (3-4 queries)
            * Remedies and procedures (2-3 queries)
          - Include one research synthesis via counselnotes
          - Example queries:
@@ -675,7 +676,7 @@ commands:
     budget_assessment_system: |
       You are an experienced litigation strategist conducting a sophisticated case assessment.
       Your task is to evaluate case complexity across multiple dimensions and recommend an appropriate budget level.
-      
+
       Consider that litigation success often depends on information superiority - having more thorough research,
       better synthesis, and clearer strategic thinking than the opponent. Budget recommendations should reflect
       the information intensity required for success.
@@ -684,21 +685,21 @@ commands:
     # LOCATION: litassist/commands/caseplan.py:148
     budget_assessment_instructions: |
       Based on the case facts below, provide a structured assessment:
-      
+
       1. COMPLEXITY SCORING (Rate each 1-10):
          - Legal Complexity: [Novel issues, multiple causes of action, statutory interpretation]
          - Factual Complexity: [Volume of evidence, disputed timeline, witness credibility]
          - Procedural Complexity: [Jurisdiction, limitation periods, interlocutory applications]
          - Strategic Complexity: [Opponent resources, public interest, precedent value]
          - Documentary Complexity: [Volume of documents, technical content, foreign language]
-         
+
       2. CRITICAL SUCCESS FACTORS:
          - What are the 3-5 factors that will determine case outcome?
          - What information/research is essential vs optional?
          - What are the highest-risk elements requiring extensive analysis?
-         
+
       3. BUDGET RECOMMENDATION: minimal / standard / comprehensive
-         
+
          MINIMAL (Total Score 10-25):
          - 5-8 research queries
          - Single brainstorm session
@@ -707,7 +708,7 @@ commands:
          - Single memorandum
          - Timeline: 5-7 days
          - Cost: $25-40
-         
+
          STANDARD (Total Score 26-35):
          - 10-15 research queries
          - Dual brainstorm approach
@@ -716,7 +717,7 @@ commands:
          - Feasibility memorandum + recommendation
          - Timeline: 10-12 days
          - Cost: $50-80
-         
+
          COMPREHENSIVE (Total Score 36-50):
          - 15-25 research queries
          - Multi-perspective brainstorming
@@ -725,13 +726,13 @@ commands:
          - Multiple memoranda + implementation plan
          - Timeline: 15-20 days
          - Cost: $100-150
-         
+
       4. JUSTIFICATION:
          - Why this budget level matches case requirements
          - What would be missed with a lower budget
          - Risk of under-resourcing vs over-resourcing
          - Expected ROI for recommended approach
-         
+
       5. ALTERNATIVE APPROACH:
          - If budget constraints exist, what's the minimum viable approach?
          - What phases could be deferred or made optional?

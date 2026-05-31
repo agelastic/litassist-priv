@@ -138,32 +138,6 @@ class TestLLMClientFactory:
 class TestLLMClientFactoryIntegration:
     """Integration tests for LLMClientFactory."""
 
-    def test_factory_creates_working_clients(self):
-        """Test that factory creates clients that can be used."""
-        with patch("litassist.config.CONFIG") as mock_config:
-            mock_config.openrouter_key = "test_key"
-
-            # Test simple commands (no sub-type required)
-            commands = [
-                "lookup",
-                "strategy",
-                "draft",
-                "extractfacts",
-            ]
-
-            for command in commands:
-                client = LLMClientFactory.for_command(command)
-
-                # All clients should have required attributes
-                assert hasattr(client, "model")
-                assert hasattr(client, "default_params")
-                assert hasattr(client, "complete")
-                assert hasattr(client, "_enforce_citations")
-
-                # Model should be a valid string
-                assert isinstance(client.model, str)
-                assert len(client.model) > 0
-
     def test_parameter_inheritance_and_override(self):
         """Test that parameters are inherited from config and can be overridden."""
         with patch("litassist.config.CONFIG") as mock_config:

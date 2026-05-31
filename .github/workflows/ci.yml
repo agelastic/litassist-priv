@@ -1,9 +1,10 @@
+---
 name: Run unit tests
 
 # This workflow runs the test-suite automatically on every pull request
 # (both when it is opened and when additional commits are pushed).
 
-on:
+"on":
   pull_request:
     # Run for all PRs targeting any branch
     types: [opened, synchronize, reopened, ready_for_review]

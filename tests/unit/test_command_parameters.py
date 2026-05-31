@@ -508,29 +508,6 @@ Test objectives""")
         # Verify factory was called
         assert mock_factory.called
 
-    def test_all_commands_have_offline_mocks(self):
-        """Verify all command tests use mocks and no real API calls."""
-        import inspect
-
-        # Get all test methods in this class
-        test_methods = [
-            m
-            for m in dir(self)
-            if m.startswith("test_") and m != "test_all_commands_have_offline_mocks"
-        ]
-
-        for method_name in test_methods:
-            method = getattr(self, method_name)
-            source = inspect.getsource(method)
-
-            # Verify no real API calls
-            assert "requests." not in source
-            assert "openai." not in source or "@patch" in source
-            assert "aiohttp" not in source
-
-            # Verify mocking is used
-            assert "@patch" in source or "mock_" in source
-
     def test_model_parameter_filtering(self):
         """Test parameters are stored on the client and filtered per model family at API time."""
         from litassist.llm.factory import LLMClientFactory

@@ -206,6 +206,10 @@ def draft(ctx, documents, query, heavy, noverify, output):
         "Documents": ", ".join(documents),
     }
 
+    # Verification status, set by the verification block below; only consulted
+    # on the not-noverify path (the noverify path reports "Skipped" directly).
+    verification_status = "Skipped (--noverify)"
+
     if not noverify:
         # Save raw pre-verification output for audit trail
         raw_metadata = {**base_metadata, "Verification": "Not yet applied (raw output)"}
@@ -228,11 +232,20 @@ def draft(ctx, documents, query, heavy, noverify, output):
         except Exception:
             pass
 
-        content, _ = verify_content_if_needed(
+        content, corrections_made, short_circuit = verify_content_if_needed(
             client, content, "draft", verify_flag=True, heavy=heavy
         )
-        verification_mode = "verification-heavy (max thinking effort)" if heavy else "Standard verification"
-        click.echo(info_message(f"{verification_mode} applied"))
+        base_mode = "verification-heavy (max thinking effort)" if heavy else "Standard verification"
+        # Compute the verification status once and reuse it for the echo, the
+        # saved metadata, and the completion stats so a short-circuit is never
+        # reported as a clean "applied".
+        if short_circuit:
+            verification_status = f"{base_mode} short-circuited ({short_circuit}); content NOT fully verified"
+        elif corrections_made:
+            verification_status = f"{base_mode} applied (corrections made)"
+        else:
+            verification_status = f"{base_mode} applied (no corrections)"
+        click.echo(info_message(verification_status))
 
         try:
             log_task_event(
@@ -303,8 +316,7 @@ def draft(ctx, documents, query, heavy, noverify, output):
     if noverify:
         final_metadata["Verification"] = "Skipped (--noverify)"
     else:
-        verification_mode = "verification-heavy (max thinking effort)" if heavy else "Standard verification"
-        final_metadata["Verification"] = verification_mode
+        final_metadata["Verification"] = verification_status
 
     output_file = save_command_output(
         output if output else "draft",
@@ -334,14 +346,10 @@ def draft(ctx, documents, query, heavy, noverify, output):
     )
 
     # Show completion with preview
-    if noverify:
-        verification_mode = "Skipped (--noverify)"
-    else:
-        verification_mode = "verification-heavy (max thinking effort)" if heavy else "Standard verification"
     stats = {
         "Query": query,
         "Documents": len(documents),
-        "Verification": verification_mode,
+        "Verification": "Skipped (--noverify)" if noverify else verification_status,
     }
 
     show_command_completion("draft", output_file, extra_files, stats)

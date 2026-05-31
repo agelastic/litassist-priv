@@ -125,11 +125,6 @@ class TestLLMClientVerification:
         call_args = mock_client.chat.completions.create.call_args[1]["messages"]
         assert "legal accuracy" in call_args[0]["content"]
 
-    def test_command_context_tracking(self):
-        """Test command context is properly tracked."""
-        self.client.command_context = "extractfacts"
-        assert self.client.command_context == "extractfacts"
-
 
 class TestCommandVerificationIntegration:
     """Test verification integration in commands."""

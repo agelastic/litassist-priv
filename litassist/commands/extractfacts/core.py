@@ -73,8 +73,8 @@ def extractfacts(file, heavy, noverify, output):
     except Exception:
         pass
 
-    # Read and combine all files
-    all_text, source_files, chunks = read_and_combine_files(file)
+    # Read and combine all files (combined_text is unused here; chunks drive extraction)
+    _, source_files, chunks = read_and_combine_files(file)
 
     # Initialize the LLM client using factory
     client = LLMClientFactory.for_command("extractfacts")
@@ -89,11 +89,13 @@ def extractfacts(file, heavy, noverify, output):
     except Exception:
         pass
 
-    # Process content based on chunking needs (now most documents will be single chunk)
+    # Process content based on chunking needs (now most documents will be single chunk).
+    # Per-call token usage/cost is logged inside LLMClient.complete(), so the usage
+    # returned here is intentionally discarded.
     if len(chunks) == 1:
-        combined, usage = extract_single_chunk(client, chunks[0])
+        combined, _ = extract_single_chunk(client, chunks[0])
     else:
-        combined, usage = extract_multi_chunk(client, chunks)
+        combined, _ = extract_multi_chunk(client, chunks)
 
     # Note: Citation verification now handled automatically in LLMClient.complete()
 
@@ -137,13 +139,21 @@ def extractfacts(file, heavy, noverify, output):
         except Exception:
             pass
 
-        combined, _ = verify_content_if_needed(
+        combined, corrections_made, short_circuit = verify_content_if_needed(
             client, combined, "extractfacts", verify_flag=True, heavy=heavy
         )
-        verification_mode = "verification-heavy (max thinking effort)" if heavy else "Standard verification"
+        base_mode = "verification-heavy (max thinking effort)" if heavy else "Standard verification"
+        # Report the real outcome: a short-circuit means the chain bailed before
+        # the LLM stage, so the output was NOT fully verified - do not claim it was.
+        if short_circuit:
+            verification_mode = f"{base_mode} short-circuited ({short_circuit}); content NOT fully verified"
+        elif corrections_made:
+            verification_mode = f"{base_mode} applied (corrections made)"
+        else:
+            verification_mode = f"{base_mode} applied (no corrections)"
         final_metadata["Verification"] = verification_mode
         final_metadata["Model"] = client.model
-        click.echo(info_message(f"{verification_mode} applied"))
+        click.echo(info_message(verification_mode))
 
         try:
             log_task_event(
@@ -215,7 +225,11 @@ def extractfacts(file, heavy, noverify, output):
 
     show_command_completion("extractfacts", output_file, None, stats)
     click.echo(
-        info_message("To use with other commands, manually copy to case_facts.txt")
+        info_message(
+            f"Next step: run 'litassist updatefacts {output_file}' to fold this "
+            "into a case_facts file that brainstorm/strategy/draft/barbrief pick "
+            "up automatically."
+        )
     )
 
     # Command end log

@@ -1,3 +1,4 @@
+---
 capabilities:
   # USED BY: litassist/commands/caseplan/plan_generator.py:57 - Injected into the caseplan full-plan system prompt as the `litassist_capabilities` template variable so the LLM only recommends real commands and flags.
   litassist_capabilities: |
@@ -115,7 +116,7 @@ capabilities:
 
     ### strategy - Tactical Implementation Planner
     Purpose: Converts broad strategies into detailed, actionable legal plans with timelines
-    Syntax: litassist strategy FACTS --outcome "goal" [options]
+    Syntax: litassist strategy [FACTS] --outcome "goal" [options]
     Inputs: case_facts.txt plus single outcome objective
     Outputs: 3-5 detailed implementation paths with success probabilities
     Strategic Use: Bridges gap between ideas and execution; essential for case planning
@@ -156,7 +157,7 @@ capabilities:
 
     ### barbrief - Barrister Brief Compiler
     Purpose: Creates comprehensive 10-section briefs for counsel with all case materials
-    Syntax: litassist barbrief FACTS --hearing-type TYPE [options]
+    Syntax: litassist barbrief [FACTS] --hearing-type TYPE [options]
     Inputs: case_facts.txt, strategies, research, supporting documents
     Outputs: Professional brief with indexed materials and strategic guidance
     Strategic Use: Essential when briefing counsel for court appearances
@@ -199,7 +200,7 @@ capabilities:
 
     ### caseplan - Litigation Workflow Generator
     Purpose: Analyzes case complexity and generates phased workflow plans tailored to case needs
-    Syntax: litassist caseplan FACTS [options]
+    Syntax: litassist caseplan [FACTS] [options]
     Inputs: Structured case_facts.txt file (can be preliminary/skeleton)
     Outputs: Comprehensive litigation plan with phases, costs, timelines, and command sequences
     Strategic Use: Essential first step - generates roadmap before investing in analysis
@@ -287,7 +288,7 @@ capabilities:
     Example: litassist refresh
 
     ## Command Selection Principles for Comprehensive Planning
-    
+
     1. Information Superiority: Use 10-15 lookup queries for standard cases, 15-25 for complex
     2. Avoid circular operations: Never extractfacts from case_facts.txt or generated content
     3. Synthesis is Key: Multiple counselnotes passes with different document combinations

@@ -1,0 +1,12 @@
+---
+# yamllint configuration for litassist.
+# Last updated: 31/05/2026
+#
+# The prompt templates under litassist/prompts/ are prose-heavy, LLM-facing YAML
+# with intentionally long lines (command references, examples, instructions).
+# Line-length checking is disabled project-wide; structural validity is still
+# enforced (and tests/unit/test_yaml_prompt_validation.py gates the prompts).
+extends: default
+
+rules:
+  line-length: disable

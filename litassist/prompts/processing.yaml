@@ -1,3 +1,4 @@
+---
 # Document processing and analysis prompt templates
 # Used for digest, draft, and extractfacts commands
 
@@ -9,13 +10,13 @@ processing:
     # LOCATION: digest.py:178
     summary_mode: |
       Create a chronological summary of the document focusing on key events, dates, and parties. Structure as:
-      
+
       **CHRONOLOGICAL SUMMARY**
-      
+
       - **[Date]**: [Event description]
       - **[Date]**: [Event description]
       - **[Date]**: [Event description]
-      
+
       {context_instruction}
       Include all significant developments, procedural steps, and factual events in chronological order.
 
@@ -34,18 +35,18 @@ processing:
     # LOCATION: digest.py:196
     issues_mode: |
       Identify and analyze legal issues present in the document. Structure as:
-      
+
       **LEGAL ISSUES ANALYSIS**
-      
+
       **Issue 1: [Issue Name]**
       - **Description:** [What the issue involves]
       - **Legal Framework:** [Relevant law/precedent]
       - **Analysis:** [Discussion of the issue]
       - **Significance:** [Why this matters]
-      
+
       **Issue 2: [Issue Name]**
       [Same structure...]
-      
+
       {context_instruction}
       Focus on substantive legal questions, procedural issues, and areas requiring legal analysis.
 
@@ -59,7 +60,7 @@ processing:
     # LOCATION: digest.py:193
     issues_mode_context_instruction_no_context: |
       Cover all legal issues present in the document.
-    
+
     # USED BY: digest.py - system prompt for chunk processing
     # LOCATION: digest.py:211, 264, 309
     system_prompt: |
@@ -69,15 +70,15 @@ processing:
     # LOCATION: digest.py:250
     chunk_analysis_summary: |
       Analyze this document section (part {chunk_num} of {total_chunks}) for chronological summary.
-      
+
       Extract key events, dates, and developments from this section that should be included in a comprehensive chronological summary.
-      
+
       **USER GUIDANCE (NOT facts):** Look for aspects related to: {context}
       **IMPORTANT:** Only report information explicitly found in the document below. Never treat the user guidance as facts from the document.
-      
+
       **IMPORTANT**: This is a partial analysis that will be consolidated with other sections.
       Focus on identifying specific events and dates rather than providing a complete summary.
-      
+
       Document section to analyze:
       {documents}
 
@@ -85,15 +86,15 @@ processing:
     # LOCATION: digest.py:298 (for sub-chunks)
     chunk_analysis_issues: |
       Analyze this document section (part {chunk_num} of {total_chunks}) for legal issues identification.
-      
+
       Extract legal issues, problems, and concerns from this section that should be included in comprehensive legal issues analysis.
-      
+
       **USER GUIDANCE (NOT facts):** Look for issues related to: {context}
       **IMPORTANT:** Only report information explicitly found in the document below. Never treat the user guidance as facts from the document.
-      
+
       **IMPORTANT**: This is a partial analysis that will be consolidated with other sections.
       Focus on identifying specific legal issues rather than providing complete legal analysis.
-      
+
       Document section to analyze:
       {documents}
 
@@ -101,93 +102,93 @@ processing:
     # LOCATION: digest.py:373
     consolidation_summary: |
       Consolidate the following partial chronological analyses into a unified chronological summary.
-      
+
       Create a comprehensive chronological summary that integrates insights from all {total_chunks} document sections.
-      
+
       **CHRONOLOGICAL SUMMARY**
-      
+
       - **[Date]**: [Event description]
       - **[Date]**: [Event description]
       - **[Date]**: [Event description]
-      
+
       **USER GUIDANCE (NOT facts):** The user is interested in: {context}
       **CRITICAL:** Base your consolidation ONLY on the document analyses below. Do NOT incorporate the user guidance as factual information.
-      
+
       Synthesize all chronological information, eliminate redundancy, and provide coherent timeline.
-      
+
       Partial analyses from {total_chunks} document sections:
       {chunk_analyses}
-      
+
       Provide consolidated chronological summary that integrates all timeline information.
 
     consolidation_issues: |
       Consolidate the following partial legal issues analyses into unified legal issues analysis.
-      
+
       Create comprehensive legal issues analysis that integrates insights from all {total_chunks} document sections.
-      
+
       **LEGAL ISSUES ANALYSIS**
-      
+
       **Issue 1: [Issue Name]**
       - **Description:** [What the issue involves]
       - **Legal Framework:** [Relevant law/precedent]
       - **Analysis:** [Discussion of the issue]
       - **Significance:** [Why this matters]
-      
+
       **Issue 2: [Issue Name]**
       [Same structure...]
-      
+
       **USER GUIDANCE (NOT facts):** The user is interested in: {context}
       **CRITICAL:** Base your consolidation ONLY on the document analyses below. Do NOT incorporate the user guidance as factual information.
-      
+
       Synthesize all legal issues, eliminate redundancy, and provide coherent analysis.
-      
+
       Partial analyses from {total_chunks} document sections:
       {chunk_analyses}
-      
+
       Provide consolidated legal issues analysis that integrates all identified problems and concerns.
 
     consolidation_cross_file_summary: |
       Create a comprehensive executive summary consolidating analyses from {file_count} documents.
-      
+
       **EXECUTIVE SUMMARY**
-      
+
       Provide a high-level overview synthesizing the key findings across all documents.
-      
+
       **KEY THEMES ACROSS DOCUMENTS**
-      
+
       - Theme 1: [Description across files]
       - Theme 2: [Description across files]
-      
+
       **CROSS-DOCUMENT TIMELINE**
-      
+
       Merge chronological events from all files into unified timeline:
       - [Date]: [Event noting which document(s)]
-      
+
       **PATTERNS AND CONNECTIONS**
-      
+
       Identify relationships and patterns between the documents.
-      
+
       Individual file analyses:
       {file_digests}
 
     consolidation_cross_file_issues: |
       Create a unified legal issues analysis consolidating {file_count} documents.
-      
+
       **CONSOLIDATED LEGAL ISSUES**
-      
+
       Synthesize legal issues identifying which documents support each issue.
-      
+
       **ISSUE PRIORITY MATRIX**
-      
+
       Rank issues by significance across all documents.
-      
+
       **CONTRADICTIONS AND GAPS**
-      
+
       Note any inconsistencies between documents.
-      
+
       Individual file analyses:
       {file_digests}
-  
+
   # Draft command prompts
   # USED BY: draft.py - legal document generation
   draft:
@@ -195,32 +196,32 @@ processing:
     # LOCATION: draft.py:210
     system_prompt_base: |
       You are a senior Australian barrister with expertise in drafting high-quality legal documents. Create professional, well-structured documents that comply with Australian court rules and legal conventions.
-      
+
       FUNDAMENTAL RULE: You must NEVER invent, create, or assume any factual information not explicitly provided in the source documents. Use placeholders like [TO BE PROVIDED] for any missing information. This is critical for legal accuracy and professional liability.
-    
+
     # USED BY: draft.py - context with both facts and strategies
     # LOCATION: draft.py:213
     context_case_facts_and_strategies: " You have been provided with structured case facts and legal strategies from brainstorming. Use the case facts as the factual foundation and consider the strategies when developing your arguments, particularly any marked as 'most likely to succeed'."
-    
+
     # USED BY: draft.py - context with case facts only
     # LOCATION: draft.py:217
     context_case_facts_only: " You have been provided with structured case facts. Use these as the factual foundation for your draft."
-    
+
     # USED BY: draft.py - context with strategies only
     # LOCATION: draft.py:219
     context_strategies_only: " You have been provided with legal strategies from brainstorming. Consider these strategies, particularly any marked as 'most likely to succeed'."
-    
+
     # USED BY: draft.py - general drafting instructions
     # LOCATION: draft.py:221
     general_instructions: |
       Be thorough but concise. Focus on legal accuracy, relevant precedents, and clear organization. Use section headings, numbered paragraphs, and proper legal citation format. Maintain internal consistency throughout and ensure all claims are supported by the provided context.
-      
+
       CRITICAL FACTUAL ACCURACY REQUIREMENTS:
       - NEVER invent or assume facts not explicitly provided in the source documents
       - NEVER create specific details like ages, dates, addresses, account numbers, or document references
       - For ANY missing information, use clear placeholders:
         * Ages: [AGE TO BE PROVIDED]
-        * Addresses: [ADDRESS TO BE CONFIRMED] 
+        * Addresses: [ADDRESS TO BE CONFIRMED]
         * Dates not in source: [DATE TO BE CONFIRMED]
         * Account/reference numbers: [ACCOUNT NUMBER - CLIENT TO PROVIDE]
         * Document exhibits: [EXHIBIT A], [EXHIBIT B] rather than specific numbering
@@ -228,23 +229,23 @@ processing:
       - Only use facts that appear verbatim in the provided context
       - If a standard legal document field requires information not provided, mark it clearly for client completion
       - It is better to produce an incomplete draft with clear placeholders than to invent plausible details
-    
+
     context_aware_prompt: |
       Context from case analysis:
       {context}
-      
+
       Draft a {document_type} that incorporates the strategic direction and legal arguments identified above. Ensure the document is:
       - Professionally formatted
       - Legally sound
       - Strategically aligned
       - Court-rule compliant
       - Evidence-based where applicable
-    
+
     # USED BY: draft.py - user prompt template
     # LOCATION: draft.py:224
     user_prompt_template: |
       Draft a {document_type}: {user_request}
-  
+
   # Multi-chunk extraction prompts
   # USED BY: extractfacts.py extractfacts() - chunk processing
   # LOCATION: extractfacts.py:99-113 (to be extracted)
@@ -263,34 +264,35 @@ processing:
       - Jurisdictional details
       - Applicable laws
       - Client objectives
-      
+
       Just extract the raw facts found in this excerpt:
-    
+
     # USED BY: extractfacts - per-chunk extraction system prompt
     # LOCATION: multi_extractor.py:67
     chunk_system_prompt: |
       Extract facts from this document excerpt. Be comprehensive but only include information actually present in this excerpt.
-    
+
     # USED BY: extractfacts.py - organizing extracted facts
     # LOCATION: extractfacts.py:156
     organize_facts_prompt: |
       Organize the following extracted facts into these 10 headings:
-      
+
       {format_instructions}
-      
+
       === RAW FACTS TO ORGANIZE ===
       {all_facts}
       === END RAW FACTS TO ORGANIZE ===
-      
-      Important: 
+
+      Important:
       - Only include information that was actually in the document
       - If information for a heading is not available, write "Not specified in the document"
       - Maintain chronological order for events
       - Be comprehensive but factual
-    
+      - Do NOT reproduce the "=== CHUNK N FACTS ===" / "=== END CHUNK N FACTS ===" markers in your output; they only delimit the input above
+
     organize_system_prompt: |
       Organize the extracted facts precisely under the requested headings. Ensure consistency and avoid duplication.
-  
+
   # Counsel's Notes command prompts
   # USED BY: counselnotes.py - strategic analysis and extraction modes
   counselnotes:
@@ -300,7 +302,7 @@ processing:
       You are an experienced Australian barrister preparing strategic counsel's notes for litigation.
       Your analysis should be from an advocate's perspective, focusing on tactical opportunities,
       risks, and strategic considerations. Consider Australian legal principles and precedents.
-      
+
       Maintain professional objectivity while identifying strengths and weaknesses that could
       impact case strategy. Focus on practical considerations for litigation management.
 
@@ -308,59 +310,59 @@ processing:
     # LOCATION: counselnotes.py:183
     strategic_analysis: |
       Analyze the following legal documents from a strategic advocate perspective.
-      
+
       **STRATEGIC ANALYSIS FRAMEWORK:**
-      
+
       **1. CASE OVERVIEW & POSITION**
       - Overall case strength assessment
       - Client's strategic position
       - Key factual advantages/disadvantages
-      
+
       **2. TACTICAL OPPORTUNITIES**
       - Procedural advantages to exploit
       - Evidence strengths to emphasize
       - Opposing party vulnerabilities
       - Settlement leverage points
-      
+
       **3. RISK ASSESSMENT**
       - Litigation risks and exposure
       - Evidence gaps or weaknesses
       - Potential adverse findings
       - Cost-benefit considerations
-      
+
       **4. STRATEGIC RECOMMENDATIONS**
       - Recommended litigation approach
       - Priority actions and next steps
       - Resource allocation priorities
       - Alternative dispute resolution considerations
-      
+
       **5. CASE MANAGEMENT NOTES**
       - Key deadlines and milestones
       - Witness considerations
       - Expert evidence requirements
       - Discovery/disclosure strategy
-      
+
       Documents to analyze:
       {documents}
-      
+
       Provide comprehensive strategic counsel's notes addressing each framework element.
 
     # USED BY: counselnotes.py - analyzing document chunks
     # LOCATION: counselnotes.py:231
     chunk_analysis: |
       Analyze this document section (part {chunk_num} of {total_chunks}) from a strategic advocate perspective.
-      
+
       Extract key strategic insights, focusing on:
       - Notable factual elements and evidence patterns
       - Legal issues and strategic considerations specific to this section
       - Tactical opportunities or risks identified
       - Critical evidence strengths or weaknesses
       - Any procedural or substantive concerns
-      
+
       **IMPORTANT**: This is a partial analysis that will be consolidated with other sections.
       Focus on identifying specific strategic elements rather than providing complete strategic framework.
       Be comprehensive but avoid duplicating standard legal analysis - focus on advocate-specific insights.
-      
+
       Document section to analyze:
       {documents}
 
@@ -368,21 +370,21 @@ processing:
     # LOCATION: counselnotes.py:278
     consolidation: |
       Consolidate the following partial strategic analyses into comprehensive counsel's notes.
-      
+
       Create a complete strategic analysis using the standard 5-section framework:
-      
+
       **1. CASE OVERVIEW & POSITION**
-      **2. TACTICAL OPPORTUNITIES** 
+      **2. TACTICAL OPPORTUNITIES**
       **3. RISK ASSESSMENT**
       **4. STRATEGIC RECOMMENDATIONS**
       **5. CASE MANAGEMENT NOTES**
-      
+
       Synthesize insights from all sections, eliminate redundancy, and provide coherent strategic guidance.
       Focus on cross-document synthesis and comprehensive strategic assessment.
-      
+
       Partial analyses from {total_chunks} document sections:
       {chunk_analyses}
-      
+
       Provide consolidated strategic counsel's notes that integrate all insights into a cohesive analysis.
 
     extraction:
@@ -390,34 +392,34 @@ processing:
       # LOCATION: counselnotes.py:121-122 (dynamic template)
       all: |
         Extract comprehensive counsel's notes from the following documents.
-        
+
         Format your response EXACTLY as follows:
-        
+
         STRATEGIC SUMMARY:
         [Brief overview of overall case position and key strategic considerations]
-        
+
         KEY CITATIONS:
         • [Case citation 1]
         • [Case citation 2]
         • [Legislative reference 1]
-        
+
         LEGAL PRINCIPLES:
         • [Legal principle description] (Supporting case/legislation)
         • [Another principle] (Supporting authority)
-        
+
         TACTICAL CHECKLIST:
         [ ] [Immediate action item 1]
         [ ] [Strategic consideration 2]
         [ ] [Procedural requirement 3]
-        
+
         RISK ASSESSMENT:
         [Assessment of litigation risks, exposure, and mitigation strategies]
-        
+
         RECOMMENDATIONS:
         • [Strategic recommendation 1]
         • [Tactical approach 2]
         • [Resource allocation 3]
-        
+
         Documents to analyze:
         {documents}
 
@@ -425,17 +427,17 @@ processing:
       # LOCATION: counselnotes.py:121-122 (dynamic template)
       citations: |
         Extract only case citations and legislative references from the documents.
-        
+
         Format your response EXACTLY as follows:
-        
+
         CITATIONS FOUND:
         • Case Name v Other Name [Year] Court Reference
         • Another Case (Year) Volume Law Report Page
         • Legislation Name (Jurisdiction) section reference
-        
+
         Include all legal authorities mentioned in the documents, using proper Australian citation format.
         If no citations are found, respond with: "No citations found."
-        
+
         Documents to analyze:
         {documents}
 
@@ -443,16 +445,16 @@ processing:
       # LOCATION: counselnotes.py:121-122 (dynamic template)
       principles: |
         Extract legal principles with their supporting authorities from the documents.
-        
+
         Format your response EXACTLY as follows:
-        
+
         LEGAL PRINCIPLES:
         • Clear statement of the legal principle or rule (Supporting case citation or legislation)
         • Another legal principle (Supporting authority)
-        
+
         Focus on substantive legal principles that could impact litigation strategy.
         If no principles are found, respond with: "No legal principles found."
-        
+
         Documents to analyze:
         {documents}
 
@@ -460,18 +462,18 @@ processing:
       # LOCATION: counselnotes.py:121-122 (dynamic template)
       checklist: |
         Create a practical tactical checklist from the documents.
-        
+
         Format your response EXACTLY as follows:
-        
+
         PRACTICAL CHECKLIST:
         [ ] Review and verify all witness statements for consistency
         [ ] Prepare comprehensive discovery plan within 14 days
         [ ] Assess prospects for summary judgment application
         [ ] Consider mediation timing and strategy
         [ ] Evaluate expert evidence requirements
-        
+
         Include specific, actionable items for case management and strategic implementation.
         If no actionable items are found, respond with: "No checklist items found."
-        
+
         Documents to analyze:
         {documents}

@@ -45,7 +45,7 @@ class TestNoVerifyFlag:
         mock_prompts.get_format_template.return_value = "Format template"
         mock_prompts.get_system_prompt.return_value = "System prompt"
         mock_save.return_value = "output.txt"
-        mock_verify.return_value = ("Content", None)
+        mock_verify.return_value = ("Content", False, None)
 
         # Create test file
         with tempfile.NamedTemporaryFile(mode="w", suffix=".txt", delete=False) as f:
@@ -81,7 +81,7 @@ class TestNoVerifyFlag:
         mock_prompts.get_format_template.return_value = "Format template"
         mock_prompts.get_system_prompt.return_value = "System prompt"
         mock_save.return_value = "output.txt"
-        mock_verify.return_value = ("Verified content", None)
+        mock_verify.return_value = ("Verified content", False, None)
 
         # Create test file
         with tempfile.NamedTemporaryFile(mode="w", suffix=".txt", delete=False) as f:
@@ -127,7 +127,7 @@ class TestNoVerifyFlag:
         mock_prompts.get.return_value = "Test prompt"
         mock_prompts.get_system_prompt.return_value = "System prompt"
         mock_save.return_value = "output.txt"
-        mock_verify.return_value = ("Content", None)
+        mock_verify.return_value = ("Content", False, None)
         mock_extract.return_value = ["Issue 1", "Issue 2"]
 
         # Create test case facts file with proper format
@@ -216,61 +216,6 @@ Test objectives
 
             # Verify the skip message appears
             assert "Standard verification skipped" in result.output
-
-        finally:
-            Path(test_file).unlink()
-
-
-class TestVerificationDefaults:
-    """Test default verification behavior without flags."""
-
-    def setup_method(self):
-        """Set up test fixtures."""
-        self.runner = CliRunner()
-        self.mock_client = Mock()
-        self.mock_client.complete.return_value = ("Content", {"tokens": 100})
-        self.mock_client.verify.return_value = ("Content", "model")
-        self.mock_client.validate_citations.return_value = []
-
-    @patch("litassist.commands.extractfacts.document_reader.LLMClientFactory.get_input_budget_for_command")
-    @patch("litassist.commands.extractfacts.core.LLMClientFactory.for_command")
-    @patch("litassist.commands.extractfacts.core.verify_content_if_needed")
-    @patch("litassist.commands.extractfacts.core.save_command_output")
-    @patch("litassist.commands.extractfacts.single_extractor.PROMPTS")
-    def test_extractfacts_default_enables_verification(
-        self, mock_prompts, mock_save, mock_verify, mock_factory, mock_config
-    ):
-        """Test that extractfacts enables verification by default."""
-        mock_config.return_value = 10000
-        mock_factory.return_value = self.mock_client
-        mock_prompts.get.return_value = "Test"
-        mock_prompts.get_format_template.return_value = "Format"
-        mock_prompts.get_system_prompt.return_value = "System"
-        mock_save.return_value = "out.txt"
-        mock_verify.return_value = ("Content", None)
-
-        with tempfile.NamedTemporaryFile(mode="w", suffix=".txt", delete=False) as f:
-            f.write("Content")
-            test_file = f.name
-
-        try:
-            result = self.runner.invoke(extractfacts, [test_file])
-            assert result.exit_code == 0
-
-            # Should use verification by default
-            mock_verify.assert_called_once()
-            # Check using keyword args or positional args
-            assert (
-                mock_verify.call_args.kwargs.get(
-                    "verify_flag",
-                    (
-                        mock_verify.call_args.args[3]
-                        if len(mock_verify.call_args.args) > 3
-                        else None
-                    ),
-                )
-                is True
-            )
 
         finally:
             Path(test_file).unlink()

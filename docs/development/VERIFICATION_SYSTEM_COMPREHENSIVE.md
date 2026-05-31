@@ -1,6 +1,6 @@
 # LitAssist Verification System - Comprehensive Documentation
 
-Last updated: 18/02/2026
+Last updated: 31/05/2026
 
 ## Table of Contents
 1. [Executive Summary](#executive-summary)
@@ -222,37 +222,38 @@ citation_verification:
 
 #### extractfacts
 ```python
-@click.option("--cove", is_flag=True, help="Use Chain of Verification instead of standard verification")
-def extractfacts(..., cove):
-    if cove:
-        content, cove_results = run_cove_verification(content, 'extractfacts')
-    else:
-        content, _ = verify_content_if_needed(client, content, "extractfacts", verify_flag=True)
+def extractfacts(file, heavy, noverify, output):
+    # Standard verification runs automatically unless --noverify.
+    if not noverify:
+        content, _ = verify_content_if_needed(
+            client, content, "extractfacts", verify_flag=True, heavy=heavy
+        )
 ```
-- **Default**: Standard 3-stage verification
-- **With --cove**: Replaces standard with CoVe
-- **Never**: Double verification (one OR the other)
+- **Default**: Standard 3-stage verification (`--heavy` raises thinking effort)
+- **--noverify**: Skip verification
+- **CoVe**: now the standalone `litassist verify-cove` command; the inline `--cove` flag was removed
 
 #### strategy
 ```python
-@click.option("--cove", is_flag=True, help="Use Chain of Verification instead of standard verification")
-def strategy(..., cove):
-    if cove:
-        strategy_content, cove_results = run_cove_verification(strategy_content, 'strategy')
-    else:
-        strategy_content, _ = verify_content_if_needed(llm_client, strategy_content, "strategy", verify_flag=True)
+def strategy(..., noverify):
+    # Standard verification runs automatically unless --noverify.
+    if not noverify:
+        strategy_content, _ = verify_content_if_needed(
+            llm_client, strategy_content, "strategy", verify_flag=True
+        )
 ```
 - **Focus**: Legal strategy accuracy
 - **Reasoning**: Creates consolidated reasoning trace
-- **Verification**: Either standard or CoVe
+- **CoVe**: now the standalone `litassist verify-cove` command; the inline `--cove` flag was removed
 
 #### draft
 ```python
-@click.option("--cove", is_flag=True, help="Use Chain of Verification (experimental)")
-def draft(..., cove):
-    if cove:
-        content, cove_results = run_cove_verification(content, 'draft')
+def draft(..., noverify):
+    # Standard verification runs via verify_content_if_needed unless --noverify.
+    if not noverify:
+        content, _ = verify_content_if_needed(client, content, "draft", verify_flag=True)
 ```
+- **CoVe**: now the standalone `litassist verify-cove` command; the inline `--cove` flag was removed
 - **Document Types**: Affidavits, claims, applications
 - **Hallucination Detection**: `detect_factual_hallucinations()`
 - **Placeholders**: [AGE TO BE PROVIDED], [ADDRESS TO BE CONFIRMED]
@@ -280,21 +281,24 @@ def verify(file, citations, soundness, reasoning, cove):
 - **Default**: All three types if no flags
 - **CoVe**: Adds as final stage after other verifications
 
-### Commands with Optional CoVe
+### Commands with Optional Verification
+
+These commands expose a functional `--verify` flag (citation/content verification).
+They do not have an inline `--cove` flag; run CoVe separately via `litassist verify-cove`.
 
 #### barbrief
 ```python
-@click.option("--cove", is_flag=True, help="Apply Chain of Verification")
+@click.option("--verify", is_flag=True, help="Enable citation/content verification")
 ```
 - **Purpose**: Barrister brief preparation
-- **CoVe Usage**: Final quality check
+- **CoVe**: separate `litassist verify-cove` command
 
 #### counselnotes
 ```python
-@click.option("--cove", is_flag=True, help="Apply Chain of Verification")
+@click.option("--verify", is_flag=True, help="Enable citation/content verification")
 ```
 - **Purpose**: Counsel advice notes
-- **CoVe Usage**: Ensure strategic accuracy
+- **CoVe**: separate `litassist verify-cove` command
 
 ## Model Configuration and Parameters
 

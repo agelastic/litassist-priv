@@ -8,7 +8,6 @@ commands fail appropriately when centralized prompts are unavailable.
 import pytest
 import tempfile
 from pathlib import Path
-from unittest.mock import patch
 
 from litassist.prompts import PromptManager, PROMPTS
 
@@ -152,44 +151,6 @@ class TestExplicitFailureBehavior:
             # Should fail when trying to get templates
             with pytest.raises(KeyError, match="no templates loaded"):
                 no_dir_manager.get("base.australian_law")
-
-
-class TestIntegrationWithCommands:
-    """Test that command modules integrate correctly with prompt management."""
-
-    def test_extractfacts_command_requires_prompts(self):
-        """Test that extractfacts command requires centralized prompts."""
-        # Mock empty PROMPTS in the single_extractor module
-        with patch("litassist.commands.extractfacts.single_extractor.PROMPTS") as mock_prompts:
-            mock_prompts.get_format_template.side_effect = KeyError(
-                "Template not found"
-            )
-            mock_prompts.get_system_prompt.side_effect = KeyError("Template not found")
-
-            # Import the command function
-            from litassist.commands.extractfacts import extractfacts
-
-            # The command should fail when trying to get templates
-            # (We can't easily test the click command without more complex mocking,
-            # but we can verify the template access points would fail)
-
-            # This test verifies the code structure requires prompts
-            assert hasattr(extractfacts, "name")  # Verify Click command imported
-            assert extractfacts.name == "extractfacts"
-
-    def test_lookup_command_requires_prompts(self):
-        """Test that lookup command requires centralized prompts."""
-        # Mock empty PROMPTS
-        with patch("litassist.commands.lookup.processors.PROMPTS") as mock_prompts:
-            mock_prompts.get_system_prompt.side_effect = KeyError("Template not found")
-
-            # Import the command function
-            from litassist.commands.lookup import lookup
-
-            # The command should fail when trying to get system prompt
-            # This test verifies the code structure requires prompts
-            assert hasattr(lookup, "name")  # Verify Click command imported
-            assert lookup.name == "lookup"
 
 
 class TestTemplateValidation:

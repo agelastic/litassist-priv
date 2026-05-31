@@ -1,3 +1,4 @@
+---
 # Lookup command specific prompt templates
 # Used for case law research and citation analysis
 
@@ -7,24 +8,24 @@ lookup:
   google_cse_note: |
     Note: These are brief search result excerpts from Google, not full content.
     Sources include: jade.io, austlii.edu.au, legislation.gov.au, and other legal sites.
-  
+
   # Research assistant system prompt
   # USED BY: lookup.py lookup() - system prompt for jade.io research
   # LOCATION: lookup.py:304-305 (to be extracted)
   # research_assistant:
   #   system_prompt: |
   #     Cite sources. Provide well-structured, concise responses focused on Victorian or federal law.
-  
+
   # Extraction mode system prompt
   # USED BY: lookup.py lookup() - system prompt when --extract is used
   # LOCATION: lookup.py:825
   extraction_system: |
     You are a legal data extraction specialist. Your task is to extract specific information from legal sources and return it in the exact format requested.
-    
+
     CRITICAL: Follow the format instructions precisely. Do not include any explanatory text, analysis, or commentary outside the requested format.
-    
+
     If you cannot access the actual content of provided links (only their URLs), note this limitation at the end of your response.
-  
+
   # Extraction-specific instructions
   # USED BY: lookup.py lookup() - when --extract option is used
   # LOCATION: lookup.py:780-784
@@ -33,44 +34,44 @@ lookup:
     # LOCATION: lookup.py:780
     citations: |
       Format your response EXACTLY as follows:
-      
+
       CITATIONS FOUND:
       • Case Name [Year] COURT_ID Number
       • Competition and Consumer Act 2010 (Cth) s 18
-      
+
       Use medium neutral citation format for all cases.
       Example: Smith v Jones [2020] HCA 1
       • Brown v Wilson (2019) 123 CLR 456
-      
+
       Include all case citations and legislation references found in the sources. Each citation should be a complete citation string as it appears in legal documents.
       If no citations are found, respond with: "No citations found."
-    
+
     # USED BY: lookup.py lookup() - extraction mode for principles
     # LOCATION: lookup.py:782
     principles: |
       Format your response EXACTLY as follows:
-      
+
       LEGAL PRINCIPLES:
       • A contract requires offer, acceptance, consideration and intention to create legal relations (Carlill v Carbolic Smoke Ball Co [1893] 1 QB 256)
       • Misleading or deceptive conduct in trade is prohibited (Competition and Consumer Act 2010 (Cth) s 18)
-      
+
       Include key legal rules and principles with their supporting authorities.
       If no principles are found, respond with: "No legal principles found."
-    
+
     # USED BY: lookup.py lookup() - extraction mode for checklist
     # LOCATION: lookup.py:784
     checklist: |
       Format your response EXACTLY as follows:
-      
+
       PRACTICAL CHECKLIST:
       [ ] Obtain witness statements from all parties present
       [ ] File originating application within limitation period
       [ ] Serve documents according to court rules
       [ ] Prepare affidavit evidence supporting claims
-      
+
       Include actionable requirements, evidence needed, and steps to take.
       If no actionable items are found, respond with: "No checklist items found."
-  
+
   # Comprehensive analysis requirements
   # USED BY: lookup.py lookup() - when --comprehensive flag is used
   # LOCATION: lookup.py:828-832
@@ -80,10 +81,10 @@ lookup:
     requirements: |
       CRITICAL FORMATTING REQUIREMENTS (MUST FOLLOW):
       - Put TWO blank lines (press Enter twice) before EVERY header
-      - Put ONE blank line (press Enter once) after EVERY header  
+      - Put ONE blank line (press Enter once) after EVERY header
       - Put ONE blank line between paragraphs within sections
       - Headers MUST start with ### followed by a space
-      
+
       EXHAUSTIVE ANALYSIS REQUIREMENTS:
       - Review ALL provided sources thoroughly (expect 20-40 sources)
       - Identify primary and secondary authorities with hierarchy
@@ -92,20 +93,20 @@ lookup:
       - Distinguish binding vs persuasive authorities by jurisdiction
       - Analyze temporal evolution of legal principles
       - Consider jurisdictional variations across Australian states/territories
-      
+
       KNOWLEDGE INTEGRATION:
       - Use BOTH the provided sources AND your own legal knowledge
       - Provided sources take PRIORITY - cite them directly and extensively
       - Your knowledge supplements the sources, providing context and filling gaps
       - When using your own knowledge, distinguish it from sourced material
-    
+
     # USED BY: lookup.py lookup() - comprehensive mode citation requirements
     # LOCATION: lookup.py:829-830
     citation_requirements: |
       COMPREHENSIVE CITATION REQUIREMENTS:
       - Use MEDIUM NEUTRAL CITATION format for all cases
       - Format: Case Name [Year] COURT_ID Number, [paragraph]
-      - Examples: 
+      - Examples:
         - R v De Gruchy [2006] VSCA 10, [4]-[5]
         - Nichia Corporation v Arrow Electronics Australia Pty Ltd [2019] FCAFC 2, [11]
       - Include pinpoint references using paragraph numbers [#] not page numbers
@@ -114,41 +115,41 @@ lookup:
       - Group citations by authority level (High Court -> Federal -> State)
       - EVERY case mentioned MUST have its medium neutral citation
       - For legislation: Act Name Year (Jurisdiction) s Number
-    
+
     # USED BY: lookup.py lookup() - comprehensive mode output structure
     # LOCATION: lookup.py:832
     output_structure: |
       EXHAUSTIVE OUTPUT STRUCTURE:
-      
+
       ### Executive Summary
       (2-3 well-formatted paragraphs with clear breaks between them)
-      
+
       ### Comprehensive Legal Framework
       (Multiple paragraphs with proper spacing, each covering distinct aspects)
-      
+
       ### Authority Hierarchy Analysis
       (Structured analysis with paragraph breaks between different authority levels)
-      
+
       ### Detailed Case Analysis by Jurisdiction
       (Clear separation between jurisdictions, with paragraph breaks within each)
-      
+
       ### Synthesis and Conflicts Resolution
       (Well-spaced paragraphs discussing different aspects of synthesis)
-      
+
       ### Practical Application with Confidence Levels
       (Distinct scenarios or applications, each in its own paragraph)
-      
+
       ### Conclusion
       (Final analysis in properly formatted paragraphs)
-      
+
       ### Technical Notes
       (Acknowledge sources: Google CSE provides search snippets for all sites. Full content fetched from accessible sites like AustLII and legislation.gov.au)
-      
-      FINAL CRITICAL REMINDER: 
+
+      FINAL CRITICAL REMINDER:
       - EVERY header (starting with ###) MUST have TWO blank lines before it
       - EVERY header MUST have ONE blank line after it
       - This is MANDATORY - not optional
-  
+
   # Standard analysis instructions
   # USED BY: lookup.py lookup() - standard mode
   # LOCATION: lookup.py:841
@@ -160,47 +161,47 @@ lookup:
       - Put TWO blank lines (press Enter twice) before EVERY header
       - Put ONE blank line (press Enter once) after EVERY header
       - Put ONE blank line between paragraphs within sections
-      
+
       OUTPUT STRUCTURE (USE THESE EXACT HEADERS):
-      
-      
+
+
       ### Executive Summary
-      
+
       (Write 2-3 paragraphs here, with one blank line between each paragraph)
-      
-      
+
+
       ### Analysis
-      
+
       (Write multiple paragraphs examining the legal issues and case law, with one blank line between each paragraph)
-      
-      
+
+
       ### Conclusion
-      
+
       (Write 1-2 paragraphs with definitive conclusions, with one blank line between if using two paragraphs)
-      
+
       CONTENT REQUIREMENTS:
       Use medium neutral citations for all cases. Format: Case Name [Year] COURT_ID Number, [paragraph]. Example: Smith v Jones [2020] HCA 15, [42]. Cite ALL sources used in your analysis. Every legal principle, case reference, or statutory provision mentioned must include a proper citation. Analyze the provided sources to provide comprehensive legal analysis. Cross-reference between sources where applicable. Each paragraph should contain a single coherent idea or point.
-      
+
       KNOWLEDGE INTEGRATION:
       Use BOTH the provided sources AND your own legal knowledge. The provided sources take PRIORITY and should be cited directly. Your own knowledge should supplement and contextualize the provided materials, filling gaps and providing broader legal context where the sources don't fully address the question.
-      
+
       TECHNICAL NOTE REQUIREMENT:
       When search snippets are provided (marked as === GOOGLE CSE SEARCH SNIPPETS ===), these are brief excerpts from Google search, not full content. Full content comes from === ACTUAL CONTENT FROM: [url] === sections (accessible sites). Always clarify your sources.
-  
+
   # Content Q&A prompt template
   # USED BY: lookup.py _process_comprehensive_search() - when actual content is fetched
   # LOCATION: lookup.py:753-758
   content_qa: |
     Question: {question}
-    
+
     Successfully fetched and providing ACTUAL CONTENT from {count} legal sources:
     {links}
-    
+
     Below is the REAL HTML/TEXT content fetched directly from these URLs:
     {content}
-    
+
     Answer the user's question comprehensively using the fetched content above and your own legal knowledge. Prioritise the provided sources, citing them directly; use your own knowledge to supplement and fill gaps.
-    
+
     CITATION REQUIREMENTS:
     - Use medium neutral citation format for all case references
     - Format: Case Name [Year] COURT_ID Number, [paragraph]

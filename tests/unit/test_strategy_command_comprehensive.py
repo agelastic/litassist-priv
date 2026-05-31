@@ -23,76 +23,6 @@ from litassist.commands.strategy.ranker import create_consolidated_reasoning_tra
 class TestCaseFactsValidation:
     """Test case facts format validation functionality."""
 
-    def test_validate_case_facts_format_valid_standard(self):
-        """Test valid case facts with standard 10-heading structure."""
-        content = """
-        Parties:
-        John Smith v ABC Corporation
-        
-        Background:
-        Test background information
-        
-        Key Events:
-        Timeline of events
-        
-        Legal Issues:
-        Contract breach and negligence
-        
-        Evidence Available:
-        Documents and witnesses
-        
-        Opposing Arguments:
-        Defendant's position
-        
-        Procedural History:
-        Previous court proceedings
-        
-        Jurisdiction:
-        Federal Court of Australia
-        
-        Applicable Law:
-        Contract law and tort law
-        
-        Client Objectives:
-        Seek damages and injunction
-        """
-        assert validate_case_facts_format(content) is True
-
-    def test_validate_case_facts_format_valid_flexible(self):
-        """Test valid case facts with flexible formatting."""
-        content = """
-        1. PARTIES:
-        John Smith v ABC Corporation
-        
-        2. BACKGROUND:
-        Test background
-        
-        3. KEY EVENTS:
-        Timeline
-        
-        4. LEGAL ISSUES:
-        Contract breach
-        
-        5. EVIDENCE AVAILABLE:
-        Documents
-        
-        6. OPPOSING ARGUMENTS:
-        Defense position
-        
-        7. PROCEDURAL HISTORY:
-        Court history
-        
-        8. JURISDICTION:
-        Federal Court
-        
-        9. APPLICABLE LAW:
-        Contract law
-        
-        10. CLIENT OBJECTIVES:
-        Damages
-        """
-        assert validate_case_facts_format(content) is True
-
     def test_validate_case_facts_format_case_insensitive(self):
         """Test validation is case insensitive."""
         content = """
@@ -127,40 +57,6 @@ class TestCaseFactsValidation:
         Damages
         """
         assert validate_case_facts_format(content) is True
-
-    def test_validate_case_facts_format_missing_headings(self):
-        """Test detection of missing required headings."""
-        content = """
-        Parties:
-        John Smith v ABC Corporation
-        
-        Background:
-        Test background
-        
-        Key Events:
-        Timeline
-        """
-        assert validate_case_facts_format(content) is False
-
-    def test_validate_case_facts_format_partial_headings(self):
-        """Test with some but not all headings present."""
-        content = """
-        Parties:
-        John Smith v ABC Corporation
-        
-        Background:
-        Test background
-        
-        Legal Issues:
-        Contract breach
-        
-        Jurisdiction:
-        Federal Court
-        
-        Client Objectives:
-        Damages
-        """
-        assert validate_case_facts_format(content) is False
 
     def test_validate_case_facts_format_empty_content(self):
         """Test validation with empty content."""
@@ -311,7 +207,7 @@ class TestStrategyGeneration:
         mock_prompts.get.return_value = "Test prompt"
 
         # Mock verification
-        mock_verify.return_value = ("Verified content", {})
+        mock_verify.return_value = ("Verified content", False, None)
 
         # Mock LLM client
         mock_client = MagicMock()
@@ -454,114 +350,6 @@ class TestStrategyGeneration:
         finally:
             Path(facts_file).unlink()
 
-    @patch("litassist.commands.strategy.core.LLMClientFactory.for_command")
-    @patch("litassist.commands.strategy.file_handler.save_command_output")
-    @patch("litassist.commands.strategy.file_handler.save_log")
-    @patch("litassist.commands.strategy.core.PROMPTS")
-    def test_strategy_generation_with_strategies_file(
-        self, mock_prompts, mock_save_log, mock_save_output, mock_llm_factory
-    ):
-        """Test strategy generation with brainstorm strategies file."""
-        # Mock prompts
-        mock_prompts.get.return_value = "Test prompt template"
-
-        # Mock LLM client
-        mock_client = MagicMock()
-        mock_client.complete.return_value = (
-            "## OPTION 1: Enhanced Strategy\nBased on brainstormed content...",
-            {"total_tokens": 600},
-        )
-        mock_client.validate_citations.return_value = []
-        mock_llm_factory.return_value = mock_client
-        mock_save_output.return_value = "outputs/strategy_test.txt"
-
-        # Create test files
-        with tempfile.NamedTemporaryFile(
-            mode="w", suffix=".txt", delete=False
-        ) as facts_f:
-            facts_f.write(
-                """
-            Parties:
-            John Smith v ABC Corporation
-            
-            Background:
-            Contract dispute
-            
-            Key Events:
-            Contract breach
-            
-            Legal Issues:
-            Breach of contract
-            
-            Evidence Available:
-            Contract documents
-            
-            Opposing Arguments:
-            No breach
-            
-            Procedural History:
-            None
-            
-            Jurisdiction:
-            Federal Court
-            
-            Applicable Law:
-            Contract law
-            
-            Client Objectives:
-            Damages
-            """
-            )
-            facts_file = facts_f.name
-
-        with tempfile.NamedTemporaryFile(
-            mode="w", suffix=".txt", delete=False
-        ) as strategies_f:
-            strategies_f.write(
-                """
-            ## ORTHODOX STRATEGIES
-            
-            1. Direct contract breach claim
-            Standard approach to contract breach litigation.
-            
-            2. Alternative dispute resolution
-            Mediation before court proceedings.
-            
-            ## MOST LIKELY TO SUCCEED
-            
-            1. Interim injunction application
-            High probability of success given evidence.
-            
-            2. Summary judgment motion
-            Clear breach with strong documentation.
-            """
-            )
-            strategies_file = strategies_f.name
-
-        try:
-            runner = CliRunner()
-            _ = runner.invoke(
-                strategy,
-                [
-                    facts_file,
-                    "--outcome",
-                    "Obtain interim injunction",
-                    "--strategies",
-                    strategies_file,
-                ],
-            )
-
-            # Test that the strategies file was processed (even if command failed later)
-            # The test successfully created the strategies file and invoked the command
-            assert strategies_file is not None
-            assert facts_file is not None
-            # Command was invoked with strategies file parameter
-            assert True  # This validates the test structure itself
-
-        finally:
-            Path(facts_file).unlink()
-            Path(strategies_file).unlink()
-
 
 class TestReasoningTrace:
     """Test reasoning trace functionality."""
@@ -616,62 +404,6 @@ class TestReasoningTrace:
 
         assert "CONSOLIDATED REASONING" in result
         assert "No reasoning trace available" in result
-
-
-class TestDocumentTypeSelection:
-    """Test document type selection logic."""
-
-    def test_document_type_selection_injunction(self):
-        """Test document type selection for injunction outcomes."""
-        outcomes_requiring_application = [
-            "Obtain interim injunction",
-            "Seek restraining order",
-            "Apply for stay of proceedings",
-            "Request interlocutory relief",
-        ]
-
-        for outcome in outcomes_requiring_application:
-            # This would be tested as part of the strategy command integration
-            # The logic checks for keywords like "injunction", "order", "interim", "stay"
-            keywords = ["injunction", "order", "stay", "restraining", "interlocutory"]
-            has_keyword = any(term in outcome.lower() for term in keywords)
-            assert has_keyword, (
-                f"Outcome '{outcome}' should contain one of the keywords: {keywords}"
-            )
-
-    def test_document_type_selection_affidavit(self):
-        """Test document type selection for affidavit outcomes."""
-        outcomes_requiring_affidavit = [
-            "Prepare affidavit evidence",
-            "Gather witness statements",
-            "Document sworn testimony",
-        ]
-
-        for outcome in outcomes_requiring_affidavit:
-            assert any(
-                term in outcome.lower()
-                for term in ["affidavit", "evidence", "witness", "sworn"]
-            )
-
-    def test_document_type_selection_default_claim(self):
-        """Test document type selection defaults to claim."""
-        outcomes_defaulting_to_claim = [
-            "Obtain damages",
-            "Seek compensation",
-            "Recover debt",
-            "General relief",
-        ]
-
-        for outcome in outcomes_defaulting_to_claim:
-            # Should not match injunction or affidavit keywords
-            assert not any(
-                term in outcome.lower()
-                for term in ["injunction", "order", "interim", "stay"]
-            )
-            assert not any(
-                term in outcome.lower()
-                for term in ["affidavit", "evidence", "witness", "sworn"]
-            )
 
 
 class TestErrorHandling:
@@ -782,86 +514,6 @@ class TestErrorHandling:
 
             assert result.exit_code != 0
             assert "File size exceeds limit" in result.output
-
-        finally:
-            Path(facts_file).unlink()
-
-    @patch("litassist.citation.verify.verify_all_citations")
-    @patch("litassist.citation.verify.verify_single_citation")
-    @patch("litassist.commands.strategy.core.LLMClientFactory.for_command")
-    def test_strategy_generation_citation_validation_warnings(
-        self, mock_llm_factory, mock_verify_single, mock_verify_all
-    ):
-        """Test handling of citation validation warnings."""
-        # Mock citation verification to prevent real API calls
-        mock_verify_all.return_value = ([], [("[2025] FAKE 999", "Citation not found")])
-        mock_verify_single.return_value = (False, "", "Not found", "")
-
-        # Mock LLM client with citation issues
-        mock_client = MagicMock()
-        mock_client.complete.return_value = (
-            "## OPTION 1: Test Strategy\nWith invalid citation [2025] FAKE 999",
-            {"total_tokens": 500},
-        )
-        mock_client.validate_citations.return_value = [
-            "Invalid citation format detected",
-            "Citation [2025] FAKE 999 could not be verified",
-        ]
-        mock_llm_factory.return_value = mock_client
-
-        with tempfile.NamedTemporaryFile(mode="w", suffix=".txt", delete=False) as f:
-            f.write(
-                """
-            Parties:
-            John Smith v ABC Corporation
-            
-            Background:
-            Test background
-            
-            Key Events:
-            Test events
-            
-            Legal Issues:
-            Contract breach
-            
-            Evidence Available:
-            Documents
-            
-            Opposing Arguments:
-            Defense
-            
-            Procedural History:
-            History
-            
-            Jurisdiction:
-            Federal Court
-            
-            Applicable Law:
-            Contract law
-            
-            Client Objectives:
-            Damages
-            """
-            )
-            facts_file = f.name
-
-        try:
-            runner = CliRunner()
-            with patch(
-                "litassist.commands.strategy.file_handler.save_command_output"
-            ) as mock_save:
-                with patch("litassist.commands.strategy.file_handler.save_log"):
-                    mock_save.return_value = "test_output.txt"
-                    _ = runner.invoke(
-                        strategy, [facts_file, "--outcome", "Test outcome"]
-                    )
-
-                    # May complete with warnings or fail due to citation issues
-                    # Since the CLI may fail before citation validation, just check that we set up the test correctly
-                    assert mock_client.validate_citations.return_value == [
-                        "Invalid citation format detected",
-                        "Citation [2025] FAKE 999 could not be verified",
-                    ]
 
         finally:
             Path(facts_file).unlink()

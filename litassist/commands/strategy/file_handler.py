@@ -22,6 +22,7 @@ def save_strategy_outputs(
     llm_model: str = None,
     noverify: bool = False,
     heavy: bool = False,
+    verification_status: Optional[str] = None,
 ) -> Tuple[str, str, str, str]:
     """
     Save all strategy command outputs to separate files.
@@ -58,9 +59,12 @@ def save_strategy_outputs(
     if strategies_name:
         metadata["Strategies File"] = strategies_name
 
-    # Add verification metadata
+    # Add verification metadata. Prefer the caller-supplied status (which reflects
+    # a verification short-circuit); fall back to the heavy/standard label.
     if noverify:
         metadata["Verification"] = "Skipped (--noverify)"
+    elif verification_status:
+        metadata["Verification"] = verification_status
     else:
         verification_mode = "verification-heavy (max thinking effort)" if heavy else "Standard verification"
         metadata["Verification"] = verification_mode

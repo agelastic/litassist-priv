@@ -54,6 +54,11 @@ def validate_case_facts_format(text: str) -> bool:
     Returns:
         True if all ten headings are present, False otherwise.
     """
+    # Paired contract: these exact heading names must stay in sync with the
+    # `case_facts_10_heading` format template in litassist/prompts/formats.yaml,
+    # which is what extractfacts and updatefacts instruct the model to emit. A
+    # one-sided rename here or there silently breaks the producer/consumer handoff;
+    # tests/unit/test_case_facts_validator.py guards that the template validates.
     required_headings = [
         "Parties",
         "Background",

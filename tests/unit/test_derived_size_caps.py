@@ -88,7 +88,7 @@ class TestDraftPreflight:
             patch("litassist.commands.draft.core.save_command_output"),
             patch(
                 "litassist.commands.draft.core.verify_content_if_needed",
-                side_effect=lambda client, content, *a, **kw: (content, {}),
+                side_effect=lambda client, content, *a, **kw: (content, False, None),
             ),
             patch(
                 "litassist.commands.draft.core.detect_factual_hallucinations",
