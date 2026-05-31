@@ -192,6 +192,15 @@ def updatefacts(file, facts):
         output_dir=os.getcwd(),
     )
 
+    # Also refresh a stable ./case_facts.txt with the merged facts. The timestamped
+    # copy above keeps history and feeds resolve_case_facts_file, but downstream
+    # scripts (and the caseplan planner's examples) frequently reference the literal
+    # 'case_facts.txt'; without this they fail with "File not found: case_facts.txt".
+    stable_path = os.path.join(os.getcwd(), "case_facts.txt")
+    with open(stable_path, "w", encoding="utf-8") as fh:
+        fh.write(combined)
+    click.echo(info_message(f"Refreshed {stable_path}"))
+
     save_log(
         "updatefacts",
         {
