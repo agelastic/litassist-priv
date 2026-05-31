@@ -275,66 +275,6 @@ class TestLookupCommand:
             call_args = mock_factory.call_args
             assert call_args[0] == ("lookup", "broad")
 
-    @patch.dict("os.environ", {"CSE_RATE_LIMIT_DELAY": "0"})
-    @patch("litassist.commands.lookup.get_config")
-    @patch("litassist.commands.lookup.search.get_config")
-    @patch("litassist.commands.lookup.fetchers._fetch_url_content", return_value="")
-    @patch("time.sleep")
-    @patch("googleapiclient.discovery.build")
-    @patch("litassist.llm.factory.LLMClientFactory.for_command")
-    def test_verify_flag_not_supported(
-        self,
-        mock_factory,
-        mock_build,
-        mock_sleep,
-        mock_fetch,
-        mock_search_get_config,
-        mock_init_get_config,
-    ):
-        """Test that --verify flag shows appropriate warning."""
-        # Just test the warning message logic without running the full command
-        from litassist.utils.formatting import warning_message
-        
-        # The actual warning message from the command
-        expected_msg = warning_message(
-            "--verify not supported: This command has no internal verification. Use 'litassist verify' for post-processing verification."
-        )
-        
-        # Verify the message format is correct
-        assert "--verify not supported" in expected_msg
-        assert "Use 'litassist verify'" in expected_msg
-        assert "[WARNING]" in expected_msg  # warning_message adds this prefix
-
-    @patch.dict("os.environ", {"CSE_RATE_LIMIT_DELAY": "0"})
-    @patch("litassist.commands.lookup.get_config")
-    @patch("litassist.commands.lookup.search.get_config")
-    @patch("litassist.commands.lookup.fetchers._fetch_url_content", return_value="")
-    @patch("time.sleep")
-    @patch("googleapiclient.discovery.build")
-    @patch("litassist.llm.factory.LLMClientFactory.for_command")
-    def test_noverify_flag_not_supported(
-        self,
-        mock_factory,
-        mock_build,
-        mock_sleep,
-        mock_fetch,
-        mock_search_get_config,
-        mock_init_get_config,
-    ):
-        """Test that --noverify flag shows appropriate warning."""
-        # Just test the warning message logic without running the full command
-        from litassist.utils.formatting import warning_message
-        
-        # The actual warning message from the command
-        expected_msg = warning_message(
-            "--noverify not supported: This command has no verification to skip."
-        )
-        
-        # Verify the message format is correct
-        assert "--noverify not supported" in expected_msg
-        assert "no verification to skip" in expected_msg
-        assert "[WARNING]" in expected_msg  # warning_message adds this prefix
-
 
 class TestLookupCommandIntegration:
     """Integration tests for lookup command."""

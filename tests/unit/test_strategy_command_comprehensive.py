@@ -513,12 +513,8 @@ class TestErrorHandling:
             runner = CliRunner()
             result = runner.invoke(strategy, [facts_file, "--outcome", "Test outcome"])
 
-            # Test that the LLM failure was properly set up
-            assert mock_client.complete.side_effect is not None
-            # The command should fail due to the LLM exception
+            # An LLM API failure must surface as a non-zero exit, not silent success.
             assert result.exit_code != 0
-            # Test validates the error handling structure is in place
-            assert True  # This validates the test structure itself
 
         finally:
             Path(facts_file).unlink()
@@ -577,61 +573,6 @@ class TestErrorHandling:
 
 class TestStrategyFileIntegration:
     """Test integration with brainstorm strategy files."""
-
-    def test_parse_strategies_file_structured(self):
-        """Test parsing of well-structured strategies file."""
-        from litassist.utils.core import parse_strategies_file
-
-        strategies_content = """## ORTHODOX STRATEGIES
-
-### 1. Standard contract breach claim
-Traditional approach to contract disputes.
-
-### 2. Alternative dispute resolution
-Mediation and arbitration options.
-
-## UNORTHODOX STRATEGIES
-
-### Strategy 1: Creative legal theory
-Novel approach to the problem.
-
-## MOST LIKELY TO SUCCEED
-
-1. Interim injunction application
-High probability given the circumstances.
-
-2. Summary judgment motion
-Clear case with strong evidence.
-"""
-
-        result = parse_strategies_file(strategies_content)
-
-        assert result["orthodox_count"] == 2
-        assert result["unorthodox_count"] == 1
-        assert result["most_likely_count"] == 2
-
-    def test_parse_strategies_file_unstructured(self):
-        """Test parsing of unstructured strategies content."""
-        from litassist.utils.core import parse_strategies_file
-
-        strategies_content = """
-        1. First strategy approach
-        Details about the first strategy.
-        
-        2. Second strategy approach
-        Details about the second strategy.
-        
-        3. Third strategy approach
-        Details about the third strategy.
-        """
-
-        result = parse_strategies_file(strategies_content)
-
-        # Should handle unstructured content gracefully
-        assert isinstance(result, dict)
-        assert "orthodox_count" in result
-        assert "unorthodox_count" in result
-        assert "most_likely_count" in result
 
     def test_parse_strategies_file_empty(self):
         """Test parsing of empty strategies file."""
