@@ -931,10 +931,9 @@ litassist updatefacts <files>... [OPTIONS]
   recency resolver then selects the newest.
 - No verification pass runs: merging already-condensed text is mechanical, so
   this stays a single cheap call.
-- If the merge comes back missing any of the ten headings, the command fails and
-  saves the raw output to `outputs/updatefacts_invalid_*.txt` for review -- it is
-  deliberately NOT written as `case_facts_*.txt`, so a bad merge can never shadow
-  good facts in downstream auto-selection.
+- If the merge comes back missing any of the ten headings, the command warns and
+  still saves (the same as `extractfacts`); the downstream commands run the same
+  10-heading validation and will reject a wrong-shaped file with a clear message.
 
 **Models:** Gemini 3.5 Flash (cheap, fast merge)
 

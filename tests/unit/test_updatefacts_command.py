@@ -6,8 +6,6 @@ The prompt system (PROMPTS) and the case-facts resolver/validator run for
 real, so these tests also prove the new YAML keys are wired correctly.
 """
 
-import glob
-
 from unittest.mock import Mock, patch
 
 from click.testing import CliRunner
@@ -137,30 +135,30 @@ class TestUpdateFactsBasic:
 
     @patch("litassist.commands.updatefacts.core.show_command_completion")
     @patch("litassist.commands.updatefacts.core.save_log")
+    @patch("litassist.commands.updatefacts.core.save_command_output")
     @patch("litassist.commands.updatefacts.core.validate_file_size")
     @patch("litassist.commands.updatefacts.core.LLMClientFactory")
-    def test_malformed_output_does_not_poison_autoselect(
-        self, mock_factory, mock_validate, mock_log, mock_show
+    def test_warns_when_result_missing_headings(
+        self, mock_factory, mock_validate, mock_output, mock_log, mock_show
     ):
-        # save_command_output is intentionally NOT mocked: we assert on the real
-        # files left in the working directory.
+        # Mirrors extractfacts: a merge missing headings warns but still saves
+        # (exit 0). Downstream commands run the same validation and reject a
+        # wrong-shaped file, so updatefacts does not special-case it.
         client = self._mock_factory(mock_factory)
         client.complete.return_value = ("just prose, no headings at all", self.usage)
         mock_validate.return_value = "BODY"
+        mock_output.return_value = "case_facts_x.txt"
 
         with self.runner.isolated_filesystem():
             with open("source.txt", "w") as f:
                 f.write("raw")
             result = self.runner.invoke(updatefacts, ["source.txt"])
-            discoverable = glob.glob("case_facts*.txt")
-            inspection = glob.glob("outputs/updatefacts_invalid_*.txt")
 
-        # A malformed merge must FAIL and must NOT leave an auto-discoverable
-        # case_facts*.txt that would shadow good facts for downstream commands.
-        assert result.exit_code != 0, result.output
-        assert discoverable == [], f"poisoned auto-selection with: {discoverable}"
-        # The raw output is preserved (non-discoverable) for inspection.
-        assert inspection, "expected an outputs/updatefacts_invalid_*.txt for review"
+        assert result.exit_code == 0, result.output
+        # Assert the command's OWN warn-and-save message (not the validator's
+        # echo, which prints regardless) so this fails if the warn block is removed.
+        assert "Saving anyway" in result.output
+        assert mock_output.call_args[0][0] == "case_facts"
 
     def test_help_and_errors(self):
         assert self.runner.invoke(updatefacts, ["--help"]).exit_code == 0

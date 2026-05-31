@@ -14,7 +14,7 @@ import click
 
 from litassist.timing import timed
 from litassist.utils.core import show_command_completion
-from litassist.utils.formatting import info_message
+from litassist.utils.formatting import info_message, warning_message
 from litassist.utils.file_ops import (
     expand_glob_patterns_callback as expand_glob_patterns,
     validate_file_size,
@@ -64,10 +64,9 @@ def updatefacts(file, facts):
 
     Raises:
         click.ClickException: On file read errors, an oversized combined input,
-                              LLM API errors, or a merged result that is missing
-                              required headings (which is saved to outputs/ for
-                              review but never installed as case_facts, so it
-                              cannot shadow good facts in downstream auto-selection).
+                              or LLM API errors. A merge missing required headings
+                              is warned about but still saved (downstream commands
+                              run the same validation).
     """
     try:
         log_task_event(
@@ -166,27 +165,16 @@ def updatefacts(file, facts):
     except Exception as e:
         raise click.ClickException(f"Error updating case facts: {e}")
 
-    # Validate the merged result. A malformed merge must NOT be written as a
-    # case_facts_<ts>.txt in the cwd: it would be the newest case_facts*.txt and
-    # resolve_case_facts_file would auto-select it, shadowing the previously-good
-    # facts for every downstream command. So on failure, preserve the raw output
-    # under a non-discoverable name in outputs/ for review, and fail fast.
+    # Validate the merged result. Like extractfacts, warn (the validator echoes
+    # the missing headings) but still save - the downstream commands run the same
+    # validation and reject a wrong-shaped file with a clear message, so there is
+    # no need to special-case it here.
     if not validate_case_facts_format(combined):
-        invalid_file = save_command_output(
-            "updatefacts_invalid",
-            combined,
-            "",
-            metadata={
-                "Source Files": ", ".join(source_files),
-                "Base Facts": base_path if base_path else "created from scratch",
-                "Model": client.model,
-            },
-        )
-        raise click.ClickException(
-            "Merged facts are missing one or more required headings (see above). "
-            "NOT written as case_facts to avoid shadowing good facts in downstream "
-            f"auto-selection; the raw merge was saved to {invalid_file} for review. "
-            "Fix the base facts or source material and re-run."
+        click.echo(
+            warning_message(
+                "Updated facts are missing one or more required headings (see "
+                "above). Saving anyway - review before using downstream."
+            )
         )
 
     # Write a fresh case_facts_<timestamp>.txt into the CURRENT directory (not
