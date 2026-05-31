@@ -275,65 +275,58 @@ class TestLookupCommand:
             call_args = mock_factory.call_args
             assert call_args[0] == ("lookup", "broad")
 
-    @patch.dict("os.environ", {"CSE_RATE_LIMIT_DELAY": "0"})
     @patch("litassist.commands.lookup.get_config")
     @patch("litassist.commands.lookup.search.get_config")
     @patch("litassist.commands.lookup.fetchers._fetch_url_content", return_value="")
-    @patch("time.sleep")
-    @patch("googleapiclient.discovery.build")
-    @patch("litassist.llm.factory.LLMClientFactory.for_command")
-    def test_verify_flag_not_supported(
+    @patch("litassist.commands.lookup.search.time.sleep")
+    def test_unsupported_verify_noverify_flags_warn(
         self,
-        mock_factory,
-        mock_build,
         mock_sleep,
         mock_fetch,
         mock_search_get_config,
         mock_init_get_config,
     ):
-        """Test that --verify flag shows appropriate warning."""
-        # Just test the warning message logic without running the full command
-        from litassist.utils.formatting import warning_message
-        
-        # The actual warning message from the command
-        expected_msg = warning_message(
-            "--verify not supported: This command has no internal verification. Use 'litassist verify' for post-processing verification."
-        )
-        
-        # Verify the message format is correct
-        assert "--verify not supported" in expected_msg
-        assert "Use 'litassist verify'" in expected_msg
-        assert "[WARNING]" in expected_msg  # warning_message adds this prefix
+        """lookup has no internal verification: --verify/--noverify must warn (not
+        error) while the command still completes. Real invocation - replaces two
+        earlier tests that only checked the warning_message helper round-trip
+        without ever running lookup."""
+        from litassist.commands.lookup import lookup
 
-    @patch.dict("os.environ", {"CSE_RATE_LIMIT_DELAY": "0"})
-    @patch("litassist.commands.lookup.get_config")
-    @patch("litassist.commands.lookup.search.get_config")
-    @patch("litassist.commands.lookup.fetchers._fetch_url_content", return_value="")
-    @patch("time.sleep")
-    @patch("googleapiclient.discovery.build")
-    @patch("litassist.llm.factory.LLMClientFactory.for_command")
-    def test_noverify_flag_not_supported(
-        self,
-        mock_factory,
-        mock_build,
-        mock_sleep,
-        mock_fetch,
-        mock_search_get_config,
-        mock_init_get_config,
-    ):
-        """Test that --noverify flag shows appropriate warning."""
-        # Just test the warning message logic without running the full command
-        from litassist.utils.formatting import warning_message
-        
-        # The actual warning message from the command
-        expected_msg = warning_message(
-            "--noverify not supported: This command has no verification to skip."
-        )
-        
-        # Verify the message format is correct
-        assert "--noverify not supported" in expected_msg
-        assert "no verification to skip" in expected_msg
-        assert "[WARNING]" in expected_msg  # warning_message adds this prefix
+        mock_config = Mock()
+        mock_config.g_key = "test_key"
+        mock_config.cse_id = "test_cse"
+        mock_config.cse_id_austlii = None
+        mock_config.cse_id_comprehensive = None
+        mock_config.max_fetch_time = 60
+        mock_config.fetch_timeout = 10
+        mock_search_get_config.return_value = mock_config
+        mock_init_get_config.return_value = mock_config
+
+        with (
+            patch("googleapiclient.discovery.build") as mock_build,
+            patch("litassist.llm.factory.LLMClientFactory.for_command") as mock_factory,
+            patch("litassist.commands.lookup.processors.save_command_output"),
+            patch("litassist.commands.lookup.save_log"),
+        ):
+            mock_cse_service = Mock()
+            mock_build.return_value = mock_cse_service
+            mock_cse_service.cse.return_value.list.return_value.execute.return_value = {
+                "items": [{"link": "https://jade.io/article/123"}]
+            }
+            mock_client = Mock()
+            mock_client.model = "test-model"
+            mock_client.complete.return_value = ("Analysis", {"total_tokens": 100})
+            mock_factory.return_value = mock_client
+
+            runner = CliRunner()
+
+            result = runner.invoke(lookup, ["test question", "--verify"])
+            assert result.exit_code == 0, result.output
+            assert "--verify not supported" in result.output
+
+            result = runner.invoke(lookup, ["test question", "--noverify"])
+            assert result.exit_code == 0, result.output
+            assert "--noverify not supported" in result.output
 
 
 class TestLookupCommandIntegration:

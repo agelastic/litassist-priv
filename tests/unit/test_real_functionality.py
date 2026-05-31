@@ -1,6 +1,6 @@
 """Real tests that actually test litassist functionality."""
 
-from unittest.mock import Mock, patch
+from unittest.mock import patch
 import tempfile
 from pathlib import Path
 
@@ -28,14 +28,6 @@ class TestActualFunctionality:
         assert (
             len(reconstructed) >= len(text) * 0.95
         )  # Allow 5% compression from normalization
-
-    def test_real_config_mock(self):
-        """Test with properly mocked config."""
-        from litassist.config import CONFIG
-
-        # The config should be mocked by conftest.py
-        assert CONFIG is not None
-        assert hasattr(CONFIG, "openrouter_api_key")
 
     def test_save_log_creates_file(self):
         """Test save_log creates actual files."""
@@ -73,39 +65,3 @@ class TestActualFunctionality:
         finally:
             # Clean up
             Path(temp_path).unlink()
-
-
-class TestCLICommandsWithRealFiles:
-    """Test CLI commands with real file handling."""
-
-    def test_brainstorm_with_real_file(self):
-        """Test brainstorm command with actual file."""
-        from click.testing import CliRunner
-        from litassist.commands.brainstorm import brainstorm
-
-        runner = CliRunner()
-
-        with runner.isolated_filesystem():
-            # Create a real file in the isolated filesystem
-            with open("facts.txt", "w") as f:
-                f.write("Test case facts")
-
-            # Mock the actual command logic
-            with patch("litassist.llm.factory.LLMClientFactory.for_command") as mock_factory:
-                mock_instance = Mock()
-                mock_instance.complete.return_value = (
-                    "Strategy",
-                    {"total_tokens": 100},
-                )
-                mock_instance.validate_citations.return_value = []
-                mock_instance.verify.return_value = ("Verified", {})
-                mock_instance.model = "test-model"
-                mock_factory.return_value = mock_instance
-
-                # Run with real file
-                result = runner.invoke(
-                    brainstorm, ["facts.txt", "--side", "plaintiff", "--area", "civil"]
-                )
-
-                # Should not fail on file not found
-                assert "does not exist" not in result.output

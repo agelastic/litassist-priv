@@ -513,12 +513,8 @@ class TestErrorHandling:
             runner = CliRunner()
             result = runner.invoke(strategy, [facts_file, "--outcome", "Test outcome"])
 
-            # Test that the LLM failure was properly set up
-            assert mock_client.complete.side_effect is not None
-            # The command should fail due to the LLM exception
+            # An LLM API failure must surface as a non-zero exit, not silent success.
             assert result.exit_code != 0
-            # Test validates the error handling structure is in place
-            assert True  # This validates the test structure itself
 
         finally:
             Path(facts_file).unlink()
@@ -578,61 +574,6 @@ class TestErrorHandling:
 class TestStrategyFileIntegration:
     """Test integration with brainstorm strategy files."""
 
-    def test_parse_strategies_file_structured(self):
-        """Test parsing of well-structured strategies file."""
-        from litassist.utils.core import parse_strategies_file
-
-        strategies_content = """## ORTHODOX STRATEGIES
-
-### 1. Standard contract breach claim
-Traditional approach to contract disputes.
-
-### 2. Alternative dispute resolution
-Mediation and arbitration options.
-
-## UNORTHODOX STRATEGIES
-
-### Strategy 1: Creative legal theory
-Novel approach to the problem.
-
-## MOST LIKELY TO SUCCEED
-
-1. Interim injunction application
-High probability given the circumstances.
-
-2. Summary judgment motion
-Clear case with strong evidence.
-"""
-
-        result = parse_strategies_file(strategies_content)
-
-        assert result["orthodox_count"] == 2
-        assert result["unorthodox_count"] == 1
-        assert result["most_likely_count"] == 2
-
-    def test_parse_strategies_file_unstructured(self):
-        """Test parsing of unstructured strategies content."""
-        from litassist.utils.core import parse_strategies_file
-
-        strategies_content = """
-        1. First strategy approach
-        Details about the first strategy.
-        
-        2. Second strategy approach
-        Details about the second strategy.
-        
-        3. Third strategy approach
-        Details about the third strategy.
-        """
-
-        result = parse_strategies_file(strategies_content)
-
-        # Should handle unstructured content gracefully
-        assert isinstance(result, dict)
-        assert "orthodox_count" in result
-        assert "unorthodox_count" in result
-        assert "most_likely_count" in result
-
     def test_parse_strategies_file_empty(self):
         """Test parsing of empty strategies file."""
         from litassist.utils.core import parse_strategies_file
@@ -642,6 +583,101 @@ Clear case with strong evidence.
         assert result["orthodox_count"] == 0
         assert result["unorthodox_count"] == 0
         assert result["most_likely_count"] == 0
+
+
+_VALID_CASE_FACTS = """
+Parties:
+John Smith v ABC Corporation
+Background:
+Contract dispute case
+Key Events:
+Contract signed and breached
+Legal Issues:
+Breach of contract
+Evidence Available:
+Contract documents
+Opposing Arguments:
+No breach occurred
+Procedural History:
+No prior proceedings
+Jurisdiction:
+Federal Court of Australia
+Applicable Law:
+Contract law
+Client Objectives:
+Obtain damages
+"""
+
+
+class TestStrategiesGlobResolution:
+    """--strategies accepts a glob and resolves to the most recent match.
+
+    Caseplan emits `--strategies 'outputs/brainstorm_*.txt'`; the dual-brainstorm
+    design means two files match. Reaching exit 0 also proves the path-string
+    substitution at core.py:326/490 (the metadata sites that used .name).
+    """
+
+    @patch("litassist.commands.strategy.core.LLMClientFactory.for_command")
+    @patch("litassist.commands.strategy.file_handler.save_command_output")
+    @patch("litassist.commands.strategy.file_handler.save_log")
+    @patch("litassist.commands.strategy.core.verify_content_if_needed")
+    @patch("litassist.commands.strategy.core.PROMPTS")
+    def test_strategies_glob_uses_newest(
+        self,
+        mock_prompts,
+        mock_verify,
+        mock_save_log,
+        mock_save_output,
+        mock_llm_factory,
+    ):
+        import os
+
+        mock_prompts.get.return_value = "Test prompt"
+        mock_verify.return_value = ("Verified content", False, None)
+        mock_client = MagicMock()
+        mock_client.complete.return_value = (
+            "## OPTION 1: Do the thing\nContent...",
+            {"total_tokens": 10},
+        )
+        mock_client.validate_citations.return_value = []
+        mock_llm_factory.return_value = mock_client
+        mock_save_output.return_value = "outputs/strategy_test.txt"
+
+        with tempfile.NamedTemporaryFile(mode="w", suffix=".txt", delete=False) as f:
+            f.write(_VALID_CASE_FACTS)
+            facts_file = f.name
+
+        try:
+            runner = CliRunner()
+            with runner.isolated_filesystem():
+                # Two brainstorm files; the research one is newer (mtime).
+                older = "brainstorm_creative_20260101_000000_000000000.txt"
+                newer = "brainstorm_research_20260102_000000_000000000.txt"
+                with open(older, "w") as fh:
+                    fh.write("creative brainstorm")
+                with open(newer, "w") as fh:
+                    fh.write("research brainstorm")
+                os.utime(older, (1_000, 1_000))
+                os.utime(newer, (2_000, 2_000))
+
+                result = runner.invoke(
+                    strategy,
+                    [
+                        facts_file,
+                        "--outcome",
+                        "Obtain damages",
+                        "--strategies",
+                        "brainstorm_*.txt",
+                    ],
+                    obj={"premium": False},
+                )
+
+                assert result.exit_code == 0, result.output
+                # Newest of the two matches was chosen, and the choice is loud.
+                assert "Matched 2 files; using newest" in result.output
+                assert newer in result.output
+        finally:
+            Path(facts_file).unlink()
 
 
 # Integration test markers

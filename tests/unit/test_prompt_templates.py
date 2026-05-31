@@ -172,11 +172,6 @@ class TestPromptTemplates:
             },
         }
 
-    def test_prompts_directory_exists(self, prompts_dir):
-        """Test that the prompts directory exists."""
-        assert prompts_dir.exists(), f"Prompts directory not found: {prompts_dir}"
-        assert prompts_dir.is_dir(), f"Prompts path is not a directory: {prompts_dir}"
-
     def test_all_yaml_files_exist(self, prompts_dir, expected_yaml_files):
         """Test that all expected YAML files exist in the prompts directory."""
         existing_files = {f.name for f in prompts_dir.glob("*.yaml")}

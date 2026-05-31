@@ -160,6 +160,35 @@ class TestUpdateFactsBasic:
         assert "Saving anyway" in result.output
         assert mock_output.call_args[0][0] == "case_facts"
 
+    @patch("litassist.commands.updatefacts.core.show_command_completion")
+    @patch("litassist.commands.updatefacts.core.save_log")
+    @patch("litassist.commands.updatefacts.core.save_command_output")
+    @patch("litassist.commands.updatefacts.core.validate_file_size")
+    @patch("litassist.commands.updatefacts.core.LLMClientFactory")
+    def test_writes_stable_case_facts_txt(
+        self, mock_factory, mock_validate, mock_output, mock_log, mock_show
+    ):
+        # updatefacts must also refresh a stable ./case_facts.txt so that
+        # caseplan-generated scripts referencing the literal name (e.g.
+        # `brainstorm --facts case_facts.txt`) resolve instead of failing with
+        # "File not found: case_facts.txt".
+        import os
+
+        self._mock_factory(mock_factory)
+        mock_validate.return_value = "BODY"
+        mock_output.return_value = "case_facts_x.txt"
+
+        with self.runner.isolated_filesystem():
+            with open("source.txt", "w") as f:
+                f.write("raw")
+            result = self.runner.invoke(updatefacts, ["source.txt"])
+            assert result.exit_code == 0, result.output
+            assert os.path.exists("case_facts.txt"), (
+                "updatefacts must write a stable case_facts.txt in the cwd"
+            )
+            with open("case_facts.txt", encoding="utf-8") as fh:
+                assert fh.read() == VALID_MERGED
+
     def test_help_and_errors(self):
         assert self.runner.invoke(updatefacts, ["--help"]).exit_code == 0
         # Missing required SOURCE argument.

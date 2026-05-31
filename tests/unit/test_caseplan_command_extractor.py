@@ -178,3 +178,22 @@ class TestExtractCliCommands:
         # shlex.join quotes the glob so litassist's own expander receives the
         # literal pattern (see expand_glob_patterns_callback).
         assert "'outputs/lookup_*.txt'" in script
+
+    def test_scalar_glob_args_survive_extraction(self):
+        # New caseplan convention: strategy --strategies and verify FILE reference
+        # a quoted glob that litassist's scalar resolver (expand_glob_single_callback)
+        # expands to the most recent match. The extractor must transcribe these
+        # verbatim with the glob still quoted (so the shell does not pre-expand it).
+        plan = _join(
+            [
+                "```bash",
+                'litassist strategy case_facts.txt --outcome "win" '
+                "--strategies 'outputs/brainstorm_research_*.txt'",
+                "litassist verify 'outputs/draft_memo_*.txt' --citations",
+                "```",
+            ]
+        )
+        script, accepted_count, _ = extract_cli_commands(plan)
+        assert accepted_count == 2
+        assert "'outputs/brainstorm_research_*.txt'" in script
+        assert "'outputs/draft_memo_*.txt'" in script
