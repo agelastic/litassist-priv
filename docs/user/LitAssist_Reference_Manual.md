@@ -1081,7 +1081,7 @@ litassist strategy <case_facts> [OPTIONS]
 | Option | Type | Description |
 |--------|------|-------------|
 | `--outcome` | text | Required: desired legal outcome (single sentence) |
-| `--strategies` | path | Optional brainstorm strategies file |
+| `--strategies` | path or glob | Optional brainstorm strategies file; a glob (e.g. `outputs/brainstorm_*.txt`) resolves to the most recent match |
 | `--heavy` | flag | Use GPT-5.5 for verification |
 | `--noverify` | flag | Skip verification |
 | `--output` | text | Custom output filename prefix |
@@ -1411,7 +1411,7 @@ litassist verify <file> [OPTIONS]
 
 | Argument | Description |
 |----------|-------------|
-| `file` | Path to text file to verify |
+| `file` | Path or glob to the text file to verify; a glob (e.g. `outputs/draft_*.txt`) resolves to the most recent match |
 
 **Options:**
 

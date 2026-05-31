@@ -338,7 +338,7 @@ litassist strategy <case_facts> [OPTIONS]
 | Option | Type | Description |
 |--------|------|-------------|
 | `--outcome` | text | Required: desired outcome (single sentence) |
-| `--strategies` | path | Optional brainstorm strategies file |
+| `--strategies` | path or glob | Optional brainstorm strategies file; a glob resolves to the most recent match |
 | `--heavy` | flag | Use GPT-5.5 for verification |
 | `--noverify` | flag | Skip verification |
 | `--output` | text | Custom output filename prefix |

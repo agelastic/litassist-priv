@@ -29,6 +29,9 @@ Historical dated sections preserve the model names that were current when those 
 
 ### Changed
 
+#### May 2026: strategy `--strategies` and verify `FILE` accept globs (most recent match)
+- Caseplan-generated scripts chain step outputs by glob (e.g. `strategy --strategies 'outputs/brainstorm_*.txt'`, `verify 'outputs/draft_*.txt'`), and the user docs already showed those forms, but the two single-input path args crashed on a glob: `--strategies` was a `click.File` and `verify`'s `FILE` was `click.Path(exists=True)`, both resolved at Click's parse stage before any callback could expand the pattern. Both now use a new `expand_glob_single_callback` (`litassist/utils/file_ops.py`): a literal path passes through, a glob resolves to the most recent matching file (by mtime, mirroring `resolve_case_facts_file`), and a zero-match / directory / missing literal fails loudly. When a glob matches more than one file (e.g. `draft` writes a raw and a final file under one prefix) it warns and uses the newest. Multi-input commands (`counselnotes`, `draft`, `barbrief`, `digest`, `brainstorm --research`) are unchanged - they still take all matches.
+
 #### May 2026: dropped the no-op `--verify` flag from extractfacts and strategy
 - `extractfacts` and `strategy` ran verification unconditionally (the call site hard-coded `verify_flag=True`), so their `--verify` flag did nothing but print a "verification already active" reminder. The flag is removed from both commands. Verification remains auto-enabled; use `--noverify` to skip it. `draft` already followed this pattern. The functional `--verify` on `brainstorm`, `counselnotes`, and `barbrief` (which genuinely toggles citation/content verification) is unchanged, as is the unsupported-flag guard on `lookup`, `digest`, and `caseplan`.
 

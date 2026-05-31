@@ -207,6 +207,51 @@ def expand_glob_patterns_callback(ctx, param, value):
     return tuple(unique_paths)
 
 
+def expand_glob_single_callback(ctx, param, value):
+    """Resolve one optional path/glob to a single existing file (newest on multi-match).
+
+    Scalar sibling of expand_glob_patterns_callback for single-input args
+    (strategy --strategies, verify FILE). A literal path passes through; a glob
+    resolves to the MOST RECENT match by mtime - mirroring how
+    resolve_case_facts_file picks the latest case_facts*.txt. Caseplan-generated
+    scripts reference prior outputs by glob (e.g. 'outputs/brainstorm_*.txt'),
+    and some producers (draft) legitimately write two files under one prefix, so
+    a multi-match is normal: warn and take the newest rather than fail.
+
+    Args:
+        ctx, param: Click callback positionals (unused).
+        value: A path or glob string, or None when the option is omitted.
+
+    Returns:
+        The resolved file path, or None when value is None.
+
+    Raises:
+        click.BadParameter: No file matches the glob, the path is a directory,
+                            or a non-glob literal does not exist.
+    """
+    from litassist.utils.formatting import warning_message
+
+    if value is None:  # optional arg omitted; do NOT treat "" as no-value
+        return value
+    if os.path.exists(value):
+        if os.path.isdir(value):
+            raise click.BadParameter(f"Expected a file, got a directory: {value}")
+        return value
+    if any(char in value for char in ["*", "?", "["]):
+        matches = expand_glob_pattern(value)  # files only
+        if not matches:
+            raise click.BadParameter(f"No files matching pattern: {value}")
+        chosen = max(matches, key=os.path.getmtime)  # most recent, not lexical
+        if len(matches) > 1:
+            click.echo(
+                warning_message(
+                    f"Matched {len(matches)} files; using newest: {chosen}"
+                )
+            )
+        return chosen
+    raise click.BadParameter(f"File not found: {value}")
+
+
 def process_reference_files(
     pattern: Optional[str],
     purpose: str = "reference",

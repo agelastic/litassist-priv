@@ -12,11 +12,12 @@ By default (no flags), all three verifications are performed.
 import click
 from litassist.timing import timed
 from litassist.prompts import PROMPTS  # noqa: F401
+from litassist.utils.file_ops import expand_glob_single_callback
 from .core import run_verification_workflow
 
 
 @click.command()
-@click.argument("file", type=click.Path(exists=True))
+@click.argument("file", type=click.Path(), callback=expand_glob_single_callback)
 @click.option("--citations", is_flag=True, help="Verify citations only")
 @click.option("--soundness", is_flag=True, help="Verify legal soundness only")
 @click.option("--reasoning", is_flag=True, help="Verify/generate reasoning trace only")

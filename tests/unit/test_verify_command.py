@@ -236,6 +236,31 @@ class TestVerifyCommand:
         result = runner.invoke(verify, ["nonexistent.txt"])
         assert result.exit_code != 0
 
+    def test_verify_glob_uses_newest(self, runner):
+        """verify FILE accepts a glob and resolves to the newest match.
+
+        draft writes raw+final under one prefix, so `verify draft_memo_*.txt`
+        matches two files even in a clean run; the newest (final save) is used.
+        """
+        import os
+
+        with runner.isolated_filesystem():
+            older = "draft_memo_20260101_000000_000000000.txt"
+            newer = "draft_memo_20260102_000000_000000000.txt"
+            for name, body in ((older, "raw draft"), (newer, "final draft")):
+                with open(name, "w") as fh:
+                    fh.write(body)
+            os.utime(older, (1_000, 1_000))
+            os.utime(newer, (2_000, 2_000))
+            with patch(
+                "litassist.commands.verify.run_verification_workflow"
+            ) as mock_wf:
+                result = runner.invoke(verify, ["draft_memo_*.txt", "--citations"])
+                assert result.exit_code == 0, result.output
+                assert "Matched 2 files; using newest" in result.output
+                mock_wf.assert_called_once()
+                assert mock_wf.call_args.kwargs["file"] == newer
+
     def testformat_citation_report(self):
         """Test citation report formatting."""
         verified = ["Case1 [2020] HCA 1", "Case2 [2021] FCA 2"]

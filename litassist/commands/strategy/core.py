@@ -12,7 +12,10 @@ from litassist.timing import timed
 from litassist.utils.core import (
     parse_strategies_file,
 )
-from litassist.utils.file_ops import validate_file_size_limit
+from litassist.utils.file_ops import (
+    validate_file_size_limit,
+    expand_glob_single_callback,
+)
 from litassist.utils.legal_reasoning import (
     create_reasoning_prompt,
     extract_reasoning_trace,
@@ -42,8 +45,9 @@ from .file_handler import save_strategy_outputs, save_strategy_log
 @click.option("--outcome", required=True, help="Desired outcome (single sentence)")
 @click.option(
     "--strategies",
-    type=click.File("r"),
-    help="Optional strategies file from brainstorm command",
+    type=click.Path(),
+    callback=expand_glob_single_callback,
+    help="Optional strategies file from brainstorm command (path or glob; newest match used)",
 )
 @click.option(
     "--heavy",
@@ -119,7 +123,8 @@ def strategy(case_facts, outcome, strategies, heavy, noverify, output):
     parsed_strategies = None
     if strategies:
         click.echo(info_message("Reading strategies from brainstorm file..."))
-        strategies_content = strategies.read()
+        with open(strategies, encoding="utf-8") as strategies_fh:
+            strategies_content = strategies_fh.read()
 
         # Check combined input size when strategies provided. Cap derives
         # from the strategy model's input budget so it scales with the
@@ -323,7 +328,7 @@ def strategy(case_facts, outcome, strategies, heavy, noverify, output):
             "Verification": "Not yet applied (raw output)",
         }
         if strategies:
-            raw_metadata["Strategies File"] = strategies.name
+            raw_metadata["Strategies File"] = strategies
         save_command_output(
             output if output else "strategy",
             strategy_content,
@@ -487,7 +492,7 @@ def strategy(case_facts, outcome, strategies, heavy, noverify, output):
         case_facts_name=case_facts.name,
         doc_type=doc_type,
         output_prefix=output,
-        strategies_name=strategies.name if strategies else None,
+        strategies_name=strategies,
         citation_issues=citation_issues,
         llm_model=llm_client.model,
         noverify=noverify,
