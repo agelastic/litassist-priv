@@ -311,6 +311,10 @@ def strategy(case_facts, outcome, strategies, heavy, noverify, output):
         from litassist.utils.formatting import warning_message
         click.echo(warning_message("--heavy flag ignored when --noverify is specified"))
 
+    # Verification status, set by the verification block below; only consulted on
+    # the not-noverify path (the noverify path reports "Skipped" directly).
+    verification_status = "Skipped (--noverify)"
+
     if not noverify:
         # Save raw pre-verification output for audit trail (before warnings prepended)
         raw_metadata = {
@@ -349,15 +353,19 @@ def strategy(case_facts, outcome, strategies, heavy, noverify, output):
         except Exception:
             pass
         click.echo(info_message("Applying standard verification..."))
-        strategy_content, _, short_circuit = verify_content_if_needed(
+        strategy_content, corrections_made, short_circuit = verify_content_if_needed(
             llm_client, strategy_content, "strategy", verify_flag=True, heavy=heavy
         )
         base_mode = "verification-heavy (max thinking effort)" if heavy else "Standard verification"
+        # Compute the status once; reused for the echo and the saved metadata so a
+        # short-circuit is never recorded as a clean verification.
         if short_circuit:
-            # Chain bailed before the LLM stage; do not claim full verification.
-            click.echo(info_message(f"{base_mode} short-circuited ({short_circuit}); content NOT fully verified"))
+            verification_status = f"{base_mode} short-circuited ({short_circuit}); content NOT fully verified"
+        elif corrections_made:
+            verification_status = f"{base_mode} applied (corrections made)"
         else:
-            click.echo(info_message(f"{base_mode} complete"))
+            verification_status = f"{base_mode} complete"
+        click.echo(info_message(verification_status))
         try:
             log_task_event(
                 "strategy",
@@ -482,6 +490,7 @@ def strategy(case_facts, outcome, strategies, heavy, noverify, output):
         llm_model=llm_client.model,
         noverify=noverify,
         heavy=heavy,
+        verification_status=verification_status,
     )
 
     # Save log
