@@ -1,3 +1,4 @@
+---
 capabilities:
   # USED BY: litassist/commands/caseplan/plan_generator.py:57 - Injected into the caseplan full-plan system prompt as the `litassist_capabilities` template variable so the LLM only recommends real commands and flags.
   litassist_capabilities: |
