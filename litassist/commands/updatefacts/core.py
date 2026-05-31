@@ -55,8 +55,11 @@ def updatefacts(file, facts):
     merges their content into an existing case-facts file - or creates one when
     none exists - under the ten standard headings, with a final Notes section
     for anything that does not fit. Always writes a fresh, auto-discoverable
-    case_facts_<timestamp>.txt into the current directory; source files are
-    never modified.
+    case_facts_<timestamp>.txt into the current directory AND (over)writes a
+    stable case_facts.txt with the merged result so scripts referencing the
+    literal name resolve. Source files are never modified, but an existing
+    case_facts.txt in the current directory is replaced by the merged output
+    on every run.
 
     Args:
         file: Path(s) to the source document(s) to fold in (glob supported).
@@ -196,6 +199,9 @@ def updatefacts(file, facts):
     # copy above keeps history and feeds resolve_case_facts_file, but downstream
     # scripts (and the caseplan planner's examples) frequently reference the literal
     # 'case_facts.txt'; without this they fail with "File not found: case_facts.txt".
+    # This deliberately writes the raw merged body (no metadata header) - it is the
+    # clean canonical facts file - and unconditionally overwrites any existing
+    # case_facts.txt with the merge just produced (documented in the docstring).
     stable_path = os.path.join(os.getcwd(), "case_facts.txt")
     with open(stable_path, "w", encoding="utf-8") as fh:
         fh.write(combined)
