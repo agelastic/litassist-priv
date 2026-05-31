@@ -145,9 +145,9 @@ jobs:
       - name: Release Summary
         run: |
           if [ "${{ needs.build.result }}" == "success" ]; then
-            echo "✅ Release v${{ steps.get_version.outputs.VERSION }} completed successfully!"
-            echo "📦 View release: https://github.com/${{ github.repository }}/releases/tag/v${{ steps.get_version.outputs.VERSION }}"
+            echo "Release v${{ steps.get_version.outputs.VERSION }} completed successfully!"
+            echo "View release: https://github.com/${{ github.repository }}/releases/tag/v${{ steps.get_version.outputs.VERSION }}"
           else
-            echo "❌ Release v${{ steps.get_version.outputs.VERSION }} failed!"
+            echo "Release v${{ steps.get_version.outputs.VERSION }} failed!"
             echo "Check the workflow logs for details."
           fi
