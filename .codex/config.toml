@@ -1,5 +1,10 @@
 personality = "friendly"
 
+# Codex handoffs in this project run the top model at maximum reasoning effort.
+model = "gpt-5.5"
+model_reasoning_effort = "xhigh"
+model_reasoning_summary = "concise"
+
 [mcp_servers]
 
 [mcp_servers.code-review-graph]
