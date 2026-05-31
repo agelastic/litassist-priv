@@ -139,20 +139,21 @@ def extractfacts(file, heavy, noverify, output):
         except Exception:
             pass
 
-        combined, corrections_made = verify_content_if_needed(
+        combined, corrections_made, short_circuit = verify_content_if_needed(
             client, combined, "extractfacts", verify_flag=True, heavy=heavy
         )
         base_mode = "verification-heavy (max thinking effort)" if heavy else "Standard verification"
-        # Reflect whether the verifier actually changed anything. (A short-circuit
-        # is announced separately by run_verification_chain.)
-        verification_mode = (
-            f"{base_mode} (corrections applied)"
-            if corrections_made
-            else f"{base_mode} (no corrections)"
-        )
+        # Report the real outcome: a short-circuit means the chain bailed before
+        # the LLM stage, so the output was NOT fully verified - do not claim it was.
+        if short_circuit:
+            verification_mode = f"{base_mode} short-circuited ({short_circuit}); content NOT fully verified"
+        elif corrections_made:
+            verification_mode = f"{base_mode} applied (corrections made)"
+        else:
+            verification_mode = f"{base_mode} applied (no corrections)"
         final_metadata["Verification"] = verification_mode
         final_metadata["Model"] = client.model
-        click.echo(info_message(f"{verification_mode} applied"))
+        click.echo(info_message(verification_mode))
 
         try:
             log_task_event(

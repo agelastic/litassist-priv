@@ -228,7 +228,7 @@ def draft(ctx, documents, query, heavy, noverify, output):
         except Exception:
             pass
 
-        content, _ = verify_content_if_needed(
+        content, _, _ = verify_content_if_needed(
             client, content, "draft", verify_flag=True, heavy=heavy
         )
         verification_mode = "verification-heavy (max thinking effort)" if heavy else "Standard verification"

@@ -45,7 +45,7 @@ class TestNoVerifyFlag:
         mock_prompts.get_format_template.return_value = "Format template"
         mock_prompts.get_system_prompt.return_value = "System prompt"
         mock_save.return_value = "output.txt"
-        mock_verify.return_value = ("Content", None)
+        mock_verify.return_value = ("Content", False, None)
 
         # Create test file
         with tempfile.NamedTemporaryFile(mode="w", suffix=".txt", delete=False) as f:
@@ -81,7 +81,7 @@ class TestNoVerifyFlag:
         mock_prompts.get_format_template.return_value = "Format template"
         mock_prompts.get_system_prompt.return_value = "System prompt"
         mock_save.return_value = "output.txt"
-        mock_verify.return_value = ("Verified content", None)
+        mock_verify.return_value = ("Verified content", False, None)
 
         # Create test file
         with tempfile.NamedTemporaryFile(mode="w", suffix=".txt", delete=False) as f:
@@ -127,7 +127,7 @@ class TestNoVerifyFlag:
         mock_prompts.get.return_value = "Test prompt"
         mock_prompts.get_system_prompt.return_value = "System prompt"
         mock_save.return_value = "output.txt"
-        mock_verify.return_value = ("Content", None)
+        mock_verify.return_value = ("Content", False, None)
         mock_extract.return_value = ["Issue 1", "Issue 2"]
 
         # Create test case facts file with proper format

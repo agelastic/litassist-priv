@@ -532,7 +532,7 @@ class TestContentVerification:
         mock_client.validate_citations.return_value = []
 
         content = "Legal analysis content"
-        result_content, verified = verify_content_if_needed(
+        result_content, verified, _ = verify_content_if_needed(
             mock_client, content, "strategy", verify_flag=True
         )
 
@@ -554,7 +554,7 @@ class TestContentVerification:
         mock_client.should_auto_verify.return_value = False
 
         content = "Legal analysis content"
-        result_content, verified = verify_content_if_needed(
+        result_content, verified, _ = verify_content_if_needed(
             mock_client, content, "strategy", verify_flag=False
         )
 
@@ -588,7 +588,7 @@ class TestContentVerification:
         mock_client = MagicMock()
         content = "Legal analysis content"
 
-        result_content, verified = verify_content_if_needed(
+        result_content, verified, _ = verify_content_if_needed(
             mock_client, content, "strategy", verify_flag=True
         )
 
@@ -616,7 +616,7 @@ class TestContentVerification:
         content = "Legal analysis content"
 
         # Test with citation_already_verified=True
-        result_content, verified = verify_content_if_needed(
+        result_content, verified, _ = verify_content_if_needed(
             mock_client,
             content,
             "strategy",

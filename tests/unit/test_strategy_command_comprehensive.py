@@ -207,7 +207,7 @@ class TestStrategyGeneration:
         mock_prompts.get.return_value = "Test prompt"
 
         # Mock verification
-        mock_verify.return_value = ("Verified content", {})
+        mock_verify.return_value = ("Verified content", False, None)
 
         # Mock LLM client
         mock_client = MagicMock()

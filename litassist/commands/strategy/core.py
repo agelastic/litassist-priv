@@ -349,7 +349,7 @@ def strategy(case_facts, outcome, strategies, heavy, noverify, output):
         except Exception:
             pass
         click.echo(info_message("Applying standard verification..."))
-        strategy_content, _ = verify_content_if_needed(
+        strategy_content, _, _ = verify_content_if_needed(
             llm_client, strategy_content, "strategy", verify_flag=True, heavy=heavy
         )
         verification_mode = "verification-heavy (max thinking effort)" if heavy else "Standard verification"

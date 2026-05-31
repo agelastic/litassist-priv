@@ -43,7 +43,7 @@ class TestHeavyFlag:
         mock_prompts.get_format_template.return_value = "Format template"
         mock_prompts.get_system_prompt.return_value = "System prompt"
         mock_save.return_value = "output.txt"
-        mock_verify.return_value = ("Content", None)
+        mock_verify.return_value = ("Content", False, None)
 
         # Create test file
         with tempfile.NamedTemporaryFile(mode="w", suffix=".txt", delete=False) as f:
@@ -80,7 +80,7 @@ class TestHeavyFlag:
         mock_prompts.get_format_template.return_value = "Format template"
         mock_prompts.get_system_prompt.return_value = "System prompt"
         mock_save.return_value = "output.txt"
-        mock_verify.return_value = ("Verified content", None)
+        mock_verify.return_value = ("Verified content", False, None)
 
         # Create test file
         with tempfile.NamedTemporaryFile(mode="w", suffix=".txt", delete=False) as f:
@@ -128,7 +128,7 @@ class TestVerificationAlwaysEnabled:
         mock_prompts.get_format_template.return_value = "Format"
         mock_prompts.get_system_prompt.return_value = "System"
         mock_save.return_value = "out.txt"
-        mock_verify.return_value = ("Content", None)
+        mock_verify.return_value = ("Content", False, None)
 
         with tempfile.NamedTemporaryFile(mode="w", suffix=".txt", delete=False) as f:
             f.write("Content")
