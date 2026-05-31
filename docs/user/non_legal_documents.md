@@ -44,7 +44,7 @@ The `extractfacts` command is the most restrictive as it enforces a rigid 10-hea
 litassist extractfacts purchase_agreement.pdf
 ```
 
-**Key Limitations**: ExtractFacts creates structured legal foundations for downstream commands but has no `--context` option and only supports `--verify`. Use `digest` for flexible document analysis.
+**Key Limitations**: ExtractFacts creates structured legal foundations for downstream commands but has no `--context` option (it takes `--heavy`, `--noverify`, `--output`). Use `digest` for flexible document analysis.
 
 ### Forced Categorization Issues
 
