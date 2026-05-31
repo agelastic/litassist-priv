@@ -54,4 +54,14 @@ def setup_logging(verbose: bool = False, log_dir: str = None) -> str:
         console_handler.setFormatter(console_formatter)
         root_logger.addHandler(console_handler)
 
+    # Silence chatty third-party libraries so their DEBUG/INFO does not flood
+    # litassist's DEBUG file handler. pdfminer logs per token while parsing PDFs,
+    # which both bloats the audit log and opens a reentrancy window: a
+    # GC-finalised OpenAI/httpx client logging from __del__ during a pdfminer
+    # flush triggers "RuntimeError: reentrant call inside BufferedWriter".
+    # litassist's own request/response and task-event logging is unaffected (it
+    # uses its own loggers, still at DEBUG).
+    for noisy in ("pdfminer", "pdfplumber", "httpx", "httpcore", "openai", "urllib3"):
+        logging.getLogger(noisy).setLevel(logging.WARNING)
+
     return log_file
