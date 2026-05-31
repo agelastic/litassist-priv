@@ -23,6 +23,11 @@ def run_verification_chain(
     Minimal chain that orchestrates existing verification functions.
     Returns (content, verification_results).
 
+    On an early exit (offline pattern issues, or unverified citations) the
+    chain records ``results["short_circuit"]`` and emits a click.echo warning.
+    Callers are the CLI commands (extractfacts, strategy, draft) via
+    verify_content_if_needed; a non-CLI caller would get the warning on stdout.
+
     Args:
         content: Content to verify
         command: Command name
