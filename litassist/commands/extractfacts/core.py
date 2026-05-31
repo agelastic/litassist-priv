@@ -73,8 +73,8 @@ def extractfacts(file, heavy, noverify, output):
     except Exception:
         pass
 
-    # Read and combine all files
-    all_text, source_files, chunks = read_and_combine_files(file)
+    # Read and combine all files (combined_text is unused here; chunks drive extraction)
+    _, source_files, chunks = read_and_combine_files(file)
 
     # Initialize the LLM client using factory
     client = LLMClientFactory.for_command("extractfacts")
@@ -89,11 +89,13 @@ def extractfacts(file, heavy, noverify, output):
     except Exception:
         pass
 
-    # Process content based on chunking needs (now most documents will be single chunk)
+    # Process content based on chunking needs (now most documents will be single chunk).
+    # Per-call token usage/cost is logged inside LLMClient.complete(), so the usage
+    # returned here is intentionally discarded.
     if len(chunks) == 1:
-        combined, usage = extract_single_chunk(client, chunks[0])
+        combined, _ = extract_single_chunk(client, chunks[0])
     else:
-        combined, usage = extract_multi_chunk(client, chunks)
+        combined, _ = extract_multi_chunk(client, chunks)
 
     # Note: Citation verification now handled automatically in LLMClient.complete()
 
