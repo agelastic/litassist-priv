@@ -228,11 +228,15 @@ def draft(ctx, documents, query, heavy, noverify, output):
         except Exception:
             pass
 
-        content, _, _ = verify_content_if_needed(
+        content, _, short_circuit = verify_content_if_needed(
             client, content, "draft", verify_flag=True, heavy=heavy
         )
-        verification_mode = "verification-heavy (max thinking effort)" if heavy else "Standard verification"
-        click.echo(info_message(f"{verification_mode} applied"))
+        base_mode = "verification-heavy (max thinking effort)" if heavy else "Standard verification"
+        if short_circuit:
+            # Chain bailed before the LLM stage; do not claim full verification.
+            click.echo(info_message(f"{base_mode} short-circuited ({short_circuit}); content NOT fully verified"))
+        else:
+            click.echo(info_message(f"{base_mode} applied"))
 
         try:
             log_task_event(
