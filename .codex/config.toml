@@ -3,7 +3,6 @@ personality = "friendly"
 # Top model at maximum reasoning effort for this project's agent handoffs.
 model = "gpt-5.5"
 model_reasoning_effort = "xhigh"
-model_reasoning_summary = "concise"
 
 [mcp_servers]
 
