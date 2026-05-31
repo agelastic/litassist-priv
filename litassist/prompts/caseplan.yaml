@@ -101,8 +101,8 @@ commands:
          [WRONG] litassist extractfacts case_facts.txt
          [CORRECT] litassist extractfacts source_documents.pdf
 
-         [WRONG] litassist brainstorm source_documents.pdf
-         [CORRECT] litassist brainstorm case_facts.txt
+         [WRONG] litassist brainstorm --side plaintiff --area civil --facts source_documents.pdf
+         [CORRECT] litassist brainstorm --side plaintiff --area civil --facts case_facts.txt
 
          - extractfacts ONLY processes source documents (.pdf, .txt, .docx)
          - case_facts.txt is OUTPUT of extractfacts, never INPUT
@@ -118,9 +118,9 @@ commands:
            1. extractfacts bank_statements.pdf vehicle_docs.pdf -> Produces outputs/extractfacts_*.txt
            2. digest source_documents.pdf -> Produces outputs/digest_*.txt to fold in
            3. updatefacts 'outputs/extractfacts_*.txt' 'outputs/digest_*.txt' -> Merges them into case_facts.txt
-           4. brainstorm case_facts.txt -> Creates strategies
-           5. strategy case_facts.txt -> Tactical plans
-           6. draft case_facts.txt strategies.txt -> Legal documents
+           4. brainstorm --side <side> --area <area> --facts case_facts.txt -> Creates strategies
+           5. strategy case_facts.txt --outcome "<goal>" -> Tactical plans
+           6. draft case_facts.txt outputs/strategy_*.txt "<drafting instruction>" -> Legal documents
 
       2B-2. WORKFLOW VALIDATION
          - If any phase generates "extractfacts case_facts.txt" or similar, THIS IS ALWAYS WRONG and must be corrected to use source documents as input.
