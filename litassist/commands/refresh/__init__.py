@@ -131,6 +131,19 @@ def _build_capabilities(
     return capabilities
 
 
+class _IndentedDumper(yaml.SafeDumper):
+    """SafeDumper that indents block sequences under their parent key.
+
+    PyYAML's SafeDumper aligns sequence items with the parent key (indentless),
+    which yamllint's default ``indent-sequences: true`` rejects. Forcing
+    ``indentless=False`` indents the items one level, so the generated file
+    passes yamllint without a config exception.
+    """
+
+    def increase_indent(self, flow=False, indentless=False):
+        return super().increase_indent(flow, indentless=False)
+
+
 def _write_capabilities_yaml(
     output_path: Path,
     capabilities: Dict[str, Dict[str, Any]],
@@ -144,7 +157,12 @@ def _write_capabilities_yaml(
         "# DO NOT EDIT MANUALLY -- run `litassist refresh`.\n"
         "\n"
     )
-    body = yaml.safe_dump(capabilities, sort_keys=True, default_flow_style=False)
+    body = yaml.dump(
+        capabilities,
+        Dumper=_IndentedDumper,
+        sort_keys=True,
+        default_flow_style=False,
+    )
     # Explicit UTF-8 because model ids / supported_parameter names from
     # OpenRouter may contain non-ASCII characters; default locale-dependent
     # encoding would silently break on systems with a non-UTF-8 locale.
