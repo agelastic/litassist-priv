@@ -4,12 +4,16 @@ import re
 import time
 import traceback
 from typing import Dict, Optional, Tuple
+
+import click
+
 from litassist.citation_patterns import validate_citation_patterns, extract_citations
 from litassist.citation.verify import verify_all_citations
 from litassist.citation_context import fetch_citation_context
 from litassist.llm.factory import LLMClientFactory
 from litassist.prompts import PROMPTS
 from litassist.logging import save_log, log_task_event
+from litassist.utils.formatting import warning_message
 
 
 def run_verification_chain(
@@ -36,8 +40,17 @@ def run_verification_chain(
             "passed": len(pattern_issues) == 0,
         }
 
-        # Early exit for high-risk commands
+        # Early exit for high-risk commands. Announce it: callers otherwise
+        # report "verification applied" for content that never reached the LLM
+        # verification stage (it was only offline pattern-checked).
         if pattern_issues and command in ["extractfacts", "strategy", "draft"]:
+            results["short_circuit"] = "citation pattern issues"
+            click.echo(
+                warning_message(
+                    "Verification short-circuited (citation pattern issues): "
+                    "LLM verification was skipped; content was NOT fully verified."
+                )
+            )
             return content, results
 
     # Stage 2: Database verification (online, authoritative)
@@ -51,8 +64,15 @@ def run_verification_chain(
             "passed": len(unverified) == 0,
         }
 
-        # Early exit for strict commands
+        # Early exit for strict commands (same visibility rationale as above).
         if unverified and command in ["extractfacts", "strategy"]:
+            results["short_circuit"] = "unverified citations"
+            click.echo(
+                warning_message(
+                    "Verification short-circuited (unverified citations): "
+                    "LLM verification was skipped; content was NOT fully verified."
+                )
+            )
             return content, results
 
     # Stage 3: LLM verification (expensive, comprehensive)

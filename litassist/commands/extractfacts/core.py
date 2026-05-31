@@ -137,10 +137,17 @@ def extractfacts(file, heavy, noverify, output):
         except Exception:
             pass
 
-        combined, _ = verify_content_if_needed(
+        combined, corrections_made = verify_content_if_needed(
             client, combined, "extractfacts", verify_flag=True, heavy=heavy
         )
-        verification_mode = "verification-heavy (max thinking effort)" if heavy else "Standard verification"
+        base_mode = "verification-heavy (max thinking effort)" if heavy else "Standard verification"
+        # Reflect whether the verifier actually changed anything. (A short-circuit
+        # is announced separately by run_verification_chain.)
+        verification_mode = (
+            f"{base_mode} (corrections applied)"
+            if corrections_made
+            else f"{base_mode} (no corrections)"
+        )
         final_metadata["Verification"] = verification_mode
         final_metadata["Model"] = client.model
         click.echo(info_message(f"{verification_mode} applied"))

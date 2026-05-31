@@ -337,5 +337,45 @@ class TestCoVeVerdictParsing:
         assert results["cove"]["regenerated"] is False
 
 
+class TestVerificationShortCircuitVisibility:
+    """run_verification_chain must surface when it bails before LLM verification,
+    so callers do not report 'verification applied' for content that was only
+    pattern/citation-checked."""
+
+    def test_pattern_issue_short_circuit_is_recorded_and_announced(self, capsys):
+        from litassist.verification_chain import run_verification_chain
+
+        with patch(
+            "litassist.verification_chain.validate_citation_patterns"
+        ) as mock_patterns:
+            mock_patterns.return_value = ["dodgy citation"]
+            content = "Document with a dodgy citation"
+            final, results = run_verification_chain(content, "extractfacts")
+
+        assert final == content
+        assert results.get("short_circuit") == "citation pattern issues"
+        assert "short-circuit" in capsys.readouterr().out.lower()
+
+    def test_unverified_citation_short_circuit_is_recorded_and_announced(self, capsys):
+        from litassist.verification_chain import run_verification_chain
+
+        with (
+            patch(
+                "litassist.verification_chain.validate_citation_patterns"
+            ) as mock_patterns,
+            patch(
+                "litassist.verification_chain.verify_all_citations"
+            ) as mock_verify,
+        ):
+            mock_patterns.return_value = []
+            mock_verify.return_value = ([], ["Made Up v Nobody [2099] HCA 1"])
+            content = "Document citing Made Up v Nobody [2099] HCA 1"
+            final, results = run_verification_chain(content, "strategy")
+
+        assert final == content
+        assert results.get("short_circuit") == "unverified citations"
+        assert "short-circuit" in capsys.readouterr().out.lower()
+
+
 # Test markers
 pytestmark = [pytest.mark.unit, pytest.mark.cove, pytest.mark.offline]
