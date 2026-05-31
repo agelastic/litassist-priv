@@ -209,6 +209,7 @@ def draft(ctx, documents, query, heavy, noverify, output):
     # Verification status, set by the verification block below; only consulted
     # on the not-noverify path (the noverify path reports "Skipped" directly).
     verification_status = "Skipped (--noverify)"
+    short_circuit = None
 
     if not noverify:
         # Save raw pre-verification output for audit trail
@@ -252,7 +253,9 @@ def draft(ctx, documents, query, heavy, noverify, output):
                 "draft",
                 "verification",
                 "end",
-                "Verification complete"
+                f"Verification short-circuited: {short_circuit}"
+                if short_circuit
+                else "Verification complete",
             )
         except Exception:
             pass
@@ -340,7 +343,11 @@ def draft(ctx, documents, query, heavy, noverify, output):
             },
             # Response content removed - already logged by LLMClient separately
             "usage": usage,
-            "verification": "disabled" if noverify else ("heavy" if heavy else "standard"),
+            "verification": (
+                "disabled" if noverify
+                else "short-circuited" if short_circuit
+                else ("heavy" if heavy else "standard")
+            ),
             "output_file": output_file,
         },
     )

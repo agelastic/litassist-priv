@@ -160,7 +160,9 @@ def extractfacts(file, heavy, noverify, output):
                 "extractfacts",
                 "verification",
                 "end",
-                "Verification complete"
+                f"Verification short-circuited: {short_circuit}"
+                if short_circuit
+                else "Verification complete",
             )
         except Exception:
             pass

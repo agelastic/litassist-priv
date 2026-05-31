@@ -371,7 +371,9 @@ def strategy(case_facts, outcome, strategies, heavy, noverify, output):
                 "strategy",
                 "verification",
                 "end",
-                "Verification complete",
+                f"Verification short-circuited: {short_circuit}"
+                if short_circuit
+                else "Verification complete",
                 {"model": LLMClientFactory.get_model_for_command("verification")},
             )
         except Exception:
