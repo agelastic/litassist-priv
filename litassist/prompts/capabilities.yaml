@@ -115,7 +115,7 @@ capabilities:
 
     ### strategy - Tactical Implementation Planner
     Purpose: Converts broad strategies into detailed, actionable legal plans with timelines
-    Syntax: litassist strategy FACTS --outcome "goal" [options]
+    Syntax: litassist strategy [FACTS] --outcome "goal" [options]
     Inputs: case_facts.txt plus single outcome objective
     Outputs: 3-5 detailed implementation paths with success probabilities
     Strategic Use: Bridges gap between ideas and execution; essential for case planning
@@ -156,7 +156,7 @@ capabilities:
 
     ### barbrief - Barrister Brief Compiler
     Purpose: Creates comprehensive 10-section briefs for counsel with all case materials
-    Syntax: litassist barbrief FACTS --hearing-type TYPE [options]
+    Syntax: litassist barbrief [FACTS] --hearing-type TYPE [options]
     Inputs: case_facts.txt, strategies, research, supporting documents
     Outputs: Professional brief with indexed materials and strategic guidance
     Strategic Use: Essential when briefing counsel for court appearances
@@ -199,7 +199,7 @@ capabilities:
 
     ### caseplan - Litigation Workflow Generator
     Purpose: Analyzes case complexity and generates phased workflow plans tailored to case needs
-    Syntax: litassist caseplan FACTS [options]
+    Syntax: litassist caseplan [FACTS] [options]
     Inputs: Structured case_facts.txt file (can be preliminary/skeleton)
     Outputs: Comprehensive litigation plan with phases, costs, timelines, and command sequences
     Strategic Use: Essential first step - generates roadmap before investing in analysis
