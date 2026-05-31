@@ -61,7 +61,8 @@ Last updated: 30/05/2026
 - [x] ~~Fail fast on config load errors~~ - Already implemented (verified Oct 2025)
 - [x] ~~REMOVE temporary glob help addon after unification~~ - COMPLETED (deleted glob_help_addon.yaml, removed concatenation logic in caseplan/plan_generator.py)
 - [x] ~~IMPLEMENT full glob unification~~ - COMPLETED (extractfacts, digest, draft, counselnotes routed through expand_glob_patterns_callback; brainstorm and barbrief already used it)
-- [ ] DEFERRED: extend glob support to strategy --strategies (currently single-file only). Requires changing --strategies from a single file to multiple files plus glob - an interface change deliberately deferred from the glob unification work. See ROADMAP.md P4-25.
+- [ ] DEFERRED: extend strategy --strategies to MULTIPLE files. As of May 2026 it accepts a path OR a glob that resolves to the most recent match (`expand_glob_single_callback`); consuming SEVERAL brainstorm sets in one run (e.g. the creative AND research brainstorm together) still needs the single-file -> multiple-file interface change. See ROADMAP.md P4-25.
+- [ ] AUDIT: review verification coverage end to end - who verifies what, and when. Map each command: verifies BY DEFAULT (draft, strategy, extractfacts), verification OPT-IN via `--verify` (brainstorm, counselnotes, barbrief), or NO verification (lookup, digest, updatefacts; caseplan/verify-cove separate). Cross-check against which commands emit COURT/filed documents (draft; strategy's claim/application/affidavit at `outputs/strategy_draft_*.txt`; barbrief's brief) so no court document ships unverified. Confirm the caseplan prompt forces `--verify` wherever verification is opt-in AND a court document results (barbrief done May 2026), and decide whether strategy's auto-verified court doc also warrants a standalone post-hoc `verify`.
 - [x] ~~Develop manual validation scripts for OpenRouter integration (in test-scripts/)~~ - COMPLETED (test_integrations.py, test_quality.py, test_cli_comprehensive.sh exist; RAG workflows removed in remove-pinecone-rag branch)
 - [ ] Enhance QA loops: iterative improvement, contingency planning, multi-perspective reviews
 - [ ] Keep documentation current with new features as they are implemented
@@ -98,7 +99,7 @@ _No critical bugs identified - all items below verified as already implemented o
 ### Next Steps
 1. Review and prioritize remaining TODO items for next sprint
 2. Consider implementing circuit-breaker enhancement for API retries
-3. Extend glob support to strategy --strategies (deferred glob-unification item; see Pending Tasks)
+3. Extend strategy --strategies to MULTIPLE files (glob-to-newest now done; multi-file interface still deferred; see Pending Tasks)
 4. Review ongoing prompt optimization opportunities (October 2025 model strategy implemented)
 5. **Pricing-aware features:** `litassist/llm/model_capabilities.yaml` already carries `input_price_per_mtok` and `output_price_per_mtok` per model (refreshable via `litassist refresh`). Consume them for per-call cost logging, a `--budget` flag, cost-aware model selection, and a cost field in the audit log. Capability data is already collected; consumers to be added.
 6. See ROADMAP.md for strategic feature implementation planning

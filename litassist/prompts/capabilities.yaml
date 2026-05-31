@@ -122,7 +122,7 @@ capabilities:
     Strategic Use: Bridges gap between ideas and execution; essential for case planning
     Options:
       --outcome: [string] (REQUIRED) | Single sentence describing the specific legal outcome to achieve
-      --strategies: [file] | Use brainstorm output to inform tactical planning (single file, no glob)
+      --strategies: [file or glob] | Brainstorm output to inform tactical planning; a glob (e.g. 'outputs/brainstorm_research_*.txt') resolves to the most recent match
       --heavy: (flag) | Use verification-heavy mode (max thinking effort)
       --noverify: (flag) | Skip verification stage (not recommended for legal work)
       --output: [string] | Custom filename prefix for output files
@@ -133,7 +133,7 @@ capabilities:
       - Be specific with outcome descriptions
     Integration: Outputs guide draft command and inform final memoranda
     Cost: ~$2-4 (provides clear roadmap, prevents tactical errors)
-    Example: litassist strategy case_facts.txt --outcome "Establish a resulting trust over the disputed vehicle" --strategies outputs/brainstorm_20250713_133724.txt
+    Example: litassist strategy case_facts.txt --outcome "Establish a resulting trust over the disputed vehicle" --strategies 'outputs/brainstorm_research_*.txt'
 
     ### counselnotes - Multi-Document Strategic Synthesizer
     Purpose: Synthesizes multiple documents/analyses into cohesive strategic assessment
