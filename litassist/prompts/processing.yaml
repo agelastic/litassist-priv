@@ -282,11 +282,12 @@ processing:
       {all_facts}
       === END RAW FACTS TO ORGANIZE ===
       
-      Important: 
+      Important:
       - Only include information that was actually in the document
       - If information for a heading is not available, write "Not specified in the document"
       - Maintain chronological order for events
       - Be comprehensive but factual
+      - Do NOT reproduce the "=== CHUNK N FACTS ===" / "=== END CHUNK N FACTS ===" markers in your output; they only delimit the input above
     
     organize_system_prompt: |
       Organize the extracted facts precisely under the requested headings. Ensure consistency and avoid duplication.
