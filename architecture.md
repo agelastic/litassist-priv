@@ -19,7 +19,7 @@ litassist/
   citation_context.py     # Citation full-text retrieval (cache, CSE, scraping)
   citation_patterns.py    # Offline citation format validation
   verification_chain.py   # Chain of Verification (CoVe) pipeline
-  commands/               # 11 user-facing command packages (each has __init__.py + core.py)
+  commands/               # 12 user-facing command packages (each has __init__.py + core.py)
     barbrief/
     brainstorm/
     caseplan/

@@ -89,7 +89,7 @@ capabilities:
       - Re-run as new documents are processed; each run writes a new timestamped file
     Integration: Output is picked up automatically by brainstorm, strategy, draft, barbrief
     Cost: ~$0.10-0.30 (cheap merge model)
-    Example: litassist updatefacts digest_issues_*.txt extractfacts_*.txt
+    Example: litassist updatefacts 'outputs/digest_issues_*.txt' 'outputs/extractfacts_*.txt'
 
     ### brainstorm - Creative Strategy Generator
     Purpose: Generates 20+ legal strategies (10 orthodox, 10 unorthodox) using Grok's creativity
@@ -295,6 +295,6 @@ capabilities:
     5. One strategy per outcome: Generate separate tactical plans for each objective
     6. Quote glob patterns: Always use quotes around patterns like 'outputs/*.txt'
     7. Build Toward Memoranda: Every phase should contribute to final feasibility assessment
-    8. Iterative Enhancement: Update case_facts.txt after digest discoveries
+    8. Iterative Enhancement: Fold digest/extractfacts discoveries into case_facts.txt with updatefacts
     9. Verify High-Stakes Documents: Always use verify for court documents and memoranda
     10. Cost-Benefit Focus: Each command should advance case understanding significantly

@@ -1,6 +1,6 @@
 # LitAssist Reference Manual
 
-Last updated: 30/05/2026
+Last updated: 31/05/2026
 
 ---
 
@@ -35,7 +35,7 @@ routed through OpenRouter.
 - **Multi-stage citation verification** including Chain of Verification (CoVe)
 - **Automated workflow planning** with executable command scripts
 
-LitAssist provides 11 commands, each performing a specific role in the litigation
+LitAssist provides 12 commands, each performing a specific role in the litigation
 pipeline:
 
 | Command | Purpose |
@@ -308,7 +308,7 @@ sharing a single configuration.
 
 ### 3.2 Output File Naming
 
-All command outputs are saved to `outputs/` with a consistent naming convention:
+All command outputs are saved to `outputs/` with a consistent naming convention (the one exception is `updatefacts`, which writes `case_facts_<ts>.txt` to the current directory so it is auto-discovered):
 
 ```
 {command}_{descriptor}_{YYYYMMDD}_{HHMMSS}.txt
@@ -322,6 +322,7 @@ Files are never overwritten. Each run creates a new timestamped file.
 | lookup | `lookup_duty_of_care_20260223_143156.txt` |
 | digest | `digest_summary_brief_20260223_143340.txt` |
 | extractfacts | `extractfacts_brief_20260223_143502.txt` |
+| updatefacts | `case_facts_20260223_143515_004821093.txt` (written to the current directory; no `--output`) |
 | brainstorm | `brainstorm_family_plaintiff_20260223_143622.txt` |
 | strategy | `strategy_summary_judgement_20260223_143740.txt` |
 | draft | `draft_statement_of_claim_20260223_143855.txt` |
@@ -330,7 +331,7 @@ Files are never overwritten. Each run creates a new timestamped file.
 | verify | `verify_citations_20260223_144240.txt` |
 | verify-cove | `verify_cove_draft_20260223_144355.txt` |
 
-Use the `--output` option on any command to set a custom filename prefix.
+Use the `--output` option to set a custom filename prefix (available on every command except `updatefacts`, whose output name is fixed so it stays auto-discoverable).
 
 ### 3.3 Working Files vs Archive Files
 
@@ -350,8 +351,8 @@ LitAssist distinguishes between two types of files:
 
 **Typical workflow:**
 
-1. Run `extractfacts` to generate an initial `case_facts.txt`-style output
-2. Copy the best output to `case_facts.txt` and refine manually
+1. Run `extractfacts` to generate structured facts
+2. Run `updatefacts` to fold that output into `case_facts.txt` (or copy and refine manually)
 3. Run `brainstorm` to generate strategies
 4. Copy the most relevant strategies to `strategies.txt`
 5. Use these working files as stable inputs for `strategy`, `barbrief`, etc.
@@ -941,7 +942,7 @@ litassist updatefacts <files>... [OPTIONS]
 
 ```bash
 # Build case facts from extractfacts + digest output in one step
-litassist updatefacts extractfacts_smith_*.txt digest_issues_*.txt
+litassist updatefacts 'outputs/extractfacts_smith_*.txt' 'outputs/digest_issues_*.txt'
 
 # Fold a newly received affidavit into the current case facts
 litassist updatefacts affidavit_jones_feb2026.pdf --facts case_facts.txt
@@ -2060,7 +2061,7 @@ Current model assignments are defined in `litassist/llm/model_configs.yaml`. Reg
 | **Critical Verification** | Highest-stakes soundness checks | GPT-5.5 | 4 |
 | **Standard Verification** | Self-critique, CoVe answers | GPT-5.5 | 2 |
 | **Strategy and Soundness** | Strategic options and logical soundness analysis | Claude Opus 4.7 | 2 |
-| **Lookup Synthesis** | Case-law research synthesis | Gemini 3.5 Flash | 1 |
+| **Lookup Synthesis & Fact Merge** | Case-law research synthesis; case_facts merging (updatefacts) | Gemini 3.5 Flash | 2 |
 | **Creative Ideation** | Unorthodox brainstorming | Grok 4.20 | 1 |
 
 **Rationale for task specialisation:**
@@ -2162,11 +2163,12 @@ The full pipeline from raw documents to verified legal output:
 ```
 1. caseplan      Plan the workflow (or skip if you know what you need)
 2. extractfacts  Structure raw documents into 10-heading format
-3. lookup        Research relevant case law
-4. brainstorm    Explore all possible strategies
-5. strategy      Develop a targeted plan for a specific outcome
-6. draft         Create citation-rich legal documents
-7. verify        Check citations, soundness, and reasoning
+3. updatefacts   Fold extractfacts/digest output into case_facts.txt (optional)
+4. lookup        Research relevant case law
+5. brainstorm    Explore all possible strategies
+6. strategy      Develop a targeted plan for a specific outcome
+7. draft         Create citation-rich legal documents
+8. verify        Check citations, soundness, and reasoning
 ```
 
 **Smith v Jones complete walkthrough:**
@@ -2183,7 +2185,8 @@ litassist caseplan case_facts_skeleton.txt --budget comprehensive
 litassist extractfacts interim_orders_april2026.pdf \
   contravention_application_feb2026.pdf \
   affidavit_smith_jan2026.pdf affidavit_jones_feb2026.pdf
-# Copy output to case_facts.txt and review/refine
+# Fold the extracted facts into case_facts.txt (review/refine optional)
+litassist updatefacts 'outputs/extractfacts_*.txt'
 
 # 3. Research key legal issues
 litassist lookup "best interests paramount consideration interstate \

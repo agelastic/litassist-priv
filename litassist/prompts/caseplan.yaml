@@ -106,15 +106,17 @@ commands:
 
       2B-1. WORKFLOW SEQUENCING LOGIC
          - extractfacts is used on source documents (not on case_facts.txt) to create or enhance case_facts.txt
-         - digest is used on documents to discover facts, which are then manually added to case_facts.txt
+         - digest is used on documents to discover facts, which are then folded into case_facts.txt with updatefacts
+         - updatefacts merges extractfacts/digest output (or any notes) into case_facts.txt, replacing manual editing
          - brainstorm, strategy, draft, and barbrief all require a structured case_facts.txt as input
          - Never run extractfacts on case_facts.txt itself
          - Typical sequence:
-           1. extractfacts bank_statements.pdf vehicle_docs.pdf -> Creates/updates case_facts.txt
-           2. digest source_documents.pdf -> Summaries/facts for manual case_facts.txt update
-           3. brainstorm case_facts.txt -> Creates strategies
-           4. strategy case_facts.txt -> Tactical plans
-           5. draft case_facts.txt strategies.txt -> Legal documents
+           1. extractfacts bank_statements.pdf vehicle_docs.pdf -> Produces outputs/extractfacts_*.txt
+           2. digest source_documents.pdf -> Produces outputs/digest_*.txt to fold in
+           3. updatefacts 'outputs/extractfacts_*.txt' 'outputs/digest_*.txt' -> Merges them into case_facts.txt
+           4. brainstorm case_facts.txt -> Creates strategies
+           5. strategy case_facts.txt -> Tactical plans
+           6. draft case_facts.txt strategies.txt -> Legal documents
 
       2B-2. WORKFLOW VALIDATION
          - If any phase generates "extractfacts case_facts.txt" or similar, THIS IS ALWAYS WRONG and must be corrected to use source documents as input.
@@ -137,12 +139,12 @@ commands:
          Commands: litassist digest "Car Docs for civil case 2025/*.pdf" --mode issues --context "analyze ownership disputes, gift claims, presumption of advancement, and financial contributions"
          # Switch rationale: --mode issues for targeted fact discovery over chronological summary
          Cost: $3
-         Output feeds: Manual update of case_facts.txt with discovered facts
-         
+         Output feeds: case_facts.txt update via updatefacts (Phase 3)
+
          ## Phase 3: Case Facts Enhancement (Day 2)
-         Purpose: Manually incorporate digest findings into case_facts.txt
-         Commands: [MANUAL TASK] Update case_facts.txt with digest discoveries
-         Cost: $0
+         Purpose: Fold digest findings into case_facts.txt
+         Commands: litassist updatefacts 'outputs/digest_*.txt'
+         Cost: $0.20
          Output feeds: Enhanced case_facts.txt for all strategic analysis
          
          ## Phase 4-8: Comprehensive Legal Research (Days 3-5)
@@ -352,7 +354,7 @@ commands:
          Essential Phases:
          - Extract facts from all source documents
          - Digest documents for hidden facts and context
-         - Manual case_facts.txt enhancement
+         - case_facts.txt enhancement via updatefacts (folds in extractfacts/digest output)
          - Additional extractfacts if new documents discovered
          Goal: Rock-solid factual foundation
          
@@ -504,6 +506,7 @@ commands:
          - lookup: [included/omitted - if omitted, explain why]
          - digest: [included/omitted - if omitted, explain why; note digest is essential for processing ongoing document flows and strengthening preliminary case_facts.txt with newly discovered facts]
          - extractfacts: [included/omitted - if omitted, explain why; note extractfacts is critical for both initial case_facts.txt structuring and iterative enhancement as new documents are processed]
+         - updatefacts: [included/omitted - if omitted, explain why; note updatefacts folds extractfacts/digest output into case_facts.txt, replacing manual edits and keeping it auto-discoverable]
          - brainstorm: [included/omitted - if omitted, explain why]
          - strategy: [included/omitted - if omitted, explain why]
          - counselnotes: [included/omitted - if omitted, explain why]
@@ -512,15 +515,16 @@ commands:
          - verify: [included/omitted - if omitted, explain why]
 
       CASE FACTS UPDATE REQUIREMENTS:
-         - After digest operations: Plan explicit case_facts.txt updates incorporating newly discovered facts
-         - After extractfacts operations: Plan case_facts.txt enhancement with additional structured information
+         - After digest operations: Plan an explicit updatefacts step to fold newly discovered facts into case_facts.txt
+         - After extractfacts operations: Plan case_facts.txt enhancement via updatefacts with the additional structured information
          - Before brainstorm/strategy phases: Ensure case_facts.txt is comprehensive and current
-         - Include "UPDATE case_facts.txt with [source] findings" as explicit workflow phases
+         - Include explicit "updatefacts [source outputs]" phases that fold findings into case_facts.txt
 
       COMMAND CAPABILITIES REFERENCE:
          - lookup: Legal research via Jade.io database with citation verification
          - digest: Document summarization and fact discovery for case_facts.txt enhancement
          - extractfacts: Structured fact organization and case_facts.txt iterative development
+         - updatefacts: Folds extractfacts/digest output into case_facts.txt (auto-discoverable, replaces manual edits)
          - brainstorm: Creative strategy generation (orthodox/unorthodox/analysis)
          - strategy: Tactical implementation planning with probability assessments
          - counselnotes: Strategic advocate analysis and multi-document synthesis
@@ -635,7 +639,7 @@ commands:
          - Create descriptive filenames with dates/parties
          - Examples: employment_contract_2023.pdf, termination_letter_jan2024.pdf
          - Use --context for key document analysis
-         - One manual case_facts.txt update after digest
+         - One case_facts.txt update via updatefacts after digest (or edit manually)
 
       4. COMPREHENSIVE RESEARCH
          - 10-15 queries covering:
