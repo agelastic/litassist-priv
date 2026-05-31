@@ -19,7 +19,7 @@ formats:
     8. **Jurisdiction**: Specify the relevant court or tribunal and basis for jurisdiction
     9. **Applicable Law**: List relevant statutes, regulations, and legal principles. Where possible, distinguish between 'Statute' and 'Case Law'.
     10. **Client Objectives**: State what the client hopes to achieve
-  
+
   # Strategic options format used by brainstorm and strategy commands
   # NOT USED - Template not referenced in codebase
   strategic_options: |
@@ -30,7 +30,7 @@ formats:
     - **Timeline:** [Expected duration]
     - **Resources:** [Required resources]
     - **Risks:** [Key risks and mitigation]
-  
+
   # IRAC structure for legal analysis (lookup command)
   # DEPRECATED - Legacy template, not in use
   irac_structure: |
@@ -38,43 +38,43 @@ formats:
     **Rule**: [Applicable law, statute, or precedent]
     **Application**: [How the law applies to these facts]
     **Conclusion**: [The likely legal outcome]
-  
+
   # Chronological summary format (digest command)
   # DEPRECATED - Legacy template, not in use
   chronological_summary: |
     **CHRONOLOGICAL SUMMARY**
-    
+
     - **[Date]**: [Event description]
     - **[Date]**: [Event description]
     - **[Date]**: [Event description]
-  
+
   # Citation extraction format (lookup --extract citations)
   # DEPRECATED - Legacy template, not in use
   citation_extraction: |
     **CITATIONS**
-    
+
     Cases:
     - [Case Name] [Year] [Court] [Citation]
     - [Case Name] [Year] [Court] [Citation]
-    
+
     Legislation:
     - [Act Name] [Year] [Jurisdiction] s [Section]
     - [Act Name] [Year] [Jurisdiction] s [Section]
-  
+
   # Legal principles extraction (lookup --extract principles)
   # DEPRECATED - Legacy template, not in use
   principles_extraction: |
     **LEGAL PRINCIPLES**
-    
+
     1. [Principle statement] - [Supporting case/statute]
     2. [Principle statement] - [Supporting case/statute]
     3. [Principle statement] - [Supporting case/statute]
-  
+
   # Practical checklist format (lookup --extract checklist)
   # DEPRECATED - Legacy template, not in use
   checklist_extraction: |
     **PRACTICAL CHECKLIST**
-    
+
     [ ] [Action item with specific requirement]
     [ ] [Evidence needed with description]
     [ ] [Procedural step with deadline]

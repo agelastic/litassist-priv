@@ -23,7 +23,7 @@ verification:
     1.  **Accuracy**: Legal inaccuracies, incorrect citations, non-Australian English.
     2.  **Jurisdiction**: Wrong state/federal law applied, incorrect court hierarchy, outdated law, wrong area of law.
     3.  **Logic**: Internal contradictions, flawed reasoning, or significant unstated assumptions.
-    
+
     JURISDICTION CHECKS (MANDATORY):
     - Verify the correct state/territory law is applied (e.g., NSW law for NSW matters)
     - Check federal vs state jurisdiction is appropriate
@@ -36,7 +36,7 @@ verification:
     - Section numbering and formatting
     - The COMPLETE document with ALL sections
 
-    Examples of headers to preserve: "## ORTHODOX STRATEGIES", "## UNORTHODOX STRATEGIES", 
+    Examples of headers to preserve: "## ORTHODOX STRATEGIES", "## UNORTHODOX STRATEGIES",
     "## MOST LIKELY TO SUCCEED", "### Executive Summary", etc.
 
     Do not omit any sections. Return the ENTIRE document with corrections made inline.
@@ -51,28 +51,28 @@ verification:
     ## Verified and Corrected Document
     START DIRECTLY with the actual document content (e.g., "## ORTHODOX STRATEGIES" or the document title).
     NEVER include system instructions like "Australian law only" at the beginning.
-    
+
     Return the COMPLETE full text with corrections made inline. All unchanged lines MUST be
-    reproduced verbatim exactly as they appear. Never use placeholders like "[unchanged]" or 
-    abbreviations. 
-    
+    reproduced verbatim exactly as they appear. Never use placeholders like "[unchanged]" or
+    abbreviations.
+
     For EVERY numbered strategy (1-10 in Orthodox/Unorthodox sections), add a comment at the end:
     - If you made corrections: "(corrected: [brief description of changes])"
     - If no corrections needed: "(unchanged during verification)"
-    
+
     IMPORTANT: For analysis sections (like "MOST LIKELY TO SUCCEED" or "ANALYSIS OF SELECTED STRATEGIES"):
     - Reproduce the FULL content without any abbreviation
     - NEVER use "..." or placeholders to shorten content
     - Add only ONE comment at the very end of the entire section
     - Preserve ALL strategy analysis text exactly as written
-    
+
     Examples:
     - "(corrected: updated Bosanac citation to [2022] HCA 34)"
     - "(corrected: changed 'license' to 'licence' throughout)"
     - "(unchanged during verification)"
-    
+
     The document MUST start with its actual content, not with any meta-instructions.
-    
+
     If previous verification results are provided (Citations or Reasoning Analysis sections),
     consider them as independent assessments to inform your analysis, but perform your own
     thorough verification.
@@ -95,7 +95,7 @@ verification:
   # LOCATION: llm.py:758-767
   heavy_verification: |
     Provide comprehensive legal accuracy review: verify all citations, check legal reasoning, identify any errors in law or procedure, ensure Australian English compliance, and VERIFY JURISDICTION - confirm the correct state/federal law is applied, cases are from appropriate courts, and legislation is current for the relevant jurisdiction.
-    
+
     ANTI-HALLUCINATION: For every citation or legal claim, indicate your confidence level (HIGH/MEDIUM/LOW). If you cannot verify a citation or are uncertain about a legal principle, explicitly state "Cannot verify" rather than guessing.
 
   # Standard verification system prompt
@@ -120,17 +120,17 @@ verification:
   # LOCATION: llm.py:1296
   soundness_with_context: |
     You are conducting legal soundness verification with the benefit of prior verification results.
-    
+
     When reviewing the "Previous Verification: Citations" section:
     - Pay special attention to any UNVERIFIED citations - arguments relying on these are potentially flawed
     - Note which legal authorities have been confirmed vs. those that could not be verified
     - Consider whether the document's arguments would survive if unverified citations were removed
-    
+
     When reviewing the "Previous Verification: Reasoning Analysis" section:
     - Note the confidence levels - low confidence may indicate logical or legal weaknesses
     - Check if the IRAC structure reveals gaps in legal reasoning
     - Consider whether issues identified in reasoning align with citation problems
-    
+
     Perform your comprehensive soundness check with these insights in mind:
     1. Flag any arguments that depend on unverified citations
     2. Verify correct jurisdiction - check state vs federal law, court hierarchy, current legislation
@@ -138,21 +138,21 @@ verification:
     4. Assess whether citation issues undermine key legal positions
     5. Verify that confidence levels align with the strength of legal arguments
     6. Confirm cases cited are from the appropriate jurisdiction for the matter
-    
+
     DO NOT simply repeat findings from previous verifications. Instead:
     - Synthesize insights across all verification layers
     - Identify compound issues (e.g., weak reasoning + unverified citations)
     - Provide actionable recommendations for strengthening the document
-    
+
     CRITICAL: Do NOT include the "Previous Verification" sections in your output.
     These are provided for your analysis only. Never echo them back.
-    
+
     Output exactly in this order:
-    
+
     ## Issues Found during Verification
     1. Describe each issue, including those revealed by citation/reasoning context.
        If there are no issues, write "No issues found."
-    
+
     ---
     ## Verified and Corrected Document
     Return the COMPLETE full text with corrections made inline. All unchanged lines MUST be
@@ -163,32 +163,32 @@ verification:
   # NOT USED - Template not referenced in codebase
   reasoning_with_citations: |
     Generate a reasoning trace for this document, taking into account the citation verification results.
-    
+
     From the "Citation Verification Results" section, note:
     - Which citations were verified vs. unverified
     - The reliability of the legal authorities cited
-    
+
     In your reasoning trace:
     - Adjust confidence levels based on citation reliability
     - Flag any reasoning that depends on unverified authorities
     - Note where stronger citations would strengthen arguments
-    
+
     Use this exact format (DO NOT repeat any sections):
-    
+
     ## Overall Strategic Reasoning
-    
+
     Issue: [State the primary legal question or issue being analyzed - write this only once]
-    
+
     Applicable Law: [Identify the relevant legal principles, statutes, cases, or rules - write this only once]
-    
+
     Application to Facts: [Explain how the law applies to the specific facts presented - write this only once]
-    
+
     Conclusion: [State your legal conclusion clearly - write this only once]
-    
+
     Confidence: [Your confidence level as a percentage, 0-100% - adjust based on citation reliability]
-    
+
     Sources: [List key legal authorities cited, separated by semicolons - note any that are unverified]
-    
+
     Each section should appear exactly once. Do not repeat sections or content.
 
   # Chain of Verification (CoVe) prompts
@@ -214,19 +214,19 @@ verification:
       === END DOCUMENT ===
 
       Output numbered questions only (1. Question one, 2. Question two, etc.).
-    
+
     # USED BY: verification_chain.py run_cove_verification() - Stage 2: Answer questions
     # LOCATION: verification_chain.py:158
     answers_verification: |
       Answer these questions based ONLY on legal knowledge, NOT the document:
-      
+
       === QUESTIONS ===
       {content}
       === END QUESTIONS ===
-      
+
       For each question, answer: Yes/No/Uncertain with brief explanation.
       Format: 1. Yes - [explanation], 2. No - [explanation], etc.
-    
+
     # USED BY: verification_chain.py run_cove_verification() - Stage 2 with legal context
     # LOCATION: verification_chain.py:217
     answers_with_context: |
@@ -269,7 +269,7 @@ verification:
       prohibits the conduct described in the question."
 
       "2. Cannot verify - [2022] HCA 34 retrieval failed (Content validation failed - citation not found in document). Unable to verify this question without access to the cited authority."
-    
+
     # USED BY: verification_chain.py run_cove_verification() - Stage 3: Detect inconsistencies
     # LOCATION: verification_chain.py:177
     inconsistency_detection: |
@@ -295,7 +295,7 @@ verification:
          VERDICT: PASS    (when the ORIGINAL DOCUMENT is consistent with every verification answer)
          VERDICT: FAIL    (when the ORIGINAL DOCUMENT has any inconsistency or error)
       A missing or malformed VERDICT line will be treated as FAIL.
-    
+
     # USED BY: verification_chain.py run_cove_verification() - Stage 4: Regenerate if issues found
     # LOCATION: verification_chain.py:206
     regeneration: |
@@ -345,7 +345,7 @@ verification:
   #   4. Is legislation current and not superseded?
   #   5. Are cases from the relevant area of law (not citing family law for commercial matters)?
   #   6. For multi-jurisdictional matters, is conflict of laws addressed?
-    
+
   #   Mark any jurisdiction errors for correction.
 
   # Self-critique fallback prompt

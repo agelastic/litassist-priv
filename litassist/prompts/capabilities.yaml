@@ -287,7 +287,7 @@ capabilities:
     Example: litassist refresh
 
     ## Command Selection Principles for Comprehensive Planning
-    
+
     1. Information Superiority: Use 10-15 lookup queries for standard cases, 15-25 for complex
     2. Avoid circular operations: Never extractfacts from case_facts.txt or generated content
     3. Synthesis is Key: Multiple counselnotes passes with different document combinations

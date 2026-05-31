@@ -7,181 +7,181 @@ documents:
   statement_of_claim: |
     IN THE {court_name}
     FILE NO: {file_number}
-    
+
     BETWEEN:
-    
+
     {plaintiff_name}
                                                     Plaintiff
-    
+
     AND:
-    
+
     {defendant_name}
                                                     Defendant
-    
+
     STATEMENT OF CLAIM
-    
+
     The Plaintiff claims:
-    
+
     1. [First claim with particulars]
-    
+
     2. [Second claim with particulars]
-    
+
     3. [Additional claims as needed]
-    
+
     AND THE PLAINTIFF CLAIMS:
-    
+
     (a) [Specific relief sought]
     (b) [Additional relief]
     (c) Interest pursuant to [relevant provision]
     (d) Costs
     (e) Such further or other relief as this Honourable Court deems just
-    
+
     DATED: [Date]
-    
+
     [Signature block]
-  
+
   # Originating Application template
   # USED BY: litassist/commands/strategy.py:840 - Used in doc_formats for draft generation
   originating_application: |
     IN THE {court_name}
     FILE NO: {file_number}
-    
+
     IN THE MATTER OF [relevant Act/Rules]
-    
+
     AND IN THE MATTER OF [specific provision]
-    
+
     BETWEEN:
-    
+
     {applicant_name}
                                                     Applicant
-    
+
     AND:
-    
+
     {respondent_name}
                                                     Respondent
-    
+
     ORIGINATING APPLICATION
-    
+
     The Applicant applies for the following orders:
-    
+
     1. [First order sought]
-    
+
     2. [Second order sought]
-    
+
     3. [Additional orders as needed]
-    
+
     The grounds of this application are:
-    
+
     (a) [First ground with facts]
-    
+
     (b) [Second ground with facts]
-    
+
     (c) [Additional grounds as needed]
-    
+
     This application is made in reliance on:
     - [Affidavit of X dated Y]
     - [Other supporting material]
-    
+
     DATED: [Date]
-    
+
     [Signature block]
-  
+
   # Affidavit template
   # USED BY: litassist/commands/strategy.py:841 - Used in doc_formats for draft generation
   affidavit: |
     IN THE {court_name}
     FILE NO: {file_number}
-    
+
     BETWEEN:
-    
+
     {party_1_name}
                                                     {party_1_role}
-    
+
     AND:
-    
+
     {party_2_name}
                                                     {party_2_role}
-    
+
     AFFIDAVIT OF {deponent_name}
-    
+
     I, {deponent_full_name}, {deponent_occupation} of {deponent_address}, STATE ON OATH/AFFIRM:
-    
+
     1. I am the {deponent_role} in these proceedings and make this affidavit from my own knowledge except where otherwise stated.
-    
+
     2. Where I depose to matters based on information and belief, I identify the source of that information and believe those matters to be true.
-    
+
     3. [Substantive paragraphs with facts]
 
     4. Annexed hereto and marked '{annexure_mark}' is a true copy of [description of document].
-    
+
     5. [Additional paragraphs as needed]
-    
+
     SWORN/AFFIRMED at {location} )
     in the State of {state}        )
     on {date}                      )
-    
+
     Before me:
-    
+
     _______________________         _______________________
     Signature of Deponent           Signature of Witness
-    
+
     _______________________
     Name and qualification of witness
-  
+
   # Witness Statement template
   # NOT USED: No direct usage found in codebase
   witness_statement: |
     IN THE {court_name}
     {jurisdiction}
-    
+
     File No: {file_number_or_placeholder}
-    
+
     Between:
     {plaintiff_name}
                         Plaintiff
-    
+
     And:
-    
+
     {defendant_name}
                         Defendant
-    
+
     __________________________________________________________________
     WITNESS STATEMENT OF {witness_full_name}
     __________________________________________________________________
-    
+
     I, {witness_full_name}, of {witness_address_or_placeholder}, {witness_occupation_if_known}, say as follows:
-    
+
     A. Personal background
     1. I am [AGE TO BE PROVIDED] years of age and reside at [ADDRESS TO BE CONFIRMED].
     2. [Any relevant personal details, licenses, qualifications - USE PLACEHOLDERS FOR MISSING INFO]
     3. Unless stated otherwise, the facts and matters deposed to are within my personal knowledge.
-    
+
     B. [Relevant Topic Heading]
     4. [Factual statements based ONLY on provided information]
     5. [Use placeholders like [DATE TO BE CONFIRMED] for any missing dates]
     6. [Reference documents as [EXHIBIT A], [EXHIBIT B] etc. unless specific exhibit numbers provided]
-    
+
     C. [Additional Topic Headings as needed]
     7. [Continue numbered paragraphs]
     8. [NEVER invent specific details - use placeholders]
-    
+
     [Continue with relevant sections based on provided facts]
-    
+
     L. Exhibits
     [EXHIBIT A]  [Description based on provided information or placeholder]
     [EXHIBIT B]  [Description based on provided information or placeholder]
     [List only exhibits actually mentioned in the statement]
-    
+
     M. Statement of Truth
     [Final paragraph number]. I believe that the contents of this statement are true and correct, and I make it knowing that, if it is tendered in evidence, I will be liable to prosecution if I have wilfully stated anything in it that I know to be false.
-    
+
     Dated: [DATE TO BE PROVIDED]
-    
+
     ……………………………………
     {witness_full_name}
-    
+
     Witnessed by:
-    
+
     ……………………………………
     [Name of authorised witness]
     [Qualification]

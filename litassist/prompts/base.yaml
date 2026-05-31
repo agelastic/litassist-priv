@@ -18,12 +18,12 @@ base:
   # USED BY: llm/client.py - system prompt date injection
   # LOCATION: client.py:896, 920
   date_tool_instruction: "Before answering, you MUST call the now() tool to get the current date. Use that date for all references to 'today' or 'current date'. When citing sources, keep their original dates."
-  
+
   # Date injection for models that don't support tools (fallback mode)
   # USED BY: llm/client.py - fallback when tools aren't supported
   # LOCATION: client.py:975-979
   date_fallback_instruction: "Today's date is {date} (Australia/Sydney). Use this date for all references to 'today' or 'current date'. When citing sources, keep their original dates."
-  
+
   # Anti-hallucination protocol for all commands
   # USED BY: llm/client.py - concatenated with australian_law and anti_injection in base system prompts
   # LOCATION: client.py:146
@@ -60,8 +60,8 @@ commands:
   # DEPRECATED: Not used in codebase
   lookup:
     system: "Cite sources. Provide well-structured, concise responses focused on Victorian or federal law."
-    
-  # Brainstorm command  
+
+  # Brainstorm command
   brainstorm:
     # DEPRECATED: Not used in codebase
     system: "You are a senior solicitor with excellent knowledge of case and statute law. Provide practical, actionable legal strategies. Balance creativity with factual accuracy. When suggesting strategies, clearly distinguish between established legal approaches and more innovative options. For orthodox strategies, cite relevant case law or legislation. For unorthodox strategies, acknowledge any legal uncertainties or risks. Maintain logical structure throughout your response. End with a clear, definitive recommendation section without open-ended statements."
@@ -99,12 +99,12 @@ commands:
       Use [CITATION TO BE VERIFIED] for cases you cannot confirm.
     # NOT USED - Template not referenced in codebase
     ranking_system: "You are a senior solicitor with excellent knowledge of case and statute law. Rank strategies objectively for the specific outcome."
-    
+
   # Draft command
   draft:
     # DEPRECATED: Not used in codebase
     system: "You are a senior Australian barrister with expertise in drafting high-quality legal documents. Create professional, well-structured documents that comply with Australian court rules and legal conventions."
-    
+
   # Digest command
   digest:
     # DEPRECATED: Not used in codebase
