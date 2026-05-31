@@ -222,7 +222,11 @@ def extractfacts(file, heavy, noverify, output):
 
     show_command_completion("extractfacts", output_file, None, stats)
     click.echo(
-        info_message("To use with other commands, manually copy to case_facts.txt")
+        info_message(
+            f"Next step: run 'litassist updatefacts {output_file}' to fold this "
+            "into a case_facts file that brainstorm/strategy/draft/barbrief pick "
+            "up automatically."
+        )
     )
 
     # Command end log

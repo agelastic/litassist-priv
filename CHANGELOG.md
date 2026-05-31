@@ -32,6 +32,9 @@ Historical dated sections preserve the model names that were current when those 
 #### May 2026: dropped the no-op `--verify` flag from extractfacts and strategy
 - `extractfacts` and `strategy` ran verification unconditionally (the call site hard-coded `verify_flag=True`), so their `--verify` flag did nothing but print a "verification already active" reminder. The flag is removed from both commands. Verification remains auto-enabled; use `--noverify` to skip it. `draft` already followed this pattern. The functional `--verify` on `brainstorm`, `counselnotes`, and `barbrief` (which genuinely toggles citation/content verification) is unchanged, as is the unsupported-flag guard on `lookup`, `digest`, and `caseplan`.
 
+#### May 2026: extractfacts points to updatefacts instead of manual copy
+- `extractfacts` no longer ends with "manually copy to case_facts.txt". Its completion message now names the next step explicitly: `litassist updatefacts <the saved file>`, which folds the extraction into an auto-discoverable `case_facts` file. No behaviour change beyond the message.
+
 #### May 2026: verification short-circuits are now announced
 - `run_verification_chain` (`litassist/verification_chain.py`) bails before the expensive LLM verification stage when the offline citation-pattern check, or the citation-database check, finds problems (for `extractfacts`/`strategy`; pattern issues also short-circuit `draft`). Previously this was silent and the command still reported "verification applied". The chain now records a `short_circuit` reason in its results and prints a warning, so the user knows the content was only pattern/citation-checked, not fully verified. `extractfacts` additionally reports whether verification actually made corrections ("corrections applied" vs "no corrections") in its output metadata.
 
