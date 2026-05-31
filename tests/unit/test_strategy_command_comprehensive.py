@@ -278,6 +278,62 @@ class TestStrategyGeneration:
             Path(facts_file).unlink()
 
     @patch("litassist.commands.strategy.core.LLMClientFactory.for_command")
+    @patch("litassist.commands.strategy.file_handler.save_command_output")
+    @patch("litassist.commands.strategy.file_handler.save_log")
+    @patch("litassist.commands.strategy.core.verify_content_if_needed")
+    @patch("litassist.commands.strategy.core.PROMPTS")
+    def test_strategy_short_circuit_recorded_not_complete(
+        self,
+        mock_prompts,
+        mock_verify,
+        mock_save_log,
+        mock_save_output,
+        mock_llm_factory,
+    ):
+        """A verification short-circuit must be recorded in the saved metadata,
+        not reported as completed verification."""
+        mock_prompts.get.return_value = "Test prompt"
+        # Verification short-circuited before the LLM stage.
+        mock_verify.return_value = ("Strategy content", False, "citation pattern issues")
+        mock_client = MagicMock()
+        mock_client.complete.return_value = (
+            "## OPTION 1: Something\nDetail...",
+            {"total_tokens": 10, "prompt_tokens": 5, "completion_tokens": 5},
+        )
+        mock_client.validate_citations.return_value = []
+        mock_llm_factory.return_value = mock_client
+        mock_save_output.return_value = "outputs/strategy_test.txt"
+
+        facts = "\n".join(
+            f"{h}: x"
+            for h in [
+                "Parties", "Background", "Key Events", "Legal Issues",
+                "Evidence Available", "Opposing Arguments", "Procedural History",
+                "Jurisdiction", "Applicable Law", "Client Objectives",
+            ]
+        )
+        with tempfile.NamedTemporaryFile(mode="w", suffix=".txt", delete=False) as f:
+            f.write(facts)
+            facts_file = f.name
+        try:
+            runner = CliRunner()
+            with runner.isolated_filesystem():
+                result = runner.invoke(
+                    strategy, [facts_file, "--outcome", "Win"], obj={"premium": False}
+                )
+            assert result.exit_code == 0
+            assert "short-circuited" in result.output.lower()
+            # The saved strategy metadata records the short-circuit, not "Standard verification".
+            verifications = [
+                call.kwargs["metadata"]["Verification"]
+                for call in mock_save_output.call_args_list
+                if call.kwargs.get("metadata", {}).get("Verification")
+            ]
+            assert any("short-circuited" in v.lower() for v in verifications), verifications
+        finally:
+            Path(facts_file).unlink()
+
+    @patch("litassist.commands.strategy.core.LLMClientFactory.for_command")
     def test_strategy_generation_invalid_facts(self, mock_llm_factory):
         """Test strategy generation with invalid case facts."""
         # Create invalid case facts file (missing required headings)

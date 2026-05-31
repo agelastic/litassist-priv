@@ -100,6 +100,51 @@ class TestDraftCommand:
         finally:
             Path(facts_file).unlink()
 
+    @patch("litassist.commands.draft.core.detect_factual_hallucinations")
+    @patch("litassist.commands.draft.core.verify_content_if_needed")
+    @patch("litassist.commands.draft.core.LLMClientFactory.for_command")
+    @patch("litassist.commands.draft.core.save_command_output")
+    @patch("litassist.commands.draft.core.save_log")
+    @patch("litassist.commands.draft.prompt_builder.PROMPTS")
+    def test_draft_short_circuit_recorded_not_applied(
+        self,
+        mock_prompts,
+        mock_save_log,
+        mock_save_output,
+        mock_llm_factory,
+        mock_verify,
+        mock_halluc,
+    ):
+        """A verification short-circuit must be recorded in the draft's saved
+        metadata, not reported as standard verification applied."""
+        mock_prompts.get.return_value = "Test template"
+        mock_client = MagicMock()
+        mock_client.complete.return_value = (
+            "DRAFT CONTENT",
+            {"total_tokens": 10, "prompt_tokens": 5, "completion_tokens": 5},
+        )
+        mock_llm_factory.return_value = mock_client
+        mock_save_output.return_value = "outputs/draft_test.txt"
+        # Verification short-circuited before the LLM stage.
+        mock_verify.return_value = ("DRAFT CONTENT", False, "citation pattern issues")
+        mock_halluc.return_value = []
+
+        with tempfile.NamedTemporaryFile(mode="w", suffix=".txt", delete=False) as f:
+            f.write("Some source document content for drafting.")
+            src = f.name
+        try:
+            runner = CliRunner()
+            result = runner.invoke(
+                draft, [src, "draft a demand letter"], obj={"premium": False}
+            )
+            assert result.exit_code == 0
+            assert "short-circuited" in result.output.lower()
+            # Final saved metadata records the short-circuit, not "Standard verification".
+            final_meta = mock_save_output.call_args_list[-1].kwargs["metadata"]
+            assert "short-circuited" in final_meta["Verification"].lower()
+        finally:
+            Path(src).unlink()
+
     @patch("litassist.commands.draft.core.LLMClientFactory.for_command")
     @patch("litassist.commands.draft.core.save_command_output")
     @patch("litassist.commands.draft.core.save_log")
