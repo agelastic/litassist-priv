@@ -25,7 +25,8 @@ def generate_full_plan(
     case_facts_name: str,
     context: str,
     budget: str,
-    output: str
+    output: str,
+    source_files: Optional[list] = None,
 ) -> Tuple[str, Optional[str], Dict]:
     """
     Generate full litigation plan and extract commands.
@@ -36,6 +37,8 @@ def generate_full_plan(
         context: Additional context (if provided)
         budget: Budget level (minimal/standard/comprehensive)
         output: Custom output prefix (if provided)
+        source_files: Real source documents in the working directory, so the model
+            references actual filenames instead of inventing them.
 
     Returns:
         Tuple of (output_file, commands_file, usage)
@@ -70,6 +73,23 @@ def generate_full_plan(
         prompt_parts.append(
             f"USER ANALYSIS GUIDANCE (NOT case facts): {context}\n"
             f"IMPORTANT: This is guidance for your analysis, not factual information from the case."
+        )
+
+    # The REAL source documents present in the working directory, so the plan
+    # references actual filenames for extractfacts/digest/draft inputs instead of
+    # inventing them (which the runner would then fail on).
+    if source_files:
+        listing = "\n".join(f"- {name}" for name in source_files)
+        prompt_parts.append(
+            "AVAILABLE SOURCE FILES (use these EXACT paths for document inputs; "
+            "do NOT invent filenames):\n" + listing
+        )
+    else:
+        prompt_parts.append(
+            "AVAILABLE SOURCE FILES: none found - the case_facts you were given is "
+            "the primary input; plan from it. Do NOT invent document filenames; mark "
+            "a step [MANUAL TASK] only if it genuinely needs a source document that "
+            "is not present."
         )
 
     # Select appropriate analysis instructions based on budget level
@@ -181,6 +201,7 @@ def generate_full_plan(
                 "model": llm_client.model,
                 "context": context,
                 "budget": budget,
+                "source_files": source_files or [],
             },
             "usage": usage,
             # Response content removed - already logged by LLMClient separately

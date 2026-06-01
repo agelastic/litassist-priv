@@ -5,6 +5,9 @@ This module implements the 'caseplan' command which analyzes case facts
 and generates a customized, efficient litigation workflow plan.
 """
 
+import os
+import sys
+
 import click
 
 from litassist.llm.factory import LLMClientFactory
@@ -12,10 +15,43 @@ from litassist.logging import log_task_event
 from litassist.timing import timed
 from litassist.utils.case_facts import resolve_case_facts_file
 from litassist.utils.file_ops import validate_file_size_limit
-from litassist.utils.formatting import warning_message
+from litassist.utils.formatting import info_message, tip_message, warning_message
 
 from .budget_assessor import assess_budget
 from .plan_generator import generate_full_plan
+
+
+def _is_interactive() -> bool:
+    """True when stdin is a terminal - a human is present to answer a prompt."""
+    return sys.stdin.isatty()
+
+
+def discover_source_files(facts_name=None) -> list:
+    """List candidate source documents in the working directory (top level).
+
+    Lists the legal source document types so the planner references REAL filenames
+    instead of inventing them. The case-facts file is excluded (resolved/seeded
+    separately): both the exact ``facts_name`` caseplan was given and any
+    ``case_facts*`` variant. Only regular files are returned (a directory/symlink
+    named like a document is skipped) and the extension is matched case-insensitively
+    (so ``scan.PDF`` counts). Fully local - no contents are read. Subdirectories
+    (``outputs/``, ``logs/``) are not scanned; scope by running from a folder that
+    holds just the relevant files.
+    """
+    exts = (".pdf", ".docx", ".doc", ".rtf", ".txt")
+    excluded = {os.path.basename(facts_name)} if facts_name else set()
+    found = []
+    for entry in os.scandir("."):
+        name = entry.name
+        if not entry.is_file():
+            continue
+        if (
+            name.lower().endswith(exts)
+            and not name.startswith("case_facts")
+            and name not in excluded
+        ):
+            found.append(name)
+    return sorted(found)
 
 
 @click.command()
@@ -38,8 +74,14 @@ from .plan_generator import generate_full_plan
     is_flag=True,
     help="Not supported - caseplan has no internal verification.",
 )
+@click.option(
+    "--yes",
+    "-y",
+    is_flag=True,
+    help="Skip the pre-generation confirmation prompt (for non-interactive use).",
+)
 @timed
-def caseplan(case_facts, context, budget, output, verify, noverify):
+def caseplan(case_facts, context, budget, output, verify, noverify, yes):
     """
     Generate customized litigation workflow plan based on case facts.
 
@@ -119,11 +161,44 @@ def caseplan(case_facts, context, budget, output, verify, noverify):
         pass
 
     if budget is None:
-        # Budget assessment mode (Sonnet)
+        # Budget assessment mode (Sonnet) - does not reference source files.
         assess_budget(facts_content, case_facts.name, context, output)
     else:
-        # Full plan mode (Opus)
-        generate_full_plan(facts_content, case_facts.name, context, budget, output)
+        # Full plan mode (Opus). Show the source-document inventory the plan will
+        # reference, then let a human abort BEFORE the paid call if the prep is
+        # wrong (only prompt at a terminal; --yes / non-interactive proceeds).
+        source_files = discover_source_files(case_facts.name)
+        if source_files:
+            click.echo(
+                info_message(
+                    f"Source documents the plan will reference ({len(source_files)}):"
+                )
+            )
+            for name in source_files:
+                click.echo(f"  - {name}")
+        else:
+            click.echo(
+                warning_message("No source documents found in the working directory.")
+            )
+        click.echo(
+            tip_message(
+                "Confirm these are the right documents, named descriptively by role. "
+                "If not, re-run from a directory holding just the relevant files."
+            )
+        )
+        if not yes and _is_interactive():
+            click.confirm(
+                "Proceed with plan generation? (this makes a paid LLM call)",
+                abort=True,
+            )
+        generate_full_plan(
+            facts_content,
+            case_facts.name,
+            context,
+            budget,
+            output,
+            source_files=source_files,
+        )
 
     # Command end log
     try:

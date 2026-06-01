@@ -623,7 +623,7 @@ test_caseplan_command() {
     # Full-plan mode: --budget + --context + --output + the unsupported-verify
     # warning (warn-and-proceed). Routes to Opus 4.7.
     run_test "Caseplan - Full plan, all switches (budget, context, verify, output)" \
-        "litassist caseplan test_inputs/mock_10heading_case_facts.txt --budget comprehensive --context 'Commercial dispute with international elements' --verify --output test_output" \
+        "litassist caseplan test_inputs/mock_10heading_case_facts.txt --budget comprehensive --context 'Commercial dispute with international elements' --verify --output test_output --yes" \
         "Litigation plan generated successfully|Plan saved to" \
         "yes"
 

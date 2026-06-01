@@ -474,6 +474,15 @@ litassist caseplan <case_facts> [OPTIONS]
 | `--budget` | `minimal` / `standard` / `comprehensive` | Budget constraint level |
 | `--context` | text | Additional context to guide planning |
 | `--output` | text | Custom output filename prefix |
+| `--yes` / `-y` | flag | Skip the pre-generation confirmation prompt (non-interactive use) |
+
+**Source documents (first-run prep):** Before generating a full plan, run caseplan
+from a directory holding your source documents (affidavits, contracts, invoices,
+exhibits), named descriptively by role - e.g. `affidavit_smith.pdf`,
+`invoice_repairs.pdf`. caseplan lists the documents it found, sends those exact
+names to the model (so it references real files instead of inventing names), and -
+when run interactively - asks you to confirm before the paid LLM call. `--yes`
+skips that prompt. Subsequent runs just re-execute the generated Python runner.
 
 **Two-mode operation:**
 
