@@ -106,7 +106,7 @@ commands:
          [WRONG] litassist brainstorm --side plaintiff --area civil --facts source_documents.pdf
          [CORRECT] litassist brainstorm --side plaintiff --area civil --facts case_facts.txt
 
-         - extractfacts ONLY processes source documents (.pdf, .txt, .docx)
+         - extractfacts ONLY processes source documents litassist can read (.pdf, .rtf, .txt) - NOT Word .doc/.docx
          - case_facts.txt is OUTPUT of extractfacts, never INPUT
          - If you generate "extractfacts case_facts.txt" - THIS IS ALWAYS WRONG
 

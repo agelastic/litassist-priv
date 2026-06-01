@@ -29,16 +29,17 @@ def _is_interactive() -> bool:
 def discover_source_files(facts_name=None) -> list:
     """List candidate source documents in the working directory (top level).
 
-    Lists the legal source document types so the planner references REAL filenames
-    instead of inventing them. The case-facts file is excluded (resolved/seeded
-    separately): both the exact ``facts_name`` caseplan was given and any
-    ``case_facts*`` variant. Only regular files are returned (a directory/symlink
-    named like a document is skipped) and the extension is matched case-insensitively
-    (so ``scan.PDF`` counts). Fully local - no contents are read. Subdirectories
-    (``outputs/``, ``logs/``) are not scanned; scope by running from a folder that
-    holds just the relevant files.
+    Lists only the document types litassist can actually READ (read_document handles
+    .pdf and .rtf specially and otherwise opens files as UTF-8 text - so .doc/.docx
+    are NOT listed; they would fail at runtime). The case-facts file is excluded
+    (resolved/seeded separately): both the exact ``facts_name`` caseplan was given
+    and any ``case_facts*`` variant (case-insensitive). Only regular files are
+    returned (a directory/symlink named like a document is skipped) and the
+    extension is matched case-insensitively (so ``scan.PDF`` counts). Fully local -
+    no contents are read. Subdirectories (``outputs/``, ``logs/``) are not scanned;
+    scope by running from a folder that holds just the relevant files.
     """
-    exts = (".pdf", ".docx", ".doc", ".rtf", ".txt")
+    exts = (".pdf", ".rtf", ".txt")
     excluded = {os.path.basename(facts_name)} if facts_name else set()
     found = []
     for entry in os.scandir("."):
@@ -47,7 +48,7 @@ def discover_source_files(facts_name=None) -> list:
             continue
         if (
             name.lower().endswith(exts)
-            and not name.startswith("case_facts")
+            and not name.lower().startswith("case_facts")
             and name not in excluded
         ):
             found.append(name)

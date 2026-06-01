@@ -403,7 +403,9 @@ class TestCaseplanSourceFiles:
             (tmp_path / name).write_text("x")
         (tmp_path / "notes.md").write_text("x")  # .md excluded (README/CHANGELOG noise)
         (tmp_path / "config.yaml").write_text("x")  # .yaml excluded by type
+        (tmp_path / "brief.docx").write_text("x")  # Word - litassist can't read it, excluded
         (tmp_path / "case_facts.txt").write_text("x")  # case_facts* prefix - excluded
+        (tmp_path / "Case_facts.txt").write_text("x")  # case-insensitive prefix - excluded
         (tmp_path / "case_facts_20260101_000000.txt").write_text("x")
         (tmp_path / "facts.txt").write_text("x")  # the ACTUAL facts file - excluded by name
         (tmp_path / "evidence.pdf").mkdir()  # a directory named like a doc - skipped
