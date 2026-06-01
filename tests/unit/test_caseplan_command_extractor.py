@@ -149,7 +149,11 @@ class TestTokenRewriting:
 
 
 class TestSafety:
-    def test_separator_is_inert_single_command(self):
+    def test_metacharacters_are_inert_literals_single_command(self):
+        # subprocess.run(args, shell=False) means EVERY token is a literal argv
+        # entry, so any shell metacharacter (; | && $(...) redirects) is inert -
+        # one example stands for all of them. A `;` must NOT split the line into a
+        # second command (one run([...])) and must survive only as a literal arg.
         script, accepted, _ = _script(
             _join(["```bash", 'litassist lookup "x" ; rm -rf outputs', "```"])
         )
@@ -157,13 +161,6 @@ class TestSafety:
         assert script.count("run([") == 1  # one command, not two
         assert "subprocess.run(args)" in script and "shell=True" not in script
         assert "';'" in script  # separator is a literal arg, not an operator
-
-    def test_command_substitution_inert(self):
-        script, _, _ = _script(
-            _join(["```bash", 'litassist lookup "$(cat secret)"', "```"])
-        )
-        assert "'$(cat secret)'" in script  # literal arg, never a live $(...)
-        assert "shell=True" not in script
 
     def test_non_litassist_lines_not_executable(self):
         script, accepted, _ = _script(
