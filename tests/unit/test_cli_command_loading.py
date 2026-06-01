@@ -93,7 +93,27 @@ def mock_external_apis():
         "requests.post"
     ) as mock_requests_post, patch(
         "litassist.llm.factory.LLMClientFactory.for_command"
-    ) as mock_llm_factory:
+    ) as mock_llm_factory, patch(
+        "litassist.commands.verify.citation_verifier.fetch_citation_context"
+    ) as mock_fetch_ctx, patch(
+        "litassist.commands.verify.reasoning_handler.fetch_citation_context"
+    ) as mock_fetch_ctx_reasoning, patch(
+        "litassist.commands.verify.soundness_checker.fetch_citation_context"
+    ) as mock_fetch_ctx_soundness, patch(
+        "litassist.verification_chain.fetch_citation_context"
+    ) as mock_fetch_ctx_chain:
+
+        # Citation-context fetch reaches the live web via curl_cffi (libcurl, which
+        # bypasses the requests/socket mocks) and adds AustLII rate-limit sleeps;
+        # stub it at every import site so verify makes no real calls. Returns
+        # (case_content, failed_citations).
+        for _ctx_mock in (
+            mock_fetch_ctx,
+            mock_fetch_ctx_reasoning,
+            mock_fetch_ctx_soundness,
+            mock_fetch_ctx_chain,
+        ):
+            _ctx_mock.return_value = ({}, [])
 
         # Setup mock LLM client
         mock_client = Mock()
