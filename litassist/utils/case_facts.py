@@ -111,7 +111,15 @@ def resolve_case_facts_file() -> str:
     Raises:
         click.ClickException: If no ``case_facts*.txt`` exists in the directory.
     """
-    candidates = sorted(glob.glob("case_facts*.txt"))
+    # A caseplan runner isolates a run under LITASSIST_OUTPUT_DIR; resolve from
+    # there when set, else from the launch directory.
+    search_dir = os.environ.get("LITASSIST_OUTPUT_DIR")
+    pattern = (
+        os.path.join(search_dir, "case_facts*.txt")
+        if search_dir
+        else "case_facts*.txt"
+    )
+    candidates = sorted(glob.glob(pattern))
     if not candidates:
         raise click.ClickException(
             "No case facts file provided and no case_facts*.txt found in the "

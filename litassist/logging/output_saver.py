@@ -18,6 +18,7 @@ def save_command_output(
     critique_sections: Optional[List[Tuple[str, str]]] = None,
     output_dir: Optional[str] = None,
     suffix: str = "",
+    include_header: bool = True,
 ) -> str:
     """
     Save command output with standard format.
@@ -34,9 +35,12 @@ def save_command_output(
     Returns:
         Path to the saved output file
     """
-    # Use provided output_dir or default to current working directory
+    # Use provided output_dir, else the per-run dir a caseplan runner sets via
+    # LITASSIST_OUTPUT_DIR, else the default outputs/ in the launch directory.
     if output_dir is None:
-        output_dir = os.path.join(os.getcwd(), "outputs")
+        output_dir = os.environ.get("LITASSIST_OUTPUT_DIR") or os.path.join(
+            os.getcwd(), "outputs"
+        )
 
     os.makedirs(output_dir, exist_ok=True)
 
@@ -65,6 +69,12 @@ def save_command_output(
         )
 
     with open(output_file, "w", encoding="utf-8") as f:
+        if not include_header:
+            # Executable artifacts (e.g. a caseplan Python runner) must be written
+            # verbatim - a title/metadata/divider would make them invalid scripts.
+            f.write(content)
+            return output_file
+
         # Standard header
         f.write(f"{command_name.replace('_', ' ').title()}\n")
 

@@ -86,6 +86,34 @@ class TestUpdateFactsBasic:
     @patch("litassist.commands.updatefacts.core.save_command_output")
     @patch("litassist.commands.updatefacts.core.validate_file_size")
     @patch("litassist.commands.updatefacts.core.LLMClientFactory")
+    def test_writes_into_env_run_dir(
+        self, mock_factory, mock_validate, mock_output, mock_log, mock_show
+    ):
+        # Inside a caseplan runner, LITASSIST_OUTPUT_DIR points both case_facts
+        # writes (timestamped + stable) at the run dir, leaving the cwd untouched.
+        import os
+
+        self._mock_factory(mock_factory)
+        mock_validate.return_value = "RAW SOURCE TEXT"
+        mock_output.return_value = "outputs/run_x/case_facts_x.txt"
+
+        with self.runner.isolated_filesystem():
+            os.makedirs("outputs/run_x")
+            with open("source.txt", "w") as f:
+                f.write("raw")
+            with patch.dict(os.environ, {"LITASSIST_OUTPUT_DIR": "outputs/run_x"}):
+                result = self.runner.invoke(updatefacts, ["source.txt"])
+
+            assert result.exit_code == 0, result.output
+            assert mock_output.call_args.kwargs.get("output_dir") == "outputs/run_x"
+            assert os.path.exists("outputs/run_x/case_facts.txt")
+            assert not os.path.exists("case_facts.txt")
+
+    @patch("litassist.commands.updatefacts.core.show_command_completion")
+    @patch("litassist.commands.updatefacts.core.save_log")
+    @patch("litassist.commands.updatefacts.core.save_command_output")
+    @patch("litassist.commands.updatefacts.core.validate_file_size")
+    @patch("litassist.commands.updatefacts.core.LLMClientFactory")
     def test_updates_explicit_facts(
         self, mock_factory, mock_validate, mock_output, mock_log, mock_show
     ):

@@ -77,3 +77,20 @@ def test_draft_auto_resolves_case_facts(mock_factory):
         result = runner.invoke(draft, ["Draft a statement of claim", "--noverify"])
     assert "Using case facts: case_facts.txt" in result.output
     assert "Missing argument" not in result.output
+
+
+def test_resolver_searches_env_dir_when_set(tmp_path, monkeypatch):
+    # Inside a caseplan runner, auto-resolution looks in the per-run dir, not the
+    # cwd - so a cwd decoy is never chosen over the run's own case_facts.
+    from litassist.utils.case_facts import resolve_case_facts_file
+
+    monkeypatch.chdir(tmp_path)
+    run_dir = tmp_path / "outputs" / "run_x"
+    run_dir.mkdir(parents=True)
+    (run_dir / "case_facts.txt").write_text("run facts")
+    (tmp_path / "case_facts.txt").write_text("cwd decoy")
+    monkeypatch.setenv("LITASSIST_OUTPUT_DIR", str(run_dir))
+
+    assert resolve_case_facts_file() == str(run_dir / "case_facts.txt")
+    # The env-UNSET cwd path is covered by the command-level auto-resolve tests
+    # above (each runs with no LITASSIST_OUTPUT_DIR), so it is not re-asserted here.
