@@ -1,6 +1,6 @@
 # LitAssist Reference Manual
 
-Last updated: 31/05/2026
+Last updated: 01/06/2026
 
 ---
 
@@ -1081,7 +1081,7 @@ litassist strategy <case_facts> [OPTIONS]
 | Option | Type | Description |
 |--------|------|-------------|
 | `--outcome` | text | Required: desired legal outcome (single sentence) |
-| `--strategies` | path or glob | Optional brainstorm strategies file; a glob (e.g. `outputs/brainstorm_*.txt`) resolves to the most recent match |
+| `--strategies` | path or glob (repeatable) | Optional brainstorm strategies file(s). Pass once per set (e.g. `--strategies 'outputs/brainstorm_creative_*.txt' --strategies 'outputs/brainstorm_research_*.txt'`); each flag resolves to the most recent match of its own pattern, and all sets are merged |
 | `--heavy` | flag | Use GPT-5.5 for verification |
 | `--noverify` | flag | Skip verification |
 | `--output` | text | Custom output filename prefix |
@@ -1109,6 +1109,14 @@ intelligently uses it:
 - Provides a coherent tactical plan anchored in both creative and conventional
   thinking
 
+`--strategies` is repeatable - pass it once per brainstorm set. The dual-brainstorm
+workflow produces a creative set and a research set; supplying both
+(`--strategies 'outputs/brainstorm_creative_*.txt' --strategies 'outputs/brainstorm_research_*.txt'`)
+merges them: the orthodox/unorthodox/most-likely counts are summed for the on-screen
+summary and both bodies are passed to the model under `=== filename ===` separators.
+Each flag resolves to the most recent match of its own pattern, so older files from
+previous runs are ignored.
+
 **Models:** Claude Opus 4.7 (strategy), o3-pro (analysis)
 **BYOK required:** Yes (analysis stage)
 
@@ -1117,7 +1125,8 @@ intelligently uses it:
 ```bash
 litassist strategy case_facts.txt \
   --outcome "Secure interim orders allowing children to remain in Brisbane" \
-  --strategies outputs/brainstorm_family_plaintiff_20260223_143622.txt
+  --strategies 'outputs/brainstorm_creative_*.txt' \
+  --strategies 'outputs/brainstorm_research_*.txt'
 ```
 
 Sample output excerpt:

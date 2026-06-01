@@ -918,9 +918,11 @@ retrieval pipeline.
   and `barbrief`
 - Temporary `prompts/glob_help_addon.yaml` removed
 
-**Deferred:**
-- Glob support for `strategy --strategies` remains outstanding: it requires
-  changing the option from a single-file to a multiple-files interface
+**Completed (June 2026):**
+- `strategy --strategies` is now a multiple-files interface (`multiple=True` via
+  `expand_glob_newest_each_callback`): repeatable, one brainstorm set per flag,
+  each flag resolving to its own newest match. `parse_strategies_files` merges the
+  sets. This closes the last deferred item under P4-25.
 
 ---
 

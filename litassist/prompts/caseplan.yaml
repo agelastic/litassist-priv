@@ -27,7 +27,7 @@ commands:
       - Write every runnable command on its own line beginning with "litassist". For a step with multiple commands, put one complete command per line.
       - Never split one command across lines or join commands with shell control characters (;, |, &&, > redirects); each line must be a single complete litassist invocation.
       - Mark non-command steps as "[MANUAL TASK] ..." - these are prose for the reader, not executable commands.
-      - litassist expands glob patterns itself. Multi-input commands (counselnotes, draft, digest, brainstorm --research) consume ALL matches; single-input options (strategy --strategies, verify FILE) take the MOST RECENT match. Quote a pattern only when the path contains spaces (e.g. "Car Docs 2025/*.pdf"); otherwise quoting is optional.
+      - litassist expands glob patterns itself. Multi-input commands (counselnotes, draft, digest, brainstorm --research) consume ALL matches. strategy --strategies is repeatable - pass it ONCE PER brainstorm set (e.g. --strategies 'outputs/brainstorm_creative_*.txt' --strategies 'outputs/brainstorm_research_*.txt') and each flag takes the MOST RECENT match of its own pattern. The verify FILE arg is single-input: it takes the MOST RECENT match. Quote a pattern only when the path contains spaces (e.g. "Car Docs 2025/*.pdf"); otherwise quoting is optional.
       - When two commands of the SAME type feed different downstream steps (the dual brainstorm, or a feasibility memo vs an executive summary), give each a distinct --output prefix that STARTS WITH THE COMMAND NAME (e.g. --output brainstorm_creative / --output brainstorm_research; --output draft_memo / --output draft_summary). Reference the specific prefix downstream ('outputs/brainstorm_research_*.txt'); a bare 'outputs/brainstorm_*.txt' still group-matches both for multi-input commands like counselnotes.
       - Run verify ONCE PER finished deliverable, naming that deliverable's prefix (litassist verify 'outputs/draft_memo_*.txt'; litassist verify 'outputs/draft_summary_*.txt'). Do NOT emit a single verify 'outputs/draft_*.txt' - verify takes one FILE and would resolve only the most recent draft, leaving the others unverified.
       - draft and strategy verify automatically (use --noverify to skip). barbrief does NOT verify by default, so ALWAYS add --verify to every barbrief command (e.g. litassist barbrief case_facts.txt --hearing-type trial --strategies 'outputs/brainstorm_research_*.txt' --verify); without it the brief's citations go unchecked.
@@ -185,9 +185,9 @@ commands:
          ## Phase 12-14: Tactical Implementation Plans (Day 8)
          Purpose: Convert strategies to actionable plans
          Commands:
-           litassist strategy case_facts.txt --outcome "Recover vehicle purchase price through detinue or conversion claim" --strategies 'outputs/brainstorm_research_*.txt'
-           litassist strategy case_facts.txt --outcome "Establish resulting trust over vehicle" --strategies 'outputs/brainstorm_research_*.txt'
-           litassist strategy case_facts.txt --outcome "Rebut presumption of advancement and prove incomplete gift" --strategies 'outputs/brainstorm_research_*.txt'
+           litassist strategy case_facts.txt --outcome "Recover vehicle purchase price through detinue or conversion claim" --strategies 'outputs/brainstorm_creative_*.txt' --strategies 'outputs/brainstorm_research_*.txt'
+           litassist strategy case_facts.txt --outcome "Establish resulting trust over vehicle" --strategies 'outputs/brainstorm_creative_*.txt' --strategies 'outputs/brainstorm_research_*.txt'
+           litassist strategy case_facts.txt --outcome "Rebut presumption of advancement and prove incomplete gift" --strategies 'outputs/brainstorm_creative_*.txt' --strategies 'outputs/brainstorm_research_*.txt'
          Cost: $9 total
          Output feeds: Final synthesis and memoranda
 

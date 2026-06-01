@@ -539,10 +539,11 @@ test_updatefacts_command() {
 test_strategy_command() {
     print_section "Testing STRATEGY Command"
 
-    # All switches: --outcome --strategies --heavy --output. (--verify removed;
-    # verification is auto-enabled, --noverify is the opt-out.)
-    run_test "Strategy - All switches (outcome, strategies, heavy, output)" \
-        "litassist strategy test_inputs/mock_case_facts.txt --outcome 'Win breach of contract case' --strategies test_inputs/mock_strategy_headers.txt --heavy --output test_output" \
+    # All switches: --outcome --strategies (repeatable, one set per flag) --heavy
+    # --output. (--verify removed; verification is auto-enabled, --noverify is the
+    # opt-out.)
+    run_test "Strategy - All switches (outcome, strategies x2, heavy, output)" \
+        "litassist strategy test_inputs/mock_case_facts.txt --outcome 'Win breach of contract case' --strategies test_inputs/mock_strategy_headers.txt --strategies test_inputs/mock_strategies.txt --heavy --output test_output" \
         "complete|saved to|strategy|verification" \
         "yes"
 }

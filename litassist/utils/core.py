@@ -204,6 +204,45 @@ def parse_strategies_file(strategies_text: str) -> dict:
     return parsed
 
 
+def parse_strategies_files(named_contents) -> dict:
+    """Parse and merge several brainstorm strategy files into one summary dict.
+
+    strategy --strategies accepts multiple files (e.g. the dual-brainstorm
+    creative AND research sets). Each is parsed individually with
+    parse_strategies_file, then the three counts are SUMMED, the side/area
+    metadata from the first file that carries it is kept (the sets share a case,
+    so this is robust to one file lacking the headers), and the raw bodies are
+    joined under the standard '=== label ===' separator for the LLM prompt. The
+    return shape matches parse_strategies_file, so downstream code is unchanged.
+
+    Args:
+        named_contents: Iterable of (label, text) pairs; label is the filename
+            shown in the '=== label ===' separator.
+
+    Returns:
+        Dict with summed orthodox/unorthodox/most_likely counts, the first file's
+        metadata, and the combined labelled text in raw_content.
+    """
+    merged = {
+        "metadata": {},
+        "orthodox_count": 0,
+        "unorthodox_count": 0,
+        "most_likely_count": 0,
+        "raw_content": "",
+    }
+    parts = []
+    for label, text in named_contents:
+        parsed = parse_strategies_file(text)
+        merged["orthodox_count"] += parsed["orthodox_count"]
+        merged["unorthodox_count"] += parsed["unorthodox_count"]
+        merged["most_likely_count"] += parsed["most_likely_count"]
+        if not merged["metadata"] and parsed["metadata"]:
+            merged["metadata"] = parsed["metadata"]
+        parts.append(f"=== {label} ===\n{text}")
+    merged["raw_content"] = "\n\n".join(parts)
+    return merged
+
+
 def validate_side_area_combination(side: str, area: str):
     """
     Validate side/area combinations and display warnings for incompatible pairs.

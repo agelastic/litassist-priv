@@ -1,6 +1,6 @@
 # Changelog
 
-Last updated: 30/05/2026
+Last updated: 01/06/2026
 
 All notable changes to LitAssist will be documented in this file.
 
@@ -28,6 +28,9 @@ Historical dated sections preserve the model names that were current when those 
 - `draft` preflight oversize handling: soft warn + hard fail derived from the model's actual context window plus a provider-error reframe pointing users at `litassist digest --mode summary <file>`.
 
 ### Changed
+
+#### June 2026: strategy `--strategies` accepts MULTIPLE brainstorm sets
+- The caseplan dual-brainstorm design produces two files - a creative set (`brainstorm_creative_*`) and a research set (`brainstorm_research_*`) - but `strategy --strategies` was single-valued (`expand_glob_single_callback`), so it silently ingested only the newest match and dropped the other set. `--strategies` is now `multiple=True` (repeatable: one brainstorm set per flag) backed by a new `expand_glob_newest_each_callback` (`litassist/utils/file_ops.py`): each flag resolves INDEPENDENTLY to its own most-recent match (so older same-prefix files from prior runs are ignored), every glob resolution is announced on the console, and the resolved files are de-duplicated. A new `parse_strategies_files` merge helper (`litassist/utils/core.py`) parses each file, SUMS the orthodox/unorthodox/most-likely counts for the on-screen summary, and joins the bodies under the standard `=== filename ===` separator before the combined text goes to the model. The caseplan prompt now emits two `--strategies` flags (creative + research) for each `strategy` step. The scalar `expand_glob_single_callback` is unchanged - `verify`'s single `FILE` arg still uses it.
 
 #### May 2026: strategy `--strategies` and verify `FILE` accept globs (most recent match)
 - Caseplan-generated scripts chain step outputs by glob (e.g. `strategy --strategies 'outputs/brainstorm_*.txt'`, `verify 'outputs/draft_*.txt'`), and the user docs already showed those forms, but the two single-input path args crashed on a glob: `--strategies` was a `click.File` and `verify`'s `FILE` was `click.Path(exists=True)`, both resolved at Click's parse stage before any callback could expand the pattern. Both now use a new `expand_glob_single_callback` (`litassist/utils/file_ops.py`): a literal path passes through, a glob resolves to the most recent matching file (by mtime, mirroring `resolve_case_facts_file`), and a zero-match / directory / missing literal fails loudly. When a glob matches more than one file (e.g. `draft` writes a raw and a final file under one prefix) it warns and uses the newest. Multi-input commands (`counselnotes`, `draft`, `barbrief`, `digest`, `brainstorm --research`) are unchanged - they still take all matches.
