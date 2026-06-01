@@ -486,6 +486,14 @@ litassist caseplan <case_facts> [OPTIONS]
 
 **Model:** Claude Opus 4.7 (full plan); Claude Sonnet 4.6 (budget assessment)
 
+**Run-id grouping:** Generated scripts accumulate into the shared `outputs/`
+folder, so caseplan stamps one run-id on every output of a single plan. Each
+`--output` prefix and each `outputs/` glob in the generated script begins with a
+`run<timestamp>_` segment, so a step's glob (e.g.
+`outputs/run20260601153012_brainstorm_creative_*.txt`) matches only this run's
+files and never files left over from a previous caseplan run. This is automatic;
+you do not write the id yourself.
+
 **Smith v Jones example:**
 
 ```bash

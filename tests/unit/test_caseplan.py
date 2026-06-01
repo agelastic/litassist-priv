@@ -327,3 +327,110 @@ class TestCaseplanCommand:
         data = yaml.safe_load(cfg_path.read_text())
         assert "opus" in data["caseplan"]["model"].lower()
         assert "sonnet" in data["caseplan-assessment"]["model"].lower()
+
+
+class TestCaseplanRunId:
+    """The RUNID sentinel groups a run's outputs.
+
+    The model writes the literal `RUNID` wherever a per-run id belongs (every
+    --output prefix and every outputs/ glob filename); caseplan replaces it with
+    one real id so a producer filename and its downstream glob carry the SAME
+    prefix and match by construction.
+    """
+
+    @patch("litassist.commands.caseplan.plan_generator.LLMClientFactory")
+    @patch("litassist.commands.caseplan.plan_generator.save_command_output")
+    @patch("litassist.commands.caseplan.plan_generator.save_log")
+    def test_runid_replaced_with_one_shared_id(
+        self, mock_save_log, mock_save_output, mock_factory, tmp_path
+    ):
+        import re
+
+        case_facts = tmp_path / "case_facts.txt"
+        case_facts.write_text("Parties: Test v Test\nBackground: Dispute...")
+
+        plan = (
+            "# Litigation Plan\n## Phase 9\n"
+            "```bash\n"
+            "litassist brainstorm --side plaintiff --area civil "
+            "--facts case_facts.txt --output RUNID_brainstorm_creative\n"
+            "litassist strategy case_facts.txt --outcome \"Win\" "
+            "--strategies 'outputs/RUNID_brainstorm_creative_*.txt'\n"
+            "```\n"
+        )
+        mock_client = MagicMock()
+        mock_client.complete.return_value = (plan, {"total_tokens": 1000})
+        mock_factory.for_command.return_value = mock_client
+        mock_save_output.return_value = "outputs/caseplan_123.txt"
+
+        runner = CliRunner()
+        result = runner.invoke(caseplan, [str(case_facts), "--budget", "minimal"])
+        assert result.exit_code == 0, result.output
+
+        # The 2nd save is the extracted command script.
+        saved_script = mock_save_output.call_args_list[1].args[1]
+        assert "RUNID" not in saved_script  # sentinel fully substituted
+        ids = set(re.findall(r"run\d{14}", saved_script))
+        assert len(ids) == 1  # one shared id across producer + consumer
+        run_id = ids.pop()
+        assert f"--output {run_id}_brainstorm_creative" in saved_script
+        assert f"outputs/{run_id}_brainstorm_creative_" in saved_script
+
+    @patch("litassist.commands.caseplan.plan_generator.LLMClientFactory")
+    @patch("litassist.commands.caseplan.plan_generator.save_command_output")
+    @patch("litassist.commands.caseplan.plan_generator.save_log")
+    def test_missing_runid_warns(
+        self, mock_save_log, mock_save_output, mock_factory, tmp_path
+    ):
+        case_facts = tmp_path / "case_facts.txt"
+        case_facts.write_text("Parties: Test v Test\nBackground: Dispute...")
+
+        plan = (
+            "# Litigation Plan\n## Phase 1\n"
+            '```bash\nlitassist lookup "contract breach" --mode irac\n```\n'
+        )
+        mock_client = MagicMock()
+        mock_client.complete.return_value = (plan, {"total_tokens": 1000})
+        mock_factory.for_command.return_value = mock_client
+        mock_save_output.return_value = "outputs/caseplan_123.txt"
+
+        runner = CliRunner()
+        result = runner.invoke(caseplan, [str(case_facts), "--budget", "minimal"])
+        assert result.exit_code == 0, result.output
+        # No RUNID anywhere -> warn that outputs are not grouped for this run.
+        assert "not grouped" in result.output.lower()
+        assert "RUNID" in result.output
+
+    @patch("litassist.commands.caseplan.plan_generator.LLMClientFactory")
+    @patch("litassist.commands.caseplan.plan_generator.save_command_output")
+    @patch("litassist.commands.caseplan.plan_generator.save_log")
+    def test_partial_runid_compliance_warns(
+        self, mock_save_log, mock_save_output, mock_factory, tmp_path
+    ):
+        import re
+
+        case_facts = tmp_path / "case_facts.txt"
+        case_facts.write_text("Parties: Test v Test\nBackground: Dispute...")
+
+        # Producer is stamped, but the consumer glob is NOT -> partial compliance.
+        plan = (
+            "# Litigation Plan\n## Phase 9\n"
+            "```bash\n"
+            "litassist brainstorm --side plaintiff --area civil "
+            "--facts case_facts.txt --output RUNID_brainstorm_creative\n"
+            "litassist strategy case_facts.txt --outcome \"Win\" "
+            "--strategies 'outputs/brainstorm_creative_*.txt'\n"
+            "```\n"
+        )
+        mock_client = MagicMock()
+        mock_client.complete.return_value = (plan, {"total_tokens": 1000})
+        mock_factory.for_command.return_value = mock_client
+        mock_save_output.return_value = "outputs/caseplan_123.txt"
+
+        runner = CliRunner()
+        result = runner.invoke(caseplan, [str(case_facts), "--budget", "minimal"])
+        assert result.exit_code == 0, result.output
+        # Some RUNID was present (so the zero-guard does NOT fire)...
+        assert re.search(r"run\d{14}", result.output)
+        # ...but the unstamped consumer glob is flagged as not carrying the id.
+        assert "do not carry the run id" in result.output.lower()

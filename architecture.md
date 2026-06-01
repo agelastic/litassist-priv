@@ -1,6 +1,6 @@
 # LitAssist Architecture
 
-Last updated: 30/05/2026
+Last updated: 01/06/2026
 
 ## Overview
 LitAssist is a Python-based CLI tool for AI-powered litigation support in Australian law. It uses LLMs (via OpenRouter) and external search (Google CSE) to assist with legal research, document analysis, strategy generation, and drafting.
@@ -104,3 +104,5 @@ The fetcher in `litassist/commands/lookup/fetchers.py` runs every URL through a 
 3. **LLM Interaction**: The command gets a configured client via `LLMClientFactory` and sends prompts from `litassist/prompts/`.
 4. **Verification (Optional)**: If enabled, the CoVe pipeline validates generated content against authoritative sources.
 5. **Output**: Results saved to `outputs/` with timestamped filenames; audit logs saved to `logs/`.
+
+`caseplan` additionally groups one generated workflow's outputs under a shared run-id: the system prompt has the model write the literal placeholder `RUNID` as the first segment of every `--output` value and every `outputs/` glob, and `caseplan/plan_generator.py` substitutes `RUNID` with one real `run<YYYYMMDDHHMMSS>` id before saving the plan and extracting the script. Producer filenames and their downstream globs therefore share the same prefix and match by construction, so chained steps never pick up files from a previous run.
