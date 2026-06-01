@@ -176,6 +176,13 @@ def generate_full_plan(
     # extracted script against those carrying the run prefix; a shortfall means
     # some steps stayed ungrouped and could match files from another run. Cheap
     # substring counts (no tokenising) - warning only, never mutates the script.
+    #
+    # This closes the only SILENT failure mode: a bare consumer glob
+    # ('outputs/brainstorm_*.txt') that over-matches a prior run's files. The
+    # other mismatch - a STAMPED glob whose producer was left unstamped - is not
+    # silent: 'outputs/run<id>_x_*.txt' matches this run's files or nothing, and
+    # the glob callbacks raise BadParameter on a zero match (file_ops.py), i.e. a
+    # loud runtime error rather than a wrong result.
     if run_id:
         total_refs = extracted_commands.count("--output ") + extracted_commands.count(
             "outputs/"

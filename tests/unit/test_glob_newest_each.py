@@ -23,17 +23,16 @@ def _touch(path, mtime):
     return str(path)
 
 
-def test_none_returns_none():
-    # Invoked directly with None -> must round-trip (the body does `if strategies:`).
+def test_empty_inputs_round_trip():
+    # Both falsy entry conditions pass straight through so the command body's
+    # `if strategies:` stays falsy: multiple=True delivers () when the option is
+    # omitted, and a direct call may pass None.
+    assert expand_glob_newest_each_callback(None, None, ()) == ()
     assert expand_glob_newest_each_callback(None, None, None) is None
 
 
-def test_empty_tuple_returns_empty():
-    # multiple=True yields () when the option is omitted.
-    assert expand_glob_newest_each_callback(None, None, ()) == ()
-
-
-def test_literal_files_pass_through(tmp_path):
+def test_literal_files_pass_through(tmp_path, capsys):
+    # Literal paths pass through in order and resolve nothing, so stay silent.
     a = tmp_path / "creative.txt"
     a.write_text("c")
     b = tmp_path / "research.txt"
@@ -42,6 +41,7 @@ def test_literal_files_pass_through(tmp_path):
         str(a),
         str(b),
     )
+    assert "Resolved" not in capsys.readouterr().out
 
 
 def test_each_flag_resolves_its_own_newest(tmp_path):
@@ -74,13 +74,6 @@ def test_multi_match_warning_names_count(tmp_path, capsys):
     out = capsys.readouterr().out
     assert "newest of 2" in out
     assert "b_2.txt" in out
-
-
-def test_literal_passthrough_no_warning(tmp_path, capsys):
-    f = tmp_path / "creative.txt"
-    f.write_text("c")
-    expand_glob_newest_each_callback(None, None, (str(f),))
-    assert "Resolved" not in capsys.readouterr().out
 
 
 def test_dedup_preserves_order(tmp_path):
