@@ -1,4 +1,10 @@
 {
+  "permissions": {
+    "allow": [
+      "Bash(.venv/bin/python -c 'import io; src=open\\('\\\\''__TRACKED_VAR__'\\\\''\\).read\\(\\); compile\\(src,'\\\\''runner'\\\\'','\\\\''exec'\\\\''\\); print\\('\\\\''COMPILES OK'\\\\''\\)')",
+      "Bash(.venv/bin/pytest tests/unit/test_caseplan.py -q)"
+    ]
+  },
   "hooks": {
     "PreToolUse": [
       {

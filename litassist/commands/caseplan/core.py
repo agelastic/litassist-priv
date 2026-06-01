@@ -39,7 +39,7 @@ def discover_source_files(facts_name=None) -> list:
     no contents are read. Subdirectories (``outputs/``, ``logs/``) are not scanned;
     scope by running from a folder that holds just the relevant files.
     """
-    exts = (".pdf", ".rtf", ".txt")
+    exts = (".pdf", ".rtf", ".txt", ".md")
     excluded = {os.path.basename(facts_name)} if facts_name else set()
     found = []
     for entry in os.scandir("."):

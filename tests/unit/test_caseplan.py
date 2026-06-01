@@ -401,7 +401,7 @@ class TestCaseplanSourceFiles:
         monkeypatch.chdir(tmp_path)
         for name in ["affidavit_smith.pdf", "invoice_repairs.pdf", "witness.txt", "scan.PDF"]:
             (tmp_path / name).write_text("x")
-        (tmp_path / "notes.md").write_text("x")  # .md excluded (README/CHANGELOG noise)
+        (tmp_path / "notes.md").write_text("x")  # .md included - read as UTF-8 text
         (tmp_path / "config.yaml").write_text("x")  # .yaml excluded by type
         (tmp_path / "brief.docx").write_text("x")  # Word - litassist can't read it, excluded
         (tmp_path / "case_facts.txt").write_text("x")  # case_facts* prefix - excluded
@@ -417,6 +417,7 @@ class TestCaseplanSourceFiles:
             "invoice_repairs.pdf",
             "witness.txt",
             "scan.PDF",  # extension matched case-insensitively
+            "notes.md",
         }
 
     @patch("litassist.commands.caseplan.plan_generator.LLMClientFactory")
