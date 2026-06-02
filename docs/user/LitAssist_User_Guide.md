@@ -772,11 +772,14 @@ Commands that accept file paths (`extractfacts`, `counselnotes`, `digest`,
 
 ### Large File Processing
 
-Files exceeding `max_chars` (default 200,000 characters) are automatically
-chunked by digest / extractfacts / counselnotes. The draft command sends every
-input in one full-context call; if the combined payload exceeds the configured
-draft model's window, draft fails with a clear error pointing at
-`litassist digest --mode summary`.
+Files exceeding the routed model's input budget (about 80% of that model's
+context window, read from `model_capabilities.yaml`) are automatically chunked by
+digest / extractfacts / counselnotes; each command then merges the per-chunk
+results with a consolidation step rather than concatenating them. Because the
+budget scales with the model's window, most multi-document inputs now process in
+a single pass. The draft command sends every input in one full-context call; if
+the combined payload exceeds the configured draft model's window, draft fails
+with a clear error pointing at `litassist digest --mode summary`.
 
 If processing is slow, the heartbeat indicator ("...still working...") confirms
 the command is active. Adjust `heartbeat_interval` in config.yaml.

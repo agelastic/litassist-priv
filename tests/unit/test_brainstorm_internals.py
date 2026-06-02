@@ -217,6 +217,14 @@ Pursue misleading conduct claim while simultaneously filing ombudsman complaint.
                 "brainstorm", "analysis"
             )
 
+            # The facts size cap must be derived from the BINDING stage -- the
+            # analysis model (o3-pro 200k) that receives facts+orthodox+unorthodox
+            # -- not the orthodox-generation model (1M), or it cannot guard the
+            # smallest window in the pipeline.
+            mock_factory_core.get_input_budget_for_command.assert_called_with(
+                "brainstorm", "analysis"
+            )
+
             # Verify output contains all sections
             output = result.output
             assert "Generating orthodox strategies..." in output

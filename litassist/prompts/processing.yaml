@@ -477,3 +477,21 @@ processing:
 
         Documents to analyze:
         {documents}
+
+      # USED BY: counselnotes.py - merging per-chunk partial extractions into one
+      # response (only runs when the input was chunked).
+      consolidation: |
+        You are given {total_chunks} partial extractions, each produced from a
+        different section of the same set of documents. Merge them into ONE final
+        response.
+
+        Rules:
+        - Use the IDENTICAL section headings that appear in the partials; do not
+          invent, rename, or drop sections.
+        - Merge the entries under each heading into a single combined list; remove
+          duplicate and near-duplicate entries.
+        - Preserve proper Australian citation format.
+        - Do not add commentary, preamble, or notes about the merge itself.
+
+        Partial extractions:
+        {partials}

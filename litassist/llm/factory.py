@@ -236,7 +236,7 @@ class LLMClientFactory:
         cls,
         command_name: str,
         sub_type: str | None = None,
-        fraction: float = 0.30,
+        fraction: float = 0.80,
     ) -> int:
         """
         Get a recommended input-size budget in CHARACTERS for a command.
@@ -244,16 +244,22 @@ class LLMClientFactory:
         Computed as `context_window_tokens * CHARS_PER_TOKEN * fraction`.
         Use the returned value as a file-size cap or a "context is getting
         large" warning threshold instead of hardcoding magic numbers. The
-        default 0.30 leaves ~70% of the model window for system prompt,
-        completion, and reasoning tokens; tighten with a smaller `fraction`
-        for commands that emit long outputs or use heavy reasoning.
+        window is a single shared budget (input + reasoning + output must fit),
+        so `1 - fraction` is the worst-case (densest text, ~3.5 chars/token)
+        reserve for system prompt + reasoning + completion. The default 0.80
+        leaves >=20% of the window -- ~40k tokens on a 200k-window model and
+        >=200k tokens on the 1M/2M-window models, comfortably above any
+        command's observed output+reasoning. The budget already tracks the
+        routed model's window from `model_capabilities.yaml`, so it scales when
+        `litassist refresh` updates a model. Tighten with a smaller `fraction`
+        only for a command whose own output is unusually large.
 
         Args:
             command_name: The command name.
             sub_type: Optional sub-type passed through to the underlying
                 capability lookup.
-            fraction: Fraction of the model's input window to reserve for
-                user-supplied content (default 0.30).
+            fraction: Fraction of the model's input window to offer to
+                user-supplied content (default 0.80).
 
         Returns:
             Recommended input budget in characters.

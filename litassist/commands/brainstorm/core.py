@@ -497,12 +497,15 @@ def brainstorm(facts, side, area, research, verify, output):
 
     facts = combined_facts
 
-    # Check file size to prevent token limit issues. Cap derives from the
-    # brainstorm orthodox-stage model's input window so it scales with
-    # whichever model is currently routed.
+    # Check file size to prevent token limit issues. The binding consumer is the
+    # analysis stage (facts + orthodox + unorthodox go to brainstorm-analysis),
+    # routed to the smallest-window model in the pipeline, so size the cap against
+    # THAT stage -- not the orthodox-generation model -- or the guard cannot
+    # protect the narrowest window. Reads the analysis model's window from
+    # model_capabilities.yaml, so it scales with whichever model is routed.
     validate_file_size_limit(
         facts,
-        LLMClientFactory.get_input_budget_for_command("brainstorm", "orthodox"),
+        LLMClientFactory.get_input_budget_for_command("brainstorm", "analysis"),
         "Case facts",
     )
 
