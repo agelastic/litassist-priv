@@ -281,7 +281,7 @@ capabilities:
     Syntax: litassist refresh
     Inputs: None (reads `litassist/llm/model_configs.yaml`, fetches OpenRouter live)
     Outputs: Overwrites `litassist/llm/model_capabilities.yaml` deterministically (sorted, dated header)
-    Strategic Use: ADMINISTRATIVE — not part of a litigation workflow. Run only after swapping a model in `model_configs.yaml` or when OpenRouter announces pricing / context-window changes. Do NOT include in a caseplan output.
+    Strategic Use: ADMINISTRATIVE - not part of a litigation workflow. Run only after swapping a model in `model_configs.yaml` or when OpenRouter announces pricing / context-window changes. Do NOT include in a caseplan output.
     Options: None
     Integration: Standalone admin tool; the caseplan LLM should never recommend this in a phased plan.
     Cost: Free (catalogue endpoint is unauthenticated)

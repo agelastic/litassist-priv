@@ -399,13 +399,13 @@ processing:
         [Brief overview of overall case position and key strategic considerations]
 
         KEY CITATIONS:
-        • [Case citation 1]
-        • [Case citation 2]
-        • [Legislative reference 1]
+        * [Case citation 1]
+        * [Case citation 2]
+        * [Legislative reference 1]
 
         LEGAL PRINCIPLES:
-        • [Legal principle description] (Supporting case/legislation)
-        • [Another principle] (Supporting authority)
+        * [Legal principle description] (Supporting case/legislation)
+        * [Another principle] (Supporting authority)
 
         TACTICAL CHECKLIST:
         [ ] [Immediate action item 1]
@@ -416,9 +416,9 @@ processing:
         [Assessment of litigation risks, exposure, and mitigation strategies]
 
         RECOMMENDATIONS:
-        • [Strategic recommendation 1]
-        • [Tactical approach 2]
-        • [Resource allocation 3]
+        * [Strategic recommendation 1]
+        * [Tactical approach 2]
+        * [Resource allocation 3]
 
         Documents to analyze:
         {documents}
@@ -431,9 +431,9 @@ processing:
         Format your response EXACTLY as follows:
 
         CITATIONS FOUND:
-        • Case Name v Other Name [Year] Court Reference
-        • Another Case (Year) Volume Law Report Page
-        • Legislation Name (Jurisdiction) section reference
+        * Case Name v Other Name [Year] Court Reference
+        * Another Case (Year) Volume Law Report Page
+        * Legislation Name (Jurisdiction) section reference
 
         Include all legal authorities mentioned in the documents, using proper Australian citation format.
         If no citations are found, respond with: "No citations found."
@@ -449,8 +449,8 @@ processing:
         Format your response EXACTLY as follows:
 
         LEGAL PRINCIPLES:
-        • Clear statement of the legal principle or rule (Supporting case citation or legislation)
-        • Another legal principle (Supporting authority)
+        * Clear statement of the legal principle or rule (Supporting case citation or legislation)
+        * Another legal principle (Supporting authority)
 
         Focus on substantive legal principles that could impact litigation strategy.
         If no principles are found, respond with: "No legal principles found."
