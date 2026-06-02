@@ -66,9 +66,20 @@ def _path_expr(token: str) -> str:
     value (an --outcome sentence, a --context phrase) is never path-shaped.
     """
     norm = token[2:] if token.startswith("./") else token
+    # Run-dir paths (outputs/ globs and case_facts) are normalised to .md before
+    # rewriting: save_command_output always writes outputs with a .md extension and
+    # the runner seeds case_facts.md, so a legacy .txt reference (an old/hand-edited
+    # plan, or an LLM slip back to the historic .txt convention) must point at the
+    # .md file that actually exists in the per-run dir. Without this it would route
+    # to a never-created run_dir/*.txt and the step would fail with "File not found".
     if norm.startswith("outputs/"):
-        return f"os.path.join(run_dir, {norm[len('outputs/'):]!r})"
+        rest = norm[len("outputs/"):]
+        if rest.endswith(".txt"):
+            rest = rest[:-4] + ".md"
+        return f"os.path.join(run_dir, {rest!r})"
     if norm.startswith("case_facts") and norm.endswith((".txt", ".md")):
+        if norm.endswith(".txt"):
+            norm = norm[:-4] + ".md"
         return f"os.path.join(run_dir, {norm!r})"
     return repr(token)
 

@@ -376,8 +376,10 @@ class TestCaseplanRunner:
         assert saved_runner.startswith("#!/usr/bin/env python3")
         assert 'os.environ["LITASSIST_OUTPUT_DIR"] = run_dir' in saved_runner
         # consumer glob + case_facts rewritten to the run dir; --output prefix not.
-        assert "os.path.join(run_dir, 'brainstorm_creative_*.txt')" in saved_runner
-        assert "os.path.join(run_dir, 'case_facts.txt')" in saved_runner
+        # A legacy case_facts.txt token normalises to the seeded run_dir/case_facts.md.
+        assert "os.path.join(run_dir, 'brainstorm_creative_*.md')" in saved_runner
+        assert "os.path.join(run_dir, 'case_facts.md')" in saved_runner
+        assert "os.path.join(run_dir, 'case_facts.txt')" not in saved_runner
         assert "'brainstorm_creative'" in saved_runner
 
 

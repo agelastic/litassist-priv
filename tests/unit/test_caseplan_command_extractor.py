@@ -71,10 +71,14 @@ class TestTokenRewriting:
                 ]
             )
         )
-        assert "os.path.join(run_dir, 'lookup_*.txt')" in script
+        # Legacy .txt output globs normalise to .md (producers always write .md).
+        assert "os.path.join(run_dir, 'lookup_*.md')" in script
         assert "'outputs/lookup_*.txt'" not in script
 
     def test_strategies_and_case_facts_space_form_routed(self):
+        # A legacy case_facts.txt token must route to the seeded run_dir/case_facts.md
+        # (the runner only ever seeds .md); routing it to run_dir/case_facts.txt would
+        # point at a file the runner never creates and crash the step.
         script, _, _ = _script(
             _join(
                 [
@@ -85,8 +89,9 @@ class TestTokenRewriting:
                 ]
             )
         )
-        assert "os.path.join(run_dir, 'brainstorm_research_*.txt')" in script
-        assert "os.path.join(run_dir, 'case_facts.txt')" in script
+        assert "os.path.join(run_dir, 'brainstorm_research_*.md')" in script
+        assert "os.path.join(run_dir, 'case_facts.md')" in script
+        assert "os.path.join(run_dir, 'case_facts.txt')" not in script
 
     def test_equals_form_path_option_routed(self):
         script, _, _ = _script(
@@ -99,7 +104,7 @@ class TestTokenRewriting:
                 ]
             )
         )
-        assert "'--research=' + os.path.join(run_dir, 'lookup_*.txt')" in script
+        assert "'--research=' + os.path.join(run_dir, 'lookup_*.md')" in script
 
     def test_output_prefix_not_rewritten_space_form(self):
         script, _, _ = _script(
@@ -138,7 +143,7 @@ class TestTokenRewriting:
                 ]
             )
         )
-        assert "os.path.join(run_dir, 'lookup_x.txt')" in script
+        assert "os.path.join(run_dir, 'lookup_x.md')" in script
 
     def test_source_doc_input_stays_literal(self):
         script, _, _ = _script(
