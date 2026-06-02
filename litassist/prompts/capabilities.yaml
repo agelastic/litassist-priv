@@ -294,7 +294,7 @@ capabilities:
     3. Synthesis is Key: Multiple counselnotes passes with different document combinations
     4. Dual Brainstorm Approach: Always run with AND without research for perspective
     5. One strategy per outcome: Generate separate tactical plans for each objective
-    6. Quote glob patterns: Always use quotes around patterns like 'outputs/*.md'
+    6. Quote glob patterns AND multi-word values: quote glob patterns like 'outputs/*.md', and wrap any multi-word option value or instruction in double quotes (--outcome "...", --context "...", --guidance "...", draft "...") - generated commands are tokenised with shell-style splitting.
     7. Build Toward Memoranda: Every phase should contribute to final feasibility assessment
     8. Iterative Enhancement: Fold digest/extractfacts discoveries into case_facts.md with updatefacts
     9. Verify High-Stakes Documents: Always use verify for court documents and memoranda
