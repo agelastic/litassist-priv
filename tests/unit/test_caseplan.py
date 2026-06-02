@@ -368,19 +368,17 @@ class TestCaseplanRunner:
         assert 'python "' in result.output
         assert "bash " not in result.output
 
-        # 2nd save is the runner, written header-less so it stays valid Python.
+        # 2nd save is the runner, saved via extension=".py" and header-less so it
+        # stays valid Python. Token routing into run_dir (outputs globs + case_facts
+        # normalised to .md, --output kept literal) is covered exhaustively by
+        # test_caseplan_command_extractor.py::TestTokenRewriting; here we only pin
+        # the command-level wiring that those unit tests cannot see.
         commands_call = mock_save_output.call_args_list[1]
         assert commands_call.kwargs.get("include_header") is False
+        assert commands_call.kwargs.get("extension") == ".py"
         saved_runner = commands_call.args[1]
         compile(saved_runner, "<runner>", "exec")
         assert saved_runner.startswith("#!/usr/bin/env python3")
-        assert 'os.environ["LITASSIST_OUTPUT_DIR"] = run_dir' in saved_runner
-        # consumer glob + case_facts rewritten to the run dir; --output prefix not.
-        # A legacy case_facts.txt token normalises to the seeded run_dir/case_facts.md.
-        assert "os.path.join(run_dir, 'brainstorm_creative_*.md')" in saved_runner
-        assert "os.path.join(run_dir, 'case_facts.md')" in saved_runner
-        assert "os.path.join(run_dir, 'case_facts.txt')" not in saved_runner
-        assert "'brainstorm_creative'" in saved_runner
 
 
 def _user_prompt(mock_client):
