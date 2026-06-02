@@ -96,6 +96,31 @@ _No critical bugs identified - all items below verified as already implemented o
 - ~~Large file handling~~ - MemoryError is caught and handled gracefully
 - ~~Input validation~~ - Click validates file existence automatically at entry points
 
+### Citation content retrieval: authorised-report citations [FOLLOW-UP]
+Verified-real authorised-report citations (e.g. `(1999) 201 CLR 1`) fail the
+post-fetch content retrieval in `fetch_citation_context` (`litassist/citation_context.py`),
+so `verify --soundness`/`--reasoning` run with no document context for them
+(soundness effectively runs blind on those citations). The misleading failure
+reason was fixed (`_search_and_validate` now preserves the fetched URL so the
+reason reads "Document fetch or content validation failed" instead of "URL not
+found - CSE returned no results"). Making these citations actually retrievable is
+deferred:
+- **C1 (retrieval) - downgraded, not a standalone fix.** Landing on the AustLII
+  case page (whose header carries parallel cites for `_check_header_parallel_citations`
+  to validate) is impossible from a CLR-only cite: `construct_austlii_url`
+  (`litassist/citation/austlii.py:28`) requires medium-neutral `[YYYY] COURT N`,
+  and `normalize_citation` leaves the CLR string unchanged, so the CSE query has
+  no name/neutral cite to hit.
+- **C2 (the real lever) - add a `traditional cite -> medium-neutral cite`
+  primitive.** Source the neutral cite from, cheapest first: (1) draft
+  co-occurrence (drafts usually print both forms together, e.g.
+  `... (1999) 201 CLR 1; [1999] HCA 66`) - free, no fetch, prefer this; or
+  (2) AustLII LawCite citator via a constructible query URL
+  (`https://www.austlii.edu.au/cgi-bin/LawCite?cit=...`) - one extra fetch plus a
+  new HTML parser (AustLII is permitted; only jade.io is off-limits). Once the
+  neutral cite is known, the existing AustLII fetch + parallel-citation validation
+  already work. Decide C2 option 1 vs 2 deliberately before building.
+
 ### Next Steps
 1. Review and prioritize remaining TODO items for next sprint
 2. Consider implementing circuit-breaker enhancement for API retries

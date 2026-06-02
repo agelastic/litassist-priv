@@ -135,6 +135,10 @@ def _search_and_validate(
         if "items" not in results:
             return None, False, None
 
+        # Track the last link we actually fetch-attempted, so the caller can tell
+        # "CSE returned nothing" apart from "fetched a document but it failed
+        # validation". Stays None if no result passed the filter.
+        attempted_link = None
         # Process top 3 results
         for result_rank, item in enumerate(results["items"][:3], start=1):
             link = item.get("link", "")
@@ -144,6 +148,7 @@ def _search_and_validate(
                 continue
 
             # Try to fetch and validate
+            attempted_link = link
             content = _try_fetch_and_validate(link, citation)
             if content:
                 # Success - log and return
@@ -168,7 +173,10 @@ def _search_and_validate(
         if apply_rate_limit:
             _last_austlii_completion = time.time()
 
-        return None, False, None
+        # If we fetched a document (attempted_link set) it just failed validation;
+        # return the URL so the caller reports a validation failure, not a missing
+        # URL. attempted_link is None when no result passed the filter.
+        return attempted_link, False, None
 
     except Exception as e:
         save_log(
@@ -293,7 +301,7 @@ def fetch_citation_context(citations: List[str]) -> tuple[Dict[str, str], List[t
             if is_legislation:
                 # STEP 1: Try PDF search FIRST (most likely to have complete document)
                 if cse_comprehensive:
-                    url, content_valid, content = _search_and_validate(
+                    found, content_valid, content = _search_and_validate(
                         service,
                         cse_comprehensive,
                         f"{citation} PDF",
@@ -303,10 +311,13 @@ def fetch_citation_context(citations: List[str]) -> tuple[Dict[str, str], List[t
                         "Validated PDF (rank {rank}/3): {url}",
                         apply_rate_limit=False,
                     )
+                    # Preserve any URL actually fetched; a later empty fallback
+                    # search returns None and must not erase it.
+                    url = found or url
 
                 # STEP 2: Try AustLII if no valid content found yet
                 if not content_valid and cse_austlii:
-                    url, content_valid, content = _search_and_validate(
+                    found, content_valid, content = _search_and_validate(
                         service,
                         cse_austlii,
                         normalize_citation(citation),
@@ -316,10 +327,11 @@ def fetch_citation_context(citations: List[str]) -> tuple[Dict[str, str], List[t
                         "Validated AustLII legis (rank {rank}/3): {url}",
                         apply_rate_limit=True,
                     )
+                    url = found or url
 
                 # STEP 3: Try plain comprehensive CSE as final fallback
                 if not content_valid and cse_comprehensive:
-                    url, content_valid, content = _search_and_validate(
+                    found, content_valid, content = _search_and_validate(
                         service,
                         cse_comprehensive,
                         normalize_citation(citation),
@@ -329,10 +341,11 @@ def fetch_citation_context(citations: List[str]) -> tuple[Dict[str, str], List[t
                         "Validated comprehensive legis (rank {rank}/3): {url}",
                         apply_rate_limit=False,
                     )
+                    url = found or url
             else:
                 # Case law - try AustLII FIRST
                 if cse_austlii:
-                    url, content_valid, content = _search_and_validate(
+                    found, content_valid, content = _search_and_validate(
                         service,
                         cse_austlii,
                         normalize_citation(citation),
@@ -342,10 +355,11 @@ def fetch_citation_context(citations: List[str]) -> tuple[Dict[str, str], List[t
                         "Validated AustLII case (rank {rank}/3): {url}",
                         apply_rate_limit=True,
                     )
+                    url = found or url
 
                 # Fallback to comprehensive for case law
                 if not content_valid and cse_comprehensive:
-                    url, content_valid, content = _search_and_validate(
+                    found, content_valid, content = _search_and_validate(
                         service,
                         cse_comprehensive,
                         normalize_citation(citation),
@@ -355,6 +369,7 @@ def fetch_citation_context(citations: List[str]) -> tuple[Dict[str, str], List[t
                         "Validated comprehensive case (rank {rank}/3): {url}",
                         apply_rate_limit=False,
                     )
+                    url = found or url
 
         # Content already fetched and validated in CSE loops above
         # If still no valid content, try direct AustLII URL construction as final fallback (case law only)
