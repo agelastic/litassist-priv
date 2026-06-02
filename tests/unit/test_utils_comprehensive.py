@@ -564,15 +564,21 @@ class TestContentVerification:
         mock_run_verification_chain.assert_not_called()
 
     def test_verify_content_if_needed_llm_failure(self):
-        """Test content verification with LLM failure."""
+        """An LLM verify failure must propagate.
+
+        Uses a non-high-risk command ("lookup") so verification goes through the
+        passed client's verify() - the path the mock targets. High-risk commands
+        (extractfacts/strategy/draft) route to run_verification_chain instead and
+        ignore the passed client, so they would not exercise this mock.
+        """
         mock_client = MagicMock()
         mock_client.should_auto_verify.return_value = False
-        mock_client.verify_with_level.side_effect = Exception("LLM API error")
+        mock_client.verify.side_effect = Exception("LLM API error")
 
         content = "Legal analysis content"
 
         with pytest.raises(Exception):
-            verify_content_if_needed(mock_client, content, "strategy", verify_flag=True)
+            verify_content_if_needed(mock_client, content, "lookup", verify_flag=True)
 
     @patch("litassist.verification_chain.run_verification_chain")
     def test_verify_content_if_needed_with_corrections(
