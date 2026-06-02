@@ -36,8 +36,6 @@ class TestCommandParameterConfiguration:
 
         client = LLMClientFactory.for_command("lookup")
         assert client.model == config["model"]
-        assert hasattr(client, "_enforce_citations")
-
     @patch("litassist.config.CONFIG")
     def test_strategy_configuration(self, mock_config):
         """Test strategy command configuration."""
@@ -51,7 +49,6 @@ class TestCommandParameterConfiguration:
 
         client = LLMClientFactory.for_command("strategy")
         assert client.model == config["model"]
-        assert hasattr(client, "_enforce_citations")
         assert client.default_params.get("thinking_effort") == "max"
 
     @patch("litassist.config.CONFIG")

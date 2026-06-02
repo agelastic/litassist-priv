@@ -379,6 +379,11 @@ class TestCaseplanRunner:
         saved_runner = commands_call.args[1]
         compile(saved_runner, "<runner>", "exec")
         assert saved_runner.startswith("#!/usr/bin/env python3")
+        # Both plan commands actually flowed into the runner as run([...]) calls
+        # (integration: command -> extract -> save); a scaffold-only runner would
+        # fail this. Routing detail of each token is unit-tested separately.
+        assert saved_runner.count("run([") == 2
+        assert "'brainstorm'" in saved_runner and "'strategy'" in saved_runner
 
 
 def _user_prompt(mock_client):
