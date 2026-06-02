@@ -584,6 +584,23 @@ class TestStrategyFileIntegration:
         assert result["unorthodox_count"] == 0
         assert result["most_likely_count"] == 0
 
+    def test_parse_strategies_file_counts_bold_most_likely(self):
+        """The analysis prompt emits most-likely entries as '**N. Title**'
+        (strategies.yaml), so the parser must count those bold-numbered items -
+        not just bare '1.' lines."""
+        from litassist.utils.core import parse_strategies_file
+
+        content = (
+            "## MOST LIKELY TO SUCCEED\n"
+            "**1. Alpha**\nJustification: a\n"
+            "**2. Beta**\nJustification: b\n"
+            "**3. Gamma**\nJustification: c\n"
+            "**4. Delta**\nJustification: d\n"
+            "**5. Epsilon**\nJustification: e\n"
+        )
+
+        assert parse_strategies_file(content)["most_likely_count"] == 5
+
     def test_parse_strategies_files_merges_counts_and_labels(self):
         """Multiple brainstorm sets: counts SUM, content joined under labels."""
         from litassist.utils.core import parse_strategies_files

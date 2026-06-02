@@ -197,8 +197,10 @@ def parse_strategies_file(strategies_text: str) -> dict:
     )
     if likely_match:
         likely_text = likely_match.group(1)
+        # The analysis prompt formats each entry as "**N. Title**" (bold), so allow
+        # an optional leading "**" before the number; bare "N." still matches too.
         parsed["most_likely_count"] = len(
-            re.findall(r"^\d+\.", likely_text, re.MULTILINE)
+            re.findall(r"^(?:\*\*)?\d+\.", likely_text, re.MULTILINE)
         )
 
     return parsed
