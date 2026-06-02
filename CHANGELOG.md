@@ -176,6 +176,22 @@ Historical dated sections preserve the model names that were current when those 
 
 ### Fixed
 
+#### June 2026: brainstorm/strategy pipeline fixes
+- `strategy` no longer fails with HTTP 400 `reasoning.effort: Invalid option`. Its
+  `thinking_effort: "max"` on `anthropic/claude-opus-4.7` was mapped to
+  `reasoning.effort: "max"`, but OpenRouter's effort enum has no `max` tier (ceiling
+  is `xhigh`); `convert_thinking_effort` now maps `max -> xhigh` for the Opus 4.7/4.8
+  family, matching the GPT-5.5 branch.
+- `brainstorm`/`strategy` "most likely to succeed" count is no longer always 0. The
+  analysis prompt formats each entry as `**N. Title**` (bold) but
+  `parse_strategies_file` counted `^\d+\.`; the most-likely regex now also matches
+  the bold-numbered form.
+- `brainstorm --verify` and `verify` now tolerate light formatting of the
+  `## Verified and Corrected Document` header (bold, `&`, case, `###`, trailing
+  colon) instead of discarding the verifier's corrections. The parse-and-fallback
+  logic is now a single shared `extract_verified_document()` in `utils/core.py` used
+  by both commands (it was duplicated, which let the two copies drift).
+
 #### May 2026: Packaging and cross-cutting trust/cache/format fixes
 - `setup.py` `package_data` now includes `litassist/prompts/*.yaml` and `litassist/llm/*.yaml`; matching `recursive-include` lines added to `MANIFEST.in`. Installed wheels previously omitted these runtime assets and commands failed with missing prompt-key errors.
 - `MANIFEST.in` now ships `requirements.txt` in the sdist. The fallback list in `setup.py::read_requirements` is removed (raises with a clear error if the file is missing) so installed packages cannot silently drift from the in-repo dependency manifest.

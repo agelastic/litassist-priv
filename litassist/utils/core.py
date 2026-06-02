@@ -134,6 +134,32 @@ def show_command_completion(
     click.echo(f"\n{tip_msg}")
 
 
+# Verifier replies place the corrected document under this header. The match is
+# deliberately tolerant of light formatting drift (optional #/##/### or **bold**,
+# "and"/"&", case, trailing colon) because verifier models vary, while still
+# requiring the exact phrase on its own line so a stray mention never mis-triggers.
+_VERIFIED_DOCUMENT_HEADER = re.compile(
+    r"^\s*#{0,3}\s*\*{0,2}\s*Verified\s+(?:and|&)\s+Corrected\s+Document\s*\*{0,2}\s*:?\s*$",
+    re.IGNORECASE | re.MULTILINE,
+)
+
+
+def extract_verified_document(text: str, fallback: str) -> tuple[str, bool]:
+    """Pull the corrected document out of a verifier reply.
+
+    Verifier prompts ask the model to return the corrected text under a
+    "## Verified and Corrected Document" header. Returns (document_body, True)
+    when that header is found, else (fallback, False) so callers PRESERVE the
+    pre-verification content rather than overwriting it with the verifier's
+    freeform reply. The header match tolerates light formatting variants (see
+    ``_VERIFIED_DOCUMENT_HEADER``) but stays line-anchored to avoid mis-extraction.
+    """
+    match = _VERIFIED_DOCUMENT_HEADER.search(text)
+    if not match:
+        return fallback, False
+    return text[match.end():].strip(), True
+
+
 def parse_strategies_file(strategies_text: str) -> dict:
     """
     Parse the strategies.txt file to extract basic counts and metadata.

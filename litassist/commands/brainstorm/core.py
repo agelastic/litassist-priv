@@ -16,6 +16,7 @@ from litassist.utils.file_ops import (
 )
 from litassist.timing import timed
 from litassist.utils.core import (
+    extract_verified_document,
     parse_strategies_file,
     validate_side_area_combination,
 )
@@ -45,22 +46,6 @@ from litassist.utils.file_ops import (
 from .orthodox_generator import generate_orthodox_strategies
 from .unorthodox_generator import generate_unorthodox_strategies
 from .analysis_generator import generate_analysis
-
-
-def _extract_verified_document(correction: str, original: str) -> tuple[str, bool]:
-    """Return (content, parsed).
-
-    If `correction` contains the expected `## Verified and Corrected Document`
-    header, return the document body and True. Otherwise return `original`
-    unchanged and False - preserving the pre-verification brainstorm output
-    rather than silently overwriting it with the verifier's freeform text.
-    """
-    match = re.search(
-        r"## Verified and Corrected Document\s*\n(.*)", correction, re.DOTALL
-    )
-    if match:
-        return match.group(1).strip(), True
-    return original, False
 
 
 def _extract_strategies(content: str, strategy_type: str) -> list[str]:
@@ -680,7 +665,7 @@ def brainstorm(facts, side, area, research, verify, output):
         # than silently replacing it with the verifier's freeform output -
         # the previous code overwrote combined_content with `correction`
         # while telling the user it was "using original output".
-        combined_content, parsed_ok = _extract_verified_document(
+        combined_content, parsed_ok = extract_verified_document(
             correction, combined_content
         )
 
