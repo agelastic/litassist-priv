@@ -73,7 +73,7 @@ def strategy(case_facts, outcome, strategies, heavy, noverify, output):
 
     Args:
         case_facts: Path to case facts file following the 10-heading structure.
-            Optional - if omitted, the latest case_facts*.txt in the current
+            Optional - if omitted, the latest case_facts*.md in the current
             directory is used.
         outcome: Desired legal outcome (single sentence description)
         strategies: Optional strategies file from brainstorm command

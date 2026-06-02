@@ -74,3 +74,29 @@ def test_default_includes_header(tmp_path, monkeypatch):
     assert written != "the body"
     assert "Timestamp:" in written
     assert "the body" in written
+
+
+def test_default_extension_is_md(tmp_path, monkeypatch):
+    # Command outputs are markdown-formatted prose, so the default extension is .md.
+    monkeypatch.chdir(tmp_path)
+    monkeypatch.delenv("LITASSIST_OUTPUT_DIR", raising=False)
+
+    path = save_command_output("digest", "content", "")
+
+    assert path.endswith(".md")
+
+
+def test_extension_override_for_python_runner(tmp_path, monkeypatch):
+    # The caseplan runner is executable Python, saved header-less with a .py name.
+    monkeypatch.chdir(tmp_path)
+    monkeypatch.delenv("LITASSIST_OUTPUT_DIR", raising=False)
+
+    path = save_command_output(
+        "caseplan_commands",
+        "print('hi')\n",
+        "",
+        include_header=False,
+        extension=".py",
+    )
+
+    assert path.endswith(".py")

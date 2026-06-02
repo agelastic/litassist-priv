@@ -1,6 +1,6 @@
 # LitAssist Feature Roadmap
 
-Last updated: 29/05/2026
+Last updated: 02/06/2026
 **Status:** Strategic planning; roadmap items are aspirational unless marked DONE, PARTIALLY SUPERSEDED, or already implemented elsewhere
 **Confidence:** 0.88
 
@@ -844,7 +844,7 @@ standard full-plan model, and ship `--tactical` together with `--matter`.
 - Commands:
   - `la adversary --input submission.md --matter LITIGATION-001`
   - `la adversary --input submission.md --opponent "Counsel A"` (uses profile)
-  - `la draft --input case_facts.txt --adversary-test` (integrated mode)
+  - `la draft --input case_facts.md --adversary-test` (integrated mode)
 - LLM: Claude Sonnet 4.6 (adversarial reasoning) + GPT-5.5 (weakness identification)
 - Output: Adversary response + weakness report + strengthening recommendations
 
@@ -1059,6 +1059,6 @@ la profile --create "Agency A" --type government
 
 ---
 
-Last updated: 22/05/2026
+Last updated: 02/06/2026
 **Status:** Strategic planning; roadmap items are aspirational unless marked DONE, PARTIALLY SUPERSEDED, or already implemented elsewhere
 **Next Review:** After Phase 1 completion

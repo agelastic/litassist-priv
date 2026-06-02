@@ -43,7 +43,7 @@ from litassist.prompts import PROMPTS
     default=None,
     help=(
         "Existing case facts file to update. Default: the latest "
-        "case_facts*.txt in the current directory; created from scratch if none."
+        "case_facts*.md in the current directory; created from scratch if none."
     ),
 )
 @timed
@@ -56,9 +56,9 @@ def updatefacts(file, facts):
     none exists - under the ten standard headings, with a final Notes section
     for anything that does not fit. Always writes a fresh, auto-discoverable
     case_facts_<timestamp>.txt into the current directory AND (over)writes a
-    stable case_facts.txt with the merged result so scripts referencing the
+    stable case_facts.md with the merged result so scripts referencing the
     literal name resolve. Source files are never modified, but an existing
-    case_facts.txt in the current directory is replaced by the merged output
+    case_facts.md in the current directory is replaced by the merged output
     on every run.
 
     Args:
@@ -86,7 +86,7 @@ def updatefacts(file, facts):
     budget = LLMClientFactory.get_input_budget_for_command("updatefacts")
 
     # Resolve the base case-facts file: explicit --facts, else the latest
-    # case_facts*.txt in the current directory, else create from scratch.
+    # case_facts*.md in the current directory, else create from scratch.
     if facts:
         base_path = facts
     else:
@@ -182,7 +182,7 @@ def updatefacts(file, facts):
 
     # Write case_facts into the launch directory so resolve_case_facts_file picks
     # it up automatically - UNLESS a caseplan runner set LITASSIST_OUTPUT_DIR, in
-    # which case BOTH the timestamped history file and the stable case_facts.txt
+    # which case BOTH the timestamped history file and the stable case_facts.md
     # go into that per-run dir (where the env-aware resolver also looks), keeping
     # the run self-contained and the cwd's case_facts untouched.
     facts_dir = os.environ.get("LITASSIST_OUTPUT_DIR") or os.getcwd()
@@ -199,14 +199,14 @@ def updatefacts(file, facts):
         output_dir=facts_dir,
     )
 
-    # Also refresh a stable ./case_facts.txt with the merged facts. The timestamped
+    # Also refresh a stable ./case_facts.md with the merged facts. The timestamped
     # copy above keeps history and feeds resolve_case_facts_file, but downstream
     # scripts (and the caseplan planner's examples) frequently reference the literal
-    # 'case_facts.txt'; without this they fail with "File not found: case_facts.txt".
+    # 'case_facts.md'; without this they fail with "File not found: case_facts.md".
     # This deliberately writes the raw merged body (no metadata header) - it is the
     # clean canonical facts file - and unconditionally overwrites any existing
-    # case_facts.txt with the merge just produced (documented in the docstring).
-    stable_path = os.path.join(facts_dir, "case_facts.txt")
+    # case_facts.md with the merge just produced (documented in the docstring).
+    stable_path = os.path.join(facts_dir, "case_facts.md")
     with open(stable_path, "w", encoding="utf-8") as fh:
         fh.write(combined)
     click.echo(info_message(f"Refreshed {stable_path}"))

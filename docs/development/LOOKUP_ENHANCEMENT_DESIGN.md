@@ -1,6 +1,6 @@
 # Lookup Command Enhancement Roadmap
 
-Last updated: 28/05/2026
+Last updated: 02/06/2026
 
 Source of truth: lookup command registration is in `litassist/commands/__init__.py`; lookup model assignment is in `litassist/llm/model_configs.yaml`; active fetcher implementation is in `litassist/commands/lookup/fetchers.py`.
 
@@ -115,7 +115,7 @@ Focus on authorities from {min_year} onwards. Older cases may be cited only if t
 
 ```bash
 litassist lookup "bail exceptional circumstances NSW" --extract citations --output bail_cases
-litassist verify outputs/bail_cases_citations_*.txt
+litassist verify outputs/bail_cases_citations_*.md
 ```
 
 **What needs to happen:**

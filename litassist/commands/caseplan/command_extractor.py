@@ -58,17 +58,17 @@ def _path_expr(token: str) -> str:
     """Python expression for one path token, isolating run-dir paths.
 
     Strips a leading ``./``. An ``outputs/<rest>`` token or a ``case_facts...``
-    ``.txt`` file/glob is rewritten to ``os.path.join(run_dir, ...)`` so the runner
-    reads/writes inside the per-run dir; anything else (source documents, prose,
-    bare words) stays a cwd-relative literal. Classification is by token SHAPE,
-    not by which option precedes it: the prompt only ever emits ``outputs/`` or
-    ``case_facts*.txt`` shapes where a run-dir path belongs, so a prose value (an
-    --outcome sentence, a --context phrase) is never path-shaped in practice.
+    ``.txt``/``.md`` file/glob is rewritten to ``os.path.join(run_dir, ...)`` so the
+    runner reads/writes inside the per-run dir; anything else (source documents,
+    prose, bare words) stays a cwd-relative literal. Classification is by token
+    SHAPE, not by which option precedes it: the prompt only ever emits ``outputs/``
+    or ``case_facts*.{txt,md}`` shapes where a run-dir path belongs, so a prose
+    value (an --outcome sentence, a --context phrase) is never path-shaped.
     """
     norm = token[2:] if token.startswith("./") else token
     if norm.startswith("outputs/"):
         return f"os.path.join(run_dir, {norm[len('outputs/'):]!r})"
-    if norm.startswith("case_facts") and norm.endswith(".txt"):
+    if norm.startswith("case_facts") and norm.endswith((".txt", ".md")):
         return f"os.path.join(run_dir, {norm!r})"
     return repr(token)
 
@@ -135,8 +135,9 @@ def extract_cli_commands(
     Args:
         plan_content: The LLM plan markdown to extract commands from.
         seed_facts: The case-facts file caseplan was given; the runner copies it
-            into the run dir as the baseline case_facts (the exact facts the plan
-            was built for), falling back to a stable ./case_facts.txt.
+            into the run dir as the baseline case_facts.md (the exact facts the plan
+            was built for), falling back to a stable ./case_facts.md (or legacy
+            ./case_facts.txt).
 
     Returns a tuple of:
         - the formatted Python runner (always at least the scaffold),
@@ -161,10 +162,11 @@ def extract_cli_commands(
         'run_dir = os.path.join("outputs", "run_" + datetime.now().strftime("%Y%m%d_%H%M%S_%f"))',
         "os.makedirs(run_dir)",
         "# Seed the baseline case_facts: the exact file caseplan was given, else a",
-        "# stable ./case_facts.txt. The cwd source is copied, never moved/mutated.",
-        f"_seed = next((p for p in [{seed_facts!r}, \"case_facts.txt\"] if p and os.path.exists(p)), \"\")",
+        "# stable ./case_facts.md (or legacy ./case_facts.txt). The cwd source is",
+        "# copied, never moved/mutated, and always lands as case_facts.md.",
+        f"_seed = next((p for p in [{seed_facts!r}, \"case_facts.md\", \"case_facts.txt\"] if p and os.path.exists(p)), \"\")",
         "if _seed:",
-        '    shutil.copy(_seed, os.path.join(run_dir, "case_facts.txt"))',
+        '    shutil.copy(_seed, os.path.join(run_dir, "case_facts.md"))',
         'os.environ["LITASSIST_OUTPUT_DIR"] = run_dir',
         'print("Outputs for this run -> " + run_dir)',
         "",

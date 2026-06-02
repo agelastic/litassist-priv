@@ -181,6 +181,7 @@ def generate_full_plan(
             "" if output else case_facts_name,
             metadata={"Type": "Executable Commands", "Budget": budget},
             include_header=False,
+            extension=".py",
         )
         if rejected_commands:
             click.echo(

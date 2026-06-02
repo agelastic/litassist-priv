@@ -1,6 +1,6 @@
 # LitAssist Architecture
 
-Last updated: 01/06/2026
+Last updated: 02/06/2026
 
 ## Overview
 LitAssist is a Python-based CLI tool for AI-powered litigation support in Australian law. It uses LLMs (via OpenRouter) and external search (Google CSE) to assist with legal research, document analysis, strategy generation, and drafting.
@@ -105,4 +105,4 @@ The fetcher in `litassist/commands/lookup/fetchers.py` runs every URL through a 
 4. **Verification (Optional)**: If enabled, the CoVe pipeline validates generated content against authoritative sources.
 5. **Output**: Results saved to `outputs/` with timestamped filenames; audit logs saved to `logs/`.
 
-`caseplan` emits a **Python runner** (not a bash script) so that each EXECUTION is fully isolated. `caseplan/command_extractor.py` builds a runner that, when run, creates a fresh `outputs/run_<timestamp>/` directory, sets `LITASSIST_OUTPUT_DIR` (inherited by each `subprocess.run(args, shell=False)` step), and rewrites every `outputs/...` and `case_facts` argument to `os.path.join(run_dir, ...)`. `save_command_output` (the single output write sink), `updatefacts`, and `resolve_case_facts_file` all honour `LITASSIST_OUTPUT_DIR`, so a run's outputs and case_facts are written and read inside its own directory; a supplied cwd `case_facts*.txt` is copied in as a seed and the cwd original is never mutated. These hooks are env-gated, so normal single-command use is unaffected, and retries (re-running the same runner) get a brand-new directory rather than mixing with the prior attempt.
+`caseplan` emits a **Python runner** (not a bash script) so that each EXECUTION is fully isolated. `caseplan/command_extractor.py` builds a runner that, when run, creates a fresh `outputs/run_<timestamp>/` directory, sets `LITASSIST_OUTPUT_DIR` (inherited by each `subprocess.run(args, shell=False)` step), and rewrites every `outputs/...` and `case_facts` argument to `os.path.join(run_dir, ...)`. `save_command_output` (the single output write sink), `updatefacts`, and `resolve_case_facts_file` all honour `LITASSIST_OUTPUT_DIR`, so a run's outputs and case_facts are written and read inside its own directory; a supplied cwd `case_facts*.md` is copied in as a seed and the cwd original is never mutated. These hooks are env-gated, so normal single-command use is unaffected, and retries (re-running the same runner) get a brand-new directory rather than mixing with the prior attempt.

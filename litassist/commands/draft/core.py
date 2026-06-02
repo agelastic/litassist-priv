@@ -56,18 +56,18 @@ def draft(ctx, documents, query, heavy, noverify, output):
 
     Concatenates every provided document into one context payload (PDFs and
     text files alike) and sends a single LLM call. Accepts multiple documents
-    to combine knowledge from different sources (e.g., case_facts.txt and
+    to combine knowledge from different sources (e.g., case_facts.md and
     strategies.txt).
 
     Args:
         documents: One or more paths to documents (PDF or text files) to use as
                   knowledge base. Optional - if none are given, the latest
-                  case_facts*.txt in the current directory is used.
+                  case_facts*.md in the current directory is used.
                   Examples:
-                  - litassist draft "query"   # uses latest case_facts*.txt
-                  - litassist draft case_facts.txt "query"
-                  - litassist draft case_facts.txt strategies.txt "query"
-                  - litassist draft bundle.pdf case_facts.txt "query"
+                  - litassist draft "query"   # uses latest case_facts*.md
+                  - litassist draft case_facts.md "query"
+                  - litassist draft case_facts.md strategies.txt "query"
+                  - litassist draft bundle.pdf case_facts.md "query"
         query: The specific legal topic or argument to draft.
 
     Raises:
@@ -86,7 +86,7 @@ def draft(ctx, documents, query, heavy, noverify, output):
     except Exception:
         pass
 
-    # Auto-select the latest case_facts*.txt when no documents are given.
+    # Auto-select the latest case_facts*.md when no documents are given.
     if not documents:
         documents = (resolve_case_facts_file(),)
 

@@ -33,7 +33,7 @@ class TestRunnerScaffold:
         assert 'os.environ["LITASSIST_OUTPUT_DIR"] = run_dir' in script
         # seeds a baseline case_facts (the cwd source is copied, not mutated)
         assert "_seed = next(" in script
-        assert 'shutil.copy(_seed, os.path.join(run_dir, "case_facts.txt"))' in script
+        assert 'shutil.copy(_seed, os.path.join(run_dir, "case_facts.md"))' in script
         # runs steps without a shell -> metacharacters stay inert
         assert "subprocess.run(args)" in script
         assert "shell=True" not in script

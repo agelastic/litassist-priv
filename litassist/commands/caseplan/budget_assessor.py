@@ -154,7 +154,7 @@ def assess_budget(
     click.echo(
         f"\n{tip_message('To generate full plan, run again with recommended budget:')}"
     )
-    click.echo("   e.g., litassist caseplan case_facts.txt --budget standard")
+    click.echo("   e.g., litassist caseplan case_facts.md --budget standard")
 
     try:
         log_task_event(

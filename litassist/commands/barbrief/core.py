@@ -32,14 +32,14 @@ from .brief_generator import generate_brief, verify_citations_if_requested
     multiple=True,
     type=click.Path(),  # Remove exists=True since we check in callback
     callback=expand_glob_patterns,
-    help="Brainstormed strategies files. Supports glob patterns. Use: --strategies 'outputs/brainstorm_*.txt'",
+    help="Brainstormed strategies files. Supports glob patterns. Use: --strategies 'outputs/brainstorm_*.md'",
 )
 @click.option(
     "--research",
     multiple=True,
     type=click.Path(),
     callback=expand_glob_patterns,
-    help="Lookup/research reports. Supports glob patterns. Use: --research 'outputs/lookup_*.txt'",
+    help="Lookup/research reports. Supports glob patterns. Use: --research 'outputs/lookup_*.md'",
 )
 @click.option(
     "--documents",
@@ -87,7 +87,7 @@ def barbrief(
 
     Args:
         case_facts: Path to structured case facts (10-heading format). Optional -
-            if omitted, the latest case_facts*.txt in the current directory is used.
+            if omitted, the latest case_facts*.md in the current directory is used.
         strategies: Optional path to brainstormed strategies
         research: Optional research/lookup reports (multiple allowed)
         documents: Optional supporting documents (multiple allowed)

@@ -70,7 +70,7 @@ class TestFileOperations:
         assert "test_command" in result
         assert "test_outcome" in result
         assert "20240101_120000" in result
-        assert result.endswith(".txt")
+        assert result.endswith(".md")
 
         # Verify file written
         mock_file.assert_called_once()

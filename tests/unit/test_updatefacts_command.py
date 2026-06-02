@@ -106,8 +106,8 @@ class TestUpdateFactsBasic:
 
             assert result.exit_code == 0, result.output
             assert mock_output.call_args.kwargs.get("output_dir") == "outputs/run_x"
-            assert os.path.exists("outputs/run_x/case_facts.txt")
-            assert not os.path.exists("case_facts.txt")
+            assert os.path.exists("outputs/run_x/case_facts.md")
+            assert not os.path.exists("case_facts.md")
 
     @patch("litassist.commands.updatefacts.core.show_command_completion")
     @patch("litassist.commands.updatefacts.core.save_log")
@@ -126,12 +126,12 @@ class TestUpdateFactsBasic:
         mock_output.return_value = "case_facts_x.txt"
 
         with self.runner.isolated_filesystem():
-            with open("existing_case_facts.txt", "w") as f:
+            with open("existing_case_facts.md", "w") as f:
                 f.write("old")
             with open("source.txt", "w") as f:
                 f.write("raw")
             result = self.runner.invoke(
-                updatefacts, ["source.txt", "--facts", "existing_case_facts.txt"]
+                updatefacts, ["source.txt", "--facts", "existing_case_facts.md"]
             )
 
         assert result.exit_code == 0, result.output
@@ -152,14 +152,14 @@ class TestUpdateFactsBasic:
         mock_output.return_value = "case_facts_x.txt"
 
         with self.runner.isolated_filesystem():
-            with open("case_facts.txt", "w") as f:
+            with open("case_facts.md", "w") as f:
                 f.write("old facts")
             with open("source.txt", "w") as f:
                 f.write("raw")
             result = self.runner.invoke(updatefacts, ["source.txt"])
 
         assert result.exit_code == 0, result.output
-        assert "Using case facts: case_facts.txt" in result.output
+        assert "Using case facts: case_facts.md" in result.output
 
     @patch("litassist.commands.updatefacts.core.show_command_completion")
     @patch("litassist.commands.updatefacts.core.save_log")
@@ -193,13 +193,13 @@ class TestUpdateFactsBasic:
     @patch("litassist.commands.updatefacts.core.save_command_output")
     @patch("litassist.commands.updatefacts.core.validate_file_size")
     @patch("litassist.commands.updatefacts.core.LLMClientFactory")
-    def test_writes_stable_case_facts_txt(
+    def test_writes_stable_case_facts_md(
         self, mock_factory, mock_validate, mock_output, mock_log, mock_show
     ):
-        # updatefacts must also refresh a stable ./case_facts.txt so that
+        # updatefacts must also refresh a stable ./case_facts.md so that
         # caseplan-generated scripts referencing the literal name (e.g.
-        # `brainstorm --facts case_facts.txt`) resolve instead of failing with
-        # "File not found: case_facts.txt".
+        # `brainstorm --facts case_facts.md`) resolve instead of failing with
+        # "File not found: case_facts.md".
         import os
 
         self._mock_factory(mock_factory)
@@ -211,10 +211,10 @@ class TestUpdateFactsBasic:
                 f.write("raw")
             result = self.runner.invoke(updatefacts, ["source.txt"])
             assert result.exit_code == 0, result.output
-            assert os.path.exists("case_facts.txt"), (
-                "updatefacts must write a stable case_facts.txt in the cwd"
+            assert os.path.exists("case_facts.md"), (
+                "updatefacts must write a stable case_facts.md in the cwd"
             )
-            with open("case_facts.txt", encoding="utf-8") as fh:
+            with open("case_facts.md", encoding="utf-8") as fh:
                 assert fh.read() == VALID_MERGED
 
     def test_help_and_errors(self):

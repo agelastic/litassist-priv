@@ -19,6 +19,7 @@ def save_command_output(
     output_dir: Optional[str] = None,
     suffix: str = "",
     include_header: bool = True,
+    extension: str = ".md",
 ) -> str:
     """
     Save command output with standard format.
@@ -31,6 +32,10 @@ def save_command_output(
         critique_sections: Optional list of (title, critique_content) tuples for AI critiques
         output_dir: Directory for output files (defaults to outputs/)
         suffix: Optional suffix to add to filename (e.g., '_raw' for pre-verification output)
+        extension: Output file extension including the leading dot. Defaults to
+            '.md' because command outputs are markdown-formatted prose; executable
+            artifacts (e.g. the caseplan Python runner) pass '.py' with
+            include_header=False.
 
     Returns:
         Path to the saved output file
@@ -59,13 +64,13 @@ def save_command_output(
     if slug:
         output_file = os.path.join(
             output_dir,
-            f"{command_name}_{slug}_{timestamp}_{sub_second}{suffix}.txt",
+            f"{command_name}_{slug}_{timestamp}_{sub_second}{suffix}{extension}",
         )
     else:
         # This handles both cases: empty query_or_slug, or a slug that becomes empty after sanitization.
         output_file = os.path.join(
             output_dir,
-            f"{command_name}_{timestamp}_{sub_second}{suffix}.txt",
+            f"{command_name}_{timestamp}_{sub_second}{suffix}{extension}",
         )
 
     with open(output_file, "w", encoding="utf-8") as f:

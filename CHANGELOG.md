@@ -1,6 +1,6 @@
 # Changelog
 
-Last updated: 01/06/2026
+Last updated: 02/06/2026
 
 All notable changes to LitAssist will be documented in this file.
 
@@ -28,6 +28,9 @@ Historical dated sections preserve the model names that were current when those 
 - `draft` preflight oversize handling: soft warn + hard fail derived from the model's actual context window plus a provider-error reframe pointing users at `litassist digest --mode summary <file>`.
 
 ### Changed
+
+#### June 2026: command outputs are Markdown (.md); caseplan runner is .py
+- All command outputs now save with a `.md` extension instead of `.txt` (they have always been Markdown-formatted prose). `save_command_output` gained an `extension` parameter (default `.md`); the caseplan executable runner passes `extension=".py"` so it is saved as a real Python file (`caseplan_commands_*.py`, run with `python <file>`). The canonical case-facts file is now `case_facts.md`: `updatefacts` writes the stable `case_facts.md` and the caseplan runner seeds/copies the baseline as `case_facts.md`. `resolve_case_facts_file()` globs BOTH `case_facts*.md` and legacy `case_facts*.txt`, so existing `.txt` case-facts folders keep auto-resolving (newest still wins by the same recency rule). The caseplan and capabilities prompts, all command help text, and the user/developer docs now reference `outputs/*.md` and `case_facts.md`. Source-document inputs are unchanged - litassist still reads `.pdf`, `.rtf`, `.txt`, and `.md`. Supersedes the `.txt` output/case-facts filenames shown in the earlier Unreleased entries below.
 
 #### June 2026: caseplan sends the real source-file inventory to the planner
 - The caseplan prompt previously sent case facts + budget + context but NO list of the documents actually present, so the model invented source-document filenames (e.g. `bank_statements.pdf`) and the generated runner then failed at `extractfacts`/`digest` on files that do not exist. caseplan now discovers the source documents in the working directory (top-level `pdf/rtf/txt` - the formats litassist can read; Word `.doc/.docx` are not listed - excluding `case_facts*.txt`), lists them for the user, and injects an `AVAILABLE SOURCE FILES` block into the prompt instructing the model to use those EXACT names, target the specific files each step needs by role (not blanket-glob unrelated documents), and mark `[MANUAL TASK]` for any needed-but-absent document. When run interactively, caseplan shows the inventory and asks to confirm before the paid full-plan call (`--yes`/`-y` skips the prompt; non-interactive runs proceed). Fully local - no file contents are read and no extra LLM call. The chosen file list is recorded in the caseplan audit log.

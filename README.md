@@ -1,6 +1,6 @@
 # LitAssist
 
-Last updated: 31/05/2026
+Last updated: 02/06/2026
 
 **LitAssist** is a comprehensive legal workflow automation tool designed for Australian legal practice. It provides a structured end-to-end pipeline for litigation support:
 
@@ -9,7 +9,7 @@ plan → research → analyse → structure → brainstorm → strategy → draf
 ```
 
 **Start with CasePlan:**  
-ALWAYS begin with the `caseplan` command, even with a skeleton `case_facts.txt` file. It generates a complete litigation roadmap with executable commands, helping you systematically build your case. The plan includes cost estimates, time projections, and explains every technical choice.
+ALWAYS begin with the `caseplan` command, even with a skeleton `case_facts.md` file. It generates a complete litigation roadmap with executable commands, helping you systematically build your case. The plan includes cost estimates, time projections, and explains every technical choice.
 
 ```mermaid
 graph TD
@@ -105,7 +105,7 @@ cp config.yaml ~/.config/litassist/
 
 # 5. Use from anywhere
 cd ~/any-directory/
-litassist caseplan case_facts.txt
+litassist caseplan case_facts.md
 ```
 
 **For detailed installation options, troubleshooting, and advanced setup, see the [Installation Guide](INSTALLATION.md)**
@@ -224,13 +224,13 @@ Global options:
 
 ```bash
 # Step 1: Get budget recommendation based on case complexity
-litassist caseplan case_facts.txt
+litassist caseplan case_facts.md
 
 # Step 2: Generate full plan with executable script
-litassist caseplan case_facts.txt --budget standard
+litassist caseplan case_facts.md --budget standard
 
 # Step 3: Execute the generated workflow
-bash caseplan_commands_standard_*.txt
+python caseplan_commands_standard_*.py
 ```
 
 **Key Features:**
@@ -240,7 +240,7 @@ bash caseplan_commands_standard_*.txt
   - `standard`: Typical litigation, 10-12 phases  
   - `comprehensive`: Complex cases, 15-25 phases
 - **Context**: Use `--context "breach of contract"` to guide analysis and prioritize relevant workflow phases
-- **Executable Output**: Creates bash script with all commands ready to run
+- **Executable Output**: Creates a Python runner with all commands ready to run
 - **Switch Explanations**: Every technical choice explained inline
 
 **Example Output:**
@@ -286,39 +286,39 @@ litassist extractfacts document.pdf
 litassist extractfacts file1.pdf file2.txt file3.pdf
 
 # Creates: extractfacts_[combined_slugs]_YYYYMMDD_HHMMSS.txt
-# Note: run 'updatefacts' to fold this into case_facts.txt (or edit manually)
+# Note: run 'updatefacts' to fold this into case_facts.md (or edit manually)
 ```
 
 ### 4.5 updatefacts - Merge source documents into the case_facts file
 
 ```bash
-# Fold extractfacts/digest output (or any text) into case_facts.txt
-litassist updatefacts 'outputs/extractfacts_*.txt' 'outputs/digest_*.txt'
+# Fold extractfacts/digest output (or any text) into case_facts.md
+litassist updatefacts 'outputs/extractfacts_*.md' 'outputs/digest_*.md'
 
 # Update a specific existing case-facts file
-litassist updatefacts new_affidavit.pdf --facts case_facts.txt
+litassist updatefacts new_affidavit.pdf --facts case_facts.md
 
-# Creates: case_facts_YYYYMMDD_HHMMSS.txt in the current directory
+# Creates: case_facts_YYYYMMDD_HHMMSS.md in the current directory
 #          (auto-discovered by brainstorm/strategy/draft/barbrief)
 ```
 
 ### 5. brainstorm - Generate comprehensive legal strategies with reasoning traces
 
 ```bash
-# Default: uses case_facts.txt if present in current directory
+# Default: uses case_facts.md if present in current directory
 litassist brainstorm --side [plaintiff|defendant|accused] --area [criminal|civil|family|commercial|administrative]
 
 # Specify facts file(s) explicitly
-litassist brainstorm --facts case_facts.txt --side plaintiff --area civil
+litassist brainstorm --facts case_facts.md --side plaintiff --area civil
 
 # Use multiple facts files with glob patterns
 litassist brainstorm --facts 'case_*.txt' --side plaintiff --area civil
 
 # Add research context (supports glob patterns)
-litassist brainstorm --side plaintiff --area civil --research 'outputs/lookup_*.txt'
+litassist brainstorm --side plaintiff --area civil --research 'outputs/lookup_*.md'
 
 # Multiple research files with selective patterns
-litassist brainstorm --side plaintiff --area civil --research 'outputs/lookup_*gift*.txt' --research 'outputs/lookup_*trust*.txt'
+litassist brainstorm --side plaintiff --area civil --research 'outputs/lookup_*gift*.md' --research 'outputs/lookup_*trust*.md'
 
 # Creates: brainstorm_[area]_[side]_YYYYMMDD_HHMMSS.txt (main strategies)
 #          brainstorm_[area]_[side]_YYYYMMDD_HHMMSS_orthodox_reasoning.txt
@@ -330,20 +330,20 @@ litassist brainstorm --side plaintiff --area civil --research 'outputs/lookup_*g
 ### 6. strategy - Generate targeted legal options and draft documents
 
 ```bash
-litassist strategy case_facts.txt --outcome "Obtain interim injunction against defendant"
+litassist strategy case_facts.md --outcome "Obtain interim injunction against defendant"
 # Or incorporate brainstormed strategies
-litassist strategy case_facts.txt --outcome "..." --strategies strategies.txt
+litassist strategy case_facts.md --outcome "..." --strategies strategies.txt
 ```
 
 ### 7. draft - Create citation-rich legal drafts with intelligent document recognition
 
 ```bash
 # Single document
-litassist draft case_facts.txt "skeleton argument on jurisdictional error"
-# Multiple documents (automatically recognizes case_facts.txt and strategies.txt)
-litassist draft case_facts.txt strategies.txt "argument based on strategy #3"
+litassist draft case_facts.md "skeleton argument on jurisdictional error"
+# Multiple documents (automatically recognizes case_facts.md and strategies.txt)
+litassist draft case_facts.md strategies.txt "argument based on strategy #3"
 # Mix text files and PDFs
-litassist draft case_facts.txt bundle.pdf "comprehensive submission"
+litassist draft case_facts.md bundle.pdf "comprehensive submission"
 ```
 
 ### 8. counselnotes - Generate strategic advocate analysis
@@ -361,11 +361,11 @@ litassist counselnotes case_bundle.pdf --extract all
 
 ```bash
 # Basic brief for trial
-litassist barbrief case_facts.txt --hearing-type trial
+litassist barbrief case_facts.md --hearing-type trial
 # Appeal brief with strategies
-litassist barbrief case_facts.txt --hearing-type appeal --strategies strategies.txt
+litassist barbrief case_facts.md --hearing-type appeal --strategies strategies.txt
 # Full brief with all materials
-litassist barbrief case_facts.txt --hearing-type interlocutory \
+litassist barbrief case_facts.md --hearing-type interlocutory \
   --strategies strategies.txt \
   --research lookup_report1.txt --research lookup_report2.txt \
   --documents affidavit.pdf --documents exhibit_a.pdf \
@@ -405,7 +405,7 @@ All commands now save their output to timestamped text files without overwriting
 - **digest**: `digest_[mode]_[filename_slug]_YYYYMMDD_HHMMSS.txt`
 - **brainstorm**: `brainstorm_[area]_[side]_YYYYMMDD_HHMMSS.txt`
 - **extractfacts**: `extractfacts_[filename_slug]_YYYYMMDD_HHMMSS.txt`
-- **updatefacts**: `case_facts_YYYYMMDD_HHMMSS.txt` (written to the current directory, not `outputs/`)
+- **updatefacts**: `case_facts_YYYYMMDD_HHMMSS.md` (written to the current directory, not `outputs/`)
 - **strategy**: `strategy_[outcome_slug]_YYYYMMDD_HHMMSS.txt`
 - **draft**: `draft_[query_slug]_YYYYMMDD_HHMMSS.txt`
 - **counselnotes**: `counselnotes_[filename_slug]_YYYYMMDD_HHMMSS.txt`
@@ -414,7 +414,7 @@ All commands now save their output to timestamped text files without overwriting
 Each output file includes metadata headers with command parameters and timestamps.
 
 ### Output Organization
-- Command outputs are automatically stored in the `outputs/` directory (the exception is `updatefacts`, which writes `case_facts_<ts>.txt` to the current directory so downstream commands auto-discover it)
+- Command outputs are automatically stored in the `outputs/` directory (the exception is `updatefacts`, which writes `case_facts_<ts>.md` to the current directory so downstream commands auto-discover it)
 - Detailed logs are saved in `logs/<command>_YYYYMMDD-HHMMSS.{json|md}`
 - Progress indicators keep you informed during long-running operations (configurable heartbeat interval)
 - Network errors are caught and displayed with user-friendly messages

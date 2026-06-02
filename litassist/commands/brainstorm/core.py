@@ -408,7 +408,7 @@ def verify_and_annotate_strategies(
     multiple=True,
     type=click.Path(),  # Remove exists=True since we'll check in callback
     callback=expand_glob_patterns,
-    help="Facts files to analyze. Supports glob patterns. Use multiple times: --facts file1.txt --facts 'case_*.txt'. Defaults to case_facts.txt if it exists.",
+    help="Facts files to analyze. Supports glob patterns. Use multiple times: --facts file1.txt --facts 'case_*.txt'. Defaults to case_facts.md if it exists.",
 )
 @click.option(
     "--side",
@@ -428,7 +428,7 @@ def verify_and_annotate_strategies(
     type=click.Path(),  # Remove exists=True since we'll check in callback
     callback=expand_glob_patterns,
     help="Optional: Lookup report files to inform orthodox strategies. Supports glob patterns. "
-    "Use multiple times: --research file1.txt --research 'outputs/lookup_*.txt'. "
+    "Use multiple times: --research file1.txt --research 'outputs/lookup_*.md'. "
     "Large research files (>128k tokens) may impact verification performance.",
 )
 @click.option(
@@ -452,11 +452,11 @@ def brainstorm(facts, side, area, research, verify, output):
     The output is automatically saved with a timestamp for use in other commands.
 
     Usage:
-        # With default case_facts.txt (if exists in current directory)
+        # With default case_facts.md (if exists in current directory)
         litassist brainstorm --side plaintiff --area civil
 
         # With single facts file
-        litassist brainstorm --facts case_facts.txt --side plaintiff --area civil
+        litassist brainstorm --facts case_facts.md --side plaintiff --area civil
 
         # With multiple facts files
         litassist brainstorm --facts facts1.txt --facts facts2.txt --side plaintiff --area civil
@@ -465,7 +465,7 @@ def brainstorm(facts, side, area, research, verify, output):
         litassist brainstorm --side plaintiff --area civil --research lookup1.txt --research lookup2.txt
 
         # With glob patterns for research files
-        litassist brainstorm --side plaintiff --area civil --research 'outputs/lookup_*gift*.txt'
+        litassist brainstorm --side plaintiff --area civil --research 'outputs/lookup_*gift*.md'
 
     Note: Verification is automatically performed on all brainstorm outputs to ensure citation accuracy and legal soundness.
 
@@ -481,7 +481,7 @@ def brainstorm(facts, side, area, research, verify, output):
     except Exception:
         pass
 
-    # Handle facts files - auto-select the latest case_facts*.txt if none given.
+    # Handle facts files - auto-select the latest case_facts*.md if none given.
     if not facts:
         facts = (resolve_case_facts_file(),)
 

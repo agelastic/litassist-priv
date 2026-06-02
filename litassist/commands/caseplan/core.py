@@ -92,12 +92,12 @@ def caseplan(case_facts, context, budget, output, verify, noverify, yes):
 
     Args:
         case_facts: Path to case facts file (10-heading structure). Optional - if
-            omitted, the latest case_facts*.txt in the current directory is used.
+            omitted, the latest case_facts*.md in the current directory is used.
 
     Examples:
-        litassist caseplan                       # auto-selects latest case_facts*.txt
-        litassist caseplan case_facts.txt
-        litassist caseplan case_facts.txt --context "property dispute"
+        litassist caseplan                       # auto-selects latest case_facts*.md
+        litassist caseplan case_facts.md
+        litassist caseplan case_facts.md --context "property dispute"
         litassist caseplan --budget minimal
     """
     # Handle unsupported verification flags

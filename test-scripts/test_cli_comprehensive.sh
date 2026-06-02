@@ -528,7 +528,7 @@ test_updatefacts_command() {
     print_section "Testing UPDATEFACTS Command"
 
     # All switches: multiple SOURCE files (glob-capable positional) + --facts
-    # base. Output goes to cwd as case_facts_<ts>.txt (NOT outputs/), so the
+    # base. Output goes to cwd as case_facts_<ts>.md (NOT outputs/), so the
     # outputs/-snapshot check is intentionally not used; the 'saved to' /
     # 'case_facts' patterns prove a file was written.
     run_test "UpdateFacts - All switches (multiple sources, --facts base)" \

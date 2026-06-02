@@ -1,6 +1,6 @@
 # LitAssist Reference Manual
 
-Last updated: 01/06/2026
+Last updated: 02/06/2026
 
 ---
 
@@ -113,7 +113,7 @@ caseplan --> extractfacts --> updatefacts --> lookup --> brainstorm --> strategy
 - `extractfacts` processes raw documents into the structured 10-heading format
   required by `brainstorm`, `strategy`, and `barbrief`
 - `updatefacts` (optional) merges `extractfacts`/`digest` output into an
-  auto-discoverable `case_facts_<timestamp>.txt`, removing the manual copy step
+  auto-discoverable `case_facts_<timestamp>.md`, removing the manual copy step
 - `lookup` produces research reports that feed into `brainstorm` via `--research`
 - `brainstorm` generates strategies that feed into `strategy` via `--strategies`
 - `strategy` produces strategic options and draft documents for `verify`
@@ -308,28 +308,28 @@ sharing a single configuration.
 
 ### 3.2 Output File Naming
 
-All command outputs are saved to `outputs/` with a consistent naming convention (the one exception is `updatefacts`, which writes `case_facts_<ts>.txt` to the current directory so it is auto-discovered):
+All command outputs are saved to `outputs/` with a consistent naming convention (the one exception is `updatefacts`, which writes `case_facts_<ts>.md` to the current directory so it is auto-discovered):
 
 ```
-{command}_{descriptor}_{YYYYMMDD}_{HHMMSS}.txt
+{command}_{descriptor}_{YYYYMMDD}_{HHMMSS}.md
 ```
 
 Files are never overwritten. Each run creates a new timestamped file.
 
 | Command | Example Filename |
 |---------|-----------------|
-| caseplan | `caseplan_standard_20260223_143022.txt` |
-| lookup | `lookup_duty_of_care_20260223_143156.txt` |
-| digest | `digest_summary_brief_20260223_143340.txt` |
-| extractfacts | `extractfacts_brief_20260223_143502.txt` |
-| updatefacts | `case_facts_20260223_143515.txt` (written to the current directory; no `--output`) |
-| brainstorm | `brainstorm_family_plaintiff_20260223_143622.txt` |
-| strategy | `strategy_summary_judgement_20260223_143740.txt` |
-| draft | `draft_statement_of_claim_20260223_143855.txt` |
-| counselnotes | `counselnotes_brief_20260223_144010.txt` |
-| barbrief | `barbrief_trial_20260223_144125.txt` |
-| verify | `verify_citations_20260223_144240.txt` |
-| verify-cove | `verify_cove_draft_20260223_144355.txt` |
+| caseplan | `caseplan_standard_20260223_143022.md` |
+| lookup | `lookup_duty_of_care_20260223_143156.md` |
+| digest | `digest_summary_brief_20260223_143340.md` |
+| extractfacts | `extractfacts_brief_20260223_143502.md` |
+| updatefacts | `case_facts_20260223_143515.md` (written to the current directory; no `--output`) |
+| brainstorm | `brainstorm_family_plaintiff_20260223_143622.md` |
+| strategy | `strategy_summary_judgement_20260223_143740.md` |
+| draft | `draft_statement_of_claim_20260223_143855.md` |
+| counselnotes | `counselnotes_brief_20260223_144010.md` |
+| barbrief | `barbrief_trial_20260223_144125.md` |
+| verify | `verify_citations_20260223_144240.md` |
+| verify-cove | `verify_cove_draft_20260223_144355.md` |
 
 Use the `--output` option to set a custom filename prefix (available on every command except `updatefacts`, whose output name is fixed so it stays auto-discoverable).
 
@@ -339,7 +339,7 @@ LitAssist distinguishes between two types of files:
 
 **Working files** are maintained by the user and serve as stable inputs:
 
-- `case_facts.txt` -- the structured 10-heading case facts, updated as the case
+- `case_facts.md` -- the structured 10-heading case facts, updated as the case
   develops
 - `strategies.txt` -- curated strategies, typically copied from brainstorm output
 
@@ -352,7 +352,7 @@ LitAssist distinguishes between two types of files:
 **Typical workflow:**
 
 1. Run `extractfacts` to generate structured facts
-2. Run `updatefacts` to fold that output into `case_facts.txt` (or copy and refine manually)
+2. Run `updatefacts` to fold that output into `case_facts.md` (or copy and refine manually)
 3. Run `brainstorm` to generate strategies
 4. Copy the most relevant strategies to `strategies.txt`
 5. Use these working files as stable inputs for `strategy`, `barbrief`, etc.
@@ -386,9 +386,9 @@ command follows a consistent output pattern:
 
 ```
 [Y] [Command] complete!
-[DOC] Output saved to: outputs/[filename]_YYYYMMDD_HHMMSS.txt
+[DOC] Output saved to: outputs/[filename]_YYYYMMDD_HHMMSS.md
 [STATS] [Processing statistics and summary]
-[TIP] View full [content]: open outputs/[filename]_YYYYMMDD_HHMMSS.txt
+[TIP] View full [content]: open outputs/[filename]_YYYYMMDD_HHMMSS.md
 ```
 
 Full content is always saved to the timestamped output file. To read the complete
@@ -396,10 +396,10 @@ output:
 
 ```bash
 # Use the file path shown in the terminal output
-open outputs/lookup_relocation_principles_20260223_143156.txt
+open outputs/lookup_relocation_principles_20260223_143156.md
 
 # Or use any text editor
-code outputs/lookup_relocation_principles_20260223_143156.txt
+code outputs/lookup_relocation_principles_20260223_143156.md
 ```
 
 The terminal output uses ANSI-coloured ASCII text for status indicators. All
@@ -496,13 +496,13 @@ skips that prompt. Subsequent runs just re-execute the generated Python runner.
 **Model:** Claude Opus 4.7 (full plan); Claude Sonnet 4.6 (budget assessment)
 
 **Per-run isolation:** With `--budget`, caseplan saves an executable **Python
-runner** (e.g. `outputs/caseplan_commands_comprehensive_<ts>.txt`) - run it with
-`python outputs/caseplan_commands_*.txt`. Each execution creates a fresh
+runner** (e.g. `outputs/caseplan_commands_comprehensive_<ts>.py`) - run it with
+`python outputs/caseplan_commands_*.py`. Each execution creates a fresh
 `outputs/run_<timestamp>/` directory and writes ALL of that run's products - every
 command's output AND the updated `case_facts` - into it, so a step's glob (e.g.
-`outputs/brainstorm_*.txt`) only ever matches this run's files, and re-running the
+`outputs/brainstorm_*.md`) only ever matches this run's files, and re-running the
 runner starts a brand-new directory rather than mixing with the previous attempt.
-Your working `case_facts.txt` in the launch directory is used as a seed (copied in
+Your working `case_facts.md` in the launch directory is used as a seed (copied in
 at the start) and is never modified by a run; to promote a run's refined
 case_facts back to your working copy, copy it out of the run directory manually.
 This is automatic - you write plain relative paths, nothing run-specific.
@@ -511,7 +511,7 @@ This is automatic - you write plain relative paths, nothing run-specific.
 
 ```bash
 # Step 1: Get a budget recommendation
-litassist caseplan case_facts_skeleton.txt
+litassist caseplan case_facts_skeleton.md
 ```
 
 Console output:
@@ -526,7 +526,7 @@ BUDGET RECOMMENDATION
 [SAVED] Recommendation saved to: "caseplan-assessment_2026-05-29_HHMMSS.md"
 
 [TIP] To generate full plan, run again with recommended budget:
-   e.g., litassist caseplan case_facts.txt --budget standard
+   e.g., litassist caseplan case_facts.md --budget standard
 ```
 
 The console shows the `BUDGET RECOMMENDATION` banner as a "done"
@@ -553,7 +553,7 @@ strategic approaches. Tight timeframes necessitate parallel workflows.
 
 ```bash
 # Step 2: Generate the full plan
-litassist caseplan case_facts_skeleton.txt \
+litassist caseplan case_facts_skeleton.md \
   --context "relocation and time arrangements" \
   --budget comprehensive
 ```
@@ -562,7 +562,7 @@ This generates two files:
 
 1. A human-readable plan with phased commands, cost estimates, and rationale
 2. An executable **Python runner** with all commands ready to run. Run it with
-   `python outputs/caseplan_commands_*.txt`. It creates a fresh per-run directory,
+   `python outputs/caseplan_commands_*.py`. It creates a fresh per-run directory,
    seeds your case_facts, and routes every output (and case_facts) into that
    directory so the run is self-contained:
 
@@ -574,9 +574,9 @@ from datetime import datetime
 
 run_dir = os.path.join("outputs", "run_" + datetime.now().strftime("%Y%m%d_%H%M%S_%f"))
 os.makedirs(run_dir)
-_seed = next((p for p in ['case_facts.txt', "case_facts.txt"] if p and os.path.exists(p)), "")
+_seed = next((p for p in ['case_facts.md', "case_facts.txt"] if p and os.path.exists(p)), "")
 if _seed:
-    shutil.copy(_seed, os.path.join(run_dir, "case_facts.txt"))
+    shutil.copy(_seed, os.path.join(run_dir, "case_facts.md"))
 os.environ["LITASSIST_OUTPUT_DIR"] = run_dir
 
 def run(args):
@@ -668,7 +668,7 @@ children aged 14 and 10; father seeks to vary interim orders; assess \
 weight of children's views given Emily's age and maturity"
 ```
 
-Sample output (saved to `outputs/lookup_best_interests_20260223_143156.txt`):
+Sample output (saved to `outputs/lookup_best_interests_20260223_143156.md`):
 
 ```
 ISSUE:
@@ -788,9 +788,9 @@ Sample terminal output:
 
 ```
 [Y] Digest complete!
-[DOC] Output saved to: outputs/digest_issues_2_files_20260223_143340.txt
+[DOC] Output saved to: outputs/digest_issues_2_files_20260223_143340.md
 [STATS] Processed 2 files (47 pages, 23,450 words)
-[TIP] View full analysis: open outputs/digest_issues_2_files_20260223_143340.txt
+[TIP] View full analysis: open outputs/digest_issues_2_files_20260223_143340.md
 ```
 
 **Best practices:**
@@ -913,7 +913,7 @@ providing for a week-about arrangement...
 
 - Process all relevant documents in a single extractfacts call for consolidated
   output.
-- Review and refine the output before using it as `case_facts.txt` for downstream
+- Review and refine the output before using it as `case_facts.md` for downstream
   commands.
 - Use `--heavy` for matters heading to court; use standard verification for early
   drafts.
@@ -928,7 +928,7 @@ downstream commands)
 **Purpose:** Fold source documents into the same 10-heading structure, either
 updating an existing case-facts file or creating one from scratch. This removes
 the manual step of copying `extractfacts` (or `digest`) output into
-`case_facts.txt`: `updatefacts` writes a fresh `case_facts_<timestamp>.txt`
+`case_facts.md`: `updatefacts` writes a fresh `case_facts_<timestamp>.md`
 directly into the current directory, where `brainstorm`, `strategy`, `draft`, and
 `barbrief` discover it automatically.
 
@@ -948,7 +948,7 @@ litassist updatefacts <files>... [OPTIONS]
 
 | Option | Type | Description |
 |--------|------|-------------|
-| `--facts` | path | Existing case facts file to update. Default: the latest `case_facts*.txt` in the current directory; created from scratch if none. |
+| `--facts` | path | Existing case facts file to update. Default: the latest `case_facts*.md` in the current directory; created from scratch if none. |
 
 **Behaviour:**
 
@@ -971,10 +971,10 @@ litassist updatefacts <files>... [OPTIONS]
 
 ```bash
 # Build case facts from extractfacts + digest output in one step
-litassist updatefacts 'outputs/extractfacts_smith_*.txt' 'outputs/digest_issues_*.txt'
+litassist updatefacts 'outputs/extractfacts_smith_*.md' 'outputs/digest_issues_*.md'
 
 # Fold a newly received affidavit into the current case facts
-litassist updatefacts affidavit_jones_feb2026.pdf --facts case_facts.txt
+litassist updatefacts affidavit_jones_feb2026.pdf --facts case_facts.md
 ```
 
 **Best practices:**
@@ -1004,7 +1004,7 @@ litassist brainstorm [OPTIONS]
 
 | Option | Type | Description |
 |--------|------|-------------|
-| `--facts` | path(s) | Case facts file(s), glob supported. Defaults to `case_facts.txt` |
+| `--facts` | path(s) | Case facts file(s), glob supported. Defaults to `case_facts.md` |
 | `--side` | `plaintiff` / `defendant` / `accused` / `respondent` | Required: which side you represent |
 | `--area` | `criminal` / `civil` / `family` / `commercial` / `administrative` | Required: area of law |
 | `--research` | path(s) | Research files from lookup, glob supported |
@@ -1048,8 +1048,8 @@ litassist brainstorm --side plaintiff --area family
 
 # With research context from prior lookup
 litassist brainstorm --side plaintiff --area family \
-  --facts case_facts.txt \
-  --research 'outputs/lookup_*.txt'
+  --facts case_facts.md \
+  --research 'outputs/lookup_*.md'
 ```
 
 Sample output excerpt (orthodox strategy):
@@ -1110,7 +1110,7 @@ litassist strategy <case_facts> [OPTIONS]
 | Option | Type | Description |
 |--------|------|-------------|
 | `--outcome` | text | Required: desired legal outcome (single sentence) |
-| `--strategies` | path or glob (repeatable) | Optional brainstorm strategies file(s). Pass once per set (e.g. `--strategies 'outputs/brainstorm_creative_*.txt' --strategies 'outputs/brainstorm_research_*.txt'`); each flag resolves to the most recent match of its own pattern, and all sets are merged |
+| `--strategies` | path or glob (repeatable) | Optional brainstorm strategies file(s). Pass once per set (e.g. `--strategies 'outputs/brainstorm_creative_*.md' --strategies 'outputs/brainstorm_research_*.md'`); each flag resolves to the most recent match of its own pattern, and all sets are merged |
 | `--heavy` | flag | Use GPT-5.5 for verification |
 | `--noverify` | flag | Skip verification |
 | `--output` | text | Custom output filename prefix |
@@ -1140,7 +1140,7 @@ intelligently uses it:
 
 `--strategies` is repeatable - pass it once per brainstorm set. The dual-brainstorm
 workflow produces a creative set and a research set; supplying both
-(`--strategies 'outputs/brainstorm_creative_*.txt' --strategies 'outputs/brainstorm_research_*.txt'`)
+(`--strategies 'outputs/brainstorm_creative_*.md' --strategies 'outputs/brainstorm_research_*.md'`)
 merges them: the orthodox/unorthodox/most-likely counts are summed for the on-screen
 summary and both bodies are passed to the model under `=== filename ===` separators.
 Each flag resolves to the most recent match of its own pattern, so older files from
@@ -1152,10 +1152,10 @@ previous runs are ignored.
 **Smith v Jones example:**
 
 ```bash
-litassist strategy case_facts.txt \
+litassist strategy case_facts.md \
   --outcome "Secure interim orders allowing children to remain in Brisbane" \
-  --strategies 'outputs/brainstorm_creative_*.txt' \
-  --strategies 'outputs/brainstorm_research_*.txt'
+  --strategies 'outputs/brainstorm_creative_*.md' \
+  --strategies 'outputs/brainstorm_research_*.md'
 ```
 
 Sample output excerpt:
@@ -1240,7 +1240,7 @@ draft.
 
 **Automatic document type detection:**
 
-The draft command recognises `case_facts.txt`, `strategies.txt`, and files
+The draft command recognises `case_facts.md`, `strategies.txt`, and files
 containing structured headings. It adapts its prompting based on the document
 types provided, building appropriate context with `=== MARKER ===` separators.
 PDFs receive their own `=== PDF DOCUMENT: <path> ===` section.
@@ -1258,15 +1258,15 @@ flagged with explicit placeholders.
 
 ```bash
 # Draft from text and PDF inputs (single full-context call)
-litassist draft case_facts.txt strategies.txt \
+litassist draft case_facts.md strategies.txt \
   "outline of submissions regarding relocation"
 
 litassist draft large_case_bundle.pdf \
   "response to contravention application"
 
 # Multiple source documents
-litassist draft case_facts.txt strategies.txt \
-  outputs/lookup_relocation_principles_20260223_143156.txt \
+litassist draft case_facts.md strategies.txt \
+  outputs/lookup_relocation_principles_20260223_143156.md \
   "submissions on parenting arrangements"
 ```
 
@@ -1383,7 +1383,7 @@ litassist barbrief [case_facts] [OPTIONS]
 
 | Argument | Description |
 |----------|-------------|
-| `case_facts` | Path to structured case facts (10-heading format); optional - the latest `case_facts*.txt` in the current directory is auto-selected if omitted |
+| `case_facts` | Path to structured case facts (10-heading format); optional - the latest `case_facts*.md` in the current directory is auto-selected if omitted |
 
 **Options:**
 
@@ -1410,9 +1410,9 @@ litassist barbrief [case_facts] [OPTIONS]
 **Smith v Jones example:**
 
 ```bash
-litassist barbrief case_facts.txt --hearing-type interlocutory \
-  --strategies 'outputs/brainstorm_family_plaintiff_*.txt' \
-  --research 'outputs/lookup_*.txt' \
+litassist barbrief case_facts.md --hearing-type interlocutory \
+  --strategies 'outputs/brainstorm_family_plaintiff_*.md' \
+  --research 'outputs/lookup_*.md' \
   --documents 'affidavit_smith_jan2026.pdf' \
   --context "Application for interim orders allowing children \
   to remain in Brisbane pending final hearing" \
@@ -1449,7 +1449,7 @@ litassist verify <file> [OPTIONS]
 
 | Argument | Description |
 |----------|-------------|
-| `file` | Path or glob to the text file to verify; a glob (e.g. `outputs/draft_*.txt`) resolves to the most recent match |
+| `file` | Path or glob to the text file to verify; a glob (e.g. `outputs/draft_*.md`) resolves to the most recent match |
 
 **Options:**
 
@@ -1504,18 +1504,18 @@ affidavits, or other materials that the verifier needs to see.
 
 ```bash
 # Full verification suite
-litassist verify outputs/draft_outline_submissions_20260223_143855.txt
+litassist verify outputs/draft_outline_submissions_20260223_143855.md
 
 # Citations only with Chain of Verification
-litassist verify outputs/draft_outline_submissions_20260223_143855.txt \
+litassist verify outputs/draft_outline_submissions_20260223_143855.md \
   --citations --cove
 
 # Heavy verification with reference documents
-litassist verify outputs/draft_outline_submissions_20260223_143855.txt \
+litassist verify outputs/draft_outline_submissions_20260223_143855.md \
   --heavy --reference 'exhibits/*.pdf'
 
 # Maximum confidence: heavy mode with CoVe and all references
-litassist verify outputs/draft_outline_submissions_20260223_143855.txt \
+litassist verify outputs/draft_outline_submissions_20260223_143855.md \
   --heavy --cove --cove-reference 'exhibits/*.pdf'
 ```
 
@@ -1612,10 +1612,10 @@ litassist verify-cove <file> [OPTIONS]
 
 ```bash
 # Standard CoVe
-litassist verify-cove outputs/draft_outline_submissions_20260223_143855.txt
+litassist verify-cove outputs/draft_outline_submissions_20260223_143855.md
 
 # With reference documents and heavy mode
-litassist verify-cove outputs/draft_outline_submissions_20260223_143855.txt \
+litassist verify-cove outputs/draft_outline_submissions_20260223_143855.md \
   --reference 'exhibits/*.pdf' --heavy
 ```
 
@@ -1678,7 +1678,7 @@ documents. The two commands serve different purposes:
 **When to use extractfacts:**
 
 - You need structured input for brainstorm, strategy, or barbrief
-- You are building the foundational `case_facts.txt` for a matter
+- You are building the foundational `case_facts.md` for a matter
 - The documents contain information that maps to the 10-heading structure
 
 **When to use digest:**
@@ -2201,7 +2201,7 @@ The full pipeline from raw documents to verified legal output:
 ```
 1. caseplan      Plan the workflow (or skip if you know what you need)
 2. extractfacts  Structure raw documents into 10-heading format
-3. updatefacts   Fold extractfacts/digest output into case_facts.txt (optional)
+3. updatefacts   Fold extractfacts/digest output into case_facts.md (optional)
 4. lookup        Research relevant case law
 5. brainstorm    Explore all possible strategies
 6. strategy      Develop a targeted plan for a specific outcome
@@ -2217,14 +2217,14 @@ mkdir ~/legal-cases/smith-v-jones-2026
 cd ~/legal-cases/smith-v-jones-2026
 
 # 1. Plan the workflow
-litassist caseplan case_facts_skeleton.txt --budget comprehensive
+litassist caseplan case_facts_skeleton.md --budget comprehensive
 
 # 2. Extract structured facts from court documents
 litassist extractfacts interim_orders_april2026.pdf \
   contravention_application_feb2026.pdf \
   affidavit_smith_jan2026.pdf affidavit_jones_feb2026.pdf
-# Fold the extracted facts into case_facts.txt (review/refine optional)
-litassist updatefacts 'outputs/extractfacts_*.txt'
+# Fold the extracted facts into case_facts.md (review/refine optional)
+litassist updatefacts 'outputs/extractfacts_*.md'
 
 # 3. Research key legal issues
 litassist lookup "best interests paramount consideration interstate \
@@ -2234,21 +2234,21 @@ litassist lookup "parental alienation evidence requirements Australian \
 
 # 4. Brainstorm strategies
 litassist brainstorm --side plaintiff --area family \
-  --facts case_facts.txt \
-  --research 'outputs/lookup_*.txt'
+  --facts case_facts.md \
+  --research 'outputs/lookup_*.md'
 
 # 5. Develop targeted strategy
-litassist strategy case_facts.txt \
+litassist strategy case_facts.md \
   --outcome "Secure interim orders allowing children to remain in Brisbane" \
-  --strategies outputs/brainstorm_family_plaintiff_*.txt
+  --strategies outputs/brainstorm_family_plaintiff_*.md
 
 # 6. Draft submissions
-litassist draft case_facts.txt \
-  outputs/strategy_secure_interim_orders_*.txt \
+litassist draft case_facts.md \
+  outputs/strategy_secure_interim_orders_*.md \
   "outline of submissions regarding relocation"
 
 # 7. Verify the draft
-litassist verify outputs/draft_outline_submissions_*.txt \
+litassist verify outputs/draft_outline_submissions_*.md \
   --heavy --cove --reference 'exhibits/*.pdf'
 ```
 
@@ -2280,16 +2280,16 @@ Let LitAssist plan the entire workflow for you:
 
 ```bash
 # Step 1: Get budget recommendation
-litassist caseplan case_facts.txt
+litassist caseplan case_facts.md
 
 # Step 2: Generate full plan with executable commands
-litassist caseplan case_facts.txt --budget standard
+litassist caseplan case_facts.md --budget standard
 
-# Step 3: Review the plan, then execute the generated script
-bash outputs/caseplan_commands_standard_*.txt
+# Step 3: Review the plan, then execute the generated runner
+python outputs/caseplan_commands_standard_*.py
 ```
 
-The generated script includes all commands in the correct order with appropriate
+The generated runner includes all commands in the correct order with appropriate
 switches and rationale comments. Review and adjust before running.
 
 **Iterating the plan:**
@@ -2297,9 +2297,9 @@ switches and rationale comments. Review and adjust before running.
 As the case develops and new documents arrive, regenerate the plan:
 
 ```bash
-# Update case_facts.txt with new information
+# Update case_facts.md with new information
 # Then regenerate the plan
-litassist caseplan case_facts.txt --budget comprehensive \
+litassist caseplan case_facts.md --budget comprehensive \
   --context "New expert report received, settlement conference scheduled"
 ```
 
@@ -2356,22 +2356,22 @@ litassist extractfacts medical_records.pdf expert_report.pdf \
 
 # 3. Brainstorm with research context
 litassist brainstorm --side plaintiff --area civil \
-  --facts case_facts.txt \
-  --research 'outputs/lookup_*.txt'
+  --facts case_facts.md \
+  --research 'outputs/lookup_*.md'
 
 # 4. Develop strategy for specific outcome
-litassist strategy case_facts.txt \
+litassist strategy case_facts.md \
   --outcome "Establish breach of duty of care" \
-  --strategies outputs/brainstorm_civil_plaintiff_*.txt
+  --strategies outputs/brainstorm_civil_plaintiff_*.md
 
 # 5. Draft the document
-litassist draft case_facts.txt \
-  outputs/strategy_establish_breach_*.txt \
-  outputs/lookup_duty_of_care_*.txt \
+litassist draft case_facts.md \
+  outputs/strategy_establish_breach_*.md \
+  outputs/lookup_duty_of_care_*.md \
   "statement of claim"
 
 # 6. Verify
-litassist verify outputs/draft_statement_of_claim_*.txt --heavy --cove
+litassist verify outputs/draft_statement_of_claim_*.md --heavy --cove
 ```
 
 Each stage builds on the previous one, with file outputs flowing naturally between
@@ -2507,8 +2507,8 @@ relying on citations for court filings.
 
 **Sparse or unfocused output:**
 
-- Ensure input files use `.txt` extension. Files with `.md` extension may not be
-  processed as expected.
+- Ensure input files are a readable text format (`.pdf`, `.rtf`, `.txt`, or
+  `.md`); other formats (e.g. Word `.doc`/`.docx`) are not read.
 - Provide more context files (case facts, strategies, research) to give the model
   better grounding.
 - For very large bundles, summarise with `litassist digest --mode summary` first

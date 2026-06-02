@@ -1,6 +1,6 @@
 # LitAssist Development TODO
 
-Last updated: 30/05/2026
+Last updated: 02/06/2026
 
 **Note:** Strategic feature planning (litigation support, advisory capabilities, new commands) is now in [ROADMAP.md](ROADMAP.md). This file focuses on bugs, technical debt, and code quality improvements.
 
@@ -62,7 +62,7 @@ Last updated: 30/05/2026
 - [x] ~~REMOVE temporary glob help addon after unification~~ - COMPLETED (deleted glob_help_addon.yaml, removed concatenation logic in caseplan/plan_generator.py)
 - [x] ~~IMPLEMENT full glob unification~~ - COMPLETED (extractfacts, digest, draft, counselnotes routed through expand_glob_patterns_callback; brainstorm and barbrief already used it)
 - [x] ~~extend strategy --strategies to MULTIPLE files~~ - COMPLETED (June 2026). `--strategies` is now `multiple=True` (repeatable, one brainstorm set per flag) via `expand_glob_newest_each_callback`; each flag resolves to its own newest match and `parse_strategies_files` merges the sets (summed counts, `=== filename ===`-separated content). The caseplan prompt emits creative + research flags. See ROADMAP.md P4-25.
-- [ ] AUDIT: review verification coverage end to end - who verifies what, and when. Map each command: verifies BY DEFAULT (draft, strategy, extractfacts), verification OPT-IN via `--verify` (brainstorm, counselnotes, barbrief), or NO verification (lookup, digest, updatefacts; caseplan/verify-cove separate). Cross-check against which commands emit COURT/filed documents (draft; strategy's claim/application/affidavit at `outputs/strategy_draft_*.txt`; barbrief's brief) so no court document ships unverified. Confirm the caseplan prompt forces `--verify` wherever verification is opt-in AND a court document results (barbrief done May 2026), and decide whether strategy's auto-verified court doc also warrants a standalone post-hoc `verify`.
+- [ ] AUDIT: review verification coverage end to end - who verifies what, and when. Map each command: verifies BY DEFAULT (draft, strategy, extractfacts), verification OPT-IN via `--verify` (brainstorm, counselnotes, barbrief), or NO verification (lookup, digest, updatefacts; caseplan/verify-cove separate). Cross-check against which commands emit COURT/filed documents (draft; strategy's claim/application/affidavit at `outputs/strategy_draft_*.md`; barbrief's brief) so no court document ships unverified. Confirm the caseplan prompt forces `--verify` wherever verification is opt-in AND a court document results (barbrief done May 2026), and decide whether strategy's auto-verified court doc also warrants a standalone post-hoc `verify`.
 - [x] ~~Develop manual validation scripts for OpenRouter integration (in test-scripts/)~~ - COMPLETED (test_integrations.py, test_quality.py, test_cli_comprehensive.sh exist; RAG workflows removed in remove-pinecone-rag branch)
 - [ ] Enhance QA loops: iterative improvement, contingency planning, multi-perspective reviews
 - [ ] Keep documentation current with new features as they are implemented

@@ -1,6 +1,6 @@
 # Using LitAssist with Non-Legal Documents
 
-Last updated: 18/02/2026
+Last updated: 02/06/2026
 
 While LitAssist is optimized for legal documents and Australian litigation workflows, it can be adapted to work with non-legal documents with some limitations and adjustments. This guide provides recommendations for processing various document types.
 
@@ -65,18 +65,18 @@ The command will force any content into these legal headings:
 For non-legal documents that need to be used with `strategy` or `brainstorm` commands:
 
 1. **Use `digest` first**: Run `digest --mode summary` (optionally with `--context` for focused analysis) to understand content
-2. **Manual structure creation**: Create a `case_facts.txt` file with all 10 headings
+2. **Manual structure creation**: Create a `case_facts.md` file with all 10 headings
 3. **Adapt content**: Fill relevant sections with content from digest output
 4. **Placeholder strategy**: For irrelevant headings, add minimal placeholder content to satisfy validation
-5. **File naming**: Save as `case_facts.txt` for downstream commands
+5. **File naming**: Save as `case_facts.md` for downstream commands
 
 ## Strategy Command
 
 The `strategy` command strictly enforces the 10-heading structure and will fail if any heading is missing:
 
 ```bash
-# Will only work with properly formatted case_facts.txt
-litassist strategy case_facts.txt --outcome "Negotiate improved terms on purchase agreement"
+# Will only work with properly formatted case_facts.md
+litassist strategy case_facts.md --outcome "Negotiate improved terms on purchase agreement"
 ```
 
 ### Processing Mixed Document Sets
@@ -88,7 +88,7 @@ For handling multiple related but non-legal documents (e.g., financial records, 
    - Note key information from each document
 
 2. **Manual Consolidation**:
-   - Create a single `case_facts.txt` file
+   - Create a single `case_facts.md` file
    - Include all 10 required headings
    - Distribute information under appropriate headings
    - Adapt commercial concepts to legal framework:
@@ -107,7 +107,7 @@ For handling multiple related but non-legal documents (e.g., financial records, 
 |------|-------------|-----|
 | **Understand document content** | `digest --mode summary` | Flexible analysis, supports `--context` |
 | **Focus on specific topics** | `digest --mode summary --context "payment terms"` | Targeted analysis with context |
-| **Prepare for strategy/brainstorm** | `digest` → manual `case_facts.txt` | ExtractFacts forces legal structure |
+| **Prepare for strategy/brainstorm** | `digest` → manual `case_facts.md` | ExtractFacts forces legal structure |
 | **Direct legal structuring** | `extractfacts` (only for legal docs) | Creates required 10-heading format |
 
 ## Example: Processing a Purchase Agreement
@@ -116,11 +116,11 @@ For handling multiple related but non-legal documents (e.g., financial records, 
 # Step 1: Get a summary of the document (optionally with focus)
 litassist digest purchase_agreement.pdf --mode summary --context "payment terms and obligations"
 
-# Step 2: Manually create case_facts.txt with all 10 headings
+# Step 2: Manually create case_facts.md with all 10 headings
 # (Include information from digest output)
 
 # Step 3: Run strategy with business-oriented outcome
-litassist strategy case_facts.txt --outcome "Negotiate more favorable payment terms"
+litassist strategy case_facts.md --outcome "Negotiate more favorable payment terms"
 ```
 
 ## Limitations and Considerations

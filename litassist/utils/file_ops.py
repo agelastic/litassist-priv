@@ -213,8 +213,8 @@ def expand_glob_single_callback(ctx, param, value):
     Scalar sibling of expand_glob_patterns_callback for single-input args
     (strategy --strategies, verify FILE). A literal path passes through; a glob
     resolves to the MOST RECENT match by mtime - mirroring how
-    resolve_case_facts_file picks the latest case_facts*.txt. Caseplan-generated
-    scripts reference prior outputs by glob (e.g. 'outputs/brainstorm_*.txt'),
+    resolve_case_facts_file picks the latest case_facts*.md. Caseplan-generated
+    scripts reference prior outputs by glob (e.g. 'outputs/brainstorm_*.md'),
     and some producers (draft) legitimately write two files under one prefix, so
     a multi-match is normal: warn and take the newest rather than fail.
 

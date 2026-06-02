@@ -1,6 +1,6 @@
 # Counsel's Notes Command Guide
 
-Last updated: 18/02/2026
+Last updated: 02/06/2026
 
 The `counselnotes` command provides strategic analysis and tactical insights for legal documents from an advocate's perspective, complementing the neutral analysis provided by the `digest` command.
 
@@ -157,10 +157,10 @@ litassist digest case_files.pdf
 litassist counselnotes --extract all case_files.pdf
 
 # 3. Generate strategic options
-litassist strategy case_facts.txt
+litassist strategy case_facts.md
 
 # 4. Draft legal documents
-litassist draft case_facts.txt "statement of claim"
+litassist draft case_facts.md "statement of claim"
 ```
 
 ### Cross-Document Synthesis
@@ -237,10 +237,10 @@ litassist extractfacts case_materials.pdf
 litassist counselnotes --extract all case_materials.pdf
 
 # Step 3: Generate strategy options
-litassist strategy case_facts.txt --outcome "summary judgment"
+litassist strategy case_facts.md --outcome "summary judgment"
 
 # Step 4: Draft pleadings
-litassist draft case_facts.txt "statement of claim"
+litassist draft case_facts.md "statement of claim"
 ```
 
 #### Document Review Workflow

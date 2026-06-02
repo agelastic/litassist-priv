@@ -1,7 +1,7 @@
 """
 Main CLI orchestration for extractfacts command.
 
-Produces structured 10-heading case facts (saved as outputs/extractfacts_*.txt) by
+Produces structured 10-heading case facts (saved as outputs/extractfacts_*.md) by
 processing documents and organizing facts using single-chunk or multi-chunk
 extraction. The usual next step is the 'updatefacts' command, which folds this
 output into a downstream-ready case_facts file.
@@ -50,7 +50,7 @@ def extractfacts(file, heavy, noverify, output):
     Produce structured 10-heading case facts from one or more documents.
 
     Extracts relevant facts and organizes them under the ten standard headings,
-    saving the result as outputs/extractfacts_*.txt. The usual next step is
+    saving the result as outputs/extractfacts_*.md. The usual next step is
     'updatefacts' to fold this into a downstream-ready case_facts file for
     commands like 'brainstorm', 'strategy', and 'barbrief'.
 

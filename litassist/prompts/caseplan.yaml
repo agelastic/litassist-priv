@@ -27,12 +27,12 @@ commands:
       - Write every runnable command on its own line beginning with "litassist". For a step with multiple commands, put one complete command per line.
       - Never split one command across lines or join commands with shell control characters (;, |, &&, > redirects); each line must be a single complete litassist invocation.
       - Mark non-command steps as "[MANUAL TASK] ..." - these are prose for the reader, not executable commands.
-      - litassist expands glob patterns itself. Multi-input commands (counselnotes, draft, digest, brainstorm --research) consume ALL matches. strategy --strategies is repeatable - pass it ONCE PER brainstorm set (e.g. --strategies 'outputs/brainstorm_creative_*.txt' --strategies 'outputs/brainstorm_research_*.txt') and each flag takes the MOST RECENT match of its own pattern. The verify FILE arg is single-input: it takes the MOST RECENT match. Quote a pattern only when the path contains spaces (e.g. "Car Docs 2025/*.pdf"); otherwise quoting is optional.
-      - When two commands of the SAME type feed different downstream steps (the dual brainstorm, or a feasibility memo vs an executive summary), give each a distinct --output prefix that STARTS WITH THE COMMAND NAME (e.g. --output brainstorm_creative / --output brainstorm_research; --output draft_memo / --output draft_summary). Reference the specific prefix downstream ('outputs/brainstorm_research_*.txt'); a bare 'outputs/brainstorm_*.txt' still group-matches both for multi-input commands like counselnotes.
-      - Reference outputs and case facts with RELATIVE paths (outputs/..., case_facts.txt), never ./ or absolute. Each execution of the generated runner automatically isolates this run's outputs AND case_facts in a fresh per-run directory, so just write plain bare names (--output brainstorm_creative, 'outputs/brainstorm_*.txt', case_facts.txt); do not add any run id or directory yourself.
-      - SOURCE DOCUMENT INPUTS: the AVAILABLE SOURCE FILES list in the user message names the REAL documents present in the working directory. Use ONLY those exact filenames for extractfacts/digest/draft document inputs - NEVER invent a filename. Target the specific files each step needs by role: do NOT lump UNRELATED documents into one command (an affidavit and an invoice serve different steps), though grouping several RELATED files for one step is fine (e.g. all affidavits into one extractfacts). This applies to SOURCE-document inputs only, not the outputs/*.txt globs that chain steps. If a step needs a document that is not listed, mark it "[MANUAL TASK] ..." for the user to supply. Any document filename shown in the examples and syntax notes below (e.g. bank_statements.pdf, source_documents.pdf) is ILLUSTRATIVE ONLY - never copy it into your output; substitute the actual AVAILABLE SOURCE FILES.
-      - Run verify ONCE PER finished deliverable, naming that deliverable's prefix (litassist verify 'outputs/draft_memo_*.txt'; litassist verify 'outputs/draft_summary_*.txt'). Do NOT emit a single verify 'outputs/draft_*.txt' - verify takes one FILE and would resolve only the most recent draft, leaving the others unverified.
-      - draft and strategy verify automatically (use --noverify to skip). barbrief does NOT verify by default, so ALWAYS add --verify to every barbrief command (e.g. litassist barbrief case_facts.txt --hearing-type trial --strategies 'outputs/brainstorm_research_*.txt' --verify); without it the brief's citations go unchecked.
+      - litassist expands glob patterns itself. Multi-input commands (counselnotes, draft, digest, brainstorm --research) consume ALL matches. strategy --strategies is repeatable - pass it ONCE PER brainstorm set (e.g. --strategies 'outputs/brainstorm_creative_*.md' --strategies 'outputs/brainstorm_research_*.md') and each flag takes the MOST RECENT match of its own pattern. The verify FILE arg is single-input: it takes the MOST RECENT match. Quote a pattern only when the path contains spaces (e.g. "Car Docs 2025/*.pdf"); otherwise quoting is optional.
+      - When two commands of the SAME type feed different downstream steps (the dual brainstorm, or a feasibility memo vs an executive summary), give each a distinct --output prefix that STARTS WITH THE COMMAND NAME (e.g. --output brainstorm_creative / --output brainstorm_research; --output draft_memo / --output draft_summary). Reference the specific prefix downstream ('outputs/brainstorm_research_*.md'); a bare 'outputs/brainstorm_*.md' still group-matches both for multi-input commands like counselnotes.
+      - Reference outputs and case facts with RELATIVE paths (outputs/..., case_facts.md), never ./ or absolute. Each execution of the generated runner automatically isolates this run's outputs AND case_facts in a fresh per-run directory, so just write plain bare names (--output brainstorm_creative, 'outputs/brainstorm_*.md', case_facts.md); do not add any run id or directory yourself.
+      - SOURCE DOCUMENT INPUTS: the AVAILABLE SOURCE FILES list in the user message names the REAL documents present in the working directory. Use ONLY those exact filenames for extractfacts/digest/draft document inputs - NEVER invent a filename. Target the specific files each step needs by role: do NOT lump UNRELATED documents into one command (an affidavit and an invoice serve different steps), though grouping several RELATED files for one step is fine (e.g. all affidavits into one extractfacts). This applies to SOURCE-document inputs only, not the outputs/*.md globs that chain steps. If a step needs a document that is not listed, mark it "[MANUAL TASK] ..." for the user to supply. Any document filename shown in the examples and syntax notes below (e.g. bank_statements.pdf, source_documents.pdf) is ILLUSTRATIVE ONLY - never copy it into your output; substitute the actual AVAILABLE SOURCE FILES.
+      - Run verify ONCE PER finished deliverable, naming that deliverable's prefix (litassist verify 'outputs/draft_memo_*.md'; litassist verify 'outputs/draft_summary_*.md'). Do NOT emit a single verify 'outputs/draft_*.md' - verify takes one FILE and would resolve only the most recent draft, leaving the others unverified.
+      - draft and strategy verify automatically (use --noverify to skip). barbrief does NOT verify by default, so ALWAYS add --verify to every barbrief command (e.g. litassist barbrief case_facts.md --hearing-type trial --strategies 'outputs/brainstorm_research_*.md' --verify); without it the brief's citations go unchecked.
 
     # USED BY: litassist/commands/caseplan.py - when budget == "comprehensive"
     # LOCATION: litassist/commands/caseplan.py:213
@@ -63,7 +63,7 @@ commands:
 
          WORKFLOW PHILOSOPHY:
          - Phases 1-5: Evidence Gathering & Document Analysis (40% of effort)
-           * Focus on documentary evidence from case_facts.txt
+           * Focus on documentary evidence from case_facts.md
            * Reference the ACTUAL documents from the AVAILABLE SOURCE FILES list - never invent filenames
          - Phases 6-10: Legal Research & Opposition Testing (40% of effort)
            * Research our legal positions for strength
@@ -93,65 +93,65 @@ commands:
          - Evidence focus or Opposition addressed
 
       2A. CASE FACTS DEVELOPMENT PRINCIPLES
-         - Initial case_facts.txt is typically a preliminary skeleton requiring enhancement
-         - Early workflow phases must focus on strengthening case_facts.txt before downstream use
-         - digest and extractfacts operations discover additional facts requiring case_facts.txt updates
-         - Plan explicit case_facts.txt enhancement phases after fact-gathering operations
-         - Stronger case_facts.txt foundation leads to better brainstorm/strategy/draft outcomes
+         - Initial case_facts.md is typically a preliminary skeleton requiring enhancement
+         - Early workflow phases must focus on strengthening case_facts.md before downstream use
+         - digest and extractfacts operations discover additional facts requiring case_facts.md updates
+         - Plan explicit case_facts.md enhancement phases after fact-gathering operations
+         - Stronger case_facts.md foundation leads to better brainstorm/strategy/draft outcomes
 
       2B. CRITICAL ERRORS TO AVOID
-         [WRONG] litassist extractfacts case_facts.txt
+         [WRONG] litassist extractfacts case_facts.md
          [CORRECT] litassist extractfacts source_documents.pdf
 
          [WRONG] litassist brainstorm --side plaintiff --area civil --facts source_documents.pdf
-         [CORRECT] litassist brainstorm --side plaintiff --area civil --facts case_facts.txt
+         [CORRECT] litassist brainstorm --side plaintiff --area civil --facts case_facts.md
 
-         - extractfacts ONLY processes source documents litassist can read (.pdf, .rtf, .txt) - NOT Word .doc/.docx
-         - case_facts.txt is OUTPUT of extractfacts, never INPUT
-         - If you generate "extractfacts case_facts.txt" - THIS IS ALWAYS WRONG
+         - extractfacts ONLY processes source documents litassist can read (.pdf, .rtf, .txt, .md) - NOT Word .doc/.docx
+         - case_facts.md is OUTPUT of extractfacts, never INPUT
+         - If you generate "extractfacts case_facts.md" - THIS IS ALWAYS WRONG
 
       2B-1. WORKFLOW SEQUENCING LOGIC
-         - extractfacts is used on source documents (not on case_facts.txt) to create or enhance case_facts.txt
-         - digest is used on documents to discover facts, which are then folded into case_facts.txt with updatefacts
-         - updatefacts merges extractfacts/digest output (or any notes) into case_facts.txt, replacing manual editing
-         - brainstorm, strategy, draft, and barbrief all require a structured case_facts.txt as input
-         - Never run extractfacts on case_facts.txt itself
+         - extractfacts is used on source documents (not on case_facts.md) to create or enhance case_facts.md
+         - digest is used on documents to discover facts, which are then folded into case_facts.md with updatefacts
+         - updatefacts merges extractfacts/digest output (or any notes) into case_facts.md, replacing manual editing
+         - brainstorm, strategy, draft, and barbrief all require a structured case_facts.md as input
+         - Never run extractfacts on case_facts.md itself
          - Typical sequence:
-           1. extractfacts bank_statements.pdf vehicle_docs.pdf -> Produces outputs/extractfacts_*.txt
-           2. digest source_documents.pdf -> Produces outputs/digest_*.txt to fold in
-           3. updatefacts 'outputs/extractfacts_*.txt' 'outputs/digest_*.txt' -> Merges them into case_facts.txt
-           4. brainstorm --side <side> --area <area> --facts case_facts.txt -> Creates strategies
-           5. strategy case_facts.txt --outcome "<goal>" -> Tactical plans
-           6. draft case_facts.txt outputs/strategy_*.txt "<drafting instruction>" -> Legal documents
+           1. extractfacts bank_statements.pdf vehicle_docs.pdf -> Produces outputs/extractfacts_*.md
+           2. digest source_documents.pdf -> Produces outputs/digest_*.md to fold in
+           3. updatefacts 'outputs/extractfacts_*.md' 'outputs/digest_*.md' -> Merges them into case_facts.md
+           4. brainstorm --side <side> --area <area> --facts case_facts.md -> Creates strategies
+           5. strategy case_facts.md --outcome "<goal>" -> Tactical plans
+           6. draft case_facts.md outputs/strategy_*.md "<drafting instruction>" -> Legal documents
 
       2B-2. WORKFLOW VALIDATION
-         - If any phase generates "extractfacts case_facts.txt" or similar, THIS IS ALWAYS WRONG and must be corrected to use source documents as input.
+         - If any phase generates "extractfacts case_facts.md" or similar, THIS IS ALWAYS WRONG and must be corrected to use source documents as input.
          - Phase 1 should always be: Extract Facts from Source Documents
            Example: litassist extractfacts bank_statements.pdf vehicle_docs.pdf
-         - case_facts.txt is only ever the OUTPUT of extractfacts, and the INPUT to brainstorm/strategy/draft/barbrief.
+         - case_facts.md is only ever the OUTPUT of extractfacts, and the INPUT to brainstorm/strategy/draft/barbrief.
 
       2C. ONE-SHOT EXAMPLE: VEHICLE OWNERSHIP DISPUTE COMPREHENSIVE PLAN
 
          This example demonstrates proper workflow for a property/contract dispute with extensive research needs:
 
          ## Phase 1: Initial Fact Extraction (Day 1)
-         Purpose: Create structured case_facts.txt from primary documents
+         Purpose: Create structured case_facts.md from primary documents
          Commands: litassist extractfacts bank_statements.pdf vehicle_registration.pdf text_messages.pdf
          Cost: $2
-         Output feeds: All subsequent phases requiring case_facts.txt
+         Output feeds: All subsequent phases requiring case_facts.md
 
          ## Phase 2: Document Intelligence Gathering (Day 1-2)
          Purpose: Deep analysis of financial and ownership evidence
          Commands: litassist digest "Car Docs for civil case 2025/*.pdf" --mode issues --context "analyze ownership disputes, gift claims, presumption of advancement, and financial contributions"
          # Switch rationale: --mode issues for targeted fact discovery over chronological summary
          Cost: $3
-         Output feeds: case_facts.txt update via updatefacts (Phase 3)
+         Output feeds: case_facts.md update via updatefacts (Phase 3)
 
          ## Phase 3: Case Facts Enhancement (Day 2)
-         Purpose: Fold digest findings into case_facts.txt
-         Commands: litassist updatefacts 'outputs/digest_*.txt'
+         Purpose: Fold digest findings into case_facts.md
+         Commands: litassist updatefacts 'outputs/digest_*.md'
          Cost: $0.20
-         Output feeds: Enhanced case_facts.txt for all strategic analysis
+         Output feeds: Enhanced case_facts.md for all strategic analysis
 
          ## Phase 4-8: Comprehensive Legal Research (Days 3-5)
          Purpose: Build authoritative foundation across all legal theories
@@ -168,47 +168,47 @@ commands:
 
          ## Phase 9: Initial Strategy Generation (Day 6)
          Purpose: Generate creative approaches without research constraints
-         Commands: litassist brainstorm --side plaintiff --area civil --facts case_facts.txt --output brainstorm_creative
+         Commands: litassist brainstorm --side plaintiff --area civil --facts case_facts.md --output brainstorm_creative
          Cost: $4
          Output feeds: Strategy development, counselnotes synthesis
 
          ## Phase 10: Research-Informed Strategy (Day 6)
          Purpose: Generate precedent-backed strategies
-         Commands: litassist brainstorm --side plaintiff --area civil --facts case_facts.txt --research 'outputs/lookup_*.txt' --output brainstorm_research
+         Commands: litassist brainstorm --side plaintiff --area civil --facts case_facts.md --research 'outputs/lookup_*.md' --output brainstorm_research
          Cost: $5
          Output feeds: Enhanced strategy options for analysis
 
          ## Phase 11: First Synthesis - Research & Strategies (Day 7)
          Purpose: Combine all research and strategies into coherent analysis
-         Commands: litassist counselnotes outputs/lookup_*.txt outputs/brainstorm_*.txt --extract all
+         Commands: litassist counselnotes outputs/lookup_*.md outputs/brainstorm_*.md --extract all
          Cost: $4
          Output feeds: Draft memoranda, further strategy refinement
 
          ## Phase 12-14: Tactical Implementation Plans (Day 8)
          Purpose: Convert strategies to actionable plans
          Commands:
-           litassist strategy case_facts.txt --outcome "Recover vehicle purchase price through detinue or conversion claim" --strategies 'outputs/brainstorm_creative_*.txt' --strategies 'outputs/brainstorm_research_*.txt'
-           litassist strategy case_facts.txt --outcome "Establish resulting trust over vehicle" --strategies 'outputs/brainstorm_creative_*.txt' --strategies 'outputs/brainstorm_research_*.txt'
-           litassist strategy case_facts.txt --outcome "Rebut presumption of advancement and prove incomplete gift" --strategies 'outputs/brainstorm_creative_*.txt' --strategies 'outputs/brainstorm_research_*.txt'
+           litassist strategy case_facts.md --outcome "Recover vehicle purchase price through detinue or conversion claim" --strategies 'outputs/brainstorm_creative_*.md' --strategies 'outputs/brainstorm_research_*.md'
+           litassist strategy case_facts.md --outcome "Establish resulting trust over vehicle" --strategies 'outputs/brainstorm_creative_*.md' --strategies 'outputs/brainstorm_research_*.md'
+           litassist strategy case_facts.md --outcome "Rebut presumption of advancement and prove incomplete gift" --strategies 'outputs/brainstorm_creative_*.md' --strategies 'outputs/brainstorm_research_*.md'
          Cost: $9 total
          Output feeds: Final synthesis and memoranda
 
          ## Phase 15: Comprehensive Multi-Source Synthesis (Day 9)
          Purpose: Synthesize ALL materials into strategic assessment
-         Commands: litassist counselnotes outputs/brainstorm_*.txt outputs/lookup_*.txt outputs/digest_*.txt outputs/strategy_*.txt --extract all --verify
+         Commands: litassist counselnotes outputs/brainstorm_*.md outputs/lookup_*.md outputs/digest_*.md outputs/strategy_*.md --extract all --verify
          Cost: $4
          Output feeds: Final memoranda drafting
 
          ## Phase 16: Draft Feasibility Memorandum (Day 10)
          Purpose: Create comprehensive assessment of all options
-         Commands: litassist draft case_facts.txt outputs/counselnotes_*.txt outputs/strategy_*.txt "Draft comprehensive feasibility memorandum analyzing all property recovery options with risk assessments and recommendations" --output draft_feasibility_memo
+         Commands: litassist draft case_facts.md outputs/counselnotes_*.md outputs/strategy_*.md "Draft comprehensive feasibility memorandum analyzing all property recovery options with risk assessments and recommendations" --output draft_feasibility_memo
          # Switch rationale: draft verifies by default (no --verify flag; use --noverify to skip); --output names this deliverable
          Cost: $5
          Output feeds: Client advice, litigation planning
 
          ## Phase 17: Draft Strategic Recommendation (Day 10)
          Purpose: Executive summary with clear recommendations
-         Commands: litassist draft outputs/counselnotes_*.txt "Draft executive strategic recommendation memorandum highlighting recommended approach and implementation timeline" --output draft_strategic_recommendation
+         Commands: litassist draft outputs/counselnotes_*.md "Draft executive strategic recommendation memorandum highlighting recommended approach and implementation timeline" --output draft_strategic_recommendation
          Cost: $3
          Output feeds: Decision-making, client conference
 
@@ -230,7 +230,7 @@ commands:
 
          * `digest --context`, `brainstorm --research/--facts`, `strategy --outcome/--strategies`, `draft "<instruction>"`, `barbrief --context`, `counselnotes` inputs:
              - These flow into LLM-only analysis prompts.
-             - DO reference specific evidence, dates, parties, claims, and amounts from case_facts.txt.
+             - DO reference specific evidence, dates, parties, claims, and amounts from case_facts.md.
              - GOOD: digest --context "analyze the $40000 vehicle purchase by Victor Orlov on 3 June 2023"
              - BAD:  digest --context "focus on vehicle ownership"
              - GOOD: draft "Draft memorandum analysing feasibility of recovering $40000 from Martin Wong"
@@ -247,7 +247,7 @@ commands:
              - BAD:  lookup "Legal Profession Uniform Law s 178 consequences non-compliance disclosure costs agreement void assessment reduction" --context "NSW solicitor costs dispute; client seeks write-off of invoice 372763 on basis that revised estimate on 3 March 2026 did not comply with s 174..." (keyword-stuffed question + case narrative crammed into --context)
 
          RESEARCH QUERY CONSTRUCTION (for `lookup`):
-         - Base queries on three sources from case_facts.txt:
+         - Base queries on three sources from case_facts.md:
            1. EVIDENCE AVAILABLE: What documents/proof do we have?
            2. LEGAL ISSUES: What are our arguments that need support?
            3. OPPOSING ARGUMENTS: What claims must we counter?
@@ -263,7 +263,7 @@ commands:
 
          OPPOSING ARGUMENT ANALYSIS WORKFLOW:
          - Dedicate specific phases to systematically address each opposing claim
-         - For each opposing argument identified in case_facts.txt:
+         - For each opposing argument identified in case_facts.md:
            1. Research query to find contrary authority (use `lookup` with a SHORT focused question, per the lookup rule above)
            2. Document analysis to find contradictory evidence (use `digest --context` with case-specific narrative; that path is LLM-only)
            3. Strategy development to counter the argument
@@ -352,7 +352,7 @@ commands:
          Essential Phases:
          - Extract facts from all source documents
          - Digest documents for hidden facts and context
-         - case_facts.txt enhancement via updatefacts (folds in extractfacts/digest output)
+         - case_facts.md enhancement via updatefacts (folds in extractfacts/digest output)
          - Additional extractfacts if new documents discovered
          Goal: Rock-solid factual foundation
 
@@ -502,9 +502,9 @@ commands:
          ## COMMAND COVERAGE ANALYSIS
          For each major command NOT included in your plan, provide specific justification:
          - lookup: [included/omitted - if omitted, explain why]
-         - digest: [included/omitted - if omitted, explain why; note digest is essential for processing ongoing document flows and strengthening preliminary case_facts.txt with newly discovered facts]
-         - extractfacts: [included/omitted - if omitted, explain why; note extractfacts is critical for both initial case_facts.txt structuring and iterative enhancement as new documents are processed]
-         - updatefacts: [included/omitted - if omitted, explain why; note updatefacts folds extractfacts/digest output into case_facts.txt, replacing manual edits and keeping it auto-discoverable]
+         - digest: [included/omitted - if omitted, explain why; note digest is essential for processing ongoing document flows and strengthening preliminary case_facts.md with newly discovered facts]
+         - extractfacts: [included/omitted - if omitted, explain why; note extractfacts is critical for both initial case_facts.md structuring and iterative enhancement as new documents are processed]
+         - updatefacts: [included/omitted - if omitted, explain why; note updatefacts folds extractfacts/digest output into case_facts.md, replacing manual edits and keeping it auto-discoverable]
          - brainstorm: [included/omitted - if omitted, explain why]
          - strategy: [included/omitted - if omitted, explain why]
          - counselnotes: [included/omitted - if omitted, explain why]
@@ -513,16 +513,16 @@ commands:
          - verify: [included/omitted - if omitted, explain why]
 
       CASE FACTS UPDATE REQUIREMENTS:
-         - After digest operations: Plan an explicit updatefacts step to fold newly discovered facts into case_facts.txt
-         - After extractfacts operations: Plan case_facts.txt enhancement via updatefacts with the additional structured information
-         - Before brainstorm/strategy phases: Ensure case_facts.txt is comprehensive and current
-         - Include explicit "updatefacts [source outputs]" phases that fold findings into case_facts.txt
+         - After digest operations: Plan an explicit updatefacts step to fold newly discovered facts into case_facts.md
+         - After extractfacts operations: Plan case_facts.md enhancement via updatefacts with the additional structured information
+         - Before brainstorm/strategy phases: Ensure case_facts.md is comprehensive and current
+         - Include explicit "updatefacts [source outputs]" phases that fold findings into case_facts.md
 
       COMMAND CAPABILITIES REFERENCE:
          - lookup: Legal research via Jade.io database with citation verification
-         - digest: Document summarization and fact discovery for case_facts.txt enhancement
-         - extractfacts: Structured fact organization and case_facts.txt iterative development
-         - updatefacts: Folds extractfacts/digest output into case_facts.txt (auto-discoverable, replaces manual edits)
+         - digest: Document summarization and fact discovery for case_facts.md enhancement
+         - extractfacts: Structured fact organization and case_facts.md iterative development
+         - updatefacts: Folds extractfacts/digest output into case_facts.md (auto-discoverable, replaces manual edits)
          - brainstorm: Creative strategy generation (orthodox/unorthodox/analysis)
          - strategy: Tactical implementation planning with probability assessments
          - counselnotes: Strategic advocate analysis and multi-document synthesis
@@ -567,9 +567,9 @@ commands:
 
       3. SIMPLIFIED EVIDENCE APPROACH
          - Use the actual filenames from AVAILABLE SOURCE FILES (never invent); [MANUAL TASK] for anything not listed
-         - Focus on documents mentioned in case_facts.txt
+         - Focus on documents mentioned in case_facts.md
          - Single digest command for all documents together
-         - Skip iterative case_facts.txt updates
+         - Skip iterative case_facts.md updates
 
       4. TARGETED RESEARCH QUERIES
          - 5-8 queries maximum focusing on:
@@ -636,7 +636,7 @@ commands:
       3. EVIDENCE-BASED APPROACH
          - Reference the actual files from AVAILABLE SOURCE FILES (never invent); [MANUAL TASK] for anything not listed
          - Use --context for key document analysis
-         - One case_facts.txt update via updatefacts after digest (or edit manually)
+         - One case_facts.md update via updatefacts after digest (or edit manually)
 
       4. COMPREHENSIVE RESEARCH
          - 10-15 queries covering:

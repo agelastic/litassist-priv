@@ -1,6 +1,6 @@
 # Lookup Command Use Cases and Workflows
 
-Last updated: 27/05/2026
+Last updated: 02/06/2026
 
 ## Overview
 
@@ -317,7 +317,7 @@ litassist lookup "unfair dismissal remedies" --extract principles > research.txt
 litassist extractfacts client_termination_letter.pdf
 
 # 4. Draft advice
-litassist draft case_facts.txt "advice on unfair dismissal prospects"
+litassist draft case_facts.md "advice on unfair dismissal prospects"
 # Manually incorporate research.txt authorities
 ```
 
@@ -328,7 +328,7 @@ litassist draft case_facts.txt "advice on unfair dismissal prospects"
 litassist lookup "urgent injunction principles" --extract citations
 
 # Draft application
-litassist draft case_facts.txt "urgent injunction application"
+litassist draft case_facts.md "urgent injunction application"
 # Copy-paste citations
 
 # Get procedural requirements
@@ -345,7 +345,7 @@ litassist lookup "personal injury settlements motor vehicle"
 litassist lookup "Calderbank offers costs consequences" --extract principles
 
 # Prepare position
-litassist strategy case_facts.txt --outcome "Settlement $200-300k"
+litassist strategy case_facts.md --outcome "Settlement $200-300k"
 ```
 
 ## Benefits
