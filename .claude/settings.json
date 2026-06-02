@@ -2,7 +2,8 @@
   "permissions": {
     "allow": [
       "Bash(.venv/bin/python -c 'import io; src=open\\('\\\\''__TRACKED_VAR__'\\\\''\\).read\\(\\); compile\\(src,'\\\\''runner'\\\\'','\\\\''exec'\\\\''\\); print\\('\\\\''COMPILES OK'\\\\''\\)')",
-      "Bash(.venv/bin/pytest tests/unit/test_caseplan.py -q)"
+      "Bash(.venv/bin/pytest tests/unit/test_caseplan.py -q)",
+      "Bash(.venv/bin/pytest -p no:cacheprovider -q \"tests/unit/test_model_parameters.py::TestRecentModelParameterMapping::test_opus_48_caps_effort_at_xhigh\" \"tests/unit/test_model_parameters.py::TestRecentModelParameterMapping::test_opus_47_caps_effort_at_xhigh\")"
     ]
   },
   "hooks": {
