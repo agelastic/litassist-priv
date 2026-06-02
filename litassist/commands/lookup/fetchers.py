@@ -310,7 +310,7 @@ def _fetch_via_jina(url: str, timeout: int = 15) -> str:
         # Queensland legislation - use /whole to get full document
         if "legislation.qld.gov.au/view/html/inforce" in url and "/whole" not in url:
             url = url.rstrip("/") + "/whole"
-            click.echo(f"  → Using full document URL: {url}")
+            click.echo(f"  -> Using full document URL: {url}")
 
         headers = {}
         # Request markdown format for better document structure preservation
@@ -331,7 +331,7 @@ def _fetch_via_jina(url: str, timeout: int = 15) -> str:
             challenge_reason = _looks_like_challenge_page(response.text)
             if challenge_reason:
                 click.echo(
-                    f"  [✗ Jina returned challenge/interstitial: {challenge_reason}]"
+                    f"  [x Jina returned challenge/interstitial: {challenge_reason}]"
                 )
                 save_log(
                     "fetch_attempt",
@@ -372,9 +372,9 @@ def _fetch_via_jina(url: str, timeout: int = 15) -> str:
                     if response.text
                     else f"HTTP {response.status_code}"
                 )
-                click.echo(f"  [✗ Jina error: {error_msg}]")
+                click.echo(f"  [x Jina error: {error_msg}]")
             else:
-                click.echo("  [✗ Jina returned empty content]")
+                click.echo("  [x Jina returned empty content]")
 
             save_log(
                 "fetch_attempt",
@@ -396,7 +396,7 @@ def _fetch_via_jina(url: str, timeout: int = 15) -> str:
             )
             return ""
     except Exception as e:
-        click.echo(f"  [✗ Jina error: {str(e)}]")
+        click.echo(f"  [x Jina error: {str(e)}]")
         logging.warning(f"Jina Reader failed for {original_url}: {e}")
         save_log(
             "fetch_attempt",
@@ -430,7 +430,7 @@ def _rate_limit_austlii() -> None:
     delay = random.uniform(2.0, 3.0)
     if elapsed < delay:
         wait_time = delay - elapsed
-        click.echo(f"  → Rate limiting AustLII: waiting {wait_time:.1f}s")
+        click.echo(f"  -> Rate limiting AustLII: waiting {wait_time:.1f}s")
         time.sleep(wait_time)
 
 
@@ -484,7 +484,7 @@ def _extract_pdf_text_with_ocr(url: str, pdf_bytes: bytes, num_pages: int) -> st
 
     if num_pages > _PDF_OCR_MAX_PAGES:
         click.echo(
-            "  ✗ PDF OCR skipped: "
+            f"  x PDF OCR skipped: "
             f"{num_pages} pages exceeds limit of {_PDF_OCR_MAX_PAGES}"
         )
         save_log(
@@ -501,7 +501,7 @@ def _extract_pdf_text_with_ocr(url: str, pdf_bytes: bytes, num_pages: int) -> st
 
     ocrmypdf_path = shutil.which("ocrmypdf")
     if not ocrmypdf_path:
-        click.echo("  ✗ PDF OCR skipped: ocrmypdf not installed")
+        click.echo("  x PDF OCR skipped: ocrmypdf not installed")
         save_log(
             "fetch_attempt",
             {
@@ -514,7 +514,7 @@ def _extract_pdf_text_with_ocr(url: str, pdf_bytes: bytes, num_pages: int) -> st
         )
         return ""
 
-    click.echo("  → No embedded PDF text found; attempting OCR with ocrmypdf...")
+    click.echo("  -> No embedded PDF text found; attempting OCR with ocrmypdf...")
     try:
         with tempfile.TemporaryDirectory(prefix="litassist-ocr-") as tmpdir:
             input_path = os.path.join(tmpdir, "input.pdf")
@@ -544,7 +544,7 @@ def _extract_pdf_text_with_ocr(url: str, pdf_bytes: bytes, num_pages: int) -> st
             if result.returncode != 0:
                 error = (result.stderr or result.stdout or "").strip()
                 click.echo(
-                    "  ✗ PDF OCR failed"
+                    "  x PDF OCR failed"
                     + (f": {error[:160]}" if error else "")
                 )
                 save_log(
@@ -564,7 +564,7 @@ def _extract_pdf_text_with_ocr(url: str, pdf_bytes: bytes, num_pages: int) -> st
 
     except subprocess.TimeoutExpired:
         click.echo(
-            f"  ✗ PDF OCR timed out after {_PDF_OCR_TIMEOUT_SECONDS}s"
+            f"  x PDF OCR timed out after {_PDF_OCR_TIMEOUT_SECONDS}s"
         )
         save_log(
             "fetch_attempt",
@@ -578,7 +578,7 @@ def _extract_pdf_text_with_ocr(url: str, pdf_bytes: bytes, num_pages: int) -> st
         )
         return ""
     except Exception as e:
-        click.echo(f"  ✗ PDF OCR failed: {str(e)[:160]}")
+        click.echo(f"  x PDF OCR failed: {str(e)[:160]}")
         save_log(
             "fetch_attempt",
             {
@@ -592,7 +592,7 @@ def _extract_pdf_text_with_ocr(url: str, pdf_bytes: bytes, num_pages: int) -> st
         return ""
 
     if not ocr_text:
-        click.echo("  ✗ PDF OCR produced no text")
+        click.echo("  x PDF OCR produced no text")
         save_log(
             "fetch_attempt",
             {
@@ -623,7 +623,7 @@ def _extract_pdf_text_with_ocr(url: str, pdf_bytes: bytes, num_pages: int) -> st
             "timestamp": time.time(),
         },
     )
-    click.echo(f"  ✓ OCR extracted PDF text: {len(ocr_text)} chars")
+    click.echo(f"  OK OCR extracted PDF text: {len(ocr_text)} chars")
     return _with_fetch_method(ocr_content, "ocrmypdf/Tesseract")
 
 
@@ -638,7 +638,7 @@ def _run_or_schedule_pdf_ocr(
         return _extract_pdf_text_with_ocr(url, pdf_bytes, num_pages)
 
     click.echo(
-        "  → No embedded PDF text found; scheduling OCR while fetching continues..."
+        "  -> No embedded PDF text found; scheduling OCR while fetching continues..."
     )
     future = ocr_executor.submit(_extract_pdf_text_with_ocr, url, pdf_bytes, num_pages)
     return PendingOcrContent(url=url, future=future, num_pages=num_pages)
@@ -707,7 +707,7 @@ def _extract_pdf_text(
                     if ocr_content:
                         return ocr_content
                     click.echo(
-                        f"  ✗ PDF rejected: text/PDF ratio {ratio:.4f} (likely images/redacted)"
+                        f"  x PDF rejected: text/PDF ratio {ratio:.4f} (likely images/redacted)"
                     )
                     save_log(
                         "pdf_rejected_ratio",
@@ -723,7 +723,7 @@ def _extract_pdf_text(
                     return ""
 
                 if has_foi_markers and not is_official_foi_act:
-                    click.echo("  ✗ PDF rejected: FOI document markers detected")
+                    click.echo("  x PDF rejected: FOI document markers detected")
                     save_log(
                         "pdf_rejected_foi",
                         {
@@ -770,7 +770,7 @@ def _extract_pdf_text(
                     return ocr_content
                 logging.info(f"PDF has no extractable text (may be scanned): {url}")
                 click.echo(
-                    "  ✗ PDF skipped: no extractable text "
+                    "  x PDF skipped: no extractable text "
                     "(likely scanned/image-only)"
                 )
                 save_log(
@@ -835,18 +835,18 @@ def _fetch_url_content(
 
     # 1. Local file
     if not url.startswith(("http://", "https://", "ftp://")) and os.path.isfile(url):
-        click.echo("  → Reading local file...")
+        click.echo("  -> Reading local file...")
         try:
             from litassist.utils.file_ops import read_document
 
             content = read_document(url)
             if content:
-                click.echo(f"  ✓ Local file read: {len(content)} chars")
+                click.echo(f"  OK Local file read: {len(content)} chars")
                 return _with_fetch_method(f"[Source: {url}]\n\n{content}", "local file")
-            click.echo("  ✗ Local file is empty")
+            click.echo("  x Local file is empty")
             return ""
         except Exception as e:
-            click.echo(f"  ✗ Local file read error: {str(e)}")
+            click.echo(f"  x Local file read error: {str(e)}")
             return ""
 
     lower_url = url.lower()
@@ -856,8 +856,8 @@ def _fetch_url_content(
         if "ndfv.jade.io" in lower_url:
             if "/download" not in lower_url:
                 url = url.rstrip("/") + "/download"
-                click.echo(f"  → Transforming to ndfv.jade.io download URL: {url}")
-            click.echo("  → Fetching ndfv.jade.io via Jina Reader...")
+                click.echo(f"  -> Transforming to ndfv.jade.io download URL: {url}")
+            click.echo("  -> Fetching ndfv.jade.io via Jina Reader...")
             return _fetch_via_jina(url, timeout)
         logging.info(f"Skipping Jade.io URL (blocked from scrapers): {url}")
         save_log(
@@ -878,7 +878,7 @@ def _fetch_url_content(
     normalised_url, austlii_rewrite_reasons = _normalise_austlii_url(url)
     if austlii_rewrite_reasons:
         click.echo(
-            "  → Normalising AustLII URL "
+            "  -> Normalising AustLII URL "
             f"({'; '.join(austlii_rewrite_reasons)}): {normalised_url}"
         )
         save_log(
@@ -908,7 +908,7 @@ def _fetch_url_content(
             _last_austlii_completion = time.time()
 
     if response is None:
-        click.echo("  → curl_cffi returned no response, falling back to Jina")
+        click.echo("  -> curl_cffi returned no response, falling back to Jina")
         return _fetch_via_jina(url, timeout)
 
     if response.status_code != 200:
@@ -920,7 +920,7 @@ def _fetch_url_content(
 
         if index_fallback_url:
             click.echo(
-                "  → AustLII flat HTML sibling returned 404; "
+                "  -> AustLII flat HTML sibling returned 404; "
                 f"trying index sibling: {index_fallback_url}"
             )
             save_log(
@@ -961,7 +961,7 @@ def _fetch_url_content(
             else:
                 if retry_response is None:
                     click.echo(
-                        "  ✗ AustLII index sibling retry returned no response, "
+                        "  x AustLII index sibling retry returned no response, "
                         "falling back to Jina"
                     )
                     save_log(
@@ -977,7 +977,7 @@ def _fetch_url_content(
                     return _fetch_via_jina(index_fallback_url, timeout)
                 if retry_response.status_code == 404:
                     click.echo(
-                        "  ✗ AustLII index sibling also returned 404; "
+                        "  x AustLII index sibling also returned 404; "
                         "skipping Jina"
                     )
                     save_log(
@@ -994,7 +994,7 @@ def _fetch_url_content(
                     return ""
                 else:
                     click.echo(
-                        "  ✗ AustLII index sibling retry returned HTTP "
+                        f"  x AustLII index sibling retry returned HTTP "
                         f"{retry_response.status_code}, falling back to Jina"
                     )
                     save_log(
@@ -1011,7 +1011,7 @@ def _fetch_url_content(
                     return _fetch_via_jina(index_fallback_url, timeout)
         else:
             if response.status_code == 404:
-                click.echo("  ✗ curl_cffi returned HTTP 404; skipping Jina")
+                click.echo("  x curl_cffi returned HTTP 404; skipping Jina")
                 save_log(
                     "fetch_attempt",
                     {
@@ -1026,7 +1026,7 @@ def _fetch_url_content(
                 return ""
 
             click.echo(
-                f"  ✗ curl_cffi returned HTTP {response.status_code}, falling back to Jina"
+                f"  x curl_cffi returned HTTP {response.status_code}, falling back to Jina"
             )
             save_log(
                 "fetch_attempt",
@@ -1042,14 +1042,14 @@ def _fetch_url_content(
 
     # 6. PDF magic bytes (binary check first - response.text on a PDF is junk)
     if response.content.startswith(b"%PDF"):
-        click.echo("  → curl_cffi returned PDF, extracting text...")
+        click.echo("  -> curl_cffi returned PDF, extracting text...")
         return _extract_pdf_text(url, response.content, ocr_executor)
 
     # 6b. RTF magic bytes (AustLII serves some cases as .rtf)
     from litassist.utils.rtf import looks_like_rtf, extract_rtf_text
 
     if looks_like_rtf(response.content):
-        click.echo("  → curl_cffi returned RTF, extracting text...")
+        click.echo("  -> curl_cffi returned RTF, extracting text...")
         rtf_content = extract_rtf_text(url, response.content)
         rtf_method = (
             "striprtf"
@@ -1067,7 +1067,7 @@ def _fetch_url_content(
     _acceptable_types = ("text/html", "text/plain", "text/xml", "application/xhtml+xml", "application/xml", "")
     if _ct and _ct not in _acceptable_types:
         click.echo(
-            f"  ✗ curl_cffi returned unexpected content-type '{_ct}', falling back to Jina"
+            f"  x curl_cffi returned unexpected content-type '{_ct}', falling back to Jina"
         )
         save_log(
             "fetch_attempt",
@@ -1113,7 +1113,7 @@ def _fetch_url_content(
             doc_url = doc_match.group("u")
             if not doc_url.startswith("http"):
                 doc_url = urljoin(url, doc_url)
-            click.echo(f"  → Following legislation.gov.au document link: {doc_url}")
+            click.echo(f"  -> Following legislation.gov.au document link: {doc_url}")
             doc_response = _fetch_via_curl_cffi(doc_url, timeout)
             if doc_response is not None and doc_response.status_code == 200:
                 url = doc_url
@@ -1124,7 +1124,7 @@ def _fetch_url_content(
                 # 'document', which the loosened gibberish heuristic
                 # (text < 100 chars) would not catch. Route to Jina instead.
                 click.echo(
-                    "  ✗ legislation.gov.au document link fetch failed, "
+                    "  x legislation.gov.au document link fetch failed, "
                     "falling back to Jina (avoiding ToC false positive)"
                 )
                 save_log(
@@ -1146,7 +1146,7 @@ def _fetch_url_content(
     try:
         text = _extract_text_from_html(raw_html)
     except Exception as e:
-        click.echo(f"  ✗ HTML parsing failed: {e}, falling back to Jina")
+        click.echo(f"  x HTML parsing failed: {e}, falling back to Jina")
         return _fetch_via_jina(url, timeout)
 
     # 8. Unusable response detection.
@@ -1157,7 +1157,7 @@ def _fetch_url_content(
     challenge_reason = _looks_like_challenge_page(raw_html, is_jina_markdown=False)
     if challenge_reason:
         click.echo(
-            f"  ✗ curl_cffi returned challenge page: {challenge_reason}, falling back to Jina"
+            f"  x curl_cffi returned challenge page: {challenge_reason}, falling back to Jina"
         )
         save_log(
             "fetch_attempt",
@@ -1176,7 +1176,7 @@ def _fetch_url_content(
     spa_reason = _looks_like_spa_shell(raw_html, text)
     if spa_reason:
         click.echo(
-            f"  ✗ curl_cffi returned SPA shell: {spa_reason}, falling back to Jina"
+            f"  x curl_cffi returned SPA shell: {spa_reason}, falling back to Jina"
         )
         save_log(
             "fetch_attempt",
@@ -1201,7 +1201,7 @@ def _fetch_url_content(
     # and all substantive legal phrases present - the content was correct,
     # only the formatting was poor.
     if len(text) < 100:
-        click.echo("  ✗ Extracted text too short, falling back to Jina")
+        click.echo("  x Extracted text too short, falling back to Jina")
         save_log(
             "fetch_attempt",
             {
@@ -1230,5 +1230,5 @@ def _fetch_url_content(
             **_response_audit_fields(response),
         },
     )
-    click.echo(f"  ✓ curl_cffi fetch: {len(text)} chars")
+    click.echo(f"  OK curl_cffi fetch: {len(text)} chars")
     return _with_fetch_method(content, "curl_cffi")

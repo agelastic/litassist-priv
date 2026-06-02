@@ -252,7 +252,7 @@ def fetch_citation_context(citations: List[str]) -> tuple[Dict[str, str], List[t
             clean_citation = citation.strip()
             if clean_citation in HARDCODED_LEGISLATION_URLS:
                 url = HARDCODED_LEGISLATION_URLS[clean_citation]
-                click.echo(f"  → Using hardcoded URL for {citation}")
+                click.echo(f"  -> Using hardcoded URL for {citation}")
                 save_log(
                     "citation_hardcoded_url",
                     {
@@ -361,7 +361,7 @@ def fetch_citation_context(citations: List[str]) -> tuple[Dict[str, str], List[t
         if not content_valid and not is_legislation:
             austlii_url = construct_austlii_url(citation)
             if austlii_url:
-                click.echo("  → Trying direct AustLII URL")
+                click.echo("  -> Trying direct AustLII URL")
                 content = _try_fetch_and_validate(austlii_url, citation)
                 if content:
                     url = austlii_url

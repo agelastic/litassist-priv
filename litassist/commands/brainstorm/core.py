@@ -484,7 +484,7 @@ def brainstorm(facts, side, area, research, verify, output):
     else:
         click.echo(f"Using facts from {len(facts_sources)} files:")
         for source in facts_sources:
-            click.echo(f"  • {source}")
+            click.echo(f"  * {source}")
 
     # Combine facts with source attribution if multiple files
     if len(facts_contents) == 1:
@@ -793,12 +793,12 @@ def brainstorm(facts, side, area, research, verify, output):
         f"Generated strategies for {side.capitalize()} in {area.capitalize()} law:"
     )
     click.echo(f"\n{msg}")
-    click.echo(f"   • Orthodox strategies: {parsed_result.get('orthodox_count', 0)}")
+    click.echo(f"   * Orthodox strategies: {parsed_result.get('orthodox_count', 0)}")
     click.echo(
-        f"   • Unorthodox strategies: {parsed_result.get('unorthodox_count', 0)}"
+        f"   * Unorthodox strategies: {parsed_result.get('unorthodox_count', 0)}"
     )
     click.echo(
-        f"   • Most likely to succeed: {parsed_result.get('most_likely_count', 0)}"
+        f"   * Most likely to succeed: {parsed_result.get('most_likely_count', 0)}"
     )
 
     tip_msg = tip_message(f'View full strategies: open "{output_file}"')

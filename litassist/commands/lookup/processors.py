@@ -108,28 +108,30 @@ class LookupProcessor:
                 # Check if it's PDF content for appropriate user message
                 if content.startswith("[PDF DOCUMENT EXTRACTED"):
                     click.echo(
-                        f"  [✓ Extracted text from PDF at {link.split('/')[2]} "
+                        f"  [OK Extracted text from PDF at {link.split('/')[2]} "
                         f"via {method}]"
                     )
                     pdf_count += 1
                 elif content.startswith("[RTF DOCUMENT EXTRACTED"):
                     click.echo(
-                        f"  [✓ Extracted text from RTF at {link.split('/')[2]} "
+                        f"  [OK Extracted text from RTF at {link.split('/')[2]} "
                         f"via {method}]"
                     )
                 elif content.startswith("[OCR DOCUMENT EXTRACTED"):
                     click.echo(
-                        f"  [✓ OCR extracted text from PDF at {link.split('/')[2]} "
+                        f"  [OK OCR extracted text from PDF at {link.split('/')[2]} "
                         f"via {method}]"
                     )
                     pdf_count += 1
                 else:
                     click.echo(
-                        f"  [✓ Fetched {len(content)} chars from {link.split('/')[2]} via {method}]"
+                        f"  [OK Fetched {len(content)} chars from {link.split('/')[2]} via {method}]"
                     )
                 fetched_count += 1
             else:
-                click.echo(f"  [✗ Failed to fetch from {link.split('/')[2]}]")
+                click.echo(
+                    f"  [x Failed to fetch from {link.split('/')[2]}]"
+                )
                 skipped_count += 1
 
         pending_ocr: list[tuple[str, PendingOcrContent]] = []
@@ -138,7 +140,7 @@ class LookupProcessor:
                 # Safety check: don't run forever
                 if time.time() - start_time > max_time:
                     click.echo(
-                        f"  [⚠ Time limit reached, stopping after {fetched_count} successful fetches]"
+                        f"  [! Time limit reached, stopping after {fetched_count} successful fetches]"
                     )
                     break
 
@@ -149,7 +151,7 @@ class LookupProcessor:
                         pass  # Continue to fetch this URL
                     else:
                         click.echo(
-                            "  [→ Jade.io: Using search snippet only (site restrictions)]"
+                            "  [-> Jade.io: Using search snippet only (site restrictions)]"
                         )
                         skipped_count += 1
                         continue
@@ -183,14 +185,14 @@ class LookupProcessor:
                     content = pending.future.result()
                 except Exception as e:
                     click.echo(
-                        f"  ✗ OCR failed for {link.split('/')[2]}: {str(e)[:100]}"
+                        f"  x OCR failed for {link.split('/')[2]}: {str(e)[:100]}"
                     )
                     content = ""
                 if content:
                     record_content(link, content)
                 else:
                     click.echo(
-                        f"  [✗ PDF skipped after OCR attempt at {link.split('/')[2]}]"
+                        f"  [x PDF skipped after OCR attempt at {link.split('/')[2]}]"
                     )
                     skipped_count += 1
 

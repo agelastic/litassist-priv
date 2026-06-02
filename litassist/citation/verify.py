@@ -271,8 +271,8 @@ def remove_citation_from_text(text: str, citation: str) -> str:
         rf"\s+as\s+(?:held|established|decided|ruled)\s+in\s+{escaped_citation}",
         # Pattern 2: "([citation])"
         rf"\s*\(\s*{escaped_citation}\s*\)",
-        # Pattern 3: "— [citation]"
-        rf"\s*[—–-]\s*\*?{escaped_citation}\*?",
+        # Pattern 3: "- [citation]"
+        rf"\s*[\u2014\u2013-]\s*\*?{escaped_citation}\*?",
         # Pattern 4: "; [citation]"
         rf"\s*;\s*{escaped_citation}",
         # Pattern 5: ", [citation]"

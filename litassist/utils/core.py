@@ -23,7 +23,7 @@ from litassist.utils.formatting import (
 )
 
 
-# ── Logging Setup ───────────────────────────────────────────
+# --- Logging Setup ---
 # Logging is now configured centrally in logging_utils.setup_logging()
 
 
@@ -74,7 +74,7 @@ def heartbeat(interval: Optional[float] = None):
                     try:
                         # Suppress during pytest runs
                         if not os.environ.get("PYTEST_CURRENT_TEST"):
-                            click.echo("…still working, please wait…", err=True)
+                            click.echo("...still working, please wait...", err=True)
                     except Exception:
                         logging.debug("Heartbeat thread: failed to emit message, stopping")
                         break

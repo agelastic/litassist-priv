@@ -86,9 +86,9 @@ class LLMClient(LLMVerificationMixin):
     # The verification helpers already had their own heartbeat wrapper, but that
     # resulted in progress messages only during the verification stage.  By
     # moving the heartbeat decorator to the main `complete` method we ensure
-    # that all long-running LLM invocations – including the initial content
-    # generation used by commands such as `extractfacts` – emit "…still working,
-    # please wait…" notifications.  Down-stream helpers that themselves call
+    # that all long-running LLM invocations - including the initial content
+    # generation used by commands such as `extractfacts` - emit "...still working,
+    # please wait..." notifications.  Down-stream helpers that themselves call
     # `complete` therefore no longer need their own heartbeat wrappers.
     def _format_date_string(self):
         """Get current date formatted for prompt injection."""

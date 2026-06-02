@@ -17,7 +17,7 @@ from litassist.timing import timed
 @timed
 def read_document(path: str) -> str:
     """
-    Read a PDF (text‐only) or plain‐text file and return its full text.
+    Read a PDF (text-only) or plain-text file and return its full text.
 
     Args:
         path: The path to the PDF or text file to read.

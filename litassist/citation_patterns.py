@@ -12,7 +12,7 @@ from litassist.timing import timed
 import time
 
 
-# ── Pattern Constants ─────────────────────────────────────────
+# --- Pattern Constants ---
 
 # Common generic surnames that are often hallucinated
 GENERIC_SURNAMES = [
@@ -145,7 +145,7 @@ HALLUCINATION_INDICATORS = [
 ]
 
 
-# ── Citation Extraction Functions ─────────────────────────────
+# --- Citation Extraction Functions ---
 
 
 @timed
@@ -254,12 +254,12 @@ def extract_citations(text: str) -> List[str]:
     return list(citations)
 
 
-# ── Individual Validation Functions ─────────────────────────────
+# --- Individual Validation Functions ---
 # Note: Pattern-based validation functions removed as they are bypassed
 # in favor of online database verification (see validate_citation_patterns)
 
 
-# ── Main Validation Function ─────────────────────────────────────
+# --- Main Validation Function ---
 
 
 def validate_citation_patterns(content: str, enable_online: bool = True) -> List[str]:
@@ -287,7 +287,7 @@ def validate_citation_patterns(content: str, enable_online: bool = True) -> List
     if not enable_online:
         return []
 
-    # ── Online Database Verification ────────────────
+    # --- Online Database Verification ---
     # Perform online verification for ALL citations
     try:
         from litassist.citation.verify import verify_all_citations
