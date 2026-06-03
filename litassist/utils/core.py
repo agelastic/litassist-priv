@@ -23,7 +23,7 @@ from litassist.utils.formatting import (
 )
 
 
-# ── Logging Setup ───────────────────────────────────────────
+# --- Logging Setup ---
 # Logging is now configured centrally in logging_utils.setup_logging()
 
 
@@ -74,7 +74,7 @@ def heartbeat(interval: Optional[float] = None):
                     try:
                         # Suppress during pytest runs
                         if not os.environ.get("PYTEST_CURRENT_TEST"):
-                            click.echo("…still working, please wait…", err=True)
+                            click.echo("...still working, please wait...", err=True)
                     except Exception:
                         logging.debug("Heartbeat thread: failed to emit message, stopping")
                         break
@@ -132,6 +132,32 @@ def show_command_completion(
 
     tip_msg = tip_message(f'View full output: open "{output_file}"')
     click.echo(f"\n{tip_msg}")
+
+
+# Verifier replies place the corrected document under this header. The match is
+# deliberately tolerant of light formatting drift (optional #/##/### or **bold**,
+# "and"/"&", case, trailing colon) because verifier models vary, while still
+# requiring the exact phrase on its own line so a stray mention never mis-triggers.
+_VERIFIED_DOCUMENT_HEADER = re.compile(
+    r"^\s*#{0,3}\s*\*{0,2}\s*Verified\s+(?:and|&)\s+Corrected\s+Document\s*\*{0,2}\s*:?\s*$",
+    re.IGNORECASE | re.MULTILINE,
+)
+
+
+def extract_verified_document(text: str, fallback: str) -> tuple[str, bool]:
+    """Pull the corrected document out of a verifier reply.
+
+    Verifier prompts ask the model to return the corrected text under a
+    "## Verified and Corrected Document" header. Returns (document_body, True)
+    when that header is found, else (fallback, False) so callers PRESERVE the
+    pre-verification content rather than overwriting it with the verifier's
+    freeform reply. The header match tolerates light formatting variants (see
+    ``_VERIFIED_DOCUMENT_HEADER``) but stays line-anchored to avoid mis-extraction.
+    """
+    match = _VERIFIED_DOCUMENT_HEADER.search(text)
+    if not match:
+        return fallback, False
+    return text[match.end():].strip(), True
 
 
 def parse_strategies_file(strategies_text: str) -> dict:
@@ -197,11 +223,52 @@ def parse_strategies_file(strategies_text: str) -> dict:
     )
     if likely_match:
         likely_text = likely_match.group(1)
+        # The analysis prompt formats each entry as "**N. Title**" (bold), so allow
+        # an optional leading "**" before the number; bare "N." still matches too.
         parsed["most_likely_count"] = len(
-            re.findall(r"^\d+\.", likely_text, re.MULTILINE)
+            re.findall(r"^(?:\*\*)?\d+\.", likely_text, re.MULTILINE)
         )
 
     return parsed
+
+
+def parse_strategies_files(named_contents) -> dict:
+    """Parse and merge several brainstorm strategy files into one summary dict.
+
+    strategy --strategies accepts multiple files (e.g. the dual-brainstorm
+    creative AND research sets). Each is parsed individually with
+    parse_strategies_file, then the three counts are SUMMED, the side/area
+    metadata from the first file that carries it is kept (the sets share a case,
+    so this is robust to one file lacking the headers), and the raw bodies are
+    joined under the standard '=== label ===' separator for the LLM prompt. The
+    return shape matches parse_strategies_file, so downstream code is unchanged.
+
+    Args:
+        named_contents: Iterable of (label, text) pairs; label is the filename
+            shown in the '=== label ===' separator.
+
+    Returns:
+        Dict with summed orthodox/unorthodox/most_likely counts, the first file's
+        metadata, and the combined labelled text in raw_content.
+    """
+    merged = {
+        "metadata": {},
+        "orthodox_count": 0,
+        "unorthodox_count": 0,
+        "most_likely_count": 0,
+        "raw_content": "",
+    }
+    parts = []
+    for label, text in named_contents:
+        parsed = parse_strategies_file(text)
+        merged["orthodox_count"] += parsed["orthodox_count"]
+        merged["unorthodox_count"] += parsed["unorthodox_count"]
+        merged["most_likely_count"] += parsed["most_likely_count"]
+        if not merged["metadata"] and parsed["metadata"]:
+            merged["metadata"] = parsed["metadata"]
+        parts.append(f"=== {label} ===\n{text}")
+    merged["raw_content"] = "\n\n".join(parts)
+    return merged
 
 
 def validate_side_area_combination(side: str, area: str):

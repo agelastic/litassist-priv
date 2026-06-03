@@ -1,6 +1,6 @@
 # LitAssist Feature Roadmap
 
-Last updated: 29/05/2026
+Last updated: 02/06/2026
 **Status:** Strategic planning; roadmap items are aspirational unless marked DONE, PARTIALLY SUPERSEDED, or already implemented elsewhere
 **Confidence:** 0.88
 
@@ -844,7 +844,7 @@ standard full-plan model, and ship `--tactical` together with `--matter`.
 - Commands:
   - `la adversary --input submission.md --matter LITIGATION-001`
   - `la adversary --input submission.md --opponent "Counsel A"` (uses profile)
-  - `la draft --input case_facts.txt --adversary-test` (integrated mode)
+  - `la draft --input case_facts.md --adversary-test` (integrated mode)
 - LLM: Claude Sonnet 4.6 (adversarial reasoning) + GPT-5.5 (weakness identification)
 - Output: Adversary response + weakness report + strengthening recommendations
 
@@ -918,9 +918,11 @@ retrieval pipeline.
   and `barbrief`
 - Temporary `prompts/glob_help_addon.yaml` removed
 
-**Deferred:**
-- Glob support for `strategy --strategies` remains outstanding: it requires
-  changing the option from a single-file to a multiple-files interface
+**Completed (June 2026):**
+- `strategy --strategies` is now a multiple-files interface (`multiple=True` via
+  `expand_glob_newest_each_callback`): repeatable, one brainstorm set per flag,
+  each flag resolving to its own newest match. `parse_strategies_files` merges the
+  sets. This closes the last deferred item under P4-25.
 
 ---
 
@@ -1057,6 +1059,6 @@ la profile --create "Agency A" --type government
 
 ---
 
-Last updated: 22/05/2026
+Last updated: 02/06/2026
 **Status:** Strategic planning; roadmap items are aspirational unless marked DONE, PARTIALLY SUPERSEDED, or already implemented elsewhere
 **Next Review:** After Phase 1 completion

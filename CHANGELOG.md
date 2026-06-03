@@ -1,6 +1,6 @@
 # Changelog
 
-Last updated: 30/05/2026
+Last updated: 02/06/2026
 
 All notable changes to LitAssist will be documented in this file.
 
@@ -21,13 +21,30 @@ Historical dated sections preserve the model names that were current when those 
 - Counsel notes strategic analysis command
 - Case plan generation for litigation planning
 - `litassist refresh` subcommand: pulls per-model context-window, prices, and supported-parameters from OpenRouter `/api/v1/models` and writes `litassist/llm/model_capabilities.yaml`. Fails loudly when any model in `model_configs.yaml` is missing from the OpenRouter response.
-- Direct OpenAI configuration removed. `config.yaml` no longer carries an `openai:` block; the project routes every LLM call through OpenRouter using `openrouter.api_key`. Provider-level BYOK for models like `openai/o3-pro` is configured at https://openrouter.ai/settings/integrations, not in this project's config.
+- Direct OpenAI configuration removed. `config.yaml` no longer carries an `openai:` block; the project routes every LLM call through OpenRouter using `openrouter.api_key`. Provider-level BYOK for models like `openai/o3-pro` is configured at <https://openrouter.ai/settings/integrations>, not in this project's config.
 - Stale model references cleaned up across docs and prompts. `litassist/prompts/system_feedback.yaml` dropped its dead `api:` subsection (`key_placeholder`, `byok_required_o1_pro`, `byok_required_o3` — none of which had any consumer in code). `litassist/README.md` example updated from `anthropic/claude-3-sonnet` to `anthropic/claude-sonnet-4.6`. `litassist/commands/digest/chunker.py` openai chunk-limit comment retargeted from `GPT-4/o3's 400k context` to the actual active models. `docs/development/LLM_MODEL_STRATEGY.md` ensemble example fixed from non-existent `x-ai/grok-4.20-turbo` to `x-ai/grok-4.20`. `docs/development/adversarial_modelling.md` Model Landscape section gained a design-time caveat clarifying that specific version pins (Claude Opus 4.6, Gemini 2.5, Grok 4.1 Fast) need re-validation against `model_configs.yaml` at implementation time.
 - Parameter-translation infrastructure in `litassist/llm/model_profiles.py` is explicitly NOT narrowed. A header comment encodes the policy: the classifier tables must cover any OpenRouter model the user might swap into `model_configs.yaml`, not just the currently-active set.
 - `LLMClientFactory.get_context_window_for_command()` lookup helper backed by the new capability file.
 - `draft` preflight oversize handling: soft warn + hard fail derived from the model's actual context window plus a provider-error reframe pointing users at `litassist digest --mode summary <file>`.
 
 ### Changed
+
+#### June 2026: input budget is 80% of the routed model's window; counselnotes consolidates chunks
+- `LLMClientFactory.get_input_budget_for_command` now offers 80% of each routed model's context window to input (was 30%). The budget already reads the per-model window from `model_capabilities.yaml`, so commands use far more of their window before chunking or rejecting input (e.g. `counselnotes` on a 200k-window model now runs typical multi-document inputs in a single unified pass instead of splitting into three). `1 - fraction` is the worst-case reserve for system prompt + reasoning + completion; 0.80 leaves comfortable headroom on every routed model.
+- `brainstorm` now sizes its case-facts cap against its **analysis** stage (the smallest-window model in the pipeline, which receives facts + orthodox + unorthodox), not the orthodox-generation model. Previously the cap was computed against a larger-window model, so it could not protect the narrowest stage.
+- `counselnotes --extract` now consolidates multi-chunk extractions with a single LLM reduce (preserving and merging the per-mode section headings) instead of concatenating the partials. The reduce runs only when the input was actually chunked; a single unified extraction is returned as-is.
+
+#### June 2026: command outputs are Markdown (.md); caseplan runner is .py
+- All command outputs now save with a `.md` extension instead of `.txt` (they have always been Markdown-formatted prose). `save_command_output` gained an `extension` parameter (default `.md`); the caseplan executable runner passes `extension=".py"` so it is saved as a real Python file (`caseplan_commands_*.py`, run with `python <file>`). The canonical case-facts file is now `case_facts.md`: `updatefacts` writes the stable `case_facts.md` and the caseplan runner seeds/copies the baseline as `case_facts.md`. `resolve_case_facts_file()` globs BOTH `case_facts*.md` and legacy `case_facts*.txt`, so existing `.txt` case-facts folders keep auto-resolving (newest still wins by the same recency rule). The caseplan and capabilities prompts, all command help text, and the user/developer docs now reference `outputs/*.md` and `case_facts.md`. Source-document inputs are unchanged - litassist still reads `.pdf`, `.rtf`, `.txt`, and `.md`. Supersedes the `.txt` output/case-facts filenames shown in the earlier Unreleased entries below.
+
+#### June 2026: caseplan sends the real source-file inventory to the planner
+- The caseplan prompt previously sent case facts + budget + context but NO list of the documents actually present, so the model invented source-document filenames (e.g. `bank_statements.pdf`) and the generated runner then failed at `extractfacts`/`digest` on files that do not exist. caseplan now discovers the source documents in the working directory (top-level `pdf/rtf/txt` - the formats litassist can read; Word `.doc/.docx` are not listed - excluding `case_facts*.txt`), lists them for the user, and injects an `AVAILABLE SOURCE FILES` block into the prompt instructing the model to use those EXACT names, target the specific files each step needs by role (not blanket-glob unrelated documents), and mark `[MANUAL TASK]` for any needed-but-absent document. When run interactively, caseplan shows the inventory and asks to confirm before the paid full-plan call (`--yes`/`-y` skips the prompt; non-interactive runs proceed). Fully local - no file contents are read and no extra LLM call. The chosen file list is recorded in the caseplan audit log.
+
+#### June 2026: caseplan emits a Python runner that isolates each execution
+- A caseplan-generated script accumulates outputs into the shared, never-cleaned `outputs/` folder, so a glob like `outputs/brainstorm_creative_*.txt` could match files from a PREVIOUS run (and a re-run silently mixed with the prior attempt). caseplan now generates a **Python** runner instead of a bash script (`command_extractor.py`). When executed, the runner creates a fresh `outputs/run_<YYYYMMDD_HHMMSS_microseconds>/` directory, sets `LITASSIST_OUTPUT_DIR` (inherited by every `subprocess.run(args, shell=False)` step), and rewrites every `outputs/...` and `case_facts` argument to `os.path.join(run_dir, ...)`. So each EXECUTION is fully isolated - outputs AND case_facts live in the run dir, retries never mix, and there is no shell-injection surface. `save_command_output` honours `LITASSIST_OUTPUT_DIR` when no explicit dir is given (the single output sink), `updatefacts` and `resolve_case_facts_file` honour it for case_facts, and a supplied cwd `case_facts*.txt` is copied in as a seed (the cwd original is never mutated). All hooks are env-gated, so normal single-command use is unchanged. This replaces the earlier per-generation `RUNID` sentinel approach. A new `include_header=False` on `save_command_output` writes the runner verbatim so it stays executable Python.
+
+#### June 2026: strategy `--strategies` accepts MULTIPLE brainstorm sets
+- The caseplan dual-brainstorm design produces two files - a creative set (`brainstorm_creative_*`) and a research set (`brainstorm_research_*`) - but `strategy --strategies` was single-valued (`expand_glob_single_callback`), so it silently ingested only the newest match and dropped the other set. `--strategies` is now `multiple=True` (repeatable: one brainstorm set per flag) backed by a new `expand_glob_newest_each_callback` (`litassist/utils/file_ops.py`): each flag resolves INDEPENDENTLY to its own most-recent match (so older same-prefix files from prior runs are ignored), every glob resolution is announced on the console, and the resolved files are de-duplicated. A new `parse_strategies_files` merge helper (`litassist/utils/core.py`) parses each file, SUMS the orthodox/unorthodox/most-likely counts for the on-screen summary, and joins the bodies under the standard `=== filename ===` separator before the combined text goes to the model. The caseplan prompt now emits two `--strategies` flags (creative + research) for each `strategy` step. The scalar `expand_glob_single_callback` is unchanged - `verify`'s single `FILE` arg still uses it.
 
 #### May 2026: strategy `--strategies` and verify `FILE` accept globs (most recent match)
 - Caseplan-generated scripts chain step outputs by glob (e.g. `strategy --strategies 'outputs/brainstorm_*.txt'`, `verify 'outputs/draft_*.txt'`), and the user docs already showed those forms, but the two single-input path args crashed on a glob: `--strategies` was a `click.File` and `verify`'s `FILE` was `click.Path(exists=True)`, both resolved at Click's parse stage before any callback could expand the pattern. Both now use a new `expand_glob_single_callback` (`litassist/utils/file_ops.py`): a literal path passes through, a glob resolves to the most recent matching file (by mtime, mirroring `resolve_case_facts_file`), and a zero-match / directory / missing literal fails loudly. When a glob matches more than one file (e.g. `draft` writes a raw and a final file under one prefix) it warns and uses the newest. Multi-input commands (`counselnotes`, `draft`, `barbrief`, `digest`, `brainstorm --research`) are unchanged - they still take all matches.
@@ -88,7 +105,7 @@ Historical dated sections preserve the model names that were current when those 
 #### May 2026: `litassist test` cleanup
 - Removed Jina Reader API probe from `litassist test`. Jina is a fallback transport used only on Cloudflare challenge bodies, SPA shells, or non-HTML payloads; failures on free-tier `r.jina.ai` were not diagnostic of LitAssist health and the 10-second timeout produced false negatives on healthy systems.
 - Migrated OpenRouter auth probe in `validate_credentials` from `/auth/key` to `/key`. Both endpoints currently resolve; `/key` is the canonical name in current OpenRouter API docs and the legacy `/auth/key` alias is retained only for backward compatibility. The probe still only checks `status_code == 200` — its purpose is to confirm the bearer token authenticates, not to surface BYOK status (OpenRouter does not expose BYOK requirements via the API).
-- Added BYOK reminder block to `litassist test`. After the OpenRouter auth + catalogue probes, the command now lists each configured model that requires a user-supplied provider key at OpenRouter (currently only `openai/o3-pro`) along with the commands routing to it and a pointer to https://openrouter.ai/settings/integrations. The reminder is silent when no configured model is BYOK-required. The BYOK-required set is hand-maintained in `litassist/cli.py` because OpenRouter does not expose BYOK status programmatically (it appears only on per-model documentation pages).
+- Added BYOK reminder block to `litassist test`. After the OpenRouter auth + catalogue probes, the command now lists each configured model that requires a user-supplied provider key at OpenRouter (currently only `openai/o3-pro`) along with the commands routing to it and a pointer to <https://openrouter.ai/settings/integrations>. The reminder is silent when no configured model is BYOK-required. The BYOK-required set is hand-maintained in `litassist/cli.py` because OpenRouter does not expose BYOK status programmatically (it appears only on per-model documentation pages).
 
 #### May 2026: RAG / Pinecone pipeline removed; `draft` becomes full-context
 - `draft` no longer routes PDFs or large text files into a Pinecone-backed retrieve-then-generate pipeline. Every supplied document is concatenated with section markers and sent to the configured draft model (`openai/o3-pro`) in a single full-context call.
@@ -98,8 +115,6 @@ Historical dated sections preserve the model names that were current when those 
 - Removed dependency: `pinecone-client==2.2.4`.
 - `litassist test` no longer checks Pinecone connectivity.
 - Prompts updated: `--diversity` references and Pinecone-error templates removed from `capabilities.yaml`, `caseplan.yaml`, and `system_feedback.yaml`.
-
-
 
 #### May 2026: Lookup fetcher chain rework (curl_cffi + Cloudflare resilience)
 - New transport: `curl_cffi` with Chrome 136 TLS impersonation replaces direct `requests` calls for all content fetching. Defeats Cloudflare's TLS fingerprint detection that newly applied to AustLII; HTML resources now return real content (verified end-to-end). Added as a project dependency.
@@ -163,6 +178,22 @@ Historical dated sections preserve the model names that were current when those 
 - Enhanced prompt template system with centralized YAML management
 
 ### Fixed
+
+#### June 2026: brainstorm/strategy pipeline fixes
+- `strategy` no longer fails with HTTP 400 `reasoning.effort: Invalid option`. Its
+  `thinking_effort: "max"` on `anthropic/claude-opus-4.7` was mapped to
+  `reasoning.effort: "max"`, but OpenRouter's effort enum has no `max` tier (ceiling
+  is `xhigh`); `convert_thinking_effort` now maps `max -> xhigh` for the Opus 4.7/4.8
+  family, matching the GPT-5.5 branch.
+- `brainstorm`/`strategy` "most likely to succeed" count is no longer always 0. The
+  analysis prompt formats each entry as `**N. Title**` (bold) but
+  `parse_strategies_file` counted `^\d+\.`; the most-likely regex now also matches
+  the bold-numbered form.
+- `brainstorm --verify` and `verify` now tolerate light formatting of the
+  `## Verified and Corrected Document` header (bold, `&`, case, `###`, trailing
+  colon) instead of discarding the verifier's corrections. The parse-and-fallback
+  logic is now a single shared `extract_verified_document()` in `utils/core.py` used
+  by both commands (it was duplicated, which let the two copies drift).
 
 #### May 2026: Packaging and cross-cutting trust/cache/format fixes
 - `setup.py` `package_data` now includes `litassist/prompts/*.yaml` and `litassist/llm/*.yaml`; matching `recursive-include` lines added to `MANIFEST.in`. Installed wheels previously omitted these runtime assets and commands failed with missing prompt-key errors.

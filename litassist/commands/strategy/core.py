@@ -6,15 +6,16 @@ legal strategy generation for Australian civil proceedings.
 """
 
 import click
+import os
 import re
 
 from litassist.timing import timed
 from litassist.utils.core import (
-    parse_strategies_file,
+    parse_strategies_files,
 )
 from litassist.utils.file_ops import (
     validate_file_size_limit,
-    expand_glob_single_callback,
+    expand_glob_newest_each_callback,
 )
 from litassist.utils.legal_reasoning import (
     create_reasoning_prompt,
@@ -46,8 +47,10 @@ from .file_handler import save_strategy_outputs, save_strategy_log
 @click.option(
     "--strategies",
     type=click.Path(),
-    callback=expand_glob_single_callback,
-    help="Optional strategies file from brainstorm command (path or glob; newest match used)",
+    multiple=True,
+    callback=expand_glob_newest_each_callback,
+    help="Optional brainstorm strategies file(s); repeatable - one set per flag "
+    "(path or glob; each flag resolves to its newest match)",
 )
 @click.option(
     "--heavy",
@@ -70,7 +73,7 @@ def strategy(case_facts, outcome, strategies, heavy, noverify, output):
 
     Args:
         case_facts: Path to case facts file following the 10-heading structure.
-            Optional - if omitted, the latest case_facts*.txt in the current
+            Optional - if omitted, the latest case_facts*.md in the current
             directory is used.
         outcome: Desired legal outcome (single sentence description)
         strategies: Optional strategies file from brainstorm command
@@ -118,13 +121,21 @@ def strategy(case_facts, outcome, strategies, heavy, noverify, output):
     # Initialize LLM client using factory
     llm_client = LLMClientFactory.for_command("strategy")
 
-    # Read and parse strategies file if provided
+    # Read and parse strategies file(s) if provided. --strategies is repeatable
+    # (one brainstorm set per flag), so `strategies` is a tuple of resolved paths.
     strategies_content = ""
     parsed_strategies = None
+    strategies_label = ", ".join(strategies)  # for the audit metadata sites
     if strategies:
-        click.echo(info_message("Reading strategies from brainstorm file..."))
-        with open(strategies, encoding="utf-8") as strategies_fh:
-            strategies_content = strategies_fh.read()
+        click.echo(info_message("Reading strategies from brainstorm file(s)..."))
+        named_contents = []
+        for strategies_path in strategies:
+            with open(strategies_path, encoding="utf-8") as strategies_fh:
+                named_contents.append(
+                    (os.path.basename(strategies_path), strategies_fh.read())
+                )
+        parsed_strategies = parse_strategies_files(named_contents)
+        strategies_content = parsed_strategies["raw_content"]
 
         # Check combined input size when strategies provided. Cap derives
         # from the strategy model's input budget so it scales with the
@@ -134,8 +145,6 @@ def strategy(case_facts, outcome, strategies, heavy, noverify, output):
             LLMClientFactory.get_input_budget_for_command("strategy"),
             "Combined case facts and strategies",
         )
-
-        parsed_strategies = parse_strategies_file(strategies_content)
 
         # Display what was found
         click.echo("Using strategies from brainstorm:")
@@ -328,7 +337,7 @@ def strategy(case_facts, outcome, strategies, heavy, noverify, output):
             "Verification": "Not yet applied (raw output)",
         }
         if strategies:
-            raw_metadata["Strategies File"] = strategies
+            raw_metadata["Strategies File"] = strategies_label
         save_command_output(
             output if output else "strategy",
             strategy_content,
@@ -492,7 +501,7 @@ def strategy(case_facts, outcome, strategies, heavy, noverify, output):
         case_facts_name=case_facts.name,
         doc_type=doc_type,
         output_prefix=output,
-        strategies_name=strategies,
+        strategies_name=strategies_label,
         citation_issues=citation_issues,
         llm_model=llm_client.model,
         noverify=noverify,

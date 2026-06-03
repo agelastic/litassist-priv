@@ -298,7 +298,8 @@ class TestClaude4ParameterHandling:
 
     Opus 4.7+ removed temperature/top_p/top_k (non-default values 400). All
     Claude 4.x (since 4.1) reject temperature and top_p specified together.
-    Opus 4.7/4.8 added the extended effort scale low..high..xhigh..max.
+    Opus 4.7/4.8 added the extended effort scale low..high..xhigh (the universal
+    "max" maps to xhigh; OpenRouter's reasoning.effort enum has no "max" tier).
     """
 
     def test_opus_47_strips_sampling(self):
@@ -333,16 +334,22 @@ class TestClaude4ParameterHandling:
         assert filtered["top_p"] == 0.5
         assert "temperature" not in filtered
 
-    def test_opus_48_extended_effort_levels(self):
+    def test_opus_48_caps_effort_at_xhigh(self):
+        # OpenRouter's reasoning.effort enum tops out at xhigh (no "max" tier), so
+        # the universal "max" must map to xhigh; sending "max" returns HTTP 400.
         assert convert_thinking_effort("xhigh", "anthropic/claude-opus-4.8") == {
             "reasoning": {"effort": "xhigh"}
         }
         assert convert_thinking_effort("max", "anthropic/claude-opus-4.8") == {
-            "reasoning": {"effort": "max"}
+            "reasoning": {"effort": "xhigh"}
         }
 
-    def test_opus_47_supports_xhigh(self):
+    def test_opus_47_caps_effort_at_xhigh(self):
+        # Same ceiling as 4.8: "max" maps to xhigh, not the rejected "max" tier.
         assert convert_thinking_effort("xhigh", "anthropic/claude-opus-4.7") == {
+            "reasoning": {"effort": "xhigh"}
+        }
+        assert convert_thinking_effort("max", "anthropic/claude-opus-4.7") == {
             "reasoning": {"effort": "xhigh"}
         }
 

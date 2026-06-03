@@ -231,44 +231,25 @@ class TestDocumentTemplates:
         """Test that statement of claim template contains required elements."""
         from litassist.prompts import PROMPTS
 
-        # This would test that the template exists and has the right structure
-        try:
-            template = PROMPTS.get("documents.statement_of_claim")
-            # Basic checks that template has key elements
-            assert (
-                "STATEMENT OF CLAIM" in template.upper() or "CLAIM" in template.upper()
-            )
-            assert len(template) > 100  # Template should have substantial content
-        except KeyError:
-            # Template doesn't exist - this is still a valid test result
-            assert True, "Template not found but test structure is valid"
+        template = PROMPTS.get("documents.statement_of_claim")
+        assert "STATEMENT OF CLAIM" in template.upper() or "CLAIM" in template.upper()
+        assert len(template) > 100  # Template should have substantial content
 
     def test_affidavit_template_elements(self):
         """Test that affidavit template contains required elements."""
         from litassist.prompts import PROMPTS
 
-        try:
-            template = PROMPTS.get("documents.affidavit")
-            # Basic checks for affidavit structure
-            assert "AFFIDAVIT" in template.upper() or "OATH" in template.upper()
-            assert len(template) > 100
-        except KeyError:
-            # Template doesn't exist - this is still a valid test result
-            assert True, "Template not found but test structure is valid"
+        template = PROMPTS.get("documents.affidavit")
+        assert "AFFIDAVIT" in template.upper() or "OATH" in template.upper()
+        assert len(template) > 100
 
     def test_originating_application_template_elements(self):
         """Test that originating application template contains required elements."""
         from litassist.prompts import PROMPTS
 
-        try:
-            template = PROMPTS.get("documents.originating_application")
-            assert (
-                "APPLICATION" in template.upper() or "ORIGINATING" in template.upper()
-            )
-            assert len(template) > 100
-        except KeyError:
-            # Template doesn't exist - this is still a valid test result
-            assert True, "Template not found but test structure is valid"
+        template = PROMPTS.get("documents.originating_application")
+        assert "APPLICATION" in template.upper() or "ORIGINATING" in template.upper()
+        assert len(template) > 100
 
 
 class TestDraftErrorHandling:

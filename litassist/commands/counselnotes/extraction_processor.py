@@ -5,10 +5,11 @@ Handles structured extraction of citations, principles, and checklists.
 """
 
 import click
-from typing import List, Dict
+from typing import Dict, List, Tuple
 
 from litassist.prompts import PROMPTS
 from litassist.logging import log_task_event
+from litassist.utils.formatting import format_citation_warnings
 
 
 def process_extraction_mode(
@@ -112,27 +113,82 @@ def process_extraction_mode(
     return extraction_results
 
 
-def consolidate_extraction_results(results: List[str]) -> str:
+def consolidate_extraction_results(
+    results: List[str], verify: bool, client
+) -> Tuple[str, Dict]:
     """
-    Consolidate multiple extraction results.
+    Consolidate multiple chunk extractions into one final response via an LLM
+    reduce, mirroring the analysis mode's consolidate_analyses.
+
+    Only invoked when the input was chunked (len(results) > 1); the single-chunk
+    case is returned verbatim by the caller without calling this. Merges the
+    partial extractions (which already carry the correct per-mode headings) into
+    one structured response rather than concatenating them.
 
     Args:
-        results: List of extraction results from chunks
+        results: List of per-chunk extraction results
+        verify: Whether to verify citations in the consolidated output
+        client: LLM client instance
 
     Returns:
-        Consolidated final content
+        Tuple of (final_content, usage)
+
+    Raises:
+        click.ClickException: If LLM processing fails
     """
-    if len(results) > 1:
-        # Multiple chunks - consolidate text directly
-        consolidated_text = "\n\n---\n\n".join(results)
-        # Add header to indicate consolidation
-        final_content = f"[Consolidated from {len(results)} document chunks]\n\n{consolidated_text}"
-    else:
-        # Single chunk - use as is
-        final_content = (
-            results[0]
-            if results
-            else "No extraction results."
+    consolidated_input = "\n\n".join(
+        f"=== EXTRACTION FROM DOCUMENT SECTION {i + 1} ===\n{result}\n=== END EXTRACTION FROM DOCUMENT SECTION {i + 1} ==="
+        for i, result in enumerate(results)
+    )
+
+    consolidation_prompt = PROMPTS.get(
+        "processing.counselnotes.extraction.consolidation",
+        partials=consolidated_input,
+        total_chunks=len(results),
+    )
+
+    try:
+        log_task_event(
+            "counselnotes",
+            "consolidation",
+            "llm_call",
+            "Consolidating chunk extractions",
+            {"model": client.model},
+        )
+    except Exception:
+        pass
+
+    try:
+        final_content, final_usage = client.complete(
+            [
+                {
+                    "role": "system",
+                    "content": PROMPTS.get(
+                        "processing.counselnotes.system_prompt"
+                    ),
+                },
+                {"role": "user", "content": consolidation_prompt},
+            ]
         )
 
-    return final_content
+        try:
+            log_task_event(
+                "counselnotes",
+                "consolidation",
+                "llm_response",
+                "Consolidation complete",
+                {"model": client.model},
+            )
+        except Exception:
+            pass
+
+    except Exception as e:
+        raise click.ClickException(f"LLM error in extraction consolidation: {e}")
+
+    # Citation verification if requested
+    if verify:
+        citation_issues = client.validate_citations(final_content)
+        if citation_issues:
+            final_content = format_citation_warnings(citation_issues) + final_content
+
+    return final_content, final_usage

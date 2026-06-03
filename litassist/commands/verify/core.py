@@ -6,10 +6,10 @@ and handles Chain of Verification (CoVe) as the final verification stage.
 """
 
 import os
-import re
 import logging
 from typing import Optional
 import click
+from litassist.utils.core import extract_verified_document
 from litassist.utils.file_ops import read_document, process_reference_files
 from litassist.utils.formatting import (
     verifying_message,
@@ -219,14 +219,11 @@ def run_verification_workflow(
                 # Use the most refined version of content available
                 final_content = content
                 if soundness and soundness_result is not None:
-                    # Extract corrected document from soundness result if available
-                    match = re.search(
-                        r"## Verified and Corrected Document\s*\n(.*)",
-                        soundness_result,
-                        re.DOTALL,
+                    # Use the corrected document from the soundness stage if the
+                    # verifier returned one; otherwise keep the original content.
+                    final_content, _ = extract_verified_document(
+                        soundness_result, content
                     )
-                    if match:
-                        final_content = match.group(1).strip()
 
                 # Build prior contexts including any CoVe reference files
                 prior_contexts_dict = {

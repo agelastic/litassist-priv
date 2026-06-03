@@ -77,3 +77,39 @@ def test_draft_auto_resolves_case_facts(mock_factory):
         result = runner.invoke(draft, ["Draft a statement of claim", "--noverify"])
     assert "Using case facts: case_facts.txt" in result.output
     assert "Missing argument" not in result.output
+
+
+def test_resolver_searches_env_dir_when_set(tmp_path, monkeypatch):
+    # Inside a caseplan runner, auto-resolution looks in the per-run dir, not the
+    # cwd - so a cwd decoy is never chosen over the run's own case_facts.
+    from litassist.utils.case_facts import resolve_case_facts_file
+
+    monkeypatch.chdir(tmp_path)
+    run_dir = tmp_path / "outputs" / "run_x"
+    run_dir.mkdir(parents=True)
+    (run_dir / "case_facts.txt").write_text("run facts")
+    (tmp_path / "case_facts.txt").write_text("cwd decoy")
+    monkeypatch.setenv("LITASSIST_OUTPUT_DIR", str(run_dir))
+
+    assert resolve_case_facts_file() == str(run_dir / "case_facts.txt")
+    # The env-UNSET cwd path is covered by the command-level auto-resolve tests
+    # above (each runs with no LITASSIST_OUTPUT_DIR), so it is not re-asserted here.
+
+
+def test_resolver_finds_md_and_prefers_newest(tmp_path, monkeypatch):
+    # case_facts is now written as .md; the resolver must find .md files, and when
+    # both a legacy .txt and a newer timestamped .md exist, recency decides.
+    from litassist.utils.case_facts import resolve_case_facts_file
+
+    monkeypatch.chdir(tmp_path)
+    monkeypatch.delenv("LITASSIST_OUTPUT_DIR", raising=False)
+
+    # Only a .md present -> it is found without needing any .txt fallback.
+    (tmp_path / "case_facts.md").write_text(VALID_FACTS)
+    assert resolve_case_facts_file() == "case_facts.md"
+
+    # A future-dated timestamped .md outranks a plain legacy .txt by recency
+    # (filename timestamp beats mtime), proving both extensions are globbed.
+    (tmp_path / "case_facts.txt").write_text(VALID_FACTS)
+    (tmp_path / "case_facts_20990101_000000.md").write_text(VALID_FACTS)
+    assert resolve_case_facts_file() == "case_facts_20990101_000000.md"

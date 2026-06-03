@@ -148,9 +148,10 @@ PARAMETER_PROFILES = {
         "system_message_support": True,
     },
     "claude_opus_4_8": {
-        # Opus 4.8: adaptive thinking, extended effort scale (low..high..xhigh..
-        # max). Sampling params (temperature/top_p/top_k) were removed and return
-        # 400 on non-default values, so they are not allowed here.
+        # Opus 4.8: adaptive thinking, extended effort scale topping out at xhigh
+        # (OpenRouter's reasoning.effort enum has no "max" tier). Sampling params
+        # (temperature/top_p/top_k) were removed and return 400 on non-default
+        # values, so they are not allowed here.
         "allowed": [
             "max_tokens",
             "stop",

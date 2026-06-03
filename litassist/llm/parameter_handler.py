@@ -15,8 +15,8 @@ def convert_thinking_effort(effort: str, model_name: str) -> dict:
 
     Args:
         effort: Universal effort level (none, minimal, low, medium, high, xhigh,
-            max). xhigh/max only pass through for Opus 4.7/4.8; other families
-            cap them to high.
+            max). xhigh is the provider ceiling for Opus 4.7/4.8 and GPT-5.5, so
+            "max" maps to xhigh there; other families cap xhigh/max to high.
         model_name: Full model identifier (provider/model slug)
 
     Returns:
@@ -75,14 +75,16 @@ def convert_thinking_effort(effort: str, model_name: str) -> dict:
             return {"reasoning": {"effort": mapped_effort}}
 
     elif model_family in ["claude_opus_4_7", "claude_opus_4_8"]:
-        # Opus 4.7/4.8 support the extended effort scale: low..high..xhigh..max.
+        # Opus 4.7/4.8 effort scale tops out at xhigh. OpenRouter's reasoning.effort
+        # enum is none/minimal/low/medium/high/xhigh - there is NO "max" tier, and
+        # sending "max" returns HTTP 400, so the universal "max" maps to xhigh.
         effort_map = {
             "minimal": "low",
             "low": "low",
             "medium": "medium",
             "high": "high",
             "xhigh": "xhigh",
-            "max": "max",
+            "max": "xhigh",
         }
         # 4.7 defaults to xhigh, 4.8 to high (per Anthropic); only used when an
         # unrecognised effort string is passed.

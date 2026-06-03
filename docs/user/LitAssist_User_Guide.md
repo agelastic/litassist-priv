@@ -1,6 +1,6 @@
 # LitAssist User Guide
 
-Last updated: 30/05/2026
+Last updated: 02/06/2026
 
 ## Overview
 
@@ -82,19 +82,19 @@ litassist extractfacts brief.pdf affidavit.pdf
 litassist lookup "duty of care in professional negligence" --mode irac
 
 # 3. Generate strategic options
-litassist brainstorm --facts case_facts.txt --side plaintiff --area civil \
-  --research outputs/lookup_*.txt
+litassist brainstorm --facts case_facts.md --side plaintiff --area civil \
+  --research outputs/lookup_*.md
 
 # 4. Develop a targeted strategy with draft document
-litassist strategy case_facts.txt \
+litassist strategy case_facts.md \
   --outcome "Summary judgement on liability" \
-  --strategies outputs/brainstorm_*.txt
+  --strategies outputs/brainstorm_*.md
 
 # 5. Draft a citation-rich legal document
-litassist draft case_facts.txt strategies.txt "statement of claim"
+litassist draft case_facts.md strategies.txt "statement of claim"
 
 # 6. Verify citations and legal soundness
-litassist verify outputs/draft_*.txt --cove
+litassist verify outputs/draft_*.md --cove
 
 # All outputs are timestamped in outputs/ and audit logs in logs/
 ```
@@ -126,7 +126,7 @@ Generate a customised litigation workflow plan with executable command scripts.
 litassist caseplan [case_facts] [OPTIONS]
 ```
 
-`case_facts` is optional: if omitted, the latest `case_facts*.txt` in the current directory is auto-selected (and printed). This applies to `strategy`, `barbrief`, `brainstorm --facts`, and `draft` too.
+`case_facts` is optional: if omitted, the latest `case_facts*.md` in the current directory is auto-selected (and printed). This applies to `strategy`, `barbrief`, `brainstorm --facts`, and `draft` too.
 
 | Option | Type | Description |
 |--------|------|-------------|
@@ -146,10 +146,10 @@ warned to action the steps manually rather than handed an empty script.
 
 ```bash
 # Get budget recommendation
-litassist caseplan case_facts.txt
+litassist caseplan case_facts.md
 
 # Generate full plan at standard budget
-litassist caseplan case_facts.txt --budget standard
+litassist caseplan case_facts.md --budget standard
 ```
 
 **Model:** Claude Opus 4.7 (full plan); Claude Sonnet 4.6 (budget assessment)
@@ -263,7 +263,7 @@ litassist extractfacts brief.pdf affidavit.pdf --heavy
 Fold source documents into the same 10-heading case facts structure, updating an
 existing case-facts file or creating one from scratch. This removes the manual
 copy-paste step after `extractfacts` or `digest`: it writes a fresh,
-auto-discoverable `case_facts_<timestamp>.txt` into the current directory that
+auto-discoverable `case_facts_<timestamp>.md` into the current directory that
 brainstorm, strategy, draft, and barbrief pick up automatically.
 
 ```bash
@@ -274,7 +274,7 @@ The `files` argument (the source material to fold in) supports glob patterns.
 
 | Option | Type | Description |
 |--------|------|-------------|
-| `--facts` | path | Existing case facts file to update. Default: the latest `case_facts*.txt` in the current directory; created from scratch if none. |
+| `--facts` | path | Existing case facts file to update. Default: the latest `case_facts*.md` in the current directory; created from scratch if none. |
 
 Anything that does not fit one of the ten headings (plus the merge model's own
 observations and any source conflicts) is collected under a final **Notes**
@@ -282,10 +282,10 @@ section. Source files are never modified; each run emits a new timestamped file.
 
 ```bash
 # Build/refresh case facts from extractfacts and digest output
-litassist updatefacts 'outputs/extractfacts_*.txt' 'outputs/digest_issues_*.txt'
+litassist updatefacts 'outputs/extractfacts_*.md' 'outputs/digest_issues_*.md'
 
 # Update a specific existing case-facts file with new material
-litassist updatefacts new_affidavit.pdf --facts case_facts.txt
+litassist updatefacts new_affidavit.pdf --facts case_facts.md
 ```
 
 **Model:** Gemini 3.5 Flash (cheap, fast merge)
@@ -303,7 +303,7 @@ litassist brainstorm [OPTIONS]
 
 | Option | Type | Description |
 |--------|------|-------------|
-| `--facts` | path(s) | Facts files (glob supported). Defaults to `case_facts.txt` |
+| `--facts` | path(s) | Facts files (glob supported). Defaults to `case_facts.md` |
 | `--side` | `plaintiff` / `defendant` / `accused` / `respondent` | Required: which side you represent |
 | `--area` | `criminal` / `civil` / `family` / `commercial` / `administrative` | Required: legal area |
 | `--research` | path(s) | Optional lookup reports to inform orthodox strategies (glob supported) |
@@ -318,7 +318,7 @@ litassist brainstorm --side plaintiff --area civil
 
 # With research context from lookup outputs
 litassist brainstorm --side defendant --area family \
-  --research 'outputs/lookup_*.txt' --facts case_facts.txt
+  --research 'outputs/lookup_*.md' --facts case_facts.md
 ```
 
 **Models:** Claude Sonnet 4.6 (orthodox), Grok 4.20 (unorthodox), o3-pro (analysis)
@@ -347,9 +347,9 @@ Generates: strategic options, next steps document, draft legal document, and
 reasoning trace.
 
 ```bash
-litassist strategy case_facts.txt \
+litassist strategy case_facts.md \
   --outcome "Summary judgement on liability" \
-  --strategies outputs/brainstorm_civil_plaintiff_*.txt
+  --strategies outputs/brainstorm_civil_plaintiff_*.md
 ```
 
 **Models:** Claude Opus 4.7 (strategy), o3-pro (analysis)
@@ -381,7 +381,7 @@ Jade.io via Google CSE.
 
 ```bash
 # Draft from text and PDF inputs (single full-context call)
-litassist draft case_facts.txt strategies.txt "statement of claim"
+litassist draft case_facts.md strategies.txt "statement of claim"
 litassist draft large_case_bundle.pdf "outline of submissions"
 ```
 
@@ -445,9 +445,9 @@ litassist barbrief [case_facts] [OPTIONS]
 | `--output` | text | Custom output filename prefix |
 
 ```bash
-litassist barbrief case_facts.txt --hearing-type trial \
-  --strategies 'outputs/brainstorm_*.txt' \
-  --research 'outputs/lookup_*.txt' \
+litassist barbrief case_facts.md --hearing-type trial \
+  --strategies 'outputs/brainstorm_*.md' \
+  --research 'outputs/lookup_*.md' \
   --documents '*.pdf'
 ```
 
@@ -481,13 +481,13 @@ checks.
 
 ```bash
 # Full verification suite
-litassist verify outputs/draft_statement_of_claim_*.txt
+litassist verify outputs/draft_statement_of_claim_*.md
 
 # Citations only with Chain of Verification
-litassist verify outputs/draft_*.txt --citations --cove
+litassist verify outputs/draft_*.md --citations --cove
 
 # Heavy verification with reference documents
-litassist verify outputs/draft_*.txt --heavy --reference 'exhibits/*.pdf'
+litassist verify outputs/draft_*.md --heavy --reference 'exhibits/*.pdf'
 ```
 
 **Models:** GPT-5.5 (citation verification), Claude Opus 4.7 (soundness),
@@ -513,10 +513,10 @@ litassist verify-cove <file> [OPTIONS]
 
 ```bash
 # Standard CoVe
-litassist verify-cove outputs/draft_*.txt
+litassist verify-cove outputs/draft_*.md
 
 # With reference documents and heavy mode
-litassist verify-cove outputs/draft_*.txt \
+litassist verify-cove outputs/draft_*.md \
   --reference 'exhibits/*.pdf' --heavy
 ```
 
@@ -539,7 +539,7 @@ extractfacts --> updatefacts --> brainstorm --> strategy --> draft --> verify
 ```
 
 `updatefacts` is optional but convenient: it merges `extractfacts`/`digest`
-output into an auto-discoverable `case_facts_<timestamp>.txt` so the downstream
+output into an auto-discoverable `case_facts_<timestamp>.md` so the downstream
 commands find it without a manual copy.
 
 1. **Extract facts** from case documents into 10-heading structure
@@ -570,10 +570,10 @@ Let LitAssist plan the workflow for you:
 
 ```bash
 # Get budget recommendation first
-litassist caseplan case_facts.txt
+litassist caseplan case_facts.md
 
 # Generate full plan with executable commands
-litassist caseplan case_facts.txt --budget standard
+litassist caseplan case_facts.md --budget standard
 ```
 
 The plan output includes complete bash commands with switch rationale comments,
@@ -675,21 +675,21 @@ Both directories are created automatically on first run.
 
 ### Output Naming
 
-Files follow the pattern `{command}_{descriptor}_{YYYYMMDD}_{HHMMSS}.txt`:
+Files follow the pattern `{command}_{descriptor}_{YYYYMMDD}_{HHMMSS}.md`:
 
 | Command | Example Filename |
 |---------|-----------------|
-| caseplan | `caseplan_standard_20260218_143022.txt` |
-| lookup | `lookup_duty_of_care_20260218_143156.txt` |
-| digest | `digest_summary_brief_20260218_143340.txt` |
-| extractfacts | `extractfacts_brief_20260218_143502.txt` |
-| updatefacts | `case_facts_20260218_143515.txt` (written to the current directory) |
-| brainstorm | `brainstorm_civil_plaintiff_20260218_143622.txt` |
-| strategy | `strategy_summary_judgement_20260218_143740.txt` |
-| draft | `draft_statement_of_claim_20260218_143855.txt` |
-| counselnotes | `counselnotes_brief_20260218_144010.txt` |
-| barbrief | `barbrief_trial_20260218_144125.txt` |
-| verify | `verify_citations_20260218_144240.txt` |
+| caseplan | `caseplan_standard_20260218_143022.md` |
+| lookup | `lookup_duty_of_care_20260218_143156.md` |
+| digest | `digest_summary_brief_20260218_143340.md` |
+| extractfacts | `extractfacts_brief_20260218_143502.md` |
+| updatefacts | `case_facts_20260218_143515.md` (written to the current directory) |
+| brainstorm | `brainstorm_civil_plaintiff_20260218_143622.md` |
+| strategy | `strategy_summary_judgement_20260218_143740.md` |
+| draft | `draft_statement_of_claim_20260218_143855.md` |
+| counselnotes | `counselnotes_brief_20260218_144010.md` |
+| barbrief | `barbrief_trial_20260218_144125.md` |
+| verify | `verify_citations_20260218_144240.md` |
 
 ### Audit Logs
 
@@ -772,11 +772,14 @@ Commands that accept file paths (`extractfacts`, `counselnotes`, `digest`,
 
 ### Large File Processing
 
-Files exceeding `max_chars` (default 200,000 characters) are automatically
-chunked by digest / extractfacts / counselnotes. The draft command sends every
-input in one full-context call; if the combined payload exceeds the configured
-draft model's window, draft fails with a clear error pointing at
-`litassist digest --mode summary`.
+Files exceeding the routed model's input budget (about 80% of that model's
+context window, read from `model_capabilities.yaml`) are automatically chunked by
+digest / extractfacts / counselnotes; each command then merges the per-chunk
+results with a consolidation step rather than concatenating them. Because the
+budget scales with the model's window, most multi-document inputs now process in
+a single pass. The draft command sends every input in one full-context call; if
+the combined payload exceeds the configured draft model's window, draft fails
+with a clear error pointing at `litassist digest --mode summary`.
 
 If processing is slow, the heartbeat indicator ("...still working...") confirms
 the command is active. Adjust `heartbeat_interval` in config.yaml.

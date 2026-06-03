@@ -117,6 +117,7 @@ class TestYAMLPromptValidation:
             "context_instruction",
             "documents",
             "chunk_analyses",
+            "partials",
             "document_type",
             "user_request",
             "all_facts",

@@ -1,6 +1,6 @@
 # LitAssist Release Process
 
-Last updated: 19/07/2025
+Last updated: 02/06/2026
 
 ## Overview
 This document provides a step-by-step process for creating releases, from branch creation through GitHub release publication. Each release should follow semantic versioning (MAJOR.MINOR.PATCH).
@@ -85,8 +85,8 @@ rm -rf test_env
 
 # 4. Run smoke tests on key commands
 litassist test
-# Create a test case_facts.txt and run:
-litassist caseplan case_facts.txt
+# Create a test case_facts.md and run:
+litassist caseplan case_facts.md
 ```
 
 ### Phase 4: Commit and Tag

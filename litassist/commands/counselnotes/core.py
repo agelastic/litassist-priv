@@ -102,8 +102,23 @@ def counselnotes(files, extract, verify, output):
             chunks, extract, verify, client, comprehensive_log
         )
 
-        # Consolidate extraction results
-        final_content = consolidate_extraction_results(extraction_results)
+        # Consolidate only when the input was chunked: a single unified extraction
+        # is already the final answer, so avoid a pointless extra LLM call.
+        if len(chunks) > 1:
+            final_content, final_usage = consolidate_extraction_results(
+                extraction_results, verify, client
+            )
+            comprehensive_log["responses"].append(
+                {"consolidation": True, "content": final_content, "usage": final_usage}
+            )
+            for key in comprehensive_log["total_usage"]:
+                comprehensive_log["total_usage"][key] += final_usage.get(key, 0)
+        else:
+            final_content = (
+                extraction_results[0]
+                if extraction_results
+                else "No extraction results."
+            )
         all_output.append(final_content)
 
     else:

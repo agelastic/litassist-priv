@@ -91,7 +91,7 @@ def extract_legal_issues(case_text: str) -> List[str]:
         line = line.strip()
         if line:
             # Remove bullet points but keep content
-            if line.startswith(("•", "-", "*")):
+            if line.startswith(("\u2022", "-", "*")):
                 line = line[1:].strip()
             issues.append(line)
 

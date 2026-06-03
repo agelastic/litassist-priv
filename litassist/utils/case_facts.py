@@ -28,7 +28,7 @@ def _case_facts_recency(path: str) -> float:
     versioned files rank by their own stamp regardless of when they were copied),
     and falls back to the file's modification time otherwise. The mtime fallback
     is what stops an OLD timestamped file from shadowing a freshly-edited plain
-    `case_facts.txt` (which carries no filename timestamp).
+    `case_facts.md` (which carries no filename timestamp).
     """
     match = _FILENAME_TIMESTAMP.search(os.path.basename(path))
     if match:
@@ -98,24 +98,31 @@ def resolve_case_facts_file() -> str:
     """
     Pick the case-facts file to use when one was not given on the command line.
 
-    Globs ``case_facts*.txt`` in the current (launch) directory and returns the
-    most recent by :func:`_case_facts_recency` - the timestamp embedded in the
-    filename (e.g. ``case_facts_20260530_101500.txt``) where present, otherwise
+    Globs ``case_facts*.{txt,md}`` in the current (launch) directory and returns
+    the most recent by :func:`_case_facts_recency` - the timestamp embedded in the
+    filename (e.g. ``case_facts_20260530_101500.md``) where present, otherwise
     the file's modification time. So the newest timestamped version wins, but a
-    freshly-edited plain ``case_facts.txt`` is not shadowed by an older
+    freshly-edited plain ``case_facts.md`` is not shadowed by an older
     timestamped file. The chosen file is printed.
 
     Returns:
         Path (relative to the launch directory) of the chosen case-facts file.
 
     Raises:
-        click.ClickException: If no ``case_facts*.txt`` exists in the directory.
+        click.ClickException: If no ``case_facts*.{txt,md}`` exists in the directory.
     """
-    candidates = sorted(glob.glob("case_facts*.txt"))
+    # A caseplan runner isolates a run under LITASSIST_OUTPUT_DIR; resolve from
+    # there when set, else from the launch directory.
+    search_dir = os.environ.get("LITASSIST_OUTPUT_DIR")
+    # Match both the current .md outputs and legacy .txt case-facts files.
+    patterns = ["case_facts*.txt", "case_facts*.md"]
+    if search_dir:
+        patterns = [os.path.join(search_dir, p) for p in patterns]
+    candidates = sorted({c for p in patterns for c in glob.glob(p)})
     if not candidates:
         raise click.ClickException(
-            "No case facts file provided and no case_facts*.txt found in the "
-            "current directory. Pass the file explicitly, or run "
+            "No case facts file provided and no case_facts*.md (or .txt) found in "
+            "the current directory. Pass the file explicitly, or run "
             "'litassist extractfacts' to create one."
         )
 

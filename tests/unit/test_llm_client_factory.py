@@ -19,7 +19,6 @@ class TestLLMClientFactory:
 
             assert isinstance(client, LLMClient)
             assert client.model == configs["lookup"]["model"]
-            assert hasattr(client, "_enforce_citations")
 
     def test_for_command_brainstorm(self):
         """Test factory requires sub-type for brainstorm - NO FALLBACK."""
@@ -33,10 +32,11 @@ class TestLLMClientFactory:
                 LLMClientFactory.for_command("brainstorm")
             assert "No model configuration found" in str(exc_info.value)
 
-            # brainstorm-orthodox should work
+            # brainstorm-orthodox should work and resolve its configured model
+            configs = LLMClientFactory.list_configurations()
             client = LLMClientFactory.for_command("brainstorm", "orthodox")
             assert isinstance(client, LLMClient)
-            assert hasattr(client, "_enforce_citations")
+            assert client.model == configs["brainstorm-orthodox"]["model"]
 
     def test_for_command_strategy(self):
         """Test factory creates strategy client wired to its configured model."""
@@ -48,7 +48,6 @@ class TestLLMClientFactory:
 
             assert isinstance(client, LLMClient)
             assert client.model == configs["strategy"]["model"]
-            assert hasattr(client, "_enforce_citations")
 
     def test_for_command_draft(self):
         """Test factory creates draft client wired to its configured model."""
@@ -60,7 +59,6 @@ class TestLLMClientFactory:
 
             assert isinstance(client, LLMClient)
             assert client.model == configs["draft"]["model"]
-            assert hasattr(client, "_enforce_citations")
 
     def test_for_command_with_overrides(self):
         """Test factory applies parameter overrides correctly."""
@@ -99,20 +97,6 @@ class TestLLMClientFactory:
             assert command in configs
             config = configs[command]
             assert "model" in config
-
-    def test_verification_flags_set_correctly(self):
-        """Test that enforce_citations flags are set correctly for different commands."""
-        with patch("litassist.config.CONFIG") as mock_config:
-            mock_config.openrouter_key = "test_key"
-
-            # Just verify that various commands have the enforce_citations attribute
-            # Don't assert specific values as these may change based on requirements
-            test_commands = ["extractfacts", "strategy", "lookup"]
-            for command in test_commands:
-                client = LLMClientFactory.for_command(command)
-                assert hasattr(client, "_enforce_citations"), (
-                    f"{command} should have _enforce_citations attribute"
-                )
 
     def test_model_parameter_restrictions(self):
         """Test that command clients carry the parameters defined in their config."""

@@ -584,6 +584,64 @@ class TestStrategyFileIntegration:
         assert result["unorthodox_count"] == 0
         assert result["most_likely_count"] == 0
 
+    def test_parse_strategies_file_counts_bold_most_likely(self):
+        """The analysis prompt emits most-likely entries as '**N. Title**'
+        (strategies.yaml), so the parser must count those bold-numbered items -
+        not just bare '1.' lines."""
+        from litassist.utils.core import parse_strategies_file
+
+        content = (
+            "## MOST LIKELY TO SUCCEED\n"
+            "**1. Alpha**\nJustification: a\n"
+            "**2. Beta**\nJustification: b\n"
+            "**3. Gamma**\nJustification: c\n"
+            "**4. Delta**\nJustification: d\n"
+            "**5. Epsilon**\nJustification: e\n"
+        )
+
+        assert parse_strategies_file(content)["most_likely_count"] == 5
+
+    def test_parse_strategies_files_merges_counts_and_labels(self):
+        """Multiple brainstorm sets: counts SUM, content joined under labels."""
+        from litassist.utils.core import parse_strategies_files
+
+        creative = (
+            "# Side: plaintiff\n# Area: civil\n\n"
+            "## ORTHODOX STRATEGIES\n"
+            "### Strategy 1: Alpha\nx\n### Strategy 2: Beta\nx\n\n"
+            "## UNORTHODOX STRATEGIES\n### Strategy 1: Gamma\nx\n\n"
+            "## MOST LIKELY TO SUCCEED\n1. Do alpha\n"
+        )
+        research = (
+            "# Side: plaintiff\n# Area: civil\n\n"
+            "## ORTHODOX STRATEGIES\n"
+            "### Strategy 1: Delta\nx\n### Strategy 2: Epsilon\nx\n"
+            "### Strategy 3: Zeta\nx\n\n"
+            "## UNORTHODOX STRATEGIES\n"
+            "### Strategy 1: Eta\nx\n### Strategy 2: Theta\nx\n\n"
+            "## MOST LIKELY TO SUCCEED\n1. Do delta\n2. Do epsilon\n"
+        )
+
+        result = parse_strategies_files(
+            [
+                ("brainstorm_creative.txt", creative),
+                ("brainstorm_research.txt", research),
+            ]
+        )
+
+        # Counts summed across both sets (creative 2/1/1 + research 3/2/2).
+        assert result["orthodox_count"] == 5
+        assert result["unorthodox_count"] == 3
+        assert result["most_likely_count"] == 3
+        # First file's metadata is kept.
+        assert result["metadata"]["side"] == "plaintiff"
+        assert result["metadata"]["area"] == "civil"
+        # Both bodies present, each under its === label === separator.
+        assert "=== brainstorm_creative.txt ===" in result["raw_content"]
+        assert "=== brainstorm_research.txt ===" in result["raw_content"]
+        assert "Alpha" in result["raw_content"]
+        assert "Zeta" in result["raw_content"]
+
 
 _VALID_CASE_FACTS = """
 Parties:
@@ -609,12 +667,30 @@ Obtain damages
 """
 
 
-class TestStrategiesGlobResolution:
-    """--strategies accepts a glob and resolves to the most recent match.
+_CREATIVE_SET = (
+    "## ORTHODOX STRATEGIES\n"
+    "### Strategy 1: Alpha\nx\n### Strategy 2: Beta\nx\n\n"
+    "## UNORTHODOX STRATEGIES\n### Strategy 1: Gamma\nx\n\n"
+    "## MOST LIKELY TO SUCCEED\n1. Do alpha\n"
+)
+_RESEARCH_SET = (
+    "## ORTHODOX STRATEGIES\n"
+    "### Strategy 1: Delta\nx\n### Strategy 2: Epsilon\nx\n### Strategy 3: Zeta\nx\n\n"
+    "## UNORTHODOX STRATEGIES\n### Strategy 1: Eta\nx\n### Strategy 2: Theta\nx\n\n"
+    "## MOST LIKELY TO SUCCEED\n1. Do delta\n2. Do epsilon\n"
+)
 
-    Caseplan emits `--strategies 'outputs/brainstorm_*.txt'`; the dual-brainstorm
-    design means two files match. Reaching exit 0 also proves the path-string
-    substitution at core.py:326/490 (the metadata sites that used .name).
+
+class TestStrategiesMultipleFiles:
+    """--strategies is repeatable: strategy consumes BOTH brainstorm sets.
+
+    The dual-brainstorm design produces a creative AND a research set. Passing
+    one --strategies flag per set must MERGE both: the displayed counts are the
+    SUM across files (creative 2/1/1 + research 3/2/2 = 5/3/3), proving neither
+    set was dropped. PROMPTS is mocked to a constant here, so the merged CONTENT
+    never reaches the prompt; the on-screen counts are the observable proof of
+    consumption. Reaching exit 0 also proves the tuple -> string substitution at
+    the two metadata sites (core.py:330/495 that used the path value directly).
     """
 
     @patch("litassist.commands.strategy.core.LLMClientFactory.for_command")
@@ -622,7 +698,7 @@ class TestStrategiesGlobResolution:
     @patch("litassist.commands.strategy.file_handler.save_log")
     @patch("litassist.commands.strategy.core.verify_content_if_needed")
     @patch("litassist.commands.strategy.core.PROMPTS")
-    def test_strategies_glob_uses_newest(
+    def test_two_flags_merge_both_sets(
         self,
         mock_prompts,
         mock_verify,
@@ -630,8 +706,6 @@ class TestStrategiesGlobResolution:
         mock_save_output,
         mock_llm_factory,
     ):
-        import os
-
         mock_prompts.get.return_value = "Test prompt"
         mock_verify.return_value = ("Verified content", False, None)
         mock_client = MagicMock()
@@ -650,15 +724,14 @@ class TestStrategiesGlobResolution:
         try:
             runner = CliRunner()
             with runner.isolated_filesystem():
-                # Two brainstorm files; the research one is newer (mtime).
-                older = "brainstorm_creative_20260101_000000_000000000.txt"
-                newer = "brainstorm_research_20260102_000000_000000000.txt"
-                with open(older, "w") as fh:
-                    fh.write("creative brainstorm")
-                with open(newer, "w") as fh:
-                    fh.write("research brainstorm")
-                os.utime(older, (1_000, 1_000))
-                os.utime(newer, (2_000, 2_000))
+                with open(
+                    "brainstorm_creative_20260101_000000_000000000.txt", "w"
+                ) as fh:
+                    fh.write(_CREATIVE_SET)
+                with open(
+                    "brainstorm_research_20260102_000000_000000000.txt", "w"
+                ) as fh:
+                    fh.write(_RESEARCH_SET)
 
                 result = runner.invoke(
                     strategy,
@@ -667,15 +740,18 @@ class TestStrategiesGlobResolution:
                         "--outcome",
                         "Obtain damages",
                         "--strategies",
-                        "brainstorm_*.txt",
+                        "brainstorm_creative_*.txt",
+                        "--strategies",
+                        "brainstorm_research_*.txt",
                     ],
                     obj={"premium": False},
                 )
 
                 assert result.exit_code == 0, result.output
-                # Newest of the two matches was chosen, and the choice is loud.
-                assert "Matched 2 files; using newest" in result.output
-                assert newer in result.output
+                # Summed across BOTH sets - neither was dropped.
+                assert "5 orthodox strategies" in result.output
+                assert "3 unorthodox strategies" in result.output
+                assert "3 marked as most likely" in result.output
         finally:
             Path(facts_file).unlink()
 

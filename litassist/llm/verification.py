@@ -215,19 +215,19 @@ class LLMVerificationMixin:
                     if existence_errors:
                         error_msg += "[NOT FOUND] CASES NOT FOUND IN DATABASE:\n"
                         for citation, reason in existence_errors:
-                            error_msg += f"   • {citation}\n     -> {reason}\n"
+                            error_msg += f"   * {citation}\n     -> {reason}\n"
                         error_msg += "\n"
 
                     if format_errors:
                         error_msg += "[WARNING] CITATION FORMAT ISSUES:\n"
                         for citation, reason in format_errors:
-                            error_msg += f"   • {citation}\n     -> {reason}\n"
+                            error_msg += f"   * {citation}\n     -> {reason}\n"
                         error_msg += "\n"
 
                     if verification_errors:
                         error_msg += "[VERIFICATION] VERIFICATION PROBLEMS:\n"
                         for citation, reason in verification_errors:
-                            error_msg += f"   • {citation}\n     -> {reason}\n"
+                            error_msg += f"   * {citation}\n     -> {reason}\n"
                         error_msg += "\n"
 
                     error_msg += "[ACTION REQUIRED] These citations appear to be AI hallucinations.\n"

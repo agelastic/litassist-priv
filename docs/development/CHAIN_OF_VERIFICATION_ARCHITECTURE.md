@@ -1,6 +1,6 @@
 # Chain of Verification (CoVe) Architecture for LitAssist
 
-Last updated: 18/02/2026
+Last updated: 02/06/2026
 
 **Status**: Implementation complete
 
@@ -265,7 +265,7 @@ litassist verify document.txt --cove --cove-reference "exhibits/*.pdf"
 ### Post-Processing with verify-cove
 ```bash
 # Run CoVe on any command output
-litassist strategy case_facts.txt --outcome "summary judgment"
+litassist strategy case_facts.md --outcome "summary judgment"
 litassist verify-cove outputs/strategy_*.md
 
 # Or on draft documents

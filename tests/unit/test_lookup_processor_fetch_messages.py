@@ -72,7 +72,10 @@ class TestLookupFetchMessages:
             )
 
         with patch.object(processors, "_fetch_url_content", side_effect=fake_fetch), \
-                patch.object(LookupProcessor, "_save_fetched_content"):
+                patch.object(LookupProcessor, "_save_fetched_content"), \
+                patch("litassist.commands.lookup.processors.time.sleep"):
+            # sleep patched out: both URLs share a domain, which would otherwise
+            # trigger the real 0.5s same-domain fetch pacing (not under test here).
             contents = _processor().fetch_content(
                 [
                     "https://example.gov.au/page",

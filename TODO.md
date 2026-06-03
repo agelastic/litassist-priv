@@ -1,6 +1,6 @@
 # LitAssist Development TODO
 
-Last updated: 30/05/2026
+Last updated: 02/06/2026
 
 **Note:** Strategic feature planning (litigation support, advisory capabilities, new commands) is now in [ROADMAP.md](ROADMAP.md). This file focuses on bugs, technical debt, and code quality improvements.
 
@@ -61,8 +61,8 @@ Last updated: 30/05/2026
 - [x] ~~Fail fast on config load errors~~ - Already implemented (verified Oct 2025)
 - [x] ~~REMOVE temporary glob help addon after unification~~ - COMPLETED (deleted glob_help_addon.yaml, removed concatenation logic in caseplan/plan_generator.py)
 - [x] ~~IMPLEMENT full glob unification~~ - COMPLETED (extractfacts, digest, draft, counselnotes routed through expand_glob_patterns_callback; brainstorm and barbrief already used it)
-- [ ] DEFERRED: extend strategy --strategies to MULTIPLE files. As of May 2026 it accepts a path OR a glob that resolves to the most recent match (`expand_glob_single_callback`); consuming SEVERAL brainstorm sets in one run (e.g. the creative AND research brainstorm together) still needs the single-file -> multiple-file interface change. See ROADMAP.md P4-25.
-- [ ] AUDIT: review verification coverage end to end - who verifies what, and when. Map each command: verifies BY DEFAULT (draft, strategy, extractfacts), verification OPT-IN via `--verify` (brainstorm, counselnotes, barbrief), or NO verification (lookup, digest, updatefacts; caseplan/verify-cove separate). Cross-check against which commands emit COURT/filed documents (draft; strategy's claim/application/affidavit at `outputs/strategy_draft_*.txt`; barbrief's brief) so no court document ships unverified. Confirm the caseplan prompt forces `--verify` wherever verification is opt-in AND a court document results (barbrief done May 2026), and decide whether strategy's auto-verified court doc also warrants a standalone post-hoc `verify`.
+- [x] ~~extend strategy --strategies to MULTIPLE files~~ - COMPLETED (June 2026). `--strategies` is now `multiple=True` (repeatable, one brainstorm set per flag) via `expand_glob_newest_each_callback`; each flag resolves to its own newest match and `parse_strategies_files` merges the sets (summed counts, `=== filename ===`-separated content). The caseplan prompt emits creative + research flags. See ROADMAP.md P4-25.
+- [ ] AUDIT: review verification coverage end to end - who verifies what, and when. Map each command: verifies BY DEFAULT (draft, strategy, extractfacts), verification OPT-IN via `--verify` (brainstorm, counselnotes, barbrief), or NO verification (lookup, digest, updatefacts; caseplan/verify-cove separate). Cross-check against which commands emit COURT/filed documents (draft; strategy's claim/application/affidavit at `outputs/strategy_draft_*.md`; barbrief's brief) so no court document ships unverified. Confirm the caseplan prompt forces `--verify` wherever verification is opt-in AND a court document results (barbrief done May 2026), and decide whether strategy's auto-verified court doc also warrants a standalone post-hoc `verify`.
 - [x] ~~Develop manual validation scripts for OpenRouter integration (in test-scripts/)~~ - COMPLETED (test_integrations.py, test_quality.py, test_cli_comprehensive.sh exist; RAG workflows removed in remove-pinecone-rag branch)
 - [ ] Enhance QA loops: iterative improvement, contingency planning, multi-perspective reviews
 - [ ] Keep documentation current with new features as they are implemented
@@ -95,6 +95,31 @@ _No critical bugs identified - all items below verified as already implemented o
 - ~~o3-pro validation~~ - Validation exists via effort mapping
 - ~~Large file handling~~ - MemoryError is caught and handled gracefully
 - ~~Input validation~~ - Click validates file existence automatically at entry points
+
+### Citation content retrieval: authorised-report citations [FOLLOW-UP]
+Verified-real authorised-report citations (e.g. `(1999) 201 CLR 1`) fail the
+post-fetch content retrieval in `fetch_citation_context` (`litassist/citation_context.py`),
+so `verify --soundness`/`--reasoning` run with no document context for them
+(soundness effectively runs blind on those citations). The misleading failure
+reason was fixed (`_search_and_validate` now preserves the fetched URL so the
+reason reads "Document fetch or content validation failed" instead of "URL not
+found - CSE returned no results"). Making these citations actually retrievable is
+deferred:
+- **C1 (retrieval) - downgraded, not a standalone fix.** Landing on the AustLII
+  case page (whose header carries parallel cites for `_check_header_parallel_citations`
+  to validate) is impossible from a CLR-only cite: `construct_austlii_url`
+  (`litassist/citation/austlii.py:28`) requires medium-neutral `[YYYY] COURT N`,
+  and `normalize_citation` leaves the CLR string unchanged, so the CSE query has
+  no name/neutral cite to hit.
+- **C2 (the real lever) - add a `traditional cite -> medium-neutral cite`
+  primitive.** Source the neutral cite from, cheapest first: (1) draft
+  co-occurrence (drafts usually print both forms together, e.g.
+  `... (1999) 201 CLR 1; [1999] HCA 66`) - free, no fetch, prefer this; or
+  (2) AustLII LawCite citator via a constructible query URL
+  (`https://www.austlii.edu.au/cgi-bin/LawCite?cit=...`) - one extra fetch plus a
+  new HTML parser (AustLII is permitted; only jade.io is off-limits). Once the
+  neutral cite is known, the existing AustLII fetch + parallel-citation validation
+  already work. Decide C2 option 1 vs 2 deliberately before building.
 
 ### Next Steps
 1. Review and prioritize remaining TODO items for next sprint

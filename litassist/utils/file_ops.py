@@ -17,7 +17,7 @@ from litassist.timing import timed
 @timed
 def read_document(path: str) -> str:
     """
-    Read a PDF (text‐only) or plain‐text file and return its full text.
+    Read a PDF (text-only) or plain-text file and return its full text.
 
     Args:
         path: The path to the PDF or text file to read.
@@ -213,8 +213,8 @@ def expand_glob_single_callback(ctx, param, value):
     Scalar sibling of expand_glob_patterns_callback for single-input args
     (strategy --strategies, verify FILE). A literal path passes through; a glob
     resolves to the MOST RECENT match by mtime - mirroring how
-    resolve_case_facts_file picks the latest case_facts*.txt. Caseplan-generated
-    scripts reference prior outputs by glob (e.g. 'outputs/brainstorm_*.txt'),
+    resolve_case_facts_file picks the latest case_facts*.md. Caseplan-generated
+    scripts reference prior outputs by glob (e.g. 'outputs/brainstorm_*.md'),
     and some producers (draft) legitimately write two files under one prefix, so
     a multi-match is normal: warn and take the newest rather than fail.
 
@@ -250,6 +250,57 @@ def expand_glob_single_callback(ctx, param, value):
             )
         return chosen
     raise click.BadParameter(f"File not found: {value}")
+
+
+def expand_glob_newest_each_callback(ctx, param, value):
+    """Resolve a repeatable option's patterns, each to its single newest file.
+
+    Multi-value sibling of expand_glob_single_callback (the scalar version) for
+    strategy --strategies, which is `multiple=True`: one brainstorm set per flag.
+    Each pattern resolves INDEPENDENTLY to its most-recent match by mtime, so two
+    flags ('brainstorm_creative_*.txt' and 'brainstorm_research_*.txt') yield the
+    newest of each prefix and older same-prefix files from prior runs are ignored.
+    Unlike the scalar callback, EVERY glob resolution is announced (not only a
+    multi-match) so the user always sees which file each flag bound to. Literal
+    paths pass through silently; results are de-duplicated, order preserved.
+
+    Args:
+        ctx, param: Click callback positionals (unused).
+        value: Tuple of path/glob strings (empty when the option is omitted), or
+               None when invoked directly without a value.
+
+    Returns:
+        Tuple of resolved file paths (or the original empty/None value).
+
+    Raises:
+        click.BadParameter: A pattern matches no file, resolves to a directory,
+                            or a non-glob literal does not exist.
+    """
+    from litassist.utils.formatting import warning_message
+
+    if not value:  # () when omitted, None when called directly: round-trip both
+        return value
+
+    resolved = []
+    for pattern in value:
+        if os.path.exists(pattern):
+            if os.path.isdir(pattern):
+                raise click.BadParameter(
+                    f"Expected a file, got a directory: {pattern}"
+                )
+            chosen = pattern  # literal path: nothing resolved, stay quiet
+        elif any(char in pattern for char in ["*", "?", "["]):
+            matches = expand_glob_pattern(pattern)  # files only
+            if not matches:
+                raise click.BadParameter(f"No files matching pattern: {pattern}")
+            chosen = max(matches, key=os.path.getmtime)  # most recent, not lexical
+            extra = f" (newest of {len(matches)})" if len(matches) > 1 else ""
+            click.echo(warning_message(f"Resolved '{pattern}' -> {chosen}{extra}"))
+        else:
+            raise click.BadParameter(f"File not found: {pattern}")
+        if chosen not in resolved:  # de-dup, preserve first occurrence
+            resolved.append(chosen)
+    return tuple(resolved)
 
 
 def process_reference_files(

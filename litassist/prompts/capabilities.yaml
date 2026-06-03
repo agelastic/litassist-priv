@@ -41,7 +41,7 @@ capabilities:
     Syntax: litassist digest FILE [FILE...] [options] (FILE arguments support glob patterns)
     Inputs: Multiple PDFs, text files, images (contracts, statements, evidence)
     Outputs: Structured summaries or issue-spotting reports with key findings
-    Strategic Use: Critical for discovering hidden facts and strengthening case_facts.txt
+    Strategic Use: Critical for discovering hidden facts and strengthening case_facts.md
     Options:
       --mode: summary, issues | Choose chronological summary or legal issue-spotting analysis
       --context: [string] | Additional context to guide the analysis (e.g., "analyze financial discrepancies in bank statements", "identify timeline conflicts in witness statements")
@@ -51,17 +51,17 @@ capabilities:
     Best Practices:
       - Use --mode issues with --context for targeted fact discovery
       - Process related documents together for contextual understanding
-      - Follow with 'updatefacts' to fold findings into case_facts.txt (or update manually)
+      - Follow with 'updatefacts' to fold findings into case_facts.md (or update manually)
       - Group documents logically (financial, correspondence, legal)
-    Integration: Fold findings into case_facts.txt with 'updatefacts' (or manually) before brainstorm/strategy
+    Integration: Fold findings into case_facts.md with 'updatefacts' (or manually) before brainstorm/strategy
     Cost: ~$1-3 per set (saves hours of manual review)
     Example: litassist digest "Bank Statements/*.pdf" "Emails/*.pdf" --mode issues --context "trace financial contributions and their impact on ownership claims"
 
     ### extractfacts - Structured Fact Organizer
     Purpose: Converts raw documents into structured 10-heading case facts format
     Syntax: litassist extractfacts FILE [FILE...] [options] (FILE arguments support glob patterns)
-    Inputs: Source documents (witness statements, affidavits, chronologies) - NOT case_facts.txt
-    Outputs: Structured 10-heading facts saved as outputs/extractfacts_*.txt; run 'updatefacts' on it to produce the downstream-ready case_facts file
+    Inputs: Source documents (witness statements, affidavits, chronologies) - NOT case_facts.md
+    Outputs: Structured 10-heading facts saved as outputs/extractfacts_*.md; run 'updatefacts' on it to produce the downstream-ready case_facts file
     Strategic Use: Essential first step - creates foundation for all downstream analysis
     Options:
       --heavy: (flag) | Use verification-heavy mode (max thinking effort)
@@ -71,7 +71,7 @@ capabilities:
       - Process primary evidence documents first
       - Run iteratively as new documents arrive
       - Combine with digest for comprehensive fact gathering
-      - NEVER use case_facts.txt as input (it's the output!)
+      - NEVER use case_facts.md as input (it's the output!)
     Integration: Feed the output to 'updatefacts' to build case_facts; brainstorm, strategy, draft, barbrief then pick it up automatically
     Limit: <1MB per file
     Cost: ~$1-2 (prevents errors in all subsequent phases)
@@ -80,28 +80,28 @@ capabilities:
     ### updatefacts - Case Facts Merger
     Purpose: Folds source documents (digest/extractfacts output or any text) into the 10-heading case_facts format, updating an existing file or creating one
     Syntax: litassist updatefacts SOURCE [SOURCE...] [--facts FILE] (SOURCE arguments support glob patterns)
-    Inputs: Source documents to merge in; optional --facts existing case-facts file (defaults to the latest case_facts*.txt in the current directory)
-    Outputs: A fresh, auto-discoverable case_facts_<timestamp>.txt in the current directory, with the 10 headings plus a Notes section for overflow
+    Inputs: Source documents to merge in; optional --facts existing case-facts file (defaults to the latest case_facts*.md in the current directory)
+    Outputs: A fresh, auto-discoverable case_facts_<timestamp>.md in the current directory, with the 10 headings plus a Notes section for overflow
     Strategic Use: Removes manual copy-paste when assembling case facts from digest/extractfacts results; safe to re-run as new material arrives
     Options:
-      --facts: [file] | Existing case facts file to update (default: latest case_facts*.txt; created from scratch if none)
+      --facts: [file] | Existing case facts file to update (default: latest case_facts*.md; created from scratch if none)
     Best Practices:
       - Feed it condensed material (digest or extractfacts output) rather than raw bundles
       - Re-run as new documents are processed; each run writes a new timestamped file
     Integration: Output is picked up automatically by brainstorm, strategy, draft, barbrief
     Cost: ~$0.10-0.30 (cheap merge model)
-    Example: litassist updatefacts 'outputs/digest_issues_*.txt' 'outputs/extractfacts_*.txt'
+    Example: litassist updatefacts 'outputs/digest_issues_*.md' 'outputs/extractfacts_*.md'
 
     ### brainstorm - Creative Strategy Generator
     Purpose: Generates 20+ legal strategies (10 orthodox, 10 unorthodox) using Grok's creativity
     Syntax: litassist brainstorm --side SIDE --area AREA [options]
-    Inputs: Structured case_facts.txt (required), optional research reports
+    Inputs: Structured case_facts.md (required), optional research reports
     Outputs: Comprehensive strategy options with risk assessments and implementation notes
     Strategic Use: Explores full range of possibilities before committing to approach
     Options:
       --side: plaintiff, defendant, accused, respondent (REQUIRED) | Specify which party you represent
       --area: criminal, civil, family, commercial, administrative (REQUIRED) | Define the legal jurisdiction/area
-      --facts: [file(s)] | Structured case facts file(s) to analyze (default: case_facts.txt, supports glob)
+      --facts: [file(s)] | Structured case facts file(s) to analyze (default: case_facts.md, supports glob)
       --research: [file(s)] | Include lookup reports for precedent-backed strategies (supports glob)
       --verify: (flag) | Add LLM content verification for legal accuracy. Recommended for final versions; citations are always verified regardless.
       --output: [string] | Custom filename prefix for output files
@@ -112,28 +112,28 @@ capabilities:
       - Review unorthodox strategies for negotiation leverage
     Integration: Feeds directly into strategy command and counselnotes synthesis
     Cost: ~$3-5 (can reveal game-changing strategies)
-    Example: litassist brainstorm --side plaintiff --area civil --facts case_facts.txt --research 'outputs/lookup_*.txt'
+    Example: litassist brainstorm --side plaintiff --area civil --facts case_facts.md --research 'outputs/lookup_*.md'
 
     ### strategy - Tactical Implementation Planner
     Purpose: Converts broad strategies into detailed, actionable legal plans with timelines
     Syntax: litassist strategy [FACTS] --outcome "goal" [options]
-    Inputs: case_facts.txt plus single outcome objective
+    Inputs: case_facts.md plus single outcome objective
     Outputs: 3-5 detailed implementation paths with success probabilities
     Strategic Use: Bridges gap between ideas and execution; essential for case planning
     Options:
       --outcome: [string] (REQUIRED) | Single sentence describing the specific legal outcome to achieve
-      --strategies: [file or glob] | Brainstorm output to inform tactical planning; a glob (e.g. 'outputs/brainstorm_research_*.txt') resolves to the most recent match
+      --strategies: [file or glob, repeatable] | Brainstorm output to inform tactical planning; pass ONCE PER set (e.g. --strategies 'outputs/brainstorm_creative_*.md' --strategies 'outputs/brainstorm_research_*.md') and each flag resolves to the most recent match of its own pattern
       --heavy: (flag) | Use verification-heavy mode (max thinking effort)
       --noverify: (flag) | Skip verification stage (not recommended for legal work)
       --output: [string] | Custom filename prefix for output files
     Best Practices:
       - Run separately for each major objective
-      - Use --strategies flag with best brainstorm output
+      - Pass both brainstorm sets (creative AND research) with a --strategies flag each
       - Generate multiple versions for comparison
       - Be specific with outcome descriptions
     Integration: Outputs guide draft command and inform final memoranda
     Cost: ~$2-4 (provides clear roadmap, prevents tactical errors)
-    Example: litassist strategy case_facts.txt --outcome "Establish a resulting trust over the disputed vehicle" --strategies 'outputs/brainstorm_research_*.txt'
+    Example: litassist strategy case_facts.md --outcome "Establish a resulting trust over the disputed vehicle" --strategies 'outputs/brainstorm_creative_*.md' --strategies 'outputs/brainstorm_research_*.md'
 
     ### counselnotes - Multi-Document Strategic Synthesizer
     Purpose: Synthesizes multiple documents/analyses into cohesive strategic assessment
@@ -153,12 +153,12 @@ capabilities:
       - Essential for creating feasibility memoranda
     Integration: Primary tool for creating final memoranda and feasibility assessments
     Cost: ~$2-4 (multiplies value of all prior research through synthesis)
-    Example: litassist counselnotes outputs/lookup_*.txt outputs/brainstorm_*.txt outputs/digest_*.txt --extract all
+    Example: litassist counselnotes outputs/lookup_*.md outputs/brainstorm_*.md outputs/digest_*.md --extract all
 
     ### barbrief - Barrister Brief Compiler
     Purpose: Creates comprehensive 10-section briefs for counsel with all case materials
     Syntax: litassist barbrief [FACTS] --hearing-type TYPE [options]
-    Inputs: case_facts.txt, strategies, research, supporting documents
+    Inputs: case_facts.md, strategies, research, supporting documents
     Outputs: Professional brief with indexed materials and strategic guidance
     Strategic Use: Essential when briefing counsel for court appearances
     Options:
@@ -176,7 +176,7 @@ capabilities:
       - Consolidates months of work into single document
     Integration: Culmination of all prior work into single counsel document
     Cost: ~$4-8 (ensures counsel fully prepared, reduces conference time)
-    Example: litassist barbrief case_facts.txt --strategies 'outputs/brainstorm_*.txt' --research 'outputs/lookup_*.txt' --hearing-type trial --verify
+    Example: litassist barbrief case_facts.md --strategies 'outputs/brainstorm_*.md' --research 'outputs/lookup_*.md' --hearing-type trial --verify
 
     ### draft - Precision Legal Document Creator
     Purpose: Generates litigation documents, correspondence, and memoranda with citations
@@ -196,12 +196,12 @@ capabilities:
       - Essential for feasibility memoranda and recommendations
     Integration: Final step converting analysis into deliverables
     Cost: ~$2-5 (produces documents that would take hours manually)
-    Example: litassist draft case_facts.txt outputs/counselnotes_*.txt outputs/strategy_*.txt "Draft a comprehensive feasibility memorandum analyzing all available property recovery options with risk assessments"
+    Example: litassist draft case_facts.md outputs/counselnotes_*.md outputs/strategy_*.md "Draft a comprehensive feasibility memorandum analyzing all available property recovery options with risk assessments"
 
     ### caseplan - Litigation Workflow Generator
     Purpose: Analyzes case complexity and generates phased workflow plans tailored to case needs
     Syntax: litassist caseplan [FACTS] [options]
-    Inputs: Structured case_facts.txt file (can be preliminary/skeleton)
+    Inputs: Structured case_facts.md file (can be preliminary/skeleton)
     Outputs: Comprehensive litigation plan with phases, costs, timelines, and command sequences
     Strategic Use: Essential first step - generates roadmap before investing in analysis
     Options:
@@ -211,13 +211,13 @@ capabilities:
       --verify: (flag) | Not supported - shows warning message
       --noverify: (flag) | Not supported - shows warning message
     Best Practices:
-      - Run early with basic case_facts.txt to guide document collection
+      - Run early with basic case_facts.md to guide document collection
       - Without --budget: Get rapid assessment and recommendation
       - With --budget: Get full implementation plan
       - Re-run as case develops with enhanced facts
     Integration: Provides complete command sequences for systematic case development
     Cost: ~$1-2 for assessment, ~$3-5 for full plan
-    Example: litassist caseplan case_facts.txt --context "custody arrangements" --budget standard
+    Example: litassist caseplan case_facts.md --context "custody arrangements" --budget standard
 
     ### verify - Quality Assurance System
     Purpose: Post-hoc verification of citations, legal soundness, and reasoning
@@ -241,7 +241,7 @@ capabilities:
       - Default (no flags) performs all three verifications
     Integration: Final quality gate before document release
     Cost: ~$1-2 (prevents embarrassing errors, strengthens credibility)
-    Example: litassist verify outputs/draft_memorandum_*.txt --citations --soundness
+    Example: litassist verify outputs/draft_memorandum_*.md --citations --soundness
 
     ### verify-cove - Chain of Verification Document Regenerator
     Purpose: Standalone Chain of Verification pass over an existing document; regenerates the document by drafting CoVe questions and answering them against the original (and optional reference) context
@@ -259,7 +259,7 @@ capabilities:
       - Run after `litassist verify` for layered quality assurance
     Integration: Polish step between draft / counselnotes and final filing
     Cost: ~$1-3 (proportional to document length and reference set)
-    Example: litassist verify-cove outputs/draft_memorandum.txt --reference 'exhibits/*.pdf' --heavy
+    Example: litassist verify-cove outputs/draft_memorandum.md --reference 'exhibits/*.pdf' --heavy
 
     ### test - API Connectivity Checker
     Purpose: Validates all API credentials and service connectivity before starting work
@@ -281,7 +281,7 @@ capabilities:
     Syntax: litassist refresh
     Inputs: None (reads `litassist/llm/model_configs.yaml`, fetches OpenRouter live)
     Outputs: Overwrites `litassist/llm/model_capabilities.yaml` deterministically (sorted, dated header)
-    Strategic Use: ADMINISTRATIVE — not part of a litigation workflow. Run only after swapping a model in `model_configs.yaml` or when OpenRouter announces pricing / context-window changes. Do NOT include in a caseplan output.
+    Strategic Use: ADMINISTRATIVE - not part of a litigation workflow. Run only after swapping a model in `model_configs.yaml` or when OpenRouter announces pricing / context-window changes. Do NOT include in a caseplan output.
     Options: None
     Integration: Standalone admin tool; the caseplan LLM should never recommend this in a phased plan.
     Cost: Free (catalogue endpoint is unauthenticated)
@@ -290,12 +290,12 @@ capabilities:
     ## Command Selection Principles for Comprehensive Planning
 
     1. Information Superiority: Use 10-15 lookup queries for standard cases, 15-25 for complex
-    2. Avoid circular operations: Never extractfacts from case_facts.txt or generated content
+    2. Avoid circular operations: Never extractfacts from case_facts.md or generated content
     3. Synthesis is Key: Multiple counselnotes passes with different document combinations
     4. Dual Brainstorm Approach: Always run with AND without research for perspective
     5. One strategy per outcome: Generate separate tactical plans for each objective
-    6. Quote glob patterns: Always use quotes around patterns like 'outputs/*.txt'
+    6. Quote glob patterns AND multi-word values: quote glob patterns like 'outputs/*.md', and wrap any multi-word option value or instruction in double quotes (--outcome "...", --context "...", --guidance "...", draft "...") - generated commands are tokenised with shell-style splitting.
     7. Build Toward Memoranda: Every phase should contribute to final feasibility assessment
-    8. Iterative Enhancement: Fold digest/extractfacts discoveries into case_facts.txt with updatefacts
+    8. Iterative Enhancement: Fold digest/extractfacts discoveries into case_facts.md with updatefacts
     9. Verify High-Stakes Documents: Always use verify for court documents and memoranda
     10. Cost-Benefit Focus: Each command should advance case understanding significantly

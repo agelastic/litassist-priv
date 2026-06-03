@@ -40,10 +40,10 @@ def count_tokens_and_words(text: str) -> tuple[int, int]:
             logging.warning(
                 f"tiktoken token counting failed: {e}. Falling back to word count estimation."
             )
-            # Fallback: rough estimation (1 token ≈ 0.75 words)
+            # Fallback: rough estimation (1 token ~ 0.75 words)
             token_count = int(len(text.split()) * 1.33)
     else:
-        # Fallback: rough estimation (1 token ≈ 0.75 words)
+        # Fallback: rough estimation (1 token ~ 0.75 words)
         token_count = int(len(text.split()) * 1.33)
 
     word_count = len(text.split())

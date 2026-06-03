@@ -9,7 +9,7 @@ from urllib.parse import urlparse
 
 
 # Authoritative sources for Australian legal citations. Matched as the full
-# hostname or a `.suffix` subdomain — never as a substring of an arbitrary URL.
+# hostname or a `.suffix` subdomain - never as a substring of an arbitrary URL.
 TRUSTED_LEGAL_HOSTS = frozenset(
     {
         "austlii.edu.au",

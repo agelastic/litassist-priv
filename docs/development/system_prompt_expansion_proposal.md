@@ -2,7 +2,7 @@
 
 # LitAssist System Prompt Expansion Proposal
 
-Last updated: 18/02/2026
+Last updated: 02/06/2026
 
 ## Executive Summary
 
@@ -170,7 +170,7 @@ commands:
     system: |
       You are structuring case facts for Australian legal analysis.
 
-      PURPOSE: Create a structured case_facts.txt that will be used by downstream
+      PURPOSE: Create a structured case_facts.md that will be used by downstream
       commands (brainstorm, strategy, draft, barbrief). Quality here determines
       quality everywhere.
 
@@ -378,7 +378,7 @@ Based on usage frequency and current gap severity:
 | 1 | `lookup` | Most-used research command; currently minimal prompt |
 | 2 | `strategy` | Generates critical advice; needs citation standards |
 | 3 | `digest` | Foundation for case analysis; needs extraction rules |
-| 4 | `extractfacts` | Creates case_facts.txt used everywhere; needs structure |
+| 4 | `extractfacts` | Creates case_facts.md used everywhere; needs structure |
 | 5 | `counselnotes` | Synthesis command; needs advocate framework |
 | 6 | `verify` | Quality gate; needs verification framework |
 

@@ -126,6 +126,80 @@ class TestCounselNotesBasic:
         finally:
             os.unlink(temp_file)
 
+    @patch("litassist.commands.counselnotes.document_processor.read_document")
+    @patch("litassist.commands.counselnotes.core.LLMClientFactory")
+    @patch("litassist.commands.counselnotes.core.save_command_output")
+    @patch("litassist.commands.counselnotes.core.save_log")
+    @patch("litassist.commands.counselnotes.core.show_command_completion")
+    @patch(
+        "litassist.commands.counselnotes.document_processor.LLMClientFactory.get_input_budget_for_command"
+    )
+    @patch("click.DateTime.convert")
+    def test_extraction_chunked_runs_llm_reduce(
+        self,
+        mock_datetime,
+        mock_budget,
+        mock_completion,
+        mock_log,
+        mock_output,
+        mock_factory,
+        mock_read,
+    ):
+        """When the input chunks, extraction must be followed by a single LLM
+        reduce that synthesises the partials -- not a string concatenation."""
+        mock_datetime.return_value = "2025-01-07 13:51:00"
+        # Tiny budget forces chunk_text to split the document into >1 chunk.
+        mock_budget.return_value = 80
+        mock_read.return_value = (
+            "First principle applies here clearly. Second principle also applies. "
+            "Third principle is relevant too. Fourth principle rounds it out."
+        )
+
+        captured = {}
+
+        def capture_save(command_name, content, *a, **kw):
+            captured["content"] = content
+            return "out.md"
+
+        mock_output.side_effect = capture_save
+
+        mock_client = Mock()
+
+        def complete_side_effect(messages, *a, **kw):
+            user = messages[-1]["content"]
+            # The reduce prompt wraps partials with this marker.
+            if "EXTRACTION FROM DOCUMENT SECTION" in user:
+                return ("CONSOLIDATED_NOTES", self.mock_usage)
+            return ("PARTIAL_CHUNK", self.mock_usage)
+
+        mock_client.complete.side_effect = complete_side_effect
+        mock_factory.for_command.return_value = mock_client
+
+        with tempfile.NamedTemporaryFile(mode="w", delete=False, suffix=".txt") as f:
+            f.write("seed")
+            temp_file = f.name
+
+        try:
+            result = self.runner.invoke(
+                counselnotes, ["--extract", "all", temp_file]
+            )
+            assert result.exit_code == 0
+            calls = mock_client.complete.call_args_list
+            reduce_calls = [
+                c
+                for c in calls
+                if "EXTRACTION FROM DOCUMENT SECTION" in c.args[0][-1]["content"]
+            ]
+            extraction_calls = [c for c in calls if c not in reduce_calls]
+            # Multiple chunk extractions, followed by exactly one LLM reduce.
+            assert len(extraction_calls) >= 2
+            assert len(reduce_calls) == 1
+            # Saved output is the reduced synthesis, not concatenated partials.
+            assert captured["content"] == "CONSOLIDATED_NOTES"
+            assert "[Consolidated from" not in captured["content"]
+        finally:
+            os.unlink(temp_file)
+
     def test_command_help(self):
         """Test that command help works."""
         result = self.runner.invoke(counselnotes, ["--help"])

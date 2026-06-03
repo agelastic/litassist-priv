@@ -36,12 +36,12 @@ lookup:
       Format your response EXACTLY as follows:
 
       CITATIONS FOUND:
-      • Case Name [Year] COURT_ID Number
-      • Competition and Consumer Act 2010 (Cth) s 18
+      * Case Name [Year] COURT_ID Number
+      * Competition and Consumer Act 2010 (Cth) s 18
 
       Use medium neutral citation format for all cases.
       Example: Smith v Jones [2020] HCA 1
-      • Brown v Wilson (2019) 123 CLR 456
+      * Brown v Wilson (2019) 123 CLR 456
 
       Include all case citations and legislation references found in the sources. Each citation should be a complete citation string as it appears in legal documents.
       If no citations are found, respond with: "No citations found."
@@ -52,8 +52,8 @@ lookup:
       Format your response EXACTLY as follows:
 
       LEGAL PRINCIPLES:
-      • A contract requires offer, acceptance, consideration and intention to create legal relations (Carlill v Carbolic Smoke Ball Co [1893] 1 QB 256)
-      • Misleading or deceptive conduct in trade is prohibited (Competition and Consumer Act 2010 (Cth) s 18)
+      * A contract requires offer, acceptance, consideration and intention to create legal relations (Carlill v Carbolic Smoke Ball Co [1893] 1 QB 256)
+      * Misleading or deceptive conduct in trade is prohibited (Competition and Consumer Act 2010 (Cth) s 18)
 
       Include key legal rules and principles with their supporting authorities.
       If no principles are found, respond with: "No legal principles found."

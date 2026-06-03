@@ -16,6 +16,7 @@ from litassist.utils.file_ops import (
 )
 from litassist.timing import timed
 from litassist.utils.core import (
+    extract_verified_document,
     parse_strategies_file,
     validate_side_area_combination,
 )
@@ -45,22 +46,6 @@ from litassist.utils.file_ops import (
 from .orthodox_generator import generate_orthodox_strategies
 from .unorthodox_generator import generate_unorthodox_strategies
 from .analysis_generator import generate_analysis
-
-
-def _extract_verified_document(correction: str, original: str) -> tuple[str, bool]:
-    """Return (content, parsed).
-
-    If `correction` contains the expected `## Verified and Corrected Document`
-    header, return the document body and True. Otherwise return `original`
-    unchanged and False - preserving the pre-verification brainstorm output
-    rather than silently overwriting it with the verifier's freeform text.
-    """
-    match = re.search(
-        r"## Verified and Corrected Document\s*\n(.*)", correction, re.DOTALL
-    )
-    if match:
-        return match.group(1).strip(), True
-    return original, False
 
 
 def _extract_strategies(content: str, strategy_type: str) -> list[str]:
@@ -408,7 +393,7 @@ def verify_and_annotate_strategies(
     multiple=True,
     type=click.Path(),  # Remove exists=True since we'll check in callback
     callback=expand_glob_patterns,
-    help="Facts files to analyze. Supports glob patterns. Use multiple times: --facts file1.txt --facts 'case_*.txt'. Defaults to case_facts.txt if it exists.",
+    help="Facts files to analyze. Supports glob patterns. Use multiple times: --facts file1.txt --facts 'case_*.txt'. Defaults to case_facts.md if it exists.",
 )
 @click.option(
     "--side",
@@ -428,7 +413,7 @@ def verify_and_annotate_strategies(
     type=click.Path(),  # Remove exists=True since we'll check in callback
     callback=expand_glob_patterns,
     help="Optional: Lookup report files to inform orthodox strategies. Supports glob patterns. "
-    "Use multiple times: --research file1.txt --research 'outputs/lookup_*.txt'. "
+    "Use multiple times: --research file1.txt --research 'outputs/lookup_*.md'. "
     "Large research files (>128k tokens) may impact verification performance.",
 )
 @click.option(
@@ -452,11 +437,11 @@ def brainstorm(facts, side, area, research, verify, output):
     The output is automatically saved with a timestamp for use in other commands.
 
     Usage:
-        # With default case_facts.txt (if exists in current directory)
+        # With default case_facts.md (if exists in current directory)
         litassist brainstorm --side plaintiff --area civil
 
         # With single facts file
-        litassist brainstorm --facts case_facts.txt --side plaintiff --area civil
+        litassist brainstorm --facts case_facts.md --side plaintiff --area civil
 
         # With multiple facts files
         litassist brainstorm --facts facts1.txt --facts facts2.txt --side plaintiff --area civil
@@ -465,7 +450,7 @@ def brainstorm(facts, side, area, research, verify, output):
         litassist brainstorm --side plaintiff --area civil --research lookup1.txt --research lookup2.txt
 
         # With glob patterns for research files
-        litassist brainstorm --side plaintiff --area civil --research 'outputs/lookup_*gift*.txt'
+        litassist brainstorm --side plaintiff --area civil --research 'outputs/lookup_*gift*.md'
 
     Note: Verification is automatically performed on all brainstorm outputs to ensure citation accuracy and legal soundness.
 
@@ -481,7 +466,7 @@ def brainstorm(facts, side, area, research, verify, output):
     except Exception:
         pass
 
-    # Handle facts files - auto-select the latest case_facts*.txt if none given.
+    # Handle facts files - auto-select the latest case_facts*.md if none given.
     if not facts:
         facts = (resolve_case_facts_file(),)
 
@@ -499,7 +484,7 @@ def brainstorm(facts, side, area, research, verify, output):
     else:
         click.echo(f"Using facts from {len(facts_sources)} files:")
         for source in facts_sources:
-            click.echo(f"  • {source}")
+            click.echo(f"  * {source}")
 
     # Combine facts with source attribution if multiple files
     if len(facts_contents) == 1:
@@ -512,12 +497,15 @@ def brainstorm(facts, side, area, research, verify, output):
 
     facts = combined_facts
 
-    # Check file size to prevent token limit issues. Cap derives from the
-    # brainstorm orthodox-stage model's input window so it scales with
-    # whichever model is currently routed.
+    # Check file size to prevent token limit issues. The binding consumer is the
+    # analysis stage (facts + orthodox + unorthodox go to brainstorm-analysis),
+    # routed to the smallest-window model in the pipeline, so size the cap against
+    # THAT stage -- not the orthodox-generation model -- or the guard cannot
+    # protect the narrowest window. Reads the analysis model's window from
+    # model_capabilities.yaml, so it scales with whichever model is routed.
     validate_file_size_limit(
         facts,
-        LLMClientFactory.get_input_budget_for_command("brainstorm", "orthodox"),
+        LLMClientFactory.get_input_budget_for_command("brainstorm", "analysis"),
         "Case facts",
     )
 
@@ -680,7 +668,7 @@ def brainstorm(facts, side, area, research, verify, output):
         # than silently replacing it with the verifier's freeform output -
         # the previous code overwrote combined_content with `correction`
         # while telling the user it was "using original output".
-        combined_content, parsed_ok = _extract_verified_document(
+        combined_content, parsed_ok = extract_verified_document(
             correction, combined_content
         )
 
@@ -808,12 +796,12 @@ def brainstorm(facts, side, area, research, verify, output):
         f"Generated strategies for {side.capitalize()} in {area.capitalize()} law:"
     )
     click.echo(f"\n{msg}")
-    click.echo(f"   • Orthodox strategies: {parsed_result.get('orthodox_count', 0)}")
+    click.echo(f"   * Orthodox strategies: {parsed_result.get('orthodox_count', 0)}")
     click.echo(
-        f"   • Unorthodox strategies: {parsed_result.get('unorthodox_count', 0)}"
+        f"   * Unorthodox strategies: {parsed_result.get('unorthodox_count', 0)}"
     )
     click.echo(
-        f"   • Most likely to succeed: {parsed_result.get('most_likely_count', 0)}"
+        f"   * Most likely to succeed: {parsed_result.get('most_likely_count', 0)}"
     )
 
     tip_msg = tip_message(f'View full strategies: open "{output_file}"')

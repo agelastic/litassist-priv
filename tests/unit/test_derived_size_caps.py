@@ -154,3 +154,23 @@ class TestDigestChunkSize:
             determine_chunk_size("digest", "issues")
             assert mock_window.call_args_list[0][0] == ("digest", "summary")
             assert mock_window.call_args_list[1][0] == ("digest", "issues")
+
+
+@pytest.mark.unit
+@pytest.mark.offline
+class TestInputBudgetFraction:
+    """`get_input_budget_for_command` offers 80% of the routed model's window
+    to input by default (char budget = window_tokens * 3.5 * 0.80)."""
+
+    def test_default_fraction_is_80_percent(self):
+        from litassist.llm.factory import LLMClientFactory
+
+        with patch.object(
+            LLMClientFactory,
+            "get_context_window_for_command",
+            return_value=200_000,
+        ):
+            assert (
+                LLMClientFactory.get_input_budget_for_command("counselnotes")
+                == int(200_000 * 3.5 * 0.80)
+            )

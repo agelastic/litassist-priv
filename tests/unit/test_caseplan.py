@@ -327,3 +327,175 @@ class TestCaseplanCommand:
         data = yaml.safe_load(cfg_path.read_text())
         assert "opus" in data["caseplan"]["model"].lower()
         assert "sonnet" in data["caseplan-assessment"]["model"].lower()
+
+
+class TestCaseplanRunner:
+    """The generated commands file is an executable Python runner.
+
+    It isolates each execution under a fresh outputs/run_<ts>/ by setting
+    LITASSIST_OUTPUT_DIR; consumer globs and case_facts are rewritten to that dir,
+    while --output prefixes (routed by the sink) stay literal.
+    """
+
+    @patch("litassist.commands.caseplan.plan_generator.LLMClientFactory")
+    @patch("litassist.commands.caseplan.plan_generator.save_command_output")
+    @patch("litassist.commands.caseplan.plan_generator.save_log")
+    def test_commands_file_is_python_runner(
+        self, mock_save_log, mock_save_output, mock_factory, tmp_path
+    ):
+        case_facts = tmp_path / "case_facts.txt"
+        case_facts.write_text("Parties: Test v Test\nBackground: Dispute...")
+
+        plan = (
+            "# Litigation Plan\n## Phase 9\n"
+            "```bash\n"
+            "litassist brainstorm --side plaintiff --area civil "
+            "--facts case_facts.txt --output brainstorm_creative\n"
+            "litassist strategy case_facts.txt --outcome \"Win\" "
+            "--strategies 'outputs/brainstorm_creative_*.txt'\n"
+            "```\n"
+        )
+        mock_client = MagicMock()
+        mock_client.complete.return_value = (plan, {"total_tokens": 1000})
+        mock_factory.for_command.return_value = mock_client
+        mock_save_output.return_value = "outputs/caseplan_123.txt"
+
+        runner = CliRunner()
+        result = runner.invoke(caseplan, [str(case_facts), "--budget", "minimal"])
+        assert result.exit_code == 0, result.output
+
+        # The run hint points at python, not bash (the artifact is a Python runner).
+        assert 'python "' in result.output
+        assert "bash " not in result.output
+
+        # 2nd save is the runner, saved via extension=".py" and header-less so it
+        # stays valid Python. Token routing into run_dir (outputs globs + case_facts
+        # normalised to .md, --output kept literal) is covered exhaustively by
+        # test_caseplan_command_extractor.py::TestTokenRewriting; here we only pin
+        # the command-level wiring that those unit tests cannot see.
+        commands_call = mock_save_output.call_args_list[1]
+        assert commands_call.kwargs.get("include_header") is False
+        assert commands_call.kwargs.get("extension") == ".py"
+        saved_runner = commands_call.args[1]
+        compile(saved_runner, "<runner>", "exec")
+        assert saved_runner.startswith("#!/usr/bin/env python3")
+        # Both plan commands actually flowed into the runner as run([...]) calls
+        # (integration: command -> extract -> save); a scaffold-only runner would
+        # fail this. Routing detail of each token is unit-tested separately.
+        assert saved_runner.count("run([") == 2
+        assert "'brainstorm'" in saved_runner and "'strategy'" in saved_runner
+
+
+def _user_prompt(mock_client):
+    return next(
+        m["content"]
+        for m in mock_client.complete.call_args[0][0]
+        if m["role"] == "user"
+    )
+
+
+class TestCaseplanSourceFiles:
+    """caseplan sends the real source-file inventory so the model references actual
+    filenames instead of inventing them, with a confirm gate before the paid call."""
+
+    def test_discover_lists_docs_excluding_facts_md_and_subdirs(
+        self, tmp_path, monkeypatch
+    ):
+        from litassist.commands.caseplan.core import discover_source_files
+
+        monkeypatch.chdir(tmp_path)
+        for name in ["affidavit_smith.pdf", "invoice_repairs.pdf", "witness.txt", "scan.PDF"]:
+            (tmp_path / name).write_text("x")
+        (tmp_path / "notes.md").write_text("x")  # .md included - read as UTF-8 text
+        (tmp_path / "config.yaml").write_text("x")  # .yaml excluded by type
+        (tmp_path / "brief.docx").write_text("x")  # Word - litassist can't read it, excluded
+        (tmp_path / "case_facts.txt").write_text("x")  # case_facts* prefix - excluded
+        (tmp_path / "Case_facts.txt").write_text("x")  # case-insensitive prefix - excluded
+        (tmp_path / "case_facts_20260101_000000.txt").write_text("x")
+        (tmp_path / "facts.txt").write_text("x")  # the ACTUAL facts file - excluded by name
+        (tmp_path / "evidence.pdf").mkdir()  # a directory named like a doc - skipped
+        (tmp_path / "outputs").mkdir()
+        (tmp_path / "outputs" / "ignored.pdf").write_text("x")  # subdir - not scanned
+
+        assert set(discover_source_files("facts.txt")) == {
+            "affidavit_smith.pdf",
+            "invoice_repairs.pdf",
+            "witness.txt",
+            "scan.PDF",  # extension matched case-insensitively
+            "notes.md",
+        }
+
+    @patch("litassist.commands.caseplan.plan_generator.LLMClientFactory")
+    @patch("litassist.commands.caseplan.plan_generator.save_command_output")
+    @patch("litassist.commands.caseplan.plan_generator.save_log")
+    def test_prompt_includes_discovered_source_files(
+        self, mock_save_log, mock_save_output, mock_factory
+    ):
+        mock_client = MagicMock()
+        mock_client.complete.return_value = (
+            '# Plan\n```bash\nlitassist lookup "x" --mode irac\n```\n',
+            {"total_tokens": 100},
+        )
+        mock_factory.for_command.return_value = mock_client
+        mock_save_output.return_value = "outputs/caseplan_123.txt"
+
+        runner = CliRunner()
+        # No --yes needed: CliRunner stdin isatty() is False, so no prompt fires.
+        with runner.isolated_filesystem():
+            with open("case_facts.txt", "w") as f:
+                f.write("Parties: A v B\nBackground: dispute")
+            with open("affidavit_smith.pdf", "w") as f:
+                f.write("x")
+            with open("invoice_repairs.pdf", "w") as f:
+                f.write("x")
+            result = runner.invoke(caseplan, ["case_facts.txt", "--budget", "minimal"])
+            assert result.exit_code == 0, result.output
+            user_msg = _user_prompt(mock_client)
+
+        assert "AVAILABLE SOURCE FILES" in user_msg
+        assert "affidavit_smith.pdf" in user_msg
+        assert "invoice_repairs.pdf" in user_msg
+
+    @patch("litassist.commands.caseplan.core._is_interactive", return_value=True)
+    @patch("litassist.commands.caseplan.plan_generator.LLMClientFactory")
+    def test_confirm_gate_aborts_before_paid_call(
+        self, mock_factory, _mock_interactive
+    ):
+        runner = CliRunner()
+        with runner.isolated_filesystem():
+            with open("case_facts.txt", "w") as f:
+                f.write("Parties: A v B\nBackground: dispute")
+            # Interactive + declining at the confirm -> Abort before any LLM call.
+            result = runner.invoke(
+                caseplan, ["case_facts.txt", "--budget", "minimal"], input="n\n"
+            )
+
+        assert result.exit_code != 0
+        mock_factory.for_command.assert_not_called()
+
+    @patch("litassist.commands.caseplan.core._is_interactive", return_value=True)
+    @patch("litassist.commands.caseplan.plan_generator.LLMClientFactory")
+    @patch("litassist.commands.caseplan.plan_generator.save_command_output")
+    @patch("litassist.commands.caseplan.plan_generator.save_log")
+    def test_yes_flag_skips_confirm(
+        self, mock_save_log, mock_save_output, mock_factory, _mock_interactive
+    ):
+        mock_client = MagicMock()
+        mock_client.complete.return_value = (
+            '# Plan\n```bash\nlitassist lookup "x" --mode irac\n```\n',
+            {"total_tokens": 100},
+        )
+        mock_factory.for_command.return_value = mock_client
+        mock_save_output.return_value = "outputs/caseplan_123.txt"
+
+        runner = CliRunner()
+        with runner.isolated_filesystem():
+            with open("case_facts.txt", "w") as f:
+                f.write("Parties: A v B\nBackground: dispute")
+            # --yes proceeds even though _is_interactive() is True and no input.
+            result = runner.invoke(
+                caseplan, ["case_facts.txt", "--budget", "minimal", "--yes"]
+            )
+
+        assert result.exit_code == 0, result.output
+        mock_factory.for_command.assert_called()

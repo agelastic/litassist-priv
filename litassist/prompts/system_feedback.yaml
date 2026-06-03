@@ -129,7 +129,7 @@ system_feedback:
         [VERIFICATION] VERIFICATION PROBLEMS:
 
       error_item: |
-           • {citation}
+           * {citation}
              -> {reason}
 
       strict_mode_failed: |
@@ -277,13 +277,13 @@ system_feedback:
         [STATS] Generated strategies for {side} in {area} law:
 
       orthodox_summary: |
-        • Orthodox strategies: {count}
+        * Orthodox strategies: {count}
 
       unorthodox_summary: |
-        • Unorthodox strategies: {count}
+        * Unorthodox strategies: {count}
 
       most_likely_summary: |
-        • Most likely to succeed: {count}
+        * Most likely to succeed: {count}
 
     # USED BY: debug_logger.py log_execution_metrics()
     debug:
@@ -320,7 +320,7 @@ system_feedback:
         {error_type} ERRORS:
 
       citation_error_detail: |
-        • {citation}
+        * {citation}
           -> {reason}
 
       unverified_citations_removed: |

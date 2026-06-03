@@ -88,20 +88,41 @@ class TestExtractVerifiedDocument:
         # Verifier returned something useful-looking but without the expected
         # section header. The original brainstorm content must be returned
         # unchanged so we never substitute the verifier's text for it.
-        from litassist.commands.brainstorm.core import _extract_verified_document
+        from litassist.utils.core import extract_verified_document
 
         correction = (
             "I reviewed the document and identified several issues. "
             "Please refer to the discussion above for details."
         )
         original = "Strategy 1: original.\nStrategy 2: original."
-        content, parsed = _extract_verified_document(correction, original)
+        content, parsed = extract_verified_document(correction, original)
         assert parsed is False
         assert content == original, (
             "Header-missing branch must return the original brainstorm "
             "content unchanged; previously it returned the verifier's "
             "freeform response while telling the user 'using original output'."
         )
+
+    def test_lightly_formatted_header_is_extracted(self):
+        # Verifier models vary the header's formatting. Each of these light
+        # variants must still be located so the corrected document is used rather
+        # than discarded: bold instead of '## ', '&' for 'and', lowercase, '###'.
+        from litassist.utils.core import extract_verified_document
+
+        for header in (
+            "## Verified and Corrected Document",
+            "**Verified & Corrected Document**",
+            "### verified and corrected document",
+            "Verified and Corrected Document:",
+        ):
+            correction = (
+                "## Issues Found during Verification\nNo issues found.\n\n"
+                f"{header}\n"
+                "## ORTHODOX STRATEGIES\nbody"
+            )
+            content, parsed = extract_verified_document(correction, "original")
+            assert parsed is True, f"header variant not matched: {header!r}"
+            assert content.startswith("## ORTHODOX STRATEGIES")
 
 
 class TestStrategyExtraction:

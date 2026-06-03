@@ -12,6 +12,7 @@ Last updated: 18/02/2026
 
 ### Git Commit Standards
 - Never add self-attribution. Commit messages contain only a technical description. Never mention yourself in commits or PRs.
+- If a task seems to require a push to complete, stop and tell the user the branch is ready locally; let them decide.
 
 ### Code Quality Standards
 - Code must pass `ruff check`.
@@ -99,6 +100,7 @@ Last updated: 18/02/2026
 - Forbidden: `git filter-branch`, interactive rebases that rewrite history, `git reset --hard` without checking local work, any `push` without explicit permission, and `push --force`.
 - Allowed: `status`, `diff`, `log`, `branch`, `add`, `commit` only with explicit permission, help craft commit messages, explain workflows, use `gh` CLI to read.
 - Never modify history or push without permission.
+- The user pushes manually. Never run `git push`. `gh pr create` is fine once asked: first `git fetch` and confirm `origin/<branch>` already has the commits (it usually does) - do not treat opening a PR as needing a push.
 - Before creating a pull request, ensure all relevant user and developer documentation has been updated to reflect the branch's behavioural changes. If any docs are stale, propose the updates and complete them before opening the PR. Relevant docs typically include `CHANGELOG.md`, `architecture.md`, `docs/user/*.md`, `docs/development/*.md`, and `TODO.md`. Trivial fixes (typos, single-file refactors with no user-visible change) are exempt.
 
 ## Safety Compliance Check

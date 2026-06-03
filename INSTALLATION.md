@@ -1,6 +1,6 @@
 # LitAssist Installation Guide
 
-Last updated: 18/02/2026
+Last updated: 02/06/2026
 
 This guide provides comprehensive installation instructions for LitAssist, including multiple installation methods, configuration setup, and troubleshooting.
 
@@ -171,23 +171,23 @@ Once installed, LitAssist works from any directory:
 # Document analysis
 cd ~/legal-projects/case-2024/
 litassist digest contract.pdf --mode summary
-# Creates: ./outputs/digest_summary_*.txt
+# Creates: ./outputs/digest_summary_*.md
 
 # Case law research
 litassist lookup "adverse possession Australia"
-# Creates: ./outputs/lookup_*.txt
+# Creates: ./outputs/lookup_*.md
 
 # Fact extraction
 litassist extractfacts witness_statement.pdf
-# Creates: ./outputs/extractfacts_*.txt
+# Creates: ./outputs/extractfacts_*.md
 
 # Strategy development
-litassist brainstorm case_facts.txt --side plaintiff --area civil
-# Creates: ./outputs/brainstorm_*.txt
+litassist brainstorm case_facts.md --side plaintiff --area civil
+# Creates: ./outputs/brainstorm_*.md
 
 # Document drafting
 litassist draft bundle.pdf "motion to dismiss"
-# Creates: ./outputs/draft_*.txt
+# Creates: ./outputs/draft_*.md
 ```
 
 ## Directory Structure

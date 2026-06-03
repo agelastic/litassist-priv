@@ -25,7 +25,8 @@ def generate_full_plan(
     case_facts_name: str,
     context: str,
     budget: str,
-    output: str
+    output: str,
+    source_files: Optional[list] = None,
 ) -> Tuple[str, Optional[str], Dict]:
     """
     Generate full litigation plan and extract commands.
@@ -36,6 +37,8 @@ def generate_full_plan(
         context: Additional context (if provided)
         budget: Budget level (minimal/standard/comprehensive)
         output: Custom output prefix (if provided)
+        source_files: Real source documents in the working directory, so the model
+            references actual filenames instead of inventing them.
 
     Returns:
         Tuple of (output_file, commands_file, usage)
@@ -70,6 +73,23 @@ def generate_full_plan(
         prompt_parts.append(
             f"USER ANALYSIS GUIDANCE (NOT case facts): {context}\n"
             f"IMPORTANT: This is guidance for your analysis, not factual information from the case."
+        )
+
+    # The REAL source documents present in the working directory, so the plan
+    # references actual filenames for extractfacts/digest/draft inputs instead of
+    # inventing them (which the runner would then fail on).
+    if source_files:
+        listing = "\n".join(f"- {name}" for name in source_files)
+        prompt_parts.append(
+            "AVAILABLE SOURCE FILES (use these EXACT paths for document inputs; "
+            "do NOT invent filenames):\n" + listing
+        )
+    else:
+        prompt_parts.append(
+            "AVAILABLE SOURCE FILES: none found - the case_facts you were given is "
+            "the primary input; plan from it. Do NOT invent document filenames; mark "
+            "a step [MANUAL TASK] only if it genuinely needs a source document that "
+            "is not present."
         )
 
     # Select appropriate analysis instructions based on budget level
@@ -126,11 +146,11 @@ def generate_full_plan(
         metadata=metadata,
     )
 
-    # Extract and validate CLI commands. Each accepted command is round-tripped
-    # through shlex so shell metacharacters in the LLM output cannot run as live
-    # operators in the saved script (see command_extractor).
+    # Extract the litassist commands and assemble the Python runner. Each accepted
+    # command runs via subprocess.run(args, shell=False), and the runner isolates
+    # the execution under a fresh outputs/run_<ts>/ dir (see command_extractor).
     extracted_commands, command_count, rejected_commands = extract_cli_commands(
-        plan_content
+        plan_content, seed_facts=case_facts_name
     )
     try:
         log_task_event(
@@ -152,11 +172,16 @@ def generate_full_plan(
             )
         )
     else:
+        # include_header=False: the runner is executable Python, so it must be
+        # written verbatim - the standard title/metadata/divider would put
+        # non-Python text before the shebang and break `python <file>`.
         commands_file = save_command_output(
             f"{output}_commands" if output else f"caseplan_commands_{budget}",
             extracted_commands,
             "" if output else case_facts_name,
             metadata={"Type": "Executable Commands", "Budget": budget},
+            include_header=False,
+            extension=".py",
         )
         if rejected_commands:
             click.echo(
@@ -177,6 +202,7 @@ def generate_full_plan(
                 "model": llm_client.model,
                 "context": context,
                 "budget": budget,
+                "source_files": source_files or [],
             },
             "usage": usage,
             # Response content removed - already logged by LLMClient separately
@@ -189,8 +215,8 @@ def generate_full_plan(
     click.echo(f"\n{success_message('Litigation plan generated successfully!')}")
     click.echo(saved_message(f'Plan saved to: "{output_file}"'))
     if commands_file:
-        click.echo(saved_message(f'Executable commands saved to: "{commands_file}"'))
-        msg = tip_message(f'Execute commands: bash "{commands_file}"')
+        click.echo(saved_message(f'Executable runner saved to: "{commands_file}"'))
+        msg = tip_message(f'Run the workflow: python "{commands_file}"')
         click.echo(f"\n{msg}")
 
     try:

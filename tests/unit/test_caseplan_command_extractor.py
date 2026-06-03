@@ -1,13 +1,13 @@
-"""Unit tests for caseplan generated-command extraction and safety.
+"""Unit tests for caseplan generated-command extraction (Python runner).
 
-extract_cli_commands turns LLM plan text into an executable bash script. Because
-the user is told to `bash` that script, every accepted command is round-tripped
-through shlex so shell control characters cannot survive as live operators, and
-the function reports how many real commands it accepted so the caller can fail
-loud instead of saving a header-only script.
+extract_cli_commands turns LLM plan text into an executable PYTHON runner that
+isolates each execution under a fresh outputs/run_<ts>/ dir. Steps run via
+subprocess.run(args) with shell=False, so shell metacharacters are inert literal
+arguments; every accepted command becomes a `run([...])` call with `outputs/` and
+`case_facts` path tokens rewritten to os.path.join(run_dir, ...). The function
+still reports the accepted count and the rejected (would-be) lines so the caller
+can fail loud instead of saving an empty runner.
 """
-
-import shlex
 
 from litassist.commands.caseplan.command_extractor import extract_cli_commands
 
@@ -16,184 +16,254 @@ def _join(plan_lines):
     return "\n".join(plan_lines)
 
 
-class TestExtractCliCommands:
-    def test_returns_script_count_and_rejected(self):
-        plan = _join(["```bash", 'litassist lookup "contract breach" --mode irac', "```"])
-        script, accepted_count, rejected = extract_cli_commands(plan)
-        assert isinstance(script, str)
-        assert accepted_count == 1
+def _script(plan):
+    script, accepted, rejected = extract_cli_commands(plan)
+    compile(script, "<runner>", "exec")  # the generated runner must be valid Python
+    return script, accepted, rejected
+
+
+class TestRunnerScaffold:
+    def test_emitted_script_is_valid_python_with_run_dir_setup(self):
+        script, _, _ = _script(
+            _join(["```bash", 'litassist lookup "x" --mode irac', "```"])
+        )
+        assert script.startswith("#!/usr/bin/env python3")
+        assert 'run_dir = os.path.join("outputs", "run_"' in script
+        assert "os.makedirs(run_dir)" in script
+        assert 'os.environ["LITASSIST_OUTPUT_DIR"] = run_dir' in script
+        # seeds a baseline case_facts (the cwd source is copied, not mutated)
+        assert "_seed = next(" in script
+        assert 'shutil.copy(_seed, os.path.join(run_dir, "case_facts.md"))' in script
+        # runs steps without a shell -> metacharacters stay inert
+        assert "subprocess.run(args)" in script
+        assert "shell=True" not in script
+
+    def test_seed_uses_the_given_case_facts_file(self):
+        # The runner seeds the EXACT facts file caseplan was given (the facts the
+        # plan was built for), falling back to a stable ./case_facts.txt.
+        script, _, _ = extract_cli_commands(
+            _join(["```bash", 'litassist lookup "x" --mode irac', "```"]),
+            seed_facts="inputs/my_case_facts.txt",
+        )
+        compile(script, "<runner>", "exec")
+        assert "'inputs/my_case_facts.txt'" in script
+        assert '"case_facts.txt"' in script  # fallback baseline still present
+
+    def test_count_and_rejected(self):
+        script, accepted, rejected = _script(
+            _join(
+                ["```bash", 'litassist lookup "contract breach" --mode irac', "```"]
+            )
+        )
+        assert accepted == 1
         assert rejected == []
-        # shlex.join drops redundant quotes around safe words
-        assert "litassist lookup 'contract breach' --mode irac" in script
+        assert "run([" in script
 
-    def test_extracts_from_commands_label(self):
-        """The prompt's worked examples use 'Commands: litassist ...' on one line."""
-        plan = "Commands: litassist counselnotes outputs/lookup_x.txt --extract all"
-        script, accepted_count, _ = extract_cli_commands(plan)
-        assert accepted_count == 1
-        assert "litassist counselnotes outputs/lookup_x.txt --extract all" in script
 
-    def test_command_separator_is_neutralised(self):
-        raw = 'litassist lookup "x"; rm -rf outputs'
-        plan = _join(["```bash", raw, "```"])
-        script, _, _ = extract_cli_commands(plan)
-        # The dangerous separator must not survive as a live ' ; rm'
-        assert "; rm" not in script
-        # Whatever is written must be exactly the shlex round-trip of the input
-        assert shlex.join(shlex.split(raw)) in script
+class TestTokenRewriting:
+    def test_outputs_glob_space_form_routed_to_run_dir(self):
+        script, _, _ = _script(
+            _join(
+                [
+                    "```bash",
+                    "litassist counselnotes outputs/lookup_*.txt --extract all",
+                    "```",
+                ]
+            )
+        )
+        # Legacy .txt output globs normalise to .md (producers always write .md).
+        assert "os.path.join(run_dir, 'lookup_*.md')" in script
+        assert "'outputs/lookup_*.txt'" not in script
 
-    def test_command_substitution_is_neutralised(self):
-        raw = 'litassist lookup "$(cat secret)"'
-        plan = _join(["```bash", raw, "```"])
-        script, _, _ = extract_cli_commands(plan)
-        # The substitution is quoted inert, never written as a live $(...)
-        assert shlex.join(shlex.split(raw)) in script
-        assert '"$(cat secret)"' not in script
+    def test_strategies_and_case_facts_space_form_routed(self):
+        # A legacy case_facts.txt token must route to the seeded run_dir/case_facts.md
+        # (the runner only ever seeds .md); routing it to run_dir/case_facts.txt would
+        # point at a file the runner never creates and crash the step.
+        script, _, _ = _script(
+            _join(
+                [
+                    "```bash",
+                    'litassist strategy case_facts.txt --outcome "win" '
+                    "--strategies 'outputs/brainstorm_research_*.txt'",
+                    "```",
+                ]
+            )
+        )
+        assert "os.path.join(run_dir, 'brainstorm_research_*.md')" in script
+        assert "os.path.join(run_dir, 'case_facts.md')" in script
+        assert "os.path.join(run_dir, 'case_facts.txt')" not in script
 
-    def test_non_litassist_line_not_executable(self):
-        plan = _join(["```bash", "echo hello", "rm -rf /", "```"])
-        script, accepted_count, _ = extract_cli_commands(plan)
-        assert accepted_count == 0
+    def test_equals_form_path_option_routed(self):
+        script, _, _ = _script(
+            _join(
+                [
+                    "```bash",
+                    "litassist brainstorm --facts case_facts.txt "
+                    "--research=outputs/lookup_*.txt --output brainstorm_research",
+                    "```",
+                ]
+            )
+        )
+        assert "'--research=' + os.path.join(run_dir, 'lookup_*.md')" in script
+
+    def test_output_prefix_not_rewritten_space_form(self):
+        script, _, _ = _script(
+            _join(
+                [
+                    "```bash",
+                    "litassist brainstorm --facts case_facts.txt "
+                    "--output brainstorm_creative",
+                    "```",
+                ]
+            )
+        )
+        assert "'brainstorm_creative'" in script
+        assert "os.path.join(run_dir, 'brainstorm_creative')" not in script
+
+    def test_output_prefix_not_rewritten_equals_form(self):
+        script, _, _ = _script(
+            _join(
+                [
+                    "```bash",
+                    "litassist brainstorm --facts case_facts.txt "
+                    "--output=brainstorm_creative",
+                    "```",
+                ]
+            )
+        )
+        assert "'--output=brainstorm_creative'" in script
+
+    def test_dot_slash_outputs_normalised(self):
+        script, _, _ = _script(
+            _join(
+                [
+                    "```bash",
+                    "litassist counselnotes ./outputs/lookup_x.txt --extract all",
+                    "```",
+                ]
+            )
+        )
+        assert "os.path.join(run_dir, 'lookup_x.md')" in script
+
+    def test_source_doc_input_stays_literal(self):
+        script, _, _ = _script(
+            _join(["```bash", "litassist extractfacts bank_statements.pdf", "```"])
+        )
+        assert "'bank_statements.pdf'" in script
+        assert "run_dir, 'bank_statements.pdf'" not in script
+
+
+class TestSafety:
+    def test_metacharacters_are_inert_literals_single_command(self):
+        # subprocess.run(args, shell=False) means EVERY token is a literal argv
+        # entry, so any shell metacharacter (; | && $(...) redirects) is inert -
+        # one example stands for all of them. A `;` must NOT split the line into a
+        # second command (one run([...])) and must survive only as a literal arg.
+        script, accepted, _ = _script(
+            _join(["```bash", 'litassist lookup "x" ; rm -rf outputs', "```"])
+        )
+        assert accepted == 1
+        assert script.count("run([") == 1  # one command, not two
+        assert "subprocess.run(args)" in script and "shell=True" not in script
+        assert "';'" in script  # separator is a literal arg, not an operator
+
+    def test_non_litassist_lines_not_executable(self):
+        script, accepted, _ = _script(
+            _join(["```bash", "echo hello", "rm -rf /", "```"])
+        )
+        assert accepted == 0
         assert "rm -rf /" not in script
         assert "echo hello" not in script
 
-    def test_zero_commands_reported(self):
-        plan = "# Litigation Plan\n## Case Assessment\nComplexity: MEDIUM\nNo commands here."
-        _, accepted_count, _ = extract_cli_commands(plan)
-        assert accepted_count == 0
 
-    def test_trailing_backslash_before_fence_not_absorbed(self):
-        # A command line ending with a stray backslash right before the closing
-        # fence must not merge the fence into the command as an argument.
-        plan = _join(
-            ["```bash", 'litassist lookup "contract breach" --mode irac \\', "```"]
+class TestParsingContracts:
+    def test_commands_label(self):
+        _, accepted, _ = _script(
+            "Commands: litassist counselnotes outputs/lookup_x.txt --extract all"
         )
-        script, accepted_count, _ = extract_cli_commands(plan)
-        assert accepted_count == 1
-        assert "```" not in script.split("# End of extracted commands")[0]
-        assert "litassist lookup 'contract breach' --mode irac" in script
+        assert accepted == 1
 
-    def test_orphan_option_line_not_merged_but_surfaced(self):
-        # An option line with no trailing backslash is a separate (would-be) shell
-        # line in bash, not a continuation. It must not be merged into the command
-        # (which would change the workflow) nor silently dropped - it is surfaced.
-        plan = _join(
-            ["```bash", 'litassist lookup "contract"', "  --mode irac --comprehensive", "```"]
+    def test_zero_commands(self):
+        _, accepted, _ = _script("# Plan\nNo commands here.")
+        assert accepted == 0
+
+    def test_trailing_backslash_before_fence(self):
+        script, accepted, _ = _script(
+            _join(
+                ["```bash", 'litassist lookup "contract breach" --mode irac \\', "```"]
+            )
         )
-        script, accepted_count, rejected = extract_cli_commands(plan)
-        assert accepted_count == 1
-        body = script.split("# End of extracted")[0]
-        assert "--mode irac" not in body
-        assert "litassist lookup contract" in body
+        assert accepted == 1
+        assert "```" not in script
+
+    def test_orphan_option_surfaced_not_merged(self):
+        script, accepted, rejected = _script(
+            _join(
+                [
+                    "```bash",
+                    'litassist lookup "contract"',
+                    "  --mode irac --comprehensive",
+                    "```",
+                ]
+            )
+        )
+        assert accepted == 1
+        assert "--mode irac" not in script
         assert any("--mode irac" in r for r in rejected)
 
-    def test_quoted_standalone_line_not_merged(self):
-        # A standalone quoted line is its own (would-be) shell line, not an arg
-        # of the preceding command; it must not be merged.
-        plan = _join(
-            [
-                "```bash",
-                'litassist lookup "x" --mode irac',
-                '"some standalone note"',
-                "```",
-            ]
+    def test_quoted_standalone_surfaced(self):
+        script, accepted, rejected = _script(
+            _join(
+                [
+                    "```bash",
+                    'litassist lookup "x" --mode irac',
+                    '"some standalone note"',
+                    "```",
+                ]
+            )
         )
-        script, accepted_count, rejected = extract_cli_commands(plan)
-        assert accepted_count == 1
-        body = script.split("# End of extracted")[0]
-        assert "some standalone note" not in body
-        assert "litassist lookup x --mode irac" in body
-        # Surfaced (fail-loud), not silently dropped.
+        assert accepted == 1
+        assert "some standalone note" not in script
         assert any("some standalone note" in r for r in rejected)
 
-    def test_non_litassist_fenced_line_not_merged(self):
-        # A bare-word line in a fence (a separate shell command in bash) must NOT
-        # be merged into the preceding litassist command.
-        plan = _join(
-            [
-                "```bash",
-                'litassist lookup "x" --mode irac',
-                "rm -rf outputs",
-                "```",
-            ]
+    def test_fence_comment_ends_command(self):
+        script, accepted, _ = _script(
+            _join(
+                [
+                    "```bash",
+                    "litassist lookup contract --mode irac",
+                    "# switch rationale",
+                    "```",
+                ]
+            )
         )
-        script, accepted_count, _ = extract_cli_commands(plan)
-        assert accepted_count == 1
-        body = script.split("# End of extracted")[0]
-        assert "rm -rf outputs" not in body
-        assert "litassist lookup x --mode irac" in body
+        assert accepted == 1
+        assert "switch rationale" not in script
 
-    def test_fence_comment_does_not_join_command(self):
-        # A shell comment line inside a fence ends the command; it is not merged.
-        plan = _join(
-            [
-                "```bash",
-                "litassist lookup contract --mode irac",
-                "# switch rationale: irac for structure",
-                "```",
-            ]
+    def test_wrapped_litassist_arg_not_split(self):
+        script, accepted, rejected = _script(
+            _join(
+                [
+                    "```bash",
+                    "litassist draft case_facts.txt",
+                    "  litassist_notes.txt --verify",
+                    "```",
+                ]
+            )
         )
-        script, accepted_count, _ = extract_cli_commands(plan)
-        assert accepted_count == 1
-        assert "litassist lookup contract --mode irac" in script
-        assert "switch rationale" not in script.split("# End of extracted")[0]
-
-    def test_wrapped_arg_starting_with_litassist_not_split(self):
-        # A wrapped arg/path that merely starts with "litassist" (e.g. a filename)
-        # is NOT a new command; it must stay part of the command, not be split off.
-        plan = _join(
-            [
-                "```bash",
-                "litassist draft case_facts.txt",
-                "  litassist_notes.txt --verify",
-                "```",
-            ]
-        )
-        script, accepted_count, rejected = extract_cli_commands(plan)
-        # Only the draft command is accepted; the litassist_notes.txt line is a
-        # would-be separate line - surfaced, not merged into the draft command.
-        assert accepted_count == 1
-        assert "litassist draft case_facts.txt" in script
-        assert "litassist_notes.txt" not in script.split("# End of extracted")[0]
+        assert accepted == 1
+        assert "litassist_notes.txt" not in script
         assert any("litassist_notes.txt" in r for r in rejected)
 
-    def test_separate_indented_commands_not_merged(self):
-        # Two indented litassist commands are distinct, not a continuation.
-        plan = _join(
-            [
-                "```bash",
-                '  litassist lookup "a" --mode irac',
-                '  litassist lookup "b" --mode irac',
-                "```",
-            ]
+    def test_two_indented_commands(self):
+        _, accepted, _ = _script(
+            _join(
+                [
+                    "```bash",
+                    '  litassist lookup "a" --mode irac',
+                    '  litassist lookup "b" --mode irac',
+                    "```",
+                ]
+            )
         )
-        _, accepted_count, _ = extract_cli_commands(plan)
-        assert accepted_count == 2
-
-    def test_glob_pattern_is_quoted_for_internal_expansion(self):
-        raw = "litassist counselnotes outputs/lookup_*.txt --extract all"
-        plan = _join(["```bash", raw, "```"])
-        script, accepted_count, _ = extract_cli_commands(plan)
-        assert accepted_count == 1
-        # shlex.join quotes the glob so litassist's own expander receives the
-        # literal pattern (see expand_glob_patterns_callback).
-        assert "'outputs/lookup_*.txt'" in script
-
-    def test_scalar_glob_args_survive_extraction(self):
-        # New caseplan convention: strategy --strategies and verify FILE reference
-        # a quoted glob that litassist's scalar resolver (expand_glob_single_callback)
-        # expands to the most recent match. The extractor must transcribe these
-        # verbatim with the glob still quoted (so the shell does not pre-expand it).
-        plan = _join(
-            [
-                "```bash",
-                'litassist strategy case_facts.txt --outcome "win" '
-                "--strategies 'outputs/brainstorm_research_*.txt'",
-                "litassist verify 'outputs/draft_memo_*.txt' --citations",
-                "```",
-            ]
-        )
-        script, accepted_count, _ = extract_cli_commands(plan)
-        assert accepted_count == 2
-        assert "'outputs/brainstorm_research_*.txt'" in script
-        assert "'outputs/draft_memo_*.txt'" in script
+        assert accepted == 2
