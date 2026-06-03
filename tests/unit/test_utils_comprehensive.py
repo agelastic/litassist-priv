@@ -528,7 +528,6 @@ class TestContentVerification:
 
         mock_client = MagicMock()
         mock_client.should_auto_verify.return_value = False
-        mock_client.verify_with_level.return_value = "Minor corrections needed"
         mock_client.validate_citations.return_value = []
 
         content = "Legal analysis content"
@@ -616,7 +615,6 @@ class TestContentVerification:
 
         mock_client = MagicMock()
         mock_client.should_auto_verify.return_value = False
-        mock_client.verify_with_level.return_value = "Minor corrections needed"
         mock_client.validate_citations.return_value = ["Citation issue"]
 
         content = "Legal analysis content"
@@ -634,8 +632,7 @@ class TestContentVerification:
         assert verified is False
         assert result_content == content
         mock_run_verification_chain.assert_called_once_with(content, "strategy", heavy=False)
-        # These shouldn't be called since verification chain handles it
-        mock_client.verify_with_level.assert_not_called()
+        # validate_citations shouldn't be called since verification chain handles it
         mock_client.validate_citations.assert_not_called()
 
 

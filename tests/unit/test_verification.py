@@ -1,6 +1,5 @@
 """Tests for the enhanced verification system."""
 
-from unittest.mock import Mock, patch, MagicMock
 from litassist.llm.client import LLMClient
 
 
@@ -46,84 +45,6 @@ class TestLLMClientVerification:
         """Test no auto-verification for basic content."""
         content = "This is a simple summary of events"
         assert self.client.should_auto_verify(content, "digest") is False
-
-    @patch("litassist.logging.save_log")
-    @patch("litassist.llm.api_handlers.get_openai_client")
-    @patch("litassist.config.CONFIG")
-    def test_verify_with_level_light(self, mock_config, mock_get_client, mock_save_log):
-        """Test light verification level."""
-        # Setup proper CONFIG values
-        mock_config.or_base = "https://openrouter.ai/api/v1"
-        mock_config.or_key = "test-key"
-
-        # Mock the OpenAI client
-        mock_client = MagicMock()
-        mock_get_client.return_value = mock_client
-
-        mock_response = Mock()
-        mock_response.choices = [Mock()]
-        mock_response.choices[0].message = Mock(content="Corrected text")
-        mock_response.choices[0].error = None
-        mock_response.choices[0].finish_reason = "stop"
-        mock_response.usage = Mock(
-            prompt_tokens=100,
-            completion_tokens=50,
-            total_tokens=150,
-            model_dump=lambda: {
-                "prompt_tokens": 100,
-                "completion_tokens": 50,
-                "total_tokens": 150,
-            },
-        )
-        mock_client.chat.completions.create.return_value = mock_response
-
-        result = self.client.verify_with_level("test content", "light")
-        if isinstance(result, tuple):
-            result = result[0]
-
-        assert result == "Corrected text"
-        # Should use light verification prompts
-        call_args = mock_client.chat.completions.create.call_args[1]["messages"]
-        assert "legal" in call_args[0]["content"].lower()
-
-    @patch("litassist.logging.save_log")
-    @patch("litassist.llm.api_handlers.get_openai_client")
-    @patch("litassist.config.CONFIG")
-    def test_verify_with_level_heavy(self, mock_config, mock_get_client, mock_save_log):
-        """Test heavy verification level."""
-        # Setup proper CONFIG values
-        mock_config.or_base = "https://openrouter.ai/api/v1"
-        mock_config.or_key = "test-key"
-
-        # Mock the OpenAI client
-        mock_client = MagicMock()
-        mock_get_client.return_value = mock_client
-
-        mock_response = Mock()
-        mock_response.choices = [Mock()]
-        mock_response.choices[0].message = Mock(content="Thoroughly reviewed content")
-        mock_response.choices[0].error = None
-        mock_response.choices[0].finish_reason = "stop"
-        mock_response.usage = Mock(
-            prompt_tokens=200,
-            completion_tokens=100,
-            total_tokens=300,
-            model_dump=lambda: {
-                "prompt_tokens": 200,
-                "completion_tokens": 100,
-                "total_tokens": 300,
-            },
-        )
-        mock_client.chat.completions.create.return_value = mock_response
-
-        result = self.client.verify_with_level("test content", "heavy")
-        if isinstance(result, tuple):
-            result = result[0]
-
-        assert result == "Thoroughly reviewed content"
-        # Should use heavy verification prompts
-        call_args = mock_client.chat.completions.create.call_args[1]["messages"]
-        assert "legal accuracy" in call_args[0]["content"]
 
 
 class TestCommandVerificationIntegration:

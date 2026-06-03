@@ -129,12 +129,6 @@ if template_content:
 {"role": "system", "content": PROMPTS.get("verification.system_prompt")}
 ```
 
-**Heavy verification mode:**
-
-```python
-{"role": "system", "content": PROMPTS.get("verification.heavy_verification_system")}
-```
-
 ### 10. counselnotes command
 
 **Extraction stage:**
@@ -214,7 +208,7 @@ system_content += "\n\n" + PROMPTS.get("base.tool_instructions")
 | draft | `litassist/commands/draft.py` | `processing.draft.system_prompt_base`, `processing.draft.system_prompt_template` |
 | digest | `litassist/commands/digest/core.py` | `processing.digest.system_prompt` |
 | extractfacts | `litassist/commands/extractfacts.py` | `base.australian_law`, `commands.extractfacts.system` |
-| verify | `litassist/commands/verify.py` | `verification.system_prompt`, `verification.heavy_verification_system` |
+| verify | `litassist/commands/verify.py` | `verification.system_prompt` |
 | counselnotes | `litassist/commands/counselnotes.py` | `processing.counselnotes.extraction_system`, `processing.counselnotes.strategic_system`, `processing.counselnotes.consolidation_system` |
 
 ## Prompt Files
@@ -247,7 +241,7 @@ All prompts are defined in YAML files under `litassist/prompts/`:
 
 ### October 2025 Model Upgrade
 - **Three-Tier Strategy**: Heavy verification (GPT-5.5 with higher reasoning effort), standard verification (GPT-5.5), legal reasoning (Claude Sonnet 4.6 / Claude Opus 4.7)
-- **Verification Commands**: Split into verification, verification-heavy, verification-light
+- **Verification Commands**: Split into verification and verification-heavy
 - **CoVe Models**: Uses GPT-5.5 for answers and Claude Sonnet 4.6 for question, verification, and final stages
 
 ### Prompt Management Architecture

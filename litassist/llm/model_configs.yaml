@@ -134,14 +134,6 @@ verification:
   enforce_citations: false
   disable_tools: true
 
-verification-light:
-  model: "anthropic/claude-sonnet-4.6"
-  temperature: 0.2
-  top_p: 0.2
-  thinking_effort: "medium"
-  enforce_citations: false
-  disable_tools: true
-
 verification-heavy:
   model: "openai/gpt-5.5"
   temperature: 0.2

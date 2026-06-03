@@ -71,7 +71,6 @@ currently runs as a standard OpenRouter model.
 | **barbrief** | `openai/o3-pro` | Comprehensive briefs | temperature: 0.7, top_p: 0.95, thinking_effort: high, verbosity: high* |
 | **verification** | `openai/gpt-5.5` | Standard verification | temperature: 0.2, top_p: 0.3, thinking_effort: medium |
 | **verification-heavy** | `openai/gpt-5.5` | Critical verification | temperature: 0.2, top_p: 0.3, thinking_effort: max |
-| **verification-light** | `anthropic/claude-sonnet-4.6` | Spelling/terminology | temperature: 0.2, top_p: 0.2, thinking_effort: medium |
 | **verify-soundness** | `anthropic/claude-opus-4.7` | Soundness checking | temperature: 0.2, top_p: 0.3, thinking_effort: high† |
 | **verify-soundness-heavy** | `openai/gpt-5.5` | Critical soundness checking | temperature: 0.2, top_p: 0.3, thinking_effort: max |
 | **verify-reasoning** | `anthropic/claude-sonnet-4.6` | Reasoning extraction | temperature: 0.2, top_p: 0.3, thinking_effort: high |

@@ -140,8 +140,6 @@ composed = PROMPTS.compose_prompt('base.australian_law', 'base.citation_standard
 
 - **`self_critique`** - Default legal accuracy verification
 - **`citation_retry_instructions`** - Enhanced instructions for citation failures
-- **`light_verification`** - Australian English compliance only
-- **`heavy_verification`** - Comprehensive legal accuracy review
 - **`system_prompt`** - Verification system prompt
 
 ## Commands Updated

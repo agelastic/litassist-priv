@@ -62,7 +62,6 @@ Last updated: 18/02/2026
 # Verification family - sourced from litassist/llm/model_configs.yaml
 verification:          openai/gpt-5.5, temp=0.2, top_p=0.3, thinking_effort=medium
 verification-heavy:    openai/gpt-5.5, temp=0.2, top_p=0.3, thinking_effort=max (<1% hallucination)
-verification-light:    anthropic/claude-sonnet-4.6, temp=0.2, top_p=0.2, thinking_effort=medium
 verify-soundness:      anthropic/claude-opus-4.7, temp=0.2, top_p=0.3, thinking_effort=high
 verify-soundness-heavy: openai/gpt-5.5, temp=0.2, top_p=0.3, thinking_effort=max
 verify-reasoning:      anthropic/claude-sonnet-4.6, temp=0.2, top_p=0.3, thinking_effort=high

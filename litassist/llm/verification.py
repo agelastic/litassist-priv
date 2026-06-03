@@ -309,73 +309,7 @@ class LLMVerificationMixin:
 
         return validate_citation_patterns(content, enable_online)
 
-    def verify_with_level(
-        self, primary_text: str, level: str = "medium"
-    ) -> Tuple[str, str]:
-        """
-        Run verification with different depth levels.
-
-        Args:
-            primary_text: Text to verify
-            level: Verification depth - "light" (spelling only) or "heavy" (comprehensive)
-                  Any other value defaults to standard verification
-
-        Returns:
-            Tuple of (verification feedback, model name used for verification)
-        """
-        if level == "light":
-            # Just check Australian English compliance
-            try:
-                light_verification = PROMPTS.get("verification.light_verification")
-            except KeyError:
-                light_verification = "Check only for Australian English spelling and terminology compliance.\n\nCorrect any non-Australian English spellings or terminology."
-
-            critique_prompt = [
-                {
-                    "role": "system",
-                    "content": light_verification.split("\n\n")[0],
-                },
-                {
-                    "role": "user",
-                    "content": primary_text
-                    + "\n\n"
-                    + light_verification.split("\n\n")[-1],
-                },
-            ]
-        elif level == "heavy":
-            # Full legal accuracy and citation check - no fallbacks allowed
-            system_prompt = PROMPTS.get("verification.heavy_verification_system")
-            heavy_verification = PROMPTS.get("verification.heavy_verification")
-
-            critique_prompt = [
-                {
-                    "role": "system",
-                    "content": system_prompt,
-                },
-                {
-                    "role": "user",
-                    "content": primary_text + "\n\n" + heavy_verification,
-                },
-            ]
-        else:
-            # For any other level, use standard verification
-            # This maintains backward compatibility
-            return self.verify(primary_text)
-
-        # Use the appropriate verification model based on level
-        from litassist.llm.factory import LLMClientFactory
-
-        if level == "light":
-            verification_client = LLMClientFactory.for_command("verification-light")
-        elif level == "heavy":
-            verification_client = LLMClientFactory.for_command("verification-heavy")
-        else:
-            verification_client = LLMClientFactory.for_command("verification")
-        
-        # Let the factory configuration handle all parameters
-        params = {}
-        verification_result, usage = verification_client.complete(
-            critique_prompt, skip_citation_verification=True, **params
-        )
-        return verification_result, verification_client.model
+    # NOTE: verify_with_level removed. The boolean --heavy flag (Nov 2025) supplies
+    # the two-tier (standard/heavy) model via run_verification_chain; this string-level
+    # method had no production callers.
 

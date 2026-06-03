@@ -905,8 +905,8 @@ def test_verification_system():
         from litassist.llm.factory import LLMClientFactory
 
         # Test with real LLM calls to measure actual verification effectiveness.
-        # Use the configured verification-light model (Anthropic family) as a stable proxy.
-        verification_model = LLMClientFactory.list_configurations()["verification-light"]["model"]
+        # Use the configured verify-reasoning model (Anthropic family) as a stable proxy.
+        verification_model = LLMClientFactory.list_configurations()["verify-reasoning"]["model"]
         print(f"Initializing {verification_model} for verification effectiveness testing...")
         test_client = LLMClient(verification_model, temperature=0.2)
 
@@ -950,9 +950,7 @@ def test_verification_system():
 
                 # Test actual verification with real LLM call
                 try:
-                    corrections = test_client.verify_with_level(
-                        test_case["content"], "heavy"
-                    )
+                    corrections, _ = test_client.verify(test_case["content"])
                     verification_worked = len(corrections.strip()) > 0
                     verification_error = None
                 except Exception as e:

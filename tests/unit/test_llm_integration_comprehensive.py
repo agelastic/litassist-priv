@@ -144,51 +144,6 @@ class TestLLMClient:
         assert usage["prompt_tokens"] == 10
         assert usage["completion_tokens"] == 20
 
-    @patch("litassist.llm.api_handlers.get_openai_client")
-    @patch("litassist.config.CONFIG")
-    def test_llm_client_verify_with_level(self, mock_config, mock_get_client):
-        """Test verify_with_level functionality."""
-        # Setup proper CONFIG values
-        mock_config.llm_model = "openai/gpt-4o"
-        mock_config.api_key = "test-key"
-        mock_config.or_base = "https://openrouter.ai/api/v1"
-        mock_config.or_key = "test-key"
-
-        # Mock the OpenAI client
-        mock_client = MagicMock()
-        mock_get_client.return_value = mock_client
-
-        mock_response = Mock()
-        mock_response.choices = [Mock()]
-        mock_response.choices[0].message = Mock(content="Verified content")
-        mock_response.choices[0].error = None
-        mock_response.choices[0].finish_reason = "stop"
-        mock_response.usage = Mock(
-            prompt_tokens=100,
-            completion_tokens=50,
-            total_tokens=150,
-            model_dump=lambda: {
-                "prompt_tokens": 100,
-                "completion_tokens": 50,
-                "total_tokens": 150,
-            },
-        )
-
-        mock_client.chat.completions.create.return_value = mock_response
-
-        client = LLMClient("openai/gpt-4o")
-        result = client.verify_with_level("Content to verify", "light")
-
-        # verify_with_level returns a tuple of (content, model_used)
-        if isinstance(result, tuple):
-            content, model_used = result
-            assert content == "Verified content"
-        else:
-            assert result == "Verified content"
-
-        # Token limits are now configured in config, not hardcoded
-        # No need to verify specific token limits in unit tests
-
 
 class TestReasoningExtraction:
     """Test legal reasoning trace extraction."""

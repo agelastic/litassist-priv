@@ -2,6 +2,8 @@
 
 Last updated: 25/02/2026
 
+> **Historical snapshot (February 2026).** Config names and the "(eval)" recommendations below reflect this review as of 25/02/2026; not all were adopted, and some configs shown as current (notably `verification-light`) have since been removed. For the live set of model and verification configs, see `litassist/llm/model_configs.yaml`.
+
 ## Scope
 This review covers how LitAssist currently uses LLMs in production code, compares that design to recent GenAI platform trends, and recommends practical upgrades—especially model-selection changes.
 

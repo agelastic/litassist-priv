@@ -2132,7 +2132,6 @@ Current model assignments are defined in `litassist/llm/model_configs.yaml`. Reg
 | `caseplan` | Claude Opus 4.7 | Full plan generation | No |
 | `caseplan-assessment` | Claude Sonnet 4.6 | Budget assessment | No |
 | `verification` | GPT-5.5 | Standard citation verification | No |
-| `verification-light` | Claude Sonnet 4.6 | Quick verification checks | No |
 | `verification-heavy` | GPT-5.5 | Heavy citation verification | No |
 | `verify-reasoning` | Claude Sonnet 4.6 | Reasoning trace analysis | No |
 | `verify-reasoning-heavy` | GPT-5.5 | Heavy reasoning analysis | No |

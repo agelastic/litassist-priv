@@ -84,24 +84,8 @@ verification:
   citation_retry_instructions: |
     IMPORTANT: Use only real, verifiable Australian cases that exist in Australian legal databases. Do not invent case names. If unsure about a citation, omit it rather than guess.
 
-  # Light verification - Australian English compliance only
-  # USED BY: llm.py LLMClient.verify_with_level() method - when level="light"
-  # LOCATION: llm.py:744-753
-  light_verification: |
-    Check only for Australian English spelling and terminology compliance.
-    Correct any non-Australian English spellings or terminology.
-
-  # Heavy verification - comprehensive legal accuracy
-  # USED BY: llm.py LLMClient.verify_with_level() method - when level="heavy"
-  # LOCATION: llm.py:758-767
-  heavy_verification: |
-    Provide comprehensive legal accuracy review: verify all citations, check legal reasoning, identify any errors in law or procedure, ensure Australian English compliance, and VERIFY JURISDICTION - confirm the correct state/federal law is applied, cases are from appropriate courts, and legislation is current for the relevant jurisdiction.
-
-    ANTI-HALLUCINATION: For every citation or legal claim, indicate your confidence level (HIGH/MEDIUM/LOW). If you cannot verify a citation or are uncertain about a legal principle, explicitly state "Cannot verify" rather than guessing.
-
   # Standard verification system prompt
-  # USED BY: llm.py LLMClient.verify_with_level() method - system prompt for heavy verification
-  # LOCATION: llm.py:757-762
+  # USED BY: commands/verify/reasoning_handler.py - reasoning-stage system prompt
   system_prompt: |
     You are a senior solicitor conducting quality assurance on legal documents.
 
@@ -354,9 +338,3 @@ verification:
   # LOCATION: llm.py:1303 (previously fallback, now required)
   self_critique_fallback: |
     Identify and correct any legal inaccuracies above, and provide the corrected text only. Ensure all spellings follow Australian English conventions.
-
-  # Heavy verification system prompt
-  # USED BY: llm.py LLMClient.verify_with_level() method - system prompt for heavy verification
-  # LOCATION: llm.py:1586 (previously fallback, now required)
-  heavy_verification_system: |
-    Australian law expert. Thoroughly verify legal accuracy, citations, precedents, and reasoning.

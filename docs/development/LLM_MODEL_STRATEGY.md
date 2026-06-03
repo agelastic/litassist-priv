@@ -27,7 +27,7 @@ Source of truth: `litassist/llm/model_configs.yaml`. Registered user-facing comm
 
 | Model | Commands Using It | Purpose | Hallucination Rate | Cost |
 |-------|------------------|---------|-------------------|------|
-| **Claude Sonnet 4.6** | extractfacts, digest-*, caseplan, brainstorm-orthodox, verification-light, verify-reasoning, cove, cove-questions, cove-verify, cove-final | Legal reasoning, foundational tasks | Model-dependent | $3/$15 |
+| **Claude Sonnet 4.6** | extractfacts, digest-*, caseplan, brainstorm-orthodox, verify-reasoning, cove, cove-questions, cove-verify, cove-final | Legal reasoning, foundational tasks | Model-dependent | $3/$15 |
 | **Claude Opus 4.7** | strategy, verify-soundness | Strategic reasoning and soundness checking | Model-dependent | Moderate |
 | **OpenAI GPT-5.5** | verification, verification-heavy, verify-soundness-heavy, verify-reasoning-heavy, cove-answers, cove-answers-heavy | Standard and heavy verification | Model-dependent | Premium |
 | **OpenAI o3-pro** | draft, counselnotes, barbrief, strategy-analysis, brainstorm-analysis | Advanced reasoning, superior drafting | ~15-20%* | Higher |
@@ -53,9 +53,9 @@ Source of truth: `litassist/llm/model_configs.yaml`. Registered user-facing comm
 LitAssist uses task-based model selection: each command gets the model best suited
 to its job. Six model families serve distinct roles across 28 command configurations.
 
-### Legal Reasoning (Claude Sonnet 4.6) -- 12 configurations
-- extractfacts, digest-*, caseplan, brainstorm-orthodox, verification-light,
-  verify-reasoning, cove, cove-questions, cove-verify, cove-final
+### Legal Reasoning (Claude Sonnet 4.6) -- 11 configurations
+- extractfacts, digest-*, caseplan, brainstorm-orthodox, verify-reasoning,
+  cove, cove-questions, cove-verify, cove-final
 - 1M context, GDPval-AA 1633 Elo, BigLaw Bench 87.6%
 - $3/$15 per M tokens
 
@@ -103,7 +103,7 @@ to its job. Six model families serve distinct roles across 28 command configurat
 - **Key Features**: Extended thinking mode, strong instruction following
 - **Parameters**: temperature, top_p, thinking_effort (low/medium/high/max)
 - **BYOK**: Not required on OpenRouter
-- **Commands**: extractfacts, digest stages, caseplan stages, brainstorm-orthodox, verification-light, verify-reasoning, and CoVe scaffold/final stages
+- **Commands**: extractfacts, digest stages, caseplan stages, brainstorm-orthodox, verify-reasoning, and CoVe scaffold/final stages
 
 #### GPT-5.5
 - **Model ID**: `openai/gpt-5.5`
@@ -477,7 +477,6 @@ Alternative paths:
 ### 7. Verification System
 
 **Current Implementation**:
-- verification-light: Sonnet 4.6 (spelling/terminology)
 - verification: GPT-5.5 (standard verification)
 - verification-heavy: GPT-5.5 (critical tasks <1% hallucination)
 - verify-soundness: Opus 4.7 (standard), GPT-5.5 (heavy)

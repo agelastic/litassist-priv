@@ -1,6 +1,6 @@
 # LitAssist Verification System - Comprehensive Documentation
 
-Last updated: 31/05/2026
+Last updated: 03/06/2026
 
 ## Table of Contents
 1. [Executive Summary](#executive-summary)
@@ -35,7 +35,6 @@ The system ensures legal accuracy, citation validity, and Australian law complia
 2. **`llm.py`**: LLM client with verification methods
    - `verify()`: Self-critique verification
    - `validate_and_verify_citations()`: Citation validation
-   - `verify_with_level()`: Graduated verification (light/heavy)
 
 3. **`citation_verify.py`**: Real-time citation verification
    - Jade.io database checking via Google Custom Search
@@ -83,16 +82,16 @@ corrected_content, _ = client.verify(content, citation_context, reasoning_contex
 - **Context**: Can include citation and reasoning reports
 - **Output**: Corrected document with issues fixed
 
-### Verification Levels
+### Verification Depth
 
-#### Light Verification
-- **Focus**: Australian English compliance only
-- **Prompt**: `verification.light_verification`
-- **Use Case**: Quick language standardization
+#### Standard Verification (default)
+- **Focus**: Legal-accuracy self-critique
+- **Config**: `verification` (with `verify-soundness` / `verify-reasoning` for the soundness and reasoning stages)
 
-#### Heavy Verification  
-- **Focus**: Comprehensive legal accuracy
-- **Prompt**: `verification.heavy_verification`
+#### Heavy Verification (`--heavy` flag)
+- **Focus**: Maximum-effort verification for premium runs
+- **Mechanism**: `run_verification_chain(..., heavy=True)` selects the `verification-heavy` config (max thinking effort)
+- **Available on**: verify, draft, strategy, extractfacts
 - **Checks**:
   - All citations verified
   - Legal reasoning validated
@@ -320,12 +319,6 @@ commands:
     temperature: 0.2
     top_p: 0.3
     thinking_effort: max
-
-  verification-light:
-    model: anthropic/claude-sonnet-4.6  # Spelling/terminology only
-    temperature: 0.2
-    top_p: 0.2
-    thinking_effort: medium
 
   cove-questions:
     model: anthropic/claude-sonnet-4.6

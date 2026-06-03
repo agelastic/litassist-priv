@@ -1,6 +1,6 @@
 # Changelog
 
-Last updated: 02/06/2026
+Last updated: 03/06/2026
 
 All notable changes to LitAssist will be documented in this file.
 
@@ -28,6 +28,9 @@ Historical dated sections preserve the model names that were current when those 
 - `draft` preflight oversize handling: soft warn + hard fail derived from the model's actual context window plus a provider-error reframe pointing users at `litassist digest --mode summary <file>`.
 
 ### Changed
+
+#### June 2026: removed dead `verify_with_level` verification path
+- Removed the unused `verify_with_level` method (no production callers). The boolean `--heavy` flag already provides two-tier (standard/heavy) verification via `run_verification_chain`. Also removed its now-orphaned prompts (`light_verification`, `heavy_verification`, `heavy_verification_system`) and the orphaned `verification-light` model config, and updated the verification docs accordingly.
 
 #### June 2026: input budget is 80% of the routed model's window; counselnotes consolidates chunks
 - `LLMClientFactory.get_input_budget_for_command` now offers 80% of each routed model's context window to input (was 30%). The budget already reads the per-model window from `model_capabilities.yaml`, so commands use far more of their window before chunking or rejecting input (e.g. `counselnotes` on a 200k-window model now runs typical multi-document inputs in a single unified pass instead of splitting into three). `1 - fraction` is the worst-case reserve for system prompt + reasoning + completion; 0.80 leaves comfortable headroom on every routed model.

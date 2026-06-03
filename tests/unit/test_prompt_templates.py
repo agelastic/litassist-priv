@@ -103,8 +103,6 @@ class TestPromptTemplates:
                 "verification": {
                     "self_critique": str,
                     "citation_retry_instructions": str,
-                    "light_verification": str,
-                    "heavy_verification": str,
                     "system_prompt": str,
                 }
             },
