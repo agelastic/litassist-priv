@@ -183,9 +183,10 @@ TRADITIONAL = r'.*?\s*\((\d{4})\)\s*(\d+)\s*([A-Z]+)\s*(\d+)'
 #### Layer 2: Database Verification (Online)
 ```python
 # litassist/citation/verify.py
-def verify_via_jade(citation: str) -> bool:
-    # Google CSE → Jade.io lookup
-    search_url = f"{CONFIG.google_cse_url}?q={citation}+site:jade.io"
+def verify_single_citation(citation: str) -> tuple:
+    # Google CSE -> Jade.io lookup (AustLII fallback)
+    # returns (is_valid, reason, url, source)
+    ...
 ```
 - **Primary Source**: Jade.io legal database
 - **Fallback**: AustLII for older cases
@@ -194,10 +195,10 @@ def verify_via_jade(citation: str) -> bool:
 
 #### Layer 3: Selective Regeneration
 ```python
-# For failed citations
-def _remove_and_regenerate_citations(content: str, unverified: List) -> str:
-    # Surgical removal of bad citations
-    # Targeted regeneration of affected sections
+# For failed citations - real helpers:
+from litassist.citation.verify import remove_citation_from_text
+# remove_citation_from_text(content, citation) strips an unverified citation;
+# affected sections are then regenerated (e.g. brainstorm.regenerate_bad_strategies).
 ```
 - **Strategy**: Remove unverified citations
 - **Regeneration**: Only affected paragraphs

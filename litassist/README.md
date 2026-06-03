@@ -81,7 +81,7 @@ chunks = chunk_text(text)        # Intelligent chunking
 def long_running_function():
     pass
 
-@timed()  # Measure and log execution time
+@timed  # Measure and log execution time
 def performance_critical_function():
     pass
 
