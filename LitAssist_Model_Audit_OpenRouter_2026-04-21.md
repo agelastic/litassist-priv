@@ -12,7 +12,7 @@
 > removed in the `remove-pinecone-rag` branch (May 2026). The
 > `text-embedding-3-small` row is no longer applicable.
 
-Last updated: 21/04/2026
+Last updated: 28/05/2026
 
 | Field | Value |
 |---|---|

@@ -1,6 +1,6 @@
 # LitAssist Reference Manual
 
-Last updated: 02/06/2026
+Last updated: 03/06/2026
 
 ---
 

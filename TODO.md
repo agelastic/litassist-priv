@@ -146,7 +146,7 @@ deferred:
 ## Implementation Concerns & Considerations
 
 ### Key Architectural Implementation Points
-1. **OpenAI Fine-tuning Integration**: Review `litassist/llm.py` integration points, extend LLMClient factory pattern to support fine-tuned model endpoints
+1. **OpenAI Fine-tuning Integration**: Review `litassist/llm/` integration points (`factory.py`, `client.py`), extend LLMClient factory pattern to support fine-tuned model endpoints
 2. **Streaming Implementation**: Update CLI output handlers in `litassist/cli.py`, modify response processing in command modules (`litassist/commands/`), add progress indicators
 3. **Student Mode**: Leverage existing prompt templates in `litassist/prompts/`, extend base.yaml and system_feedback.yaml with beginner-friendly variants
 4. **Model Configuration**: Extend `litassist/config.py` with new environment variable mappings, update `config.yaml.template` with streaming/model options

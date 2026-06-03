@@ -1,6 +1,6 @@
 # Release Scripts
 
-Last updated: 19/07/2025
+Last updated: 19/02/2026
 
 This directory contains scripts to automate the LitAssist release process.
 

@@ -1,6 +1,6 @@
 # Google Custom Search JSON API -> Vertex AI Search Migration Plan
 
-Last updated: 30/04/2026
+Last updated: 13/05/2026
 
 Status: Design sketch. Not yet implemented. Deadline 01/01/2027.
 

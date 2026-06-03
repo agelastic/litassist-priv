@@ -32,11 +32,11 @@ The system ensures legal accuracy, citation validity, and Australian law complia
    - `run_cove_verification()`: Chain of Verification implementation
    - `format_cove_report()`: Reporting utilities
 
-2. **`llm.py`**: LLM client with verification methods
+2. **`llm/` package**: LLM client with verification methods
    - `verify()`: Self-critique verification
    - `validate_and_verify_citations()`: Citation validation
 
-3. **`citation_verify.py`**: Real-time citation verification
+3. **`citation/` package**: Real-time citation verification
    - Jade.io database checking via Google Custom Search
    - Citation caching and pattern validation
    
@@ -182,7 +182,7 @@ TRADITIONAL = r'.*?\s*\((\d{4})\)\s*(\d+)\s*([A-Z]+)\s*(\d+)'
 
 #### Layer 2: Database Verification (Online)
 ```python
-# citation_verify.py
+# litassist/citation/verify.py
 def verify_via_jade(citation: str) -> bool:
     # Google CSE → Jade.io lookup
     search_url = f"{CONFIG.google_cse_url}?q={citation}+site:jade.io"
@@ -537,7 +537,7 @@ The critique capture system ensures complete transparency by appending all AI ve
 ### Implementation
 
 #### Core Mechanism
-The `save_command_output()` function in `logging_utils.py` now accepts an optional `critique_sections` parameter:
+The `save_command_output()` function in `litassist/logging/output_saver.py` now accepts an optional `critique_sections` parameter:
 
 ```python
 def save_command_output(
@@ -637,7 +637,7 @@ Overall assessment: Document is legally sound with minor citation formatting iss
 
 1. **No Parsing**: Raw LLM outputs are preserved without processing
 2. **Optional Parameter**: Backward compatible - no breaking changes
-3. **Centralized**: Single modification point in `logging_utils.py`
+3. **Centralized**: Single modification point in `litassist/logging/output_saver.py`
 4. **Transparent**: All reasoning visible, nothing hidden
 
 ### Usage Guidelines

@@ -1,6 +1,6 @@
 # LitAssist Demo: The Case of the Catastrophic Cat
 
-Last updated: 23/07/2025
+Last updated: 19/02/2026
 
 ## An Escalating Neighbourhood Dispute That Reveals Hidden Legal Complexity
 

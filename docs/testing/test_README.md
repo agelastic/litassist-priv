@@ -1,6 +1,6 @@
 # LitAssist Testing Documentation
 
-Last updated: 18/02/2026
+Last updated: 28/05/2026
 
 This document covers both automated unit tests (pytest) and manual integration validation scripts.
 

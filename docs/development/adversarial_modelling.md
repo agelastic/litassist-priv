@@ -1,6 +1,6 @@
 # Adversarial Modelling -- Design Reference
 
-Last updated: 18/02/2026
+Last updated: 28/05/2026
 **Status:** Design Reference (partially planned in ROADMAP P1-9, P3-22)
 **Prerequisite:** P0A-1 (Matter Memory Module)
 **Confidence:** 0.85

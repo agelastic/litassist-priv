@@ -1,6 +1,6 @@
 # Model Parameter Filtering
 
-Last updated: 26/02/2026
+Last updated: 28/05/2026
 
 Parameters defined in `model_configs.yaml` are filtered at call time so that only parameters the target model actually supports reach the API. The filtering operates in two tiers: first identifying the model family, then applying a per-family allowlist.
 

@@ -1,5 +1,5 @@
 # LitAssist Verification System - Executive Summary
-Last updated: 18/02/2026
+Last updated: 03/06/2026
 
 ## Quick Reference
 

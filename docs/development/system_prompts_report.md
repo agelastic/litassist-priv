@@ -1,6 +1,6 @@
 # LitAssist System Prompts Report
 
-Last updated: 22/05/2026
+Last updated: 03/06/2026
 **Status**: Reference Document
 
 ## Overview
@@ -203,13 +203,13 @@ system_content += "\n\n" + PROMPTS.get("base.tool_instructions")
 | lookup | `litassist/commands/lookup/processors.py` | `base.australian_law`, `lookup.standard_analysis.instructions`, `lookup.extraction_system`, `lookup.comprehensive_analysis.*` |
 | brainstorm | `litassist/commands/brainstorm/*.py` | `commands.brainstorm.orthodox_system`, `commands.brainstorm.unorthodox_system`, `commands.brainstorm.analysis_system` |
 | strategy | `litassist/commands/strategy/core.py` | `commands.strategy.system`, `commands.strategy.ranking_system` |
-| caseplan | `litassist/commands/caseplan.py` | `commands.caseplan.system`, `commands.caseplan.budget_assessment_system` |
-| barbrief | `litassist/commands/barbrief.py` | `barbrief.system` |
-| draft | `litassist/commands/draft.py` | `processing.draft.system_prompt_base`, `processing.draft.system_prompt_template` |
+| caseplan | `litassist/commands/caseplan/core.py` | `commands.caseplan.system`, `commands.caseplan.budget_assessment_system` |
+| barbrief | `litassist/commands/barbrief/core.py` | `barbrief.system` |
+| draft | `litassist/commands/draft/core.py` | `processing.draft.system_prompt_base`, `processing.draft.system_prompt_template` |
 | digest | `litassist/commands/digest/core.py` | `processing.digest.system_prompt` |
-| extractfacts | `litassist/commands/extractfacts.py` | `base.australian_law`, `commands.extractfacts.system` |
-| verify | `litassist/commands/verify.py` | `verification.system_prompt` |
-| counselnotes | `litassist/commands/counselnotes.py` | `processing.counselnotes.extraction_system`, `processing.counselnotes.strategic_system`, `processing.counselnotes.consolidation_system` |
+| extractfacts | `litassist/commands/extractfacts/core.py` | `base.australian_law`, `commands.extractfacts.system` |
+| verify | `litassist/commands/verify/core.py` | `verification.system_prompt` |
+| counselnotes | `litassist/commands/counselnotes/core.py` | `processing.counselnotes.extraction_system`, `processing.counselnotes.strategic_system`, `processing.counselnotes.consolidation_system` |
 
 ## Prompt Files
 
@@ -264,8 +264,3 @@ All prompts are defined in YAML files under `litassist/prompts/`:
 - `MODEL_CONFIGURATION.md` - Model selection and configuration details
 - `VERIFICATION_SYSTEM_COMPREHENSIVE.md` - Verification chain architecture
 - `CLAUDE.md` - Development guidelines including prompt management policy
-
----
-
-**Generated**: January 6, 2025
-**Updated**: October 22, 2025

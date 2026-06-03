@@ -1,6 +1,6 @@
 # LitAssist LLM Use Review and Model Recommendations (2026-02)
 
-Last updated: 25/02/2026
+Last updated: 03/06/2026
 
 > **Historical snapshot (February 2026).** Config names and the "(eval)" recommendations below reflect this review as of 25/02/2026; not all were adopted, and some configs shown as current (notably `verification-light`) have since been removed. For the live set of model and verification configs, see `litassist/llm/model_configs.yaml`.
 

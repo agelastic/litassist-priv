@@ -1,6 +1,6 @@
 # LitAssist Model Configuration Guide
 
-Last updated: 28/05/2026
+Last updated: 03/06/2026
 **Status**: Technical Reference - See `LLM_MODEL_STRATEGY.md` for strategy overview
 
 ## Overview
@@ -532,7 +532,7 @@ To add a new model, simply:
 ### Issue: Parameter Restrictions
 - o3-pro: Use max_completion_tokens, not max_tokens
 - o3-pro: No temperature/top_p/penalties allowed
-- Check model-specific restrictions in llm.py
+- Check model-specific restrictions in litassist/llm/parameter_handler.py
 
 ### Issue: BYOK Required
 - Ensure `openrouter.api_key` is configured locally
@@ -598,4 +598,3 @@ See `LLM_MODEL_STRATEGY.md` → "Future Model Opportunities" for:
 
 **Document Purpose**: Technical reference for model configuration and parameters
 **Strategic Guidance**: See `LLM_MODEL_STRATEGY.md`
-Last updated: 26/02/2026

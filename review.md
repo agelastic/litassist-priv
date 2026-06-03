@@ -11,7 +11,7 @@
 > re-run the review against current `HEAD` rather than acting on the
 > specific citations below.
 
-Last updated: 25/04/2026
+Last updated: 30/05/2026
 
 Axes: simplicity / over-engineering + correctness / bug risk. Format: `path:line - problem - fix`.
 

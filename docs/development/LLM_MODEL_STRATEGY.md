@@ -1,6 +1,6 @@
 # LitAssist LLM Model Strategy
 
-Last updated: 28/05/2026
+Last updated: 03/06/2026
 **Status**: Living Document
 **Purpose**: Comprehensive guide to LLM usage, model selection, and improvement strategies
 

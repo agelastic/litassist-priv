@@ -1059,6 +1059,5 @@ la profile --create "Agency A" --type government
 
 ---
 
-Last updated: 02/06/2026
 **Status:** Strategic planning; roadmap items are aspirational unless marked DONE, PARTIALLY SUPERSEDED, or already implemented elsewhere
 **Next Review:** After Phase 1 completion

@@ -1,4 +1,4 @@
-Last updated: 18/02/2026
+Last updated: 28/05/2026
 
 Prompt Engineering for LitAssist: OpenAI, Anthropic Claude, Google Gemini, and xAI Grok
 

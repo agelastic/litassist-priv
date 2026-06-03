@@ -1,6 +1,6 @@
 # LitAssist Package Architecture
 
-Last updated: 09/07/2025
+Last updated: 03/06/2026
 
 This directory contains the modular implementation of LitAssist, providing a structured approach to handling Australian legal workflows through various specialized commands.
 
@@ -9,31 +9,45 @@ This directory contains the modular implementation of LitAssist, providing a str
 ```
 litassist/
 ├── __init__.py             # Package initialization
-├── config.py               # Configuration management (API keys, service endpoints)
-├── utils.py                # Core utilities (document reading, chunking, logging)
-├── llm.py                  # LLM client wrapper with standard interface
 ├── cli.py                  # CLI entry point and command registration
-└── commands/               # Individual command implementations
-    ├── __init__.py         # Command registration mechanism
-    ├── lookup.py           # Case-law lookup via Google CSE/Jade
-    ├── digest.py           # Document digestion with Claude
-    ├── brainstorm.py       # Legal strategy generation with Grok
-    ├── extractfacts.py     # Case facts extraction under 10 headings
-    ├── draft.py            # Full-context legal drafting with o3-pro
-    ├── strategy.py         # Strategic options and document generation
-    ├── verify.py           # Citation verification with Claude
-    ├── counselnotes.py     # Strategic advocate analysis with Claude
-    ├── caseplan.py         # Phased workflow planning with command coverage, focus, and rationale (Sonnet/Opus)
-    └── barbrief.py         # Comprehensive barrister's briefs with o3-pro
+├── config.py               # Configuration management (get_config)
+├── prompts.py              # PROMPTS template manager (loads prompts/*.yaml)
+├── timing.py               # @timed execution-timing decorator
+├── citation_context.py     # Citation context retrieval
+├── citation_patterns.py    # Offline citation pattern validation
+├── verification_chain.py   # Standard + Chain-of-Verification orchestration
+├── llm/                    # LLM client package
+│   ├── client.py           #   LLMClient (standard complete()/verify() interface)
+│   ├── factory.py          #   LLMClientFactory.for_command(name)
+│   ├── model_configs.yaml  #   command -> model assignments
+│   └── ...                 #   api_handlers, parameter_handler, model_profiles, ...
+├── utils/                  # Utilities package
+│   ├── file_ops.py         #   read_document, glob expansion
+│   ├── text_processing.py  #   chunk_text
+│   ├── core.py             #   heartbeat, command-completion helpers
+│   ├── formatting.py       #   ANSI message helpers (success_message, ...)
+│   └── ...                 #   legal_reasoning, case_facts, rtf, truncation
+├── logging/                # Logging/output package
+│   ├── output_saver.py     #   save_command_output
+│   └── __init__.py         #   save_log, log_task_event
+├── citation/               # Citation verification package (Jade.io/AustLII)
+├── prompts/                # YAML prompt templates (base, lookup, processing, ...)
+└── commands/               # One package per command
+    ├── __init__.py         #   register_commands()
+    ├── lookup/  digest/  brainstorm/  extractfacts/  updatefacts/
+    ├── draft/  strategy/  verify/  verify_cove/
+    └── counselnotes/  barbrief/  caseplan/  refresh/
 ```
 
 ## Core Components
 
-### LLMClient (llm.py)
+### LLMClient (llm/client.py)
 
-Centralized client that provides a standardized interface to various LLM providers:
+Centralized client that provides a standardized interface to various LLM providers. In practice clients are usually built from the per-command model config via `LLMClientFactory.for_command("draft")`; direct construction also works:
 
 ```python
+from litassist.llm.client import LLMClient
+
 # Initialize with model ID and parameters
 client = LLMClient("anthropic/claude-sonnet-4.6", temperature=0.2)
 
@@ -43,17 +57,23 @@ content, usage = client.complete([
     {"role": "user", "content": prompt}
 ])
 
-# Optional self-verification
-corrections = client.verify(content)
+# Optional self-verification (returns the corrections text and the model used)
+corrections, model_used = client.verify(content)
 ```
 
-### Utilities (utils.py)
+### Utilities (utils/ package)
 
 Provides document handling and monitoring capabilities:
 
 ```python
+from litassist.utils.file_ops import read_document
+from litassist.utils.text_processing import chunk_text
+from litassist.utils.core import heartbeat
+from litassist.timing import timed
+from litassist.logging import save_log
+
 # Document processing
-text = read_document(file_path)  # Handles PDF and text
+text = read_document(file_path)  # Handles PDF, RTF, and text
 chunks = chunk_text(text)        # Intelligent chunking
 
 # Monitoring and logging
@@ -73,7 +93,7 @@ save_log("command_name", data_dict)  # JSON or Markdown
 
 To add a new command:
 
-1. Create a new file in the `commands/` directory
+1. Create a new package in the `commands/` directory (e.g. `commands/newcmd/` with a `core.py` defining the command function)
 2. Define a command function using Click decorators:
    ```python
    @click.command()
@@ -83,14 +103,14 @@ To add a new command:
        """Command description for help text."""
        # Implementation
    ```
-3. Import and register in `commands/__init__.py`
+3. Import the command and register it in `commands/__init__.py` via `register_commands()`
 
 ## Developer Notes
 
 - **Error Handling**: Use `click.ClickException` for user-friendly error messages
 - **Progress Feedback**: Use `click.progressbar` for multi-step processes
 - **Resource Cleanup**: Ensure proper cleanup in finally blocks
-- **Configuration**: Access via `config.get_config()` utility
+- **Configuration**: Access via `from litassist.config import get_config`
 - **Token Usage**: Track and log all API usage for cost monitoring
 
 ## Testing
@@ -98,8 +118,8 @@ To add a new command:
 Test fixtures and utilities are available in the `tests/` directory. Key test files:
 
 - `conftest.py`: Shared fixtures and mocks
-- `unit/`: Unit tests for individual components
-- `integration/`: End-to-end workflow tests
+- `unit/`: Offline unit and (mocked) integration tests - no real API calls
+- `../test-scripts/`: Manual real-API checks (incur cost; run manually)
 
 Run tests with pytest:
 ```bash
