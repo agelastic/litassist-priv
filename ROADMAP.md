@@ -315,8 +315,13 @@ facts - no drift, no silent omission, no invented specifics beyond the existing
 
 **Implementation:**
 - Extend `litassist/verification_chain.py`, reusing the multi-stage pipeline
-  pattern of `run_cove_verification()` and the document retrieval in
-  `citation_context.py:fetch_citation_context()`
+  pattern of `run_cove_verification()`
+- Load the `--sources` files through the existing supplied-file path
+  (`utils/file_ops.py:read_document()` plus an `expand_glob_*` callback, as
+  `draft` already does via `commands/draft/document_processor.py`) - these are
+  the documents claims are checked against. Optionally pull cited-authority
+  context via `citation_context.py:fetch_citation_context()` as a secondary
+  source, but it is not the primary `--sources` loader
 - New flag: `la verify --input draft.md --faithfulness --sources case_facts.md`
 - New prompt keys under `prompts/verification.yaml` (e.g. `claim_extraction`,
   `faithfulness_alignment`)
