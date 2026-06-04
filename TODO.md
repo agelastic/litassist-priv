@@ -1,6 +1,6 @@
 # LitAssist Development TODO
 
-Last updated: 03/06/2026
+Last updated: 04/06/2026
 
 **Note:** Strategic feature planning (litigation support, advisory capabilities, new commands) is now in [ROADMAP.md](ROADMAP.md). This file focuses on bugs, technical debt, and code quality improvements.
 
@@ -8,92 +8,23 @@ Last updated: 03/06/2026
 
 ---
 
-## Current State Summary
-
-### Completed Features [DONE]
-- 12 registered user-facing commands (lookup, digest, extractfacts, updatefacts, brainstorm, strategy, draft, verify, verify-cove, counselnotes, barbrief, caseplan)
-- Global installation via pipx
-- Single configuration approach
-- Outputs organized in `outputs/` directory
-- Comprehensive documentation suite
-- Australian legal focus throughout
-- Timestamped outputs preventing data loss
-- Multi-level verification system
-- Zero-tolerance citation enforcement
-- Clean CLI summaries instead of content dumps
-- Comprehensive logging and timing instrumentation
-- Fixed all ruff linting errors and removed unused dependencies
-- CounselNotes command for strategic advocate analysis (January 2025)
-- Barbrief command for comprehensive barrister's briefs (January 2025)
-- **October 2025: Historical LLM model upgrade** - Implemented the first three-tier strategy
-  - This section records the historical upgrade. Current model assignments are now in `litassist/llm/model_configs.yaml`.
-  - Upgraded 20+ commands with 40-50% cost reduction while improving quality
-  - All 407 unit tests passing
-  - Comprehensive documentation updates across all user/dev docs
-- **November 2025: Verification System Enhancements & Tooling**
-  - Added --heavy flag to verify command for premium verification
-  - Added --noverify flag to extractfacts, draft, and strategy commands for skipping verification
-  - Changed default verify-soundness model for cost optimization
-  - Fixed verify_content_if_needed() to properly respect verify_flag parameter
-  - Citation validation improvements with header analysis for PDF content
-  - PDF search validation with automatic retry logic (up to 3 attempts)
-  - Anti-injection prompt protection added for all LLM calls
-  - Raw pre-verification output persistence for audit trail compliance
-  - All 392 tests passing
-- **November 2025: Token Limit System Removal**
-  - Removed global token limit system (use_token_limits flag and automatic 16K output limits)
-  - Increased input file size limits: brainstorm (50K→600K), caseplan (50K→600K), strategy (100K+100K→600K combined)
-  - Clarified thinking_effort as reasoning budget (not output limit)
-  - Quality prioritized over cost - models use API defaults for comprehensive outputs
-  - Deprecation warnings added for old config files
-  - All 390 tests passing
-- **May 2026: Caseplan hardening + parameter-translation correctness** (caseplan-upgrade branch)
-  - caseplan: generated commands validated via a `shlex` round-trip (shell control characters in LLM output cannot become live operators in the saved script) with fail-loud on zero extracted commands; assessment mode now honours `--context`; empty case facts rejected before any LLM call; full-plan routed to Opus 4.7; nested `@timed` removed; plan prompt gained a canonical command-output rule and a fence/continuation fix.
-  - LLM parameter translation corrected per model in `model_profiles.py`/`parameter_handler.py`: Opus 4.7/4.8 strip sampling (`temperature`/`top_p`/`top_k`) and use the extended effort scale (`xhigh`/`max`); other Claude 4.x never send `temperature` and `top_p` together; GPT-5.5 `xhigh` tier; o3 / Grok 4.20 / Gemini verbosity handling; a directly-supplied `reasoning.effort` is normalised. Added `test_model_config_sampling.py` (config-vs-capabilities guard) and a `supports_system_messages` test.
-  - test-scripts: online CLI harness (`test_cli_comprehensive.sh`) stuffed with every command's switches + a `refresh` case + an output-saved assertion per command; superseded print-only scripts removed (`test_dynamic_parameters.py`, `test_prompts.py`, `test_barbrief_integration.py`); citation fetching wired into `run_tests.sh`.
-  - Full offline suite green (537 tests).
-
-### Pending Tasks [IN PROGRESS]
-- [x] ~~Fix lookup `--comprehensive` help/behavior mismatch~~ - Already correct (verified Oct 2025)
-- [x] ~~Enable `openrouter.api_base` setting~~ - Not needed (OpenAI SDK v1.0+ architecture change)
+## Pending Tasks [IN PROGRESS]
 - [ ] Implement circuit‑breaker (`safety_cutoff`) in retry logic [AG-124] - OPTIONAL enhancement (has 5-retry limit)
-- [x] ~~Remove redundant top‑level `litassist.py` entry point~~ - COMPLETED (Oct 2025)
-- [x] ~~Fail fast on config load errors~~ - Already implemented (verified Oct 2025)
-- [x] ~~REMOVE temporary glob help addon after unification~~ - COMPLETED (deleted glob_help_addon.yaml, removed concatenation logic in caseplan/plan_generator.py)
-- [x] ~~IMPLEMENT full glob unification~~ - COMPLETED (extractfacts, digest, draft, counselnotes routed through expand_glob_patterns_callback; brainstorm and barbrief already used it)
-- [x] ~~extend strategy --strategies to MULTIPLE files~~ - COMPLETED (June 2026). `--strategies` is now `multiple=True` (repeatable, one brainstorm set per flag) via `expand_glob_newest_each_callback`; each flag resolves to its own newest match and `parse_strategies_files` merges the sets (summed counts, `=== filename ===`-separated content). The caseplan prompt emits creative + research flags. See ROADMAP.md P4-25.
 - [ ] AUDIT: verification coverage (mapping done June 2026; two decisions remain). Confirmed against source: verifies BY DEFAULT (draft, strategy, extractfacts, with `--noverify` opt-out); OPT-IN via `--verify` (brainstorm, counselnotes, barbrief); NO verification (lookup, digest, updatefacts; caseplan and verify-cove are separate). Open items: (1) the caseplan prompt does NOT yet force `--verify` on opt-in commands that emit court documents, except barbrief (done May 2026) - extend it to the others; (2) decide whether strategy's auto-verified court doc (`outputs/strategy_draft_*.md`) also warrants a standalone post-hoc `verify`.
-- [x] ~~Develop manual validation scripts for OpenRouter integration (in test-scripts/)~~ - COMPLETED (test_integrations.py, test_quality.py, test_cli_comprehensive.sh exist; RAG workflows removed in remove-pinecone-rag branch)
 - [ ] Enhance QA loops: iterative improvement, contingency planning, multi-perspective reviews (partial: verify-cove + brainstorm regeneration exist; contingency/multi-perspective absent)
 - [ ] Automate performance benchmarking and monitoring setup [MON]
 - [ ] Implement OpenAI API fine-tuning per platform recommendations
 - [ ] Add LLM response streaming functionality
 - [ ] Expose model configuration parameters via CLI/env vars
 - [ ] Develop "student mode" with newcomer-friendly explanations
-- [x] ~~Add thinking trace logging system~~ - COMPLETED (LegalReasoningTrace class exists and used throughout)
-- [x] ~~Integrate reasoning-model parameter standards~~ - COMPLETED (`o3-pro` and current GPT-5.5-style model handling are integrated with provider-specific parameter filtering)
 - [ ] Adopt Jules framework for test instrumentation (evaluate if still desired)
-- [x] ~~**Refactor verify_with_level (Option B)**~~ - COMPLETED (June 2026). Resolved as dead-code removal, not a refactor: `verify_with_level` had no production callers, and the boolean `--heavy` flag (Nov 2025) already provides two-tier (standard/heavy) verification via `run_verification_chain`. Deleted the method (`litassist/llm/verification.py`), its now-orphaned prompts (`light_verification`, `heavy_verification`, `heavy_verification_system` in `prompts/verification.yaml`), the orphaned `verification-light` entry in `model_configs.yaml`, and the four tests that referenced it. [DEBT]
 - [ ] **Add optional reasoning trace file output**: CORRECTION (June 2026): strategy and verify already write reasoning traces to separate timestamped files by default (`commands/strategy/file_handler.py`, `commands/verify/reasoning_handler.py`); the premise "embedded in main output only" was stale. Residual scope is narrow - an opt-in `--save-reasoning` file for commands that do NOT already emit one (notably draft). Re-confirm need before building; may be useful for professional-liability audit trails.
 - [ ] **Migrate off Google Custom Search JSON API by 01/01/2027**: Google has announced the JSON API is being retired in favour of Vertex AI Search (favourable alternative for <=50 domains) or the new full web search solution. LitAssist uses the JSON API in `litassist/citation/google_cse.py`, `litassist/commands/lookup/search.py`, `litassist/citation_context.py`, `litassist/cli.py` (startup ping), and two test-scripts. All three configured CSEs (Jade.io, AustLII, Comprehensive) are well under the 50-domain threshold and none use "Search the entire web", so the transition target is Vertex AI Search. Design sketch in `docs/development/GOOGLE_CSE_MIGRATION_PLAN.md`. No urgent action; deadline 01/01/2027.
 - [ ] **[SOON] Implement jade.io cookie-reuse fetch via Jina**: Replace the jade.io skip in `litassist/commands/lookup/fetchers.py:548-572` with a cookie-authenticated Jina fetch. jade.io article pages are SPA-rendered behind passwordless email magic-link auth; direct/Jina fetches without auth currently return only login chrome (no judgment text). Approach: (1) user logs in manually in a browser once, (2) copies session cookies from DevTools (`JSESSIONID`, `IID`, any post-login auth cookies), (3) stores them in config (e.g. `JADE_COOKIES` env var or `config.yaml`), (4) lookup forwards the `Cookie:` header to Jina's `r.jina.ai` API so rendering happens as the authenticated user. Add a `_looks_like_jade_login_wall` detector matching strings like "Check your email", "sign-in link", "Use verification code", "Register for free" — fires when cookies have expired and logs a clear "refresh JADE_COOKIES" warning. Implementer note: verify that Jina's r.jina.ai API forwards arbitrary `Cookie:` headers to the target site (their docs cover header passthrough); if not, use curl_cffi + manual JS rendering or fall back to skipping. See conversation 26/05/2026 for empirical findings: curl_cffi defeats Cloudflare on jade.io (HTTP 200, 15KB shell) but content is auth-gated; Jina renders the page but only sees login chrome without cookies.
 - [ ] **Evaluate removing Jina from the lookup fetcher chain**: After the 26/05/2026 fetcher work (captcha-marker fix, gibberish-heuristic loosening, AustLII PDF -> HTML substitution, fedcourt unblocked), Jina's production usage has shrunk to a narrow set: (1) `ndfv.jade.io` URLs (forced routing in `_fetch_url_content`), (2) HTTP 4xx/5xx fallback from curl_cffi (rare), (3) extraction < 100 chars (rare after the gibberish-check loosening). The jade.io cookie-reuse [SOON] entry above currently assumes Jina is the transport; if that work is reshaped to use curl_cffi directly with Cookie headers (avoiding Jina's IP class which is itself Cloudflare-challenged on many AU government sites), Jina would have no callers left. Decision criteria: after 1-2 weeks of production usage with the current chain, query the audit logs for `method=jina_reader` entries and count successes vs failures. If `successes / total < 5%` and no critical case relies on Jina alone, remove. Removal would: (a) drop the jina_api_key config field, (b) delete `_fetch_via_jina` and its tests, (c) replace the ndfv.jade.io routing with curl_cffi + skip (per the same logic as the jade.io main domain skip already in place), (d) collapse the gibberish fallback to "return empty content" instead of attempting Jina. Verified 26/05/2026: jina_api_key in config is valid and works (probe to fairwork.gov.au returned 64KB markdown); the question is not whether Jina works mechanically but whether it actually adds coverage that curl_cffi misses. See conversation 26/05/2026 for the empirical analysis (78% Jaccard similarity between curl_cffi and Jina renderings of triplezero.vic.gov.au showed Jina was adding navigation chrome, not legal content). Order this AFTER the jade.io cookie-reuse work since that may itself remove the last forced Jina path.
 - [ ] **Known limitation: AustLII PDF paths are Cloudflare-blocked**: AustLII serves PDFs behind a strict Cloudflare policy that returns "Just a moment..." challenge body (HTTP 403, `cf-mitigated: challenge`) to every Python transport tested on 26/05/2026: requests with Chrome 91/136 UAs, curl_cffi with chrome116/120/131/136 profiles, curl_cffi with HTML-warmup cookies + Referer, Jina (datacentre IPs also challenged), Playwright vanilla, Playwright + playwright_stealth (16 attempts with fresh-context-per-fetch, multiple PDFs), patchright (CDP-leak-patched Chrome 148), nodriver (custom CDP transport), and Camoufox (custom Firefox with C++ stealth patches). The user's own real Chrome browser also shows the Cloudflare banner. The block is server-side and per-URL-extension: HTML siblings at the same paths pass curl_cffi cleanly. Mitigation already implemented (26/05/2026): the fetcher detects `austlii.edu.au` PDF URLs and rewrites to the `.html` sibling before the HTTP fetch (`litassist/commands/lookup/fetchers.py` `_fetch_url_content`). Recovery rates per empirical test: full article HTML (CanterLawRw, MelbULawRw patterns) returns 70-110KB of clean text; stub HTML (VUWLawRw 2016/2020, AukULawRw 1992 patterns) returns ~1KB containing the full Australian citation but no article body; bill_em PDFs have no HTML sibling and 404. If a paid Cloudflare-bypass service (ScrapingBee/ZenRows/Bright Data Web Unlocker) is later judged worth the cost, integrate as a new transport in the chain after curl_cffi but before Jina. Diagnostic scripts that produced this evidence: `/tmp/austlii_diag.py`, `/tmp/playwright_test*.py`, `/tmp/stealth_compare.py`, `/tmp/camoufox_test.py` (regenerate from the 26/05/2026 conversation if needed).
-- [x] ~~Document July 2025 upgrades in all user/dev/system docs~~ - COMPLETED
 
 ## Critical Bugs to Fix [HIGH PRIORITY]
-
-### Code Quality Issues
-- [x] ~~**Fix thread safety in progress indicator**: No error handling if progress thread fails. Add exception handling and timeout~~
-
-### Performance & Reliability
-_No critical bugs identified - all items below verified as already implemented or false alarms:_
-- ~~Rate limiting~~ - Already exists (tenacity with exponential backoff)
-- ~~Circuit breaker~~ - Has retry limits (5 attempts), full circuit breaker is nice-to-have but not critical
-- ~~Bare exceptions~~ - All exceptions are properly typed and logged
-- ~~o3-pro validation~~ - Validation exists via effort mapping
-- ~~Large file handling~~ - MemoryError is caught and handled gracefully
-- ~~Input validation~~ - Click validates file existence automatically at entry points
 
 ### Citation content retrieval: authorised-report citations [FOLLOW-UP]
 Verified-real authorised-report citations (e.g. `(1999) 201 CLR 1`) fail the
@@ -120,13 +51,13 @@ deferred:
   neutral cite is known, the existing AustLII fetch + parallel-citation validation
   already work. Decide C2 option 1 vs 2 deliberately before building.
 
-### Next Steps
+## Next Steps
 1. Review and prioritize remaining TODO items for next sprint
 2. Consider implementing circuit-breaker enhancement for API retries
-3. Extend strategy --strategies to MULTIPLE files (glob-to-newest now done; multi-file interface still deferred; see Pending Tasks)
-4. Review ongoing prompt optimization opportunities (October 2025 model strategy implemented)
-5. **Pricing-aware features:** `litassist/llm/model_capabilities.yaml` already carries `input_price_per_mtok` and `output_price_per_mtok` per model (refreshable via `litassist refresh`). Consume them for per-call cost logging, a `--budget` flag, cost-aware model selection, and a cost field in the audit log. Capability data is already collected; consumers to be added.
-6. See ROADMAP.md for strategic feature implementation planning
+3. Review ongoing prompt optimization opportunities (October 2025 model strategy implemented)
+4. **Pricing-aware features:** `litassist/llm/model_capabilities.yaml` already carries `input_price_per_mtok` and `output_price_per_mtok` per model (refreshable via `litassist refresh`). Consume them for per-call cost logging, a `--budget` flag, cost-aware model selection, and a cost field in the audit log. Capability data is already collected; consumers to be added.
+5. See ROADMAP.md for strategic feature implementation planning
+6. **Roadmap restructure (04/06/2026 - no active litigation):** ROADMAP.md was reorganised complaints-first with model-research elevated. New phase order: (1) Matter Foundation, (2) Model Quality & Research, (3) Professional Complaints, (4) Citation & Compliance, (5) Litigation Tooling (DORMANT), (6) FOI (deprioritised) + Infrastructure. P-IDs are now stable handles (not phase indicators). Code-touching items relevant to this file: P1-12 Multi-Model Cross-Checks, P2-19 Bias Divergence Detector, and the new **P-FAITH** Long-Context Faithfulness Checker all extend `litassist/verification_chain.py` (reusing `run_cove_verification()` + `citation_context.py:fetch_citation_context()`); the new **P-JUDGE** LLM-as-Judge eval harness lands as a real-API `test-scripts/test_judge_eval.py` building on `test_quality.py`. Deprioritised: P0A-2 (-> P3, dormant), P2-16 FOI (-> LOW). Dropped: P1-14 Evidence Chain Tracker. Full detail and dependency notes in ROADMAP.md.
 
 ## Future Plans
 
@@ -156,8 +87,6 @@ deferred:
 8. **Config Exposure**: Add CLI arguments in `litassist/cli.py`, extend configuration validation in `litassist/config.py`
 
 ### Technical Architecture Concerns
-- **Jules Framework Integration**: Need to research Jules framework documentation and compatibility with existing test infrastructure
-- **o3-pro Standards**: Requires clarification on specific coding standards and how they integrate with current Python/legal domain patterns
 - **Model Config Exposure**: Risk of breaking existing config.yaml structure; need backward compatibility strategy
 - **Fine-tuning Implementation**: Requires OpenAI API credits, training data preparation, and evaluation metrics - significant cost implications
 - **Streaming Architecture**: Major refactor needed for CLI output handling, progress indicators, and error handling during streaming
@@ -180,3 +109,72 @@ deferred:
 - Prioritize minimal whitespace changes to maintain clean diffs
 - Consider implementing features incrementally with feature flags to minimize integration risk
 - Establish clear success criteria and rollback plans for each major change
+
+---
+
+## Completed [DONE]
+
+### Shipped Features
+- 12 registered user-facing commands (lookup, digest, extractfacts, updatefacts, brainstorm, strategy, draft, verify, verify-cove, counselnotes, barbrief, caseplan)
+- Global installation via pipx
+- Single configuration approach
+- Outputs organized in `outputs/` directory
+- Comprehensive documentation suite
+- Australian legal focus throughout
+- Timestamped outputs preventing data loss
+- Multi-level verification system
+- Zero-tolerance citation enforcement
+- Clean CLI summaries instead of content dumps
+- Comprehensive logging and timing instrumentation
+- Fixed all ruff linting errors and removed unused dependencies
+- CounselNotes command for strategic advocate analysis (January 2025)
+- Barbrief command for comprehensive barrister's briefs (January 2025)
+
+### Dated Upgrade Log
+- **October 2025: Historical LLM model upgrade** - Implemented the first three-tier strategy
+  - This section records the historical upgrade. Current model assignments are now in `litassist/llm/model_configs.yaml`.
+  - Upgraded 20+ commands with 40-50% cost reduction while improving quality
+  - All 407 unit tests passing
+  - Comprehensive documentation updates across all user/dev docs
+- **November 2025: Verification System Enhancements & Tooling**
+  - Added --heavy flag to verify command for premium verification
+  - Added --noverify flag to extractfacts, draft, and strategy commands for skipping verification
+  - Changed default verify-soundness model for cost optimization
+  - Fixed verify_content_if_needed() to properly respect verify_flag parameter
+  - Citation validation improvements with header analysis for PDF content
+  - PDF search validation with automatic retry logic (up to 3 attempts)
+  - Anti-injection prompt protection added for all LLM calls
+  - Raw pre-verification output persistence for audit trail compliance
+  - All 392 tests passing
+- **November 2025: Token Limit System Removal**
+  - Removed global token limit system (use_token_limits flag and automatic 16K output limits)
+  - Increased input file size limits: brainstorm (50K→600K), caseplan (50K→600K), strategy (100K+100K→600K combined)
+  - Clarified thinking_effort as reasoning budget (not output limit)
+  - Quality prioritized over cost - models use API defaults for comprehensive outputs
+  - Deprecation warnings added for old config files
+  - All 390 tests passing
+- **May 2026: Caseplan hardening + parameter-translation correctness** (caseplan-upgrade branch)
+  - caseplan: generated commands validated via a `shlex` round-trip (shell control characters in LLM output cannot become live operators in the saved script) with fail-loud on zero extracted commands; assessment mode now honours `--context`; empty case facts rejected before any LLM call; full-plan routed to Opus 4.7; nested `@timed` removed; plan prompt gained a canonical command-output rule and a fence/continuation fix.
+  - LLM parameter translation corrected per model in `model_profiles.py`/`parameter_handler.py`: Opus 4.7/4.8 strip sampling (`temperature`/`top_p`/`top_k`) and use the extended effort scale (`xhigh`/`max`); other Claude 4.x never send `temperature` and `top_p` together; GPT-5.5 `xhigh` tier; o3 / Grok 4.20 / Gemini verbosity handling; a directly-supplied `reasoning.effort` is normalised. Added `test_model_config_sampling.py` (config-vs-capabilities guard) and a `supports_system_messages` test.
+  - test-scripts: online CLI harness (`test_cli_comprehensive.sh`) stuffed with every command's switches + a `refresh` case + an output-saved assertion per command; superseded print-only scripts removed (`test_dynamic_parameters.py`, `test_prompts.py`, `test_barbrief_integration.py`); citation fetching wired into `run_tests.sh`.
+  - Full offline suite green (537 tests).
+- **June 2026: Glob, verification, and tooling cleanups**
+  - Full glob unification: `extractfacts`, `digest`, `draft`, `counselnotes` routed through `expand_glob_patterns_callback` (matching `brainstorm`/`barbrief`); temporary `prompts/glob_help_addon.yaml` and its concatenation logic removed. See ROADMAP.md P4-25.
+  - `strategy --strategies` made a multiple-files interface (`multiple=True` via `expand_glob_newest_each_callback`); each flag resolves to its own newest match and `parse_strategies_files` merges the sets.
+  - Removed dead `verify_with_level` (no production callers; the `--heavy` flag already provides two-tier verification via `run_verification_chain`), plus its orphaned prompts (`light_verification`, `heavy_verification`, `heavy_verification_system`), the `verification-light` entry in `model_configs.yaml`, and four referencing tests.
+  - Removed redundant top-level `litassist.py` entry point (Oct 2025).
+  - Thinking-trace logging (`LegalReasoningTrace`) and reasoning-model parameter standards (o3-pro / GPT-5.5 provider-specific filtering) integrated.
+  - Manual OpenRouter validation scripts present in `test-scripts/` (`test_integrations.py`, `test_quality.py`, `test_cli_comprehensive.sh`).
+  - Thread-safety handling added to the progress indicator.
+  - July 2025 upgrades documented across user/dev/system docs.
+
+### Verified Non-Issues (no action needed)
+- lookup `--comprehensive` help/behaviour mismatch - already correct (verified Oct 2025)
+- `openrouter.api_base` setting - not needed under OpenAI SDK v1.0+ architecture
+- Fail-fast on config load errors - already implemented (verified Oct 2025)
+- Rate limiting - already exists (tenacity with exponential backoff)
+- Circuit breaker - 5-retry limit exists; full breaker remains an OPTIONAL open item (see Pending Tasks)
+- Bare exceptions - all are properly typed and logged
+- o3-pro validation - exists via effort mapping
+- Large file handling - MemoryError is caught and handled gracefully
+- Input validation - Click validates file existence automatically at entry points
