@@ -22,26 +22,28 @@ keeps cross-references (and `TODO.md`) intact across re-sequencing.
 
 ## Executive Summary
 
-This roadmap prioritises features for litassist around the **current active
-matter mix**: professional-oversight complaints first (legal-profession
-regulators - QLSC, OLSC, ACT Bar Association), with **model-quality / research**
-work elevated as a cross-cutting thrust. Litigation tooling is retained but
-**dormant** (no active litigation); FOI is deprioritised. The goal is lawyer-like
-smart advice for legal and government dealings - what to do, when, and how - with
-precision as the priority.
+This roadmap leads with **model-quality / research** as the top active thrust on
+top of the matter-tracking foundation. There is no active litigation, and as of
+04/06/2026 **professional complaints have been pushed to the dormant backlog**
+pending an urgent assessment of whether the existing commands already handle
+complaints adequately (see TODO.md) - dedicated complaint tooling is not built
+until that assessment shows current tools are insufficient. Litigation tooling is
+likewise dormant; FOI is deprioritised. The goal is lawyer-like smart advice for
+legal and government dealings - what to do, when, and how - with precision as the
+priority.
 
-**Total Planned Work:** ~242-305 hours across 6 phases (Phases 5-6 are
-dormant/deprioritised) + a separate deprioritised backlog (revised 04/06/2026;
+**Total Planned Work:** ~242-305 hours across 6 phases (Phases 4-6 are
+dormant/deferred/deprioritised) + a separate deprioritised backlog (revised 04/06/2026;
 this total is the sum of the six phase durations below). It counts P2-16 at its
 Commonwealth base only - the optional per-jurisdiction FOI stages, and the
 DONE/superseded items, are excluded. Current model choices must be checked
 against `litassist/llm/model_configs.yaml` before implementation.
 
-**Key Principle (revised 04/06/2026 - no active litigation):** Professional-
-oversight complaints are the primary active matter type, with model-quality /
-research work elevated alongside the foundation. Build-priority order:
-Foundation > Model quality & research > Professional complaints >
-Citation/compliance > Litigation tooling (dormant) > FOI.
+**Key Principle (revised 04/06/2026 - no active litigation):** Model-quality /
+research is the lead active thrust on top of the matter-tracking foundation.
+Build-priority order: Foundation > Model quality & research > Citation/compliance
+> [dormant backlog: Professional complaints (deferred, gated on the tool-
+assessment TODO) and Litigation tooling] > FOI.
 
 ---
 
@@ -68,18 +70,22 @@ Citation/compliance > Litigation tooling (dormant) > FOI.
 
 ## Feature Prioritization
 
-Features are prioritised to support professional-oversight complaints (QLSC,
-OLSC, ACT Bar Association) as the primary active matter, with model-quality /
-research work elevated, systematic matter tracking throughout, and litigation /
-FOI tooling retained at lower priority.
+Features are prioritised with model-quality / research as the lead active thrust
+on top of systematic matter tracking. Professional-oversight complaints
+(QLSC, OLSC, ACT Bar Association) are the real-world matter type but their
+dedicated tooling is deferred to the dormant backlog pending the urgent
+tool-assessment (TODO.md); litigation tooling and FOI are retained at lower
+priority.
 
 ---
 
 ## PHASE 1: MATTER FOUNDATION (Sprint 1)
-**Duration:** 33-40 hours
-**Goal:** Matter-agnostic foundation - persistent matter tracking plus
-correspondence quality and triage. Survives the litigation-to-complaints target
-switch because matter type lives in data (`--type`), not code structure.
+**Duration:** 41-50 hours
+**Goal:** Matter-agnostic foundation - persistent matter tracking, correspondence
+quality and triage, plus cross-matter next-step/deadline guidance (P0B-6, a P0
+that serves any matter type and is NOT gated on the complaints assessment).
+Survives the litigation-to-complaints target switch because matter type lives in
+data (`--type`), not code structure.
 
 ### P0A-1: Matter Memory Module [ELEVATED TO P0]
 **Effort:** 15-18 hours
@@ -186,7 +192,7 @@ switch because matter type lives in data (`--type`), not code structure.
 - Identify delay tactics
 - Detect procedural defects in agency actions
 
-**Professional-Oversight Correspondence (primary active matter):**
+**Professional-Oversight Correspondence (real-world matter type; dedicated complaint tooling deferred - see Phase 4):**
 - Classify type (complaint acknowledgement, investigation request, show-cause
   notice, determination/decision)
 - Extract obligations and response deadlines set by the oversight body (QLSC,
@@ -205,11 +211,43 @@ switch because matter type lives in data (`--type`), not code structure.
 
 ---
 
-## PHASE 2: MODEL QUALITY & RESEARCH (Sprint 2)
+### P0B-6: Procedural Advisor / "What to Do Next" [KEEP P0]
+**Effort:** 8-10 hours
+**Priority:** HIGH
+
+**Purpose:** Context-aware guidance on immediate next steps across all active matters
+
+**Rationale:**
+- Systematic approach prevents missed deadlines across multiple matters
+- Risk-based prioritization (what happens if deadline missed?)
+- Matter-agnostic: drives complaint deadlines as readily as litigation ones
+
+**Capabilities:**
+- Analyze current state of ALL matters (or specific matter)
+- Identify immediate obligations across matters
+- Recommend next action with rationale per matter
+- Prioritize across matters (urgent vs. important)
+- Procedural compliance checks (court rules, FOI Act, complaint processes)
+- Risk assessment
+- Calendar integration (export deadlines)
+
+**Implementation:**
+- New module: `litassist/commands/next/`
+- Commands:
+  - `la next` (analyze all matters)
+  - `la next --matter COMPLAINT-001` (specific matter)
+  - `la next --urgent` (only critical deadlines)
+- Requires: Matter Memory (P0A-1)
+- LLM: Claude Sonnet 4.6 (strategic prioritization)
+- Output: Prioritized action list + deadline table + procedural guidance + risk warnings
+
+---
+
+## PHASE 2: MODEL QUALITY & RESEARCH (Sprint 2) [LEAD ACTIVE THRUST]
 **Duration:** 42-54 hours
-**Goal:** Elevated research thrust - ensemble divergence / uncertainty
-quantification, long-context faithfulness, and repeatable offline quality
-measurement.
+**Goal:** The top active priority after the foundation - ensemble divergence /
+uncertainty quantification, long-context faithfulness, and repeatable offline
+quality measurement.
 
 **Theme - ensemble divergence / uncertainty:** P1-12 and P2-19 together
 establish the principle that where independent models disagree, confidence is
@@ -363,118 +401,7 @@ regression eval - not per-document verification.
 
 ---
 
-## PHASE 3: PROFESSIONAL COMPLAINTS (Sprint 3)
-**Duration:** 26-32 hours
-**Goal:** End-to-end professional-oversight complaint workflow - the primary
-active matter type. Depends on the Phase 1 foundation (Matter Memory).
-
-### P2-15: Professional Complaint Support [ELEVATED TO TOP PRIORITY]
-**Effort:** 10-12 hours
-**Priority:** HIGHEST among active-matter features (elevated 03/06/2026 - now the
-primary active matter type). Build sequencing: the Phase 2 Model Quality &
-Research thrust is sequenced first per the 04/06/2026 restructure; P2-15 is the
-immediate next build and the primary day-to-day deliverable. Depends on P0A-1
-Matter Memory (already P0).
-
-**Purpose:** Strategic guidance for professional-oversight complaints -
-legal-profession regulators (QLSC in Qld, OLSC in NSW, ACT Bar Association / ACT
-Law Society) and analogous bodies.
-
-**Rationale:**
-- Professional complaint processes are jurisdiction-specific
-- Evidence compilation and strategic timing matter
-
-**Capabilities:**
-- Complaint process guidance:
-  - Investigation stages
-  - Evidence requirements
-  - Response strategies
-  - Typical outcomes and timelines
-- Evidence compilation:
-  - Organize supporting evidence
-  - Link evidence to complaint grounds
-  - Identify evidence gaps
-- Strategic advice:
-  - When to provide additional evidence
-  - How to respond to requests
-  - Settlement vs. hearing decision support
-- Jurisdiction-specific compliance (QLSC Qld, OLSC NSW, ACT Bar Association /
-  ACT Law Society, and analogous regulators)
-
-**Implementation:**
-- New module: `litassist/commands/complaint/`
-- Commands:
-  - `la complaint --matter COMPLAINT-001 --stage investigation`
-  - `la complaint --matter COMPLAINT-001 --evidence-compile`
-- LLM: Claude Sonnet 4.6 (process knowledge)
-- Output: Process guidance + evidence checklist + strategic advice
-
----
-
-### P2-17: Administrative Complaint Drafter [NEW]
-**Effort:** 8-10 hours
-**Priority:** MEDIUM-LOW
-
-**Purpose:** Draft administrative complaints to government agencies
-
-**Rationale:**
-- Government agency complaints have specific formats
-- Evidence compilation and timing matter
-
-**Capabilities:**
-- Analyze background information
-- Identify potential complaint grounds
-- Draft complaint:
-  - Grounds for complaint
-  - Evidence compilation
-  - Relevant statutory sections
-  - Procedural requirements
-- Strategic timing advice
-- Risk assessment
-
-**Implementation:**
-- New module: `litassist/commands/admin/`
-- Commands:
-  - `la admin --type complaint --agency DHA`
-  - `la admin --draft --evidence-from matters/FOI-001/`
-- LLM: Claude Sonnet 4.6 + o3-pro (strategic timing)
-- Output: Draft complaint + evidence checklist + strategic timing advice
-
----
-
-### P0B-6: Procedural Advisor / "What to Do Next" [KEEP P0]
-**Effort:** 8-10 hours
-**Priority:** HIGH
-
-**Purpose:** Context-aware guidance on immediate next steps across all active matters
-
-**Rationale:**
-- Systematic approach prevents missed deadlines across multiple matters
-- Risk-based prioritization (what happens if deadline missed?)
-- Matter-agnostic: drives complaint deadlines as readily as litigation ones
-
-**Capabilities:**
-- Analyze current state of ALL matters (or specific matter)
-- Identify immediate obligations across matters
-- Recommend next action with rationale per matter
-- Prioritize across matters (urgent vs. important)
-- Procedural compliance checks (court rules, FOI Act, complaint processes)
-- Risk assessment
-- Calendar integration (export deadlines)
-
-**Implementation:**
-- New module: `litassist/commands/next/`
-- Commands:
-  - `la next` (analyze all matters)
-  - `la next --matter COMPLAINT-001` (specific matter)
-  - `la next --urgent` (only critical deadlines)
-- Requires: Matter Memory (P0A-1)
-- LLM: Claude Sonnet 4.6 (strategic prioritization)
-- Output: Prioritized action list + deadline table + procedural guidance + risk warnings
-
----
-
-## PHASE 4: CITATION & COMPLIANCE (Sprint 4)
+## PHASE 3: CITATION & COMPLIANCE (Sprint 3)
 **Duration:** 52-67 hours
 **Goal:** Citation quality, AGLC compliance, and robustness testing.
 
@@ -656,11 +583,96 @@ submissions**, not just court filings.
 
 ---
 
+## PHASE 4: PROFESSIONAL COMPLAINTS - DEFERRED (dormant backlog)
+**Duration:** 18-22 hours
+**Goal:** End-to-end professional-oversight complaint workflow. Depends on the
+Phase 1 foundation (Matter Memory).
+
+**GATED (04/06/2026):** Demoted from the lead position to the dormant backlog. Do
+NOT build any dedicated complaint tooling until the urgent tool-assessment in
+TODO.md determines the existing commands are insufficient for complaints. Until
+then, complaints are handled with the current commands (extractfacts, brainstorm,
+strategy, draft, etc.). This phase is specced for reference and is unblocked only
+by a "needs dedicated tooling" finding from that assessment.
+
+### P2-15: Professional Complaint Support [DEFERRED - dormant]
+**Effort:** 10-12 hours
+**Priority:** DEFERRED (demoted 04/06/2026 from HIGHEST to the dormant backlog).
+Gated on the urgent tool-assessment in TODO.md: build only if that assessment
+finds the existing commands inadequate for complaints. Depends on P0A-1 Matter
+Memory (already P0) when it does proceed.
+
+**Purpose:** Strategic guidance for professional-oversight complaints -
+legal-profession regulators (QLSC in Qld, OLSC in NSW, ACT Bar Association / ACT
+Law Society) and analogous bodies.
+
+**Rationale:**
+- Professional complaint processes are jurisdiction-specific
+- Evidence compilation and strategic timing matter
+
+**Capabilities:**
+- Complaint process guidance:
+  - Investigation stages
+  - Evidence requirements
+  - Response strategies
+  - Typical outcomes and timelines
+- Evidence compilation:
+  - Organize supporting evidence
+  - Link evidence to complaint grounds
+  - Identify evidence gaps
+- Strategic advice:
+  - When to provide additional evidence
+  - How to respond to requests
+  - Settlement vs. hearing decision support
+- Jurisdiction-specific compliance (QLSC Qld, OLSC NSW, ACT Bar Association /
+  ACT Law Society, and analogous regulators)
+
+**Implementation:**
+- New module: `litassist/commands/complaint/`
+- Commands:
+  - `la complaint --matter COMPLAINT-001 --stage investigation`
+  - `la complaint --matter COMPLAINT-001 --evidence-compile`
+- LLM: Claude Sonnet 4.6 (process knowledge)
+- Output: Process guidance + evidence checklist + strategic advice
+
+---
+
+### P2-17: Administrative Complaint Drafter [NEW]
+**Effort:** 8-10 hours
+**Priority:** MEDIUM-LOW
+
+**Purpose:** Draft administrative complaints to government agencies
+
+**Rationale:**
+- Government agency complaints have specific formats
+- Evidence compilation and timing matter
+
+**Capabilities:**
+- Analyze background information
+- Identify potential complaint grounds
+- Draft complaint:
+  - Grounds for complaint
+  - Evidence compilation
+  - Relevant statutory sections
+  - Procedural requirements
+- Strategic timing advice
+- Risk assessment
+
+**Implementation:**
+- New module: `litassist/commands/admin/`
+- Commands:
+  - `la admin --type complaint --agency DHA`
+  - `la admin --draft --evidence-from matters/FOI-001/`
+- LLM: Claude Sonnet 4.6 + o3-pro (strategic timing)
+- Output: Draft complaint + evidence checklist + strategic timing advice
+
+---
+
 ## PHASE 5: LITIGATION TOOLING - DORMANT (Sprint 5)
 **Duration:** 71-89 hours
 **Goal:** Litigation strategic and tactical tooling. **Retained but dormant** as
 of 04/06/2026 - no active litigation. Build when litigation resumes; none of these
-block the complaints-first or research work above.
+block the active research/citation work above.
 
 ### P0A-2: ACT Magistrates Court Procedures Calculator [DEMOTED TO P3]
 **Effort:** 8-10 hours
@@ -1167,7 +1179,7 @@ la profile --create "Agency A" --type government
 **Overall Confidence: 0.88**
 
 ### High Confidence (0.92+)
-- Feature relevance for the current matter mix (complaints-first)
+- Feature relevance for the current matter mix (research-led; complaints deferred)
 - Current codebase can support these features
 - Matter Memory is foundational
 - API research conclusions
@@ -1191,23 +1203,32 @@ la profile --create "Agency A" --type government
 
 ## Next Steps
 
-**Build Sequence (revised 04/06/2026 - complaints-first, research elevated):**
+**Build Sequence (revised 04/06/2026 - research-led; complaints deferred):**
+0. **DO FIRST (URGENT, no build dependency):** run the complaints tool-assessment
+   (see TODO.md) - it just exercises existing commands on a complaint scenario, so
+   it can run immediately and in parallel with step 1. It decides
+   overhaul-vs-usable and is what unblocks (or keeps dormant) Phase 4 Professional
+   Complaints; resolving it early prevents the plan drifting while real complaints
+   are handled by current tools.
 1. P0A-1 Matter Memory (15-18h) - foundational spine; everything depends on it
-2. P0A-3 Letter Doctor + P0A-4 Correspondence Analyzer (18-22h) - correspondence
-   quality and triage (P0A-4 now includes a professional-oversight branch)
-3. Phase 2 Model Quality & Research thrust: P1-12 Multi-Model Cross-Checks ->
-   P2-19 Bias Divergence Detector (build P1-12 first), then P-FAITH Long-Context
-   Faithfulness and P-JUDGE Eval Harness
-4. P2-15 Professional Complaint Support (HIGHEST active-matter feature; needs
-   Matter Memory) and the rest of Phase 3
+2. P0A-3 Letter Doctor + P0A-4 Correspondence Analyzer + P0B-6 Procedural Advisor
+   (26-32h) - correspondence quality/triage (P0A-4 includes a professional-
+   oversight branch) plus cross-matter next-step/deadline guidance
+3. Phase 2 Model Quality & Research thrust (LEAD): P1-12 Multi-Model Cross-Checks
+   -> P2-19 Bias Divergence Detector (build P1-12 first), then P-FAITH Long-
+   Context Faithfulness and P-JUDGE Eval Harness
+4. Phase 3 Citation & Compliance as capacity allows
+   (Phase 4 Professional Complaints stays dormant unless step 0 says otherwise.)
 
-**Total Phase 1 Effort:** 33-40 hours
+**Total Phase 1 Effort:** 41-50 hours
 
-**Reprioritisation note (04/06/2026 - no active litigation):** Professional-
-oversight complaints (QLSC/OLSC/ACT Bar) are the primary active matter, with the
-Model Quality & Research thrust elevated to Phase 2. Litigation tooling (Phase 5)
-is retained but dormant - build when litigation resumes. FOI (P2-16) is
-deprioritised. P1-14 Evidence Chain Tracker is dropped.
+**Reprioritisation note (04/06/2026 - no active litigation):** Model Quality &
+Research (Phase 2) is the lead active thrust on top of the foundation.
+Professional complaints (QLSC/OLSC/ACT Bar) were demoted 04/06/2026 to the
+dormant backlog (Phase 4), gated on the urgent tool-assessment in TODO.md - no
+dedicated complaint tooling is built until that assessment shows current commands
+are insufficient. Litigation tooling (Phase 5) is likewise dormant. FOI (P2-16)
+is deprioritised. P1-14 Evidence Chain Tracker is dropped.
 
 ---
 

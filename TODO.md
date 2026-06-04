@@ -9,6 +9,7 @@ Last updated: 04/06/2026
 ---
 
 ## Pending Tasks [IN PROGRESS]
+- [ ] **[URGENT] Assess how current tools handle complaints (overhaul vs usable-interim):** Run this FIRST - in parallel with the Phase 1 foundation work, not after it (it has no build dependency; it only exercises existing commands). It is ROADMAP Build Sequence step 0, and Phase 4 stays dormant/gated on its finding. Before any dedicated complaint tooling is built, evaluate whether the existing commands (extractfacts, brainstorm, strategy, draft, counselnotes, barbrief, verify) already produce usable output for professional-oversight complaints (QLSC/OLSC/ACT Bar). Method: run a representative real complaint scenario end-to-end through the current pipeline and judge against three outcomes - (a) usable as-is for now, (b) usable with prompt/template tweaks only (cheap, scope them), or (c) needs a major overhaul / a dedicated `complaint` command. Deliverable: a short go/no-go that either keeps complaints handled by current commands or unblocks ROADMAP P2-15 with a concrete scope. Until this reports, complaints are handled with the current commands.
 - [ ] Implement circuit‑breaker (`safety_cutoff`) in retry logic [AG-124] - OPTIONAL enhancement (has 5-retry limit)
 - [ ] AUDIT: verification coverage (mapping done June 2026; two decisions remain). Confirmed against source: verifies BY DEFAULT (draft, strategy, extractfacts, with `--noverify` opt-out); OPT-IN via `--verify` (brainstorm, counselnotes, barbrief); NO verification (lookup, digest, updatefacts; caseplan and verify-cove are separate). Open items: (1) the caseplan prompt does NOT yet force `--verify` on opt-in commands that emit court documents, except barbrief (done May 2026) - extend it to the others; (2) decide whether strategy's auto-verified court doc (`outputs/strategy_draft_*.md`) also warrants a standalone post-hoc `verify`.
 - [ ] Enhance QA loops: iterative improvement, contingency planning, multi-perspective reviews (partial: verify-cove + brainstorm regeneration exist; contingency/multi-perspective absent)
@@ -17,7 +18,6 @@ Last updated: 04/06/2026
 - [ ] Add LLM response streaming functionality
 - [ ] Expose model configuration parameters via CLI/env vars
 - [ ] Develop "student mode" with newcomer-friendly explanations
-- [ ] Adopt Jules framework for test instrumentation (evaluate if still desired)
 - [ ] **Add optional reasoning trace file output**: CORRECTION (June 2026): strategy and verify already write reasoning traces to separate timestamped files by default (`commands/strategy/file_handler.py`, `commands/verify/reasoning_handler.py`); the premise "embedded in main output only" was stale. Residual scope is narrow - an opt-in `--save-reasoning` file for commands that do NOT already emit one (notably draft). Re-confirm need before building; may be useful for professional-liability audit trails.
 - [ ] **Migrate off Google Custom Search JSON API by 01/01/2027**: Google has announced the JSON API is being retired in favour of Vertex AI Search (favourable alternative for <=50 domains) or the new full web search solution. LitAssist uses the JSON API in `litassist/citation/google_cse.py`, `litassist/commands/lookup/search.py`, `litassist/citation_context.py`, `litassist/cli.py` (startup ping), and two test-scripts. All three configured CSEs (Jade.io, AustLII, Comprehensive) are well under the 50-domain threshold and none use "Search the entire web", so the transition target is Vertex AI Search. Design sketch in `docs/development/GOOGLE_CSE_MIGRATION_PLAN.md`. No urgent action; deadline 01/01/2027.
 - [ ] **[SOON] Implement jade.io cookie-reuse fetch via Jina**: Replace the jade.io skip in `litassist/commands/lookup/fetchers.py:548-572` with a cookie-authenticated Jina fetch. jade.io article pages are SPA-rendered behind passwordless email magic-link auth; direct/Jina fetches without auth currently return only login chrome (no judgment text). Approach: (1) user logs in manually in a browser once, (2) copies session cookies from DevTools (`JSESSIONID`, `IID`, any post-login auth cookies), (3) stores them in config (e.g. `JADE_COOKIES` env var or `config.yaml`), (4) lookup forwards the `Cookie:` header to Jina's `r.jina.ai` API so rendering happens as the authenticated user. Add a `_looks_like_jade_login_wall` detector matching strings like "Check your email", "sign-in link", "Use verification code", "Register for free" — fires when cookies have expired and logs a clear "refresh JADE_COOKIES" warning. Implementer note: verify that Jina's r.jina.ai API forwards arbitrary `Cookie:` headers to the target site (their docs cover header passthrough); if not, use curl_cffi + manual JS rendering or fall back to skipping. See conversation 26/05/2026 for empirical findings: curl_cffi defeats Cloudflare on jade.io (HTTP 200, 15KB shell) but content is auth-gated; Jina renders the page but only sees login chrome without cookies.
@@ -57,7 +57,7 @@ deferred:
 3. Review ongoing prompt optimization opportunities (October 2025 model strategy implemented)
 4. **Pricing-aware features:** `litassist/llm/model_capabilities.yaml` already carries `input_price_per_mtok` and `output_price_per_mtok` per model (refreshable via `litassist refresh`). Consume them for per-call cost logging, a `--budget` flag, cost-aware model selection, and a cost field in the audit log. Capability data is already collected; consumers to be added.
 5. See ROADMAP.md for strategic feature implementation planning
-6. **Roadmap restructure (04/06/2026 - no active litigation):** ROADMAP.md was reorganised complaints-first with model-research elevated. New phase order: (1) Matter Foundation, (2) Model Quality & Research, (3) Professional Complaints, (4) Citation & Compliance, (5) Litigation Tooling (DORMANT), (6) FOI (deprioritised) + Infrastructure. P-IDs are now stable handles (not phase indicators). Code-touching items relevant to this file: P1-12 Multi-Model Cross-Checks, P2-19 Bias Divergence Detector, and the new **P-FAITH** Long-Context Faithfulness Checker all extend `litassist/verification_chain.py` (reusing `run_cove_verification()` + `citation_context.py:fetch_citation_context()`); the new **P-JUDGE** LLM-as-Judge eval harness lands as a real-API `test-scripts/test_judge_eval.py` building on `test_quality.py`. Deprioritised: P0A-2 (-> P3, dormant), P2-16 FOI (-> LOW). Dropped: P1-14 Evidence Chain Tracker. Full detail and dependency notes in ROADMAP.md.
+6. **Roadmap restructure (04/06/2026 - no active litigation):** ROADMAP.md is research-led, with professional complaints demoted to the dormant backlog pending the [URGENT] tool-assessment above. Phase order: (1) Matter Foundation, (2) Model Quality & Research [LEAD], (3) Citation & Compliance, (4) Professional Complaints (DEFERRED/dormant), (5) Litigation Tooling (DORMANT), (6) FOI (deprioritised) + Infrastructure. P-IDs are now stable handles (not phase indicators). Code-touching items relevant to this file: P1-12 Multi-Model Cross-Checks, P2-19 Bias Divergence Detector, and the new **P-FAITH** Long-Context Faithfulness Checker all extend `litassist/verification_chain.py` (reusing `run_cove_verification()` + `citation_context.py:fetch_citation_context()`); the new **P-JUDGE** LLM-as-Judge eval harness lands as a real-API `test-scripts/test_judge_eval.py` building on `test_quality.py`. Deprioritised: P0A-2 (-> P3, dormant), P2-16 FOI (-> LOW). Dropped: P1-14 Evidence Chain Tracker. Full detail and dependency notes in ROADMAP.md.
 
 ## Future Plans
 
@@ -83,7 +83,6 @@ deferred:
 4. **Model Configuration**: Extend `litassist/config.py` with new environment variable mappings, update `config.yaml.template` with streaming/model options
 5. **Thinking Traces**: Add new logging handlers in `litassist/utils.py`, extend output directory structure for trace files
 6. **o3-pro Standards**: Review existing code patterns in `litassist/commands/` modules, update linting rules in `setup.py` and `requirements-ci.txt`
-7. **Jules Framework**: Integrate with existing test infrastructure in `tests/unit/`, update `test-scripts/` directory structure
 8. **Config Exposure**: Add CLI arguments in `litassist/cli.py`, extend configuration validation in `litassist/config.py`
 
 ### Technical Architecture Concerns
@@ -101,7 +100,6 @@ deferred:
 
 ### Resource & Timeline Concerns
 - Fine-tuning requires significant API budget and data preparation time
-- Jules framework adoption may require team training
 - Multiple concurrent LLM architecture changes increase testing complexity
 - Student mode requires extensive legal domain expertise for accurate simplification
 
@@ -167,14 +165,3 @@ deferred:
   - Manual OpenRouter validation scripts present in `test-scripts/` (`test_integrations.py`, `test_quality.py`, `test_cli_comprehensive.sh`).
   - Thread-safety handling added to the progress indicator.
   - July 2025 upgrades documented across user/dev/system docs.
-
-### Verified Non-Issues (no action needed)
-- lookup `--comprehensive` help/behaviour mismatch - already correct (verified Oct 2025)
-- `openrouter.api_base` setting - not needed under OpenAI SDK v1.0+ architecture
-- Fail-fast on config load errors - already implemented (verified Oct 2025)
-- Rate limiting - already exists (tenacity with exponential backoff)
-- Circuit breaker - 5-retry limit exists; full breaker remains an OPTIONAL open item (see Pending Tasks)
-- Bare exceptions - all are properly typed and logged
-- o3-pro validation - exists via effort mapping
-- Large file handling - MemoryError is caught and handled gracefully
-- Input validation - Click validates file existence automatically at entry points
