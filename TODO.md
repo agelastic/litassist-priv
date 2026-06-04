@@ -1,6 +1,6 @@
 # LitAssist Development TODO
 
-Last updated: 03/06/2026
+Last updated: 04/06/2026
 
 **Note:** Strategic feature planning (litigation support, advisory capabilities, new commands) is now in [ROADMAP.md](ROADMAP.md). This file focuses on bugs, technical debt, and code quality improvements.
 
@@ -54,6 +54,8 @@ Last updated: 03/06/2026
   - Full offline suite green (537 tests).
 
 ### Pending Tasks [IN PROGRESS]
+- [ ] **Licensing reconciliation:** the repo is inconsistent/unstated - `setup.py` declares `License :: Other/Proprietary License` (commented "proprietary / closed-source") but there is NO LICENSE file and no licence prose in README or other top-level docs. Decide a single licence (proprietary vs an OSS licence), then make `setup.py`'s classifier, a `LICENSE` file, and any doc mention all agree. Deferred from the v3.0.0 release (04/06/2026), where adding an Apache-2.0 LICENSE was dropped because it contradicted the proprietary classifier.
+- [ ] **GitHub Pages decision + stale URLs:** no GitHub Pages site exists (Pages API 404, no `gh-pages` branch, no `mkdocs.yml`/`_config.yml`/`CNAME`, no Pages workflow). Decide whether to publish the `docs/` tree as a Pages site. Regardless of that decision, the stale placeholder/branch URLs were corrected in the v3.0.0 release-tooling fix - `.github/workflows/release.yml` (`/blob/main/` -> `/blob/master/`), `scripts/release/finalize-release.sh` (`YOUR-ORG`/`main` -> `agelastic/litassist-priv`/`master`), and `RELEASE_PROCESS.md` (`main` -> `master`); confirm no other docs still link to a non-existent Pages site or the wrong branch.
 - [x] ~~Fix lookup `--comprehensive` help/behavior mismatch~~ - Already correct (verified Oct 2025)
 - [x] ~~Enable `openrouter.api_base` setting~~ - Not needed (OpenAI SDK v1.0+ architecture change)
 - [ ] Implement circuit‑breaker (`safety_cutoff`) in retry logic [AG-124] - OPTIONAL enhancement (has 5-retry limit)

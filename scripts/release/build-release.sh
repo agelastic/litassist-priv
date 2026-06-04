@@ -38,15 +38,15 @@ error() {
 }
 
 success() {
-    echo -e "${GREEN}✓ $1${NC}"
+    echo -e "${GREEN}[OK] $1${NC}"
 }
 
 info() {
-    echo -e "${BLUE}→ $1${NC}"
+    echo -e "${BLUE}-> $1${NC}"
 }
 
 warning() {
-    echo -e "${YELLOW}⚠ $1${NC}"
+    echo -e "${YELLOW}[WARN] $1${NC}"
 }
 
 cleanup() {
@@ -202,18 +202,18 @@ run_smoke_tests() {
     # Test 1: Version command/help
     info "Testing help command..."
     if litassist --help > /dev/null 2>&1; then
-        test_results+=("✓ Help command works")
+        test_results+=("[OK] Help command works")
     else
-        test_results+=("✗ Help command failed")
+        test_results+=("[FAIL] Help command failed")
         all_passed=false
     fi
-    
+
     # Test 2: API connectivity test
     info "Testing API connectivity..."
     if litassist test > /dev/null 2>&1; then
-        test_results+=("✓ API test command works")
+        test_results+=("[OK] API test command works")
     else
-        test_results+=("⚠ API test command failed (may need API keys)")
+        test_results+=("[WARN] API test command failed (may need API keys)")
     fi
     
     # Test 3: Create test case_facts.txt
@@ -231,13 +231,15 @@ Applicable Law: Employment law, contract law
 Client Objectives: Reinstatement or compensation
 EOF
     
-    # Test 4: CasePlan command (dry run)
+    # Test 4: CasePlan command
+    # Non-fatal: caseplan makes a live LLM call, so it fails without
+    # credentials. Treat failure as a warning (like the API test above)
+    # rather than aborting a credential-less build.
     info "Testing caseplan command..."
     if litassist caseplan "$test_facts" > /dev/null 2>&1; then
-        test_results+=("✓ CasePlan command works")
+        test_results+=("[OK] CasePlan command works")
     else
-        test_results+=("✗ CasePlan command failed")
-        all_passed=false
+        test_results+=("[WARN] CasePlan command failed (may need API keys)")
     fi
     
     # Clean up test file

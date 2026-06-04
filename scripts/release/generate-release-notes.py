@@ -89,12 +89,12 @@ class ReleaseNotesGenerator:
             
         # Add all sections with content
         section_names = {
-            'added': '### 🎯 Added',
-            'changed': '### ♻️ Changed',
-            'fixed': '### 🐛 Fixed',
-            'removed': '### 🗑️ Removed',
-            'deprecated': '### ⚠️ Deprecated',
-            'security': '### 🔒 Security'
+            'added': '### Added',
+            'changed': '### Changed',
+            'fixed': '### Fixed',
+            'removed': '### Removed',
+            'deprecated': '### Deprecated',
+            'security': '### Security'
         }
         
         for section_key, section_title in section_names.items():

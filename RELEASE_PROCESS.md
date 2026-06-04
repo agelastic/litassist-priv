@@ -1,6 +1,6 @@
 # LitAssist Release Process
 
-Last updated: 02/06/2026
+Last updated: 04/06/2026
 
 ## Overview
 This document provides a step-by-step process for creating releases, from branch creation through GitHub release publication. Each release should follow semantic versioning (MAJOR.MINOR.PATCH).
@@ -8,16 +8,16 @@ This document provides a step-by-step process for creating releases, from branch
 ## Pre-Release Checklist
 - [ ] All tests passing (`pytest`)
 - [ ] Code linted (`ruff check`)
-- [ ] No uncommitted changes on main branch
+- [ ] No uncommitted changes on master branch
 - [ ] Review open issues/PRs that should be included
 
 ## Release Process
 
 ### Phase 1: Create Release Branch
 ```bash
-# 1. Ensure you're on main and up to date
-git checkout main
-git pull origin main
+# 1. Ensure you're on master and up to date
+git checkout master
+git pull origin master
 
 # 2. Create release branch (replace X.Y.Z with version)
 git checkout -b release/vX.Y.Z
@@ -111,7 +111,7 @@ git push origin vX.Y.Z
 ### Phase 5: Create Pull Request
 
 1. Go to GitHub repository
-2. Create PR from `release/vX.Y.Z` to `main`
+2. Create PR from `release/vX.Y.Z` to `master`
 3. Title: "Release vX.Y.Z"
 4. Description should include:
    - Summary of changes
@@ -161,9 +161,9 @@ pip install --upgrade litassist
 ### Phase 7: Post-Release
 
 ```bash
-# 1. Switch back to main
-git checkout main
-git pull origin main
+# 1. Switch back to master
+git checkout master
+git pull origin master
 
 # 2. Delete local release branch
 git branch -d release/vX.Y.Z
@@ -183,8 +183,8 @@ git branch -d release/vX.Y.Z
 ## Automation Opportunities
 
 Consider creating scripts for:
-1. `scripts/prepare-release.sh` - Automates version updates
-2. `scripts/build-release.sh` - Builds and tests distribution
+1. `scripts/release/prepare-release.sh` - Automates version updates
+2. `scripts/release/build-release.sh` - Builds and tests distribution
 3. GitHub Actions workflow for automated releases on tag push
 
 ## Release Checklist Template
