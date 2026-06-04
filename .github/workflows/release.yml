@@ -41,7 +41,7 @@ jobs:
 
       - name: Verify version matches setup.py
         run: |
-          SETUP_VERSION=$(python -c "import ast; tree=ast.parse(open('setup.py').read()); print([node.value.s for node in ast.walk(tree) if isinstance(node, ast.Assign) and any(isinstance(t, ast.Name) and t.id == 'version' for t in node.targets)][0])")
+          SETUP_VERSION=$(python -c "import ast; tree=ast.parse(open('setup.py').read()); print(next(ast.literal_eval(kw.value) for node in ast.walk(tree) if isinstance(node, ast.Call) and getattr(node.func, 'id', '') == 'setup' for kw in node.keywords if kw.arg == 'version'))")
           TAG_VERSION=${{ steps.get_version.outputs.VERSION }}
           if [ "$SETUP_VERSION" != "$TAG_VERSION" ]; then
             echo "Version mismatch: setup.py has $SETUP_VERSION, tag is $TAG_VERSION"
@@ -99,8 +99,8 @@ jobs:
           ```
 
           ### Documentation
-          - [User Guide](https://github.com/REPO/blob/main/docs/user/LitAssist_User_Guide.md)
-          - [Installation Guide](https://github.com/REPO/blob/main/INSTALLATION.md)
+          - [User Guide](https://github.com/REPO/blob/master/docs/user/LitAssist_User_Guide.md)
+          - [Installation Guide](https://github.com/REPO/blob/master/INSTALLATION.md)
           EOF
 
           # Replace placeholders

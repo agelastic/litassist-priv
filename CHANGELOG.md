@@ -1,6 +1,6 @@
 # Changelog
 
-Last updated: 03/06/2026
+Last updated: 04/06/2026
 
 All notable changes to LitAssist will be documented in this file.
 
@@ -10,6 +10,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 Historical dated sections preserve the model names that were current when those changes shipped. Current model assignments are defined in `litassist/llm/model_configs.yaml`.
 
 ## [Unreleased]
+
+## [3.0.0] - 2026-06-04
+
+Major release. Breaking changes (see end of this section). 298 commits since v2.0.0.
 
 ### Added
 - `updatefacts` command: folds source documents (digest/extractfacts output or any text) into the 10-heading case_facts structure, updating an existing case-facts file (auto-resolved from the latest `case_facts*.txt`, or set with `--facts`) or creating one from scratch, with an extra Notes section for material that does not fit a heading. Writes a fresh, auto-discoverable `case_facts_<timestamp>.txt` into the working directory, removing the manual copy-to-`case_facts.txt` step. Uses a cheap merge model (`google/gemini-3.5-flash`).
@@ -154,32 +158,6 @@ Historical dated sections preserve the model names that were current when those 
 - Raw pre-verification output persistence for audit trail compliance
 - All 392 tests passing
 
-#### October 2025: Major Model Upgrade - Three-Tier Strategy Implementation
-- **Implemented three-tier model strategy** for optimal accuracy and cost-efficiency:
-  - Tier 1: GPT-5 Pro for critical verification (<1% hallucination rate)
-  - Tier 2: GPT-5.1 for fast verification (1.4% hallucination rate)
-  - Tier 3: Claude Sonnet 4.5 for legal reasoning (state-of-the-art for litigation)
-- **Upgraded 20+ commands** to new models based on June-October 2025 releases:
-  - Claude Opus 4.1 → Claude Sonnet 4.5 (14 commands, 80% cost reduction)
-  - Claude Sonnet 4 → Claude Sonnet 4.5 (6 commands, improved reasoning)
-  - New GPT-5 Pro implementation (3 critical verification commands)
-  - New GPT-5.1 implementation (2 standard verification commands)
-  - Grok 3 → Grok 4 (unorthodox brainstorming upgrade)
-- **Expected impact**: 40-50% overall cost reduction while improving quality
-- **Key improvements**:
-  - Superior legal reasoning: "state of the art on complex litigation tasks"
-  - Enhanced accuracy: <1.6% hallucination rate on all verification
-  - Extended thinking mode for complex multi-step analysis
-  - Preserved old configurations as comments for rollback capability
-- All 407 unit tests passing with updated model configurations
-- Comprehensive documentation updates across README, user guide, and dev docs
-
-#### Previous Changes
-- Removed pattern-based citation validation in favor of online verification only
-- Improved verification system with increased token limits
-- Standardized CLI flags to use --context across all commands
-- Enhanced prompt template system with centralized YAML management
-
 ### Fixed
 
 #### June 2026: brainstorm/strategy pipeline fixes
@@ -236,14 +214,64 @@ Historical dated sections preserve the model names that were current when those 
 - `citation_context.py` URL trust filters switched from substring matching (`.gov.au` in link, `austlii.edu.au` in link) to the shared parsed-hostname helper. Hostnames like `austlii.edu.au.attacker.invalid` are now rejected.
 - Note: downstream `verify`/`brainstorm` runs will surface more "unverified" citations under the new existence checks. This is the intended outcome; placeholders should replace any unverifiable references.
 
+### Security
+- No security vulnerabilities reported
+
+### Breaking Changes
+- RAG/Pinecone pipeline removed: `draft` is now a single full-context call (no retrieve-then-generate); oversize inputs fail with a `digest --mode summary <file>` pointer instead of being retrieved.
+- `draft --diversity` flag removed.
+- Config keys removed (existing `config.yaml` must be updated): the entire `pinecone.*` block, the `openai:` block (`openai.api_key`, `openai.embedding_model`), `general.rag_max_chars`, and `llm.use_token_limits` / `llm.token_limit`.
+- Dependency `pinecone-client==2.2.4` removed; `litassist test` no longer probes Pinecone.
+- No-op `--verify` flag removed from `extractfacts` and `strategy` (verification stays auto-enabled; use `--noverify` to skip).
+- Default command output extension changed from `.txt` to `.md`; canonical case-facts file is now `case_facts.md` (legacy `case_facts*.txt` still auto-resolves on read).
+- Direct OpenAI configuration removed; all LLM calls route through OpenRouter (provider BYOK for models like `openai/o3-pro` is configured at OpenRouter).
+
+### Upgrading from v2.0.0
+- Edit `config.yaml`: delete the `pinecone.*` and `openai:` blocks, `general.rag_max_chars`, and `llm.use_token_limits`/`llm.token_limit`.
+- Remove any use of `draft --diversity` and the no-op `--verify` on `extractfacts`/`strategy` (use `--noverify` to skip verification).
+- For oversize `draft` inputs, pre-summarise with `litassist digest --mode summary <file>`.
+- Configure provider BYOK (e.g. `openai/o3-pro`) at OpenRouter, not in this project's config.
+- Scripts that hardcode `.txt` output names: outputs are now `.md` (reading legacy `.txt` case-facts still works).
+
+## [2.0.0] - 2025-10-26
+
+> Backfilled 2026-06-04: v2.0.0 was originally a lightweight git tag (placed on an unrelated commit) and never received a CHANGELOG entry. The items below are reconstructed from the changes that shipped between v1.0.0 and the v2.0.0 tag.
+
+### Changed
+
+#### October 2025: Major Model Upgrade - Three-Tier Strategy Implementation
+- **Implemented three-tier model strategy** for optimal accuracy and cost-efficiency:
+  - Tier 1: GPT-5 Pro for critical verification (<1% hallucination rate)
+  - Tier 2: GPT-5.1 for fast verification (1.4% hallucination rate)
+  - Tier 3: Claude Sonnet 4.5 for legal reasoning (state-of-the-art for litigation)
+- **Upgraded 20+ commands** to new models based on June-October 2025 releases:
+  - Claude Opus 4.1 → Claude Sonnet 4.5 (14 commands, 80% cost reduction)
+  - Claude Sonnet 4 → Claude Sonnet 4.5 (6 commands, improved reasoning)
+  - New GPT-5 Pro implementation (3 critical verification commands)
+  - New GPT-5.1 implementation (2 standard verification commands)
+  - Grok 3 → Grok 4 (unorthodox brainstorming upgrade)
+- **Expected impact**: 40-50% overall cost reduction while improving quality
+- **Key improvements**:
+  - Superior legal reasoning: "state of the art on complex litigation tasks"
+  - Enhanced accuracy: <1.6% hallucination rate on all verification
+  - Extended thinking mode for complex multi-step analysis
+  - Preserved old configurations as comments for rollback capability
+- All 407 unit tests passing with updated model configurations
+- Comprehensive documentation updates across README, user guide, and dev docs
+
+#### Previous Changes
+- Removed pattern-based citation validation in favor of online verification only
+- Improved verification system with increased token limits
+- Standardized CLI flags to use --context across all commands
+- Enhanced prompt template system with centralized YAML management
+
+### Fixed
+
 #### Previous fixes
 - Citation verification no longer flags valid NSW tribunal citations
 - Brainstorm command streaming API errors resolved
 - Barbrief command progress indicator issues fixed
 - Verification system now preserves full document content
-
-### Security
-- No security vulnerabilities reported
 
 ## [1.0.0] - 2025-01-23
 

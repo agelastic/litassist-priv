@@ -15,6 +15,7 @@ NC='\033[0m' # No Color
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_ROOT="$(cd "$SCRIPT_DIR/../.." && pwd)"
 SETUP_PY="$PROJECT_ROOT/setup.py"
+INIT_PY="$PROJECT_ROOT/litassist/__init__.py"
 CHANGELOG="$PROJECT_ROOT/CHANGELOG.md"
 
 # Functions
@@ -35,15 +36,15 @@ error() {
 }
 
 success() {
-    echo -e "${GREEN}✓ $1${NC}"
+    echo -e "${GREEN}[OK] $1${NC}"
 }
 
 info() {
-    echo -e "${BLUE}→ $1${NC}"
+    echo -e "${BLUE}[INFO] $1${NC}"
 }
 
 warning() {
-    echo -e "${YELLOW}⚠ $1${NC}"
+    echo -e "${YELLOW}[WARN] $1${NC}"
 }
 
 validate_version() {
@@ -126,6 +127,29 @@ update_version() {
             sed -i "s/version=[\"'][^\"']*[\"']/version=\"$version\"/" "$SETUP_PY"
         fi
         success "Updated version in setup.py"
+    fi
+
+    info "Updating __version__ in litassist/__init__.py to $version"
+
+    if [[ ! -f "$INIT_PY" ]]; then
+        error "litassist/__init__.py not found at: $INIT_PY"
+    fi
+
+    # Check if __version__ line exists
+    if ! grep -q '__version__' "$INIT_PY"; then
+        error "No __version__ line found in litassist/__init__.py"
+    fi
+
+    if [[ "$DRY_RUN" == "true" ]]; then
+        echo "[DRY RUN] Would update __version__ in litassist/__init__.py to $version"
+    else
+        # Update __version__ - compatible with both macOS and Linux
+        if [[ "$OSTYPE" == "darwin"* ]]; then
+            sed -i '' "s/__version__ = [\"'][^\"']*[\"']/__version__ = \"$version\"/" "$INIT_PY"
+        else
+            sed -i "s/__version__ = [\"'][^\"']*[\"']/__version__ = \"$version\"/" "$INIT_PY"
+        fi
+        success "Updated __version__ in litassist/__init__.py"
     fi
 }
 

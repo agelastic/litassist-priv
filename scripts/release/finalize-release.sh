@@ -25,26 +25,32 @@ print_usage() {
     echo "Options:"
     echo "  -h, --help     Show this help message"
     echo "  -d, --dry-run  Show what would be done without making changes"
-    echo "  -f, --force    Force push (use with caution)"
+    echo "  -p, --push     Push the branch and tag to origin (default: off)"
+    echo "  -f, --force    Force push the branch (only takes effect with --push)"
+    echo ""
+    echo "By default this script works locally only: it creates the release"
+    echo "commit and annotated tag but does NOT push anything. It prints the"
+    echo "exact 'git push' commands for you to run. Pass --push to push."
     echo ""
     echo "Example: $0 1.2.3"
+    echo "Example: $0 --push 1.2.3"
 }
 
 error() {
-    echo -e "${RED}ERROR: $1${NC}" >&2
+    echo -e "${RED}[FAIL] $1${NC}" >&2
     exit 1
 }
 
 success() {
-    echo -e "${GREEN}✓ $1${NC}"
+    echo -e "${GREEN}[OK] $1${NC}"
 }
 
 info() {
-    echo -e "${BLUE}→ $1${NC}"
+    echo -e "${BLUE}-> $1${NC}"
 }
 
 warning() {
-    echo -e "${YELLOW}⚠ $1${NC}"
+    echo -e "${YELLOW}[WARN] $1${NC}"
 }
 
 verify_release_branch() {
@@ -160,7 +166,7 @@ generate_tag_message() {
         python3 "$RELEASE_NOTES_SCRIPT" "$version" --format tag 2>/dev/null || echo "See CHANGELOG.md for details"
     else
         # Fallback: simple extraction
-        awk "/## \[$version\]/,/## \[/" "$CHANGELOG" | tail -n +2 | head -n -1 || echo "See CHANGELOG.md for details"
+        awk "/## \[$version\]/,/## \[/" "$CHANGELOG" | tail -n +2 | sed '$d' || echo "See CHANGELOG.md for details"
     fi
 }
 
@@ -169,14 +175,27 @@ push_branch_and_tag() {
     local branch_name="release/v${version}"
     local tag_name="v${version}"
     local force_flag=""
-    
+
     if [[ "${FORCE_PUSH:-false}" == "true" ]]; then
         force_flag="--force"
+    fi
+
+    # Pushing is opt-in. Without --push, do nothing remote: just print the
+    # exact commands so the user can push manually when ready.
+    if [[ "${PUSH:-false}" != "true" ]]; then
+        info "Push disabled (default). Branch and tag remain local."
+        echo "To push when ready, run:"
+        echo "    git push origin $branch_name $force_flag"
+        echo "    git push origin $tag_name"
+        return
+    fi
+
+    if [[ "${FORCE_PUSH:-false}" == "true" ]]; then
         warning "Force push enabled"
     fi
-    
+
     info "Pushing branch and tag to origin..."
-    
+
     if [[ "$DRY_RUN" == "true" ]]; then
         echo "[DRY RUN] Would push branch: git push origin $branch_name $force_flag"
         echo "[DRY RUN] Would push tag: git push origin $tag_name"
@@ -187,7 +206,7 @@ push_branch_and_tag() {
         else
             error "Failed to push branch"
         fi
-        
+
         # Push tag
         if git push origin "$tag_name"; then
             success "Pushed tag: $tag_name"
@@ -225,7 +244,7 @@ generate_fallback_release_notes() {
 
 ### What's Changed
 
-$(awk "/## \[$version\]/,/## \[/" "$CHANGELOG" | tail -n +2 | head -n -1)
+$(awk "/## \[$version\]/,/## \[/" "$CHANGELOG" | tail -n +2 | sed '$d')
 
 ### Installation
 
@@ -252,11 +271,11 @@ display_next_steps() {
     echo -e "${GREEN}Release finalized successfully!${NC}"
     echo ""
     echo "Next steps:"
-    echo "1. Go to: https://github.com/YOUR-ORG/litassist/compare/main...release/v${version}"
+    echo "1. Go to: https://github.com/agelastic/litassist-priv/compare/master...release/v${version}"
     echo "2. Create Pull Request with title: 'Release v${version}'"
     echo "3. Add description from: github_release_notes_${version}.md"
     echo "4. Get PR reviewed and merged"
-    echo "5. Go to: https://github.com/YOUR-ORG/litassist/releases/new"
+    echo "5. Go to: https://github.com/agelastic/litassist-priv/releases/new"
     echo "6. Select tag: v${version}"
     echo "7. Title: 'LitAssist v${version}'"
     echo "8. Copy description from: github_release_notes_${version}.md"
@@ -272,6 +291,7 @@ display_next_steps() {
 # Main script
 DRY_RUN=false
 FORCE_PUSH=false
+PUSH=false
 
 # Parse arguments
 while [[ $# -gt 0 ]]; do
@@ -282,6 +302,10 @@ while [[ $# -gt 0 ]]; do
             ;;
         -d|--dry-run)
             DRY_RUN=true
+            shift
+            ;;
+        -p|--push)
+            PUSH=true
             shift
             ;;
         -f|--force)

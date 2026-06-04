@@ -6,4 +6,4 @@ litigation tasks such as case-law lookup, document analysis, legal strategy
 ideation, fact extraction, and citation-rich drafting.
 """
 
-__version__ = "1.0.0"
+__version__ = "3.0.0"
