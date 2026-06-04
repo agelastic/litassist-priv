@@ -355,13 +355,13 @@ facts - no drift, no silent omission, no invented specifics beyond the existing
 - Extend `litassist/verification_chain.py`, reusing the multi-stage pipeline
   pattern of `run_cove_verification()`
 - Load the `--sources` files through the existing supplied-file path
-  (`utils/file_ops.py:read_document()` plus an `expand_glob_*` callback, as
-  `draft` already does via `commands/draft/document_processor.py`) - these are
+  (`litassist/utils/file_ops.py:read_document()` plus an `expand_glob_*` callback, as
+  `draft` already does via `litassist/commands/draft/document_processor.py`) - these are
   the documents claims are checked against. Optionally pull cited-authority
   context via `citation_context.py:fetch_citation_context()` as a secondary
   source, but it is not the primary `--sources` loader
 - New flag: `la verify --input draft.md --faithfulness --sources case_facts.md`
-- New prompt keys under `prompts/verification.yaml` (e.g. `claim_extraction`,
+- New prompt keys under `litassist/prompts/verification.yaml` (e.g. `claim_extraction`,
   `faithfulness_alignment`)
 - LLM: Claude Sonnet 4.6 (claim extraction) + GPT-5.5 (cross-check)
 - Output: Per-claim table + faithfulness score + flagged sections
@@ -395,8 +395,8 @@ regression eval - not per-document verification.
 - Judge LLM: GPT-5.5 (or a small panel)
 - Manual real-API script (incurs cost), consistent with the `test-scripts/`
   convention - **NOT** in the offline pytest suite
-- Reuse `LLMClientFactory.for_command()` for routing and `logging_utils.py` for
-  the audit trail
+- Reuse `LLMClientFactory.for_command()` for routing and the `litassist/logging/`
+  package for the audit trail
 - Optional later surface: `la verify --judge` for single-doc rubric scoring
 
 ---
@@ -431,7 +431,7 @@ regression eval - not per-document verification.
 4. Calculate TIS score: Recency + Treatment
 
 **Implementation:**
-- Extend `citation/verify.py` with TIS module
+- Extend `litassist/citation/verify.py` with TIS module
 - New module: `litassist/citation/temporal.py`
 - Commands:
   - `la verify --input legal_memo.md --tis --threshold 70`
@@ -461,7 +461,7 @@ regression eval - not per-document verification.
   - Currency (not overruled, from P1-13 TIS)
 
 **Implementation:**
-- Extend `citation/verify.py`
+- Extend `litassist/citation/verify.py`
 - Scrape via Google CSE + JADE/AustLII
 - Output: Valid/Invalid + corrections + integrity score
 
@@ -481,7 +481,7 @@ regression eval - not per-document verification.
 - Contribute to citation integrity score (see P3-19)
 
 **Implementation:**
-- Extend `citation/verify.py`
+- Extend `litassist/citation/verify.py`
 - AGLC 4th edition rules
 - Output: Format corrections + AGLC compliance score component
 
@@ -500,7 +500,7 @@ regression eval - not per-document verification.
 - Choose canonical by policy
 
 **Implementation:**
-- Extend `citation/verify.py`
+- Extend `litassist/citation/verify.py`
 - Two-provider verification via Google CSE + scraping
 - Output: Concordance report
 
@@ -577,7 +577,7 @@ submissions**, not just court filings.
 - Pass/fail signal
 
 **Implementation:**
-- Enhance existing `utils/file_ops.py:read_document()`
+- Enhance existing `litassist/utils/file_ops.py:read_document()`
 - Add OCR support
 - Output: Extracted text + quality report
 
@@ -1047,7 +1047,7 @@ checker), not a re-introduced retrieval pipeline.
 **Status:** Complete
 
 **Implementation:**
-- Glob expansion centralised in `utils/file_ops.py`
+- Glob expansion centralised in `litassist/utils/file_ops.py`
 - `extractfacts`, `digest`, `draft`, and `counselnotes` route their FILE
   arguments through `expand_glob_patterns_callback`, matching `brainstorm`
   and `barbrief`
