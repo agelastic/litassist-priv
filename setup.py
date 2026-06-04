@@ -30,7 +30,7 @@ def read_requirements():
 
 setup(
     name="litassist",
-    version="1.0.0",
+    version="3.0.0",
     author="LitAssist Project",
     description="AI-powered litigation support for Australian law",
     long_description=read_readme(),
