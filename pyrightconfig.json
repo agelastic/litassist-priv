@@ -15,6 +15,11 @@
 
   "include": ["litassist", "tests"],
   "exclude": [
+    // pyright drops its built-in default excludes once a custom list is given;
+    // re-add them so node_modules and dotfile dirs (.git, .mypy_cache, ...) stay
+    // out of the typed surface.
+    "**/node_modules",
+    "**/.*",
     "**/__pycache__",
     ".venv",
     // test-scripts/ and scripts/ are ad-hoc integration probes and one-off
