@@ -3,6 +3,7 @@ Pytest configuration and shared fixtures for LitAssist tests.
 """
 
 import pytest
+import tiktoken
 from unittest.mock import Mock, patch
 import tempfile
 from pathlib import Path
@@ -26,6 +27,25 @@ config_module.CONFIG = mock_config
 sys.modules["litassist.config"] = config_module
 
 # Mock fixtures for external services
+
+
+@pytest.fixture(autouse=True)
+def _offline_tiktoken(monkeypatch):
+    """Keep tiktoken offline in tests.
+
+    Real tiktoken.get_encoding("cl100k_base") downloads a ~1.7MB BPE vocab over
+    the network on first use (~2.5s) and caches it to <tempdir>/data-gym-cache.
+    That breaks the offline-tests contract and surfaces as a one-off slow outlier
+    on whichever test first calls count_tokens_and_words. A fake encoder whose
+    encode() length tracks word count removes the network entirely; no test
+    depends on exact token counts.
+    """
+
+    class _FakeEncoding:
+        def encode(self, text):
+            return text.split()
+
+    monkeypatch.setattr(tiktoken, "get_encoding", lambda _name: _FakeEncoding())
 
 
 @pytest.fixture
