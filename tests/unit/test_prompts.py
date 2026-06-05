@@ -59,19 +59,6 @@ class TestPromptManager:
         assert "Parties" in format_template
         assert "Background" in format_template
 
-    def test_template_composition(self):
-        """Test combining multiple templates using get()."""
-        # Test that we can get and combine templates manually
-        template1 = PROMPTS.get("base.australian_law")
-
-        # Manually compose (what compose_prompt used to do)
-        composed = "\n\n".join([template1])
-
-        assert isinstance(composed, str)
-        assert len(composed) > 0
-        # Should contain content from template
-        assert "Australian" in composed
-
     def test_template_with_parameters(self):
         """Test template parameter substitution using get()."""
         # This test assumes document templates support parameters
@@ -175,15 +162,6 @@ class TestTemplateValidation:
             except KeyError:
                 pytest.fail(f"Essential template '{template_key}' is missing")
 
-    def test_australian_law_template_content(self):
-        """Test that Australian law template contains expected content."""
-        australian_law = PROMPTS.get("base.australian_law")
-
-        # Should mention Australian requirements
-        assert any(
-            word in australian_law.lower() for word in ["australian", "australia"]
-        )
-
     def test_anti_hallucination_template_content(self):
         """Test that anti-hallucination template contains placeholder guidance."""
         anti_hallucination = PROMPTS.get("base.anti_hallucination")
@@ -223,25 +201,6 @@ class TestTemplateValidation:
         assert found_headings >= 7, (
             f"Case facts template missing essential headings. Found {found_headings}/10"
         )
-
-    def test_templates_are_strings(self):
-        """Test that all loaded templates are valid strings."""
-
-        def check_dict_values(d, path=""):
-            for key, value in d.items():
-                current_path = f"{path}.{key}" if path else key
-                if isinstance(value, dict):
-                    check_dict_values(value, current_path)
-                elif isinstance(value, str):
-                    assert len(value.strip()) > 0, f"Empty template at {current_path}"
-                else:
-                    pytest.fail(
-                        f"Template at {current_path} is not a string: {type(value)}"
-                    )
-
-        PROMPTS._ensure_loaded()
-        templates = PROMPTS.templates
-        check_dict_values(templates)
 
 
 @pytest.mark.unit

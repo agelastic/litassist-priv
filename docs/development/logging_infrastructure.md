@@ -1,12 +1,16 @@
 # LitAssist Logging Infrastructure Documentation
 
-Last updated: 31/05/2026
+Last updated: 05/06/2026
 
 ## Overview
 
 The litassist codebase implements a comprehensive structured logging system using the `log_task_event` function to track all stages of command execution, including file I/O, LLM interactions, and processing stages. This provides complete visibility into command execution for debugging, auditing, and performance monitoring.
 
 **Location**: `litassist/logging/task_events.py` (public API via `litassist/logging/__init__.py`)
+
+### Log directory resolution
+
+`save_log` resolves its target directory per call via `get_log_dir()` (in `litassist/logging/__init__.py`): it honours `LITASSIST_LOG_DIR` if set, otherwise `logs/` under the current working directory. Resolving at call time (rather than freezing the directory at import) keeps audit files inside whatever cwd the process is running in. This mirrors `save_command_output`'s `LITASSIST_OUTPUT_DIR` handling, so a caseplan runner or a test that isolates a run can redirect audit logs the same way it redirects outputs. The lookup fetcher's debug artefacts (`cse_snippets_*.txt`, `fetched_*.html`) use the same resolver. The `setup_logging` console/file logger (`litassist_*.log`) also honours `LITASSIST_LOG_DIR` as an override when no explicit `log_dir` is passed, falling back to its package-relative `logs/` default when the env var is unset (so production behaviour is unchanged).
 
 ### Filename uniqueness (microsecond-resolution timestamps)
 

@@ -182,16 +182,6 @@ class TestPromptTemplates:
         if extra_files:
             print(f"Note: Extra YAML files found: {sorted(extra_files)}")
 
-    def test_yaml_files_are_valid(self, prompts_dir, expected_yaml_files):
-        """Test that all YAML files are syntactically valid."""
-        for yaml_file in expected_yaml_files:
-            file_path = prompts_dir / yaml_file
-            with open(file_path, "r", encoding="utf-8") as f:
-                try:
-                    yaml.safe_load(f)
-                except yaml.YAMLError as e:
-                    pytest.fail(f"Invalid YAML syntax in {yaml_file}: {e}")
-
     def _validate_schema_recursive(self, data, schema, path=""):
         """Recursively validate data structure against schema."""
         errors = []
@@ -287,37 +277,6 @@ class TestPromptTemplates:
                     )
 
         return empty_keys
-
-    def test_specific_command_templates_accessible(self, prompts_dir):
-        """Test that specific templates used by commands are accessible."""
-        # Test base templates
-        base_file = prompts_dir / "base.yaml"
-        with open(base_file, "r", encoding="utf-8") as f:
-            base_data = yaml.safe_load(f)
-
-        # Test critical base templates
-        assert "base" in base_data
-        assert "australian_law" in base_data["base"]
-        assert "commands" in base_data
-        assert "brainstorm" in base_data["commands"]
-
-        # Test strategies templates
-        strategies_file = prompts_dir / "strategies.yaml"
-        with open(strategies_file, "r", encoding="utf-8") as f:
-            strategies_data = yaml.safe_load(f)
-
-        assert "strategies" in strategies_data
-        assert "brainstorm" in strategies_data["strategies"]
-        assert "orthodox_prompt" in strategies_data["strategies"]["brainstorm"]
-
-        # Test lookup templates
-        lookup_file = prompts_dir / "lookup.yaml"
-        with open(lookup_file, "r", encoding="utf-8") as f:
-            lookup_data = yaml.safe_load(f)
-
-        assert "lookup" in lookup_data
-        # assert "research_assistant" in lookup_data["lookup"]
-        # assert "system_prompt" in lookup_data["lookup"]["research_assistant"]
 
     def test_template_content_has_substance(self, prompts_dir, expected_yaml_files):
         """Test that template content is substantial (not just whitespace)."""

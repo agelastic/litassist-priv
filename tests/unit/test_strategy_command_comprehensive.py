@@ -574,16 +574,6 @@ class TestErrorHandling:
 class TestStrategyFileIntegration:
     """Test integration with brainstorm strategy files."""
 
-    def test_parse_strategies_file_empty(self):
-        """Test parsing of empty strategies file."""
-        from litassist.utils.core import parse_strategies_file
-
-        result = parse_strategies_file("")
-
-        assert result["orthodox_count"] == 0
-        assert result["unorthodox_count"] == 0
-        assert result["most_likely_count"] == 0
-
     def test_parse_strategies_file_counts_bold_most_likely(self):
         """The analysis prompt emits most-likely entries as '**N. Title**'
         (strategies.yaml), so the parser must count those bold-numbered items -

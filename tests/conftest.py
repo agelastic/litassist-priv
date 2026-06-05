@@ -3,7 +3,6 @@ Pytest configuration and shared fixtures for LitAssist tests.
 """
 
 import pytest
-import tiktoken
 from unittest.mock import Mock, patch
 import tempfile
 from pathlib import Path
@@ -39,13 +38,36 @@ def _offline_tiktoken(monkeypatch):
     on whichever test first calls count_tokens_and_words. A fake encoder whose
     encode() length tracks word count removes the network entirely; no test
     depends on exact token counts.
+
+    Imported lazily so the suite can still be collected without tiktoken
+    installed - count_tokens_and_words treats it as optional (word-count
+    fallback), and tests must not be stricter than production.
     """
+    try:
+        import tiktoken
+    except ImportError:
+        return
 
     class _FakeEncoding:
         def encode(self, text):
             return text.split()
 
     monkeypatch.setattr(tiktoken, "get_encoding", lambda _name: _FakeEncoding())
+
+
+@pytest.fixture(autouse=True)
+def _isolate_audit_logs(monkeypatch, tmp_path):
+    """Redirect audit logs to a per-test temp dir so the suite never writes into
+    the repo's logs/.
+
+    save_log and the lookup debug writers resolve their target via get_log_dir()
+    (litassist/logging/__init__.py), which honours LITASSIST_LOG_DIR else
+    os.getcwd()/logs. Without this, any test that logs without chdir'ing leaks
+    audit files into the repository's logs/ dir. tmp_path is unique per test and
+    auto-cleaned. Tests that need a specific log dir set their own
+    LITASSIST_LOG_DIR inside the test, which overrides this default.
+    """
+    monkeypatch.setenv("LITASSIST_LOG_DIR", str(tmp_path / "logs"))
 
 
 @pytest.fixture

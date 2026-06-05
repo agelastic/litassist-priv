@@ -19,7 +19,7 @@ from litassist.utils.formatting import (
     verifying_message,
     tip_message,
 )
-from litassist.logging import LOG_DIR
+from litassist.logging import get_log_dir
 from litassist.llm.factory import LLMClientFactory
 from litassist.citation.trust import is_trusted_legal_host
 from litassist.prompts import PROMPTS
@@ -223,16 +223,17 @@ class LookupProcessor:
         timestamp = time.strftime("%Y%m%d-%H%M%S")
         sub_second = f"{time.monotonic_ns() % 1_000_000_000:09d}"
         domain = link.split("/")[2].replace(".", "_")
+        log_dir = get_log_dir()
 
         # Check if it's PDF content for appropriate file naming
         if content.startswith("[PDF DOCUMENT EXTRACTED"):
             log_file = os.path.join(
-                LOG_DIR,
+                log_dir,
                 f"pdf_extracted_{domain}_{timestamp}_{sub_second}.txt",
             )
         else:
             log_file = os.path.join(
-                LOG_DIR, f"fetched_{domain}_{timestamp}_{sub_second}.html"
+                log_dir, f"fetched_{domain}_{timestamp}_{sub_second}.html"
             )
 
         with open(log_file, "w", encoding="utf-8") as f:

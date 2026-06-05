@@ -32,12 +32,18 @@ from .markdown_writers import (
 
 
 #    Directory Setup
-# Use current working directory for logs and outputs when running as global command
-WORKING_DIR = os.getcwd()
-LOG_DIR = os.path.join(WORKING_DIR, "logs")
-OUTPUT_DIR = os.path.join(WORKING_DIR, "outputs")
-os.makedirs(LOG_DIR, exist_ok=True)
-os.makedirs(OUTPUT_DIR, exist_ok=True)
+def get_log_dir() -> str:
+    """Resolve the audit-log directory at call time.
+
+    Honour an explicit LITASSIST_LOG_DIR (lets a caseplan runner or a test isolate
+    a run), else logs/ under the current working directory. Resolving per-call -
+    not once at import - keeps audit files inside whatever cwd the process is in,
+    so a test that chdir's to a temp dir no longer leaks logs into the repo's logs/.
+    Symmetric with save_command_output's LITASSIST_OUTPUT_DIR handling.
+    """
+    log_dir = os.environ.get("LITASSIST_LOG_DIR") or os.path.join(os.getcwd(), "logs")
+    os.makedirs(log_dir, exist_ok=True)
+    return log_dir
 
 
 #    Main Logging Function
@@ -77,9 +83,12 @@ def save_log(tag: str, payload: dict):
         config = get_config()
         log_format = config.log_format if config else "json"
 
+    # Resolve the log directory per-call (honours cwd / LITASSIST_LOG_DIR)
+    log_dir = get_log_dir()
+
     # JSON logging
     if log_format == "json":
-        path = os.path.join(LOG_DIR, f"{tag}_{ts}.json")
+        path = os.path.join(log_dir, f"{tag}_{ts}.json")
         try:
             # Sanitize payload for JSON serialization (handle Mock objects)
             sanitized_payload = sanitize_for_json(payload)
@@ -97,7 +106,7 @@ def save_log(tag: str, payload: dict):
         return
 
     # Markdown logging with intelligent template selection
-    md_path = os.path.join(LOG_DIR, f"{tag}_{ts}.md")
+    md_path = os.path.join(log_dir, f"{tag}_{ts}.md")
     try:
         with open(md_path, "w", encoding="utf-8") as f:
             # Detect log type and use appropriate formatter

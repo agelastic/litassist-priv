@@ -8,6 +8,7 @@ raises "RuntimeError: reentrant call inside BufferedWriter".
 """
 
 import logging
+import os
 
 import pytest
 
@@ -39,3 +40,33 @@ def test_setup_logging_silences_noisy_third_party_loggers(tmp_path, restore_root
             f"{name} must be >= WARNING so its DEBUG output never reaches "
             "litassist's log file (prevents the pdfminer reentrant-flush crash)"
         )
+
+
+def test_setup_logging_falls_back_when_log_dir_unwritable(
+    monkeypatch, tmp_path, restore_root_logging
+):
+    """A read-only primary log dir must not crash startup.
+
+    When litassist is installed into a read-only location and no LITASSIST_LOG_DIR
+    is set, makedirs on the default dir raises PermissionError. setup_logging must
+    fall back to a writable location instead of crashing the CLI on startup.
+    """
+    primary = tmp_path / "readonly_logs"
+    monkeypatch.setenv("LITASSIST_LOG_DIR", str(primary))
+    monkeypatch.chdir(tmp_path)  # so the cwd/logs fallback lands under tmp
+
+    import litassist.logging.config as cfg
+
+    real_makedirs = os.makedirs
+
+    def fake_makedirs(path, *args, **kwargs):
+        if os.path.realpath(path) == os.path.realpath(str(primary)):
+            raise PermissionError("read-only location")
+        return real_makedirs(path, *args, **kwargs)
+
+    monkeypatch.setattr(cfg.os, "makedirs", fake_makedirs)
+
+    log_file = setup_logging(verbose=False)  # must not raise
+
+    assert os.path.isdir(os.path.dirname(log_file))
+    assert os.path.realpath(str(primary)) != os.path.realpath(os.path.dirname(log_file))
