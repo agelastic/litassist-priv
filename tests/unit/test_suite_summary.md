@@ -1,154 +1,93 @@
-# Comprehensive Test Suite Summary
+# LitAssist Unit Test Suite
 
-Last updated: 28/05/2026
+Last updated: 05/06/2026
 
 ## Overview
 
-Added **50+ comprehensive pytest test cases** covering the most critical functionality in the LitAssist codebase. All tests are designed to run offline using mocked dependencies.
+The unit suite in `tests/unit/` exercises LitAssist's critical paths. As of the
+date above it is **532 tests across 61 files**. Per the project testing policy,
+every test runs **offline with mocked dependencies** - no real API calls. The
+"integration" tests are still offline, mocked interactions. Real-API checks live in
+`test-scripts/` and are run manually (they incur cost).
 
-## Test Files Created
+This document describes how the suite is organised by area. It intentionally does
+NOT enumerate per-file test counts: those go stale on every change. For an exact
+current count run `pytest tests/unit --collect-only -q`.
 
-### 1. `test_strategy_command_comprehensive.py` (28 tests)
-
-**What they test:**
-- Case facts validation with various formatting scenarios
-- Legal issues extraction from case facts
-- Strategy generation with LLM integration
-- Integration with brainstorm strategy files
-- Document type selection logic
-- Error handling for LLM failures and file size limits
-- Citation validation warnings
-- Reasoning trace consolidation
-- Enhanced mode functionality
-
-**Key test classes:**
-- `TestCaseFactsValidation` (7 tests) - Validates the 10-heading case facts structure
-- `TestLegalIssuesExtraction` (6 tests) - Tests extraction of legal issues from case facts
-- `TestStrategyGeneration` (4 tests) - Core strategy generation functionality
-- `TestReasoningTrace` (2 tests) - Reasoning trace creation
-- `TestDocumentTypeSelection` (3 tests) - Document type logic based on outcomes
-- `TestErrorHandling` (3 tests) - Error scenarios and recovery
-- `TestStrategyFileIntegration` (3 tests) - Integration with brainstorm command output
-
-### 2. `test_draft_command_comprehensive.py` (18 tests)
-
-**What they test:**
-- Document generation for different legal document types
-- Template handling for statements of claim, affidavits, applications
-- Case facts validation integration
-- Enhanced document generation
-- Citation validation in generated documents
-- Error handling for invalid inputs
-- File size limit validation
-- LLM failure recovery
-
-**Key test classes:**
-- `TestDraftCommand` (5 tests) - Core draft command functionality
-- `TestDocumentTemplates` (3 tests) - Template validation and structure
-- `TestDraftValidation` (2 tests) - Input validation logic
-- `TestDraftErrorHandling` (2 tests) - Error scenarios
-- `TestDraftIntegration` (6 tests) - Integration scenarios and advanced features
-
-### 3. `test_llm_integration_comprehensive.py` (25 tests)
-
-**What they test:**
-- LLM client factory pattern for different command types
-- OpenRouter API integration and error handling
-- Citation validation and pattern matching
-- Reasoning trace extraction and formatting
-- Rate limiting and authentication error handling
-- Prompt system integration
-- Auto-verification logic
-- Different verification levels
-
-**Key test classes:**
-- `TestLLMClientFactory` (4 tests) - Factory pattern for LLM clients
-- `TestLLMClient` (6 tests) - Core LLM client functionality
-- `TestCitationValidation` (2 tests) - Citation pattern matching and validation
-- `TestReasoningTraceExtraction` (6 tests) - Reasoning trace processing
-- `TestLLMErrorHandling` (4 tests) - API error scenarios
-- `TestPromptIntegration` (2 tests) - Prompt system integration
-
-## Test Coverage Areas
-
-### Core Functionality
-✅ **Strategy generation** - Complete workflow from case facts to strategic options  
-✅ **Document drafting** - Legal document generation with templates  
-✅ **LLM integration** - API calls, error handling, response processing  
-✅ **Citation validation** - Pattern matching and verification  
-✅ **Reasoning traces** - Extraction, formatting, and consolidation  
-
-### Input Validation
-✅ **Case facts structure** - 10-heading validation with flexible formatting  
-✅ **File size limits** - Protection against token limit issues  
-✅ **Document type validation** - Valid legal document types  
-✅ **Legal issues extraction** - Various formatting scenarios  
-
-### Error Handling
-✅ **LLM API errors** - Rate limits, authentication, token limits  
-✅ **File processing errors** - Invalid files, missing content  
-✅ **Citation validation warnings** - Invalid citation detection  
-✅ **Fallback scenarios** - Graceful degradation  
-
-### Integration Scenarios
-✅ **Advanced features** - Enhanced functionality with specialized models  
-✅ **Verification workflows** - Auto-verification and manual verification  
-✅ **Strategy file integration** - Brainstorm command output processing  
-✅ **Multi-option generation** - Complex strategy generation workflows  
-
-## Test Quality Features
-
-### Comprehensive Mocking
-- All external dependencies mocked (OpenRouter API, file I/O, etc.)
-- Tests run completely offline
-- Consistent mock patterns across test files
-
-### Realistic Test Data
-- Valid Australian legal case facts structures
-- Real citation formats and patterns
-- Authentic legal document templates
-- Representative error scenarios
-
-### Edge Case Coverage
-- Missing required headings in case facts
-- Empty or whitespace-only content
-- Various citation formats and invalid citations
-- Different error conditions and recovery paths
-
-### Integration Testing
-- End-to-end command workflows
-- Cross-component interactions
-- Advanced vs standard mode differences
-- File processing pipelines
-
-## Running the Tests
+## Running
 
 ```bash
-# Run all comprehensive tests
-pytest tests/unit/test_*_comprehensive.py -v
+# Full unit suite
+pytest tests/unit -q
 
-# Run specific test file
-pytest tests/unit/test_strategy_command_comprehensive.py -v
+# A single area / file
+pytest tests/unit/test_model_parameters.py -q
 
-# Run with coverage
-pytest tests/unit/test_*_comprehensive.py --cov=litassist
+# Slowest tests (find outliers)
+pytest tests/unit --durations=10
 
-# Run only fast tests (offline)
-pytest tests/unit/test_*_comprehensive.py -m "offline" -v
+# Coverage
+pytest tests/unit --cov=litassist
 ```
 
-## Test Results Summary
+## Coverage areas
 
-- **Strategy Command**: 23/28 tests passing (5 failing due to complex mocking scenarios)
-- **Draft Command**: Expected to have high pass rate once imports fixed
-- **LLM Integration**: Expected high pass rate with proper mocking
+### Commands (CLI end-to-end, mocked LLM)
+`test_barbrief`, `test_brainstorm_internals`, `test_brainstorm_verification`,
+`test_caseplan`, `test_caseplan_command_extractor`, `test_counselnotes_basic`,
+`test_digest_command`, `test_draft_command_comprehensive`, `test_extractfacts_command`,
+`test_refresh_command`, `test_strategy_command_comprehensive`, `test_updatefacts_command`,
+`test_verify_command`, `test_verify_cove_command`, `test_cli_command`,
+`test_cli_command_loading`, `test_command_parameters`, `test_comprehensive_pipeline`.
+These drive the Click commands via `CliRunner` and assert exit codes, output, and
+call wiring with all external services mocked.
 
-The failing strategy tests are primarily due to complex LLM interaction patterns that require more sophisticated mocking, but the core functionality tests are passing.
+### LLM and model layer
+`test_llm_client_factory`, `test_llm_complete`, `test_llm_retry_logic`,
+`test_llm_client_streaming_retry`, `test_llm_integration_comprehensive`,
+`test_model_parameters`, `test_model_config_integrity`, `test_model_config_sampling`,
+`test_thinking_effort`, `test_provider_prefix`, `test_heavy_flag`. Per-model-family
+parameter mapping (Claude / Gemini / OpenAI reasoning / Grok), retry/backoff on
+transient errors, and command-to-model configuration.
 
-## Benefits
+### Lookup and content fetching
+`test_lookup_command`, `test_lookup_context_split`, `test_lookup_gibberish_heuristic`,
+`test_lookup_jina_challenge_detection`, `test_lookup_austlii_pdf_substitution`,
+`test_lookup_rtf_extraction`, `test_lookup_processor_fetch_messages`,
+`test_fetcher_review_fixes`. Google CSE search handling, fetch/OCR fallbacks,
+Cloudflare-challenge detection, and document extraction.
 
-1. **Regression Protection** - Comprehensive coverage prevents breaking changes
-2. **Refactoring Safety** - Tests enable safe code improvements
-3. **Documentation** - Tests serve as examples of proper usage
-4. **Quality Assurance** - Validates edge cases and error handling
-5. **Development Speed** - Fast feedback loop for changes
+### Citation and verification
+`test_citation_trust`, `test_citation_verification_simple`,
+`test_citation_context_failure_reason`, `test_verification`, `test_cove_regeneration`,
+`test_format_cove_report_none_handling`, `test_noverify_flag`. Citation
+trust/verification, auto-verify risk detection, and the Chain-of-Verification path.
+
+### Case facts
+`test_case_facts_validator`, `test_case_facts_autoselect`. The 10-heading
+case-facts format validator and latest-file auto-selection.
+
+### Prompts (YAML)
+`test_prompts`, `test_prompt_templates`, `test_prompt_validation`,
+`test_yaml_prompt_validation`. YAML parses, required keys exist, no empty values,
+and the no-emoji policy across the prompt corpus.
+
+### Logging, output and utilities
+`test_logging_config`, `test_log_filename_collision`, `test_fetch_audit_log_fidelity`,
+`test_output_saver`, `test_utils_comprehensive`, `test_utils_additional`,
+`test_real_functionality`, `test_derived_size_caps`. Log-directory resolution and
+filename collisions, output saving (`LITASSIST_OUTPUT_DIR` isolation), and core
+text/chunking utilities.
+
+### Config and file selection
+`test_config_validation`, `test_glob_single`, `test_glob_newest_each`.
+Configuration precedence/validation and glob-callback file selection.
+
+## Conventions
+
+- Shared fixtures and the global config mock live in `tests/conftest.py`; an autouse
+  fixture redirects `LITASSIST_LOG_DIR` to a per-test temp dir so the suite never
+  writes audit logs into the repo's `logs/`.
+- Keep tests behavioural. Avoid framework-only assertions (mocking the function
+  under test), tautologies, and duplicate coverage of the same path across files.
+- ASCII only - no emoji anywhere in the repo, including this file.

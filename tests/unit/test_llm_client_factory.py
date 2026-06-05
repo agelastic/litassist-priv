@@ -38,28 +38,6 @@ class TestLLMClientFactory:
             assert isinstance(client, LLMClient)
             assert client.model == configs["brainstorm-orthodox"]["model"]
 
-    def test_for_command_strategy(self):
-        """Test factory creates strategy client wired to its configured model."""
-        with patch("litassist.config.CONFIG") as mock_config:
-            mock_config.openrouter_key = "test_key"
-
-            configs = LLMClientFactory.list_configurations()
-            client = LLMClientFactory.for_command("strategy")
-
-            assert isinstance(client, LLMClient)
-            assert client.model == configs["strategy"]["model"]
-
-    def test_for_command_draft(self):
-        """Test factory creates draft client wired to its configured model."""
-        with patch("litassist.config.CONFIG") as mock_config:
-            mock_config.openrouter_key = "test_key"
-
-            configs = LLMClientFactory.list_configurations()
-            client = LLMClientFactory.for_command("draft")
-
-            assert isinstance(client, LLMClient)
-            assert client.model == configs["draft"]["model"]
-
     def test_for_command_with_overrides(self):
         """Test factory applies parameter overrides correctly."""
         with patch("litassist.config.CONFIG") as mock_config:

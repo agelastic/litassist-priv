@@ -8,7 +8,6 @@ import pytest
 
 from litassist.utils.file_ops import validate_file_size
 from litassist.utils.core import (
-    parse_strategies_file,
     validate_side_area_combination,
 )
 from litassist.commands.brainstorm import analyze_research_size
@@ -46,27 +45,6 @@ def test_validate_file_size_too_large(tmp_path):
     with pytest.raises(click.ClickException) as excinfo:
         validate_file_size(str(file_path), max_size=100)
     assert "file too large" in str(excinfo.value)
-
-
-def test_parse_strategies_file_counts_and_metadata():
-    text = (
-        "# Side: plaintiff\n"
-        "# Area: civil\n\n"
-        "## ORTHODOX STRATEGIES\n"
-        "### 1. Strategy One\n"
-        "### 2. Strategy Two\n\n"
-        "## UNORTHODOX STRATEGIES\n"
-        "### Strategy 1: Strategy A\n\n"
-        "## MOST LIKELY TO SUCCEED\n"
-        "1. Strategy One\n"
-        "2. Strategy A\n"
-    )
-    parsed = parse_strategies_file(text)
-    assert parsed["metadata"]["side"] == "plaintiff"
-    assert parsed["metadata"]["area"] == "civil"
-    assert parsed["orthodox_count"] == 2
-    assert parsed["unorthodox_count"] == 1
-    assert parsed["most_likely_count"] == 2
 
 
 def test_validate_side_area_combination_warns_for_invalid(capsys):

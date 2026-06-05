@@ -48,6 +48,21 @@ def _offline_tiktoken(monkeypatch):
     monkeypatch.setattr(tiktoken, "get_encoding", lambda _name: _FakeEncoding())
 
 
+@pytest.fixture(autouse=True)
+def _isolate_audit_logs(monkeypatch, tmp_path):
+    """Redirect audit logs to a per-test temp dir so the suite never writes into
+    the repo's logs/.
+
+    save_log and the lookup debug writers resolve their target via get_log_dir()
+    (litassist/logging/__init__.py), which honours LITASSIST_LOG_DIR else
+    os.getcwd()/logs. Without this, any test that logs without chdir'ing leaks
+    audit files into the repository's logs/ dir. tmp_path is unique per test and
+    auto-cleaned. Tests that need a specific log dir set their own
+    LITASSIST_LOG_DIR inside the test, which overrides this default.
+    """
+    monkeypatch.setenv("LITASSIST_LOG_DIR", str(tmp_path / "logs"))
+
+
 @pytest.fixture
 def mock_llm_client():
     """Mock LLMClient for command tests."""

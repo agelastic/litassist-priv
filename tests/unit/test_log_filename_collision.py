@@ -12,6 +12,7 @@ Fix: microsecond-resolution timestamps via datetime.now().strftime(
 """
 
 import json
+import os
 from unittest.mock import MagicMock, patch
 
 from litassist.logging import save_log
@@ -26,7 +27,7 @@ def _save(tag, payload):
 
 class TestLogFilenameCollision:
     def test_two_save_log_calls_same_second_both_persist(self, tmp_path):
-        with patch("litassist.logging.LOG_DIR", str(tmp_path)):
+        with patch.dict(os.environ, {"LITASSIST_LOG_DIR": str(tmp_path)}):
             _save("collision_regression", {"call": "first", "data": "curl_cffi failure"})
             _save("collision_regression", {"call": "second", "data": "jina failure"})
 

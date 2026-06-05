@@ -20,9 +20,14 @@ def setup_logging(verbose: bool = False, log_dir: str = None) -> str:
     Returns:
         Path to the created log file
     """
-    # Use provided log_dir or default
+    # Use provided log_dir, else an explicit LITASSIST_LOG_DIR override (honoured
+    # by save_log/save_command_output too, so a caseplan runner or test can
+    # isolate a run), else the package-relative logs/ default. When the env var
+    # is unset, production behaviour is unchanged.
     if log_dir is None:
-        log_dir = os.path.join(os.path.dirname(os.path.dirname(__file__)), "..", "logs")
+        log_dir = os.environ.get("LITASSIST_LOG_DIR") or os.path.join(
+            os.path.dirname(os.path.dirname(__file__)), "..", "logs"
+        )
 
     os.makedirs(log_dir, exist_ok=True)
 

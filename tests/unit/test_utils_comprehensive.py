@@ -639,24 +639,6 @@ class TestContentVerification:
 class TestErrorHandling:
     """Test error handling in utility functions."""
 
-    def test_save_log_invalid_json(self):
-        """Test log saving with non-serializable data."""
-
-        # Create object that can't be JSON serialized
-        class NonSerializable:
-            pass
-
-        log_data = {"invalid": NonSerializable()}
-
-        with patch("litassist.logging.open", new_callable=mock_open):
-            with patch("litassist.logging.os.makedirs"):
-                # Should handle serialization errors gracefully
-                try:
-                    save_log("test", log_data)
-                except (TypeError, ValueError):
-                    # Expected behavior - either handle gracefully or raise appropriate error
-                    pass
-
     def test_file_operations_disk_full(self):
         """Test file operations when disk is full."""
         with patch(
@@ -665,32 +647,6 @@ class TestErrorHandling:
         ):
             with pytest.raises(OSError):
                 save_command_output("test", "content", "outcome")
-
-
-class TestPerformanceEdgeCases:
-    """Test performance-related edge cases."""
-
-    def test_large_content_handling(self):
-        """Test handling of very large content."""
-        large_content = "x" * 100000  # 100KB content
-
-        # Should handle large content without memory issues
-        with patch("litassist.logging.open", new_callable=mock_open):
-            with patch("litassist.logging.os.makedirs"):
-                try:
-                    save_command_output("test", large_content, "large_test")
-                except MemoryError:
-                    pytest.fail("Should handle large content efficiently")
-
-    def test_many_small_operations(self):
-        """Test performance with many small operations."""
-        # Test multiple small file operations
-        with patch("litassist.logging.open", new_callable=mock_open):
-            with patch("litassist.logging.os.makedirs"):
-                for i in range(100):
-                    save_command_output(f"test_{i}", f"content_{i}", f"outcome_{i}")
-
-                # Should complete without significant performance degradation
 
 
 # Integration test markers

@@ -12,7 +12,7 @@ import logging
 import time
 from litassist.config import get_config
 from litassist.utils.formatting import info_message
-from litassist.logging import LOG_DIR, log_task_event
+from litassist.logging import get_log_dir, log_task_event
 
 # Suppress Google API cache warning
 os.environ["GOOGLE_API_USE_CLIENT_CERTIFICATE"] = "false"
@@ -180,7 +180,7 @@ def _save_search_snippets(all_snippets, question, context, comprehensive):
     timestamp = time.strftime("%Y%m%d-%H%M%S")
     sub_second = f"{time.monotonic_ns() % 1_000_000_000:09d}"
     snippet_file = os.path.join(
-        LOG_DIR, f"cse_snippets_{timestamp}_{sub_second}.txt"
+        get_log_dir(), f"cse_snippets_{timestamp}_{sub_second}.txt"
     )
     with open(snippet_file, "w", encoding="utf-8") as f:
         f.write(f"Query: {question}\n")
