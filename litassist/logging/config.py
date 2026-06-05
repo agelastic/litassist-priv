@@ -6,6 +6,7 @@ Handles setup of file and console logging with appropriate formatters.
 
 import os
 import time
+import tempfile
 import logging
 
 
@@ -29,7 +30,32 @@ def setup_logging(verbose: bool = False, log_dir: str = None) -> str:
             os.path.dirname(os.path.dirname(__file__)), "..", "logs"
         )
 
-    os.makedirs(log_dir, exist_ok=True)
+    # Resolve a writable log directory. If the primary location is read-only
+    # (e.g. a system-wide install with no LITASSIST_LOG_DIR set), fall back to the
+    # caller's cwd and then the system temp dir so the CLI never crashes on
+    # startup merely because it cannot create its default log directory.
+    primary = log_dir
+    for candidate in (
+        primary,
+        os.path.join(os.getcwd(), "logs"),
+        os.path.join(tempfile.gettempdir(), "litassist-logs"),
+    ):
+        try:
+            os.makedirs(candidate, exist_ok=True)
+        except OSError:
+            continue
+        if candidate != primary:
+            logging.warning(
+                "Log directory %r is not writable; falling back to %r",
+                primary,
+                candidate,
+            )
+        log_dir = candidate
+        break
+    else:
+        # Nothing (not even the temp dir) was writable - re-raise on the primary
+        # so the failure is loud rather than silently producing a bad path.
+        os.makedirs(primary, exist_ok=True)
 
     # Create timestamped log file
     timestamp = time.strftime("%Y%m%d_%H%M%S")
