@@ -70,3 +70,29 @@ def test_setup_logging_falls_back_when_log_dir_unwritable(
 
     assert os.path.isdir(os.path.dirname(log_file))
     assert os.path.realpath(str(primary)) != os.path.realpath(os.path.dirname(log_file))
+
+
+def test_setup_logging_falls_back_when_existing_dir_readonly(
+    monkeypatch, tmp_path, restore_root_logging
+):
+    """An existing read-only log dir passes makedirs(exist_ok=True) but fails when
+    the file handler opens. setup_logging must detect this (by opening the target
+    file) and fall back, not crash.
+    """
+    if hasattr(os, "geteuid") and os.geteuid() == 0:
+        pytest.skip("root bypasses directory write permissions")
+
+    primary = tmp_path / "existing_ro_logs"
+    primary.mkdir()  # already exists...
+    os.chmod(primary, 0o555)  # ...but is read-only, so makedirs is a no-op success
+    monkeypatch.setenv("LITASSIST_LOG_DIR", str(primary))
+    monkeypatch.chdir(tmp_path)  # writable cwd/logs fallback
+
+    try:
+        log_file = setup_logging(verbose=False)  # must not raise
+        assert os.path.exists(log_file)
+        assert os.path.realpath(str(primary)) != os.path.realpath(
+            os.path.dirname(log_file)
+        )
+    finally:
+        os.chmod(primary, 0o755)  # restore so tmp_path cleanup can remove it

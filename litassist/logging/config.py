@@ -30,18 +30,25 @@ def setup_logging(verbose: bool = False, log_dir: str = None) -> str:
             os.path.dirname(os.path.dirname(__file__)), "..", "logs"
         )
 
-    # Resolve a writable log directory. If the primary location is read-only
-    # (e.g. a system-wide install with no LITASSIST_LOG_DIR set), fall back to the
-    # caller's cwd and then the system temp dir so the CLI never crashes on
-    # startup merely because it cannot create its default log directory.
+    # Resolve a writable log file. makedirs(exist_ok=True) succeeds for an existing
+    # but read-only directory, so creating the dir is not enough - we open the
+    # target file (exactly what the FileHandler does) to confirm it is writable.
+    # If the primary location is read-only (e.g. a system-wide install with no
+    # LITASSIST_LOG_DIR set), fall back to the caller's cwd and then the system
+    # temp dir so the CLI never crashes on startup over its log location.
+    timestamp = time.strftime("%Y%m%d_%H%M%S")
     primary = log_dir
+    log_file = None
     for candidate in (
         primary,
         os.path.join(os.getcwd(), "logs"),
         os.path.join(tempfile.gettempdir(), "litassist-logs"),
     ):
+        candidate_file = os.path.join(candidate, f"litassist_{timestamp}.log")
         try:
             os.makedirs(candidate, exist_ok=True)
+            # Append-open confirms write access without truncating an existing log.
+            open(candidate_file, "a", encoding="utf-8").close()
         except OSError:
             continue
         if candidate != primary:
@@ -50,16 +57,13 @@ def setup_logging(verbose: bool = False, log_dir: str = None) -> str:
                 primary,
                 candidate,
             )
-        log_dir = candidate
+        log_file = candidate_file
         break
     else:
         # Nothing (not even the temp dir) was writable - re-raise on the primary
         # so the failure is loud rather than silently producing a bad path.
         os.makedirs(primary, exist_ok=True)
-
-    # Create timestamped log file
-    timestamp = time.strftime("%Y%m%d_%H%M%S")
-    log_file = os.path.join(log_dir, f"litassist_{timestamp}.log")
+        log_file = os.path.join(primary, f"litassist_{timestamp}.log")
 
     # Clear any existing handlers
     root_logger = logging.getLogger()
