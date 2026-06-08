@@ -30,9 +30,9 @@
 #
 # Usage
 #   Run from the repo root (needs config.yaml + the `litassist` CLI on PATH):
-#     ./test-scripts/test_matter_type_spotcheck.sh           # default matrix (7 command runs)
-#     ./test-scripts/test_matter_type_spotcheck.sh -q        # quick (3 command runs: strategy + warning)
-#     ./test-scripts/test_matter_type_spotcheck.sh -a        # all framing commands (11 command runs)
+#     ./test-scripts/test_matter_type_spotcheck.sh           # default matrix (9 command runs)
+#     ./test-scripts/test_matter_type_spotcheck.sh -q        # quick (5 command runs: strategy pair + ambiguous pair + warning)
+#     ./test-scripts/test_matter_type_spotcheck.sh -a        # all framing commands (13 command runs)
 #     ./test-scripts/test_matter_type_spotcheck.sh -y        # skip the cost confirmation
 #
 # Cost
@@ -44,8 +44,9 @@
 #   complete(). On top of that, each complete() may add its own citation-check
 #   work, and
 #   citation checks make paid Google CSE calls. So the true paid-call count is
-#   well above the command count - the full matrix is 20+ LLM calls plus citation
-#   lookups. Budget for that, not for the command count.
+#   well above the command count - the full matrix is 35+ LLM calls plus citation
+#   lookups (5 strategy runs alone fan out to ~20). Budget for that, not for the
+#   command count.
 
 set -uo pipefail   # NOT -e: a slow/failed command must not abort the whole run.
 
@@ -135,6 +136,65 @@ CIVIL="$WORK/facts_civil.md"
 NONE="$WORK/facts_absent.md"
 OUTCOME="Obtain a refund of overcharged costs and a conduct finding"
 
+# --- ambiguous fixture: the posture-ISOLATION test --------------------------
+# The fixtures above are CONFOUNDED: their facts already name the OLSC /
+# Commissioner / Uniform Law, so the model frames for the regulator regardless
+# of the Matter type line. This fixture describes the SAME kind of fee dispute
+# with NO forum tells in the body (no OLSC, Commissioner, "complaint", Uniform
+# Law, "unsatisfactory professional conduct"), so the Matter type line is the
+# ONLY signal pointing at a forum. The outcome is neutral too ("recover the
+# overcharge", not "a conduct finding"). This is the run that actually measures
+# whether the POSTURE - not the facts - steers the framing.
+cat > "$WORK/facts_ambiguous_civil.md" <<'EOF'
+# Matter Extraction
+
+## 1. Parties:
+Former client and a New South Wales law practice (the former solicitor)
+
+## 2. Background:
+The client retained the practice for earlier legal work and was billed
+professional fees the client considers excessive. The client wants the
+overcharged amount returned.
+
+## 3. Key Events:
+Tax invoices were rendered over the course of the retainer. The client queried
+the quantum of the fees; the practice declined to reduce them.
+
+## 4. Legal Issues:
+Whether the fees charged were fair and reasonable; whether the client was
+overcharged.
+
+## 5. Evidence Available:
+Tax invoices, the costs agreement, and email correspondence about the fees.
+
+## 6. Opposing Arguments:
+The practice maintains that the fees were properly incurred and reasonable.
+
+## 7. Procedural History:
+No proceedings have been commenced and no external process has begun.
+
+## 8. Jurisdiction:
+Matter type: civil
+New South Wales
+
+## 9. Applicable Law:
+The principles governing solicitor-client costs in New South Wales, including
+the requirement that legal costs be fair and reasonable, and the terms of the
+costs agreement.
+
+## 10. Client Objectives:
+A refund of the amount overcharged on the legal fees.
+EOF
+
+# One-line diff: the disciplinary variant differs ONLY in the Matter type line.
+sed 's/^Matter type: civil$/Matter type: disciplinary/' \
+    "$WORK/facts_ambiguous_civil.md" > "$WORK/facts_ambiguous_disc.md"
+
+AMBIG_CIVIL="$WORK/facts_ambiguous_civil.md"
+AMBIG_DISC="$WORK/facts_ambiguous_disc.md"
+# Neutral outcome - "conduct finding" would itself steer the disciplinary framing.
+AMBIG_OUTCOME="Recover the amount overcharged on the legal fees"
+
 # --- signal lexicons (heuristic only) ---------------------------------------
 # Forum tells. Deliberately exclude bare 'plaintiff/defendant/register' (too noisy)
 # and keep the litigation-forum signatures that the assessment actually saw misfire.
@@ -181,9 +241,9 @@ run_cmd() {
 
 # --- cost gate --------------------------------------------------------------
 case "$MODE" in
-  quick)   N_CMDS=3 ;;
-  default) N_CMDS=7 ;;
-  all)     N_CMDS=11 ;;
+  quick)   N_CMDS=5 ;;
+  default) N_CMDS=9 ;;
+  all)     N_CMDS=13 ;;
 esac
 print_header() {
   echo -e "${BLUE}============================================================${NC}"
@@ -196,7 +256,8 @@ warn "This makes REAL, PAID LLM calls and each command takes several minutes."
 warn "Each of the ${N_CMDS} command runs fans out to SEVERAL LLM calls internally"
 warn "(brainstorm alone = orthodox + unorthodox + analysis + a verification pass)"
 warn "plus paid Google CSE citation checks - so the true paid-call count is well"
-warn "above ${N_CMDS}; the full matrix is 20+ LLM calls. Budget for that."
+warn "above ${N_CMDS}; the full matrix is 35+ LLM calls (5 strategy runs alone"
+warn "fan out to ~20). Budget for that."
 if (( ! ASSUME_YES )); then
   read -r -p "Type RUN to proceed: " confirm
   [[ "$confirm" == "RUN" ]] || { echo "Aborted."; exit 0; }
@@ -223,6 +284,15 @@ elif grep -qiF "assuming 'civil'" "$WORK/strategy-absent.stdout.log"; then
 else
   err "  FAIL: expected \"assuming 'civil'\" warning not found - the warn-on-absent path is broken."
 fi
+
+# Posture-isolation pair: identical forum-NEUTRAL facts, only the Matter type
+# line differs, and a neutral outcome. Unlike the explicit pair above (whose
+# facts name the regulator and so confound the comparison), any divergence here
+# is attributable to the posture alone. Always run - this is the sharpest test.
+run_cmd "strategy-ambiguous-disciplinary" disciplinary \
+  litassist strategy "$AMBIG_DISC" --outcome "$AMBIG_OUTCOME"
+run_cmd "strategy-ambiguous-civil" civil \
+  litassist strategy "$AMBIG_CIVIL" --outcome "$AMBIG_OUTCOME"
 
 if [[ "$MODE" != "quick" ]]; then
   # barbrief: original failure was an invented Supreme Court listing.
