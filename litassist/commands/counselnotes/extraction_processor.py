@@ -17,7 +17,8 @@ def process_extraction_mode(
     extract: str,
     verify: bool,
     client,
-    comprehensive_log: Dict
+    comprehensive_log: Dict,
+    matter_posture: str = "",
 ) -> List[str]:
     """
     Process structured extraction mode.
@@ -36,6 +37,10 @@ def process_extraction_mode(
         click.ClickException: If LLM processing fails
     """
     extraction_results = []
+
+    system_prompt = PROMPTS.get("processing.counselnotes.system_prompt")
+    if matter_posture:
+        system_prompt = matter_posture + "\n\n" + system_prompt
 
     with click.progressbar(
         chunks, label="Extracting structured data"
@@ -60,12 +65,7 @@ def process_extraction_mode(
             try:
                 content, usage = client.complete(
                     [
-                        {
-                            "role": "system",
-                            "content": PROMPTS.get(
-                                "processing.counselnotes.system_prompt"
-                            ),
-                        },
+                        {"role": "system", "content": system_prompt},
                         {"role": "user", "content": extraction_prompt},
                     ]
                 )
@@ -114,7 +114,7 @@ def process_extraction_mode(
 
 
 def consolidate_extraction_results(
-    results: List[str], verify: bool, client
+    results: List[str], verify: bool, client, matter_posture: str = ""
 ) -> Tuple[str, Dict]:
     """
     Consolidate multiple chunk extractions into one final response via an LLM
@@ -158,15 +158,14 @@ def consolidate_extraction_results(
     except Exception:
         pass
 
+    system_prompt = PROMPTS.get("processing.counselnotes.system_prompt")
+    if matter_posture:
+        system_prompt = matter_posture + "\n\n" + system_prompt
+
     try:
         final_content, final_usage = client.complete(
             [
-                {
-                    "role": "system",
-                    "content": PROMPTS.get(
-                        "processing.counselnotes.system_prompt"
-                    ),
-                },
+                {"role": "system", "content": system_prompt},
                 {"role": "user", "content": consolidation_prompt},
             ]
         )

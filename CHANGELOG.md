@@ -1,6 +1,6 @@
 # Changelog
 
-Last updated: 04/06/2026
+Last updated: 08/06/2026
 
 All notable changes to LitAssist will be documented in this file.
 
@@ -10,6 +10,26 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 Historical dated sections preserve the model names that were current when those changes shipped. Current model assignments are defined in `litassist/llm/model_configs.yaml`.
 
 ## [Unreleased]
+
+### Added
+- Matter-type-aware prompts (Phase 1). `case_facts` now carries a `Matter type:` line
+  under the Jurisdiction heading (proposed by `extractfacts`, preserved by `updatefacts`).
+  The framing commands (`barbrief`, `strategy`, `brainstorm`, `caseplan`) read it and prepend
+  a matter-type "posture" (forum / document archetype / process / remedies / what-to-avoid)
+  to their system prompt, so a regulatory/disciplinary complaint, FOI matter, criminal,
+  family, etc. is framed for the right forum instead of defaulting to court litigation.
+  New `litassist/prompts/matter_types.yaml` holds one posture per type
+  (civil/criminal/family/commercial/disciplinary/foi/administrative). `counselnotes` (which
+  takes arbitrary files, not `case_facts`) gains an optional `--matter-type` flag;
+  `brainstorm --side` gains `complainant`. When the line is absent/unknown the commands
+  assume `civil` and warn - existing matters are unaffected (no hard gate). Motivated by the
+  complaints tool-assessment.
+
+### Fixed
+- `strategy`/`barbrief` no longer reject `extractfacts` headings that carry parenthetical
+  qualifiers (e.g. "Key Events (Chronological)"); the 10-heading validator tolerates them.
+- `lookup` and `digest` prompts now instruct the model to verify statutory section numbers
+  against the supplied sources (and flag unverified ones), reducing definitional-section drift.
 
 ## [3.0.0] - 2026-06-04
 

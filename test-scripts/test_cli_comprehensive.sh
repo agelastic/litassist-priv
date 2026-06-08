@@ -336,6 +336,7 @@ Procedural History:
 - 15 September 2024: Matter listed for hearing
 
 Jurisdiction:
+Matter type: civil
 District Court of New South Wales, Sydney Registry. Jurisdiction established under District Court Act 1973 (NSW) for personal injury claims up to $750,000. Venue appropriate as incident occurred within Sydney metropolitan area.
 
 Applicable Law:
@@ -593,9 +594,9 @@ test_verify_command() {
 test_counselnotes_command() {
     print_section "Testing COUNSELNOTES Command"
 
-    # All switches: --extract all (broadest extraction mode) + --verify + --output.
-    run_test "Counselnotes - All switches (extract all, verify, output)" \
-        "litassist counselnotes test_inputs/mock_case_facts.txt --extract all --verify --output test_output" \
+    # All switches: --extract all (broadest extraction mode) + --matter-type + --verify + --output.
+    run_test "Counselnotes - All switches (extract all, matter-type, verify, output)" \
+        "litassist counselnotes test_inputs/mock_case_facts.txt --extract all --matter-type disciplinary --verify --output test_output" \
         "Counsel notes generation complete" \
         "yes"
 }

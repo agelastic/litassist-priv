@@ -99,7 +99,7 @@ capabilities:
     Outputs: Comprehensive strategy options with risk assessments and implementation notes
     Strategic Use: Explores full range of possibilities before committing to approach
     Options:
-      --side: plaintiff, defendant, accused, respondent (REQUIRED) | Specify which party you represent
+      --side: plaintiff, defendant, accused, respondent, complainant (REQUIRED) | Specify which party you represent (complainant = regulatory/FOI complaints)
       --area: criminal, civil, family, commercial, administrative (REQUIRED) | Define the legal jurisdiction/area
       --facts: [file(s)] | Structured case facts file(s) to analyze (default: case_facts.md, supports glob)
       --research: [file(s)] | Include lookup reports for precedent-backed strategies (supports glob)
@@ -143,6 +143,7 @@ capabilities:
     Strategic Use: CRITICAL for synthesis - transforms information into actionable intelligence
     Options:
       --extract: all, citations, principles, checklist | Generate structured JSON output for workflows
+      --matter-type: civil, criminal, family, commercial, disciplinary, foi, administrative | Posture framing (counselnotes has no case_facts to read it from); defaults to civil with a warning if omitted
       --verify: (flag) | Enable real-time citation verification against Jade.io database
       --output: [string] | Custom filename prefix for output files (default: counselnotes)
     Best Practices:

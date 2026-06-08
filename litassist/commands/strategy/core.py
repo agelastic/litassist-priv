@@ -28,12 +28,17 @@ from litassist.utils.formatting import (
     stats_message,
     info_message,
     tip_message,
+    warning_message,
     format_citation_warnings,
 )
 from litassist.llm.factory import LLMClientFactory
 from litassist.prompts import PROMPTS
 from litassist.logging import log_task_event, save_command_output
-from litassist.utils.case_facts import resolve_case_facts_file
+from litassist.utils.case_facts import (
+    resolve_case_facts_file,
+    resolve_matter_type,
+    matter_type_posture,
+)
 
 from .validators import validate_case_facts_format, extract_legal_issues
 from .ranker import create_consolidated_reasoning_trace
@@ -110,6 +115,12 @@ def strategy(case_facts, outcome, strategies, heavy, noverify, output):
             "Case facts file must follow the required 10-heading structure. Run 'litassist extractfacts' first."
         )
 
+    # Matter-type posture: default civil with a warning when absent/unknown
+    # (Phase 1 - no hard gate).
+    matter_type, mt_warning = resolve_matter_type(case_text)
+    if mt_warning:
+        click.echo(warning_message(mt_warning))
+
     # Extract legal issues
     click.echo(info_message("Extracting legal issues..."))
     legal_issues = extract_legal_issues(case_text)
@@ -185,7 +196,11 @@ def strategy(case_facts, outcome, strategies, heavy, noverify, output):
     except Exception:
         pass
     click.echo(info_message("Generating strategic options..."))
-    system_prompt = PROMPTS.get("commands.strategy.system")
+    system_prompt = (
+        matter_type_posture(matter_type)
+        + "\n\n"
+        + PROMPTS.get("commands.strategy.system")
+    )
 
     # Enhance prompt if strategies are provided
     if parsed_strategies and parsed_strategies["most_likely_count"] > 0:
@@ -322,7 +337,6 @@ def strategy(case_facts, outcome, strategies, heavy, noverify, output):
 
     # Warn if both --noverify and --heavy are specified
     if noverify and heavy:
-        from litassist.utils.formatting import warning_message
         click.echo(warning_message("--heavy flag ignored when --noverify is specified"))
 
     # Verification status, set by the verification block below; only consulted on

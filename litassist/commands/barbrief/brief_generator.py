@@ -16,7 +16,8 @@ from litassist.citation.verify import verify_all_citations
 def generate_brief(
     client,
     sections: Dict,
-    total_tokens: int
+    total_tokens: int,
+    matter_posture: str = "",
 ) -> Tuple[str, Dict]:
     """
     Generate barrister's brief using LLM.
@@ -25,6 +26,8 @@ def generate_brief(
         client: LLM client instance
         sections: Prepared sections dictionary
         total_tokens: Estimated total input tokens (for error messages)
+        matter_posture: Matter-type posture prepended to the system prompt
+            (empty string = no posture).
 
     Returns:
         Tuple of (content, usage)
@@ -53,8 +56,11 @@ def generate_brief(
     except Exception:
         pass
 
+    system_content = PROMPTS.get("barbrief.system")
+    if matter_posture:
+        system_content = matter_posture + "\n\n" + system_content
     messages = [
-        {"role": "system", "content": PROMPTS.get("barbrief.system")},
+        {"role": "system", "content": system_content},
         {"role": "user", "content": prompt_with_reasoning},
     ]
 

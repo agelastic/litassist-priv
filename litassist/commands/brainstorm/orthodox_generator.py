@@ -13,7 +13,11 @@ from litassist.logging import log_task_event
 
 
 def generate_orthodox_strategies(
-    facts: str, side: str, area: str, research_context: str = ""
+    facts: str,
+    side: str,
+    area: str,
+    research_context: str = "",
+    matter_posture: str = "",
 ):
     """
     Generate orthodox legal strategies.
@@ -54,11 +58,11 @@ def generate_orthodox_strategies(
     orthodox_prompt = create_reasoning_prompt(
         orthodox_base_prompt, "brainstorm-orthodox"
     )
+    orthodox_system = PROMPTS.get("commands.brainstorm.orthodox_system")
+    if matter_posture:
+        orthodox_system = matter_posture + "\n\n" + orthodox_system
     orthodox_messages = [
-        {
-            "role": "system",
-            "content": PROMPTS.get("commands.brainstorm.orthodox_system"),
-        },
+        {"role": "system", "content": orthodox_system},
         {"role": "user", "content": orthodox_prompt},
     ]
 

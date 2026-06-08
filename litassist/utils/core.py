@@ -284,7 +284,7 @@ def validate_side_area_combination(side: str, area: str):
         "civil": ["plaintiff", "defendant"],
         "family": ["plaintiff", "defendant", "respondent"],
         "commercial": ["plaintiff", "defendant"],
-        "administrative": ["plaintiff", "defendant", "respondent"],
+        "administrative": ["plaintiff", "defendant", "respondent", "complainant"],
     }
 
     if area in valid_combinations and side not in valid_combinations[area]:

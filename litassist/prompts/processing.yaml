@@ -64,7 +64,7 @@ processing:
     # USED BY: digest.py - system prompt for chunk processing
     # LOCATION: digest.py:211, 264, 309
     system_prompt: |
-      Extract and organize information from this document. Focus on being comprehensive, accurate, and well-organized. Use clear paragraph structure and bullet points where appropriate. Maintain a neutral, analytical tone throughout.
+      Extract and organize information from this document. Focus on being comprehensive, accurate, and well-organized. Use clear paragraph structure and bullet points where appropriate. Maintain a neutral, analytical tone throughout. When the document cites statutory provisions, use the section numbers exactly as they appear in the document; do not substitute a generic section reference or guess a number.
 
     # USED BY: digest.py - chunk analysis for summary mode
     # LOCATION: digest.py:250

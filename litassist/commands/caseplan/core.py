@@ -13,7 +13,11 @@ import click
 from litassist.llm.factory import LLMClientFactory
 from litassist.logging import log_task_event
 from litassist.timing import timed
-from litassist.utils.case_facts import resolve_case_facts_file
+from litassist.utils.case_facts import (
+    resolve_case_facts_file,
+    resolve_matter_type,
+    matter_type_posture,
+)
 from litassist.utils.file_ops import validate_file_size_limit
 from litassist.utils.formatting import info_message, tip_message, warning_message
 
@@ -161,9 +165,19 @@ def caseplan(case_facts, context, budget, output, verify, noverify, yes):
     except Exception:
         pass
 
+    # Matter-type posture: default civil with a warning when absent/unknown
+    # (Phase 1 - no hard gate). Resolved once before the budget branch so it
+    # reaches both the assessment and the full-plan paths.
+    matter_type, mt_warning = resolve_matter_type(facts_content)
+    if mt_warning:
+        click.echo(warning_message(mt_warning))
+    matter_posture = matter_type_posture(matter_type)
+
     if budget is None:
         # Budget assessment mode (Sonnet) - does not reference source files.
-        assess_budget(facts_content, case_facts.name, context, output)
+        assess_budget(
+            facts_content, case_facts.name, context, output, matter_posture=matter_posture
+        )
     else:
         # Full plan mode (Opus). Show the source-document inventory the plan will
         # reference, then let a human abort BEFORE the paid call if the prep is
@@ -199,6 +213,7 @@ def caseplan(case_facts, context, budget, output, verify, noverify, yes):
             budget,
             output,
             source_files=source_files,
+            matter_posture=matter_posture,
         )
 
     # Command end log

@@ -1,8 +1,10 @@
 # LitAssist Development TODO
 
-Last updated: 04/06/2026
+Last updated: 08/06/2026
 
 **Note:** Strategic feature planning (litigation support, advisory capabilities, new commands) is now in [ROADMAP.md](ROADMAP.md). This file focuses on bugs, technical debt, and code quality improvements.
+
+**In progress (08/06/2026):** Matter-type-aware prompts Phase 1 (feature branch `feat/matter-type-prompts`) - the scoped fix from the complaints assessment. See ROADMAP **P-MTYPE**. Also fixes two assessment bugs: the `extractfacts`->`strategy`/`barbrief` heading-validation mismatch (parenthetical qualifiers) and lookup/digest definitional-section citation drift. Phase 2 (hard gate, Matter Memory wiring) deferred pending observation.
 
 **Sources of truth:** command registration lives in `litassist/commands/__init__.py`; current model assignments live in `litassist/llm/model_configs.yaml`; strategic feature planning lives in `ROADMAP.md`.
 

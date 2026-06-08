@@ -36,7 +36,11 @@ from litassist.logging import (
 )
 from litassist.llm.factory import LLMClientFactory
 from litassist.prompts import PROMPTS
-from litassist.utils.case_facts import resolve_case_facts_file
+from litassist.utils.case_facts import (
+    resolve_case_facts_file,
+    resolve_matter_type,
+    matter_type_posture,
+)
 
 # Import from submodules
 from .research_handler import analyze_research_size
@@ -397,9 +401,11 @@ def verify_and_annotate_strategies(
 )
 @click.option(
     "--side",
-    type=click.Choice(["plaintiff", "defendant", "accused", "respondent"]),
+    type=click.Choice(
+        ["plaintiff", "defendant", "accused", "respondent", "complainant"]
+    ),
     required=True,
-    help="Specify which side you are representing",
+    help="Specify which side you are representing (complainant = regulatory/FOI complaints)",
 )
 @click.option(
     "--area",
@@ -497,6 +503,14 @@ def brainstorm(facts, side, area, research, verify, output):
 
     facts = combined_facts
 
+    # Matter-type posture: default civil with a warning when absent/unknown
+    # (Phase 1 - no hard gate). Posture is prepended to each generator's system
+    # message; brainstorm's --side/--area axes are unchanged.
+    matter_type, mt_warning = resolve_matter_type(facts)
+    if mt_warning:
+        click.echo(warning_message(mt_warning))
+    matter_posture = matter_type_posture(matter_type)
+
     # Check file size to prevent token limit issues. The binding consumer is the
     # analysis stage (facts + orthodox + unorthodox go to brainstorm-analysis),
     # routed to the smallest-window model in the pipeline, so size the cap against
@@ -542,7 +556,7 @@ def brainstorm(facts, side, area, research, verify, output):
     except Exception:
         pass
     orthodox_content, orthodox_usage = generate_orthodox_strategies(
-        facts, side, area, research_context
+        facts, side, area, research_context, matter_posture=matter_posture
     )
     try:
         log_task_event("brainstorm", "orthodox", "end", "Orthodox strategies generated")
@@ -557,7 +571,7 @@ def brainstorm(facts, side, area, research, verify, output):
     except Exception:
         pass
     unorthodox_content, unorthodox_usage = generate_unorthodox_strategies(
-        facts, side, area
+        facts, side, area, matter_posture=matter_posture
     )
     try:
         log_task_event(
@@ -605,7 +619,8 @@ def brainstorm(facts, side, area, research, verify, output):
     except Exception:
         pass
     analysis_content, analysis_usage = generate_analysis(
-        facts, side, area, orthodox_content, unorthodox_content
+        facts, side, area, orthodox_content, unorthodox_content,
+        matter_posture=matter_posture,
     )
     try:
         log_task_event("brainstorm", "analysis", "end", "Analysis completed")

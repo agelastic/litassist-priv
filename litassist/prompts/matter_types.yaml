@@ -1,0 +1,83 @@
+---
+# Matter-type posture fragments.
+# Each `matter_types.<type>.posture` is a block-scalar STRING prepended to the
+# system message of the framing commands (barbrief, counselnotes, brainstorm,
+# strategy, caseplan) so output is framed for the actual forum instead of
+# defaulting to court litigation. Accessed via
+# PROMPTS.get("matter_types.<type>.posture").
+#
+# Source of the matter_type value: the "Matter type:" line in case_facts
+# (litassist/prompts/formats.yaml case_facts_10_heading); commands default to
+# `civil` with a warning when it is absent or unknown. The known set is mirrored
+# in litassist/utils/case_facts.py KNOWN_MATTER_TYPES - keep the two in sync.
+#
+# Keep each posture concise (forum / document archetype / process / remedies /
+# what to avoid). Do NOT use literal { } braces (PROMPTS.get may .format()).
+
+matter_types:
+  civil:
+    posture: |
+      MATTER TYPE: civil litigation. Frame output for an Australian civil court or
+      tribunal: pleadings, evidence, interlocutory steps and hearings as relevant.
+      Remedies are court orders (damages, injunctions, declarations, costs).
+
+  criminal:
+    posture: |
+      MATTER TYPE: criminal. Frame output for Australian criminal proceedings:
+      charge, plea, case conferencing, sentencing. The forum is a criminal court;
+      the prosecuting authority (e.g. DPP) is the opponent, not a private party.
+      Outcomes are acquittal, plea negotiation, sentencing submissions, appeals.
+      Avoid civil-remedy framing (damages, injunctions) and private-party language.
+
+  family:
+    posture: |
+      MATTER TYPE: family law. Frame output for the Federal Circuit and Family
+      Court of Australia (or state equivalents): parenting and property
+      proceedings, the paramountcy of the child's best interests, financial
+      disclosure. Remedies are parenting orders, property settlement, maintenance.
+      Avoid criminal and commercial framing.
+
+  commercial:
+    posture: |
+      MATTER TYPE: commercial litigation/dispute. Frame output for Australian
+      commercial proceedings (contract, corporations, equity): remedies include
+      damages, specific performance, injunctions, account of profits, winding-up.
+      Standard civil-court process applies.
+
+  disciplinary:
+    posture: |
+      MATTER TYPE: professional-conduct / regulatory complaint to a legal-services
+      regulator (NSW Office of the Legal Services Commissioner; Qld Legal Services
+      Commission; ACT Law Society / Bar; or analogue) under the Legal Profession
+      Uniform Law or equivalent. THE FORUM IS THE COMMISSIONER, NOT A COURT.
+      Process: lodge a complaint, which is characterised as a consumer matter
+      (costs dispute) and/or a disciplinary matter (unsatisfactory professional
+      conduct / professional misconduct); the Commissioner attempts informal
+      resolution, may make a binding determination, refer for costs assessment, or
+      close the complaint. The document archetype is WRITTEN SUBMISSIONS / a
+      complaint to the Commissioner - NOT a court filing.
+      Available outcomes: costs reduction or refund, a costs-assessment referral,
+      caution or reprimand, or referral to a disciplinary tribunal (e.g. NCAT).
+      Cite the governing Act's section numbers from the supplied source - do not
+      invent them. DO NOT manufacture court process: no summons, no court rules
+      (e.g. UCPR), no directions/interlocutory hearings, no pleadings, no
+      delivery-up or declaratory relief, no "proceedings commenced". Be realistic
+      about prospects: many such complaints close without a finding against the
+      practitioner.
+
+  foi:
+    posture: |
+      MATTER TYPE: freedom-of-information / administrative review. Frame output for
+      the FOI/RTI process: an access request, the agency decision, internal review,
+      then external review by the Information Commissioner / Ombudsman or a tribunal
+      (NCAT/AAT). Remedies are release of documents, review of exemption claims, and
+      review of deemed refusals. The opponent is a government agency, not a private
+      litigant. Avoid court-litigation framing (pleadings, summons, damages).
+
+  administrative:
+    posture: |
+      MATTER TYPE: administrative law (merits or judicial review, or an agency
+      complaint). Frame output for the relevant tribunal (NCAT/AAT) or
+      decision-maker/Ombudsman: review or set-aside of an administrative decision,
+      remittal, or a recommendation. Remedies are review-based, not private-law
+      damages. Avoid private-litigation framing.

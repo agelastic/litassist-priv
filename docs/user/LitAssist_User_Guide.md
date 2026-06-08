@@ -1,6 +1,6 @@
 # LitAssist User Guide
 
-Last updated: 02/06/2026
+Last updated: 08/06/2026
 
 ## Overview
 
@@ -14,6 +14,7 @@ routed through OpenRouter.
 - **Case-law research** via Jade.io and AustLII (Google Custom Search)
 - **Document analysis** with neutral or strategic perspectives
 - **Structured fact extraction** into a standard 10-heading format
+- **Matter-type posture** carried in case facts (civil, criminal, family, commercial, disciplinary, foi, administrative) so framing commands adapt forum, remedies, and document archetype
 - **Legal strategy generation** (orthodox, unorthodox, and analytical)
 - **Citation-rich document drafting** that feeds full source documents to the model in a single call
 - **Multi-stage citation verification** including Chain of Verification (CoVe)
@@ -135,7 +136,10 @@ litassist caseplan [case_facts] [OPTIONS]
 | `--output` | text | Custom output filename prefix |
 
 When `--budget` is omitted, performs a rapid assessment and recommends a budget
-level. When specified, generates a full plan with phased command sequences.
+level. The plan also reads the `Matter type:` line in the case facts to set its
+posture, so the recommended commands and forum suit e.g. a regulatory complaint or
+FOI matter rather than defaulting to litigation. If the line is absent or
+unrecognised, caseplan assumes `civil` and warns. When specified, generates a full plan with phased command sequences.
 Each command in the plan includes a `# Switch rationale:` comment explaining
 technical choices. `--context` guides both modes.
 
@@ -246,6 +250,13 @@ The 10-heading structure covers: Parties, Background, Key Events, Legal Issues,
 Evidence Available, Opposing Arguments, Procedural History, Jurisdiction,
 Applicable Law, and Client Objectives.
 
+Under the Jurisdiction heading, extractfacts also proposes a `Matter type:` line
+(one of: civil, criminal, family, commercial, disciplinary, foi, administrative),
+classified from the source documents. Review and edit it if the classification is
+wrong: the framing commands (brainstorm, strategy, barbrief, caseplan) read it to
+set their posture. If it is missing or unrecognised, those commands assume `civil`
+and print a warning.
+
 ```bash
 # Extract facts with standard verification
 litassist extractfacts case_bundle.pdf
@@ -278,7 +289,8 @@ The `files` argument (the source material to fold in) supports glob patterns.
 
 Anything that does not fit one of the ten headings (plus the merge model's own
 observations and any source conflicts) is collected under a final **Notes**
-section. Source files are never modified; each run emits a new timestamped file.
+section. The existing `Matter type:` line under Jurisdiction is preserved across
+updates. Source files are never modified; each run emits a new timestamped file.
 
 ```bash
 # Build/refresh case facts from extractfacts and digest output
@@ -295,7 +307,11 @@ litassist updatefacts new_affidavit.pdf --facts case_facts.md
 ### brainstorm
 
 Generate comprehensive legal strategies: 15 orthodox, 15 unorthodox, analytical
-ranking, and a final 5 most promising.
+ranking, and a final 5 most promising. Reads the `Matter type:` line in the case
+facts to set its posture, so a disciplinary/regulatory complaint or an FOI matter is
+framed for the relevant commissioner or agency rather than defaulting to court
+litigation. Use `--side complainant` for regulatory and FOI matters. If the line is
+absent or unrecognised, brainstorm assumes `civil` and warns.
 
 ```bash
 litassist brainstorm [OPTIONS]
@@ -304,7 +320,7 @@ litassist brainstorm [OPTIONS]
 | Option | Type | Description |
 |--------|------|-------------|
 | `--facts` | path(s) | Facts files (glob supported). Defaults to `case_facts.md` |
-| `--side` | `plaintiff` / `defendant` / `accused` / `respondent` | Required: which side you represent |
+| `--side` | `plaintiff` / `defendant` / `accused` / `respondent` / `complainant` | Required: which side you represent (`complainant` = regulatory/FOI complaints) |
 | `--area` | `criminal` / `civil` / `family` / `commercial` / `administrative` | Required: legal area |
 | `--research` | path(s) | Optional lookup reports to inform orthodox strategies (glob supported) |
 | `--verify` | flag | Add LLM content verification |
@@ -329,7 +345,11 @@ litassist brainstorm --side defendant --area family \
 ### strategy
 
 Analyse case facts to produce strategic options for achieving a specific legal
-outcome, including next steps and a draft legal document.
+outcome, including next steps and a draft legal document. The `Matter type:` line in
+the case facts sets the posture (forum, available remedies, and document archetype),
+so e.g. an FOI or disciplinary matter is targeted at the relevant agency or
+commissioner instead of a court. If the line is absent or unrecognised, strategy
+assumes `civil` and warns.
 
 ```bash
 litassist strategy <case_facts> [OPTIONS]
@@ -393,7 +413,9 @@ litassist draft large_case_bundle.pdf "outline of submissions"
 ### counselnotes
 
 Generate strategic analysis from an advocate's perspective, complementing the
-neutral analysis from digest. Supports structured JSON extraction modes.
+neutral analysis from digest. Supports structured JSON extraction modes. Because
+counselnotes takes arbitrary files rather than a case-facts file, set the posture
+with `--matter-type` (default `civil` with a warning).
 
 ```bash
 litassist counselnotes <files>... [OPTIONS]
@@ -404,6 +426,7 @@ The `files` argument supports glob patterns.
 | Option | Type | Description |
 |--------|------|-------------|
 | `--extract` | `all` / `citations` / `principles` / `checklist` | Extract structured JSON data |
+| `--matter-type` | `civil` / `criminal` / `family` / `commercial` / `disciplinary` / `foi` / `administrative` | Posture framing (counselnotes has no `case_facts` to read it from); defaults to `civil` with a warning |
 | `--verify` | flag | Enable citation verification |
 | `--output` | text | Custom output filename prefix |
 
@@ -428,7 +451,9 @@ litassist counselnotes --extract all --verify judgment.pdf
 ### barbrief
 
 Create a structured barrister's brief combining case facts, strategies, research,
-and supporting documents. Follows Australian legal conventions.
+and supporting documents. Follows Australian legal conventions. The `Matter type:`
+line in the case facts sets the brief's posture (forum, process, and remedies). If
+the line is absent or unrecognised, barbrief assumes `civil` and warns.
 
 ```bash
 litassist barbrief [case_facts] [OPTIONS]
@@ -541,6 +566,12 @@ extractfacts --> updatefacts --> brainstorm --> strategy --> draft --> verify
 `updatefacts` is optional but convenient: it merges `extractfacts`/`digest`
 output into an auto-discoverable `case_facts_<timestamp>.md` so the downstream
 commands find it without a manual copy.
+
+The case facts carry a `Matter type:` line (under Jurisdiction) that extractfacts
+proposes and updatefacts preserves. The framing commands (brainstorm, strategy,
+barbrief, caseplan) read it to adapt their posture, so a disciplinary, FOI, or
+administrative matter is framed for the right forum instead of defaulting to
+litigation. Check this line before brainstorming.
 
 1. **Extract facts** from case documents into 10-heading structure
 2. **Research** relevant case law via lookup

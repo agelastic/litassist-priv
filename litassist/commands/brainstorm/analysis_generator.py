@@ -13,7 +13,12 @@ from litassist.logging import log_task_event
 
 
 def generate_analysis(
-    facts: str, side: str, area: str, orthodox_content: str, unorthodox_content: str
+    facts: str,
+    side: str,
+    area: str,
+    orthodox_content: str,
+    unorthodox_content: str,
+    matter_posture: str = "",
 ):
     """
     Analyze strategies and identify most likely to succeed.
@@ -49,11 +54,11 @@ def generate_analysis(
     analysis_prompt = create_reasoning_prompt(
         analysis_base_prompt, "brainstorm-analysis"
     )
+    analysis_system = PROMPTS.get("commands.brainstorm.analysis_system")
+    if matter_posture:
+        analysis_system = matter_posture + "\n\n" + analysis_system
     analysis_messages = [
-        {
-            "role": "system",
-            "content": PROMPTS.get("commands.brainstorm.analysis_system"),
-        },
+        {"role": "system", "content": analysis_system},
         {"role": "user", "content": analysis_prompt},
     ]
 

@@ -15,7 +15,8 @@ from litassist.logging import log_task_event
 def consolidate_analyses(
     chunk_analyses: List[str],
     verify: bool,
-    client
+    client,
+    matter_posture: str = "",
 ) -> Tuple[str, Dict]:
     """
     Consolidate multiple chunk analyses into final strategic notes.
@@ -61,15 +62,14 @@ def consolidate_analyses(
     except Exception:
         pass
 
+    system_prompt = PROMPTS.get("processing.counselnotes.system_prompt")
+    if matter_posture:
+        system_prompt = matter_posture + "\n\n" + system_prompt
+
     try:
         final_content, final_usage = client.complete(
             [
-                {
-                    "role": "system",
-                    "content": PROMPTS.get(
-                        "processing.counselnotes.system_prompt"
-                    ),
-                },
+                {"role": "system", "content": system_prompt},
                 {"role": "user", "content": consolidation_prompt},
             ]
         )

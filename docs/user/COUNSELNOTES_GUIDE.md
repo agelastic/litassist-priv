@@ -1,6 +1,6 @@
 # Counsel's Notes Command Guide
 
-Last updated: 02/06/2026
+Last updated: 08/06/2026
 
 The `counselnotes` command provides strategic analysis and tactical insights for legal documents from an advocate's perspective, complementing the neutral analysis provided by the `digest` command.
 
@@ -27,6 +27,23 @@ litassist counselnotes brief.pdf affidavit.pdf response.pdf
 litassist counselnotes --verify case_bundle.pdf
 ```
 
+### Setting the Matter Type
+
+Unlike commands that read `case_facts.md`, `counselnotes` takes arbitrary files, so it
+cannot detect the matter type automatically. Use `--matter-type` to frame the analysis
+for the correct forum:
+
+```bash
+# Frame analysis for a professional-conduct complaint to a legal services commissioner
+litassist counselnotes --matter-type disciplinary complaint_bundle.pdf
+
+# Frame analysis for an FOI/administrative matter
+litassist counselnotes --matter-type foi agency_decision.pdf
+```
+
+If `--matter-type` is omitted, `counselnotes` assumes `civil` (litigation) and prints a
+warning.
+
 ### Structured Data Extraction
 ```bash
 # Extract all structured elements as JSON
@@ -47,6 +64,7 @@ litassist counselnotes --extract checklist case_docs.pdf
 | Option | Description | Example |
 |--------|-------------|---------|
 | `--extract` | Extract structured data in JSON format | `--extract all` |
+| `--matter-type` | Set the matter type (`civil`, `criminal`, `family`, `commercial`, `disciplinary`, `foi`, `administrative`) so the strategic posture suits the relevant forum. Defaults to `civil` with a warning if omitted. | `--matter-type disciplinary` |
 | `--verify` | Enable citation verification | `--verify` |
 
 ### Extraction Modes
