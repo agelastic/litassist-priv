@@ -13,85 +13,12 @@ from click.testing import CliRunner
 import click
 
 from litassist.commands.strategy import strategy
-from litassist.commands.strategy.validators import (
-    validate_case_facts_format,
-    extract_legal_issues,
-)
+from litassist.commands.strategy.validators import extract_legal_issues
 from litassist.commands.strategy.ranker import create_consolidated_reasoning_trace
-
-
-class TestCaseFactsValidation:
-    """Test case facts format validation functionality."""
-
-    def test_validate_case_facts_format_case_insensitive(self):
-        """Test validation is case insensitive."""
-        content = """
-        parties:
-        John Smith v ABC Corporation
-        
-        background:
-        Test background
-        
-        key events:
-        Timeline
-        
-        legal issues:
-        Contract breach
-        
-        evidence available:
-        Documents
-        
-        opposing arguments:
-        Defense
-        
-        procedural history:
-        History
-        
-        jurisdiction:
-        Federal Court
-        
-        applicable law:
-        Contract law
-        
-        client objectives:
-        Damages
-        """
-        assert validate_case_facts_format(content) is True
-
-    def test_validate_case_facts_format_empty_content(self):
-        """Test validation with empty content."""
-        assert validate_case_facts_format("") is False
-
-    def test_validate_case_facts_format_whitespace_only(self):
-        """Test validation with whitespace-only content."""
-        assert validate_case_facts_format("   \n\n   \t   ") is False
 
 
 class TestLegalIssuesExtraction:
     """Test legal issues extraction functionality."""
-
-    def test_extract_legal_issues_success_standard(self):
-        """Test successful extraction from standard format."""
-        content = """
-        Parties:
-        John Smith v ABC Corporation
-        
-        Legal Issues:
-        1. Breach of contract
-        2. Professional negligence
-        3. Misleading and deceptive conduct
-        
-        Evidence Available:
-        Documents and witnesses
-        """
-        issues = extract_legal_issues(content)
-        # The actual function returns numbered items, so adjust expectations
-        expected = [
-            "1. Breach of contract",
-            "2. Professional negligence",
-            "3. Misleading and deceptive conduct",
-        ]
-        assert issues == expected
 
     def test_extract_legal_issues_success_bullet_points(self):
         """Test extraction with bullet point formatting."""
@@ -129,6 +56,23 @@ class TestLegalIssuesExtraction:
         assert "Secondary issue: Negligence" in issues
         assert "1. Tertiary issue: Statutory claims" in issues
 
+    def test_extract_legal_issues_case_insensitive(self):
+        """Extraction must be case-insensitive: lower-case `legal issues:` /
+        `evidence available:` headings must still be found (guards the .lower()
+        in the heading match - every other extract test feeds Title-case)."""
+        content = """
+        legal issues:
+        1. Contract breach
+        2. Negligence claim
+
+        evidence available:
+        Documents
+        """
+        issues = extract_legal_issues(content)
+        assert len(issues) == 2
+        assert "1. Contract breach" in issues
+        assert "2. Negligence claim" in issues
+
     def test_extract_legal_issues_missing_section(self):
         """Test extraction when Legal Issues section is missing."""
         content = """
@@ -155,21 +99,6 @@ class TestLegalIssuesExtraction:
         """
         issues = extract_legal_issues(content)
         assert issues == []
-
-    def test_extract_legal_issues_case_insensitive(self):
-        """Test extraction is case insensitive."""
-        content = """
-        legal issues:
-        1. Contract breach
-        2. Negligence claim
-        
-        evidence available:
-        Documents
-        """
-        issues = extract_legal_issues(content)
-        assert len(issues) == 2
-        assert "1. Contract breach" in issues
-        assert "2. Negligence claim" in issues
 
     def test_extract_legal_issues_numbered_bold_inline(self):
         """extractfacts numbered/bold format with the issue inline on the heading

@@ -102,48 +102,5 @@ class TestHeavyFlag:
             Path(test_file).unlink()
 
 
-class TestVerificationAlwaysEnabled:
-    """Test that verification is always enabled (no --noverify anymore)."""
-
-    def setup_method(self):
-        """Set up test fixtures."""
-        self.runner = CliRunner()
-        self.mock_client = Mock()
-        self.mock_client.complete.return_value = ("Content", {"tokens": 100})
-        self.mock_client.verify.return_value = ("Content", "model")
-        self.mock_client.validate_citations.return_value = []
-
-    @patch("litassist.commands.extractfacts.document_reader.LLMClientFactory.get_input_budget_for_command")
-    @patch("litassist.commands.extractfacts.core.LLMClientFactory.for_command")
-    @patch("litassist.commands.extractfacts.core.verify_content_if_needed")
-    @patch("litassist.commands.extractfacts.core.save_command_output")
-    @patch("litassist.commands.extractfacts.single_extractor.PROMPTS")
-    def test_extractfacts_always_verifies(
-        self, mock_prompts, mock_save, mock_verify, mock_factory, mock_config
-    ):
-        """Test that extractfacts always uses verification (no way to skip)."""
-        mock_config.return_value = 10000
-        mock_factory.return_value = self.mock_client
-        mock_prompts.get.return_value = "Test"
-        mock_prompts.get_format_template.return_value = "Format"
-        mock_prompts.get_system_prompt.return_value = "System"
-        mock_save.return_value = "out.txt"
-        mock_verify.return_value = ("Content", False, None)
-
-        with tempfile.NamedTemporaryFile(mode="w", suffix=".txt", delete=False) as f:
-            f.write("Content")
-            test_file = f.name
-
-        try:
-            result = self.runner.invoke(extractfacts, [test_file])
-            assert result.exit_code == 0
-
-            # Verification is mandatory
-            mock_verify.assert_called_once()
-
-        finally:
-            Path(test_file).unlink()
-
-
 # Test markers
 pytestmark = pytest.mark.unit

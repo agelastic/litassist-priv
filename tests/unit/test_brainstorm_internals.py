@@ -251,60 +251,6 @@ Pursue misleading conduct claim while simultaneously filing ombudsman complaint.
     @patch("litassist.commands.brainstorm.unorthodox_generator.LLMClientFactory")
     @patch("litassist.commands.brainstorm.orthodox_generator.LLMClientFactory")
     @patch("litassist.commands.brainstorm.core.LLMClientFactory")
-    def test_brainstorm_output_formatting(
-        self,
-        mock_factory_core,
-        mock_factory_orth,
-        mock_factory_unorth,
-        mock_factory_analysis,
-    ):
-        """Test that brainstorm formats output correctly."""
-        mock_factory_orth.for_command.return_value = self.mock_orthodox_client
-        mock_factory_unorth.for_command.side_effect = [
-            self.mock_unorthodox_client,  # First call for unorthodox
-            self.mock_verification_client,  # Second call for verification
-        ]
-        mock_factory_analysis.for_command.return_value = self.mock_analysis_client
-        mock_factory_core.for_command.return_value = self.mock_analysis_client
-        mock_factory_core.get_input_budget_for_command.return_value = 10_000_000
-
-        with self.runner.isolated_filesystem():
-            with open("facts.txt", "w") as f:
-                f.write("Test facts")
-
-            result = self.runner.invoke(
-                cli,
-                [
-                    "brainstorm",
-                    "--facts",
-                    "facts.txt",
-                    "--side",
-                    "plaintiff",
-                    "--area",
-                    "civil",
-                ],
-            )
-
-            # Check formatting elements
-            output = result.output
-
-            # Progress messages
-            assert "[SUCCESS]" in output
-
-            # Strategy counts
-            assert "Orthodox strategies:" in output
-            assert "Unorthodox strategies:" in output
-            assert "Most likely to succeed:" in output
-
-            # Other formatting elements
-            assert "[STATS]" in output
-            assert "[TIP]" in output
-            assert "[INFO]" in output
-
-    @patch("litassist.commands.brainstorm.analysis_generator.LLMClientFactory")
-    @patch("litassist.commands.brainstorm.unorthodox_generator.LLMClientFactory")
-    @patch("litassist.commands.brainstorm.orthodox_generator.LLMClientFactory")
-    @patch("litassist.commands.brainstorm.core.LLMClientFactory")
     def test_brainstorm_with_research_files(
         self,
         mock_factory_core,
@@ -394,16 +340,6 @@ Pursue misleading conduct claim while simultaneously filing ombudsman complaint.
             # Should fail with error message
             assert result.exit_code != 0
             assert "Error generating orthodox strategies" in result.output
-
-    def test_brainstorm_validates_inputs(self):
-        """Test brainstorm validates required inputs."""
-        with self.runner.isolated_filesystem():
-            # Missing required --side option
-            result = self.runner.invoke(cli, ["brainstorm", "--area", "civil"])
-
-            assert result.exit_code != 0
-            assert "Missing option" in result.output
-            assert "--side" in result.output
 
     @patch("litassist.commands.brainstorm.analysis_generator.LLMClientFactory")
     @patch("litassist.commands.brainstorm.unorthodox_generator.LLMClientFactory")

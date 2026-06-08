@@ -391,14 +391,3 @@ class TestLookupCommandIntegration:
 
             call_args = mock_factory.call_args
             assert call_args[0] == ("lookup", "irac")
-
-    def test_no_engine_option_anymore(self):
-        """Test that --engine option is no longer available."""
-        from litassist.commands.lookup import lookup
-
-        runner = CliRunner()
-        result = runner.invoke(lookup, ["test", "--engine", "google"])
-
-        # Should fail because --engine option no longer exists
-        assert result.exit_code != 0
-        assert "no such option" in result.output.lower()

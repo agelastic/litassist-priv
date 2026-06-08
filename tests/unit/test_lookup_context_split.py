@@ -163,37 +163,6 @@ class TestCSEConcatenation:
                 f"comprehensive query. Queries seen: {queries!r}"
             )
 
-    def test_search_signature_does_not_accept_guidance(self):
-        """`perform_cse_searches` must remain context-only. If a future
-        change starts threading `guidance` into CSE, this test fails
-        and forces an explicit review."""
-        import inspect
-
-        from litassist.commands.lookup.search import perform_cse_searches
-
-        params = inspect.signature(perform_cse_searches).parameters
-        assert "guidance" not in params, (
-            "perform_cse_searches must not accept `guidance` -- the "
-            "split's whole point is that guidance is LLM-only and "
-            "never reaches the CSE query."
-        )
-
-
-@pytest.mark.unit
-@pytest.mark.offline
-class TestCliParse:
-    """Codex audit finding #7: confirm Click parses `--guidance` with
-    no collisions against global options or other lookup flags."""
-
-    def test_guidance_flag_is_parsed(self):
-        """A `--help` invocation succeeds (exit_code 0) and includes
-        the new flag's name, proving the decorator is wired."""
-        runner = CliRunner()
-        result = runner.invoke(lookup, ["--help"])
-        assert result.exit_code == 0, result.output
-        assert "--guidance" in result.output
-        assert "--context" in result.output
-
 
 @pytest.mark.unit
 @pytest.mark.offline

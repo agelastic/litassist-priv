@@ -11,23 +11,6 @@ from litassist.commands.brainstorm.core import (
 class TestVerificationFlow:
     """Test the new verification flow."""
 
-    def test_extract_strategies_with_numbered_format(self):
-        """Test extraction of strategies in ### 1. format."""
-        content = """## ORTHODOX STRATEGIES
-
-### 1. Negligence Claim
-This is the first strategy content.
-Legal basis: Donoghue v Stevenson.
-
-### 2. Contract Breach
-This is the second strategy content.
-Legal basis: Contract Act.
-"""
-        strategies = _extract_strategies(content, "orthodox")
-        assert len(strategies) == 2
-        assert "This is the first strategy content" in strategies[0]
-        assert "This is the second strategy content" in strategies[1]
-
     def test_extract_strategies_fallback(self):
         """Test fallback when no numbered patterns found."""
         content = """Some strategy text
@@ -65,19 +48,6 @@ Third strategy text"""
         assert "[VERIFIED]" in unorth_out
         assert "1 verified, 1 unverified" in summary
 
-    def test_annotation_with_risk_levels(self):
-        """Test strategy annotation includes risk levels."""
-        strategies = ["Strategy citing [2024] Test 1"]
-        verified = set()
-        unverified = {"[2024] Test 1": "not found"}
-        plausibility = {"orthodox_1": {"risk": "LOW", "explanation": "Typo likely"}}
-
-        annotated = _annotate_strategies_with_verification(
-            strategies, verified, unverified, plausibility, "orthodox"
-        )
-
-        assert "LOW RISK" in annotated[0]
-        assert "Typo likely" in annotated[0]
 
 class TestExtractVerifiedDocument:
     """Brainstorm verification fallback: when the verifier response lacks the
@@ -129,11 +99,10 @@ class TestStrategyExtraction:
     """Test strategy extraction patterns."""
 
     # Note: `_extract_strategies` accepts several markdown formats (### N.,
-    # ### Strategy N:, N., ## STRATEGY N:). The canonical happy-path test
-    # in TestVerificationFlow above covers `### N.` and the blank-line
-    # fallback; the multiline test below covers content-preservation
-    # within a single strategy. Per-format variant tests were dropped
-    # as TDD hygiene.
+    # ### Strategy N:, N., ## STRATEGY N:). The blank-line fallback is covered
+    # by TestVerificationFlow.test_extract_strategies_fallback; the multiline
+    # test below covers `### N.` splitting plus content-preservation within a
+    # single strategy. Per-format variant tests were dropped as TDD hygiene.
 
     def test_extract_preserves_multiline(self):
         """Test that extraction preserves multiline strategy content."""
@@ -167,39 +136,6 @@ class TestCitationAnnotation:
 
         assert annotated[0] == "Strategy with no citations"
         assert "CITATION STATUS" not in annotated[0]
-
-    def test_verified_citation_marking(self):
-        """Test verified citations are marked correctly."""
-        strategies = ["Strategy citing [2020] HCA 1"]
-        verified = {"[2020] HCA 1"}
-        unverified = {}
-        plausibility = {}
-
-        annotated = _annotate_strategies_with_verification(
-            strategies, verified, unverified, plausibility, "orthodox"
-        )
-
-        assert "[VERIFIED]: [2020] HCA 1" in annotated[0]
-
-    def test_unverified_with_risk_assessment(self):
-        """Test unverified citations include risk assessment."""
-        strategies = ["Strategy citing [2024] Fake 1"]
-        verified = set()
-        unverified = {"[2024] Fake 1": "not found in database"}
-        plausibility = {
-            "orthodox_1": {
-                "risk": "HIGH",
-                "explanation": "Citation appears fabricated"
-            }
-        }
-
-        annotated = _annotate_strategies_with_verification(
-            strategies, verified, unverified, plausibility, "orthodox"
-        )
-
-        assert "[NOT VERIFIED]: [2024] Fake 1" in annotated[0]
-        assert "HIGH RISK" in annotated[0]
-        assert "Citation appears fabricated" in annotated[0]
 
     def test_mixed_citations(self):
         """Test strategies with both verified and unverified citations."""

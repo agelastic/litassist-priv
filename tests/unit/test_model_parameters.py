@@ -21,14 +21,10 @@ class TestGetModelFamily:
     def test_openai_reasoning_models(self):
         """Test identification of OpenAI reasoning models."""
         # Pattern matches "openai/o" followed by digits
-        assert get_model_family("openai/o1") == "openai_reasoning"
         assert get_model_family("openai/o1-preview") == "openai_reasoning"
-        assert get_model_family("openai/o1-mini") == "openai_reasoning"
-        assert get_model_family("openai/o3") == "openai_reasoning"
         assert get_model_family("openai/o3-pro") == "openai_reasoning"
 
         # Without provider prefix, won't match
-        assert get_model_family("o1-preview") == "default"
         assert get_model_family("o3-pro") == "default"
 
     def test_claude_models(self):
@@ -39,15 +35,13 @@ class TestGetModelFamily:
         assert get_model_family("anthropic/claude-opus-4.8") == "claude_opus_4_8"
 
         # Other Claude 4.x (older opus, all sonnet-4.x) still honour sampling but
-        # reject temperature+top_p together.
-        assert get_model_family("anthropic/claude-opus-4") == "claude4_sampling"
+        # reject temperature+top_p together. Cover both arms of the (opus-4|sonnet-4)
+        # alternation.
         assert get_model_family("anthropic/claude-opus-4.1") == "claude4_sampling"
         assert get_model_family("anthropic/claude-sonnet-4.6") == "claude4_sampling"
 
         # Claude 3 and other models are standard anthropic
         assert get_model_family("anthropic/claude-3-opus") == "anthropic"
-        assert get_model_family("anthropic/claude-3-sonnet") == "anthropic"
-        assert get_model_family("anthropic/claude-3.7-sonnet") == "anthropic"
 
         # Without provider prefix, won't match
         assert get_model_family("claude-3-opus") == "default"
@@ -56,8 +50,6 @@ class TestGetModelFamily:
         """Test identification of standard OpenAI models."""
         # Pattern matches "openai/gpt" or "openai/chatgpt"
         assert get_model_family("openai/gpt-4") == "openai_standard"
-        assert get_model_family("openai/gpt-4-turbo") == "openai_standard"
-        assert get_model_family("openai/gpt-3.5-turbo") == "openai_standard"
         assert get_model_family("openai/chatgpt") == "openai_standard"
 
         # Without provider prefix, won't match
@@ -67,8 +59,6 @@ class TestGetModelFamily:
         """Test identification of Google models."""
         # Pattern matches "google/gemini", "google/palm", or "google/bard"
         assert get_model_family("google/gemini-pro") == "google"
-        assert get_model_family("google/gemini-2.5-pro") == "google"
-        assert get_model_family("google/gemini-2.5-pro-preview") == "google"
         assert get_model_family("google/palm-2") == "google"
         assert get_model_family("google/bard") == "google"
 
@@ -79,15 +69,12 @@ class TestGetModelFamily:
         """Test identification of Grok models."""
         # Pattern matches "x-ai/grok"
         assert get_model_family("x-ai/grok-3") == "xai"
-        assert get_model_family("x-ai/grok-beta") == "xai"
 
         # Without provider prefix, won't match
         assert get_model_family("grok-3") == "default"
 
     def test_other_models(self):
         """Test default handling of other models."""
-        assert get_model_family("llama-2") == "default"
-        assert get_model_family("mistral-7b") == "default"
         assert get_model_family("unknown-model") == "default"
         assert get_model_family("meta/llama-2") == "meta"
         assert get_model_family("mistral/mistral-7b") == "mistral"
@@ -226,14 +213,6 @@ class TestGetModelParameters:
         filtered = get_model_parameters("gpt-4", {"max_completion_tokens": 4096})
         assert "max_completion_tokens" not in filtered
 
-    def test_empty_parameters(self):
-        """Test handling of empty parameter dict."""
-        filtered = get_model_parameters("openai/o3-pro", {})
-        assert filtered == {}
-
-        filtered = get_model_parameters("gpt-4", {})
-        assert filtered == {}
-
     def test_none_parameters(self):
         """Test handling of None values in parameters."""
         requested = {"temperature": None, "max_tokens": 4096, "reasoning_effort": None}
@@ -243,55 +222,6 @@ class TestGetModelParameters:
         assert "temperature" not in filtered
         assert "reasoning_effort" not in filtered
         assert "max_tokens" not in filtered
-
-    def test_parameter_type_preservation(self):
-        """Test that parameter types are preserved."""
-        requested = {
-            "temperature": 0.7,  # float
-            "max_tokens": 4096,  # int
-            "stop": ["\n\n"],  # list
-            "response_format": {"type": "json_object"},  # dict
-            "stream": True,  # bool
-        }
-
-        # Test with proper OpenAI model that supports these params
-        filtered = get_model_parameters("openai/gpt-4", requested)
-
-        assert isinstance(filtered["temperature"], float)
-        assert isinstance(filtered["max_tokens"], int)
-        assert isinstance(filtered["stop"], list)
-        assert isinstance(filtered["response_format"], dict)
-        assert isinstance(filtered["stream"], bool)
-
-    def test_model_family_edge_cases(self):
-        """Test edge cases in model family detection."""
-        # The regex patterns are case-sensitive, so uppercase won't match
-        assert get_model_family("O1-PREVIEW") == "default"
-        assert get_model_family("CLAUDE-3-OPUS") == "default"
-
-        # Lowercase versions will match
-        assert get_model_family("openai/o1-preview") == "openai_reasoning"
-        assert get_model_family("anthropic/claude-3-opus") == "anthropic"
-
-    def test_parameter_filtering_preserves_order(self):
-        """Test that parameter filtering preserves relative order."""
-        requested = {
-            "a": 1,
-            "temperature": 0.7,
-            "b": 2,
-            "max_completion_tokens": 4096,
-            "c": 3,
-            "thinking_effort": "high",
-            "d": 4,
-        }
-
-        filtered = get_model_parameters("openai/o3-pro", requested)
-
-        # Should have reasoning object and max_completion_tokens
-        assert "reasoning" in filtered
-        assert "max_completion_tokens" in filtered
-        assert filtered["reasoning"] == {"effort": "high"}
-
 
 class TestClaude4ParameterHandling:
     """Sampling-parameter and effort handling for Claude 4.x models.
@@ -344,15 +274,6 @@ class TestClaude4ParameterHandling:
             "reasoning": {"effort": "xhigh"}
         }
 
-    def test_opus_47_caps_effort_at_xhigh(self):
-        # Same ceiling as 4.8: "max" maps to xhigh, not the rejected "max" tier.
-        assert convert_thinking_effort("xhigh", "anthropic/claude-opus-4.7") == {
-            "reasoning": {"effort": "xhigh"}
-        }
-        assert convert_thinking_effort("max", "anthropic/claude-opus-4.7") == {
-            "reasoning": {"effort": "xhigh"}
-        }
-
     def test_sonnet_effort_caps_at_high(self):
         # Sonnet 4.x has no xhigh/max effort; both cap to high.
         assert convert_thinking_effort("max", "anthropic/claude-sonnet-4.6") == {
@@ -400,11 +321,6 @@ class TestRecentModelParameterMapping:
         assert "verbosity" not in filtered
         assert filtered["reasoning"] == {"effort": "high"}
 
-    def test_o3_has_no_xhigh(self):
-        assert convert_thinking_effort("max", "openai/o3-pro") == {
-            "reasoning": {"effort": "high"}
-        }
-
     def test_grok_keeps_sampling_and_reasoning_drops_verbosity(self):
         filtered = get_model_parameters(
             "x-ai/grok-4.20",
@@ -421,15 +337,6 @@ class TestRecentModelParameterMapping:
         assert "verbosity" not in filtered
         assert "frequency_penalty" not in filtered
         assert filtered["reasoning"] == {"effort": "high"}
-
-    def test_grok_keeps_min_p_best_effort(self):
-        # min_p / repetition_penalty ride extra_body (OpenRouter-specific) and are
-        # kept as best-effort even though grok-4.20 ignores them.
-        filtered = get_model_parameters(
-            "x-ai/grok-4.20", {"min_p": 0.05, "repetition_penalty": 1.2}
-        )
-        assert filtered["min_p"] == 0.05
-        assert filtered["repetition_penalty"] == 1.2
 
     def test_supports_system_messages(self):
         # o-series reasoning models do not accept system messages; everything

@@ -207,6 +207,8 @@ class LLMClient(LLMVerificationMixin):
     # The enclosing `complete` method now emits heartbeat updates, so we no
     # longer need a second heartbeat layer here. Retaining only the timing
     # decorator avoids duplicated progress messages.
+    # Keep BOTH wrappers: @heartbeat keeps the connection alive during long LLM
+    # calls (idle-timeout guard) and @timed records duration for the cost logs.
     @heartbeat()  # Uses heartbeat_interval from config.yaml
     @timed
     def complete(

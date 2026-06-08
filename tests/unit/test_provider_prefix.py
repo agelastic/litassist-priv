@@ -48,9 +48,10 @@ class _MockResponse:
 @pytest.mark.parametrize(
     "slug",
     [
+        # gpt-4 (openai_standard) is the family whose prefix was historically
+        # stripped; gpt-5.5 (gpt5.x) is a current reasoning family. The
+        # preservation logic is family-independent, so two representatives suffice.
         "openai/gpt-5.5",
-        "openai/gpt-5.1",
-        "openai/gpt-5-pro",
         "openai/gpt-4",
     ],
 )

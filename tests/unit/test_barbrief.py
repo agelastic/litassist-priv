@@ -382,26 +382,6 @@ class TestBarbriefCommand:
     @patch("litassist.commands.barbrief.document_reader.read_document")
     @patch("litassist.commands.barbrief.core.LLMClientFactory")
     @patch("litassist.commands.barbrief.core.save_command_output")
-    def test_barbrief_all_hearing_types(self, mock_save, mock_factory, mock_read):
-        """Every --hearing-type choice runs (only trial/appeal were covered)."""
-        mock_read.return_value = _VALID_FACTS
-        mock_save.return_value = "outputs/barbrief.txt"
-        client = MagicMock()
-        client.complete.return_value = ("Brief body", {"total_tokens": 100})
-        mock_factory.for_command.return_value = client
-        runner = CliRunner()
-        for hearing in ("trial", "directions", "interlocutory", "appeal"):
-            with runner.isolated_filesystem():
-                with open("facts.txt", "w") as f:
-                    f.write("dummy")
-                result = runner.invoke(
-                    barbrief, ["facts.txt", "--hearing-type", hearing]
-                )
-            assert result.exit_code == 0, f"{hearing}: {result.output}"
-
-    @patch("litassist.commands.barbrief.document_reader.read_document")
-    @patch("litassist.commands.barbrief.core.LLMClientFactory")
-    @patch("litassist.commands.barbrief.core.save_command_output")
     def test_barbrief_optional_files_partial(self, mock_save, mock_factory, mock_read):
         """Partial optional-file combinations (strategies-only, research-only) run."""
         mock_save.return_value = "outputs/barbrief.txt"

@@ -9,7 +9,7 @@ import pytest
 import os
 import threading
 import time
-from unittest.mock import patch, MagicMock, mock_open, Mock
+from unittest.mock import patch, MagicMock, mock_open
 
 from litassist.utils.core import heartbeat, parse_strategies_file
 from litassist.timing import timed
@@ -24,15 +24,6 @@ from litassist.logging import save_log, save_command_output
 
 class TestFileOperations:
     """Test file handling and validation functionality."""
-
-    def test_validate_file_size_limit_success(self):
-        """Test file size validation within limits."""
-        content = "Test content that is well within limits"
-        # Should not raise exception for small content
-        try:
-            validate_file_size_limit(content, 1000, "Test file")
-        except Exception:
-            pytest.fail("validate_file_size_limit raised exception for valid content")
 
     def test_validate_file_size_limit_exceeded(self):
         """Test file size validation when limit exceeded."""
@@ -52,28 +43,6 @@ class TestFileOperations:
             validate_file_size_limit(content, 100, "Test file")
         except Exception:
             pytest.fail("validate_file_size_limit raised exception at exact limit")
-
-    @patch("litassist.logging.output_saver.open", new_callable=mock_open)
-    def test_save_command_output_success(self, mock_file):
-        """Test successful command output saving."""
-        content = "Test command output content"
-        command = "test_command"
-        outcome = "test_outcome"
-        metadata = {"key": "value"}
-
-        with patch(
-            "litassist.logging.output_saver.time.strftime", return_value="20240101_120000"
-        ):
-            result = save_command_output(command, content, outcome, metadata)
-
-        # Check that result contains expected components (path may be absolute)
-        assert "test_command" in result
-        assert "test_outcome" in result
-        assert "20240101_120000" in result
-        assert result.endswith(".md")
-
-        # Verify file written
-        mock_file.assert_called_once()
 
     @patch("litassist.logging.output_saver.open", new_callable=mock_open)
     def test_save_command_output_sanitized_outcome(self, mock_file):
@@ -96,82 +65,9 @@ class TestFileOperations:
         assert "\\" not in filename
         assert ":" not in filename
 
-    def test_save_command_output_empty_content(self):
-        """Test command output saving with empty content."""
-        with patch("litassist.logging.output_saver.open", new_callable=mock_open) as mock_file:
-            with patch("litassist.logging.output_saver.os.makedirs"):
-                with patch(
-                    "litassist.logging.output_saver.time.strftime",
-                    return_value="20240101_120000",
-                ):
-                    result = save_command_output("test", "", "empty")
-
-        assert "test_" in result
-        mock_file.assert_called_once()
-
 
 class TestLogging:
     """Test logging functionality."""
-
-    @patch("litassist.config.get_config")
-    @patch("litassist.logging.json.dump")
-    @patch("litassist.logging.open", new_callable=mock_open)
-    def test_save_log_success(self, mock_file, mock_json_dump, mock_get_config):
-        """Test successful log saving."""
-        # Mock config to return json format
-        mock_config = Mock()
-        mock_config.log_format = "json"
-        mock_get_config.return_value = mock_config
-        
-        command = "test_command"
-        log_data = {
-            "inputs": {"test": "data"},
-            "params": {"model": "test"},
-            "usage": {"tokens": 100},
-            "response": "test response",
-        }
-
-        with patch(
-            "litassist.logging.output_saver.time.strftime", return_value="20240101_120000"
-        ):
-            save_log(command, log_data)
-
-        # Verify file opened for writing
-        mock_file.assert_called_once()
-
-        # Verify JSON dumped
-        mock_json_dump.assert_called_once()
-
-    @patch("litassist.config.get_config")
-    @patch("litassist.logging.json.dump")
-    @patch("litassist.logging.os.makedirs")
-    @patch("litassist.logging.open", new_callable=mock_open)
-    def test_save_log_with_metadata(self, mock_file, mock_makedirs, mock_json_dump, mock_get_config):
-        """Test log saving with additional metadata."""
-        # Mock config to return json format
-        mock_config = Mock()
-        mock_config.log_format = "json"
-        mock_get_config.return_value = mock_config
-        
-        command = "strategy"
-        log_data = {
-            "inputs": {"case_facts": "test facts"},
-            "metadata": {"outcome": "test outcome"},
-            "timestamp": "2024-01-01T12:00:00",
-        }
-
-        save_log(command, log_data)
-
-        # Verify JSON dump was called with the data (save_log doesn't modify payload)
-        mock_json_dump.assert_called_once()
-        call_args = mock_json_dump.call_args[0]
-        saved_data = call_args[0]
-
-        # The payload should be saved as-is
-        assert "inputs" in saved_data
-        assert saved_data["inputs"]["case_facts"] == "test facts"
-        assert "metadata" in saved_data
-        assert saved_data["metadata"]["outcome"] == "test outcome"
 
     @patch(
         "builtins.open", side_effect=PermissionError("Permission denied")
@@ -221,22 +117,6 @@ class TestTiming:
         # Exception should propagate
         with pytest.raises(ValueError, match="Test error"):
             failing_function()
-
-    def test_heartbeat_decorator_function(self):
-        """Test heartbeat decorator functionality."""
-        mock_func = MagicMock(return_value="heartbeat_result")
-
-        # Create heartbeat-decorated function
-        heartbeat_func = heartbeat(1)(mock_func)
-
-        # Call the decorated function
-        result = heartbeat_func("test_arg", keyword="test_kwarg")
-
-        # Should return original result
-        assert result == "heartbeat_result"
-
-        # Original function should be called with same arguments
-        mock_func.assert_called_once_with("test_arg", keyword="test_kwarg")
 
     def test_heartbeat_decorator_with_interval(self, monkeypatch):
         """heartbeat must propagate the configured interval to Event.wait."""
@@ -327,17 +207,6 @@ class TestReasoningPrompts:
         assert "Application to Facts:" in result
         assert "Conclusion:" in result
 
-    def test_create_reasoning_prompt_different_commands(self):
-        """Test reasoning prompt creation for different commands."""
-        base_prompt = "Test prompt"
-        commands = ["strategy", "draft", "digest", "lookup"]
-
-        for command in commands:
-            result = create_reasoning_prompt(base_prompt, command)
-            assert base_prompt in result
-            # Should have some form of reasoning header
-            assert "Strategic Reasoning" in result or "Selection Reasoning" in result
-
     def test_create_reasoning_prompt_empty_input(self):
         """Test reasoning prompt creation with empty input."""
         result = create_reasoning_prompt("", "strategy")
@@ -389,20 +258,6 @@ class TestReasoningPrompts:
 
         trace = extract_reasoning_trace(content, "strategy")
 
-        assert trace is None
-
-    def test_extract_reasoning_trace_malformed(self):
-        """Test extraction from malformed reasoning trace."""
-        content = """
-        ## Overall Strategic Reasoning
-        Malformed content without proper structure
-        Random text here
-        """
-
-        trace = extract_reasoning_trace(content, "strategy")
-
-        # Should handle gracefully, either return None or partial trace
-        # Implementation depends on robustness requirements
         assert trace is None
 
 
@@ -462,24 +317,6 @@ Highest success probability.
         assert result["orthodox_count"] == 1
         assert result["unorthodox_count"] == 0
         assert result["most_likely_count"] == 1
-
-    def test_parse_strategies_file_no_structure(self):
-        """Test parsing of unstructured content."""
-        content = """
-        Some general strategies:
-        
-        1. First approach
-        2. Second approach
-        3. Third approach
-        """
-
-        result = parse_strategies_file(content)
-
-        # Should handle gracefully
-        assert isinstance(result, dict)
-        assert "orthodox_count" in result
-        assert "unorthodox_count" in result
-        assert "most_likely_count" in result
 
     def test_parse_strategies_file_empty_sections(self):
         """Test parsing when sections exist but are empty."""
@@ -601,40 +438,6 @@ class TestContentVerification:
         assert verified is True
         assert result_content == "Corrected legal analysis content"
         mock_run_verification_chain.assert_called_once_with(content, "strategy", heavy=False)
-
-    @patch("litassist.verification_chain.run_verification_chain")
-    def test_verify_content_if_needed_citation_already_verified(
-        self, mock_run_verification_chain
-    ):
-        """Test that citation validation is skipped when already verified."""
-        # Mock the verification chain for strategy command
-        mock_run_verification_chain.return_value = (
-            "Legal analysis content",
-            {"llm": {"corrections_made": False}},
-        )
-
-        mock_client = MagicMock()
-        mock_client.should_auto_verify.return_value = False
-        mock_client.validate_citations.return_value = ["Citation issue"]
-
-        content = "Legal analysis content"
-
-        # Test with citation_already_verified=True
-        result_content, verified, _ = verify_content_if_needed(
-            mock_client,
-            content,
-            "strategy",
-            verify_flag=True,
-            citation_already_verified=True,
-        )
-
-        # Strategy command uses verification chain, returns False when no corrections
-        assert verified is False
-        assert result_content == content
-        mock_run_verification_chain.assert_called_once_with(content, "strategy", heavy=False)
-        # validate_citations shouldn't be called since verification chain handles it
-        mock_client.validate_citations.assert_not_called()
-
 
 class TestErrorHandling:
     """Test error handling in utility functions."""

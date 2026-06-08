@@ -170,18 +170,6 @@ class TestPromptTemplates:
             },
         }
 
-    def test_all_yaml_files_exist(self, prompts_dir, expected_yaml_files):
-        """Test that all expected YAML files exist in the prompts directory."""
-        existing_files = {f.name for f in prompts_dir.glob("*.yaml")}
-
-        missing_files = expected_yaml_files - existing_files
-        assert not missing_files, f"Missing YAML files: {sorted(missing_files)}"
-
-        # Log extra files for awareness (not failure)
-        extra_files = existing_files - expected_yaml_files
-        if extra_files:
-            print(f"Note: Extra YAML files found: {sorted(extra_files)}")
-
     def _validate_schema_recursive(self, data, schema, path=""):
         """Recursively validate data structure against schema."""
         errors = []

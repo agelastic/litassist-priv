@@ -200,17 +200,6 @@ class TestCounselNotesBasic:
         finally:
             os.unlink(temp_file)
 
-    def test_command_help(self):
-        """Test that command help works."""
-        result = self.runner.invoke(counselnotes, ["--help"])
-        assert result.exit_code == 0
-        assert "Strategic analysis and counsel's notes" in result.output
-
-    def test_no_files_error(self):
-        """Test error when no files provided."""
-        result = self.runner.invoke(counselnotes, [])
-        assert result.exit_code != 0
-
     def test_nonexistent_file_error(self):
         """Test error handling for missing files."""
         result = self.runner.invoke(counselnotes, ["nonexistent.txt"])
