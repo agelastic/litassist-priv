@@ -588,12 +588,19 @@ submissions**, not just court filings.
 **Goal:** End-to-end professional-oversight complaint workflow. Depends on the
 Phase 1 foundation (Matter Memory).
 
-**GATED (04/06/2026):** Demoted from the lead position to the dormant backlog. Do
-NOT build any dedicated complaint tooling until the urgent tool-assessment in
-TODO.md determines the existing commands are insufficient for complaints. Until
-then, complaints are handled with the current commands (extractfacts, brainstorm,
-strategy, draft, etc.). This phase is specced for reference and is unblocked only
-by a "needs dedicated tooling" finding from that assessment.
+**GATED (04/06/2026); ASSESSMENT DONE - STAYS DORMANT (07/06/2026):** The urgent
+tool-assessment ran a real combined fee+conduct OLSC matter (Osipov v Dowson Turco,
+CAS022856) end-to-end and scored every output against the Commissioner's actual
+determination. **Result: keep complaints on current commands; do NOT build P2-15.**
+9 of 11 outputs were usable as-is or with scoped tweaks; the two failures
+(counselnotes, barbrief) share a single court-default framing gap fixable by a
+regulator-complaint enum/posture + prompt change, not a dedicated subsystem. Full
+write-up and the scoped tweak list:
+`docs/development/claude_complaints_tool_assessment.md`. This phase remains dormant.
+**Re-open only if** those tweaks fail to coax barbrief/counselnotes into a regulator
+posture, or a second real OLSC matter shows the same court-default surviving the fix.
+Until then, complaints are handled with the current commands (extractfacts,
+brainstorm, strategy, draft, etc.).
 
 ### P2-15: Professional Complaint Support [DEFERRED - dormant]
 **Effort:** 10-12 hours
