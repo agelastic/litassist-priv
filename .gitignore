@@ -127,6 +127,8 @@ draft_*.txt
 test_*.txt
 test_*.json
 test_*.pdf
+# Tier 2 matter-type spot-check run artifacts (fixtures + paid-call logs)
+test-scripts/spotcheck_matter_type_*/
 temp_*.py
 temp_*.txt
 mock_*.txt

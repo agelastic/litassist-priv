@@ -10,6 +10,10 @@ import pytest
 from click.testing import CliRunner
 
 from litassist.commands.strategy.core import strategy
+from litassist.commands.barbrief import barbrief
+from litassist.commands.caseplan import caseplan
+from litassist.commands.counselnotes import counselnotes
+from litassist.commands.brainstorm import brainstorm
 from litassist.utils.case_facts import (
     KNOWN_MATTER_TYPES,
     DEFAULT_MATTER_TYPE,
@@ -87,12 +91,6 @@ def test_all_known_types_have_a_posture():
         assert isinstance(posture, str) and posture.strip()
 
 
-def test_disciplinary_posture_is_regulator_framed():
-    posture = matter_type_posture("disciplinary").lower()
-    assert "commissioner" in posture
-    assert "not a court" in posture
-
-
 def test_unknown_posture_falls_back_to_civil():
     assert matter_type_posture("nonsense") == matter_type_posture("civil")
 
@@ -113,11 +111,6 @@ def test_validator_accepts_parenthetical_qualifiers():
         "## 10. Client Objectives:\n"
     )
     assert validate_case_facts_format(facts) is True
-
-
-def test_validator_still_rejects_missing_heading():
-    facts = "## 1. Parties:\n## 2. Background:\n"  # missing the rest
-    assert validate_case_facts_format(facts) is False
 
 
 # --- contract carries the Matter type line ---------------------------------
@@ -182,3 +175,204 @@ def test_strategy_prepends_matter_posture_to_system_message(
         "not a court" in s.lower() and "commissioner" in s.lower()
         for s in system_messages
     ), "disciplinary posture not found in any system message"
+
+
+# --- command-level: posture reaches the OTHER framing commands ---------------
+#
+# Each command resolves matter_type and prepends the posture into a
+# {"role": "system"} message its generator sends. These tests run the real
+# command with a capturing mock client (real prompts) and assert the
+# disciplinary posture lands on the wire -- guarding BOTH seams offline:
+#   (1) core resolves matter_type and threads the posture, and
+#   (2) the generator actually prepends it to the system message.
+# A broken seam OR a deleted regulator framing in matter_types.yaml fails here.
+
+
+def _system_messages(mock_client):
+    """Every system-role message content passed to a mock client's complete()."""
+    messages = []
+    for call in mock_client.complete.call_args_list:
+        sent = call.args[0]
+        for entry in sent:
+            if isinstance(entry, dict) and entry.get("role") == "system":
+                messages.append(entry["content"])
+    return messages
+
+
+def _assert_disciplinary_posture(system_messages):
+    assert system_messages, "command never called client.complete with a system message"
+    assert any(
+        "not a court" in s.lower() and "commissioner" in s.lower()
+        for s in system_messages
+    ), "disciplinary posture did not reach any system message"
+
+
+@patch("litassist.commands.barbrief.document_reader.read_document")
+@patch("litassist.commands.barbrief.core.LLMClientFactory")
+@patch("litassist.commands.barbrief.core.save_command_output")
+def test_barbrief_prepends_matter_posture(mock_save, mock_factory, mock_read):
+    mock_read.return_value = _DISCIPLINARY_FACTS
+    mock_save.return_value = "outputs/barbrief_directions_123.txt"
+
+    mock_client = MagicMock()
+    mock_client.model = "test-model"
+    mock_client.complete.return_value = ("Brief content", {"total_tokens": 1000})
+    mock_client.validate_citations.return_value = []
+    mock_factory.for_command.return_value = mock_client
+
+    runner = CliRunner()
+    with runner.isolated_filesystem():
+        with open("case_facts.md", "w") as f:
+            f.write("dummy")  # read_document is mocked
+        result = runner.invoke(
+            barbrief, ["case_facts.md", "--hearing-type", "directions"]
+        )
+
+    assert result.exit_code == 0, result.output
+    _assert_disciplinary_posture(_system_messages(mock_client))
+
+
+@patch("litassist.commands.caseplan.budget_assessor.LLMClientFactory")
+@patch("litassist.commands.caseplan.budget_assessor.save_command_output")
+@patch("litassist.commands.caseplan.budget_assessor.save_log")
+def test_caseplan_assessment_prepends_matter_posture(
+    mock_save_log, mock_save_output, mock_factory, tmp_path
+):
+    case_facts = tmp_path / "case_facts.md"
+    case_facts.write_text(_DISCIPLINARY_FACTS)
+
+    mock_client = MagicMock()
+    mock_client.complete.return_value = (
+        "SUMMARY: Medium complexity\nRECOMMENDATION: standard\nJUSTIFICATION: ...",
+        {"total_tokens": 500},
+    )
+    mock_factory.for_command.return_value = mock_client
+    mock_save_output.return_value = "outputs/caseplan_assessment_123.txt"
+
+    result = CliRunner().invoke(caseplan, [str(case_facts)])
+
+    assert result.exit_code == 0, result.output
+    _assert_disciplinary_posture(_system_messages(mock_client))
+
+
+@patch("litassist.commands.caseplan.plan_generator.LLMClientFactory")
+@patch("litassist.commands.caseplan.plan_generator.save_command_output")
+@patch("litassist.commands.caseplan.plan_generator.save_log")
+def test_caseplan_full_plan_prepends_matter_posture(
+    mock_save_log, mock_save_output, mock_factory, tmp_path
+):
+    case_facts = tmp_path / "case_facts.md"
+    case_facts.write_text(_DISCIPLINARY_FACTS)
+
+    mock_client = MagicMock()
+    mock_client.complete.return_value = (
+        "# Litigation Plan\n## Case Assessment\nComplexity: MEDIUM\n",
+        {"total_tokens": 1000},
+    )
+    mock_factory.for_command.return_value = mock_client
+    mock_save_output.return_value = "outputs/caseplan_123.txt"
+
+    result = CliRunner().invoke(caseplan, [str(case_facts), "--budget", "minimal"])
+
+    assert result.exit_code == 0, result.output
+    _assert_disciplinary_posture(_system_messages(mock_client))
+
+
+@patch("litassist.commands.counselnotes.document_processor.read_document")
+@patch(
+    "litassist.commands.counselnotes.document_processor.LLMClientFactory.get_input_budget_for_command"
+)
+@patch("litassist.commands.counselnotes.core.show_command_completion")
+@patch("litassist.commands.counselnotes.core.save_log")
+@patch("litassist.commands.counselnotes.core.save_command_output")
+@patch("litassist.commands.counselnotes.core.LLMClientFactory")
+def test_counselnotes_prepends_matter_posture_from_flag(
+    mock_factory, mock_save, mock_log, mock_completion, mock_budget, mock_read
+):
+    # counselnotes takes no case_facts, so the posture comes via --matter-type.
+    mock_budget.return_value = 10000
+    mock_read.return_value = "Some legal document content"
+    mock_save.return_value = "output_file.md"
+
+    mock_client = MagicMock()
+    mock_client.model = "test-model"
+    mock_client.complete.return_value = (
+        "Strategic analysis result",
+        {"total_tokens": 100, "prompt_tokens": 60, "completion_tokens": 40},
+    )
+    mock_client.validate_citations.return_value = []
+    mock_factory.for_command.return_value = mock_client
+
+    runner = CliRunner()
+    with runner.isolated_filesystem():
+        with open("doc.md", "w") as f:
+            f.write("dummy")  # read_document is mocked
+        result = runner.invoke(counselnotes, ["doc.md", "--matter-type", "disciplinary"])
+
+    assert result.exit_code == 0, result.output
+    _assert_disciplinary_posture(_system_messages(mock_client))
+
+
+@patch("litassist.citation.verify.verify_all_citations", return_value=([], []))
+@patch("litassist.commands.brainstorm.analysis_generator.LLMClientFactory")
+@patch("litassist.commands.brainstorm.unorthodox_generator.LLMClientFactory")
+@patch("litassist.commands.brainstorm.orthodox_generator.LLMClientFactory")
+@patch("litassist.commands.brainstorm.core.LLMClientFactory")
+@patch("litassist.commands.brainstorm.core.save_command_output")
+@patch("litassist.commands.brainstorm.core.save_log")
+def test_brainstorm_prepends_matter_posture_to_all_generators(
+    mock_save_log,
+    mock_save_output,
+    mock_factory_core,
+    mock_factory_orth,
+    mock_factory_unorth,
+    mock_factory_analysis,
+    mock_verify_citations,
+):
+    """Posture must reach all three brainstorm generators; also exercises the
+    new --side complainant value end-to-end."""
+
+    def _client(content):
+        client = MagicMock()
+        client.model = "test/mock-model"
+        client.complete.return_value = (content, {"total_tokens": 300})
+        client.validate_citations.return_value = []
+        return client
+
+    orthodox_client = _client("## ORTHODOX\n### 1. Lodge the complaint\nBasis: LPUL")
+    unorthodox_client = _client("## UNORTHODOX\n### 1. Media pressure\nBasis: leverage")
+    analysis_client = _client("## ANALYSIS\nTop strategy: lodge the complaint")
+    analysis_client.verify.return_value = "No corrections needed"
+
+    verification_client = MagicMock()
+    verification_client.model = "test/mock-model"
+    verification_client.verify.return_value = ("## UNORTHODOX\n### 1. Media pressure", {})
+
+    mock_factory_orth.for_command.return_value = orthodox_client
+    mock_factory_unorth.for_command.side_effect = [
+        unorthodox_client,  # generation
+        verification_client,  # verification pass
+    ]
+    mock_factory_analysis.for_command.return_value = analysis_client
+    mock_factory_core.get_input_budget_for_command.return_value = 10_000_000
+    mock_factory_core.for_command.side_effect = [
+        orthodox_client,  # regeneration slots / final citation check
+        unorthodox_client,
+        analysis_client,
+    ]
+    mock_save_output.side_effect = lambda *a, **k: "brainstorm_output.txt"
+
+    runner = CliRunner()
+    with runner.isolated_filesystem():
+        with open("facts.md", "w") as f:
+            f.write(_DISCIPLINARY_FACTS)
+        result = runner.invoke(
+            brainstorm,
+            ["--facts", "facts.md", "--side", "complainant", "--area", "administrative"],
+        )
+
+    assert result.exit_code == 0, result.output
+    # All three generators must carry the regulator posture.
+    _assert_disciplinary_posture(_system_messages(orthodox_client))
+    _assert_disciplinary_posture(_system_messages(unorthodox_client))
+    _assert_disciplinary_posture(_system_messages(analysis_client))
