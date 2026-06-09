@@ -148,6 +148,10 @@ claude_*
 codex_*
 !**/codex_*/
 
+# Local AI-tool config dirs (untracked 10/06/2026 - kept on disk, out of VCS)
+.claude/
+.codex/
+
 # --- Additional Python-related ---
 *.pyd
 *.pdb
