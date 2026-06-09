@@ -443,7 +443,7 @@ def strategy(case_facts, outcome, strategies, heavy, noverify, output):
         except Exception:
             pass
 
-        next_steps_content, _ = llm_client.complete(
+        next_steps_content, next_steps_usage = llm_client.complete(
             [
                 {"role": "system", "content": system_prompt},
                 {"role": "user", "content": user_prompt},
@@ -490,7 +490,7 @@ def strategy(case_facts, outcome, strategies, heavy, noverify, output):
     except Exception:
         pass
     click.echo(info_message(f"Generating draft {doc_type}..."))
-    document_content = generate_draft_document(
+    document_content, document_usage = generate_draft_document(
         llm_client, system_prompt, user_prompt, strategy_content, outcome, doc_type
     )
     try:
@@ -523,8 +523,22 @@ def strategy(case_facts, outcome, strategies, heavy, noverify, output):
         verification_status=verification_status,
     )
 
+    # Aggregate token usage across the three generation stages (options,
+    # next-steps, draft). Reporting only the options usage under-counted true
+    # spend by roughly two-thirds. The standard verification stage also makes an
+    # LLM call, but verify() does not return its usage, so those tokens are a
+    # known residual excluded here (see litassist/llm/verification.py).
+    total_usage = {
+        key: (
+            strategy_usage.get(key, 0)
+            + next_steps_usage.get(key, 0)
+            + document_usage.get(key, 0)
+        )
+        for key in ("prompt_tokens", "completion_tokens", "total_tokens")
+    }
+
     # Save log
-    save_strategy_log(outcome, strategy_content, strategy_usage)
+    save_strategy_log(outcome, strategy_content, total_usage)
 
     # Show completion message
     click.echo()
@@ -538,6 +552,6 @@ def strategy(case_facts, outcome, strategies, heavy, noverify, output):
     click.echo(saved_message(f"Draft document saved to: {draft_file}"))
     click.echo(saved_message(f"Reasoning trace saved to: {trace_file}"))
     click.echo()
-    click.echo(stats_message(f"Total tokens used: {strategy_usage['total_tokens']:,}"))
+    click.echo(stats_message(f"Total tokens used: {total_usage['total_tokens']:,}"))
     click.echo()
     click.echo(tip_message(f"View strategic options: open {strategy_file}"))

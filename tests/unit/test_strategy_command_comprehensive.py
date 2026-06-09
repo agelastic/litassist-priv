@@ -211,6 +211,96 @@ class TestStrategyGeneration:
     @patch("litassist.commands.strategy.file_handler.save_log")
     @patch("litassist.commands.strategy.core.verify_content_if_needed")
     @patch("litassist.commands.strategy.core.PROMPTS")
+    def test_strategy_reports_summed_token_usage(
+        self,
+        mock_prompts,
+        mock_verify,
+        mock_save_log,
+        mock_save_output,
+        mock_llm_factory,
+    ):
+        """Total tokens must aggregate the options + next-steps + draft calls,
+        not just the first (options) call (Defect 3)."""
+        mock_prompts.get.return_value = "Test prompt"
+        mock_verify.return_value = ("Verified content", False, None)
+
+        mock_client = MagicMock()
+        # Three distinct usages for the three llm_client.complete() stages:
+        # options, next-steps, draft. 500 + 300 + 150 = 950.
+        mock_client.complete.side_effect = [
+            (
+                "## OPTION 1: Apply for Interim Injunction\nDetailed content...",
+                {"total_tokens": 500, "prompt_tokens": 300, "completion_tokens": 200},
+            ),
+            (
+                "Recommended next steps: file, serve, list for directions.",
+                {"total_tokens": 300, "prompt_tokens": 200, "completion_tokens": 100},
+            ),
+            (
+                "DRAFT ORIGINATING APPLICATION\nBody text.",
+                {"total_tokens": 150, "prompt_tokens": 100, "completion_tokens": 50},
+            ),
+        ]
+        mock_client.validate_citations.return_value = []
+        mock_llm_factory.return_value = mock_client
+        mock_save_output.return_value = "outputs/strategy_test.txt"
+
+        with tempfile.NamedTemporaryFile(mode="w", suffix=".txt", delete=False) as f:
+            f.write(
+                """
+            Parties:
+            John Smith v ABC Corporation
+
+            Background:
+            Contract dispute case
+
+            Key Events:
+            Contract signed and breached
+
+            Legal Issues:
+            Breach of contract
+
+            Evidence Available:
+            Contract documents
+
+            Opposing Arguments:
+            No breach occurred
+
+            Procedural History:
+            No prior proceedings
+
+            Jurisdiction:
+            Federal Court of Australia
+
+            Applicable Law:
+            Contract law
+
+            Client Objectives:
+            Obtain damages
+            """
+            )
+            facts_file = f.name
+
+        try:
+            runner = CliRunner()
+            with runner.isolated_filesystem():
+                result = runner.invoke(
+                    strategy,
+                    [facts_file, "--outcome", "Obtain interim injunction"],
+                    obj={"premium": False},
+                )
+
+            assert result.exit_code == 0
+            assert "Total tokens used: 950" in result.output
+
+        finally:
+            Path(facts_file).unlink()
+
+    @patch("litassist.commands.strategy.core.LLMClientFactory.for_command")
+    @patch("litassist.commands.strategy.file_handler.save_command_output")
+    @patch("litassist.commands.strategy.file_handler.save_log")
+    @patch("litassist.commands.strategy.core.verify_content_if_needed")
+    @patch("litassist.commands.strategy.core.PROMPTS")
     def test_strategy_short_circuit_recorded_not_complete(
         self,
         mock_prompts,
