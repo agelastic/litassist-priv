@@ -34,6 +34,8 @@ from litassist.prompts import PROMPTS
         ("Matter type: disciplinary", "disciplinary"),
         ("## 8. Jurisdiction\nMatter type: FOI\nOLSC", "foi"),
         ("8. **Matter type**: Civil\n", "civil"),
+        ("Matter type: **disciplinary**", "disciplinary"),  # bold value
+        ("Matter type: *foi*", "foi"),  # italic value
         ("MATTER TYPE : criminal", "criminal"),
         ("no matter type line here", None),
         ("", None),

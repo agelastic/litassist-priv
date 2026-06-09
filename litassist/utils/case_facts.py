@@ -122,7 +122,10 @@ DEFAULT_MATTER_TYPE = "civil"
 # One delimited line, e.g. "Matter type: disciplinary" (any leading numbering/
 # emphasis, case-insensitive). Single regex - no prose mining.
 _MATTER_TYPE_RE = re.compile(
-    r"(?im)^\s*[^a-zA-Z]*matter\s+type[*_]*\s*:\s*([A-Za-z][A-Za-z-]*)"
+    # The `[*_]*` before the value tolerates a markdown-emphasised value
+    # (e.g. "Matter type: **disciplinary**"), mirroring the emphasis already
+    # tolerated on the key.
+    r"(?im)^\s*[^a-zA-Z]*matter\s+type[*_]*\s*:\s*[*_]*([A-Za-z][A-Za-z-]*)"
 )
 
 
