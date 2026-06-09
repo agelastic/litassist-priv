@@ -1,6 +1,6 @@
 # LitAssist Feature Roadmap
 
-Last updated: 08/06/2026
+Last updated: 09/06/2026
 **Status:** Strategic planning; roadmap items are aspirational unless marked DONE, PARTIALLY SUPERSEDED, or already implemented elsewhere
 **Confidence:** 0.88
 
@@ -44,6 +44,12 @@ research is the lead active thrust on top of the matter-tracking foundation.
 Build-priority order: Foundation > Model quality & research > Citation/compliance
 > [dormant backlog: Professional complaints (deferred, gated on the tool-
 assessment TODO) and Litigation tooling] > FOI.
+
+**Measurement-first refinement (09/06/2026):** within the research thrust, the
+P-JUDGE offline eval is built **before** the ensemble (P1-12/P2-19), which only
+ships if P-JUDGE measures a real lift; and the eval is designed so the
+retrieval gap (un-fetchable Jade/AustLII-PDF/authorised-report cites) caps the
+citation-grounding score rather than hiding behind it. See Phase 2 and Next Steps.
 
 ---
 
@@ -92,6 +98,13 @@ data (`--type`), not code structure.
 **Priority:** CRITICAL - FOUNDATIONAL
 
 **Purpose:** Track all active matters with systematic persistence
+
+**Already partially live (P-MTYPE, shipped 08/06/2026):** `matter_type` already exists as a
+`Matter type:` line in case_facts, with a canonical taxonomy
+(civil/criminal/family/commercial/disciplinary/foi/administrative) and per-type prompt postures.
+Matter Memory's `--type` should adopt that canonical taxonomy (not the informal
+LITIGATION/COMPLAINT/FOI labels in the example IDs below) and become the canonical matter_type
+source, superseding the interim case_facts line (see P-MTYPE Phase 2).
 
 **Rationale:**
 - Everything else depends on this
@@ -245,21 +258,44 @@ data (`--type`), not code structure.
 
 ## PHASE 2: MODEL QUALITY & RESEARCH (Sprint 2) [LEAD ACTIVE THRUST]
 **Duration:** 42-54 hours
-**Goal:** The top active priority after the foundation - ensemble divergence /
-uncertainty quantification, long-context faithfulness, and repeatable offline
-quality measurement.
+**Goal:** The top active priority after the foundation - repeatable offline
+quality measurement **first**, then ensemble divergence / uncertainty
+quantification and long-context faithfulness measured against it. Driving goal
+(user, 09/06/2026): **trustworthy output** - citation-grounded, faithful, filable.
+
+**Build order within this phase [RE-SEQUENCED 09/06/2026, approved plan]:**
+P-JUDGE is built **first** as the measurement keystone. Without a repeatable
+offline eval, every other "quality" change here is judged by vibes (this
+roadmap's own framing: "measured vs guessed at"). P1-12 then ships **only if**
+P-JUDGE shows its 2-4x-cost cross-check actually improves output over the existing
+three-stage verify; P2-19 reuses P1-12's plumbing. P-FAITH is a sibling,
+sequenced as capacity allows. Rationale: P2-19 depends on P1-12, and neither is
+falsifiable without P-JUDGE - so committing the ensemble spend before the
+measurement that justifies it is the inversion this re-sequence corrects.
+
+**Binding constraint named (09/06/2026):** the real gap for trustworthy output is
+**retrieval, not verification**. `fetch_citation_context` returns nothing for
+Jade.io (SPA/auth-gated, skipped in `citation_context.py`), AustLII PDFs
+(Cloudflare-blocked), and authorised-report cites like `(1999) 201 CLR 1` (no
+neutral-citation URL to construct). So `verify --soundness` runs context-starved
+for those classes today. P-JUDGE must **surface and cap** on this (see its updated
+spec) rather than let a judge launder un-fetchable citations into a green score;
+otherwise ensemble verification polishes the output end of a pipe starved at the
+input.
 
 **Theme - ensemble divergence / uncertainty:** P1-12 and P2-19 together
 establish the principle that where independent models disagree, confidence is
 lower and human review is warranted (divergence as an "uncertainty interval").
 P-FAITH adds faithfulness checking of full-context outputs against their supplied
-sources; P-JUDGE adds a repeatable offline eval so prompt/model changes can be
-measured for quality regression rather than guessed at.
+sources.
 
 ### P1-12: Multi-Model Cross-Checks [ELEVATED TO HIGH]
 **Effort:** 8-10 hours
 **Priority:** HIGH (elevated 03/06/2026 - hard prerequisite for the now-elevated
-P2-19 Bias Divergence Detector; build before P2-19)
+P2-19 Bias Divergence Detector; build before P2-19).
+**GATED ON P-JUDGE (09/06/2026):** build P-JUDGE first, then ship this **only if**
+the P-JUDGE before/after comparison shows a positive per-dimension delta that
+beats the added 2-4x cost; otherwise shelve with evidence.
 
 **Purpose:** Quality assurance for critical documents
 
@@ -283,11 +319,23 @@ P2-19 Bias Divergence Detector; build before P2-19)
 - Complaint responses and determinations analysis
 - High-stakes correspondence
 
-**Implementation:**
-- Extend existing verification system in `litassist/verification_chain.py`
-  (reuse the multi-stage pipeline pattern of `run_cove_verification()` and model
-  routing via `LLMClientFactory.for_command()`)
-- New flag: `la verify --input submission.md --cross-check --matter COMPLAINT-001`
+**Implementation [approved plan 09/06/2026]:**
+- New module `litassist/commands/verify/ensemble.py` (stateless functions), NOT in
+  `verification_chain.py` - the ensemble is verify-only and read-only (it compares,
+  it does not rewrite the document); `verification_chain.py` is the
+  content-mutation chain for extractfacts/strategy/draft. Reuse model routing via
+  `LLMClientFactory.for_command()`.
+- New flag on the existing `verify` command (which takes a **positional FILE arg**,
+  not `--input`): `la verify submission.md --cross-check`. Additive, mirroring
+  `--cove`; composes with the three core checks.
+- Fixed 3-model panel (`crosscheck-claude`/`gpt5`/`o3` config roles -> exact ids
+  `anthropic/claude-sonnet-4.6` / `openai/gpt-5.5` / `openai/o3-pro`) plus a
+  `crosscheck-arbiter` LLM that emits a structured `=== AGREEMENT ===` /
+  `=== DISAGREEMENTS ===` / `=== FLAGGED FOR HUMAN REVIEW ===` / `=== CONFIDENCE ===`
+  report (marker regex, fail-closed; confidence surfaced verbatim, never recomputed)
+- Cost made explicit: a `[COST]` banner per ensemble stage (reads the currently
+  unused `input_price_per_mtok`/`output_price_per_mtok` in `model_capabilities.yaml`)
+- HIGH disagreement -> warning only (project warn-not-fail), not a non-zero exit
 - Output: Agreement level + disagreements highlighted + confidence score
 
 ---
@@ -317,12 +365,19 @@ P2-19 Bias Divergence Detector; build before P2-19)
 - Strategic advice where different models suggest different approaches
 - Settlement recommendations where stakes are high
 
-**Implementation:**
-- Extend `litassist/verification_chain.py` with divergence detection
-- New module: `litassist/verification/divergence.py`
-- Commands:
-  - `la verify --input strategy.md --divergence-check`
-  - `la verify --input risk_assessment.md --divergence-check --models claude,gpt5,o3`
+**Implementation [approved plan 09/06/2026]:** thin add on P1-12, GATED on P-JUDGE.
+- Reuse `litassist/commands/verify/ensemble.py` (not a separate
+  `litassist/verification/divergence.py`): `run_divergence_check()` reuses the
+  `crosscheck-*` role configs and only swaps to a `divergence-arbiter` prompt key
+  ("treat substantive divergence as uncertainty; wording differences are not
+  divergence"; same structured contract as P1-12)
+- New flags on the existing `verify` command (positional FILE arg):
+  - `la verify strategy.md --divergence-check`
+  - `la verify risk_assessment.md --divergence-check --models claude,gpt5,o3`
+  - `--models` without `--divergence-check` -> `click.BadOptionUsage` (precedent:
+    `--cove-reference` requires `--cove`); default when omitted: `claude,gpt5`
+    (2-model, cheapest). Alias -> config-role mapping is a plain dict; no model id
+    in Python; fail-fast on unknown alias.
 - LLM: Run through Claude Sonnet 4.6, GPT-5.5, and optionally o3-pro
 - Output: Divergence report + agreement/disagreement matrix + confidence score + flagged sections
 
@@ -370,33 +425,58 @@ facts - no drift, no silent omission, no invented specifics beyond the existing
 
 ### P-JUDGE: LLM-as-Judge Eval Harness [NEW - 04/06/2026]
 **Effort:** 14-18 hours
-**Priority:** HIGH
+**Priority:** HIGHEST - BUILD FIRST (measurement keystone; re-sequenced
+09/06/2026). Everything else in Phase 2 is gated on this existing, so its lift can
+be measured rather than assumed.
 
 **Purpose:** Repeatable **offline** quality scoring of litassist outputs
-(citation grounding, IRAC structure, Australian-English, faithfulness) as a
-regression eval - not per-document verification.
+(citation grounding, IRAC structure, Australian-English, faithfulness, AGLC
+format) as a regression eval - not per-document verification.
 
 **Rationale:**
 - Today `test-scripts/test_quality.py` only checks model *availability* and
   spelling, not content quality
 - No current way to tell whether a prompt or model change improves or regresses
   output quality
+- It is the gate for P1-12/P2-19: ship the ensemble only if it scores higher here
 
 **Capabilities:**
-- Curated benchmark set of (input, rubric/reference) cases
+- Curated benchmark set of (output, sources, expected-citations) cases
 - Judge model scores each output against a rubric (0-100 across dimensions)
-- Aggregate report + per-dimension breakdown
-- Diff vs previous run to catch regressions
+- Aggregate report + per-dimension breakdown; baseline + per-dimension tolerance
+  so a run flags REGRESSION when a dimension drops below baseline
+- **Retrieval-gap surfacing (load-bearing):** each benchmark case tags its
+  citations `fetchable: true|false` + `retrieval_class`
+  (`jade_spa`/`austlii_pdf_blocked`/`authorised_report`); the judge is instructed
+  not to use outside knowledge to confirm a cite absent from SOURCES; the harness
+  computes `grounding_coverage` and **caps `citation_grounding` by it**, so while
+  these classes stay un-fetchable no case relying on them can score 100. A
+  standalone `=== RETRIEVAL GAP ===` report section makes the gap a quantified
+  line item; when later retrieval work flips tags to `fetchable:true`, the ceiling
+  lifts and the eval registers the gain.
 
-**Implementation:**
-- New `test-scripts/test_judge_eval.py`, building on `test_quality.py`'s
-  `quality_score` pattern and the `EnhancedTestResult` formatter
-- Rubric prompts in a dedicated eval prompt file
-- Judge LLM: GPT-5.5 (or a small panel)
-- Manual real-API script (incurs cost), consistent with the `test-scripts/`
-  convention - **NOT** in the offline pytest suite
-- Reuse `LLMClientFactory.for_command()` for routing and the `litassist/logging/`
-  package for the audit trail
+**Implementation [approved plan 09/06/2026]:**
+- New `test-scripts/test_judge_eval.py` (plain functions + `main()`), building on
+  `test_quality.py` / `test_utils.py` conventions; manual real-API script (incurs
+  cost), **NOT** in the offline pytest suite. Pure parsing/scoring helpers get
+  offline unit tests in `tests/unit/`.
+- Benchmark fixtures under `test-scripts/judge_eval/` (`cases/`, `sources/`,
+  `baseline/baseline_scores.yaml`, gitignored `results/`)
+- Rubric prompts in a new `litassist/prompts/judge_eval.yaml` (auto-merged by
+  PromptManager): `system_prompt`, `task_template`, per-dimension `rubric_*`,
+  `context_starved_instruction`
+- New `judge-eval` entry in `litassist/llm/model_configs.yaml` -> `openai/gpt-5.5`,
+  temperature 0, thinking max, `enforce_citations: false` (so fixtures'
+  deliberately-unfetchable cites are not stripped)
+- Structured output contract enforced by prompt, no fallback parsing, fail closed
+  (mirrors the `VERDICT: PASS|FAIL` pattern): judge must end with a
+  `=== JUDGE SCORES (JSON) ===` block; harness recomputes `overall` from
+  dimensions and uses the model's number only as a cross-check
+- Reuse `LLMClientFactory.for_command('judge-eval')` for routing and
+  `litassist/logging/` for the audit trail; call `complete(..., skip_citation_verification=True)`
+  so the judge's own verdict text is not itself citation-verified
+- Optional `--confirm-retrieval` flag re-runs `fetch_citation_context` to assert
+  the fetchable tags have not drifted
 - Optional later surface: `la verify --judge` for single-doc rubric scoring
 
 ---
@@ -1244,11 +1324,23 @@ la profile --create "Agency A" --type government
 2. P0A-3 Letter Doctor + P0A-4 Correspondence Analyzer + P0B-6 Procedural Advisor
    (26-32h) - correspondence quality/triage (P0A-4 includes a professional-
    oversight branch) plus cross-matter next-step/deadline guidance
-3. Phase 2 Model Quality & Research thrust (LEAD): P1-12 Multi-Model Cross-Checks
-   -> P2-19 Bias Divergence Detector (build P1-12 first), then P-FAITH Long-
-   Context Faithfulness and P-JUDGE Eval Harness
+3. Phase 2 Model Quality & Research thrust (LEAD) [RE-SEQUENCED 09/06/2026,
+   approved plan - measurement before the thing it measures]:
+   **P-JUDGE Eval Harness FIRST** (keystone; calibrate baseline) -> P1-12
+   Multi-Model Cross-Checks, shipped **only if** P-JUDGE shows lift > cost ->
+   P2-19 Bias Divergence Detector (thin add on P1-12) -> P-FAITH Long-Context
+   Faithfulness as capacity allows.
 4. Phase 3 Citation & Compliance as capacity allows
    (Phase 4 Professional Complaints stays dormant unless step 0 says otherwise.)
+
+**Parallel de-risk track (low cost, no build dependency; approved 09/06/2026):**
+- **CSE -> Vertex AI Search migration scoping** - the Google CSE JSON API retires
+  **01/01/2027** and is the database layer of `verify`/`lookup`; it is the only
+  item with a hard external deadline that breaks a core feature. Validate the path
+  in `docs/development/GOOGLE_CSE_MIGRATION_PLAN.md` now (deliverable: a validated
+  cutover doc, not the migration). Tracked in `TODO.md`.
+- **Licensing reconciliation** - `setup.py` says proprietary; no LICENSE file/prose.
+  ~1h once the proprietary-vs-OSS decision is made. Tracked in `TODO.md`.
 
 **Total Phase 1 Effort:** 41-50 hours
 
