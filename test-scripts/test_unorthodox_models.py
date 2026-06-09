@@ -38,7 +38,6 @@ import time
 import argparse
 
 import yaml
-from openai import OpenAI  # HTTP client against OpenRouter, as in test_quality.py
 
 # Add the project root to the Python path so litassist imports resolve.
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
@@ -46,6 +45,7 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from litassist.prompts import PROMPTS  # noqa: E402
 from litassist.commands.brainstorm.core import _extract_strategies  # noqa: E402
 from litassist.utils.legal_reasoning import create_reasoning_prompt  # noqa: E402
+from litassist.llm.factory import LLMClientFactory  # noqa: E402
 
 REPO_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 CONFIG_PATH = os.path.join(REPO_ROOT, "config.yaml")
@@ -102,20 +102,19 @@ A refund of overcharged costs and a finding of unsatisfactory professional condu
 """
 
 
-def load_openrouter_config():
-    """Load the OpenRouter key/base from the repo-root config.yaml (fail fast)."""
+def require_openrouter_config():
+    """Fail fast if the repo-root config.yaml lacks a real OpenRouter key.
+
+    The actual model calls go through LLMClient, which loads config itself; this
+    is only an early, friendly guard before spending money.
+    """
     if not os.path.exists(CONFIG_PATH):
         sys.exit("Error: config.yaml not found at repo root.")
     with open(CONFIG_PATH) as f:
         cfg = yaml.safe_load(f) or {}
-    try:
-        key = cfg["openrouter"]["api_key"]
-        base = cfg["openrouter"].get("api_base", "https://openrouter.ai/api/v1")
-    except (KeyError, TypeError):
-        sys.exit("Error: config.yaml missing openrouter.api_key")
+    key = (cfg.get("openrouter") or {}).get("api_key")
     if not key or "YOUR_" in str(key):
-        sys.exit("Error: OpenRouter API key is a placeholder; set a real key.")
-    return key, base
+        sys.exit("Error: OpenRouter API key missing/placeholder in config.yaml.")
 
 
 def load_prices():
@@ -158,30 +157,33 @@ def estimate_cost(caps, model, usage):
     ) * pout
 
 
-def evaluate_model(client, model, messages, caps):
-    """One real call to `model`; return a result dict (or an error dict)."""
-    t0 = time.monotonic()
+def evaluate_model(model, messages, caps):
+    """One real call to `model` via the PRODUCTION LLMClient path; return a result
+    dict (or an error dict).
+
+    Using LLMClientFactory.for_command('brainstorm', 'unorthodox', model=...) means
+    the request carries the SAME decoding parameters and per-model parameter
+    handling production uses (for_command applies the override before constructing
+    the client), so a refusal here matches a real brainstorm run. A bare
+    chat-completions call would send a different request and could mis-measure
+    refusal behaviour.
+    """
     try:
-        resp = client.chat.completions.create(model=model, messages=messages)
-    except Exception as e:  # one bad model must not abort the matrix
+        client = LLMClientFactory.for_command("brainstorm", "unorthodox", model=model)
+        client.command_context = "unorthodox_model_eval"
+        t0 = time.monotonic()
+        content, usage = client.complete(messages, skip_citation_verification=True)
+    except Exception as e:  # one bad model (e.g. BYOK not configured) must not abort the matrix
         return {"model": model, "error": str(e)[:200]}
     latency = time.monotonic() - t0
-    content = resp.choices[0].message.content or ""
-    usage = {}
-    if getattr(resp, "usage", None):
-        usage = {
-            "prompt_tokens": resp.usage.prompt_tokens,
-            "completion_tokens": resp.usage.completion_tokens,
-            "total_tokens": resp.usage.total_tokens,
-        }
-    parsed = _extract_strategies(content, "unorthodox")
+    parsed = _extract_strategies(content or "", "unorthodox")
     return {
         "model": model,
         "strategies": len(parsed),
         "refused": len(parsed) == 0,
         "latency_s": round(latency, 1),
-        "cost": estimate_cost(caps, model, usage),
-        "snippet": " ".join(content.split())[:140],
+        "cost": estimate_cost(caps, model, usage or {}),
+        "snippet": " ".join((content or "").split())[:140],
     }
 
 
@@ -201,7 +203,7 @@ def main(argv=None):
         if args.models
         else DEFAULT_CANDIDATES
     )
-    key, base = load_openrouter_config()
+    require_openrouter_config()
     caps = load_prices()
 
     total_calls = len(models) * args.trials
@@ -212,13 +214,12 @@ def main(argv=None):
         if input("Type RUN to proceed: ").strip() != "RUN":
             sys.exit("Aborted.")
 
-    client = OpenAI(base_url=base, api_key=key)
     messages = build_unorthodox_messages()
 
     results = []
     for model in models:
         for _ in range(args.trials):
-            results.append(evaluate_model(client, model, messages, caps))
+            results.append(evaluate_model(model, messages, caps))
 
     header = f"{'model':32} {'refused':8} {'strats':7} {'lat(s)':7} {'est $':8}"
     print("\n" + "=" * len(header))
