@@ -239,6 +239,43 @@ run_cmd() {
   fi
 }
 
+# caseplan reads its CURRENT WORKING DIRECTORY for "source documents" to
+# reference (discover_source_files scans os.scandir(".")). Run from a clean
+# per-invocation dir holding ONLY the one facts file, so it does not ingest
+# unrelated repo docs (README, CLAUDE.md, requirements.txt, ...). Pin
+# LITASSIST_OUTPUT_DIR to the repo outputs/ (output_saver.py honours it) so the
+# generated plan still lands there and the new-file scan below works unchanged.
+run_caseplan() {
+  local label="$1" tag="$2" facts="$3"
+  hdr "$label  (matter=$tag)"
+  local cleandir="$WORK/${label}_cwd"
+  mkdir -p "$cleandir"
+  cp "$facts" "$cleandir/"
+  local base outdir before after rc newfiles
+  base=$(basename "$facts")
+  outdir="$(pwd)/outputs"
+  echo "\$ (cd $cleandir && LITASSIST_OUTPUT_DIR=$outdir litassist caseplan $base --budget standard)"
+  before=$(ls -1 "$outdir" 2>/dev/null | sort || true)
+  ( cd "$cleandir" && LITASSIST_OUTPUT_DIR="$outdir" litassist caseplan "$base" --budget standard ) \
+    2>&1 | tee "$WORK/${label}.stdout.log"
+  rc=${PIPESTATUS[0]}
+  after=$(ls -1 "$outdir" 2>/dev/null | sort || true)
+  if (( rc != 0 )); then
+    err "  command exited $rc (see $WORK/${label}.stdout.log)"
+    return 0
+  fi
+  ok "  command ok"
+  newfiles=$(comm -13 <(echo "$before") <(echo "$after"))
+  if [[ -z "$newfiles" ]]; then
+    warn "  no new file in outputs/ (check the .stdout.log)"
+    scan_file "$WORK/${label}.stdout.log" "$tag"
+  else
+    while IFS= read -r nf; do
+      [[ -n "$nf" ]] && scan_file "$outdir/$nf" "$tag"
+    done <<< "$newfiles"
+  fi
+}
+
 # --- cost gate --------------------------------------------------------------
 case "$MODE" in
   quick)   N_CMDS=5 ;;
@@ -316,11 +353,11 @@ if [[ "$MODE" == "all" ]]; then
     litassist brainstorm --facts "$CIVIL" --side complainant --area administrative
 
   # caseplan full plan: the complaint-drafting deliverable phase should culminate
-  # in a regulator submission for a disciplinary matter, not an advice memo.
-  run_cmd "caseplan-disciplinary" disciplinary \
-    litassist caseplan "$DISC" --budget standard
-  run_cmd "caseplan-civil" civil \
-    litassist caseplan "$CIVIL" --budget standard
+  # in a regulator submission for a disciplinary matter, not an advice memo. Run
+  # via run_caseplan so each invocation sees only its own facts file as a source
+  # document (not the whole repo's markdown/txt) - see run_caseplan above.
+  run_caseplan "caseplan-disciplinary" disciplinary "$DISC"
+  run_caseplan "caseplan-civil" civil "$CIVIL"
 fi
 
 # --- wrap-up ----------------------------------------------------------------
