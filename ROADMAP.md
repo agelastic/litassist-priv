@@ -1,6 +1,6 @@
 # LitAssist Feature Roadmap
 
-Last updated: 09/06/2026
+Last updated: 10/06/2026
 **Status:** Strategic planning; roadmap items are aspirational unless marked DONE, PARTIALLY SUPERSEDED, or already implemented elsewhere
 **Confidence:** 0.88
 
@@ -1145,6 +1145,42 @@ stage to guard. If hallucination control in long-context drafts becomes
 a need, the right surface is the existing CoVe / citation-verification
 chain in `litassist/verification_chain.py` (and the new P-FAITH faithfulness
 checker), not a re-introduced retrieval pipeline.
+
+---
+
+### P-TOK: Complete Token & Cost Accounting [NEW - 10/06/2026]
+**Effort:** 8-12 hours
+**Priority:** MEDIUM (pairs with Pricing-aware features in TODO.md Next Steps #4)
+
+**Purpose:** Make per-command token accounting complete and consistent, and surface
+input/output token counts in EVERY command's output - not just a combined total in a few.
+
+**Current state (audited 10/06/2026):** per-call usage IS logged by
+`LLMClient.complete()` (full audit trail, including output/completion tokens), but the
+command-level rollups are patchy:
+- Only `strategy`, `barbrief`, `counselnotes`, `digest` print a user-facing total;
+  `lookup`, `draft`, `extractfacts`, `updatefacts`, `caseplan`, `verify`, `verify-cove`
+  print none. Output tokens are never surfaced separately anywhere.
+- Several rollups drop secondary-call usage: `brainstorm` plausibility
+  (`core.py:200`), regeneration (`citation_regenerator.py:115`) and `--verify`; `verify`
+  reasoning stage (`reasoning_handler.py:158`); `updatefacts` (`core.py:159`).
+- `verify()` (`llm/verification.py:95`) returns `(result, model)` and drops usage, so
+  every verification call's tokens are uncounted at command level.
+
+**Implementation:**
+- New `litassist/llm/usage.py`: `merge_usage(*usages)` (pure per-key sum, ignores None)
+  and `format_token_usage(usage)` -> `"N (in: X, out: Y)"`. Replaces the four hand-rolled
+  sums (brainstorm, strategy, digest, counselnotes).
+- Change `verify()` to also return usage; update its 4 real callers
+  (`verification_chain.py:88`, `brainstorm/core.py:697`, `verify/soundness_checker.py:108`,
+  `legal_reasoning.py:308`). The verification subsystem has wide blast radius - grep callers,
+  change atomically.
+- Capture the dropped usages; add a consistent `Total tokens used: N (in: X, out: Y)` line
+  to every command via the helper.
+- Feeds Pricing-aware features (per-call cost, `--budget`, cost-aware model selection).
+
+**Note:** closes the `strategy` verification-stage token residual already documented in
+CHANGELOG (the `verify()` usage change is the missing piece).
 
 ---
 

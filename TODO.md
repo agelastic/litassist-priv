@@ -1,6 +1,6 @@
 # LitAssist Development TODO
 
-Last updated: 09/06/2026
+Last updated: 10/06/2026
 
 **Note:** Strategic feature planning (litigation support, advisory capabilities, new commands) is now in [ROADMAP.md](ROADMAP.md). This file focuses on bugs, technical debt, and code quality improvements.
 
@@ -31,6 +31,7 @@ Phase 2 + Next Steps.
 - [ ] Automate performance benchmarking and monitoring setup [MON]
 - [ ] Implement OpenAI API fine-tuning per platform recommendations
 - [ ] Add LLM response streaming functionality
+- [ ] **Complete token & cost accounting + in/out surfacing [PLANNED - see ROADMAP P-TOK]:** per-call usage IS logged by `LLMClient.complete()` (audit trail complete, including output/completion tokens), but command-level totals are inconsistent. Only `strategy`/`barbrief`/`counselnotes`/`digest` print a user-facing total; `lookup`/`draft`/`extractfacts`/`updatefacts`/`caseplan`/`verify`/`verify-cove` print none; output tokens are never surfaced separately anywhere; and several rollups drop secondary-call usage - `brainstorm` plausibility (`core.py:200`) + regeneration (`citation_regenerator.py:115`) + `--verify`, `verify` reasoning stage (`reasoning_handler.py:158`), `updatefacts` (`core.py:159`) - while `verify()` (`llm/verification.py:95`) drops usage on return so every verification call's tokens are uncounted at command level. Plan: shared `litassist/llm/usage.py` (`merge_usage` + `format_token_usage` -> "N (in: X, out: Y)"); change `verify()` to also return usage (4 real callers: `verification_chain.py:88`, `brainstorm/core.py:697`, `verify/soundness_checker.py:108`, `legal_reasoning.py:308`); capture the dropped usages; add a consistent "Total tokens used: N (in: X, out: Y)" line to every command. Ties into Pricing-aware features (Next Steps #4); closes the strategy verification-stage residual.
 - [ ] Expose model configuration parameters via CLI/env vars
 - [ ] Develop "student mode" with newcomer-friendly explanations
 - [ ] **Add optional reasoning trace file output**: CORRECTION (June 2026): strategy and verify already write reasoning traces to separate timestamped files by default (`litassist/commands/strategy/file_handler.py`, `litassist/commands/verify/reasoning_handler.py`); the premise "embedded in main output only" was stale. Residual scope is narrow - an opt-in `--save-reasoning` file for commands that do NOT already emit one (notably draft). Re-confirm need before building; may be useful for professional-liability audit trails.
