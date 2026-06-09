@@ -27,6 +27,7 @@ def generate_full_plan(
     budget: str,
     output: str,
     source_files: Optional[list] = None,
+    matter_posture: str = "",
 ) -> Tuple[str, Optional[str], Dict]:
     """
     Generate full litigation plan and extract commands.
@@ -63,6 +64,8 @@ def generate_full_plan(
     system_prompt = PROMPTS.get("commands.caseplan.system").format(
         litassist_capabilities=PROMPTS.get("capabilities.litassist_capabilities")
     )
+    if matter_posture:
+        system_prompt = matter_posture + "\n\n" + system_prompt
 
     # Build the main user prompt
     prompt_parts = [

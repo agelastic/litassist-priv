@@ -1,6 +1,6 @@
 # LitAssist Reference Manual
 
-Last updated: 03/06/2026
+Last updated: 08/06/2026
 
 ---
 
@@ -62,6 +62,8 @@ reference this case.
 **Case Overview:** Smith v Jones (Federal Circuit and Family Court of Australia,
 Division 1)
 
+**Matter type:** family (the value `extractfacts` would propose for the running example, recorded under the Jurisdiction heading of `case_facts.md`; see Section 3.4).
+
 **Key Parties:**
 
 - Jennifer Smith (mother, 38): Formerly resided in Sydney, relocated to Brisbane
@@ -111,7 +113,9 @@ caseplan --> extractfacts --> updatefacts --> lookup --> brainstorm --> strategy
 - `caseplan` reads case facts and generates a phased workflow with executable
   commands
 - `extractfacts` processes raw documents into the structured 10-heading format
-  required by `brainstorm`, `strategy`, and `barbrief`
+  required by `brainstorm`, `strategy`, and `barbrief` (including the `Matter type:`
+  line under Jurisdiction, which `extractfacts` proposes and `updatefacts` preserves;
+  see Section 3.4)
 - `updatefacts` (optional) merges `extractfacts`/`digest` output into an
   auto-discoverable `case_facts_<timestamp>.md`, removing the manual copy step
 - `lookup` produces research reports that feed into `brainstorm` via `--research`
@@ -357,7 +361,26 @@ LitAssist distinguishes between two types of files:
 4. Copy the most relevant strategies to `strategies.txt`
 5. Use these working files as stable inputs for `strategy`, `barbrief`, etc.
 
-### 3.4 Audit Logs
+### 3.4 Matter type (posture)
+
+`case_facts.md` carries a `Matter type:` line under the Jurisdiction heading, e.g.
+`Matter type: disciplinary`. `extractfacts` proposes it (classified from the source
+documents) and `updatefacts` preserves it; review and correct it like any other fact.
+
+The framing commands (`barbrief`, `strategy`, `brainstorm`, `caseplan`) read this value
+and adjust their posture - the forum, document type, available remedies, and what to
+avoid - so a regulatory/disciplinary complaint is framed for the relevant commissioner
+rather than defaulting to court litigation. Valid values: `civil` (the default),
+`criminal`, `family`, `commercial`, `disciplinary` (a professional-conduct/regulatory
+complaint), `foi`, `administrative`.
+
+If the line is absent or unrecognised, the commands assume `civil` (litigation) and
+print a warning - existing matters behave exactly as before. `counselnotes` takes
+arbitrary files rather than `case_facts`, so it accepts an optional `--matter-type`
+flag instead (defaulting to `civil`). `brainstorm --side` also accepts `complainant`
+for regulatory/FOI matters.
+
+### 3.5 Audit Logs
 
 Every LLM request and response is logged with full detail:
 
@@ -379,7 +402,7 @@ Every LLM request and response is logged with full detail:
 Logs are never truncated. This provides a complete audit trail for compliance and
 review.
 
-### 3.5 Clean CLI Output
+### 3.6 Clean CLI Output
 
 LitAssist shows concise terminal summaries rather than dumping full content. Every
 command follows a consistent output pattern:
@@ -494,6 +517,8 @@ skips that prompt. Subsequent runs just re-execute the generated Python runner.
   was chosen over `--mode broad`).
 
 **Model:** Claude Opus 4.7 (full plan); Claude Sonnet 4.6 (budget assessment)
+
+**Matter type awareness:** caseplan reads the `Matter type:` line in `case_facts` and adapts the plan's posture - the forum, document types, and remedies it recommends. If the line is absent or unrecognised it assumes `civil` and prints a warning. See Section 3.4.
 
 **Per-run isolation:** With `--budget`, caseplan saves an executable **Python
 runner** (e.g. `outputs/caseplan_commands_comprehensive_<ts>.py`) - run it with
@@ -851,7 +876,10 @@ Every extractfacts output is organised under these headings:
 10. **Client Objectives** -- What the client wants to achieve
 
 This structure is validated by `strategy` and consumed by `brainstorm`, `strategy`,
-and `barbrief`. See Section 6.3 for the full explanation of each heading.
+and `barbrief`. See Section 6.3 for the full explanation of each heading. The
+Jurisdiction heading also carries a `Matter type:` line (e.g. `Matter type: family`)
+that extractfacts proposes and the framing commands read to set their posture; see
+Section 3.4.
 
 **Verification:**
 
@@ -913,6 +941,8 @@ providing for a week-about arrangement...
 
 - Process all relevant documents in a single extractfacts call for consolidated
   output.
+- Review the proposed `Matter type:` line under Jurisdiction and correct it if the
+  classification is wrong; the framing commands rely on it (see Section 3.4).
 - Review and refine the output before using it as `case_facts.md` for downstream
   commands.
 - Use `--heavy` for matters heading to court; use standard verification for early
@@ -954,6 +984,8 @@ litassist updatefacts <files>... [OPTIONS]
 
 - The ten headings are preserved; existing facts are kept unless the new material
   directly corrects them, and conflicting sources are flagged.
+- The existing `Matter type:` line under Jurisdiction is preserved across merges
+  (updatefacts does not re-classify it); see Section 3.4.
 - Anything that does not fit a heading -- plus the merge model's observations and
   any source conflicts -- is collected under a final **Notes** section. The
   10-heading validator tolerates this extra section.
@@ -1005,7 +1037,7 @@ litassist brainstorm [OPTIONS]
 | Option | Type | Description |
 |--------|------|-------------|
 | `--facts` | path(s) | Case facts file(s), glob supported. Defaults to `case_facts.md` |
-| `--side` | `plaintiff` / `defendant` / `accused` / `respondent` | Required: which side you represent |
+| `--side` | `plaintiff` / `defendant` / `accused` / `respondent` / `complainant` | Required: which side you represent (`complainant` = regulatory/FOI complaints) |
 | `--area` | `criminal` / `civil` / `family` / `commercial` / `administrative` | Required: area of law |
 | `--research` | path(s) | Research files from lookup, glob supported |
 | `--verify` | flag | Add LLM content verification |
@@ -1039,6 +1071,8 @@ analysis stages. These show the logic behind strategy selection and ranking.
 
 **Models:** Claude Sonnet 4.6 (orthodox), Grok 4.20 (unorthodox), o3-pro (analysis)
 **BYOK required:** Yes (analysis stage)
+
+**Matter type awareness:** brainstorm reads the `Matter type:` line in `case_facts` and frames strategies for the relevant posture (e.g. a disciplinary or FOI matter is framed for the relevant commissioner/agency rather than court litigation). An absent or unrecognised line defaults to `civil` with a warning. For regulatory/FOI matters pass `--side complainant`. See Section 3.4.
 
 **Smith v Jones example:**
 
@@ -1118,6 +1152,8 @@ litassist strategy <case_facts> [OPTIONS]
 **Input validation:**
 
 The strategy command validates that the input file follows the 10-heading structure.
+
+**Matter type awareness:** strategy reads the `Matter type:` line in the case facts and adapts the forum, document archetype, and remedies it targets. An absent or unrecognised line defaults to `civil` with a warning. See Section 3.4.
 Files that do not contain the expected headings will produce an error with guidance
 on using extractfacts first.
 
@@ -1287,7 +1323,9 @@ litassist draft case_facts.md strategies.txt \
 
 **Purpose:** Generate strategic analysis from an advocate's perspective, identifying
 tactical opportunities, risks, and actionable recommendations. This complements
-the neutral analysis provided by digest.
+the neutral analysis provided by digest. Because counselnotes takes arbitrary files
+rather than `case_facts`, set its posture with `--matter-type` (default `civil` with
+a warning); see Section 3.4.
 
 **Syntax:**
 
@@ -1306,6 +1344,7 @@ litassist counselnotes <files>... [OPTIONS]
 | Option | Type | Description |
 |--------|------|-------------|
 | `--extract` | `all` / `citations` / `principles` / `checklist` | Extract structured JSON data |
+| `--matter-type` | `civil` / `criminal` / `family` / `commercial` / `disciplinary` / `foi` / `administrative` | Posture framing (counselnotes has no `case_facts` to read it from); defaults to `civil` with a warning |
 | `--verify` | flag | Enable citation verification |
 | `--output` | text | Custom output filename prefix |
 
@@ -1406,6 +1445,8 @@ litassist barbrief [case_facts] [OPTIONS]
 
 **Model:** o3-pro (extended output capacity: 32K tokens)
 **BYOK required:** Yes
+
+**Matter type awareness:** barbrief reads the `Matter type:` line in the case facts and frames the brief for the appropriate forum and process (e.g. a regulatory complaint is addressed to the relevant commissioner rather than a court). An absent or unrecognised line defaults to `civil` with a warning. See Section 3.4.
 
 **Smith v Jones example:**
 
@@ -1778,6 +1819,9 @@ by `brainstorm`, `strategy`, and `barbrief`.
 8. **Jurisdiction**
    - Which court has jurisdiction, which legislation applies, which procedural
      rules govern the proceedings.
+   - Include a `Matter type:` line here (one of `civil`, `criminal`, `family`,
+     `commercial`, `disciplinary`, `foi`, `administrative`). The framing commands
+     read it to set their posture; see Section 3.4.
 
 9. **Applicable Law**
    - Key statutes, regulations, and leading cases relevant to the legal issues.

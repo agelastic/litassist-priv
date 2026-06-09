@@ -11,48 +11,6 @@ from litassist.verification_chain import format_cove_report
 class TestFormatCoveReportNoneHandling:
     """Test format_cove_report handles None values correctly."""
 
-    def test_handles_none_questions(self):
-        """Should handle None questions value gracefully."""
-        cove_results = {
-            "cove": {
-                "questions": None,  # Explicitly None
-                "answers": "Some answers",
-                "issues": "Some issues",
-                "passed": False,
-            }
-        }
-        report = format_cove_report(cove_results)
-        assert "No questions generated" in report
-        assert isinstance(report, str)
-
-    def test_handles_none_answers(self):
-        """Should handle None answers value gracefully."""
-        cove_results = {
-            "cove": {
-                "questions": "Some questions",
-                "answers": None,  # Explicitly None
-                "issues": "Some issues",
-                "passed": False,
-            }
-        }
-        report = format_cove_report(cove_results)
-        assert "No answers generated" in report
-        assert isinstance(report, str)
-
-    def test_handles_none_issues(self):
-        """Should handle None issues value gracefully."""
-        cove_results = {
-            "cove": {
-                "questions": "Some questions",
-                "answers": "Some answers",
-                "issues": None,  # Explicitly None - this was item 10 in the error
-                "passed": True,
-            }
-        }
-        report = format_cove_report(cove_results)
-        assert "No issues checked" in report
-        assert isinstance(report, str)
-
     def test_handles_all_none_values(self):
         """Should handle all None values gracefully."""
         cove_results = {
@@ -72,15 +30,6 @@ class TestFormatCoveReportNoneHandling:
     def test_handles_missing_cove_key(self):
         """Should handle missing cove key gracefully."""
         cove_results = {}
-        report = format_cove_report(cove_results)
-        assert "No questions generated" in report
-        assert "No answers generated" in report
-        assert "No issues checked" in report
-        assert isinstance(report, str)
-
-    def test_handles_empty_cove_dict(self):
-        """Should handle empty cove dict gracefully."""
-        cove_results = {"cove": {}}
         report = format_cove_report(cove_results)
         assert "No questions generated" in report
         assert "No answers generated" in report

@@ -76,13 +76,20 @@ def validate_case_facts_format(text: str) -> bool:
     for heading in required_headings:
         # The heading must be the first alphabetic token on its line, after an
         # optional non-alphabetic prefix (numbering, markdown bold/heading marks,
-        # whitespace), then optional closing emphasis (`*`/`_`), then the real
-        # terminator: a colon or end-of-line. This accepts every form extractfacts
-        # produces - "1. **Parties**: ...", "**Parties:**", "PARTIES:",
-        # "## Parties" - while rejecting prose that merely starts with the word,
-        # including bolded prose like "**Parties** were notified" (the closing
-        # `**` is consumed, but the trailing text is neither a colon nor EOL).
-        pattern = r"^\s*[^a-zA-Z]*" + re.escape(heading) + r"[*_]*\s*(?::|$)"
+        # whitespace), then optional closing emphasis (`*`/`_`), an OPTIONAL
+        # parenthetical qualifier (extractfacts sometimes emits e.g.
+        # "Key Events (Chronological)", "Opposing Arguments (DTL's Position)"),
+        # more optional emphasis, then the real terminator: a colon or
+        # end-of-line. This accepts every form extractfacts produces -
+        # "1. **Parties**: ...", "**Parties:**", "PARTIES:", "## Parties",
+        # "3. **Key Events (Chronological)**:" - while rejecting prose that merely
+        # starts with the word, like "**Parties** were notified" (the trailing
+        # text is neither a parenthetical+terminator, a colon, nor EOL).
+        pattern = (
+            r"^\s*[^a-zA-Z]*"
+            + re.escape(heading)
+            + r"[*_]*\s*(?:\([^)]*\))?\s*[*_]*\s*(?::|$)"
+        )
         if not re.search(pattern, text, re.MULTILINE | re.IGNORECASE):
             missing_headings.append(heading)
 
@@ -92,6 +99,96 @@ def validate_case_facts_format(text: str) -> bool:
         return False
 
     return True
+
+
+# --- Matter type -----------------------------------------------------------
+#
+# matter_type lives as a "Matter type:" line under the Jurisdiction heading of
+# case_facts (see the case_facts_10_heading contract in formats.yaml). It drives
+# the matter-type posture prepended to the framing commands' system prompts.
+# Keep KNOWN_MATTER_TYPES in sync with the keys in
+# litassist/prompts/matter_types.yaml.
+KNOWN_MATTER_TYPES = (
+    "civil",
+    "criminal",
+    "family",
+    "commercial",
+    "disciplinary",
+    "foi",
+    "administrative",
+)
+DEFAULT_MATTER_TYPE = "civil"
+
+# One delimited line, e.g. "Matter type: disciplinary" (any leading numbering/
+# emphasis, case-insensitive). Single regex - no prose mining.
+_MATTER_TYPE_RE = re.compile(
+    # The `[*_]*` before the value tolerates a markdown-emphasised value
+    # (e.g. "Matter type: **disciplinary**"), mirroring the emphasis already
+    # tolerated on the key.
+    r"(?im)^\s*[^a-zA-Z]*matter\s+type[*_]*\s*:\s*[*_]*([A-Za-z][A-Za-z-]*)"
+)
+
+
+def read_matter_type(text: str) -> str | None:
+    """Return the lower-cased matter_type from a case_facts string, or None."""
+    if not text:
+        return None
+    match = _MATTER_TYPE_RE.search(text)
+    return match.group(1).strip().lower() if match else None
+
+
+def _warn_for(reason: str, remedy: str) -> str:
+    return (
+        f"{reason} - assuming '{DEFAULT_MATTER_TYPE}' (litigation) posture. "
+        f"{remedy} (one of: " + ", ".join(KNOWN_MATTER_TYPES) + ") for accurate framing."
+    )
+
+
+_FACTS_REMEDY = "Set a 'Matter type: <value>' line in case facts (or re-run extractfacts)"
+_FLAG_REMEDY = "Pass --matter-type <value>"
+
+
+def resolve_matter_type(text: str) -> tuple[str, str | None]:
+    """Resolve matter_type from case_facts text.
+
+    Returns (matter_type, warning). Defaults to civil with a warning when the
+    line is absent or carries an unknown value - never raises, never blocks
+    (Phase 1 is default-civil-with-warning, not a hard gate).
+    """
+    raw = read_matter_type(text)
+    if raw is None:
+        return DEFAULT_MATTER_TYPE, _warn_for(
+            "No 'Matter type:' line in case facts", _FACTS_REMEDY
+        )
+    if raw not in KNOWN_MATTER_TYPES:
+        return DEFAULT_MATTER_TYPE, _warn_for(
+            f"Unknown matter type '{raw}'", _FACTS_REMEDY
+        )
+    return raw, None
+
+
+def normalise_matter_type(value: str | None) -> tuple[str, str | None]:
+    """Resolve matter_type from an explicit value (e.g. a CLI flag).
+
+    Used by counselnotes, which takes arbitrary files and has no case_facts to
+    read. Same default-civil-with-warning contract as resolve_matter_type.
+    """
+    if value is None:
+        return DEFAULT_MATTER_TYPE, _warn_for("No --matter-type given", _FLAG_REMEDY)
+    raw = value.strip().lower()
+    if raw not in KNOWN_MATTER_TYPES:
+        return DEFAULT_MATTER_TYPE, _warn_for(
+            f"Unknown matter type '{raw}'", _FLAG_REMEDY
+        )
+    return raw, None
+
+
+def matter_type_posture(matter_type: str) -> str:
+    """Return the posture string for a matter_type (falls back to civil)."""
+    from litassist.prompts import PROMPTS
+
+    mt = matter_type if matter_type in KNOWN_MATTER_TYPES else DEFAULT_MATTER_TYPE
+    return PROMPTS.get(f"matter_types.{mt}.posture")
 
 
 def resolve_case_facts_file() -> str:

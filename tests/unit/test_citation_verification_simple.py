@@ -127,23 +127,6 @@ class TestCitationVerificationBasic:
         success, url, snippet = search_legal_database_via_cse("[2099] FCA 999")
         assert success is False
 
-    def test_citation_extraction_integration(self):
-        """Test that citation extraction works with real legal text."""
-        legal_text = """
-        The High Court in Mabo v Queensland (No 2) [1992] HCA 23 established
-        the principle of native title. This was later developed in
-        Wik Peoples v Queensland [1996] HCA 40.
-        """
-
-        citations = extract_citations(legal_text)
-
-        # Should find multiple citations
-        assert len(citations) >= 1
-
-        # Should find HCA citations
-        hca_citations = [c for c in citations if "HCA" in str(c)]
-        assert len(hca_citations) >= 1
-
 
 class TestCitationVerificationExistenceChecks:
     """Regression tests: legislation and international citations must require

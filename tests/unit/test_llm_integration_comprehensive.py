@@ -1,52 +1,17 @@
 """
 Comprehensive tests for LLM integration functionality.
 
-Tests cover LLM client factory, citation validation, reasoning extraction, and error handling.
+Tests cover LLM client factory, citation validation, and error handling.
 All tests run offline using mocked dependencies.
+
+Reasoning-trace extraction (extract_reasoning_trace) is covered, more
+thoroughly, in test_utils_comprehensive.py.
 """
 
 import pytest
 from unittest.mock import patch, Mock, MagicMock
 
 from litassist.llm.factory import LLMClient
-from litassist.utils.legal_reasoning import LegalReasoningTrace, extract_reasoning_trace
-
-
-class TestReasoningExtraction:
-    """Test legal reasoning trace extraction."""
-
-    def test_extract_reasoning_trace(self):
-        """Test extracting reasoning trace from text."""
-        text = """
-        === REASONING ===
-        Issue: Test issue
-        
-        Applicable Law: Test law
-        
-        Application to Facts: Test application
-        
-        Conclusion: Test conclusion
-        
-        Confidence: 85
-        
-        Sources: [2023] FCA 123
-        """
-
-        trace = extract_reasoning_trace(text)
-        assert isinstance(trace, LegalReasoningTrace)
-        assert trace.issue == "Test issue"
-        assert trace.applicable_law == "Test law"
-        assert trace.application == "Test application"
-        assert trace.conclusion == "Test conclusion"
-        assert trace.confidence == 85
-        assert "[2023] FCA 123" in trace.sources
-
-    def test_empty_reasoning_trace(self):
-        """Test handling of text without reasoning trace."""
-        text = "This is just regular text without reasoning."
-        trace = extract_reasoning_trace(text)
-        # Should return None when no trace found
-        assert trace is None
 
 
 class TestPromptIntegration:

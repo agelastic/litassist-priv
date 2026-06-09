@@ -19,7 +19,10 @@ from litassist.llm.factory import LLMClientFactory
 from litassist.utils.case_facts import (
     validate_case_facts_format,
     resolve_case_facts_file,
+    resolve_matter_type,
+    matter_type_posture,
 )
+from litassist.utils.formatting import warning_message
 from .document_reader import read_all_documents
 from .section_builder import prepare_brief_sections
 from .brief_generator import generate_brief, verify_citations_if_requested
@@ -122,6 +125,12 @@ def barbrief(
             "Case facts must be in 10-heading format from extractfacts command"
         )
 
+    # Matter-type posture: default civil with a warning when absent/unknown
+    # (Phase 1 - no hard gate).
+    matter_type, mt_warning = resolve_matter_type(content_dict["case_facts_content"])
+    if mt_warning:
+        click.echo(warning_message(mt_warning))
+
     # Calculate total tokens for error messages
     total_content = (
         content_dict["case_facts_content"]
@@ -161,7 +170,9 @@ def barbrief(
         raise click.ClickException(f"Failed to initialize LLM client: {e}")
 
     # Generate the brief
-    content, usage = generate_brief(client, sections, total_tokens)
+    content, usage = generate_brief(
+        client, sections, total_tokens, matter_posture=matter_type_posture(matter_type)
+    )
 
     # Run manual citation verification if requested
     verify_citations_if_requested(content, verify)

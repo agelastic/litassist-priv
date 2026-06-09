@@ -1,11 +1,11 @@
 # LitAssist Unit Test Suite
 
-Last updated: 05/06/2026
+Last updated: 08/06/2026
 
 ## Overview
 
 The unit suite in `tests/unit/` exercises LitAssist's critical paths. As of the
-date above it is **532 tests across 61 files**. Per the project testing policy,
+date above it is **458 tests across 59 files**. Per the project testing policy,
 every test runs **offline with mocked dependencies** - no real API calls. The
 "integration" tests are still offline, mocked interactions. Real-API checks live in
 `test-scripts/` and are run manually (they incur cost).
@@ -38,13 +38,13 @@ pytest tests/unit --cov=litassist
 `test_digest_command`, `test_draft_command_comprehensive`, `test_extractfacts_command`,
 `test_refresh_command`, `test_strategy_command_comprehensive`, `test_updatefacts_command`,
 `test_verify_command`, `test_verify_cove_command`, `test_cli_command`,
-`test_cli_command_loading`, `test_command_parameters`, `test_comprehensive_pipeline`.
+`test_cli_command_loading`.
 These drive the Click commands via `CliRunner` and assert exit codes, output, and
 call wiring with all external services mocked.
 
 ### LLM and model layer
 `test_llm_client_factory`, `test_llm_complete`, `test_llm_retry_logic`,
-`test_llm_client_streaming_retry`, `test_llm_integration_comprehensive`,
+`test_llm_integration_comprehensive`,
 `test_model_parameters`, `test_model_config_integrity`, `test_model_config_sampling`,
 `test_thinking_effort`, `test_provider_prefix`, `test_heavy_flag`. Per-model-family
 parameter mapping (Claude / Gemini / OpenAI reasoning / Grok), retry/backoff on

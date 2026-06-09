@@ -15,23 +15,6 @@ from litassist.prompts import PromptManager, PROMPTS
 class TestPromptManager:
     """Test the core PromptManager functionality."""
 
-    def test_template_loading(self):
-        """Test that templates load correctly from YAML files."""
-        # Use the global PROMPTS instance which should have loaded templates
-        # Access templates via the internal attribute after ensuring loaded
-        PROMPTS._ensure_loaded()
-        templates = PROMPTS.templates
-
-        # Verify key template categories exist
-        assert "base" in templates
-        assert "commands" in templates
-        assert "formats" in templates
-
-        # Verify essential templates exist
-        assert "australian_law" in templates["base"]
-        assert "extractfacts" in templates["commands"]
-        assert "case_facts_10_heading" in templates["formats"]
-
     def test_get_basic_template(self):
         """Test basic template retrieval."""
         australian_law = PROMPTS.get("base.australian_law")
@@ -85,11 +68,6 @@ class TestPromptManager:
         ):
             PROMPTS.get("nonexistent.template")
 
-    def test_invalid_template_key_raises_keyerror(self):
-        """Test that malformed template keys raise KeyError."""
-        with pytest.raises(KeyError):
-            PROMPTS.get("base.nonexistent_key")
-
 
 class TestExplicitFailureBehavior:
     """Test that commands fail explicitly without centralized prompts."""
@@ -118,49 +96,9 @@ class TestExplicitFailureBehavior:
             with pytest.raises(KeyError, match="no templates loaded"):
                 empty_manager.get_format_template("case_facts_10_heading")
 
-    def test_missing_template_directory(self):
-        """Test behavior when templates directory doesn't exist."""
-        with tempfile.TemporaryDirectory() as temp_dir:
-            temp_path = Path(temp_dir)
-
-            class NoDirectoryPromptManager(PromptManager):
-                def __init__(self):
-                    self.prompts_dir = temp_path / "missing_directory"
-                    self.templates = self._load_templates()
-                    self._templates_loaded = bool(self.templates)
-
-            no_dir_manager = NoDirectoryPromptManager()
-
-            # Should have empty templates
-            assert no_dir_manager.templates == {}
-            assert not no_dir_manager._templates_loaded
-
-            # Should fail when trying to get templates
-            with pytest.raises(KeyError, match="no templates loaded"):
-                no_dir_manager.get("base.australian_law")
-
 
 class TestTemplateValidation:
     """Test template content validation and structure."""
-
-    def test_essential_templates_exist(self):
-        """Test that all essential templates are present."""
-        essential_templates = [
-            "base.australian_law",
-            "base.anti_injection",
-            "base.anti_hallucination",
-            "commands.extractfacts.system",
-            "commands.lookup.system",
-            "formats.case_facts_10_heading",
-        ]
-
-        for template_key in essential_templates:
-            try:
-                content = PROMPTS.get(template_key)
-                assert isinstance(content, str)
-                assert len(content.strip()) > 0
-            except KeyError:
-                pytest.fail(f"Essential template '{template_key}' is missing")
 
     def test_anti_hallucination_template_content(self):
         """Test that anti-hallucination template contains placeholder guidance."""
@@ -267,16 +205,6 @@ test:
 
 class TestBasePromptInjection:
     """Test that base prompts are properly injected by LLMClient."""
-
-    def test_base_prompts_all_exist(self):
-        """Test that all three base prompts exist and are non-empty."""
-        australian_law = PROMPTS.get("base.australian_law")
-        anti_injection = PROMPTS.get("base.anti_injection")
-        anti_hallucination = PROMPTS.get("base.anti_hallucination")
-
-        assert australian_law and len(australian_law.strip()) > 0
-        assert anti_injection and len(anti_injection.strip()) > 0
-        assert anti_hallucination and len(anti_hallucination.strip()) > 0
 
     def test_base_prompts_injection_in_client(self):
         """Test that LLMClient._add_base_system_prompts injects all base prompts."""

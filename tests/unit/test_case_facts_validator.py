@@ -52,6 +52,14 @@ def test_accepts_own_line_headings():
     assert validate_case_facts_format(content) is True
 
 
+def test_accepts_lowercase_headings():
+    """Validation is case-insensitive: lower-case heading lines (e.g.
+    `parties:`) must still validate. All other cases here use Title-case, so
+    this is the sole guard on the matcher's case-folding."""
+    content = "\n".join(f"{h.lower()}:\nsome content" for h in _HEADINGS)
+    assert validate_case_facts_format(content) is True
+
+
 def test_accepts_extra_notes_section():
     """An extra 11th 'Notes' section (added by updatefacts) must not break the
     10-heading validation - the validator checks presence, not exact count."""

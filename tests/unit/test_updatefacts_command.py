@@ -216,8 +216,3 @@ class TestUpdateFactsBasic:
             )
             with open("case_facts.md", encoding="utf-8") as fh:
                 assert fh.read() == VALID_MERGED
-
-    def test_help_and_errors(self):
-        assert self.runner.invoke(updatefacts, ["--help"]).exit_code == 0
-        # Missing required SOURCE argument.
-        assert self.runner.invoke(updatefacts, []).exit_code != 0

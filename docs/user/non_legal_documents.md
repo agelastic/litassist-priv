@@ -1,6 +1,6 @@
 # Using LitAssist with Non-Legal Documents
 
-Last updated: 02/06/2026
+Last updated: 08/06/2026
 
 While LitAssist is optimized for legal documents and Australian litigation workflows, it can be adapted to work with non-legal documents with some limitations and adjustments. This guide provides recommendations for processing various document types.
 
@@ -58,6 +58,12 @@ The command will force any content into these legal headings:
 7. Procedural History ← irrelevant for most non-legal documents
 8. Jurisdiction ← irrelevant for most non-legal documents
 9. Applicable Law ← will stretch to find legal connections
+
+> **Note**: `case_facts.md` also carries a `Matter type:` line under the Jurisdiction
+> heading (one of civil, criminal, family, commercial, disciplinary, foi, administrative).
+> If you build `case_facts.md` by hand, add this line - for a purchase agreement or other
+> business matter use `commercial`. If it is missing, `strategy`, `brainstorm`, `barbrief`
+> and `caseplan` assume `civil` and print a warning.
 10. Client Objectives
 
 ### Recommended Workaround
@@ -65,7 +71,7 @@ The command will force any content into these legal headings:
 For non-legal documents that need to be used with `strategy` or `brainstorm` commands:
 
 1. **Use `digest` first**: Run `digest --mode summary` (optionally with `--context` for focused analysis) to understand content
-2. **Manual structure creation**: Create a `case_facts.md` file with all 10 headings
+2. **Manual structure creation**: Create a `case_facts.md` file with all 10 headings (and a `Matter type:` line under Jurisdiction - use `commercial` for business documents)
 3. **Adapt content**: Fill relevant sections with content from digest output
 4. **Placeholder strategy**: For irrelevant headings, add minimal placeholder content to satisfy validation
 5. **File naming**: Save as `case_facts.md` for downstream commands

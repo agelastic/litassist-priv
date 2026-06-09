@@ -19,6 +19,11 @@ from litassist.logging import (
     log_task_event,
 )
 from litassist.llm.factory import LLMClientFactory
+from litassist.utils.case_facts import (
+    normalise_matter_type,
+    matter_type_posture,
+)
+from litassist.utils.formatting import warning_message
 
 from .document_processor import read_and_consolidate_documents, prepare_chunks
 from .extraction_processor import process_extraction_mode, consolidate_extraction_results
@@ -38,9 +43,18 @@ from .consolidator import consolidate_analyses
 @click.option(
     "--verify", is_flag=True, help="Enable citation verification for extracted content"
 )
+@click.option(
+    "--matter-type",
+    "matter_type",
+    default=None,
+    help="Matter type for posture framing: one of "
+    "civil/criminal/family/commercial/disciplinary/foi/administrative "
+    "(counselnotes has no case_facts to read it from). Defaults to civil with a "
+    "warning if omitted or unrecognised - never blocks.",
+)
 @click.option("--output", type=str, help="Custom output filename prefix")
 @timed
-def counselnotes(files, extract, verify, output):
+def counselnotes(files, extract, verify, matter_type, output):
     """
     Strategic analysis and counsel's notes for legal documents.
 
@@ -74,6 +88,14 @@ def counselnotes(files, extract, verify, output):
     if not files:
         raise click.ClickException("At least one input file must be provided.")
 
+    # Matter-type posture: counselnotes takes arbitrary files (no case_facts to
+    # read), so it comes from --matter-type; default civil with a warning when
+    # absent/unknown (Phase 1 - no hard gate).
+    resolved_matter_type, mt_warning = normalise_matter_type(matter_type)
+    if mt_warning:
+        click.echo(warning_message(mt_warning))
+    matter_posture = matter_type_posture(resolved_matter_type)
+
     # Read and consolidate documents
     combined_content, file_info = read_and_consolidate_documents(files)
 
@@ -99,14 +121,15 @@ def counselnotes(files, extract, verify, output):
     if extract:
         # Structured extraction mode
         extraction_results = process_extraction_mode(
-            chunks, extract, verify, client, comprehensive_log
+            chunks, extract, verify, client, comprehensive_log,
+            matter_posture=matter_posture,
         )
 
         # Consolidate only when the input was chunked: a single unified extraction
         # is already the final answer, so avoid a pointless extra LLM call.
         if len(chunks) > 1:
             final_content, final_usage = consolidate_extraction_results(
-                extraction_results, verify, client
+                extraction_results, verify, client, matter_posture=matter_posture
             )
             comprehensive_log["responses"].append(
                 {"consolidation": True, "content": final_content, "usage": final_usage}
@@ -124,13 +147,13 @@ def counselnotes(files, extract, verify, output):
     else:
         # Strategic analysis mode
         analysis_results, needs_consolidation = process_strategic_analysis(
-            chunks, verify, client, comprehensive_log
+            chunks, verify, client, comprehensive_log, matter_posture=matter_posture
         )
 
         if needs_consolidation:
             # Multiple chunks - consolidate analyses
             final_content, final_usage = consolidate_analyses(
-                analysis_results, verify, client
+                analysis_results, verify, client, matter_posture=matter_posture
             )
 
             # Log consolidation response

@@ -1,6 +1,6 @@
 # LitAssist Feature Roadmap
 
-Last updated: 04/06/2026
+Last updated: 08/06/2026
 **Status:** Strategic planning; roadmap items are aspirational unless marked DONE, PARTIALLY SUPERSEDED, or already implemented elsewhere
 **Confidence:** 0.88
 
@@ -398,6 +398,29 @@ regression eval - not per-document verification.
 - Reuse `LLMClientFactory.for_command()` for routing and the `litassist/logging/`
   package for the audit trail
 - Optional later surface: `la verify --judge` for single-doc rubric scoring
+
+---
+
+### P-MTYPE: Matter-Type-Aware Prompts [PHASE 1 SHIPPED 08/06/2026]
+**Status:** Phase 1 implemented (feature branch). Phase 2 deferred pending observation.
+
+**Purpose:** Drive command output framing from the matter's type instead of a baked-in
+litigation default. Motivated by the complaints tool-assessment
+(`docs/development/claude_complaints_tool_assessment.md`), which showed barbrief/counselnotes
+defaulting to court framing on a real OLSC disciplinary/costs complaint.
+
+**Phase 1 (shipped):** matter_type is a `Matter type:` line in case_facts (proposed by
+extractfacts via the `case_facts_10_heading` contract, preserved by updatefacts); a per-type
+posture in `litassist/prompts/matter_types.yaml` is prepended to the system prompt of
+barbrief/strategy/brainstorm/caseplan; `counselnotes` gets `--matter-type`; `brainstorm --side`
+gets `complainant`. Default civil + warning when absent (no hard gate). Plus two bug fixes:
+heading-qualifier tolerance in the case_facts validator, and statute-section verification in
+lookup/digest prompts.
+
+**Phase 2 (deferred - only if Phase 1 proves insufficient):** hard gate / refuse-until-set +
+stop-and-ask bootstrap + a shared `save_case_facts` writer; brainstorm `--area`
+derived-from-matter_type; canonical matter_type taxonomy shared with Matter Memory `--type`;
+**P0A-1 Matter Memory as the matter_type source** (one-line read swap per command).
 
 ---
 

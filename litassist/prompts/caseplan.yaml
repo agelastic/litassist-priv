@@ -22,6 +22,7 @@ commands:
       - Build systematically toward feasibility memoranda
       - Emphasize synthesis through multiple counselnotes phases
       - Focus on deliverables that enable informed decision-making
+      - Match deliverables to the matter type: where the matter is a regulatory or disciplinary complaint (e.g. to a legal-services commissioner / ombudsman), the plan must culminate in a draft step that produces the actual complaint or submission to the regulator, not stop at internal advice memoranda
 
       COMMAND OUTPUT FORMAT (commands are auto-extracted into a runnable Python script that isolates each run's outputs):
       - Write every runnable command on its own line beginning with "litassist". For a step with multiple commands, put one complete command per line.

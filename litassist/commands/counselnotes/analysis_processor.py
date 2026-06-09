@@ -12,7 +12,9 @@ from litassist.logging import log_task_event
 from litassist.utils.formatting import format_citation_warnings
 
 
-def analyze_single_chunk(chunk: str, verify: bool, client) -> Tuple[str, Dict]:
+def analyze_single_chunk(
+    chunk: str, verify: bool, client, matter_posture: str = ""
+) -> Tuple[str, Dict]:
     """
     Analyze a single document chunk.
 
@@ -30,6 +32,9 @@ def analyze_single_chunk(chunk: str, verify: bool, client) -> Tuple[str, Dict]:
     strategic_prompt = PROMPTS.get(
         "processing.counselnotes.strategic_analysis", documents=chunk
     )
+    system_prompt = PROMPTS.get("processing.counselnotes.system_prompt")
+    if matter_posture:
+        system_prompt = matter_posture + "\n\n" + system_prompt
 
     try:
         log_task_event(
@@ -45,12 +50,7 @@ def analyze_single_chunk(chunk: str, verify: bool, client) -> Tuple[str, Dict]:
     try:
         content, usage = client.complete(
             [
-                {
-                    "role": "system",
-                    "content": PROMPTS.get(
-                        "processing.counselnotes.system_prompt"
-                    ),
-                },
+                {"role": "system", "content": system_prompt},
                 {"role": "user", "content": strategic_prompt},
             ]
         )
@@ -78,7 +78,9 @@ def analyze_single_chunk(chunk: str, verify: bool, client) -> Tuple[str, Dict]:
     return content, usage
 
 
-def analyze_multiple_chunks(chunks: List[str], client) -> List[Tuple[str, Dict]]:
+def analyze_multiple_chunks(
+    chunks: List[str], client, matter_posture: str = ""
+) -> List[Tuple[str, Dict]]:
     """
     Analyze multiple document chunks separately.
 
@@ -93,6 +95,10 @@ def analyze_multiple_chunks(chunks: List[str], client) -> List[Tuple[str, Dict]]
         click.ClickException: If LLM processing fails
     """
     chunk_analyses = []
+
+    system_prompt = PROMPTS.get("processing.counselnotes.system_prompt")
+    if matter_posture:
+        system_prompt = matter_posture + "\n\n" + system_prompt
 
     with click.progressbar(
         chunks, label="Analyzing document chunks"
@@ -120,12 +126,7 @@ def analyze_multiple_chunks(chunks: List[str], client) -> List[Tuple[str, Dict]]
             try:
                 content, usage = client.complete(
                     [
-                        {
-                            "role": "system",
-                            "content": PROMPTS.get(
-                                "processing.counselnotes.system_prompt"
-                            ),
-                        },
+                        {"role": "system", "content": system_prompt},
                         {"role": "user", "content": chunk_prompt},
                     ]
                 )
@@ -155,7 +156,8 @@ def process_strategic_analysis(
     chunks: List[str],
     verify: bool,
     client,
-    comprehensive_log: Dict
+    comprehensive_log: Dict,
+    matter_posture: str = "",
 ) -> Tuple[List[str], bool]:
     """
     Process strategic analysis mode.
@@ -174,7 +176,9 @@ def process_strategic_analysis(
     """
     if len(chunks) == 1:
         # Single chunk - process normally
-        content, usage = analyze_single_chunk(chunks[0], verify, client)
+        content, usage = analyze_single_chunk(
+            chunks[0], verify, client, matter_posture=matter_posture
+        )
 
         # Log response data
         comprehensive_log["responses"].append(
@@ -189,7 +193,9 @@ def process_strategic_analysis(
 
     else:
         # Multiple chunks - need consolidation
-        chunk_results = analyze_multiple_chunks(chunks, client)
+        chunk_results = analyze_multiple_chunks(
+            chunks, client, matter_posture=matter_posture
+        )
 
         all_analyses = []
 

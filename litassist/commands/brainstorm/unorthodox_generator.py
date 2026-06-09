@@ -13,7 +13,9 @@ from litassist.prompts import PROMPTS
 from litassist.logging import log_task_event
 
 
-def generate_unorthodox_strategies(facts: str, side: str, area: str):
+def generate_unorthodox_strategies(
+    facts: str, side: str, area: str, matter_posture: str = ""
+):
     """
     Generate unorthodox legal strategies.
 
@@ -56,11 +58,11 @@ def generate_unorthodox_strategies(facts: str, side: str, area: str):
     unorthodox_prompt = create_reasoning_prompt(
         unorthodox_base_prompt, "brainstorm-unorthodox"
     )
+    unorthodox_system = PROMPTS.get("commands.brainstorm.unorthodox_system")
+    if matter_posture:
+        unorthodox_system = matter_posture + "\n\n" + unorthodox_system
     unorthodox_messages = [
-        {
-            "role": "system",
-            "content": PROMPTS.get("commands.brainstorm.unorthodox_system"),
-        },
+        {"role": "system", "content": unorthodox_system},
         {"role": "user", "content": unorthodox_prompt},
     ]
 

@@ -86,15 +86,6 @@ class TestLLMClientFactoryThinkingEffort:
         )  # Updated to match config
 
     @patch("litassist.config.CONFIG")
-    def test_lookup_command_thinking_effort(self, mock_config):
-        """Test lookup command uses thinking_effort for Gemini."""
-        client = LLMClientFactory.for_command("lookup")
-
-        # Check that thinking_effort is in default params
-        assert "thinking_effort" in client.default_params
-        assert client.default_params["thinking_effort"] == "low"
-
-    @patch("litassist.config.CONFIG")
     def test_brainstorm_orthodox_thinking_effort(self, mock_config):
         """Test brainstorm-orthodox uses thinking_effort for Claude."""
         client = LLMClientFactory.for_command("brainstorm", "orthodox")

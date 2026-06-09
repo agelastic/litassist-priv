@@ -1,15 +1,16 @@
 """
-Test CLI command loading and initialization with real config.
+Command registration and config-loading error paths.
 
-These tests use config.yaml.template to ensure commands can load properly
-without making external API calls. This would have caught the CONFIG bug.
+Guards that register_commands() wires every command into the CLI group and that
+each command's --help loads, plus the config error paths and the CONFIG=None
+regression. Uses config.yaml.template so the real config module is exercised
+offline, without external API calls.
 """
 
 import pytest
 import tempfile
 from pathlib import Path
-from unittest.mock import Mock, patch
-from click.testing import CliRunner
+from unittest.mock import patch
 
 
 # ============================================================================
@@ -84,131 +85,29 @@ web_scraping:
         sys.modules["litassist.config"] = original_config_module
 
 
-@pytest.fixture
-def mock_external_apis():
-    """Mock all external API calls but NOT config or file I/O."""
-    with patch("googleapiclient.discovery.build") as mock_google, patch(
-        "openai.OpenAI"
-    ) as mock_openai, patch("requests.get") as mock_requests, patch(
-        "requests.post"
-    ) as mock_requests_post, patch(
-        "litassist.llm.factory.LLMClientFactory.for_command"
-    ) as mock_llm_factory, patch(
-        "litassist.commands.verify.citation_verifier.fetch_citation_context"
-    ) as mock_fetch_ctx, patch(
-        "litassist.commands.verify.reasoning_handler.fetch_citation_context"
-    ) as mock_fetch_ctx_reasoning, patch(
-        "litassist.commands.verify.soundness_checker.fetch_citation_context"
-    ) as mock_fetch_ctx_soundness, patch(
-        "litassist.verification_chain.fetch_citation_context"
-    ) as mock_fetch_ctx_chain:
-
-        # Citation-context fetch reaches the live web via curl_cffi (libcurl, which
-        # bypasses the requests/socket mocks) and adds AustLII rate-limit sleeps;
-        # stub it at every import site so verify makes no real calls. Returns
-        # (case_content, failed_citations).
-        for _ctx_mock in (
-            mock_fetch_ctx,
-            mock_fetch_ctx_reasoning,
-            mock_fetch_ctx_soundness,
-            mock_fetch_ctx_chain,
-        ):
-            _ctx_mock.return_value = ({}, [])
-
-        # Setup mock LLM client
-        mock_client = Mock()
-        mock_client.complete.return_value = ("Test response", {"total_tokens": 100})
-        mock_client.verify.return_value = ("No issues", "test-model")
-        mock_client.model = "test-model"
-        mock_llm_factory.return_value = mock_client
-
-        # Setup mock OpenAI
-        mock_openai_instance = Mock()
-        mock_openai_instance.models.list.return_value = Mock(data=[])
-        mock_openai.return_value = mock_openai_instance
-
-        # Setup mock requests
-        mock_response = Mock()
-        mock_response.status_code = 200
-        mock_response.json.return_value = {"data": []}
-        mock_response.text = ""
-        mock_requests.return_value = mock_response
-        mock_requests_post.return_value = mock_response
-
-        yield {
-            "google": mock_google,
-            "openai": mock_openai,
-            "requests": mock_requests,
-            "requests_post": mock_requests_post,
-            "llm_factory": mock_llm_factory,
-            "llm_client": mock_client,
-        }
-
-
 # ============================================================================
-# TEST: IMPORTS AND CONFIG LOADING
+# TEST: COMMAND REGISTRATION
 # ============================================================================
 
 
-def test_all_commands_import_with_real_config(test_config_file):
+def test_all_commands_registered_in_cli_group():
+    """register_commands() must wire every command into the CLI group.
+
+    The per-command test files invoke each command object directly, so none of
+    them catches a command being dropped from (or never added to) the group.
+    This is the sole guard on the group's command set, and the --help loop is a
+    cheap loadability smoke that each command's Click decorators import and parse
+    (--help short-circuits before any config load or API call).
     """
-    Test that all command modules import successfully with real config.
-    This WOULD HAVE CAUGHT the CONFIG AttributeError bug immediately.
-    """
-    # Import all commands - this triggers real config loading
-    from litassist.commands import (  # noqa: F401
-        lookup,
-        digest,
-        brainstorm,
-        extractfacts,
-        draft,
-        strategy,
-        verify,
-        counselnotes,
-        barbrief,
-        caseplan,
-    )
-    from litassist.config import get_config
-
-    # Verify config actually loaded and has required attributes
-    config = get_config()
-    assert config is not None, "Config should not be None"
-    assert hasattr(config, "max_chars"), "Config missing max_chars attribute"
-    assert hasattr(config, "or_key"), "Config missing or_key attribute"
-    assert hasattr(config, "log_format"), "Config missing log_format attribute"
-
-    # Verify values from template
-    assert config.max_chars == 200000, "max_chars should be 200000 from template"
-    assert config.log_format == "markdown", "log_format should be markdown from template"
-
-    # Verify placeholder detection works
-    placeholders = config.using_placeholders()
-    assert isinstance(placeholders, dict), "using_placeholders should return dict"
-
-
-def test_config_singleton_pattern(test_config_file):
-    """Test that get_config() returns the same instance (singleton)."""
-    from litassist.config import get_config
-
-    config1 = get_config()
-    config2 = get_config()
-    config3 = get_config()
-
-    assert config1 is config2, "get_config should return same instance"
-    assert config2 is config3, "get_config should be consistent"
-    assert id(config1) == id(config3), "All configs should be same object"
-
-
-def test_command_registration(test_config_file, mock_external_apis):
-    """Test all commands are properly registered with the CLI."""
-    from litassist.cli import cli
+    import click
+    from click.testing import CliRunner
     from litassist.commands import register_commands
 
-    # Clear and re-register
-    cli.commands = {}
-    register_commands(cli)
+    group = click.Group()
+    register_commands(group)
 
-    expected_commands = {
+    # 'test' is registered directly in cli.py, not via register_commands.
+    expected = {
         "barbrief",
         "brainstorm",
         "caseplan",
@@ -222,322 +121,18 @@ def test_command_registration(test_config_file, mock_external_apis):
         "strategy",
         "verify",
         "verify-cove",
-    }  # 'test' is added directly in cli.py, not via register_commands
+    }
+    assert set(group.commands) == expected
 
-    actual_commands = set(cli.commands.keys())
-
-    assert (
-        expected_commands == actual_commands
-    ), f"Missing commands: {expected_commands - actual_commands}"
-
-
-# ============================================================================
-# TEST: HELP MESSAGES
-# ============================================================================
-
-
-def test_main_cli_help(test_config_file, mock_external_apis):
-    """Test main CLI --help works with real config."""
-    from litassist.cli import cli
-    from litassist.commands import register_commands
-
-    register_commands(cli)
     runner = CliRunner()
-
-    result = runner.invoke(cli, ["--help"])
-
-    assert result.exit_code == 0, f"Main help failed: {result.output}"
-    assert "LitAssist" in result.output
-    assert "Commands:" in result.output
-
-
-def test_all_commands_show_help(test_config_file, mock_external_apis):
-    """Test --help works for ALL commands with real config loading."""
-    from litassist.cli import cli
-    from litassist.commands import register_commands
-
-    register_commands(cli)
-    runner = CliRunner()
-
-    all_commands = [
-        "barbrief",
-        "brainstorm",
-        "caseplan",
-        "counselnotes",
-        "digest",
-        "draft",
-        "extractfacts",
-        "updatefacts",
-        "lookup",
-        "refresh",
-        "strategy",
-        "verify",
-        "verify-cove",  # 'test' is in cli.py directly
-    ]
-
-    for cmd in all_commands:
-        result = runner.invoke(cli, [cmd, "--help"])
-
-        assert result.exit_code == 0, f"{cmd} --help failed: {result.output}"
-        assert cmd in result.output.lower(), f"{cmd} not in help output"
-        assert (
-            "Options:" in result.output or "Usage:" in result.output
-        ), f"{cmd} missing Options/Usage section"
-
-        # Ensure no errors
-        assert "AttributeError" not in result.output
-        assert "NoneType" not in result.output
-        assert "ConfigError" not in result.output
-
-
-# ============================================================================
-# TEST: FILE-BASED COMMANDS
-# ============================================================================
-
-
-def test_file_processing_commands(
-    test_config_file, mock_external_apis, tmp_path
-):
-    """
-    Test commands that process files: extractfacts, digest, counselnotes.
-    Uses real files and real config loading.
-    """
-    from litassist.cli import cli
-    from litassist.commands import register_commands
-
-    register_commands(cli)
-    runner = CliRunner()
-
-    # Create test document
-    test_doc = tmp_path / "test_document.txt"
-    test_doc.write_text(
-        """
-    This is a test legal document.
-    It contains multiple paragraphs.
-    
-    The purpose is to test file processing.
-    """
-    )
-
-    # Test extractfacts
-    result = runner.invoke(cli, ["extractfacts", str(test_doc)])
-    assert result.exit_code in [
-        0,
-        1,
-    ], f"extractfacts failed unexpectedly: {result.output}"
-    assert "AttributeError" not in result.output
-    assert "'NoneType' object has no attribute" not in result.output
-
-    # Test digest
-    result = runner.invoke(cli, ["digest", str(test_doc), "--mode", "summary"])
-    assert result.exit_code in [0, 1], f"digest failed unexpectedly: {result.output}"
-    assert "AttributeError" not in result.output
-
-    # Test counselnotes
-    result = runner.invoke(cli, ["counselnotes", str(test_doc)])
-    assert result.exit_code in [
-        0,
-        1,
-    ], f"counselnotes failed unexpectedly: {result.output}"
-    assert "AttributeError" not in result.output
-
-
-def test_barbrief_with_case_facts(test_config_file, mock_external_apis, tmp_path):
-    """Test barbrief command with case_facts.txt file."""
-    from litassist.cli import cli
-    from litassist.commands import register_commands
-
-    register_commands(cli)
-    runner = CliRunner()
-
-    with runner.isolated_filesystem():
-        # Create case_facts.txt in working directory
-        Path("case_facts.txt").write_text(
-            """
-Parties:
-- Applicant: John Smith
-- Respondent: ABC Corporation
-
-Background:
-Contract dispute regarding software development.
-
-Jurisdiction:
-Federal Court of Australia
-"""
-        )
-
-        result = runner.invoke(
-            cli, ["barbrief", "case_facts.txt", "--hearing-type", "trial"]
-        )
-
-        assert result.exit_code in [0, 1], f"barbrief failed: {result.output}"
-        assert "AttributeError" not in result.output
-        assert "'NoneType' object" not in result.output
-
-
-# ============================================================================
-# TEST: TEXT/QUESTION COMMANDS
-# ============================================================================
-
-
-@patch("litassist.commands.lookup.perform_cse_searches")
-@patch("litassist.commands.lookup.fetchers._fetch_url_content")
-def test_question_based_commands(mock_fetch, mock_cse, test_config_file, mock_external_apis):
-    """Test commands that take text/question arguments: lookup, draft."""
-    mock_fetch.return_value = "Test content"
-    mock_cse.return_value = ["https://test.com/result"]
-
-    from litassist.cli import cli
-    from litassist.commands import register_commands
-
-    register_commands(cli)
-    runner = CliRunner()
-
-    # Test lookup
-    result = runner.invoke(cli, ["lookup", "What is the test for negligence?"])
-    assert result.exit_code in [0, 1], f"lookup failed: {result.output}"
-    assert "AttributeError" not in result.output
-
-    # Test draft - full-context call, no RAG mocks needed
-    with runner.isolated_filesystem():
-        Path("case_facts.txt").write_text("Test facts")
-        result = runner.invoke(
-            cli, ["draft", "case_facts.txt", "draft a statement of claim"]
-        )
-        assert result.exit_code in [0, 1], f"draft failed: {result.output}"
-        assert "AttributeError" not in result.output
-
-
-def test_verify_with_file(test_config_file, mock_external_apis, tmp_path):
-    """Test verify command with file input."""
-    from litassist.cli import cli
-    from litassist.commands import register_commands
-
-    register_commands(cli)
-    runner = CliRunner()
-
-    # Create test file
-    test_file = tmp_path / "test_verify.txt"
-    test_file.write_text(
-        """
-    The High Court in Mabo v Queensland (No 2) [1992] HCA 23 established
-    the principle of native title in Australian law.
-    """
-    )
-
-    result = runner.invoke(cli, ["verify", str(test_file)])
-
-    assert result.exit_code in [0, 1], f"verify failed: {result.output}"
-    assert "AttributeError" not in result.output
-
-
-# ============================================================================
-# TEST: CASE_FACTS DEPENDENT COMMANDS
-# ============================================================================
-
-
-def test_strategy_brainstorm_caseplan_with_facts(test_config_file, mock_external_apis):
-    """Test commands that use case_facts.txt: brainstorm, strategy, caseplan."""
-    from litassist.cli import cli
-    from litassist.commands import register_commands
-
-    register_commands(cli)
-    runner = CliRunner()
-
-    with runner.isolated_filesystem():
-        # Create minimal case_facts.txt
-        Path("case_facts.txt").write_text(
-            """
-Parties:
-- Applicant: Test Party A
-- Respondent: Test Party B
-
-Background:
-Test legal matter for command testing.
-
-Issues:
-- Test issue one
-"""
-        )
-
-        # Test brainstorm - requires --side and --area
-        result = runner.invoke(
-            cli, ["brainstorm", "--side", "plaintiff", "--area", "civil"]
-        )
-        assert result.exit_code in [0, 1], f"brainstorm failed: {result.output}"
-        assert "AttributeError" not in result.output
-
-        # Test strategy - requires case_facts and --outcome
-        result = runner.invoke(
-            cli, ["strategy", "case_facts.txt", "--outcome", "settlement"]
-        )
-        assert result.exit_code in [0, 1], f"strategy failed: {result.output}"
-        assert "AttributeError" not in result.output
-
-        # Test caseplan - requires case_facts argument
-        result = runner.invoke(cli, ["caseplan", "case_facts.txt"])
-        assert result.exit_code in [0, 1], f"caseplan failed: {result.output}"
-        assert "AttributeError" not in result.output
-
-
-# ============================================================================
-# TEST: API TEST COMMAND
-# ============================================================================
-
-
-@patch("litassist.cli.validate_credentials")
-@patch("litassist.cli.test_scraping_capabilities")
-def test_api_test_command(
-    mock_scraping, mock_validate, test_config_file, mock_external_apis
-):
-    """Test the 'test' command that validates API connectivity."""
-    # Mock the validation functions
-    mock_validate.return_value = None
-    mock_scraping.return_value = None
-
-    from litassist.cli import test
-
-    # Note: test command is defined directly in cli.py, not via register_commands
-    runner = CliRunner()
-
-    # Test the test command directly
-    result = runner.invoke(test)
-
-    # Command should run (even if APIs are mocked)
-    assert result.exit_code in [0, 1], f"test command failed: {result.output}"
-    assert "AttributeError" not in result.output
+    for name, command in group.commands.items():
+        result = runner.invoke(command, ["--help"])
+        assert result.exit_code == 0, f"{name} --help failed: {result.output}"
 
 
 # ============================================================================
 # TEST: ERROR HANDLING
 # ============================================================================
-
-
-def test_commands_with_missing_required_arguments(test_config_file, mock_external_apis):
-    """Test commands fail appropriately when required arguments are missing."""
-    from litassist.cli import cli
-    from litassist.commands import register_commands
-
-    register_commands(cli)
-    runner = CliRunner()
-
-    # Commands that require arguments should fail with exit code 2
-    missing_arg_tests = [
-        ("lookup", []),  # Missing QUESTION
-        ("draft", []),  # Missing QUESTION
-        ("extractfacts", []),  # Missing FILE
-        ("digest", []),  # Missing FILE
-        ("counselnotes", []),  # Missing FILE
-    ]
-
-    for cmd, args in missing_arg_tests:
-        result = runner.invoke(cli, [cmd] + args)
-
-        assert result.exit_code == 2, f"{cmd} should fail with missing args"
-        assert "Error" in result.output or "Usage" in result.output
-        # Should NOT have attribute errors
-        assert "AttributeError" not in result.output
-        assert "'NoneType' object" not in result.output
 
 
 def test_config_missing_error_handling():
@@ -602,27 +197,3 @@ def test_would_have_caught_config_none_bug(test_config_file):
     # Try to access the attribute (this was the failure point)
     max_chars_value = config.max_chars
     assert max_chars_value == 200000, "Should get value from template"
-
-
-# ============================================================================
-# TEST: REFACTORED MODULES
-# ============================================================================
-
-
-def test_refactored_utils_imports(test_config_file):
-    """Test that refactored utils modules import correctly."""
-    # These were refactored from litassist.utils to submodules
-    from litassist.utils.core import heartbeat, parse_strategies_file  # noqa: F401
-    from litassist.utils.formatting import success_message, error_message  # noqa: F401
-    from litassist.utils.text_processing import (
-        chunk_text,
-    )  # noqa: F401
-    from litassist.utils.file_ops import read_document, validate_file_size  # noqa: F401
-    from litassist.utils.legal_reasoning import create_reasoning_prompt  # noqa: F401
-    from litassist.timing import timed
-
-    # Verify they're callable
-    assert callable(heartbeat)
-    assert callable(success_message)
-    assert callable(chunk_text)
-    assert callable(timed)

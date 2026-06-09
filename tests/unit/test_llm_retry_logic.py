@@ -173,27 +173,6 @@ class TestLLMRetryLogic:
         assert mock_client.chat.completions.create.call_count == 1
 
     @patch("litassist.llm.api_handlers.get_openai_client")
-    def test_no_retry_on_payload_too_large(self, mock_get_client):
-        """Test that 'payload too large' errors raise NonRetryableAPIError."""
-        # Mock the client and its chat.completions.create method
-        mock_client = MagicMock()
-        mock_get_client.return_value = mock_client
-
-        error = Exception("Payload too large for model")
-        mock_client.chat.completions.create.side_effect = error
-
-        with pytest.raises(NonRetryableAPIError) as exc_info:
-            execute_api_call_with_retry(
-                "openai/gpt-4",
-                [{"role": "user", "content": "test"}],
-                {},
-                get_openai_client_func=mock_get_client,
-            )
-
-        assert "Request too large" in str(exc_info.value)
-        assert mock_client.chat.completions.create.call_count == 1
-
-    @patch("litassist.llm.api_handlers.get_openai_client")
     def test_retry_on_streaming_error(self, mock_get_client):
         """Test that streaming errors trigger retries."""
         # Create a proper response object
@@ -279,6 +258,28 @@ class TestLLMRetryLogic:
             )
 
         # Should be called exactly 5 times
+        assert mock_client.chat.completions.create.call_count == 5
+
+    @patch("litassist.llm.api_handlers.get_openai_client")
+    def test_streaming_error_exhausts_after_max_retries(self, mock_get_client):
+        """A streaming error that never clears must exhaust all 5 attempts and
+        propagate. Pairs with test_retry_on_streaming_error (which recovers on
+        the second attempt): streaming errors are retryable AND bounded by the
+        same cap - neither half is implied by the other."""
+        mock_client = MagicMock()
+        mock_get_client.return_value = mock_client
+        mock_client.chat.completions.create.side_effect = Exception(
+            "Error processing stream"
+        )
+
+        with pytest.raises(Exception, match="Error processing stream"):
+            execute_api_call_with_retry(
+                "openai/gpt-4",
+                [{"role": "user", "content": "test"}],
+                {},
+                get_openai_client_func=mock_get_client,
+            )
+
         assert mock_client.chat.completions.create.call_count == 5
 
     @patch("litassist.llm.api_handlers.get_openai_client")

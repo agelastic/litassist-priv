@@ -115,6 +115,7 @@ lookup:
       - Group citations by authority level (High Court -> Federal -> State)
       - EVERY case mentioned MUST have its medium neutral citation
       - For legislation: Act Name Year (Jurisdiction) s Number
+      - Verify statutory section numbers (especially definitional provisions) against the provided sources before citing; do not guess or shift them. Mark any section number not confirmed by a source as [SECTION TO BE VERIFIED]
 
     # USED BY: lookup.py lookup() - comprehensive mode output structure
     # LOCATION: lookup.py:832
@@ -180,7 +181,7 @@ lookup:
       (Write 1-2 paragraphs with definitive conclusions, with one blank line between if using two paragraphs)
 
       CONTENT REQUIREMENTS:
-      Use medium neutral citations for all cases. Format: Case Name [Year] COURT_ID Number, [paragraph]. Example: Smith v Jones [2020] HCA 15, [42]. Cite ALL sources used in your analysis. Every legal principle, case reference, or statutory provision mentioned must include a proper citation. Analyze the provided sources to provide comprehensive legal analysis. Cross-reference between sources where applicable. Each paragraph should contain a single coherent idea or point.
+      Use medium neutral citations for all cases. Format: Case Name [Year] COURT_ID Number, [paragraph]. Example: Smith v Jones [2020] HCA 15, [42]. Cite ALL sources used in your analysis. Every legal principle, case reference, or statutory provision mentioned must include a proper citation. Verify statutory section numbers (especially definitional provisions) against the provided sources before citing; do not guess or shift them, and mark any section number not confirmed by a source as [SECTION TO BE VERIFIED]. Analyze the provided sources to provide comprehensive legal analysis. Cross-reference between sources where applicable. Each paragraph should contain a single coherent idea or point.
 
       KNOWLEDGE INTEGRATION:
       Use BOTH the provided sources AND your own legal knowledge. The provided sources take PRIORITY and should be cited directly. Your own knowledge should supplement and contextualize the provided materials, filling gaps and providing broader legal context where the sources don't fully address the question.

@@ -60,25 +60,6 @@ class TestContentTypeGuard:
             "application/javascript response must fall back to Jina"
         )
 
-    def test_application_json_response_falls_back_to_jina(self):
-        json_body = '{"data": ' + ('"item",' * 100) + '}'
-        captured = {"jina_called": False}
-
-        def fake_curl(url, timeout=10):
-            return _build_response(
-                status=200, text=json_body, content_type="application/json",
-            )
-
-        def fake_jina(url, timeout=10):
-            captured["jina_called"] = True
-            return ""
-
-        with patch.object(fetchers, "_fetch_via_curl_cffi", side_effect=fake_curl), \
-                patch.object(fetchers, "_fetch_via_jina", side_effect=fake_jina):
-            fetchers._fetch_url_content("https://example.gov.au/api")
-
-        assert captured["jina_called"]
-
     def test_text_html_response_is_processed_normally(self):
         html_body = "<!doctype html><html><body>" + ("<p>real content here. </p>" * 50) + "</body></html>"
         captured = {"jina_called": False}

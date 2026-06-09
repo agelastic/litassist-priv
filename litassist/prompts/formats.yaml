@@ -17,7 +17,7 @@ formats:
     5. **Evidence Available**: Catalog all available evidence, documents, and potential witnesses. Where possible, group by type (e.g., Documentary, Witness, Expert).
     6. **Opposing Arguments**: Summarize the other party's position and claims
     7. **Procedural History**: Detail any court proceedings, orders, or legal steps taken to date
-    8. **Jurisdiction**: Specify the relevant court or tribunal and basis for jurisdiction
+    8. **Jurisdiction**: Begin this section with a line in the exact form `Matter type: <value>` where <value> is one of: civil, criminal, family, commercial, disciplinary (a professional-conduct/regulatory complaint), foi, administrative - choose the best fit from the facts. Then specify the relevant court, tribunal, or regulator and the basis for jurisdiction
     9. **Applicable Law**: List relevant statutes, regulations, and legal principles. Where possible, distinguish between 'Statute' and 'Case Law'.
     10. **Client Objectives**: State what the client hopes to achieve
 

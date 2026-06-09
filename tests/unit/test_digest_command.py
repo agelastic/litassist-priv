@@ -221,11 +221,3 @@ class TestDigestIssuesMode:
         mock_output.assert_called_once()
         mock_show.assert_called_once()
         mock_log.assert_called_once()
-
-    def test_help_and_errors(self):
-        # Help output
-        result_help = self.runner.invoke(digest, ["--help"])
-        assert result_help.exit_code == 0
-        # No files provided
-        result_no_file = self.runner.invoke(digest, [])
-        assert result_no_file.exit_code != 0

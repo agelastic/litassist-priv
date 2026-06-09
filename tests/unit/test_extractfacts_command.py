@@ -194,10 +194,3 @@ class TestExtractFactsBasic:
         # The saved metadata carries the short-circuit status, not "applied".
         final_metadata = mock_output.call_args_list[-1].kwargs["metadata"]
         assert "short-circuited" in final_metadata["Verification"].lower()
-
-    def test_help_and_errors(self):  # no patches needed for help and error paths
-        result_help = self.runner.invoke(extractfacts, ["--help"])
-        assert result_help.exit_code == 0
-        # Missing file argument
-        result_no_file = self.runner.invoke(extractfacts, [])
-        assert result_no_file.exit_code != 0

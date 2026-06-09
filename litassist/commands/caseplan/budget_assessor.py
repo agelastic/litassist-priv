@@ -23,7 +23,8 @@ def assess_budget(
     facts_content: str,
     case_facts_name: str,
     context: str,
-    output: str
+    output: str,
+    matter_posture: str = "",
 ) -> Tuple[str, Dict]:
     """
     Perform budget assessment and save results.
@@ -55,6 +56,8 @@ def assess_budget(
     llm_client = LLMClientFactory.for_command("caseplan", "assessment")
 
     system_prompt = PROMPTS.get("commands.caseplan.budget_assessment_system")
+    if matter_posture:
+        system_prompt = matter_posture + "\n\n" + system_prompt
     # Use base case facts template for budget assessment
     user_prompt = PROMPTS.get("analysis.base_case_facts_prompt").format(
         facts_content=facts_content
