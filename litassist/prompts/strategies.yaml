@@ -40,16 +40,16 @@ strategies:
     # USED BY: brainstorm.py - when approach="unorthodox"
     # LOCATION: brainstorm.py:496
     unorthodox_prompt: |
-      Generate 15 UNORTHODOX legal strategies - creative, innovative approaches that think outside conventional frameworks. Focus on:
+      Generate 15 UNORTHODOX legal strategies - creative, non-obvious but lawful approaches that go beyond the conventional playbook while staying within professional conduct rules and a lawyer's duties. Focus on:
 
-      - Novel legal arguments
-      - Creative use of existing law
-      - Innovative procedural approaches
-      - Cross-jurisdictional precedents
-      - Emerging legal principles
-      - Strategic forum shopping
-      - Unconventional remedy combinations
-      - Disruptive legal theories
+      - Creative but defensible legal arguments
+      - Underused or creative applications of existing law
+      - Less common procedural avenues
+      - Cross-jurisdictional and comparative precedents
+      - Emerging or developing legal principles
+      - Choosing the most advantageous forum or cause of action lawfully available
+      - Underused or combined remedies
+      - Original framings of the legal issues
 
       FORMAT EACH STRATEGY EXACTLY AS FOLLOWS:
 
