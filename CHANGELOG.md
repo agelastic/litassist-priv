@@ -1,6 +1,6 @@
 # Changelog
 
-Last updated: 08/06/2026
+Last updated: 10/06/2026
 
 All notable changes to LitAssist will be documented in this file.
 
@@ -30,6 +30,18 @@ Historical dated sections preserve the model names that were current when those 
   qualifiers (e.g. "Key Events (Chronological)"); the 10-heading validator tolerates them.
 - `lookup` and `digest` prompts now instruct the model to verify statutory section numbers
   against the supplied sources (and flag unverified ones), reducing definitional-section drift.
+- `brainstorm` no longer fabricates strategies when a model returns no `### Strategy N:`
+  headers (e.g. a refusal). The blank-line fallback that silently split a refusal into up to
+  15 "strategies" is removed; a lane that yields zero parseable strategies now prints a loud
+  warning showing the model's response prefix and reports an honest count of 0, and the
+  citation-verification stage logs the real strategy count instead of a hardcoded "30".
+- `brainstorm` unorthodox prompt reworded toward creative-but-lawful framing (dropping the
+  "fabricate 15 boundary-pushing / disruptive / forum-shopping" language) to reduce model
+  refusals on regulatory/complaint matters.
+- `strategy` "Total tokens used" (and the audit log) now aggregate the options, next-steps and
+  draft generation calls; previously only the options call was counted, under-reporting cost by
+  roughly two-thirds. (The verification-stage call's usage is not yet returned by `verify()` and
+  remains a documented residual.)
 
 ## [3.0.0] - 2026-06-04
 
