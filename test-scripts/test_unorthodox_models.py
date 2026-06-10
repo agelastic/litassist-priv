@@ -46,6 +46,10 @@ from litassist.prompts import PROMPTS  # noqa: E402
 from litassist.commands.brainstorm.core import _extract_strategies  # noqa: E402
 from litassist.utils.legal_reasoning import create_reasoning_prompt  # noqa: E402
 from litassist.llm.factory import LLMClientFactory  # noqa: E402
+from litassist.utils.case_facts import (  # noqa: E402
+    resolve_matter_type,
+    matter_type_posture,
+)
 
 REPO_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 CONFIG_PATH = os.path.join(REPO_ROOT, "config.yaml")
@@ -136,7 +140,16 @@ def build_unorthodox_messages():
         content=combined
     )
     user = create_reasoning_prompt(wrapped, "brainstorm-unorthodox")
+    # Match production: brainstorm resolves the matter type from the facts and
+    # prepends its posture to the unorthodox system message (core.py +
+    # unorthodox_generator.py). Without this the harness would send a different
+    # (less constrained) system prompt than a real disciplinary brainstorm run,
+    # so a model could appear to avoid refusing here while still refusing live.
+    matter_type, _ = resolve_matter_type(SAMPLE_FACTS)
+    matter_posture = matter_type_posture(matter_type)
     system = PROMPTS.get("commands.brainstorm.unorthodox_system")
+    if matter_posture:
+        system = matter_posture + "\n\n" + system
     return [
         {"role": "system", "content": system},
         {"role": "user", "content": user},
