@@ -129,6 +129,8 @@ test_*.json
 test_*.pdf
 # Tier 2 matter-type spot-check run artifacts (fixtures + paid-call logs)
 test-scripts/spotcheck_matter_type_*/
+# P-JUDGE eval harness run artefacts (timestamped reports; baseline is tracked)
+test-scripts/judge_eval/results/
 temp_*.py
 temp_*.txt
 mock_*.txt
