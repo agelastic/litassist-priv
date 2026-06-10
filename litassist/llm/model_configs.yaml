@@ -68,7 +68,10 @@ brainstorm-orthodox:
   disable_tools: true
 
 brainstorm-unorthodox:
-  model: "x-ai/grok-4.20"
+  # grok-4.3: grok-4.20 refused ~2/3 of unorthodox eval trials on the
+  # disciplinary/complaint framing even after the prompt reword; grok-4.3
+  # produced 15 parseable strategies in 3/3 trials (test_unorthodox_models.py).
+  model: "x-ai/grok-4.3"
   temperature: 0.8
   top_p: 0.95
   min_p: 0.05

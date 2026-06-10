@@ -38,6 +38,10 @@ Historical dated sections preserve the model names that were current when those 
 - `brainstorm` unorthodox prompt reworded toward creative-but-lawful framing (dropping the
   "fabricate 15 boundary-pushing / disruptive / forum-shopping" language) to reduce model
   refusals on regulatory/complaint matters.
+- `brainstorm-unorthodox` model changed from `x-ai/grok-4.20` to `x-ai/grok-4.3`. An eval
+  (`test-scripts/test_unorthodox_models.py`) showed grok-4.20 still refused ~2/3 of trials on
+  the disciplinary/complaint framing even with the reworded prompt, while grok-4.3 produced 15
+  parseable strategies in 3/3 trials. Sampling parameters unchanged (same xAI family).
 - `strategy` "Total tokens used" (and the audit log) now aggregate the options, next-steps and
   draft generation calls; previously only the options call was counted, under-reporting cost by
   roughly two-thirds. (The verification-stage call's usage is not yet returned by `verify()` and
