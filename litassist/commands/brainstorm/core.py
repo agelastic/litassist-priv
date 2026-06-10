@@ -59,11 +59,10 @@ def _extract_strategies(content: str, strategy_type: str) -> list[str]:
     pattern = r'((?:###\s+Strategy\s+\d+:|###\s+\d+\.|##\s*STRATEGY\s*\d+:|\d+\.)[^\n]*\n.*?)(?=(?:\n(?:###\s+Strategy\s+\d+:|###\s+\d+\.|##\s*STRATEGY\s*\d+:|\d+\.))|$)'
     matches = re.findall(pattern, content, re.DOTALL | re.IGNORECASE)
 
-    if not matches:
-        # Fallback: split by blank lines
-        strategies = [s.strip() for s in content.split('\n\n') if s.strip()]
-        return strategies[:15]  # Cap at expected count
-
+    # No fallback: if the model returned no recognisable strategy headers (e.g. a
+    # refusal or malformed output), surface zero strategies rather than fabricating
+    # chunks by splitting on blank lines. The caller detects the empty result and
+    # warns loudly (CLAUDE.md: fail fast, no fallback parsing).
     return [match.strip() for match in matches]
 
 
@@ -580,13 +579,43 @@ def brainstorm(facts, side, area, research, verify, output):
     except Exception:
         pass
 
+    # Detect empty/refused lanes before verification and surface them loudly.
+    # _extract_strategies returns [] when the model produced no recognisable
+    # strategy headers (e.g. a refusal); previously a refusal was silently split
+    # into fabricated chunks. We do not abort - the other lane and the analysis
+    # may still be useful - but the user must see that a lane produced nothing.
+    orthodox_parsed = _extract_strategies(orthodox_content, "orthodox")
+    unorthodox_parsed = _extract_strategies(unorthodox_content, "unorthodox")
+    for lane_name, lane_content, lane_parsed in (
+        ("Orthodox", orthodox_content, orthodox_parsed),
+        ("Unorthodox", unorthodox_content, unorthodox_parsed),
+    ):
+        if not lane_parsed:
+            snippet = " ".join(lane_content.split())[:200]
+            click.echo(
+                warning_message(
+                    f"{lane_name} generation produced 0 parseable strategies "
+                    "(the model may have refused or returned an unexpected format). "
+                    f"Response begins: {snippet}"
+                )
+            )
+    strategy_total = len(orthodox_parsed) + len(unorthodox_parsed)
+    if strategy_total == 0:
+        # Both lanes produced no parseable strategies (e.g. both models refused).
+        # Abort before the expensive analysis stage rather than analysing nothing.
+        raise click.ClickException(
+            "Both orthodox and unorthodox generation produced 0 parseable "
+            "strategies (the models may have refused). Aborting before the "
+            "analysis stage - nothing to analyse."
+        )
+
     # NEW: Verify all citations before analysis
     try:
         log_task_event(
             "brainstorm",
             "verify-citations",
             "start",
-            "Verifying citations in all 30 strategies",
+            f"Verifying citations in all {strategy_total} strategies",
         )
     except Exception:
         pass

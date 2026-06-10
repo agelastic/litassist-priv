@@ -11,15 +11,17 @@ from litassist.commands.brainstorm.core import (
 class TestVerificationFlow:
     """Test the new verification flow."""
 
-    def test_extract_strategies_fallback(self):
-        """Test fallback when no numbered patterns found."""
+    def test_extract_strategies_returns_empty_when_no_headers(self):
+        """No `### Strategy N:` headers (e.g. a model refusal or malformed output)
+        must yield zero strategies - never fabricated blank-line chunks. The old
+        blank-line fallback masked refusals by returning paragraph fragments."""
         content = """Some strategy text
 
 Another strategy text
 
 Third strategy text"""
         strategies = _extract_strategies(content, "orthodox")
-        assert len(strategies) == 3
+        assert strategies == []
 
     @patch('litassist.citation.verify.verify_all_citations')
     @patch('litassist.commands.brainstorm.core.assess_legal_plausibility_bulk')

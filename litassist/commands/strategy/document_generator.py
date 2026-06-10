@@ -52,7 +52,7 @@ def generate_draft_document(
     strategy_content: str,
     outcome: str,
     doc_type: str = None,
-) -> str:
+) -> tuple[str, dict]:
     """
     Generate a draft legal document based on strategy analysis.
 
@@ -65,7 +65,7 @@ def generate_draft_document(
         doc_type: Document type (if None, will be determined automatically)
 
     Returns:
-        Generated document content
+        Tuple of (document content, token-usage dict)
 
     Raises:
         click.ClickException: If document generation fails
@@ -102,7 +102,7 @@ def generate_draft_document(
         pass
 
     try:
-        document_content, _ = llm_client.complete(
+        document_content, document_usage = llm_client.complete(
             [
                 {"role": "system", "content": system_prompt},
                 {"role": "user", "content": user_prompt},
@@ -122,7 +122,7 @@ def generate_draft_document(
         except Exception:
             pass
 
-        return document_content
+        return document_content, document_usage
     except Exception as e:
         logging.error(f"Document generation failed: {e}")
         raise click.ClickException(f"LLM document generation error: {e}")

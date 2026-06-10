@@ -1,7 +1,28 @@
 ---
 # LLM Model Configurations for Commands
-# Last updated: 23/05/2026
+# Last updated: 10/06/2026
 # NO FALLBACKS - Missing keys will raise KeyError
+#
+# PARAMETERS ARE NEVER TRIMMED WHEN CHANGING A CONFIG'S MODEL - ONLY ADD.
+# The decoding parameters below are the per-command INTENT. Per-model
+# applicability is handled downstream, in two places:
+#   - litassist/llm/parameter_handler.py (+ model_profiles.py) adapts them per
+#     family at call time: it maps thinking_effort, keeps/drops verbosity, and
+#     drops sampling params NOT in a family's `allowed` profile (e.g.
+#     temperature/top_p for the GPT-5 / o3 reasoning families and Opus 4.7/4.8);
+#   - the OpenRouter-extension sampling params (min_p, top_a, repetition_penalty)
+#     are NOT dropped by that layer - they are forwarded for every model and
+#     OpenRouter / the provider ignores the ones it does not support.
+# So when you swap the `model:` for a command, do NOT delete existing parameters:
+# removing one changes the intent and gains nothing, because anything the new
+# model cannot use is dropped here or ignored downstream. Only ADD parameters the
+# new model needs.
+#
+# AFTER changing a `model:` here: run `litassist refresh` (regenerates the tracked,
+# auto-generated model_capabilities.yaml for the new id - never hand-edit that file)
+# and run pytest. The offline integrity tests assert every configured model is in
+# model_capabilities.yaml; the pre-commit hook runs pytest only when a .py file is
+# staged, so a YAML-only model swap that breaks them would otherwise commit green.
 
 # extractfacts: deterministic structured extraction from legal documents.
 # Anthropic family chosen because temperature/top_p are honoured (GPT-5 family strips them).
@@ -53,7 +74,10 @@ brainstorm-orthodox:
   disable_tools: true
 
 brainstorm-unorthodox:
-  model: "x-ai/grok-4.20"
+  # grok-4.3: grok-4.20 refused ~2/3 of unorthodox eval trials on the
+  # disciplinary/complaint framing even after the prompt reword; grok-4.3
+  # produced 15 parseable strategies in 3/3 trials (test_unorthodox_models.py).
+  model: "x-ai/grok-4.3"
   temperature: 0.8
   top_p: 0.95
   min_p: 0.05
