@@ -4,15 +4,19 @@
 # NO FALLBACKS - Missing keys will raise KeyError
 #
 # PARAMETERS ARE NEVER TRIMMED WHEN CHANGING A CONFIG'S MODEL - ONLY ADD.
-# The decoding parameters below are the INTENT for a command. Per-model
-# applicability is resolved at the TRANSLATION layer
-# (litassist/llm/parameter_handler.py + model_profiles.py), which strips or maps
-# any parameter a given model family does not support, at call time - e.g. the
-# GPT-5 / o3 family ignore temperature/top_p, and min_p / repetition_penalty are
-# honoured only by some providers. So when you swap the `model:` for a command,
-# do NOT delete existing parameters: removing one changes the intent and gains
-# nothing, because the translation layer already drops what the new model cannot
-# use. Only ADD parameters the new model needs.
+# The decoding parameters below are the per-command INTENT. Per-model
+# applicability is handled downstream, in two places:
+#   - litassist/llm/parameter_handler.py (+ model_profiles.py) adapts them per
+#     family at call time: it maps thinking_effort, keeps/drops verbosity, and
+#     drops sampling params NOT in a family's `allowed` profile (e.g.
+#     temperature/top_p for the GPT-5 / o3 reasoning families and Opus 4.7/4.8);
+#   - the OpenRouter-extension sampling params (min_p, top_a, repetition_penalty)
+#     are NOT dropped by that layer - they are forwarded for every model and
+#     OpenRouter / the provider ignores the ones it does not support.
+# So when you swap the `model:` for a command, do NOT delete existing parameters:
+# removing one changes the intent and gains nothing, because anything the new
+# model cannot use is dropped here or ignored downstream. Only ADD parameters the
+# new model needs.
 
 # extractfacts: deterministic structured extraction from legal documents.
 # Anthropic family chosen because temperature/top_p are honoured (GPT-5 family strips them).

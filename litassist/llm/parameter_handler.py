@@ -5,12 +5,23 @@ This module contains functions for converting, filtering, and validating
 LLM parameters based on model families and profiles.
 
 This is the TRANSLATION layer. The decoding parameters in `model_configs.yaml`
-are the per-command INTENT; this module strips or maps any parameter a given
-model family does not support, at call time (e.g. the GPT-5/o3 family ignore
-temperature/top_p; min_p/repetition_penalty are honoured only by some providers).
-Consequence: when a command is swapped to a different model in model_configs.yaml,
-parameters are NEVER trimmed there - only added. Removing a param changes intent
-and gains nothing, because this layer already drops what the new model cannot use.
+are the per-command INTENT; this module adapts them per model family at call time:
+  - thinking_effort is mapped to OpenRouter's reasoning object (or dropped for
+    families with no reasoning tier);
+  - verbosity is kept for the GPT-5 and Claude families, dropped for the o-series
+    / Grok / Gemini families;
+  - sampling params NOT in a family's `allowed` profile are silently dropped here
+    (e.g. temperature/top_p are dropped for the GPT-5/o3 reasoning families and for
+    Opus 4.7/4.8, which expose no sampling);
+  - BUT the OpenRouter-extension sampling params (min_p, top_a, repetition_penalty,
+    see get_openrouter_params) are NOT dropped here - they are forwarded for every
+    model and it is OpenRouter / the target provider that ignores the ones it does
+    not support.
+Consequence for editing model_configs.yaml: when you swap a command's model, only
+ADD parameters - do not trim. Params the new model cannot use are either dropped
+here (effort / verbosity / sampling-not-in-`allowed`) or ignored downstream by
+OpenRouter (the min_p/top_a/repetition_penalty extensions); removing them changes
+intent and gains nothing.
 """
 
 import re
