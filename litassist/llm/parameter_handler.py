@@ -3,6 +3,14 @@ Parameter handling functions for LLM clients.
 
 This module contains functions for converting, filtering, and validating
 LLM parameters based on model families and profiles.
+
+This is the TRANSLATION layer. The decoding parameters in `model_configs.yaml`
+are the per-command INTENT; this module strips or maps any parameter a given
+model family does not support, at call time (e.g. the GPT-5/o3 family ignore
+temperature/top_p; min_p/repetition_penalty are honoured only by some providers).
+Consequence: when a command is swapped to a different model in model_configs.yaml,
+parameters are NEVER trimmed there - only added. Removing a param changes intent
+and gains nothing, because this layer already drops what the new model cannot use.
 """
 
 import re
