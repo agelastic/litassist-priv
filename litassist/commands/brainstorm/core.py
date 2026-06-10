@@ -600,6 +600,14 @@ def brainstorm(facts, side, area, research, verify, output):
                 )
             )
     strategy_total = len(orthodox_parsed) + len(unorthodox_parsed)
+    if strategy_total == 0:
+        # Both lanes produced no parseable strategies (e.g. both models refused).
+        # Abort before the expensive analysis stage rather than analysing nothing.
+        raise click.ClickException(
+            "Both orthodox and unorthodox generation produced 0 parseable "
+            "strategies (the models may have refused). Aborting before the "
+            "analysis stage - nothing to analyse."
+        )
 
     # NEW: Verify all citations before analysis
     try:

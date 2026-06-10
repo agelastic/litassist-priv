@@ -443,3 +443,62 @@ Pursue misleading conduct claim while simultaneously filing ombudsman complaint.
         assert "0 parseable strategies" in result.output
         # And the honest count is zero, not a fabricated number.
         assert "Unorthodox strategies: 0" in result.output
+
+    @patch("litassist.commands.brainstorm.analysis_generator.LLMClientFactory")
+    @patch("litassist.commands.brainstorm.unorthodox_generator.LLMClientFactory")
+    @patch("litassist.commands.brainstorm.orthodox_generator.LLMClientFactory")
+    @patch("litassist.commands.brainstorm.core.LLMClientFactory")
+    @patch("litassist.commands.brainstorm.core.save_command_output")
+    @patch("litassist.commands.brainstorm.core.save_log")
+    def test_brainstorm_aborts_when_both_lanes_empty(
+        self,
+        mock_save_log,
+        mock_save_output,
+        mock_factory_core,
+        mock_factory_orth,
+        mock_factory_unorth,
+        mock_factory_analysis,
+    ):
+        """If BOTH lanes produce 0 parseable strategies, abort before the
+        expensive analysis stage instead of analysing nothing (PR feedback)."""
+        refusal = (
+            "I must decline to generate these strategies.\n\nNo precedent exists.",
+            {"total_tokens": 40},
+        )
+        self.mock_orthodox_client.complete.return_value = refusal
+        self.mock_unorthodox_client.complete.return_value = refusal
+
+        mock_factory_orth.for_command.return_value = self.mock_orthodox_client
+        mock_factory_unorth.for_command.side_effect = [
+            self.mock_unorthodox_client,
+            self.mock_verification_client,
+        ]
+        mock_factory_analysis.for_command.return_value = self.mock_analysis_client
+        mock_factory_core.get_input_budget_for_command.return_value = 10_000_000
+        mock_factory_core.for_command.side_effect = [
+            self.mock_orthodox_client,
+            self.mock_unorthodox_client,
+            self.mock_analysis_client,
+        ]
+        mock_save_output.return_value = "brainstorm_output.txt"
+
+        with self.runner.isolated_filesystem():
+            with open("facts.txt", "w") as f:
+                f.write("Test case facts.")
+            result = self.runner.invoke(
+                cli,
+                [
+                    "brainstorm",
+                    "--facts",
+                    "facts.txt",
+                    "--side",
+                    "plaintiff",
+                    "--area",
+                    "commercial",
+                ],
+            )
+
+        assert result.exit_code != 0
+        assert "parseable strategies" in result.output
+        # The expensive analysis stage must NOT run on empty input.
+        self.mock_analysis_client.complete.assert_not_called()
