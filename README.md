@@ -1,6 +1,6 @@
 # LitAssist
 
-Last updated: 02/06/2026
+Last updated: 10/06/2026
 
 **LitAssist** is a comprehensive legal workflow automation tool designed for Australian legal practice. It provides a structured end-to-end pipeline for litigation support:
 
@@ -434,6 +434,10 @@ Each command uses optimized LLM models and parameters:
 ## Disclaimer
 
 This tool provides drafts and summaries only. All outputs must be reviewed by qualified legal counsel before filing or submission.
+
+## Licence
+
+LitAssist is released under the MIT License. See [LICENSE](LICENSE) for the full text.
 
 ---
 

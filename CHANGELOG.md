@@ -12,6 +12,10 @@ Historical dated sections preserve the model names that were current when those 
 ## [Unreleased]
 
 ### Added
+- `LICENSE` file (MIT). The project licence is now stated consistently: `setup.py`
+  classifier changed from `License :: Other/Proprietary License` to
+  `License :: OSI Approved :: MIT License` (plus a `license="MIT"` kwarg), and README
+  gained a Licence section. Resolves the licensing inconsistency deferred from v3.0.0.
 - Matter-type-aware prompts (Phase 1). `case_facts` now carries a `Matter type:` line
   under the Jurisdiction heading (proposed by `extractfacts`, preserved by `updatefacts`).
   The framing commands (`barbrief`, `strategy`, `brainstorm`, `caseplan`) read it and prepend

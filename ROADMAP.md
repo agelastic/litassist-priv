@@ -1375,8 +1375,8 @@ la profile --create "Agency A" --type government
   item with a hard external deadline that breaks a core feature. Validate the path
   in `docs/development/GOOGLE_CSE_MIGRATION_PLAN.md` now (deliverable: a validated
   cutover doc, not the migration). Tracked in `TODO.md`.
-- **Licensing reconciliation** - `setup.py` says proprietary; no LICENSE file/prose.
-  ~1h once the proprietary-vs-OSS decision is made. Tracked in `TODO.md`.
+- **Licensing reconciliation** - DONE 10/06/2026: MIT chosen; LICENSE added,
+  `setup.py` classifier and README aligned. Tracked in `TODO.md`.
 
 **Total Phase 1 Effort:** 41-50 hours
 
