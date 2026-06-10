@@ -17,6 +17,12 @@
 # removing one changes the intent and gains nothing, because anything the new
 # model cannot use is dropped here or ignored downstream. Only ADD parameters the
 # new model needs.
+#
+# AFTER changing a `model:` here: run `litassist refresh` (regenerates the tracked,
+# auto-generated model_capabilities.yaml for the new id - never hand-edit that file)
+# and run pytest. The offline integrity tests assert every configured model is in
+# model_capabilities.yaml; the pre-commit hook runs pytest only when a .py file is
+# staged, so a YAML-only model swap that breaks them would otherwise commit green.
 
 # extractfacts: deterministic structured extraction from legal documents.
 # Anthropic family chosen because temperature/top_p are honoured (GPT-5 family strips them).
