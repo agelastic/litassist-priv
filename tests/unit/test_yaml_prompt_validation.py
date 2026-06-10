@@ -206,6 +206,14 @@ class TestYAMLPromptValidation:
             "file_digests",
             # Reasoning trace placeholders
             "reasoning_header",
+            # P-JUDGE eval harness placeholders (judge_eval.yaml)
+            "case_id",
+            "dimensions_list",
+            "rubrics",
+            "structure_template",
+            "expected_citations_table",
+            "output",
+            "context_starved_instruction",
         }
 
         errors = []
