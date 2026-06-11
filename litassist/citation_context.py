@@ -35,6 +35,69 @@ HARDCODED_LEGISLATION_URLS = {
     "Freedom of Information Act 1982 (Commonwealth)": "https://www.legislation.gov.au/C2004A02562/2025-02-21/2025-02-21/text/original/pdf",
 }
 
+# Jurisdiction parenthetical in an act citation -> (AustLII /au/legis/ path
+# segment, jurisdiction prose as it appears on AustLII act-page headers,
+# e.g. "New South Wales Consolidated Acts"). Used to scope the AustLII CSE
+# link filter and the legislation validation strategy: without this the WA
+# Civil Liability Act was fetched and (correctly) rejected for an (NSW)
+# citation, while the correct NSW page could never validate because act
+# pages head with the bare title, never the "(NSW)" literal.
+LEGISLATION_JURISDICTIONS = {
+    "(cth)": ("cth", "commonwealth"),
+    "(nsw)": ("nsw", "new south wales"),
+    "(vic)": ("vic", "victoria"),
+    "(qld)": ("qld", "queensland"),
+    "(sa)": ("sa", "south australia"),
+    "(wa)": ("wa", "western australia"),
+    "(tas)": ("tas", "tasmania"),
+    "(act)": ("act", "australian capital territory"),
+    "(nt)": ("nt", "northern territory"),
+}
+
+
+def _parse_legislation_jurisdiction(citation: str):
+    """Return (austlii_path_segment, header_prose_name) for the jurisdiction
+    parenthetical in an act citation, or None when no marker is present
+    (case citations and bare titles)."""
+    lower = citation.lower()
+    for marker, mapping in LEGISLATION_JURISDICTIONS.items():
+        if marker in lower:
+            return mapping
+    return None
+
+
+def _legislation_austlii_link_ok(link: str, jurisdiction) -> bool:
+    """Link filter for the AustLII legislation CSE step. When the citation
+    names a jurisdiction, only that jurisdiction's /au/legis/ subtree is
+    accepted; otherwise the generic legislation-path check applies."""
+    if not is_trusted_legal_host(link):
+        return False
+    if jurisdiction:
+        return f"/au/legis/{jurisdiction[0]}/" in link
+    return "/au/legis/" in link
+
+
+def _legislation_title_jurisdiction_match(header: str, citation: str) -> bool:
+    """Legislation-aware validation: AustLII act pages head with the bare
+    title ("CIVIL LIABILITY ACT 2002") and name the jurisdiction in prose
+    ("New South Wales Consolidated Acts"), never the "(NSW)" literal, so
+    the exact-string strategies cannot validate a whole-act citation.
+    Requires BOTH the title (sans parentheticals) and the jurisdiction
+    marker in the header; a right-title/wrong-jurisdiction page still
+    fails."""
+    jurisdiction = _parse_legislation_jurisdiction(citation)
+    if not jurisdiction:
+        return False
+    path_abbrev, prose_name = jurisdiction
+    title = re.sub(r"\([^)]*\)", "", citation)
+    title = re.sub(r"\s+", " ", title).strip().lower()
+    if not title:
+        return False
+    header_norm = re.sub(r"\s+", " ", header.lower())
+    if title not in header_norm:
+        return False
+    return prose_name in header_norm or f"({path_abbrev})" in header_norm
+
 
 def _try_fetch_and_validate(url: str, citation: str) -> Optional[str]:
     """
@@ -317,12 +380,13 @@ def fetch_citation_context(citations: List[str]) -> tuple[Dict[str, str], List[t
 
                 # STEP 2: Try AustLII if no valid content found yet
                 if not content_valid and cse_austlii:
+                    jurisdiction = _parse_legislation_jurisdiction(citation)
                     found, content_valid, content = _search_and_validate(
                         service,
                         cse_austlii,
                         normalize_citation(citation),
                         citation,
-                        lambda link: is_trusted_legal_host(link) and "/au/legis/" in link,
+                        lambda link, _j=jurisdiction: _legislation_austlii_link_ok(link, _j),
                         "citation_austlii_legis_validated",
                         "Validated AustLII legis (rank {rank}/3): {url}",
                         apply_rate_limit=True,
@@ -606,6 +670,7 @@ def _validate_citation_match(content: str, citation: str) -> bool:
     # Define validation strategies in order of reliability
     strategies = [
         ("exact_primary_location", lambda: citation.lower() in content[:500].lower()),
+        ("legislation_title_jurisdiction_header", lambda: _legislation_title_jurisdiction_match(header, citation)),
         ("alternative_citations_header", lambda: _check_alternative_citations_section(header, citation)),
         ("parallel_citations_header", lambda: _check_header_parallel_citations(header, citation)),
         ("case_name_header", lambda: _case_name_match(header, citation)),

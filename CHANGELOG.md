@@ -41,6 +41,17 @@ Historical dated sections preserve the model names that were current when those 
   complaints tool-assessment.
 
 ### Fixed
+- Whole-act legislation citations (e.g. "Civil Liability Act 2002 (NSW)") are
+  now retrievable by `fetch_citation_context`. Two jurisdiction-blind spots
+  fixed together: the AustLII CSE link filter accepted any /au/legis/ link
+  (the WA Civil Liability Act and a Regulation were fetched for an NSW Act
+  citation), and no validation strategy could pass on the correct page, whose
+  header carries the bare title plus jurisdiction prose ("New South Wales
+  Consolidated Acts") rather than the "(NSW)" literal. The link filter is now
+  scoped to the citation's jurisdiction subtree and a legislation-aware
+  validation strategy matches title-plus-jurisdiction in the header (a
+  right-title/wrong-jurisdiction page still fails). Found by the P-JUDGE
+  retrieval-tag measurement.
 - `construct_austlii_url` now accepts citations that carry their case name
   (e.g. "Fallas v Mourlas [2006] NSWCA 32" - the form every command output
   uses). The parser was anchored to the start of the string, so the direct
