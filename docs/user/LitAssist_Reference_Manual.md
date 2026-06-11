@@ -1,6 +1,6 @@
 # LitAssist Reference Manual
 
-Last updated: 08/06/2026
+Last updated: 12/06/2026
 
 ---
 
@@ -138,7 +138,7 @@ caseplan --> extractfacts --> updatefacts --> lookup --> brainstorm --> strategy
     BYOK (e.g. for `openai/o3-pro`) is configured at OpenRouter, not in this
     project's config.
   - **Google Custom Search** (required): Citation verification and legal research
-  - **Jina Reader** (optional): Fallback transport for JavaScript-rendered pages and Cloudflare-blocked content. The primary fetch transport is `curl_cffi` (no key required); a Jina API key enables the fallback path with higher rate limits.
+  - **Jina Reader** (optional): Fallback transport for JavaScript-rendered pages and Cloudflare-blocked content (not used for austlii.edu.au, which blocks Jina's IPs; AustLII content is fetched directly). The primary fetch transport is `curl_cffi` (no key required); a Jina API key enables the fallback path with higher rate limits.
 
 ### 2.2 Installation Methods
 

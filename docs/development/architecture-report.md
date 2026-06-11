@@ -1,10 +1,10 @@
 # LitAssist Architecture Report
 
-Last updated: 05/06/2026
+Last updated: 12/06/2026
 
 **Repository:** `/Users/witt/Projects/litassist`  
 **Package version:** 3.0.0 (`setup.py`)  
-**Primary doc:** `docs/development/architecture.md` (last updated 02/06/2026)  
+**Primary doc:** `docs/development/architecture.md` (last updated 12/06/2026)  
 **Graph snapshot:** 188 files, 1,416 nodes, 13,113 edges (05/06/2026)
 
 ---
@@ -266,7 +266,7 @@ The fetcher is the most operationally complex non-LLM component. Pipeline (docum
 7. Content-Type guard → Jina if non-text.
 8. `legislation.gov.au` TOC follow for OEBPS link.
 9. BeautifulSoup text extraction.
-10. Challenge / SPA / gibberish detection → Jina fallback.
+10. Challenge / SPA / gibberish detection → Jina fallback (never for austlii.edu.au hosts, which always Cloudflare-challenge Jina and are guarded since 11/06/2026).
 11. Return cleaned text.
 
 Unit tests heavily cover URL normalisation, 404 behaviour, challenge detection, and RTF — reflecting past production pain on AustLII/Jade.

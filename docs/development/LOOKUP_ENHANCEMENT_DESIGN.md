@@ -1,6 +1,6 @@
 # Lookup Command Enhancement Roadmap
 
-Last updated: 02/06/2026
+Last updated: 12/06/2026
 
 Source of truth: lookup command registration is in `litassist/commands/__init__.py`; lookup model assignment is in `litassist/llm/model_configs.yaml`; active fetcher implementation is in `litassist/commands/lookup/fetchers.py`.
 
@@ -69,7 +69,11 @@ single-pipeline `_fetch_url_content` in `fetchers.py` handles each URL:
 9. **Content-Type guard** → non-text payloads (`application/javascript`, `application/json`, etc.) route to Jina; prevents long-garbage text passing through to BS4.
 10. **legislation.gov.au `/latest/text`** → follow the OEBPS document link via curl_cffi to retrieve the real document (the URL itself returns a ToC page). Hostname check via `urlsplit().hostname` (not substring) prevents attacker URLs with `legislation.gov.au` in query string from triggering the follow.
 11. **BS4 text extraction** (strip scripts, styles, meta, link, noscript).
-12. **Unusable response detection** → Jina fallback fires on:
+12. **Unusable response detection** → Jina fallback fires on the triggers
+    below, EXCEPT for austlii.edu.au hosts: AustLII always serves Jina's
+    datacentre IPs a Cloudflare challenge, so `_fetch_via_jina`
+    short-circuits for them with a skipped audit entry (guard added
+    11/06/2026). Triggers:
     - Cloudflare challenge markers (`_looks_like_challenge_page`) — phrase-level matches, not bare substrings (the bare `"captcha"` marker was false-positive-flagging fedcourt practice-note pages with Google reCAPTCHA widgets).
     - SPA shell (`_looks_like_spa_shell`) — Angular/React/Vue/Next/Nuxt framework markers with short extracted text, or text/HTML ratio below 5%.
     - Gibberish — extracted text under 100 chars. Newline-count heuristic dropped in May 2026 after rejecting Nuxt server-pre-rendered pages using Unicode word-joiner separators.

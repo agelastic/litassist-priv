@@ -1,6 +1,6 @@
 # LitAssist Architecture
 
-Last updated: 02/06/2026
+Last updated: 12/06/2026
 
 ## Overview
 LitAssist is a Python-based CLI tool for AI-powered litigation support in Australian law. It uses LLMs (via OpenRouter) and external search (Google CSE) to assist with legal research, document analysis, strategy generation, and drafting.
@@ -81,7 +81,7 @@ The 12 registered user-facing commands are: `lookup`, `digest`, `extractfacts`, 
 - **OpenRouter**: Primary API gateway for all LLM calls (Claude, GPT, Gemini, Grok, o3-pro).
 - **Google Custom Search Engine (CSE)**: Retrieves legal documents from Jade.io and AustLII.
 - **curl_cffi**: Primary content-fetch transport with Chrome 136 TLS impersonation. Defeats Cloudflare TLS fingerprint detection for HTML responses on AustLII and similar protected hosts. Direct `requests` is not used for content fetching.
-- **Jina Reader**: Fallback transport used by `litassist/commands/lookup/fetchers.py` when curl_cffi returns a Cloudflare challenge body, a JavaScript SPA shell, or non-HTML content. Also serves `ndfv.jade.io` URLs directly. Narrower role since the May 2026 fetcher rework (see CHANGELOG).
+- **Jina Reader**: Fallback transport used by `litassist/commands/lookup/fetchers.py` when curl_cffi returns a Cloudflare challenge body, a JavaScript SPA shell, or non-HTML content. Also serves `ndfv.jade.io` URLs directly. Never dispatched to austlii.edu.au hosts (AustLII always Cloudflare-challenges Jina's datacentre IPs; guarded since 11/06/2026). Narrower role since the May 2026 fetcher rework (see CHANGELOG).
 
 ### Lookup fetcher chain
 The fetcher in `litassist/commands/lookup/fetchers.py` runs every URL through a single generic pipeline:
@@ -95,7 +95,7 @@ The fetcher in `litassist/commands/lookup/fetchers.py` runs every URL through a 
 7. Content-Type guard: non-text payloads route to Jina rather than passing through to BS4.
 8. legislation.gov.au `/latest/text` → follow the OEBPS document link via curl_cffi.
 9. BS4 text extraction (strip scripts/styles/meta/link/noscript).
-10. Detection: Cloudflare challenge markers (`_looks_like_challenge_page`), SPA shell (`_looks_like_spa_shell`), or gibberish (text < 100 chars) → Jina fallback.
+10. Detection: Cloudflare challenge markers (`_looks_like_challenge_page`), SPA shell (`_looks_like_spa_shell`), or gibberish (text < 100 chars) → Jina fallback (not for austlii.edu.au hosts, which are guarded out of the Jina path).
 11. Otherwise return cleaned text.
 
 ## Data Flow
