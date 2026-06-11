@@ -26,19 +26,20 @@ expected_citations:
   # (pipeline capability). CLR-only citations have no medium-neutral form
   # printed, so no AustLII URL is constructible (TODO C1/C2).
   - cite: "Civil Liability Act 2002 (NSW)"
-    # measured 11/06/2026 via fetch_citation_context: no validated content
-    fetchable: false
-    retrieval_class: fetch_failed
+    # re-measured 11/06/2026 after the named-cite and jurisdiction fixes: fetch succeeded
+    fetchable: true
+    retrieval_class: fetchable
   - cite: "Limitation Act 1969 (NSW)"
-    # measured 11/06/2026 via fetch_citation_context: no validated content
-    fetchable: false
-    retrieval_class: fetch_failed
+    # re-measured 11/06/2026 after the named-cite and jurisdiction fixes: fetch succeeded
+    fetchable: true
+    retrieval_class: fetchable
   - cite: "Civil Procedure Act 2005 (NSW)"
-    # measured 11/06/2026 via fetch_citation_context: no validated content
-    fetchable: false
-    retrieval_class: fetch_failed
+    # re-measured 11/06/2026 after the named-cite and jurisdiction fixes: fetch succeeded
+    fetchable: true
+    retrieval_class: fetchable
   - cite: "District Court Act 1973 (NSW)"
-    # measured 11/06/2026 via fetch_citation_context: no validated content
+    # still failed on the 11/06/2026 post-fix re-measure (CSE recall: act page
+    # not surfaced in the top results), not the regex/jurisdiction defects
     fetchable: false
     retrieval_class: fetch_failed
   - cite: "Competition and Consumer Act 2010 (Cth)"

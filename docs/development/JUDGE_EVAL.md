@@ -144,15 +144,32 @@ generation pipeline asserts far more authority than its retrieval provides
 (lookup wrote its entire IRAC analysis with zero source-verifiable
 citations), so retrieval work, not more verification, lifts the ceiling.
 
-Tag verification (same day, via `fetch_citation_context` over all 16
-distinct expected citations): only 3 survived as fetchable - Dederer
-[2007] HCA 42, Moore v Scenic Tours [2020] HCA 17 (hcourt.gov.au judgment
-summary PDF) and the Competition and Consumer Act 2010 (Cth). Every bare
-statute title (CLA, Limitation Act, CPA, UCPR, Evidence Act, DCA) and
-every NSWCA neutral citation tested (Fallas, Jaber, Alameddine, Miwa)
-returned no validated content and is tagged `fetch_failed`. A
-single-case rerun scored within 1 point of baseline (lookup 56 vs 57),
-supporting the +/-8 tolerance.
+Tag verification (same day, via `fetch_citation_context` over the 22
+distinct expected-citation strings across the four cases; the two March
+v Stramare forms count separately because fetching keys on the exact
+string): of the 13 strings tagged fetchable by assumption, only 3
+actually fetched - Dederer [2007] HCA 42, Moore v Scenic Tours [2020]
+HCA 17 (hcourt.gov.au judgment summary PDF) and the Competition and
+Consumer Act 2010 (Cth). Every bare statute title and every NSWCA
+neutral citation returned no validated content. A single-case rerun
+scored within 1 point of baseline (lookup 56 vs 57), supporting the
++/-8 tolerance.
+
+That measurement triggered three retrieval fixes (11/06/2026): the
+anchored-regex bug in `construct_austlii_url` that disabled the direct
+AustLII fallback for named neutral citations, jurisdiction-aware
+legislation link filtering and validation, and a guard stopping Jina
+dispatches to austlii.edu.au (always Cloudflare-challenged). Post-fix
+re-measurement: **12 of the 22** distinct citation strings fetch - all
+four NSWCA cases now validate via direct AustLII URL and five NSW
+statutes validate via the jurisdiction-aware strategy. The 10 that do
+not, by class: 7 authorised-report/overseas strings (Wyong, both March
+v Stramare forms, Zaluzna, Darlington Futures, Oceanic Sun Line,
+Calderbank - TODO C2 territory), 2 `not_found` (the confabulated Falvo
+cite and the citation-less Action Paintball reference), and District
+Court Act 1973 (NSW) (CSE recall - the act page is not surfaced in the
+top results). The judge baseline is unchanged: tags do not feed
+scoring, and the fixture SOURCES are frozen.
 
 ## Gate for P1-12 / P2-19
 
