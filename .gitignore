@@ -145,6 +145,9 @@ test_inputs/
 # Claude-generated files
 claude_*
 !**/claude_*/
+# P-JUDGE benchmark fixture inputs are deliberate repo artefacts despite the
+# claude_ provenance prefix (case YAMLs reference them by path)
+!test-scripts/judge_eval/**/claude_*
 
 # codex-generated files
 codex_*
