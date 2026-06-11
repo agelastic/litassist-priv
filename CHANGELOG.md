@@ -41,6 +41,11 @@ Historical dated sections preserve the model names that were current when those 
   complaints tool-assessment.
 
 ### Fixed
+- Jina Reader is no longer dispatched to austlii.edu.au URLs. AustLII serves
+  Jina's datacentre IPs a Cloudflare challenge on every request (verified
+  26/05/2026, reconfirmed 11/06/2026), so each dispatch was a guaranteed-
+  failed paid call caught by the challenge detector. The fetcher now fails
+  fast with an audit-log entry instead.
 - Whole-act legislation citations (e.g. "Civil Liability Act 2002 (NSW)") are
   now retrievable by `fetch_citation_context`. Two jurisdiction-blind spots
   fixed together: the AustLII CSE link filter accepted any /au/legis/ link

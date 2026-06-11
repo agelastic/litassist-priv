@@ -305,6 +305,22 @@ def _fetch_via_jina(url: str, timeout: int = 15) -> str:
         Extracted text content or empty string if failed
     """
     original_url = url
+    # AustLII serves Jina's datacentre IPs a Cloudflare challenge on every
+    # request (empirical 26/05/2026, reconfirmed 11/06/2026 audit logs), so
+    # dispatching Jina there is a guaranteed-failed paid call. Fail fast.
+    host = urlsplit(url).hostname or ""
+    if host == "austlii.edu.au" or host.endswith(".austlii.edu.au"):
+        save_log(
+            "fetch_attempt",
+            {
+                "url": original_url,
+                "method": "jina_reader",
+                "status": "skipped",
+                "rejection_reason": "austlii.edu.au always Cloudflare-challenges Jina's IPs",
+                "timestamp": time.time(),
+            },
+        )
+        return ""
     try:
         # Apply URL tricks for known sites to get full content
         # Queensland legislation - use /whole to get full document
