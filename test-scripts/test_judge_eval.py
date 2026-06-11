@@ -251,8 +251,19 @@ def score_case(case: dict, response: str) -> dict:
             raise JudgeFormatError(
                 f"malformed context_starved_citations entry: {entry!r}"
             )
-    starved = [s for s in starved_raw if s["cite"] in expected_cites]
-    unmatched = [s["cite"] for s in starved_raw if s["cite"] not in expected_cites]
+    # dedupe by cite: a judge repeating one starved citation must not
+    # inflate the starved count (coverage could otherwise go negative)
+    seen_cites = set()
+    starved = []
+    for s in starved_raw:
+        if s["cite"] in expected_cites and s["cite"] not in seen_cites:
+            seen_cites.add(s["cite"])
+            starved.append(s)
+    unmatched = list(
+        dict.fromkeys(
+            s["cite"] for s in starved_raw if s["cite"] not in expected_cites
+        )
+    )
 
     coverage = grounding_coverage(len(expected_cites), len(starved))
     dims = {name: entry["score"] for name, entry in parsed["dimensions"].items()}
@@ -296,8 +307,11 @@ def confirm_retrieval(cases: list) -> list:
     tags = {}
     for case in cases:
         for e in case["expected_citations"]:
-            all_cites.append(e["cite"])
-            tags[e["cite"]] = e["fetchable"]
+            # cites repeat across case files; fetch each once (paid CSE
+            # calls), first tag wins for the drift comparison
+            if e["cite"] not in tags:
+                all_cites.append(e["cite"])
+                tags[e["cite"]] = e["fetchable"]
     if not all_cites:
         return drift
     successful, _failed = fetch_citation_context(all_cites)

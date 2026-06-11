@@ -335,3 +335,85 @@ class TestCitationsTable:
         table = harness.build_citations_table(expected)
         assert "Smith v Jones [2020] HCA 1 | fetchable" in table
         assert "(1999) 201 CLR 1 | authorised_report" in table
+
+
+class TestDuplicateHandling:
+    """PR #92 review findings: duplicate citations must not distort coverage
+    or repeat paid retrieval work."""
+
+    @staticmethod
+    def _case(n_expected=2):
+        return {
+            "case_id": "dup_case",
+            "command": "draft",
+            "dimensions": ["citation_grounding"],
+            "expected_citations": [
+                {"cite": f"Cite {i}", "fetchable": True, "retrieval_class": "fetchable"}
+                for i in range(n_expected)
+            ],
+        }
+
+    def _response(self, starved_cites):
+        payload = {
+            "case_id": "dup_case",
+            "dimensions": {
+                "citation_grounding": {
+                    "score": 90,
+                    "band": "excellent",
+                    "rationale": "r",
+                    "flags": [],
+                }
+            },
+            "context_starved_citations": [
+                {
+                    "cite": c,
+                    "retrieval_class": "fetchable",
+                    "judge_could_verify_from_sources": False,
+                }
+                for c in starved_cites
+            ],
+            "overall": 90,
+            "summary": "s",
+        }
+        return make_response(payload)
+
+    def test_duplicate_starved_cites_counted_once(self):
+        case = self._case(n_expected=2)
+        result = harness.score_case(case, self._response(["Cite 0", "Cite 0"]))
+        assert result["grounding_coverage"] == 0.5
+        assert len(result["context_starved"]) == 1
+
+    def test_unmatched_starved_cites_deduplicated(self):
+        case = self._case(n_expected=1)
+        result = harness.score_case(
+            case, self._response(["Cite 0", "Unknown", "Unknown"])
+        )
+        assert result["unmatched_starved_cites"] == ["Unknown"]
+
+    def test_coverage_never_negative_under_duplicates(self):
+        case = self._case(n_expected=2)
+        result = harness.score_case(
+            case, self._response(["Cite 0", "Cite 0", "Cite 0"])
+        )
+        assert result["grounding_coverage"] == 0.5
+        assert 0 <= result["dimensions"]["citation_grounding"] <= 100
+
+    def test_confirm_retrieval_deduplicates_paid_fetches(self):
+        from unittest.mock import patch
+
+        case_a = self._case()
+        case_b = self._case()
+        captured = {}
+
+        def fake_fetch(cites):
+            captured["cites"] = list(cites)
+            return {}, []
+
+        with patch(
+            "litassist.citation_context.fetch_citation_context",
+            side_effect=fake_fetch,
+        ):
+            harness.confirm_retrieval([case_a, case_b])
+        assert len(captured["cites"]) == len(set(captured["cites"]))
+        # every distinct cite still reaches the fetcher, original order kept
+        assert captured["cites"] == ["Cite 0", "Cite 1"]
