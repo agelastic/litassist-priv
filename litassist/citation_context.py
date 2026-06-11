@@ -96,19 +96,29 @@ def _legislation_title_jurisdiction_match(header: str, citation: str) -> bool:
     header_norm = re.sub(r"\s+", " ", header.lower())
     if title not in header_norm:
         return False
-    # An AustLII component page titles itself "ACT NAME YEAR - SECT 5B" (or
-    # SCHED/REG/RULE/CL plus an identifier). For a whole-act citation that is
-    # not the act: validating an arbitrary component overstates retrieval.
-    # Citations that name a section never reach this guard - their section
-    # reference is part of the title string, so the substring check above
-    # already fails on component pages; this strategy only validates
-    # whole-instrument citations against whole-instrument pages.
-    if re.search(
-        re.escape(title) + r"\s*-\s*(sect|sched|schedule|reg|rule|cl)\b\s*\S+",
-        header_norm,
-    ):
-        return False
     return prose_name in header_norm or f"({path_abbrev})" in header_norm
+
+
+def _component_page_for_whole_citation(header: str, citation: str) -> bool:
+    """True when the header is an AustLII component page ("ACT NAME YEAR -
+    SECT 5B", or SCHED/REG/RULE/CL plus an identifier) for an instrument the
+    citation names as a whole. Validating an arbitrary component as the
+    whole instrument overstates retrieval, so _validate_citation_match
+    refuses these outright - for any strategy, with or without a
+    jurisdiction parenthetical. Citations that themselves name a section
+    keep the component reference inside the derived title, so the pattern
+    cannot match and they are never blocked here."""
+    title = re.sub(r"\([^)]*\)", "", citation)
+    title = re.sub(r"\s+", " ", title).strip().lower()
+    if not title:
+        return False
+    header_norm = re.sub(r"\s+", " ", header.lower())
+    return bool(
+        re.search(
+            re.escape(title) + r"\s*-\s*(sect|sched|schedule|reg|rule|cl)\b\s*\S+",
+            header_norm,
+        )
+    )
 
 
 def _try_fetch_and_validate(url: str, citation: str) -> Optional[str]:
@@ -678,6 +688,20 @@ def _validate_citation_match(content: str, citation: str) -> bool:
 
     # Extract metadata header once for efficiency
     header = _extract_metadata_header(content)
+
+    # Fail closed before any strategy runs: a component page (SECT/SCHED/
+    # REG/RULE/CL) must never validate a whole-instrument citation, however
+    # the strategies below would match it.
+    if _component_page_for_whole_citation(header, citation):
+        save_log(
+            "citation_validation_failure",
+            {
+                "citation": citation,
+                "strategies_tried": ["component_page_guard"],
+                "header_preview": header[:300] if header else content[:300],
+            },
+        )
+        return False
 
     # Define validation strategies in order of reliability
     strategies = [

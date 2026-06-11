@@ -119,3 +119,39 @@ class TestLegislationValidation:
         assert not _validate_citation_match(
             CTH_SECTION_PAGE, "Competition and Consumer Act 2010 (Cth)"
         )
+
+    def test_section_page_rejected_for_bare_whole_act_citation(self):
+        # without a jurisdiction parenthetical the exact-match strategies see
+        # the title verbatim in the section-page header; the component-page
+        # guard must still refuse it
+        content = (
+            "CIVIL LIABILITY ACT 2002 - SECT 16\n"
+            "Determination of damages for non-economic loss\n"
+            "AustLII Search\n"
+            "New South Wales Consolidated Acts\n"
+        )
+        assert not _validate_citation_match(content, "Civil Liability Act 2002")
+
+    def test_section_citing_citation_not_blocked_by_guard(self):
+        # a citation that names the section may validate a page whose first
+        # 500 chars carry the full citation string (exact-match strategy)
+        content = (
+            "Civil Liability Act 2002 (NSW) s 16 commentary\n"
+            "Some annotated discussion of the provision.\n"
+        )
+        assert _validate_citation_match(content, "Civil Liability Act 2002 (NSW) s 16")
+
+    def test_guard_contract_on_genuine_component_header(self):
+        # the guard fires for the whole-act form but structurally cannot fire
+        # for the section-citing form: its derived title keeps the section
+        # ref, so the title-then-component pattern cannot match
+        from litassist.citation_context import _component_page_for_whole_citation
+
+        header = (
+            "CIVIL LIABILITY ACT 2002 - SECT 16\n"
+            "Determination of damages for non-economic loss\n"
+        )
+        assert _component_page_for_whole_citation(header, "Civil Liability Act 2002")
+        assert not _component_page_for_whole_citation(
+            header, "Civil Liability Act 2002 s 16"
+        )
