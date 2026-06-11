@@ -38,6 +38,15 @@ NSW_REGULATION_PAGE = (
     "New South Wales Consolidated Regulations\n"
 )
 
+# Real shape from the 11/06/2026 audit logs: an arbitrary section page of the
+# right act, which must NOT validate a whole-act citation.
+CTH_SECTION_PAGE = (
+    "COMPETITION AND CONSUMER ACT 2010 - SECT 87CC\n"
+    "Certain concurrent wrongdoers not to have benefit of apportionment\n"
+    "AustLII Search\n"
+    "Commonwealth Consolidated Acts\n"
+)
+
 
 class TestParseLegislationJurisdiction:
     def test_nsw(self):
@@ -103,3 +112,10 @@ class TestLegislationValidation:
         # existing exact-match strategy still validates case headers
         content = "Fallas v Mourlas [2006] NSWCA 32\nCourt of Appeal\n"
         assert _validate_citation_match(content, "Fallas v Mourlas [2006] NSWCA 32")
+
+    def test_section_page_rejected_for_whole_act_citation(self):
+        # an arbitrary section of the right act is not the act: validating it
+        # would overstate retrieval for whole-act citations
+        assert not _validate_citation_match(
+            CTH_SECTION_PAGE, "Competition and Consumer Act 2010 (Cth)"
+        )

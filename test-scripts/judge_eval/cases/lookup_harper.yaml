@@ -28,9 +28,11 @@ expected_citations:
   # retrieve (pipeline capability), independent of what this particular run
   # had in context; the judge's context_starved report captures the latter.
   - cite: "Civil Liability Act 2002 (NSW)"
-    # re-measured 11/06/2026 after the named-cite and jurisdiction fixes: fetch succeeded
-    fetchable: true
-    retrieval_class: fetchable
+    # 11/06/2026: validated only via an arbitrary section page, which the
+    # section-page guard now correctly refuses for a whole-act citation;
+    # CSE does not surface the act-root page in its top results
+    fetchable: false
+    retrieval_class: fetch_failed
   - cite: "Falvo v Oztag Queensland Inc [2006] HCA 16"
     # citation does not correspond to a real authority (apparent conflation);
     # fetch + header validation cannot retrieve it

@@ -96,6 +96,18 @@ def _legislation_title_jurisdiction_match(header: str, citation: str) -> bool:
     header_norm = re.sub(r"\s+", " ", header.lower())
     if title not in header_norm:
         return False
+    # An AustLII component page titles itself "ACT NAME YEAR - SECT 5B" (or
+    # SCHED/REG/RULE/CL plus an identifier). For a whole-act citation that is
+    # not the act: validating an arbitrary component overstates retrieval.
+    # Citations that name a section never reach this guard - their section
+    # reference is part of the title string, so the substring check above
+    # already fails on component pages; this strategy only validates
+    # whole-instrument citations against whole-instrument pages.
+    if re.search(
+        re.escape(title) + r"\s*-\s*(sect|sched|schedule|reg|rule|cl)\b\s*\S+",
+        header_norm,
+    ):
+        return False
     return prose_name in header_norm or f"({path_abbrev})" in header_norm
 
 

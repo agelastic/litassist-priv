@@ -159,17 +159,24 @@ That measurement triggered three retrieval fixes (11/06/2026): the
 anchored-regex bug in `construct_austlii_url` that disabled the direct
 AustLII fallback for named neutral citations, jurisdiction-aware
 legislation link filtering and validation, and a guard stopping Jina
-dispatches to austlii.edu.au (always Cloudflare-challenged). Post-fix
-re-measurement: **12 of the 22** distinct citation strings fetch - all
-four NSWCA cases now validate via direct AustLII URL and five NSW
-statutes validate via the jurisdiction-aware strategy. The 10 that do
-not, by class: 7 authorised-report/overseas strings (Wyong, both March
-v Stramare forms, Zaluzna, Darlington Futures, Oceanic Sun Line,
-Calderbank - TODO C2 territory), 2 `not_found` (the confabulated Falvo
-cite and the citation-less Action Paintball reference), and District
-Court Act 1973 (NSW) (CSE recall - the act page is not surfaced in the
-top results). The judge baseline is unchanged: tags do not feed
-scoring, and the fixture SOURCES are frozen.
+dispatches to austlii.edu.au (always Cloudflare-challenged). A first
+post-fix re-measurement showed 12 of 22 fetching, but three of those
+(CLA NSW, Evidence Act NSW, UCPR NSW) had validated on arbitrary
+SECTION pages of the right act - an overstatement the validation
+strategy now refuses for whole-act citations (section-page guard,
+same day). Final measured state: **9 of the 22** distinct citation
+strings fetch - the four NSWCA cases via direct AustLII URL, the
+Limitation Act 1969 (NSW) and Civil Procedure Act 2005 (NSW) via their
+act-root pages, plus the original three (Dederer, Moore, CCA (Cth)).
+The 13 that do not, by class: 7 authorised-report/overseas strings
+(Wyong, both March v Stramare forms, Zaluzna, Darlington Futures,
+Oceanic Sun Line, Calderbank - TODO C2 territory), 2 `not_found` (the
+confabulated Falvo cite and the citation-less Action Paintball
+reference), and 4 `fetch_failed` statutes whose act-root pages CSE does
+not surface in its top results (DCA, CLA, Evidence Act, UCPR - a CSE
+recall limitation, distinct from the fixed defects). The judge baseline
+is unchanged: tags do not feed scoring, and the fixture SOURCES are
+frozen.
 
 ## Gate for P1-12 / P2-19
 
