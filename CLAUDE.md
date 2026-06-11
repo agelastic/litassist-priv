@@ -11,7 +11,7 @@ Last updated: 18/02/2026
 - Read the code first. Map each function's purpose and dependencies. Propose only changes you can justify from the codebase. Verify behaviour after edits. Do not guess.
 
 ### Git Commit Standards
-- Never add self-attribution. Commit messages contain only a technical description. Never mention yourself in commits or PRs.
+- Commit messages contain only a technical description.
 - If a task seems to require a push to complete, stop and tell the user the branch is ready locally; let them decide.
 
 ### Code Quality Standards
