@@ -141,6 +141,32 @@ class TestLegislationValidation:
         )
         assert _validate_citation_match(content, "Civil Liability Act 2002 (NSW) s 16")
 
+    def test_parenthetical_act_title_section_page_rejected(self):
+        # acts with parentheticals in their NAME ("Civil Law (Wrongs) Act
+        # 2002") must not evade the guard: the citation-side strip used to
+        # produce a title the component header could never match
+        content = (
+            "CIVIL LAW (WRONGS) ACT 2002 - SECT 5\n"
+            "Definitions\n"
+            "AustLII Search\n"
+            "Australian Capital Territory Consolidated Acts\n"
+        )
+        assert not _validate_citation_match(content, "Civil Law (Wrongs) Act 2002")
+        assert not _validate_citation_match(
+            content, "Civil Law (Wrongs) Act 2002 (ACT)"
+        )
+
+    def test_parenthetical_act_title_act_root_validates(self):
+        # the same paren-stripping blindness also false-negatived the
+        # legitimate act-root page for such acts
+        content = (
+            "CIVIL LAW (WRONGS) ACT 2002\n"
+            "AustLII Search\n"
+            "Australian Capital Territory Consolidated Acts\n"
+            "Table of Provisions\n"
+        )
+        assert _validate_citation_match(content, "Civil Law (Wrongs) Act 2002 (ACT)")
+
     def test_guard_contract_on_genuine_component_header(self):
         # the guard fires for the whole-act form but structurally cannot fire
         # for the section-citing form: its derived title keeps the section

@@ -93,8 +93,16 @@ def _legislation_title_jurisdiction_match(header: str, citation: str) -> bool:
     title = re.sub(r"\s+", " ", title).strip().lower()
     if not title:
         return False
+    # Strip parentheticals from BOTH sides so acts with parenthetical names
+    # ("Civil Law (Wrongs) Act 2002") still match their headers; jurisdiction
+    # markers are checked against the unstripped header below. Accepted
+    # residual: two same-jurisdiction acts of the same year whose names
+    # collapse identically without parentheticals could cross-match; no such
+    # pair has been observed and downstream verification reads the actual
+    # fetched text.
     header_norm = re.sub(r"\s+", " ", header.lower())
-    if title not in header_norm:
+    header_stripped = re.sub(r"\s+", " ", re.sub(r"\([^)]*\)", "", header.lower()))
+    if title not in header_stripped:
         return False
     return prose_name in header_norm or f"({path_abbrev})" in header_norm
 
@@ -107,16 +115,18 @@ def _component_page_for_whole_citation(header: str, citation: str) -> bool:
     refuses these outright - for any strategy, with or without a
     jurisdiction parenthetical. Citations that themselves name a section
     keep the component reference inside the derived title, so the pattern
-    cannot match and they are never blocked here."""
+    cannot match and they are never blocked here. Parentheticals are
+    stripped from both sides so acts with parenthetical names ("Civil Law
+    (Wrongs) Act 2002") cannot evade the guard."""
     title = re.sub(r"\([^)]*\)", "", citation)
     title = re.sub(r"\s+", " ", title).strip().lower()
     if not title:
         return False
-    header_norm = re.sub(r"\s+", " ", header.lower())
+    header_stripped = re.sub(r"\s+", " ", re.sub(r"\([^)]*\)", "", header.lower()))
     return bool(
         re.search(
             re.escape(title) + r"\s*-\s*(sect|sched|schedule|reg|rule|cl)\b\s*\S+",
-            header_norm,
+            header_stripped,
         )
     )
 
