@@ -156,6 +156,20 @@ class TestLegislationValidation:
             content, "Civil Law (Wrongs) Act 2002 (ACT)"
         )
 
+    def test_same_year_parenthetical_sibling_act_not_cross_matched(self):
+        # name parentheticals are kept in the derived title, so two
+        # same-jurisdiction same-year acts differing only by parenthetical
+        # can never collapse to the same string and cross-validate
+        content = (
+            "CIVIL LAW (COSTS) ACT 2002\n"
+            "AustLII Search\n"
+            "Australian Capital Territory Consolidated Acts\n"
+            "Table of Provisions\n"
+        )
+        assert not _validate_citation_match(
+            content, "Civil Law (Wrongs) Act 2002 (ACT)"
+        )
+
     def test_parenthetical_act_title_act_root_validates(self):
         # the same paren-stripping blindness also false-negatived the
         # legitimate act-root page for such acts
