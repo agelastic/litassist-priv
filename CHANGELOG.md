@@ -41,6 +41,13 @@ Historical dated sections preserve the model names that were current when those 
   complaints tool-assessment.
 
 ### Fixed
+- `construct_austlii_url` now accepts citations that carry their case name
+  (e.g. "Fallas v Mourlas [2006] NSWCA 32" - the form every command output
+  uses). The parser was anchored to the start of the string, so the direct
+  AustLII fallback in `fetch_citation_context` silently never ran for named
+  neutral citations; CSE then surfaced documents that merely cite the target
+  and validation correctly rejected them. Found by the P-JUDGE retrieval-tag
+  measurement (all four NSWCA fetch failures traced to this line).
 - `strategy`/`barbrief` no longer reject `extractfacts` headings that carry parenthetical
   qualifiers (e.g. "Key Events (Chronological)"); the 10-heading validator tolerates them.
 - `lookup` and `digest` prompts now instruct the model to verify statutory section numbers

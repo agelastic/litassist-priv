@@ -16,16 +16,23 @@ from .constants import COURT_MAPPINGS
 
 def construct_austlii_url(citation: str) -> str:
     """
-    Construct AustLII URL from medium neutral citation.
+    Construct AustLII URL from a medium neutral citation.
+
+    The neutral cite may appear anywhere in the string, so both bare
+    citations ("[2022] ACTSC 272") and full named citations
+    ("Fallas v Mourlas [2006] NSWCA 32" - the form command outputs use)
+    are accepted.
 
     Args:
-        citation: Normalized citation like "[2022] ACTSC 272"
+        citation: Citation containing a medium neutral cite
 
     Returns:
         URL string or empty string if cannot construct
     """
-    # Parse medium neutral citation format [YYYY] COURT NUMBER
-    match = re.match(r"\[(\d{4})\]\s+([A-Z]+[A-Za-z]*)\s+(\d+)", citation)
+    # Parse medium neutral citation format [YYYY] COURT NUMBER; re.search,
+    # not re.match - an anchored match silently failed for every citation
+    # prefixed with its case name (P-JUDGE finding, 11/06/2026)
+    match = re.search(r"\[(\d{4})\]\s+([A-Z]+[A-Za-z]*)\s+(\d+)", citation)
     if not match:
         return ""
 
