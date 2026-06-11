@@ -449,7 +449,12 @@ def main() -> int:
             with open(args.baseline, "r", encoding="utf-8") as f:
                 existing_tolerance = (yaml.safe_load(f) or {}).get("tolerance", DEFAULT_TOLERANCE)
         with open(args.baseline, "w", encoding="utf-8") as f:
-            yaml.safe_dump({"tolerance": existing_tolerance, "cases": scores}, f, sort_keys=True)
+            yaml.safe_dump(
+                {"tolerance": existing_tolerance, "cases": scores},
+                f,
+                sort_keys=True,
+                explicit_start=True,
+            )
         print(f"Baseline updated: {args.baseline}")
     elif os.path.exists(args.baseline):
         with open(args.baseline, "r", encoding="utf-8") as f:

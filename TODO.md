@@ -1,19 +1,20 @@
 # LitAssist Development TODO
 
-Last updated: 10/06/2026
+Last updated: 11/06/2026
 
 **Note:** Strategic feature planning (litigation support, advisory capabilities, new commands) is now in [ROADMAP.md](ROADMAP.md). This file focuses on bugs, technical debt, and code quality improvements.
 
 **Active thrust (09/06/2026 - approved plan; goal: trustworthy output):** Phase 2
-Model Quality & Research, **re-sequenced measurement-first**. Build order: **P-JUDGE
-offline eval harness FIRST** (the keystone - new `test-scripts/test_judge_eval.py`,
-`litassist/prompts/judge_eval.yaml`, `judge-eval` config), then P1-12 cross-checks
-shipped **only if** P-JUDGE measures lift > cost, then P2-19 divergence (thin add).
-Parallel de-risk track: CSE->Vertex scoping + licensing (both below). P-JUDGE's
-benchmark deliberately includes the un-fetchable citation classes (Jade SPA,
-AustLII PDF, authorised-report) so the retrieval gap caps the grounding score
-instead of hiding - see those items below. Full re-sequence rationale in ROADMAP
-Phase 2 + Next Steps.
+Model Quality & Research, **re-sequenced measurement-first**. **P-JUDGE SHIPPED
+11/06/2026** on branch `feat/judge-eval-harness` (`test-scripts/test_judge_eval.py`,
+`litassist/prompts/judge_eval.yaml`, `judge-eval` config, 4-case Harper benchmark +
+baseline; see `docs/development/JUDGE_EVAL.md`). Next: P1-12 cross-checks shipped
+**only if** P-JUDGE measures lift > cost, then P2-19 divergence (thin add).
+De-risk track done: CSE->Vertex scoping validated 10/06/2026 (below) and licensing
+resolved as MIT 10/06/2026. P-JUDGE's benchmark seeds the un-fetchable citation
+classes (authorised-report CLR-only cites, a confabulated citation, overseas
+reports) so the retrieval gap caps the grounding score instead of hiding - see
+the C1/C2 items below. Full re-sequence rationale in ROADMAP Phase 2 + Next Steps.
 
 **Prior (08/06/2026):** Matter-type-aware prompts Phase 1 (feature branch `feat/matter-type-prompts`) - the scoped fix from the complaints assessment. See ROADMAP **P-MTYPE**. Also fixes two assessment bugs: the `extractfacts`->`strategy`/`barbrief` heading-validation mismatch (parenthetical qualifiers) and lookup/digest definitional-section citation drift. Phase 2 (hard gate, Matter Memory wiring) deferred pending observation.
 

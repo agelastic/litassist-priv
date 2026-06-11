@@ -1,0 +1,59 @@
+# P-JUDGE benchmark case: extractfacts output for the Harper matter.
+# Generated 11/06/2026 by:
+#   litassist extractfacts test-scripts/judge_eval/inputs/claude_brief_harper_negligence.md
+# (anthropic/claude-sonnet-4.6 + standard verification; corrections applied).
+# Benchmark notes: the verification stage REPLACED Donoghue v Stevenson with
+# Australian Safeway Stores v Zaluzna (1987) 162 CLR 479 - an authority that
+# appears nowhere in the source brief - and introduced other extrinsic
+# specifics (District Court monetary limit, s 50C discoverability, CPA 2005,
+# DCA 1973). The judge should find those unverifiable from SOURCES; that is
+# the behaviour this case measures, not a fixture defect.
+---
+case_id: extractfacts_harper
+command: extractfacts
+dimensions:
+  - citation_grounding
+  - structure
+  - australian_english
+  - faithfulness
+  - aglc_format
+structure_template_key: formats.case_facts_10_heading
+output_file: extractfacts_harper.output.md
+source_files:
+  - ../sources/claude_brief_harper_negligence.md
+expected_citations:
+  # fetchable/retrieval_class = what fetch_citation_context can retrieve
+  # (pipeline capability). CLR-only citations have no medium-neutral form
+  # printed, so no AustLII URL is constructible (TODO C1/C2).
+  - cite: "Civil Liability Act 2002 (NSW)"
+    # measured 11/06/2026 via fetch_citation_context: no validated content
+    fetchable: false
+    retrieval_class: fetch_failed
+  - cite: "Limitation Act 1969 (NSW)"
+    # measured 11/06/2026 via fetch_citation_context: no validated content
+    fetchable: false
+    retrieval_class: fetch_failed
+  - cite: "Civil Procedure Act 2005 (NSW)"
+    # measured 11/06/2026 via fetch_citation_context: no validated content
+    fetchable: false
+    retrieval_class: fetch_failed
+  - cite: "District Court Act 1973 (NSW)"
+    # measured 11/06/2026 via fetch_citation_context: no validated content
+    fetchable: false
+    retrieval_class: fetch_failed
+  - cite: "Competition and Consumer Act 2010 (Cth)"
+    fetchable: true
+    retrieval_class: fetchable
+  - cite: "Wyong Shire Council v Shirt (1980) 146 CLR 40"
+    fetchable: false
+    retrieval_class: authorised_report
+  - cite: "March v Stramare (E & MH) Pty Ltd (1991) 171 CLR 506"
+    fetchable: false
+    retrieval_class: authorised_report
+  - cite: "Australian Safeway Stores Pty Ltd v Zaluzna (1987) 162 CLR 479"
+    # introduced by the verification stage; absent from the source brief
+    fetchable: false
+    retrieval_class: authorised_report
+  - cite: "Roads and Traffic Authority of NSW v Dederer [2007] HCA 42"
+    fetchable: true
+    retrieval_class: fetchable

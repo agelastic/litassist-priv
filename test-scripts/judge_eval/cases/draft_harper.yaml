@@ -1,0 +1,54 @@
+# P-JUDGE benchmark case: draft (letter of demand) output for the Harper
+# matter. Generated 11/06/2026 by:
+#   litassist draft outputs/judge_fixture_extractfacts_*.md "Letter of demand
+#   to Glenbrook Adventure Park Pty Ltd ..." (openai/o3-pro + standard
+#   verification; corrections applied).
+# SOURCES = the case_facts document the draft was generated from (the
+# extractfacts fixture output). No structure dimension: a letter of demand
+# has no named structure contract in formats.yaml.
+---
+case_id: draft_harper
+command: draft
+dimensions:
+  - citation_grounding
+  - australian_english
+  - faithfulness
+  - aglc_format
+output_file: draft_harper.output.md
+source_files:
+  - extractfacts_harper.output.md
+expected_citations:
+  # fetchable/retrieval_class = what fetch_citation_context can retrieve
+  # (pipeline capability); CLR-only cites are not constructible (TODO C1/C2).
+  - cite: "Civil Liability Act 2002 (NSW)"
+    # measured 11/06/2026 via fetch_citation_context: no validated content
+    fetchable: false
+    retrieval_class: fetch_failed
+  - cite: "Civil Procedure Act 2005 (NSW)"
+    # measured 11/06/2026 via fetch_citation_context: no validated content
+    fetchable: false
+    retrieval_class: fetch_failed
+  - cite: "District Court Act 1973 (NSW)"
+    # measured 11/06/2026 via fetch_citation_context: no validated content
+    fetchable: false
+    retrieval_class: fetch_failed
+  - cite: "Limitation Act 1969 (NSW)"
+    # measured 11/06/2026 via fetch_citation_context: no validated content
+    fetchable: false
+    retrieval_class: fetch_failed
+  - cite: "Evidence Act 1995 (NSW)"
+    # measured 11/06/2026 via fetch_citation_context: no validated content
+    fetchable: false
+    retrieval_class: fetch_failed
+  - cite: "Competition and Consumer Act 2010 (Cth)"
+    fetchable: true
+    retrieval_class: fetchable
+  - cite: "Australian Safeway Stores Pty Ltd v Zaluzna (1987) 162 CLR 479"
+    fetchable: false
+    retrieval_class: authorised_report
+  - cite: "Wyong Shire Council v Shirt (1980) 146 CLR 40"
+    fetchable: false
+    retrieval_class: authorised_report
+  - cite: "March v Stramare (1991) 171 CLR 506"
+    fetchable: false
+    retrieval_class: authorised_report

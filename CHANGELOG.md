@@ -1,6 +1,6 @@
 # Changelog
 
-Last updated: 10/06/2026
+Last updated: 11/06/2026
 
 All notable changes to LitAssist will be documented in this file.
 
@@ -12,6 +12,17 @@ Historical dated sections preserve the model names that were current when those 
 ## [Unreleased]
 
 ### Added
+- P-JUDGE offline eval harness (`test-scripts/test_judge_eval.py`): repeatable,
+  real-API quality scoring of litassist outputs against a rubric (citation
+  grounding, structure, Australian English, faithfulness, AGLC format), with a
+  fail-closed structured-output contract, baseline regression comparison
+  (tolerance 8), and a retrieval-gap report that caps `citation_grounding` by
+  the fraction of expected citations verifiable from sources. New `judge-eval`
+  model role, `litassist/prompts/judge_eval.yaml` prompts, a 4-case benchmark
+  generated from a fictional NSW negligence matter (extractfacts, lookup IRAC,
+  strategy, draft), offline unit tests for the scoring core, and
+  `docs/development/JUDGE_EVAL.md`. ROADMAP P-JUDGE; the ensemble items
+  (P1-12, P2-19) stay gated on deltas measured with this harness.
 - `LICENSE` file (MIT). The project licence is now stated consistently: `setup.py`
   classifier changed from `License :: Other/Proprietary License` to
   `License :: OSI Approved :: MIT License` (plus a `license="MIT"` kwarg), and README

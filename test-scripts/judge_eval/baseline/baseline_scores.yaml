@@ -1,0 +1,29 @@
+---
+cases:
+  draft_harper:
+    aglc_format: 84
+    australian_english: 100
+    citation_grounding: 70
+    faithfulness: 72
+    overall: 82
+  extractfacts_harper:
+    aglc_format: 86
+    australian_english: 100
+    citation_grounding: 45
+    faithfulness: 72
+    overall: 77
+    structure: 84
+  lookup_harper:
+    aglc_format: 62
+    australian_english: 92
+    citation_grounding: 0
+    faithfulness: 45
+    overall: 57
+    structure: 84
+  strategy_harper:
+    aglc_format: 76
+    australian_english: 100
+    citation_grounding: 33
+    faithfulness: 84
+    overall: 73
+tolerance: 8

@@ -1,0 +1,45 @@
+# P-JUDGE benchmark case: lookup --mode irac output for the Harper matter.
+# Generated 11/06/2026 by:
+#   litassist lookup "negligence breach of duty obvious risk dangerous
+#   recreational activity waiver Civil Liability Act 2002 NSW" --mode irac
+#   --context "NSW personal injury claim against adventure park operator
+#   after guardrail failure on elevated rope walk"
+# sources file = the exact search context/snippets/fetched content the model
+# received (extracted from the run's audit log). Note the run's retrieval
+# gap: all four jade.io links were skipped and the SydLRev PDF is
+# Cloudflare-blocked, so the only full text fetched was the WA (not NSW)
+# Civil Liability Act.
+---
+case_id: lookup_harper
+command: lookup
+dimensions:
+  - citation_grounding
+  - structure
+  - australian_english
+  - faithfulness
+  - aglc_format
+# lookup standard mode promises Executive Summary / Analysis / Conclusion
+structure_template_key: lookup.standard_analysis.instructions
+output_file: lookup_harper.output.md
+source_files:
+  - ../sources/lookup_retrieved_sources.md
+expected_citations:
+  # fetchable/retrieval_class describe what fetch_citation_context can
+  # retrieve (pipeline capability), independent of what this particular run
+  # had in context; the judge's context_starved report captures the latter.
+  - cite: "Civil Liability Act 2002 (NSW)"
+    # measured 11/06/2026 via fetch_citation_context: no validated content
+    fetchable: false
+    retrieval_class: fetch_failed
+  - cite: "Falvo v Oztag Queensland Inc [2006] HCA 16"
+    # citation does not correspond to a real authority (apparent conflation);
+    # fetch + header validation cannot retrieve it
+    fetchable: false
+    retrieval_class: not_found
+  - cite: "Action Paintball Games Pty Ltd v Barker"
+    # case named with no citation string; no URL constructible
+    fetchable: false
+    retrieval_class: not_found
+  - cite: "Competition and Consumer Act 2010 (Cth)"
+    fetchable: true
+    retrieval_class: fetchable
