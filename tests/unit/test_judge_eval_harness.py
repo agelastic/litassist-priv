@@ -265,6 +265,58 @@ class TestScoreCase:
         with pytest.raises(harness.JudgeFormatError):
             harness.score_case(self.make_case(), make_response(payload))
 
+    def test_missing_starved_array_raises(self):
+        # fail closed: a missing context-starvation report must never be
+        # treated as "everything verified" (coverage 1.0, no cap)
+        payload = json.loads(json.dumps(VALID_PAYLOAD))
+        del payload["context_starved_citations"]
+        with pytest.raises(harness.JudgeFormatError):
+            harness.score_case(self.make_case(), make_response(payload))
+
+    def test_null_starved_array_raises(self):
+        payload = json.loads(json.dumps(VALID_PAYLOAD))
+        payload["context_starved_citations"] = None
+        with pytest.raises(harness.JudgeFormatError):
+            harness.score_case(self.make_case(), make_response(payload))
+
+    def test_non_dict_starved_entry_raises(self):
+        payload = json.loads(json.dumps(VALID_PAYLOAD))
+        payload["context_starved_citations"] = ["(1999) 201 CLR 1"]
+        with pytest.raises(harness.JudgeFormatError):
+            harness.score_case(self.make_case(), make_response(payload))
+
+    def test_starved_entry_without_cite_raises(self):
+        payload = json.loads(json.dumps(VALID_PAYLOAD))
+        payload["context_starved_citations"] = [{"retrieval_class": "authorised_report"}]
+        with pytest.raises(harness.JudgeFormatError):
+            harness.score_case(self.make_case(), make_response(payload))
+
+    def test_empty_starved_array_means_full_coverage(self):
+        payload = json.loads(json.dumps(VALID_PAYLOAD))
+        payload["context_starved_citations"] = []
+        result = harness.score_case(self.make_case(), make_response(payload))
+        assert result["grounding_coverage"] == 1.0
+
+    def test_dict_starved_value_raises(self):
+        payload = json.loads(json.dumps(VALID_PAYLOAD))
+        payload["context_starved_citations"] = {}
+        with pytest.raises(harness.JudgeFormatError):
+            harness.score_case(self.make_case(), make_response(payload))
+
+    def test_non_string_cite_in_starved_entry_raises(self):
+        payload = json.loads(json.dumps(VALID_PAYLOAD))
+        payload["context_starved_citations"] = [
+            {"cite": 42, "retrieval_class": "authorised_report"}
+        ]
+        with pytest.raises(harness.JudgeFormatError):
+            harness.score_case(self.make_case(), make_response(payload))
+
+    def test_mixed_valid_invalid_starved_entries_raise(self):
+        payload = json.loads(json.dumps(VALID_PAYLOAD))
+        payload["context_starved_citations"].append("not an object")
+        with pytest.raises(harness.JudgeFormatError):
+            harness.score_case(self.make_case(), make_response(payload))
+
 
 class TestCitationsTable:
     def test_table_lists_cite_and_class(self):

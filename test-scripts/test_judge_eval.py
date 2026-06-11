@@ -239,9 +239,20 @@ def score_case(case: dict, response: str) -> dict:
         )
 
     expected_cites = {e["cite"] for e in case["expected_citations"]}
-    starved_raw = parsed.get("context_starved_citations", [])
-    starved = [s for s in starved_raw if s.get("cite") in expected_cites]
-    unmatched = [s["cite"] for s in starved_raw if s.get("cite") not in expected_cites]
+    # fail closed: a missing/malformed context-starvation report must never
+    # be scored as "everything verified" (coverage 1.0, cap disabled)
+    starved_raw = parsed.get("context_starved_citations")
+    if not isinstance(starved_raw, list):
+        raise JudgeFormatError(
+            "'context_starved_citations' missing or not an array"
+        )
+    for entry in starved_raw:
+        if not isinstance(entry, dict) or not isinstance(entry.get("cite"), str):
+            raise JudgeFormatError(
+                f"malformed context_starved_citations entry: {entry!r}"
+            )
+    starved = [s for s in starved_raw if s["cite"] in expected_cites]
+    unmatched = [s["cite"] for s in starved_raw if s["cite"] not in expected_cites]
 
     coverage = grounding_coverage(len(expected_cites), len(starved))
     dims = {name: entry["score"] for name, entry in parsed["dimensions"].items()}
