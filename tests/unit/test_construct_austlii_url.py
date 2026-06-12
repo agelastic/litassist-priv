@@ -21,6 +21,11 @@ class TestConstructAustliiUrl:
             construct_austlii_url("Fallas v Mourlas [2006] NSWCA 32")
             == NSWCA_32_URL
         )
+        # pins the HCA -> cth/HCA COURT_MAPPINGS row: the most-cited court,
+        # and the only cross-jurisdiction path shape exercised in tests
+        assert construct_austlii_url(
+            "Roads and Traffic Authority of NSW v Dederer [2007] HCA 42"
+        ) == ("https://www.austlii.edu.au/cgi-bin/viewdoc/au/cases/cth/HCA/2007/42.html")
 
     def test_unknown_court_returns_empty(self):
         assert construct_austlii_url("[2006] NOTACOURT 32") == ""
