@@ -129,6 +129,8 @@ test_*.json
 test_*.pdf
 # Tier 2 matter-type spot-check run artifacts (fixtures + paid-call logs)
 test-scripts/spotcheck_matter_type_*/
+# P-JUDGE eval harness run artefacts (timestamped reports; baseline is tracked)
+test-scripts/judge_eval/results/
 temp_*.py
 temp_*.txt
 mock_*.txt
@@ -143,6 +145,9 @@ test_inputs/
 # Claude-generated files
 claude_*
 !**/claude_*/
+# P-JUDGE benchmark fixture inputs are deliberate repo artefacts despite the
+# claude_ provenance prefix (case YAMLs reference them by path)
+!test-scripts/judge_eval/**/claude_*
 
 # codex-generated files
 codex_*

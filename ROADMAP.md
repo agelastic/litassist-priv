@@ -1,6 +1,6 @@
 # LitAssist Feature Roadmap
 
-Last updated: 10/06/2026
+Last updated: 11/06/2026
 **Status:** Strategic planning; roadmap items are aspirational unless marked DONE, PARTIALLY SUPERSEDED, or already implemented elsewhere
 **Confidence:** 0.88
 
@@ -423,7 +423,16 @@ facts - no drift, no silent omission, no invented specifics beyond the existing
 
 ---
 
-### P-JUDGE: LLM-as-Judge Eval Harness [NEW - 04/06/2026]
+### P-JUDGE: LLM-as-Judge Eval Harness [SHIPPED 11/06/2026]
+**Status:** Built and calibrated on branch `feat/judge-eval-harness`. Harness
+`test-scripts/test_judge_eval.py` (pure scoring core covered by offline unit
+tests), prompts `litassist/prompts/judge_eval.yaml`, model role `judge-eval`,
+first-cut 4-case Harper benchmark (extractfacts, lookup IRAC, strategy,
+draft) with baseline. The structure dimension scores against live named
+contracts per case (the plan's `formats.irac_structure` reference was stale -
+that key is deprecated; lookup uses `lookup.standard_analysis.instructions`).
+Usage and policy: `docs/development/JUDGE_EVAL.md`. P1-12/P2-19 remain gated
+on before/after deltas measured with this harness.
 **Effort:** 14-18 hours
 **Priority:** HIGHEST - BUILD FIRST (measurement keystone; re-sequenced
 09/06/2026). Everything else in Phase 2 is gated on this existing, so its lift can
@@ -1375,8 +1384,8 @@ la profile --create "Agency A" --type government
   item with a hard external deadline that breaks a core feature. Validate the path
   in `docs/development/GOOGLE_CSE_MIGRATION_PLAN.md` now (deliverable: a validated
   cutover doc, not the migration). Tracked in `TODO.md`.
-- **Licensing reconciliation** - `setup.py` says proprietary; no LICENSE file/prose.
-  ~1h once the proprietary-vs-OSS decision is made. Tracked in `TODO.md`.
+- **Licensing reconciliation** - DONE 10/06/2026: MIT chosen; LICENSE added,
+  `setup.py` classifier and README aligned. Tracked in `TODO.md`.
 
 **Total Phase 1 Effort:** 41-50 hours
 

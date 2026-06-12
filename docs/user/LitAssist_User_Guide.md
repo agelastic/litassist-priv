@@ -1,6 +1,6 @@
 # LitAssist User Guide
 
-Last updated: 08/06/2026
+Last updated: 12/06/2026
 
 ## Overview
 
@@ -748,7 +748,9 @@ google_cse:
 jina_reader:
   api_key: "your-jina-key"               # Optional - fallback transport for
                                          # JavaScript-rendered pages and
-                                         # Cloudflare-blocked content. Primary
+                                         # Cloudflare-blocked content (never
+                                         # used for austlii.edu.au, which
+                                         # blocks Jina's IPs). Primary
                                          # transport is curl_cffi (no key
                                          # required); Jina key enables higher
                                          # rate limits on the fallback path.

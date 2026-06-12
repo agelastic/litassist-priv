@@ -200,6 +200,21 @@ verify-soundness-heavy:
   enforce_citations: false
   disable_tools: true
 
+# judge-eval: P-JUDGE offline eval harness (test-scripts/test_judge_eval.py).
+# Reuses the verification model (gpt-5.5) for consistency with the verification
+# stack. temperature 0 / top_p 0.1 document the intended deterministic scoring
+# settings; the translation layer strips sampling params gpt-5.5 does not
+# accept, so thinking_effort max is the operative lever (source-grounding +
+# AGLC judgement). enforce_citations false so the judge can read fixtures'
+# deliberately-unfetchable cites without triggering verification on them.
+judge-eval:
+  model: "openai/gpt-5.5"
+  temperature: 0
+  top_p: 0.1
+  thinking_effort: "max"
+  enforce_citations: false
+  disable_tools: true
+
 counselnotes:
   model: "openai/o3-pro"
   temperature: 0.7

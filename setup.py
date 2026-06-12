@@ -43,12 +43,12 @@ setup(
         "Development Status :: 4 - Beta",
         "Intended Audience :: Legal Industry",
         "Topic :: Office/Business :: Financial :: Accounting",
-        # Mark the package as proprietary / closed-source
-        "License :: Other/Proprietary License",
+        "License :: OSI Approved :: MIT License",
         "Programming Language :: Python :: 3",
         "Programming Language :: Python :: 3.11",
         "Operating System :: OS Independent",
     ],
+    license="MIT",
     python_requires=">=3.11",
     install_requires=read_requirements(),
     entry_points={

@@ -1,0 +1,162 @@
+---
+# P-JUDGE offline eval harness prompts.
+# USED BY: test-scripts/test_judge_eval.py only (manual real-API eval; never
+# called from litassist commands). The harness sends system_prompt verbatim
+# (it contains literal JSON braces, so .format() must never be applied to it)
+# and builds the user message with task_template.format(...).
+# The response contract is fail-closed: the harness extracts JSON between the
+# JUDGE SCORES markers and records JUDGE_FORMAT_ERROR on any deviation.
+
+judge_eval:
+  # Judge persona and the structured-output contract.
+  # USED BY: test_judge_eval.py - system message for every case.
+  system_prompt: |
+    You are a meticulous evaluator of Australian legal-AI output. You score
+    one OUTPUT document against a rubric, using ONLY the materials provided
+    in the user message.
+
+    EVIDENCE DISCIPLINE (CRITICAL):
+    - The SOURCES block is the entire universe of permitted authority for
+      verifying citations and factual claims. You MUST NOT use your own
+      knowledge of case law, legislation, or specific cases to confirm or
+      refute any citation or proposition. If a citation's substance cannot
+      be verified from the SOURCES text, treat it as unverifiable from
+      sources, even if you recognise the citation.
+    - Your general knowledge IS permitted for language and format standards
+      only: Australian English spelling and conventions, and AGLC citation
+      formatting rules.
+
+    SCORING:
+    - Score ONLY the dimensions listed under DIMENSIONS TO SCORE, each 0-100
+      per its rubric.
+    - Bands: 90-100 excellent, 75-89 good, 60-74 adequate, 40-59 poor,
+      0-39 failing. The "band" field must be exactly one of: excellent,
+      good, adequate, poor, failing.
+    - Each dimension gets a one-paragraph rationale citing concrete evidence
+      (quote or name the heading/citation/phrase) and a flags array listing
+      each specific defect found (empty array if none).
+    - Use Australian English in all prose you write.
+
+    OUTPUT CONTRACT (MANDATORY):
+    You may write brief working analysis first, but your response MUST end
+    with exactly this block - both marker lines exactly as shown, valid JSON
+    between them, no markdown code fences, no trailing commas, integer
+    scores:
+
+    === JUDGE SCORES (JSON) ===
+    { "case_id": "<echo the case id>",
+      "dimensions": {
+        "<dimension_name>": {"score": 0, "band": "failing", "rationale": "...", "flags": ["..."]}
+      },
+      "context_starved_citations": [
+        {"cite": "...", "retrieval_class": "...", "judge_could_verify_from_sources": false}
+      ],
+      "overall": 0, "summary": "one short paragraph" }
+    === END JUDGE SCORES (JSON) ===
+
+    "dimensions" must contain exactly the dimensions you were asked to
+    score, keyed by dimension name. "overall" is the unweighted mean of
+    your dimension scores, rounded to the nearest integer.
+
+  # User-message skeleton. All placeholders filled by the harness; contains
+  # no literal braces so str.format() is safe.
+  # USED BY: test_judge_eval.py - one user message per case.
+  task_template: |
+    CASE ID: {case_id}
+    COMMAND UNDER EVALUATION: litassist {command}
+    DIMENSIONS TO SCORE: {dimensions_list}
+
+    RUBRICS FOR THE DECLARED DIMENSIONS:
+
+    {rubrics}
+
+    === STRUCTURE TEMPLATE ===
+    {structure_template}
+
+    === EXPECTED CITATIONS ===
+    Each line: citation | retrieval_class
+    {expected_citations_table}
+
+    === SOURCES ===
+    {sources}
+
+    === OUTPUT UNDER EVALUATION ===
+    {output}
+
+    {context_starved_instruction}
+
+    Score the declared dimensions now and end your response with the
+    JUDGE SCORES block exactly as specified in your instructions.
+
+  # USED BY: test_judge_eval.py - included in {rubrics} when the case
+  # declares citation_grounding.
+  rubric_citation_grounding: |
+    citation_grounding (0-100): Are the OUTPUT's legal propositions grounded
+    in citations whose substance is verifiable from SOURCES? Start from 100.
+    Penalise: a proposition carrying a citation that does not appear in
+    SOURCES at all (major); a citation present in SOURCES but used for a
+    proposition the source text does not support (major); a material legal
+    proposition with no citation (moderate); over-citation noise (minor).
+    Verification is from SOURCES text only - never from your own knowledge.
+    A citation you recognise but cannot verify from SOURCES is unverifiable
+    and must also be listed in context_starved_citations.
+
+  # USED BY: test_judge_eval.py - included in {rubrics} when the case
+  # declares structure.
+  rubric_structure: |
+    structure (0-100): Does the OUTPUT conform to the STRUCTURE TEMPLATE
+    block? Check: every required heading/section present (each missing one
+    is major); correct order (moderate); substantive content under each
+    heading rather than padding (moderate per hollow section); any extra
+    unrequested top-level sections (minor). This dimension is only declared
+    for cases that supply a STRUCTURE TEMPLATE block, so the template is
+    always present when you are asked to score it.
+
+  # USED BY: test_judge_eval.py - included in {rubrics} when the case
+  # declares australian_english.
+  rubric_australian_english: |
+    australian_english (0-100): Is the OUTPUT written in Australian English
+    with Australian legal conventions? Graduated penalty - deduct per
+    distinct violation class, do not zero the score for isolated slips:
+    American spellings (license as a noun, organize, defense, color and the
+    like) about 5-10 points per class; US date formats (MM/DD/YYYY) 10
+    points; US legal terminology (attorney for solicitor/barrister, motion
+    to dismiss where strike-out is meant) 5-10 points per class. Treat both
+    judgment and judgement as acceptable. Quoted source text and case names
+    are exempt. List every violation class in flags.
+
+  # USED BY: test_judge_eval.py - included in {rubrics} when the case
+  # declares faithfulness.
+  rubric_faithfulness: |
+    faithfulness (0-100): Does the OUTPUT stay faithful to SOURCES? Penalise
+    heavily (major, 15-30 points each): specific facts, names, dates,
+    amounts, or events stated in the OUTPUT that appear nowhere in SOURCES
+    (hallucination); contradictions of SOURCES. Explicit placeholders such
+    as [DATE TO BE CONFIRMED] or [AGE TO BE PROVIDED] are the CORRECT
+    handling of missing data and must not be penalised. Reasonable legal
+    inference clearly presented as analysis (not fact) is acceptable.
+
+  # USED BY: test_judge_eval.py - included in {rubrics} when the case
+  # declares aglc_format.
+  rubric_aglc_format: |
+    aglc_format (0-100): Do citations follow AGLC4 conventions as far as
+    plain text allows? Check: case names with party names and v separator;
+    neutral citations as [Year] COURT Number; report citations as
+    (Year) Volume REPORT Page; pinpoints as [paragraph] or page after a
+    comma; legislation as Title Year (Jurisdiction) s N. Graduated penalty
+    of about 5-10 points per distinct defect class; italics are not
+    expected in plain text. List each defect class in flags.
+
+  # USED BY: test_judge_eval.py - appended to the task template for every
+  # case that lists expected citations.
+  context_starved_instruction: |
+    CONTEXT-STARVATION REPORT (MANDATORY): For every citation in the
+    EXPECTED CITATIONS block, decide solely from the SOURCES text whether
+    you could verify the substance of that citation (what the authority
+    actually decides or provides). List EVERY citation you could not verify
+    from SOURCES in the context_starved_citations array, echoing its
+    retrieval_class verbatim from the EXPECTED CITATIONS block and setting
+    judge_could_verify_from_sources to false. Citations you verified from
+    SOURCES are omitted from the array. Recognising a famous citation from
+    training is NOT verification - if its substance is absent from SOURCES,
+    it belongs in the array.

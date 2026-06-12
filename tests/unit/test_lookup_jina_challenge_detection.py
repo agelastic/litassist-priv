@@ -124,3 +124,43 @@ class TestSpaShellDetection:
         assert ratio < _SPA_TEXT_RATIO_THRESHOLD
         reason = _looks_like_spa_shell(raw_html, extracted)
         assert reason and "text/html ratio" in reason
+
+
+class TestJinaAustliiGuard:
+    """AustLII serves Jina's datacentre IPs a Cloudflare challenge on every
+    request (empirical 26/05/2026, reconfirmed 11/06/2026), so dispatching
+    Jina there is a guaranteed-failed paid call. The guard returns the
+    failure sentinel without any HTTP request."""
+
+    def test_austlii_url_short_circuits_without_http(self):
+        from unittest.mock import patch
+        from litassist.commands.lookup.fetchers import _fetch_via_jina
+
+        # one URL per guard arm: subdomain suffix match and bare-host equality
+        for url in (
+            "https://www.austlii.edu.au/au/legis/cth/consol_act/caca2010265/sch2.html",
+            "https://austlii.edu.au/au/cases/nsw/NSWCA/2006/32.html",
+        ):
+            with patch("litassist.commands.lookup.fetchers.requests.get") as mock_get:
+                result = _fetch_via_jina(url)
+            assert result == ""
+            mock_get.assert_not_called()
+
+    def test_non_austlii_host_still_uses_jina(self):
+        from unittest.mock import patch, Mock
+        from litassist.commands.lookup.fetchers import _fetch_via_jina
+
+        ok = Mock(status_code=200, text="x" * 5000)
+        with patch("litassist.commands.lookup.fetchers.requests.get", return_value=ok) as mock_get:
+            result = _fetch_via_jina("https://www.fairwork.gov.au/some-page")
+        mock_get.assert_called_once()
+        assert "fairwork.gov.au" in result
+
+    def test_lookalike_host_not_guarded(self):
+        from unittest.mock import patch, Mock
+        from litassist.commands.lookup.fetchers import _fetch_via_jina
+
+        ok = Mock(status_code=200, text="x" * 5000)
+        with patch("litassist.commands.lookup.fetchers.requests.get", return_value=ok) as mock_get:
+            _fetch_via_jina("https://notaustlii.edu.au/page")
+        mock_get.assert_called_once()

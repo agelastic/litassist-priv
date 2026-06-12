@@ -35,6 +35,118 @@ HARDCODED_LEGISLATION_URLS = {
     "Freedom of Information Act 1982 (Commonwealth)": "https://www.legislation.gov.au/C2004A02562/2025-02-21/2025-02-21/text/original/pdf",
 }
 
+# Jurisdiction parenthetical in an act citation -> (AustLII /au/legis/ path
+# segment, jurisdiction prose as it appears on AustLII act-page headers,
+# e.g. "New South Wales Consolidated Acts"). Used to scope the AustLII CSE
+# link filter and the legislation validation strategy: without this the WA
+# Civil Liability Act was fetched and (correctly) rejected for an (NSW)
+# citation, while the correct NSW page could never validate because act
+# pages head with the bare title, never the "(NSW)" literal.
+LEGISLATION_JURISDICTIONS = {
+    "(cth)": ("cth", "commonwealth"),
+    "(nsw)": ("nsw", "new south wales"),
+    "(vic)": ("vic", "victoria"),
+    "(qld)": ("qld", "queensland"),
+    "(sa)": ("sa", "south australia"),
+    "(wa)": ("wa", "western australia"),
+    "(tas)": ("tas", "tasmania"),
+    "(act)": ("act", "australian capital territory"),
+    "(nt)": ("nt", "northern territory"),
+}
+
+
+def _jurisdiction_markers(lower_citation: str) -> list:
+    """Jurisdiction markers present in a lowercased citation. "(act)" is the
+    only jurisdiction token that also occurs inside act NAMES ("Civil Law
+    (ACT) Act 2000 (NSW)"), so when any other marker co-occurs, "(act)"
+    belongs to the name and is dropped from the marker list."""
+    markers = [m for m in LEGISLATION_JURISDICTIONS if m in lower_citation]
+    if "(act)" in markers and len(markers) > 1:
+        markers.remove("(act)")
+    return markers
+
+
+def _parse_legislation_jurisdiction(citation: str):
+    """Return (austlii_path_segment, header_prose_name) for the jurisdiction
+    parenthetical in an act citation, or None when no marker is present
+    (case citations and bare titles)."""
+    markers = _jurisdiction_markers(citation.lower())
+    if markers:
+        return LEGISLATION_JURISDICTIONS[markers[0]]
+    return None
+
+
+def _legislation_austlii_link_ok(link: str, jurisdiction) -> bool:
+    """Link filter for the AustLII legislation CSE step. When the citation
+    names a jurisdiction, only that jurisdiction's /au/legis/ subtree is
+    accepted; otherwise the generic legislation-path check applies."""
+    if not is_trusted_legal_host(link):
+        return False
+    if jurisdiction:
+        return f"/au/legis/{jurisdiction[0]}/" in link
+    return "/au/legis/" in link
+
+
+def _instrument_title(citation: str) -> str:
+    """Lowercased instrument title with ONLY the jurisdiction parenthetical
+    removed. Name parentheticals ("Civil Law (Wrongs) Act 2002") are kept
+    so titles match AustLII headers verbatim and two acts whose names
+    differ only by parenthetical can never collapse to the same string.
+    A NAME parenthetical of "(ACT)" is kept whenever another jurisdiction
+    marker is present (see _jurisdiction_markers). Known limitation (Codex
+    review 11/06/2026, narrowed 12/06/2026): an "(ACT)"-named act of the
+    ACT jurisdiction itself ("X (ACT) Act 2000 (ACT)") still has both
+    occurrences stripped; no real act title with that shape has been
+    observed."""
+    title = citation.lower()
+    for marker in _jurisdiction_markers(title):
+        title = title.replace(marker, "")
+    return re.sub(r"\s+", " ", title).strip()
+
+
+def _legislation_title_jurisdiction_match(header: str, citation: str) -> bool:
+    """Legislation-aware validation: AustLII act pages head with the bare
+    title ("CIVIL LIABILITY ACT 2002") and name the jurisdiction in prose
+    ("New South Wales Consolidated Acts"), never the "(NSW)" literal, so
+    the exact-string strategies cannot validate a whole-act citation.
+    Requires BOTH the title (sans the jurisdiction parenthetical) and the
+    jurisdiction marker in the header; a right-title/wrong-jurisdiction
+    page still fails."""
+    jurisdiction = _parse_legislation_jurisdiction(citation)
+    if not jurisdiction:
+        return False
+    path_abbrev, prose_name = jurisdiction
+    title = _instrument_title(citation)
+    if not title:
+        return False
+    header_norm = re.sub(r"\s+", " ", header.lower())
+    if title not in header_norm:
+        return False
+    return prose_name in header_norm or f"({path_abbrev})" in header_norm
+
+
+def _component_page_for_whole_citation(header: str, citation: str) -> bool:
+    """True when the header is an AustLII component page ("ACT NAME YEAR -
+    SECT 5B", or SCHED/REG/RULE/CL plus an identifier) for an instrument the
+    citation names as a whole. Validating an arbitrary component as the
+    whole instrument overstates retrieval, so _validate_citation_match
+    refuses these outright - for any strategy, with or without a
+    jurisdiction parenthetical. Citations that themselves name a section
+    keep the component reference inside the derived title, so the pattern
+    cannot match and they are never blocked here. Only the jurisdiction
+    parenthetical is stripped from the citation, so acts with parenthetical
+    names ("Civil Law (Wrongs) Act 2002") match their headers verbatim."""
+    title = _instrument_title(citation)
+    if not title:
+        return False
+    header_norm = re.sub(r"\s+", " ", header.lower())
+    return bool(
+        re.search(
+            re.escape(title) + r"\s*-\s*(sect|sched|schedule|reg|rule|cl)\b\s*\S+",
+            header_norm,
+        )
+    )
+
 
 def _try_fetch_and_validate(url: str, citation: str) -> Optional[str]:
     """
@@ -317,12 +429,13 @@ def fetch_citation_context(citations: List[str]) -> tuple[Dict[str, str], List[t
 
                 # STEP 2: Try AustLII if no valid content found yet
                 if not content_valid and cse_austlii:
+                    jurisdiction = _parse_legislation_jurisdiction(citation)
                     found, content_valid, content = _search_and_validate(
                         service,
                         cse_austlii,
                         normalize_citation(citation),
                         citation,
-                        lambda link: is_trusted_legal_host(link) and "/au/legis/" in link,
+                        lambda link, _j=jurisdiction: _legislation_austlii_link_ok(link, _j),
                         "citation_austlii_legis_validated",
                         "Validated AustLII legis (rank {rank}/3): {url}",
                         apply_rate_limit=True,
@@ -603,9 +716,24 @@ def _validate_citation_match(content: str, citation: str) -> bool:
     # Extract metadata header once for efficiency
     header = _extract_metadata_header(content)
 
+    # Fail closed before any strategy runs: a component page (SECT/SCHED/
+    # REG/RULE/CL) must never validate a whole-instrument citation, however
+    # the strategies below would match it.
+    if _component_page_for_whole_citation(header, citation):
+        save_log(
+            "citation_validation_failure",
+            {
+                "citation": citation,
+                "strategies_tried": ["component_page_guard"],
+                "header_preview": header[:300] if header else content[:300],
+            },
+        )
+        return False
+
     # Define validation strategies in order of reliability
     strategies = [
         ("exact_primary_location", lambda: citation.lower() in content[:500].lower()),
+        ("legislation_title_jurisdiction_header", lambda: _legislation_title_jurisdiction_match(header, citation)),
         ("alternative_citations_header", lambda: _check_alternative_citations_section(header, citation)),
         ("parallel_citations_header", lambda: _check_header_parallel_citations(header, citation)),
         ("case_name_header", lambda: _case_name_match(header, citation)),

@@ -1,6 +1,6 @@
 # Changelog
 
-Last updated: 10/06/2026
+Last updated: 11/06/2026
 
 All notable changes to LitAssist will be documented in this file.
 
@@ -12,6 +12,21 @@ Historical dated sections preserve the model names that were current when those 
 ## [Unreleased]
 
 ### Added
+- P-JUDGE offline eval harness (`test-scripts/test_judge_eval.py`): repeatable,
+  real-API quality scoring of litassist outputs against a rubric (citation
+  grounding, structure, Australian English, faithfulness, AGLC format), with a
+  fail-closed structured-output contract, baseline regression comparison
+  (tolerance 8), and a retrieval-gap report that caps `citation_grounding` by
+  the fraction of expected citations verifiable from sources. New `judge-eval`
+  model role, `litassist/prompts/judge_eval.yaml` prompts, a 4-case benchmark
+  generated from a fictional NSW negligence matter (extractfacts, lookup IRAC,
+  strategy, draft), offline unit tests for the scoring core, and
+  `docs/development/JUDGE_EVAL.md`. ROADMAP P-JUDGE; the ensemble items
+  (P1-12, P2-19) stay gated on deltas measured with this harness.
+- `LICENSE` file (MIT). The project licence is now stated consistently: `setup.py`
+  classifier changed from `License :: Other/Proprietary License` to
+  `License :: OSI Approved :: MIT License` (plus a `license="MIT"` kwarg), and README
+  gained a Licence section. Resolves the licensing inconsistency deferred from v3.0.0.
 - Matter-type-aware prompts (Phase 1). `case_facts` now carries a `Matter type:` line
   under the Jurisdiction heading (proposed by `extractfacts`, preserved by `updatefacts`).
   The framing commands (`barbrief`, `strategy`, `brainstorm`, `caseplan`) read it and prepend
@@ -26,6 +41,31 @@ Historical dated sections preserve the model names that were current when those 
   complaints tool-assessment.
 
 ### Fixed
+- Jina Reader is no longer dispatched to austlii.edu.au URLs. AustLII serves
+  Jina's datacentre IPs a Cloudflare challenge on every request (verified
+  26/05/2026, reconfirmed 11/06/2026), so each dispatch was a guaranteed-
+  failed paid call caught by the challenge detector. The fetcher now fails
+  fast with an audit-log entry instead.
+- Whole-act legislation citations (e.g. "Civil Liability Act 2002 (NSW)") are
+  now retrievable by `fetch_citation_context` when CSE surfaces the act-root
+  page. Two jurisdiction-blind spots fixed together: the AustLII CSE link
+  filter accepted any /au/legis/ link (the WA Civil Liability Act and a
+  Regulation were fetched for an NSW Act citation), and no validation
+  strategy could pass on the correct page, whose header carries the bare
+  title plus jurisdiction prose ("New South Wales Consolidated Acts") rather
+  than the "(NSW)" literal. The link filter is now scoped to the citation's
+  jurisdiction subtree and a legislation-aware validation strategy matches
+  title-plus-jurisdiction in the header; a right-title/wrong-jurisdiction
+  page still fails, and an arbitrary SECT/REG/RULE/SCHEDULE component page
+  is refused for a whole-act citation rather than overstating retrieval.
+  Found by the P-JUDGE retrieval-tag measurement.
+- `construct_austlii_url` now accepts citations that carry their case name
+  (e.g. "Fallas v Mourlas [2006] NSWCA 32" - the form every command output
+  uses). The parser was anchored to the start of the string, so the direct
+  AustLII fallback in `fetch_citation_context` silently never ran for named
+  neutral citations; CSE then surfaced documents that merely cite the target
+  and validation correctly rejected them. Found by the P-JUDGE retrieval-tag
+  measurement (all four NSWCA fetch failures traced to this line).
 - `strategy`/`barbrief` no longer reject `extractfacts` headings that carry parenthetical
   qualifiers (e.g. "Key Events (Chronological)"); the 10-heading validator tolerates them.
 - `lookup` and `digest` prompts now instruct the model to verify statutory section numbers

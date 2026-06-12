@@ -1,6 +1,6 @@
 # Citation Verification System
 
-Last updated: 19/02/2026
+Last updated: 12/06/2026
 
 ## Problem
 
@@ -27,6 +27,11 @@ AI models hallucinate legal citations. LitAssist implements a two-phase verifica
 **Package**: `litassist/citation/`
 
 Modules: `verify.py`, `cache.py`, `google_cse.py`, `austlii.py`, `legislation.py`, `constants.py`, `exceptions.py`
+
+`construct_austlii_url` (in `austlii.py`) builds a direct AustLII case URL
+from a medium neutral citation; since 11/06/2026 it accepts the neutral
+cite anywhere in the string, so named citations ("Fallas v Mourlas [2006]
+NSWCA 32") work as well as bare ones ("[2006] NSWCA 32").
 
 `verify_all_citations(text)` returns `Tuple[List[Dict[str, str]], List[Tuple[str, str]]]` -- verified citation details and unverified citations with reasons. Makes HEAD requests to AustLII to confirm case existence. Results are cached with thread-safe locking.
 

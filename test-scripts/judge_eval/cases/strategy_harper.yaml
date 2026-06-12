@@ -1,0 +1,87 @@
+# P-JUDGE benchmark case: strategy (strategic options) output for the Harper
+# matter. Generated 11/06/2026 by:
+#   litassist strategy outputs/judge_fixture_extractfacts_*.md --outcome
+#   "Recover damages for personal injury and economic loss from the
+#   adventure park operator" (anthropic/claude-opus-4.7 + verification).
+# SOURCES = the case_facts document strategy ran on (the extractfacts
+# fixture output). Benchmark note: most authorities below were introduced
+# from model knowledge, not from SOURCES - expect low grounding_coverage;
+# that is the context-starvation measurement, not a fixture defect. No
+# structure dimension: the strategy options format has no live named
+# contract in formats.yaml (formats.strategic_options is marked NOT USED).
+---
+case_id: strategy_harper
+command: strategy
+dimensions:
+  - citation_grounding
+  - australian_english
+  - faithfulness
+  - aglc_format
+output_file: strategy_harper.output.md
+source_files:
+  - extractfacts_harper.output.md
+expected_citations:
+  # fetchable/retrieval_class = what fetch_citation_context can retrieve
+  # (pipeline capability); CLR-only and overseas report cites are not
+  # constructible (TODO C1/C2).
+  - cite: "Civil Liability Act 2002 (NSW)"
+    # 11/06/2026: validated only via an arbitrary section page, which the
+    # section-page guard now correctly refuses for a whole-act citation;
+    # CSE does not surface the act-root page in its top results
+    fetchable: false
+    retrieval_class: fetch_failed
+  - cite: "Limitation Act 1969 (NSW)"
+    # re-measured 11/06/2026 after the named-cite and jurisdiction fixes: fetch succeeded
+    fetchable: true
+    retrieval_class: fetchable
+  - cite: "Civil Procedure Act 2005 (NSW)"
+    # re-measured 11/06/2026 after the named-cite and jurisdiction fixes: fetch succeeded
+    fetchable: true
+    retrieval_class: fetchable
+  - cite: "Uniform Civil Procedure Rules 2005 (NSW)"
+    # 11/06/2026: validated only via an arbitrary section page, which the
+    # section-page guard now correctly refuses for a whole-act citation;
+    # CSE does not surface the act-root page in its top results
+    fetchable: false
+    retrieval_class: fetch_failed
+  - cite: "Evidence Act 1995 (NSW)"
+    # 11/06/2026: validated only via an arbitrary section page, which the
+    # section-page guard now correctly refuses for a whole-act citation;
+    # CSE does not surface the act-root page in its top results
+    fetchable: false
+    retrieval_class: fetch_failed
+  - cite: "Competition and Consumer Act 2010 (Cth)"
+    fetchable: true
+    retrieval_class: fetchable
+  - cite: "Fallas v Mourlas [2006] NSWCA 32"
+    # re-measured 11/06/2026 after the named-cite and jurisdiction fixes: fetch succeeded
+    fetchable: true
+    retrieval_class: fetchable
+  - cite: "Jaber v Rockdale City Council [2008] NSWCA 98"
+    # re-measured 11/06/2026 after the named-cite and jurisdiction fixes: fetch succeeded
+    fetchable: true
+    retrieval_class: fetchable
+  - cite: "Roads and Traffic Authority of NSW v Dederer [2007] HCA 42"
+    fetchable: true
+    retrieval_class: fetchable
+  - cite: "Alameddine v Glenworth Valley Horse Riding Pty Ltd [2015] NSWCA 219"
+    # re-measured 11/06/2026 after the named-cite and jurisdiction fixes: fetch succeeded
+    fetchable: true
+    retrieval_class: fetchable
+  - cite: "Moore v Scenic Tours Pty Ltd [2020] HCA 17"
+    fetchable: true
+    retrieval_class: fetchable
+  - cite: "Miwa Pty Ltd v Siantan Properties Pte Ltd (No 2) [2011] NSWCA 344"
+    # re-measured 11/06/2026 after the named-cite and jurisdiction fixes: fetch succeeded
+    fetchable: true
+    retrieval_class: fetchable
+  - cite: "Darlington Futures Ltd v Delco Australia Pty Ltd (1986) 161 CLR 500"
+    fetchable: false
+    retrieval_class: authorised_report
+  - cite: "Oceanic Sun Line Special Shipping Co Inc v Fay (1988) 165 CLR 197"
+    fetchable: false
+    retrieval_class: authorised_report
+  - cite: "Calderbank v Calderbank [1975] 3 All ER 333"
+    # English report series; no AustLII URL exists for it
+    fetchable: false
+    retrieval_class: authorised_report

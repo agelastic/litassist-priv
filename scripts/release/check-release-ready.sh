@@ -155,9 +155,6 @@ check_required_files() {
     for file in "${REQUIRED_FILES[@]}"; do
         if [[ -f "$PROJECT_ROOT/$file" ]]; then
             check_result "File: $file" "pass"
-        elif [[ "$file" == "LICENSE" ]]; then
-            # This repo intentionally ships without a LICENSE file; warn, do not fail the gate.
-            check_result "File: $file" "warn" "Missing LICENSE file (intentional for this repo)"
         else
             check_result "File: $file" "fail" "Missing required file"
         fi
