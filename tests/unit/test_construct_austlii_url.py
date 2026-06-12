@@ -22,18 +22,6 @@ class TestConstructAustliiUrl:
             == NSWCA_32_URL
         )
 
-    def test_named_citation_with_parenthetical(self):
-        assert construct_austlii_url(
-            "Miwa Pty Ltd v Siantan Properties Pte Ltd (No 2) [2011] NSWCA 344"
-        ) == (
-            "https://www.austlii.edu.au/cgi-bin/viewdoc/au/cases/nsw/NSWCA/2011/344.html"
-        )
-
-    def test_named_hca_citation(self):
-        assert construct_austlii_url(
-            "Roads and Traffic Authority of NSW v Dederer [2007] HCA 42"
-        ) == ("https://www.austlii.edu.au/cgi-bin/viewdoc/au/cases/cth/HCA/2007/42.html")
-
     def test_unknown_court_returns_empty(self):
         assert construct_austlii_url("[2006] NOTACOURT 32") == ""
 

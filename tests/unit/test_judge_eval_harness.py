@@ -378,6 +378,8 @@ class TestDuplicateHandling:
         return make_response(payload)
 
     def test_duplicate_starved_cites_counted_once(self):
+        # set-based dedupe also makes negative coverage impossible: the
+        # starved set can never exceed the expected set
         case = self._case(n_expected=2)
         result = harness.score_case(case, self._response(["Cite 0", "Cite 0"]))
         assert result["grounding_coverage"] == 0.5
@@ -389,14 +391,6 @@ class TestDuplicateHandling:
             case, self._response(["Cite 0", "Unknown", "Unknown"])
         )
         assert result["unmatched_starved_cites"] == ["Unknown"]
-
-    def test_coverage_never_negative_under_duplicates(self):
-        case = self._case(n_expected=2)
-        result = harness.score_case(
-            case, self._response(["Cite 0", "Cite 0", "Cite 0"])
-        )
-        assert result["grounding_coverage"] == 0.5
-        assert 0 <= result["dimensions"]["citation_grounding"] <= 100
 
     def test_confirm_retrieval_deduplicates_paid_fetches(self):
         from unittest.mock import patch

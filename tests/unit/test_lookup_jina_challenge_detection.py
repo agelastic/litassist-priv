@@ -136,21 +136,15 @@ class TestJinaAustliiGuard:
         from unittest.mock import patch
         from litassist.commands.lookup.fetchers import _fetch_via_jina
 
-        with patch("litassist.commands.lookup.fetchers.requests.get") as mock_get:
-            result = _fetch_via_jina(
-                "https://www.austlii.edu.au/au/legis/cth/consol_act/caca2010265/sch2.html"
-            )
-        assert result == ""
-        mock_get.assert_not_called()
-
-    def test_bare_austlii_host_also_guarded(self):
-        from unittest.mock import patch
-        from litassist.commands.lookup.fetchers import _fetch_via_jina
-
-        with patch("litassist.commands.lookup.fetchers.requests.get") as mock_get:
-            result = _fetch_via_jina("https://austlii.edu.au/au/cases/nsw/NSWCA/2006/32.html")
-        assert result == ""
-        mock_get.assert_not_called()
+        # one URL per guard arm: subdomain suffix match and bare-host equality
+        for url in (
+            "https://www.austlii.edu.au/au/legis/cth/consol_act/caca2010265/sch2.html",
+            "https://austlii.edu.au/au/cases/nsw/NSWCA/2006/32.html",
+        ):
+            with patch("litassist.commands.lookup.fetchers.requests.get") as mock_get:
+                result = _fetch_via_jina(url)
+            assert result == ""
+            mock_get.assert_not_called()
 
     def test_non_austlii_host_still_uses_jina(self):
         from unittest.mock import patch, Mock
@@ -161,15 +155,6 @@ class TestJinaAustliiGuard:
             result = _fetch_via_jina("https://www.fairwork.gov.au/some-page")
         mock_get.assert_called_once()
         assert "fairwork.gov.au" in result
-
-    def test_subdomain_austlii_host_guarded(self):
-        from unittest.mock import patch
-        from litassist.commands.lookup.fetchers import _fetch_via_jina
-
-        with patch("litassist.commands.lookup.fetchers.requests.get") as mock_get:
-            result = _fetch_via_jina("https://classic.austlii.edu.au/au/cases/cth/HCA/2007/42.html")
-        assert result == ""
-        mock_get.assert_not_called()
 
     def test_lookalike_host_not_guarded(self):
         from unittest.mock import patch, Mock

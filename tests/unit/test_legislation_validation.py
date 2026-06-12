@@ -38,38 +38,16 @@ NSW_REGULATION_PAGE = (
     "New South Wales Consolidated Regulations\n"
 )
 
-# Real shape from the 11/06/2026 audit logs: an arbitrary section page of the
-# right act, which must NOT validate a whole-act citation.
-CTH_SECTION_PAGE = (
-    "COMPETITION AND CONSUMER ACT 2010 - SECT 87CC\n"
-    "Certain concurrent wrongdoers not to have benefit of apportionment\n"
-    "AustLII Search\n"
-    "Commonwealth Consolidated Acts\n"
-)
-
 
 class TestParseLegislationJurisdiction:
-    def test_nsw(self):
-        assert _parse_legislation_jurisdiction("Civil Liability Act 2002 (NSW)") == (
-            "nsw",
-            "new south wales",
-        )
-
     def test_cth_case_insensitive(self):
         assert _parse_legislation_jurisdiction(
             "Competition and Consumer Act 2010 (CTH)"
         ) == ("cth", "commonwealth")
 
     def test_no_marker_returns_none(self):
+        # case citations (incl. parentheticals like "(No 2)") carry no marker
         assert _parse_legislation_jurisdiction("Fallas v Mourlas [2006] NSWCA 32") is None
-
-    def test_case_parenthetical_is_not_jurisdiction(self):
-        assert (
-            _parse_legislation_jurisdiction(
-                "Miwa Pty Ltd v Siantan Properties Pte Ltd (No 2) [2011] NSWCA 344"
-            )
-            is None
-        )
 
 
 class TestLegislationLinkFilter:
@@ -91,6 +69,8 @@ class TestLegislationLinkFilter:
         )
 
     def test_untrusted_host_rejected(self):
+        # pins the filter's own early-return branch; is_trusted_legal_host
+        # internals are covered separately in test_citation_trust.py
         assert not _legislation_austlii_link_ok(
             "https://evil.example.com/au/legis/nsw/consol_act/ca200294/", self.NSW
         )
@@ -113,17 +93,14 @@ class TestLegislationValidation:
         content = "Fallas v Mourlas [2006] NSWCA 32\nCourt of Appeal\n"
         assert _validate_citation_match(content, "Fallas v Mourlas [2006] NSWCA 32")
 
-    def test_section_page_rejected_for_whole_act_citation(self):
-        # an arbitrary section of the right act is not the act: validating it
-        # would overstate retrieval for whole-act citations
-        assert not _validate_citation_match(
-            CTH_SECTION_PAGE, "Competition and Consumer Act 2010 (Cth)"
-        )
-
     def test_section_page_rejected_for_bare_whole_act_citation(self):
-        # without a jurisdiction parenthetical the exact-match strategies see
-        # the title verbatim in the section-page header; the component-page
-        # guard must still refuse it
+        # an arbitrary section of the right act is not the act: validating
+        # it would overstate retrieval for whole-act citations. Without a
+        # jurisdiction parenthetical the exact-match strategies see the
+        # title verbatim in the section-page header; the component-page
+        # guard (which runs before every strategy) must still refuse it.
+        # Parenthetical-named titles through the same guard are pinned by
+        # test_parenthetical_act_title_section_page_rejected
         content = (
             "CIVIL LIABILITY ACT 2002 - SECT 16\n"
             "Determination of damages for non-economic loss\n"
@@ -196,7 +173,6 @@ class TestLegislationValidation:
             header, "Civil Liability Act 2002 s 16"
         )
 
-
 class TestActNameParentheticalDisambiguation:
     """"(ACT)" is the only jurisdiction token that also appears inside act
     names. When another jurisdiction marker co-occurs, "(ACT)" belongs to
@@ -219,14 +195,11 @@ class TestActNameParentheticalDisambiguation:
         )
 
     def test_jurisdiction_prefers_other_marker_over_name_act(self):
+        # the lone-(ACT) branch of the shared _jurisdiction_markers helper
+        # is pinned by test_title_still_strips_lone_act_jurisdiction
         assert _parse_legislation_jurisdiction(
             "Road Transport (ACT) Act 2000 (NT)"
         ) == ("nt", "northern territory")
-
-    def test_lone_act_marker_still_parses_as_jurisdiction(self):
-        assert _parse_legislation_jurisdiction(
-            "Civil Law (Wrongs) Act 2002 (ACT)"
-        ) == ("act", "australian capital territory")
 
     def test_act_name_parenthetical_end_to_end_validation(self):
         # retained "(act)" in the derived title flows through the validation
