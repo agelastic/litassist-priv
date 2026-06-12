@@ -195,3 +195,54 @@ class TestLegislationValidation:
         assert not _component_page_for_whole_citation(
             header, "Civil Liability Act 2002 s 16"
         )
+
+
+class TestActNameParentheticalDisambiguation:
+    """"(ACT)" is the only jurisdiction token that also appears inside act
+    names. When another jurisdiction marker co-occurs, "(ACT)" belongs to
+    the name: it is kept in the title and never wins jurisdiction parsing."""
+
+    def test_title_keeps_act_parenthetical_when_other_marker_present(self):
+        from litassist.citation_context import _instrument_title
+
+        assert (
+            _instrument_title("Civil Law (ACT) Act 2002 (NSW)")
+            == "civil law (act) act 2002"
+        )
+
+    def test_title_still_strips_lone_act_jurisdiction(self):
+        from litassist.citation_context import _instrument_title
+
+        assert (
+            _instrument_title("Civil Law (Wrongs) Act 2002 (ACT)")
+            == "civil law (wrongs) act 2002"
+        )
+
+    def test_jurisdiction_prefers_other_marker_over_name_act(self):
+        assert _parse_legislation_jurisdiction(
+            "Road Transport (ACT) Act 2000 (NT)"
+        ) == ("nt", "northern territory")
+
+    def test_lone_act_marker_still_parses_as_jurisdiction(self):
+        assert _parse_legislation_jurisdiction(
+            "Civil Law (Wrongs) Act 2002 (ACT)"
+        ) == ("act", "australian capital territory")
+
+    def test_act_name_parenthetical_end_to_end_validation(self):
+        # retained "(act)" in the derived title flows through the validation
+        # strategy and the component-page guard unchanged
+        root_page = (
+            "CIVIL LAW (ACT) ACT 2000\n"
+            "AustLII Search\n"
+            "New South Wales Consolidated Acts\n"
+            "Table of Provisions\n"
+        )
+        section_page = (
+            "CIVIL LAW (ACT) ACT 2000 - SECT 5\n"
+            "Definitions\n"
+            "AustLII Search\n"
+            "New South Wales Consolidated Acts\n"
+        )
+        citation = "Civil Law (ACT) Act 2000 (NSW)"
+        assert _validate_citation_match(root_page, citation)
+        assert not _validate_citation_match(section_page, citation)

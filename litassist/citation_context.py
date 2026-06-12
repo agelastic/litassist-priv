@@ -55,14 +55,24 @@ LEGISLATION_JURISDICTIONS = {
 }
 
 
+def _jurisdiction_markers(lower_citation: str) -> list:
+    """Jurisdiction markers present in a lowercased citation. "(act)" is the
+    only jurisdiction token that also occurs inside act NAMES ("Civil Law
+    (ACT) Act 2000 (NSW)"), so when any other marker co-occurs, "(act)"
+    belongs to the name and is dropped from the marker list."""
+    markers = [m for m in LEGISLATION_JURISDICTIONS if m in lower_citation]
+    if "(act)" in markers and len(markers) > 1:
+        markers.remove("(act)")
+    return markers
+
+
 def _parse_legislation_jurisdiction(citation: str):
     """Return (austlii_path_segment, header_prose_name) for the jurisdiction
     parenthetical in an act citation, or None when no marker is present
     (case citations and bare titles)."""
-    lower = citation.lower()
-    for marker, mapping in LEGISLATION_JURISDICTIONS.items():
-        if marker in lower:
-            return mapping
+    markers = _jurisdiction_markers(citation.lower())
+    if markers:
+        return LEGISLATION_JURISDICTIONS[markers[0]]
     return None
 
 
@@ -82,11 +92,14 @@ def _instrument_title(citation: str) -> str:
     removed. Name parentheticals ("Civil Law (Wrongs) Act 2002") are kept
     so titles match AustLII headers verbatim and two acts whose names
     differ only by parenthetical can never collapse to the same string.
-    Known limitation (Codex review 11/06/2026): a NAME parenthetical that
-    exactly equals a jurisdiction token - realistically only "(ACT)" - is
-    also stripped; no real act title with that shape has been observed."""
+    A NAME parenthetical of "(ACT)" is kept whenever another jurisdiction
+    marker is present (see _jurisdiction_markers). Known limitation (Codex
+    review 11/06/2026, narrowed 12/06/2026): an "(ACT)"-named act of the
+    ACT jurisdiction itself ("X (ACT) Act 2000 (ACT)") still has both
+    occurrences stripped; no real act title with that shape has been
+    observed."""
     title = citation.lower()
-    for marker in LEGISLATION_JURISDICTIONS:
+    for marker in _jurisdiction_markers(title):
         title = title.replace(marker, "")
     return re.sub(r"\s+", " ", title).strip()
 
