@@ -233,14 +233,12 @@ capabilities:
       --cove: (flag) | Add Chain of Verification as final check
       --reference: [string] | Glob pattern for reference files to include as context (e.g. '*.txt', 'docs/*.pdf'). Supports PDF and text files.
       --cove-reference: [string] | Glob pattern for reference files to include in the CoVe answer stage (requires --cove)
+      --cross-check: (flag) | Multi-model cross-check: three-model panel + arbiter flag disagreements and unsupported/contradictory content (read-only; ~$1 extra per document; reserve for high-stakes filed documents)
       --heavy: (flag) | Use verification-heavy mode (max thinking effort for reasoning and soundness stages)
       --output: [string] | Custom filename prefix for output files
-      # --cross-check (multi-model ensemble) is intentionally omitted here until the
-      # P1-12 measurement gate passes: caseplan generates verify commands from this
-      # block, and we do not want it emitting an extra three-model panel + arbiter
-      # (incl. o3-pro) into client cost plans for a still-gated feature.
     Best Practices:
       - Always verify court documents and formal correspondence
+      - Use --cross-check for high-stakes documents before filing (catches fabricated facts and internal contradictions a single pass can miss; adds ~$1 and several model calls)
       - Use --citations for research-heavy documents
       - Use --soundness for novel legal arguments
       - Default (no flags) performs all three verifications

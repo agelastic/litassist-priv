@@ -289,25 +289,37 @@ lower and human review is warranted (divergence as an "uncertainty interval").
 P-FAITH adds faithfulness checking of full-context outputs against their supplied
 sources.
 
-### P1-12: Multi-Model Cross-Checks [BUILT BEHIND FLAG 13/06/2026; PENDING GATE]
+### P1-12: Multi-Model Cross-Checks [SHIPPED 14/06/2026 - GATE PASSED]
 **Effort:** 8-10 hours
-**Priority:** HIGH (elevated 03/06/2026 - hard prerequisite for the now-elevated
-P2-19 Bias Divergence Detector; build before P2-19).
-**Status (13/06/2026):** Implemented behind `verify --cross-check` on branch
+**Priority:** HIGH (hard prerequisite for the now-elevated P2-19 Bias Divergence
+Detector; build before P2-19).
+**Status (14/06/2026):** SHIPPED behind `verify --cross-check` on branch
 `feat/verify-crosscheck` - new `litassist/commands/verify/ensemble.py` (read-only
 three-model panel + non-panel arbiter, fail-closed `=== AGREEMENT/DISAGREEMENTS/
 FLAGGED FOR HUMAN REVIEW/CONFIDENCE ===` contract with a machine-readable
 `DISAGREEMENT LEVEL` line), four `crosscheck-*` roles, `verification.crosscheck.*`
-prompts, and `litassist/llm/cost.py` powering a `[COST]` banner. NOT yet surfaced
-to caseplan (`capabilities.yaml`) and NOT "shipped" until the gate below passes.
-**GATED ON P-JUDGE (09/06/2026), gate substituted (13/06/2026):** the original
-"P-JUDGE before/after per-dimension delta" is zero by construction for a read-only
-stage (it never rewrites the document). Replaced with a deterministic
-seeded-defect detection gate (no LLM judge, since the judge model is also a
-panellist): on 4 Harper-benchmark variants carrying 20 documented defects, ship
-`--cross-check` only if treatment recall >= 14/20, >= 4 defects are caught that
-baseline `verify` missed, <= 1 spurious HIGH flag on the 4 clean documents, and
-the marginal cost is <= 4x baseline. Otherwise shelve with the evidence table.
+prompts, and `litassist/llm/cost.py` powering a `[COST]` banner. Now surfaced to
+caseplan (`capabilities.yaml`).
+**Gate result (14/06/2026): PASS - all four criteria.** The original "P-JUDGE
+before/after per-dimension delta" is zero by construction for a read-only stage,
+so it was replaced with a deterministic seeded-defect detection gate (no LLM
+judge, since the judge model is also a panellist). On 4 Harper-benchmark variants
+carrying 20 documented defects:
+
+| Criterion | Threshold | Measured | Pass |
+|-----------|-----------|----------|------|
+| treatment recall | >= 14/20 | 20/20 | yes |
+| defects cross-check caught that baseline missed | >= 4 | 6 | yes |
+| spurious HIGH on 4 clean docs | <= 1 | 0 | yes |
+| marginal cost vs baseline | <= 4x | 3.6x total / 2.6x marginal | yes |
+
+The cross-check's marginal value is concentrated in the **fabricated-fact** class
+(baseline 0/4 -> cross-check 4/4) and **internal contradiction** (2/4 -> 4/4);
+citation/jurisdiction defects are already caught by the existing
+citation-verification + Opus 4.7 soundness stages, so the retrieval gap does not
+bias the result. Full evidence, per-defect detail, costs and caveats:
+`test-scripts/judge_eval/crosscheck_gate/RESULTS.md` (protocol in `README.md`,
+fixtures + `manifest.yaml` committed).
 
 **Purpose:** Quality assurance for critical documents
 

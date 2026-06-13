@@ -131,6 +131,8 @@ test_*.pdf
 test-scripts/spotcheck_matter_type_*/
 # P-JUDGE eval harness run artefacts (timestamped reports; baseline is tracked)
 test-scripts/judge_eval/results/
+# P1-12 cross-check gate run artefacts (variants + manifest are tracked)
+test-scripts/judge_eval/crosscheck_gate/results/
 temp_*.py
 temp_*.txt
 mock_*.txt
