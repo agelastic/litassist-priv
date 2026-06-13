@@ -21,8 +21,9 @@ a panel member, so judge-scoring would be self-grading).
   copied to `variants/`, each seeded with 5 documented defects (20 total) across
   five classes: confabulated citation, real-cite-wrong-proposition, jurisdiction
   error, internal contradiction, fabricated fact. The seeded edits are the only
-  differences from `../cases/*.output.md` (see `/tmp/seed_defects.py` provenance in
-  the commit). `manifest.yaml` (frozen before any run) lists each defect's
+  differences from `../cases/*.output.md`; `seed_defects.py` (committed here)
+  regenerates the variants from those originals and lists every defect as an
+  explicit old/new pair. `manifest.yaml` (frozen before any run) lists each defect's
   detection criterion. The lookup original already contains two confabulations
   (`Falvo`, `Action Paintball`) recorded as `pre_existing_not_scored`.
 - **Detection arm (4 runs):** `litassist verify variants/<v>.variant.md --cross-check`.
