@@ -1,6 +1,6 @@
 # LitAssist Feature Roadmap
 
-Last updated: 11/06/2026
+Last updated: 13/06/2026
 **Status:** Strategic planning; roadmap items are aspirational unless marked DONE, PARTIALLY SUPERSEDED, or already implemented elsewhere
 **Confidence:** 0.88
 
@@ -289,13 +289,25 @@ lower and human review is warranted (divergence as an "uncertainty interval").
 P-FAITH adds faithfulness checking of full-context outputs against their supplied
 sources.
 
-### P1-12: Multi-Model Cross-Checks [ELEVATED TO HIGH]
+### P1-12: Multi-Model Cross-Checks [BUILT BEHIND FLAG 13/06/2026; PENDING GATE]
 **Effort:** 8-10 hours
 **Priority:** HIGH (elevated 03/06/2026 - hard prerequisite for the now-elevated
 P2-19 Bias Divergence Detector; build before P2-19).
-**GATED ON P-JUDGE (09/06/2026):** build P-JUDGE first, then ship this **only if**
-the P-JUDGE before/after comparison shows a positive per-dimension delta that
-beats the added 2-4x cost; otherwise shelve with evidence.
+**Status (13/06/2026):** Implemented behind `verify --cross-check` on branch
+`feat/verify-crosscheck` - new `litassist/commands/verify/ensemble.py` (read-only
+three-model panel + non-panel arbiter, fail-closed `=== AGREEMENT/DISAGREEMENTS/
+FLAGGED FOR HUMAN REVIEW/CONFIDENCE ===` contract with a machine-readable
+`DISAGREEMENT LEVEL` line), four `crosscheck-*` roles, `verification.crosscheck.*`
+prompts, and `litassist/llm/cost.py` powering a `[COST]` banner. NOT yet surfaced
+to caseplan (`capabilities.yaml`) and NOT "shipped" until the gate below passes.
+**GATED ON P-JUDGE (09/06/2026), gate substituted (13/06/2026):** the original
+"P-JUDGE before/after per-dimension delta" is zero by construction for a read-only
+stage (it never rewrites the document). Replaced with a deterministic
+seeded-defect detection gate (no LLM judge, since the judge model is also a
+panellist): on 4 Harper-benchmark variants carrying 20 documented defects, ship
+`--cross-check` only if treatment recall >= 14/20, >= 4 defects are caught that
+baseline `verify` missed, <= 1 spurious HIGH flag on the 4 clean documents, and
+the marginal cost is <= 4x baseline. Otherwise shelve with the evidence table.
 
 **Purpose:** Quality assurance for critical documents
 

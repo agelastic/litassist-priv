@@ -201,6 +201,8 @@ class TestYAMLPromptValidation:
             # CoVe citation context placeholders
             "legal_context",
             "questions",
+            # Cross-check (P1-12) arbiter placeholder
+            "panel_reviews",
             # Cross-file consolidation placeholders
             "file_count",
             "file_digests",

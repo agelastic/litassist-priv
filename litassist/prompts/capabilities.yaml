@@ -235,6 +235,10 @@ capabilities:
       --cove-reference: [string] | Glob pattern for reference files to include in the CoVe answer stage (requires --cove)
       --heavy: (flag) | Use verification-heavy mode (max thinking effort for reasoning and soundness stages)
       --output: [string] | Custom filename prefix for output files
+      # --cross-check (multi-model ensemble) is intentionally omitted here until the
+      # P1-12 measurement gate passes: caseplan generates verify commands from this
+      # block, and we do not want it emitting an extra three-model panel + arbiter
+      # (incl. o3-pro) into client cost plans for a still-gated feature.
     Best Practices:
       - Always verify court documents and formal correspondence
       - Use --citations for research-heavy documents

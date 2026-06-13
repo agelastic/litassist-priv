@@ -1,6 +1,6 @@
 ---
 # LLM Model Configurations for Commands
-# Last updated: 10/06/2026
+# Last updated: 13/06/2026
 # NO FALLBACKS - Missing keys will raise KeyError
 #
 # PARAMETERS ARE NEVER TRIMMED WHEN CHANGING A CONFIG'S MODEL - ONLY ADD.
@@ -212,6 +212,50 @@ judge-eval:
   temperature: 0
   top_p: 0.1
   thinking_effort: "max"
+  enforce_citations: false
+  disable_tools: true
+
+# crosscheck-*: P1-12 multi-model cross-check (verify --cross-check). A FIXED
+# three-model panel critiques a document independently, then a separate arbiter
+# compares the critiques. The panel IDs are pinned by ROADMAP P1-12 (sonnet-4.6 /
+# gpt-5.5 / o3-pro) for reasoning diversity; the arbiter is opus-4.7 specifically
+# because it is NOT a panel member - any panel model adjudicating would be judging
+# its own critique. temperature 0.2 / top_p 0.3 document deterministic-critique
+# intent (the translation layer strips sampling params the gpt-5.5 / o3 families
+# do not accept; thinking_effort high is the operative lever). enforce_citations
+# false + disable_tools true: the critiques quote the document's citations and
+# must not trigger citation verification on them (call sites also pass
+# skip_citation_verification=True).
+crosscheck-claude:
+  model: "anthropic/claude-sonnet-4.6"
+  temperature: 0.2
+  top_p: 0.3
+  thinking_effort: "high"
+  enforce_citations: false
+  disable_tools: true
+
+crosscheck-gpt5:
+  model: "openai/gpt-5.5"
+  temperature: 0.2
+  top_p: 0.3
+  thinking_effort: "high"
+  enforce_citations: false
+  disable_tools: true
+
+crosscheck-o3:
+  model: "openai/o3-pro"
+  temperature: 0.2
+  top_p: 0.3
+  thinking_effort: "high"
+  enforce_citations: false
+  disable_tools: true
+
+crosscheck-arbiter:
+  model: "anthropic/claude-opus-4.7"
+  temperature: 0.2
+  top_p: 0.3
+  thinking_effort: "high"
+  verbosity: "medium"
   enforce_citations: false
   disable_tools: true
 
