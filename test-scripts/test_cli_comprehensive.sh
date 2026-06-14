@@ -584,10 +584,10 @@ test_verify_command() {
     print_section "Testing VERIFY Command"
 
     # All switches: every check toggle (--citations --soundness --reasoning),
-    # --cove with both --reference and --cove-reference, --heavy, --output.
-    run_test "Verify - All switches (citations, soundness, reasoning, cove, refs, heavy)" \
-        "litassist verify test_inputs/mock_case_facts.txt --citations --soundness --reasoning --cove --reference 'test_inputs/*.txt' --cove-reference 'test_inputs/*.txt' --heavy --output test_output" \
-        "Citation verification complete|Legal soundness check complete" \
+    # --cove with both --reference and --cove-reference, --cross-check, --heavy, --output.
+    run_test "Verify - All switches (citations, soundness, reasoning, cove, cross-check, refs, heavy)" \
+        "litassist verify test_inputs/mock_case_facts.txt --citations --soundness --reasoning --cove --cross-check --reference 'test_inputs/*.txt' --cove-reference 'test_inputs/*.txt' --heavy --output test_output" \
+        "Citation verification complete|Legal soundness check complete|Multi-model cross-check complete" \
         "yes"
 }
 

@@ -308,6 +308,99 @@ verification:
 
       Generate the complete corrected version of the ORIGINAL DOCUMENT:
 
+  crosscheck:
+    # USED BY: commands/verify/ensemble.py run_panel_reviews() - panel member prompt
+    # One of three models independently critiques the document. The critique is
+    # read by the arbiter (not parsed by code), so structure is for comparability.
+    panel_review: |
+      You are one of several senior solicitors independently reviewing the same
+      legal document for quality assurance. Produce a self-contained critique.
+      Do not assume or address what the other reviewers might say.
+
+      For each verification finding, indicate confidence:
+      - HIGH: Certain of the issue
+      - MEDIUM: Probable issue requiring attention
+      - LOW: Possible issue, recommend manual check
+      If you cannot verify a citation, say "Cannot verify" rather than guessing.
+
+      === REFERENCE DOCUMENTS ===
+      {context}
+      === END REFERENCE DOCUMENTS ===
+
+      === DOCUMENT ===
+      {content}
+      === END DOCUMENT ===
+
+      Produce your critique using exactly these three markdown headings:
+
+      ## FINDINGS
+      A numbered list. For each finding give, on the same item:
+      - the confidence level (HIGH/MEDIUM/LOW),
+      - the EXACT passage from the DOCUMENT it concerns, quoted verbatim, and
+      - the reason it is a problem (citation, legal soundness, jurisdiction,
+        internal consistency, or Australian English).
+      If you find no issues, write "No issues found."
+
+      ## REASONING PATH
+      Briefly state the legal route you took: how you framed the issues, which
+      authorities or principles you relied on, and your jurisdictional analysis.
+
+      ## VERDICT SUMMARY
+      One paragraph: your overall assessment of the document.
+
+      Do not reproduce any "=== NAME ===" separators from the input in your output.
+
+    # USED BY: commands/verify/ensemble.py run_arbiter() - arbiter prompt
+    # The arbiter COMPARES the three critiques; it does not re-read the document.
+    # Output is parsed by parse_arbiter_report() - the four section markers and the
+    # DISAGREEMENT LEVEL line are a strict, fail-closed contract.
+    arbiter_report: |
+      You are a senior solicitor acting as an arbiter. Three colleagues have
+      independently reviewed the same legal document; their critiques are below.
+      Your job is to COMPARE the critiques, not to re-review the document. The
+      passages each reviewer quoted are your evidentiary basis - where a reviewer
+      makes a claim about an unquoted part of the document, treat it as a point
+      that needs a human to check rather than something you can confirm.
+
+      === PANEL REVIEWS ===
+      {panel_reviews}
+      === END PANEL REVIEWS ===
+
+      Produce your report in EXACTLY the following four sections, in this order,
+      each introduced by its marker on its own line, and nothing before the first
+      marker:
+
+      === AGREEMENT ===
+      Findings that two or more reviewers raised in substance (note which
+      reviewers), and points on which they concur.
+
+      === DISAGREEMENTS ===
+      Begin this section with a single line, on its own line, in exactly this
+      format:
+      DISAGREEMENT LEVEL: NONE
+      using one of NONE, LOW, MEDIUM or HIGH, where:
+      - HIGH  = reviewers reach conflicting conclusions on a material legal point,
+                or a HIGH-severity defect asserted by one is denied by another;
+      - MEDIUM = material divergence in severity or reasoning, but compatible
+                 conclusions;
+      - LOW   = only minor differences;
+      - NONE  = the reviewers substantively agree.
+      Then describe each point of divergence: which reviewers differ and how their
+      reasoning paths diverge. A missing or malformed DISAGREEMENT LEVEL line will
+      be treated as an error.
+
+      === FLAGGED FOR HUMAN REVIEW ===
+      Specific items a human solicitor should check before the document is relied
+      on, or "None." if there are none.
+
+      === CONFIDENCE ===
+      A short plain-English statement of how much confidence the panel's level of
+      agreement warrants in this document. This is the final section; end your
+      response here.
+
+      Use only the four "=== NAME ===" markers above. Do not emit any other
+      "=== NAME ===" separators.
+
   # Base Australian law prompt
   # USED BY: llm.py LLMClient.verify() method - base prompt
   # LOCATION: llm.py:1302 (previously fallback, now required)

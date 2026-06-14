@@ -1,6 +1,6 @@
 # LitAssist Feature Roadmap
 
-Last updated: 11/06/2026
+Last updated: 13/06/2026
 **Status:** Strategic planning; roadmap items are aspirational unless marked DONE, PARTIALLY SUPERSEDED, or already implemented elsewhere
 **Confidence:** 0.88
 
@@ -289,13 +289,37 @@ lower and human review is warranted (divergence as an "uncertainty interval").
 P-FAITH adds faithfulness checking of full-context outputs against their supplied
 sources.
 
-### P1-12: Multi-Model Cross-Checks [ELEVATED TO HIGH]
+### P1-12: Multi-Model Cross-Checks [SHIPPED 14/06/2026 - GATE PASSED]
 **Effort:** 8-10 hours
-**Priority:** HIGH (elevated 03/06/2026 - hard prerequisite for the now-elevated
-P2-19 Bias Divergence Detector; build before P2-19).
-**GATED ON P-JUDGE (09/06/2026):** build P-JUDGE first, then ship this **only if**
-the P-JUDGE before/after comparison shows a positive per-dimension delta that
-beats the added 2-4x cost; otherwise shelve with evidence.
+**Priority:** HIGH (hard prerequisite for the now-elevated P2-19 Bias Divergence
+Detector; build before P2-19).
+**Status (14/06/2026):** SHIPPED behind `verify --cross-check` on branch
+`feat/verify-crosscheck` - new `litassist/commands/verify/ensemble.py` (read-only
+three-model panel + non-panel arbiter, fail-closed `=== AGREEMENT/DISAGREEMENTS/
+FLAGGED FOR HUMAN REVIEW/CONFIDENCE ===` contract with a machine-readable
+`DISAGREEMENT LEVEL` line), four `crosscheck-*` roles, `verification.crosscheck.*`
+prompts, and `litassist/llm/cost.py` powering a `[COST]` banner. Now surfaced to
+caseplan (`capabilities.yaml`).
+**Gate result (14/06/2026): PASS - all four criteria.** The original "P-JUDGE
+before/after per-dimension delta" is zero by construction for a read-only stage,
+so it was replaced with a deterministic seeded-defect detection gate (no LLM
+judge, since the judge model is also a panellist). On 4 Harper-benchmark variants
+carrying 20 documented defects:
+
+| Criterion | Threshold | Measured | Pass |
+|-----------|-----------|----------|------|
+| treatment recall | >= 14/20 | 20/20 | yes |
+| defects cross-check caught that baseline missed | >= 4 | 6 | yes |
+| spurious HIGH on 4 clean docs | <= 1 | 0 | yes |
+| marginal cost vs baseline | <= 4x | 3.6x total / 2.6x marginal | yes |
+
+The cross-check's marginal value is concentrated in the **fabricated-fact** class
+(baseline 0/4 -> cross-check 4/4) and **internal contradiction** (2/4 -> 4/4);
+citation/jurisdiction defects are already caught by the existing
+citation-verification + Opus 4.7 soundness stages, so the retrieval gap does not
+bias the result. Full evidence, per-defect detail, costs and caveats:
+`test-scripts/judge_eval/crosscheck_gate/RESULTS.md` (protocol in `README.md`,
+fixtures + `manifest.yaml` committed).
 
 **Purpose:** Quality assurance for critical documents
 

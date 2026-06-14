@@ -1,6 +1,6 @@
 # P-JUDGE offline eval harness
 
-Last updated: 11/06/2026
+Last updated: 14/06/2026
 
 Repeatable, real-API quality scoring of litassist outputs against a rubric,
 so prompt/model changes are measured rather than guessed. This is ROADMAP
@@ -180,7 +180,36 @@ frozen.
 
 ## Gate for P1-12 / P2-19
 
-Before any ensemble cross-check ships: run each benchmark case through the
-candidate pipeline, judge both sides, and ship only if the mean
-per-dimension delta is positive and worth the added cost. Shelve with
-evidence otherwise.
+The original idea was: run each benchmark case through the candidate pipeline,
+judge both sides, ship only if the mean per-dimension delta is positive and worth
+the added cost.
+
+**This does not work for a read-only stage.** The P1-12 cross-check never rewrites
+the document, so the before/after document is byte-identical and the judged delta
+is zero by construction. Two further problems: the judge model (`judge-eval` ->
+`openai/gpt-5.5`) is also a cross-check panel member, so judge-scoring the panel is
+self-grading; and what a read-only checker delivers is *detection*, not a quality
+lift the judge rubric measures.
+
+### Substituted gate (used for P1-12, 14/06/2026): deterministic seeded-defect detection
+
+Fixtures, protocol and pre-registered ship criteria live alongside the harness in
+`test-scripts/judge_eval/crosscheck_gate/` (`README.md` = protocol, `manifest.yaml`
+= frozen defect list, `RESULTS.md` = committed outcome, `variants/` = the 4 seeded
+Harper outputs). In outline: seed 5 documented defects into each of the 4 benchmark
+outputs (20 total) across five classes (confabulated cite, real-cite-wrong-
+proposition, jurisdiction error, internal contradiction, fabricated fact); run
+`verify --cross-check` on each; score detection deterministically against the
+manifest by inspection (no LLM judge); compare cross-check detections against the
+same run's baseline citation/soundness/reasoning reports; measure spurious HIGH
+flags on the 4 clean originals and the cost ratio from the `[COST]` banners.
+
+Ship iff: recall >= 14/20, >= 4 defects caught that baseline missed, <= 1 spurious
+HIGH on clean docs, marginal cost <= 4x baseline. **P1-12 result: PASS (20/20, 6
+treatment-only, 0 spurious HIGH, 2.6x marginal / 3.6x total cost).** The marginal value was entirely in
+the fabricated-fact (0/4 -> 4/4) and internal-contradiction (2/4 -> 4/4) classes;
+the existing citation/soundness stages already catch citation and jurisdiction
+defects, so the retrieval gap did not bias the comparison.
+
+P2-19 (divergence detector) reuses the same fixtures and the same deterministic
+approach when it is built.

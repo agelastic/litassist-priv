@@ -21,6 +21,7 @@ from litassist.verification_chain import run_cove_verification, format_cove_repo
 from .citation_verifier import verify_citations
 from .reasoning_handler import verify_reasoning
 from .soundness_checker import verify_soundness
+from .ensemble import run_cross_check
 
 
 def handle_verification_error(step_name: str, exception: Exception) -> None:
@@ -40,6 +41,7 @@ def run_verification_workflow(
     reference: Optional[str] = None,
     cove_reference: Optional[str] = None,
     heavy: bool = False,
+    cross_check: bool = False,
 ) -> dict:
     """
     Run the complete verification workflow.
@@ -54,6 +56,7 @@ def run_verification_workflow(
         reference: Optional reference file glob pattern
         cove_reference: Optional CoVe reference file glob pattern
         heavy: Use verification-heavy mode (max thinking effort for reasoning and soundness)
+        cross_check: Run the multi-model cross-check stage (read-only ensemble)
 
     Returns:
         dict: Workflow results including files generated and reports
@@ -65,7 +68,7 @@ def run_verification_workflow(
             "init",
             "start",
             "Starting verification command",
-            {"stages": f"citations={citations}, soundness={soundness}, reasoning={reasoning}, cove={cove}"}
+            {"stages": f"citations={citations}, soundness={soundness}, reasoning={reasoning}, cove={cove}, cross_check={cross_check}"}
         )
     except Exception:
         pass
@@ -307,6 +310,21 @@ def run_verification_workflow(
                 handle_verification_error("Chain of Verification", e)
                 failed_stages.append(("Chain of Verification", str(e)))
 
+    # 5. Multi-model cross-check (read-only ensemble). Runs last as the most
+    # expensive stage, and consumes no prior-stage output - it always reviews the
+    # original as-read `content`, never a CoVe-regenerated or soundness-corrected
+    # version - so its position cannot change its inputs.
+    if cross_check:
+        try:
+            crosscheck_result = run_cross_check(
+                content, file, reference_context, output
+            )
+            extra_files["Cross-check report"] = crosscheck_result["crosscheck_file"]
+            reports_generated += 1
+        except Exception as e:
+            handle_verification_error("Cross-check", e)
+            failed_stages.append(("Cross-check", str(e)))
+
     if failed_stages:
         # One or more selected stages raised. Save the workflow log so the
         # failure is visible in audit trails, then fail the command. Don't
@@ -321,6 +339,7 @@ def run_verification_workflow(
                         "soundness": soundness,
                         "reasoning": reasoning,
                         "cove": cove,
+                        "cross_check": cross_check,
                         "reference": reference,
                         "cove_reference": cove_reference,
                     },
@@ -370,6 +389,7 @@ def run_verification_workflow(
                     "soundness": soundness,
                     "reasoning": reasoning,
                     "cove": cove,
+                    "cross_check": cross_check,
                     "reference": reference,
                     "cove_reference": cove_reference,
                 },

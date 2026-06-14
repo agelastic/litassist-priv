@@ -66,6 +66,11 @@ def verifying_message(message: str) -> str:
     return colored_message("[VERIFYING]", message, Colors.BLUE)
 
 
+def cost_message(message: str) -> str:
+    """Format a cost message with cyan [COST] prefix."""
+    return colored_message("[COST]", message, Colors.CYAN)
+
+
 def format_citation_warnings(
     issues: list[str], header: str = "CITATION WARNINGS"
 ) -> str:
