@@ -312,16 +312,17 @@ panellist). On 4 Harper-benchmark variants carrying 20 documented defects:
 | treatment recall | >= 14/20 | 20/20 | yes |
 | defects cross-check caught that baseline missed | >= 4 | 6 | yes |
 | spurious HIGH on 4 clean docs | <= 1 | 0 | yes |
-| marginal cost vs baseline | <= 4x | 3.93x marginal (actual) | yes |
+| marginal cost vs baseline | <= 4x | mean 2.71x, max 3.93x (N=5, actual) | yes |
 
-**Cost criterion re-measured with actual OpenRouter cost (14/06/2026).** The
-original figures came from the since-removed `estimate_call_cost` estimator (which
-undercounted 3-9x). A fresh `verify --cross-check` run on the draft benchmark with
-the new `usage.cost` capture: cross-check stage = $1.47 actual (vs $1.01
-estimated, a 45% undercount), baseline (soundness) = $0.37, marginal ratio 3.93x.
-This is a near-worst case - the draft already had a reasoning trace, so the
-reasoning stage made no LLM call, giving the smallest baseline; a document without
-a trace lowers the ratio to ~2.5-3x. n=1; criterion met but close to the bound.
+**Cost criterion re-measured with actual OpenRouter `usage.cost`, N=5
+(14/06/2026).** The original figures came from the since-removed
+`estimate_call_cost` estimator (which undercounted). Five real `verify
+--cross-check` runs across different matters/sizes (draft 14KB; four fresh
+fixtures 1.6-2.5KB): marginal ratio mean 2.71x, range 1.41-3.93x, all <= 4x. The
+3.93x worst case is the draft, driven by its large cross-check cost (biggest
+document, 14KB) rather than its baseline; the four fresh fixtures sit 1.4-3.3x.
+Cross-check absolute cost scales with document size ($0.55-$1.47). Full table:
+`crosscheck_gate/RESULTS.md`.
 
 The cross-check's marginal value is concentrated in the **fabricated-fact** class
 (baseline 0/4 -> cross-check 4/4) and **internal contradiction** (2/4 -> 4/4);

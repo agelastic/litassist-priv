@@ -8,19 +8,18 @@ in the gitignored `results/`; this is the committed summary.
 
 All four criteria pass. Criterion 4 (cost) was re-measured with actual OpenRouter
 `usage.cost` (14/06/2026) after the local `estimate_call_cost` estimator was
-removed for undercounting the invoice 3-9x. A fresh `verify --cross-check` run on
-the draft benchmark: cross-check stage $1.47 actual (vs $1.01 estimated, 45%
-undercount), baseline (soundness) $0.37, **marginal ratio 3.93x** (<= 4x). This is
-a near-worst case (the draft already had a reasoning trace, so the reasoning stage
-made no LLM call - smallest baseline; a no-trace document drops the ratio to
-~2.5-3x). n=1, near the bound.
+removed for undercounting the invoice. **N=5 real `verify --cross-check` runs
+across different matters/sizes: marginal ratio mean 2.71x, range 1.41-3.93x, all
+<= 4x** (full table below). The 3.93x worst case is the draft - driven by its
+large cross-check cost (biggest document), not its baseline; the four fresh
+fixtures sit 1.4-3.3x.
 
 | # | Criterion | Threshold | Measured | Pass |
 |---|-----------|-----------|----------|------|
 | 1 | treatment-arm recall | >= 14/20 | 20/20 | yes |
 | 2 | defects cross-check caught that baseline verify missed | >= 4 | 6 | yes |
 | 3 | spurious HIGH disagreement on the 4 clean originals | <= 1 | 0 | yes |
-| 4 | marginal cost vs baseline verify (actual `usage.cost`) | <= 4x | 3.93x | yes |
+| 4 | marginal cost vs baseline verify (actual `usage.cost`, N=5) | <= 4x | mean 2.71x, max 3.93x | yes |
 
 ## Detection (seeded-defect arm)
 
@@ -65,20 +64,33 @@ fact and contradiction detector that the single-pass soundness stage misses.
 0 HIGH flags. The two MEDIUMs are defensible (residual issues in the post-
 verification fixtures), not hallucinated alarm.
 
-## Cost (from `[COST]` banners; gate-era figures were local estimates)
+## Cost - actual OpenRouter `usage.cost`, N=5 (14/06/2026)
 
-> Note: the figures below were produced by the since-removed local estimator
-> (`estimate_call_cost`), which undercounted vs the OpenRouter invoice. Cost is now
-> read from OpenRouter's actual `usage.cost`; treat these as rough lower bounds.
+Measured with the actual-cost capture (the prior `estimate_call_cost` figures are
+removed - they undercounted the invoice). Cross-check totals from the live
+`[COST]` banners; baseline (reasoning + soundness) from the per-call audit-log
+`usage.cost`. Five real `verify --cross-check` runs across different matters and
+sizes:
 
+| Document | size | baseline (reasoning+soundness) | cross-check stage | marginal |
+|----------|------|--------------------------------|-------------------|----------|
+| draft_harper (reasoning trace reused) | 14KB | $0.37 | $1.47 | 3.93x |
+| contract supply dispute | 2.5KB | $0.39 | $0.55 | 1.41x |
+| unfair dismissal | 2.2KB | $0.28 | $0.71 | 2.56x |
+| tenancy bond | 1.6KB | $0.17 | $0.55 | 3.27x |
+| defamation concerns notice | 2.4KB | $0.29 | $0.69 | 2.37x |
 
-- baseline verify (reasoning + soundness LLM calls) ~ **$0.41 / document** (the
-  citation stage is CSE, negligible LLM cost).
-- cross-check marginal (3 panel + arbiter) ~ **$1.06 / document** (detection arm:
-  draft $1.01, strategy $1.20, lookup $0.74, extractfacts $1.28).
-- total treatment ~ $1.47/doc = **3.6x** baseline; marginal alone = **2.6x**. Within
-  the ROADMAP 2-4x envelope. o3-pro is the dominant single cost (~$0.52/call).
-- Total gate spend across the 8 runs: ~$11.
+- **Marginal ratio mean 2.71x, range 1.41-3.93x; all five <= 4x.**
+- The 3.93x case is the draft. The dominant driver is its large cross-check cost
+  ($1.47 - it is the biggest document, 14KB, so the panel input/output is the
+  largest), not its baseline (tenancy_bond has a lower baseline, $0.17 vs $0.37,
+  yet only 3.27x). The draft's reused reasoning trace (no reasoning LLM call)
+  additionally trims its baseline, compounding the ratio. The four fresh fixtures
+  sit 1.4-3.3x.
+- Cross-check absolute cost scales with document size ($0.55-$1.47); o3-pro is the
+  largest single call. The earlier estimator's $1.06 "marginal" figure was both
+  wrong in method and not comparable.
+- Fixtures: `cost_fixtures/`. N=5 cost spend ~$4.5.
 
 ## Caveats (stated, not hidden)
 

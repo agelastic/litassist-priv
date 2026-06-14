@@ -29,11 +29,11 @@ Historical dated sections preserve the model names that were current when those 
   (20 defects) the cross-check caught 20/20, including 6 that baseline `verify`
   missed - all the fabricated-fact defects (0/4 baseline) and the contradictions
   baseline missed - with 0 spurious HIGH flags on clean documents. The cost
-  criterion was re-measured with actual OpenRouter `usage.cost` (after the
-  estimator was removed): marginal 3.93x baseline (<= 4x), cross-check ~$1.47/doc
-  (n=1, near-worst case - the benchmark draft reused its reasoning trace, giving
-  the smallest baseline and thus the highest ratio; a no-trace document drops it
-  to ~2.5-3x). Now surfaced to caseplan. Evidence:
+  criterion was re-measured with actual OpenRouter `usage.cost` over N=5 real runs
+  across different matters/sizes: marginal ratio mean 2.71x, range 1.41-3.93x, all
+  <= 4x (the 3.93x worst case is the draft, driven by its large cross-check cost as
+  the biggest document; cross-check absolute cost $0.55-$1.47/doc, scaling with size).
+  Now surfaced to caseplan. Evidence:
   `test-scripts/judge_eval/crosscheck_gate/RESULTS.md`.
 - Actual per-call cost from OpenRouter. Every LLM request now sets
   `usage: {include: true}`, so the response carries OpenRouter's real billed
