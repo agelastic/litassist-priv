@@ -4,20 +4,23 @@ Last updated: 14/06/2026
 Run: 14/06/2026, branch `feat/verify-crosscheck`. Real-API, manual. Raw artefacts
 in the gitignored `results/`; this is the committed summary.
 
-## Verdict: SHIP on detection; cost criterion UNVERIFIED
+## Verdict: SHIP
 
-Criteria 1-3 (detection) pass. Criterion 4 (cost) is NOT established: its figures
-came from the local `estimate_call_cost` estimator, since removed (14/06/2026) for
-undercounting the OpenRouter invoice 3-9x on reasoning-heavy o3 calls. Re-measure
-the cost criterion with the new actual-cost capture (`usage.cost`) on a fresh
-`verify --cross-check` run before treating it as met.
+All four criteria pass. Criterion 4 (cost) was re-measured with actual OpenRouter
+`usage.cost` (14/06/2026) after the local `estimate_call_cost` estimator was
+removed for undercounting the invoice 3-9x. A fresh `verify --cross-check` run on
+the draft benchmark: cross-check stage $1.47 actual (vs $1.01 estimated, 45%
+undercount), baseline (soundness) $0.37, **marginal ratio 3.93x** (<= 4x). This is
+a near-worst case (the draft already had a reasoning trace, so the reasoning stage
+made no LLM call - smallest baseline; a no-trace document drops the ratio to
+~2.5-3x). n=1, near the bound.
 
 | # | Criterion | Threshold | Measured | Pass |
 |---|-----------|-----------|----------|------|
 | 1 | treatment-arm recall | >= 14/20 | 20/20 | yes |
 | 2 | defects cross-check caught that baseline verify missed | >= 4 | 6 | yes |
 | 3 | spurious HIGH disagreement on the 4 clean originals | <= 1 | 0 | yes |
-| 4 | marginal cost vs baseline verify | <= 4x | est. 3.6x total / 2.6x marginal (estimator removed) | UNVERIFIED |
+| 4 | marginal cost vs baseline verify (actual `usage.cost`) | <= 4x | 3.93x | yes |
 
 ## Detection (seeded-defect arm)
 
