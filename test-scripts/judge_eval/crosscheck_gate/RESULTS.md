@@ -4,16 +4,20 @@ Last updated: 14/06/2026
 Run: 14/06/2026, branch `feat/verify-crosscheck`. Real-API, manual. Raw artefacts
 in the gitignored `results/`; this is the committed summary.
 
-## Verdict: SHIP
+## Verdict: SHIP on detection; cost criterion UNVERIFIED
 
-All four pre-registered ship criteria (see `README.md`) pass.
+Criteria 1-3 (detection) pass. Criterion 4 (cost) is NOT established: its figures
+came from the local `estimate_call_cost` estimator, since removed (14/06/2026) for
+undercounting the OpenRouter invoice 3-9x on reasoning-heavy o3 calls. Re-measure
+the cost criterion with the new actual-cost capture (`usage.cost`) on a fresh
+`verify --cross-check` run before treating it as met.
 
 | # | Criterion | Threshold | Measured | Pass |
 |---|-----------|-----------|----------|------|
 | 1 | treatment-arm recall | >= 14/20 | 20/20 | yes |
 | 2 | defects cross-check caught that baseline verify missed | >= 4 | 6 | yes |
 | 3 | spurious HIGH disagreement on the 4 clean originals | <= 1 | 0 | yes |
-| 4 | marginal cost vs baseline verify | <= 4x | 3.6x total / 2.6x marginal | yes |
+| 4 | marginal cost vs baseline verify | <= 4x | est. 3.6x total / 2.6x marginal (estimator removed) | UNVERIFIED |
 
 ## Detection (seeded-defect arm)
 

@@ -24,13 +24,15 @@ Historical dated sections preserve the model names that were current when those 
   the document and always reviews the original as-read content. New
   `litassist/commands/verify/ensemble.py`, four `crosscheck-*` model roles,
   `verification.crosscheck.*` prompts. Composes additively with the three core
-  checks and `--cove`; unaffected by `--heavy`. **Measurement gate PASSED
-  (14/06/2026):** on 4 seeded-defect benchmark variants (20 defects) the
-  cross-check caught 20/20, including 6 that baseline `verify` missed - all the
-  fabricated-fact defects (0/4 baseline) and the contradictions baseline missed -
-  with 0 spurious HIGH flags on clean documents at 2.6x marginal / 3.6x total cost
-  (criterion is marginal <= 4x). Now surfaced to caseplan. Evidence:
-  `test-scripts/judge_eval/crosscheck_gate/RESULTS.md`.
+  checks and `--cove`; unaffected by `--heavy`. **Measurement gate: detection
+  PASSED (14/06/2026), cost UNVERIFIED.** On 4 seeded-defect benchmark variants
+  (20 defects) the cross-check caught 20/20, including 6 that baseline `verify`
+  missed - all the fabricated-fact defects (0/4 baseline) and the contradictions
+  baseline missed - with 0 spurious HIGH flags on clean documents. The cost
+  criterion (<= 4x) is NOT established: its figures came from the local
+  `estimate_call_cost` estimator, since removed for undercounting the OpenRouter
+  invoice 3-9x; re-measure with the new actual-cost capture. Now surfaced to
+  caseplan. Evidence: `test-scripts/judge_eval/crosscheck_gate/RESULTS.md`.
 - Actual per-call cost from OpenRouter. Every LLM request now sets
   `usage: {include: true}`, so the response carries OpenRouter's real billed
   `cost` and a generation `id`; both are captured in `response_parser`, summed

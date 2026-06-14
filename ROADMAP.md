@@ -289,7 +289,7 @@ lower and human review is warranted (divergence as an "uncertainty interval").
 P-FAITH adds faithfulness checking of full-context outputs against their supplied
 sources.
 
-### P1-12: Multi-Model Cross-Checks [SHIPPED 14/06/2026 - GATE PASSED]
+### P1-12: Multi-Model Cross-Checks [SHIPPED 14/06/2026 - DETECTION GATE PASSED; COST UNVERIFIED]
 **Effort:** 8-10 hours
 **Priority:** HIGH (hard prerequisite for the now-elevated P2-19 Bias Divergence
 Detector; build before P2-19).
@@ -300,18 +300,26 @@ FLAGGED FOR HUMAN REVIEW/CONFIDENCE ===` contract with a machine-readable
 `DISAGREEMENT LEVEL` line), four `crosscheck-*` roles, `verification.crosscheck.*`
 prompts, and a `[COST]` banner showing OpenRouter's actual per-call cost. Now
 surfaced to caseplan (`capabilities.yaml`).
-**Gate result (14/06/2026): PASS - all four criteria.** The original "P-JUDGE
-before/after per-dimension delta" is zero by construction for a read-only stage,
-so it was replaced with a deterministic seeded-defect detection gate (no LLM
-judge, since the judge model is also a panellist). On 4 Harper-benchmark variants
-carrying 20 documented defects:
+**Gate result (14/06/2026): PASS on detection (criteria 1-3); cost criterion
+UNVERIFIED.** The original "P-JUDGE before/after per-dimension delta" is zero by
+construction for a read-only stage, so it was replaced with a deterministic
+seeded-defect detection gate (no LLM judge, since the judge model is also a
+panellist). On 4 Harper-benchmark variants carrying 20 documented defects:
 
 | Criterion | Threshold | Measured | Pass |
 |-----------|-----------|----------|------|
 | treatment recall | >= 14/20 | 20/20 | yes |
 | defects cross-check caught that baseline missed | >= 4 | 6 | yes |
 | spurious HIGH on 4 clean docs | <= 1 | 0 | yes |
-| marginal cost vs baseline | <= 4x | 3.6x total / 2.6x marginal | yes |
+| marginal cost vs baseline | <= 4x | est. 3.6x total / 2.6x marginal | UNVERIFIED |
+
+**Cost criterion is NOT established.** The cost figures came from the local
+`estimate_call_cost` estimator, since removed (14/06/2026) because it undercounted
+the OpenRouter invoice 3-9x on reasoning-heavy o3 calls. The true marginal cost
+may exceed the 4x envelope. Re-measure with the new actual-cost capture
+(`usage.cost`) on a fresh `verify --cross-check` run before treating criterion 4
+as met. The detection criteria (1-3) are deterministic counts, independent of
+cost, and stand.
 
 The cross-check's marginal value is concentrated in the **fabricated-fact** class
 (baseline 0/4 -> cross-check 4/4) and **internal contradiction** (2/4 -> 4/4);
