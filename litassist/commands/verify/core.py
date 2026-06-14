@@ -389,6 +389,7 @@ def run_verification_workflow(
                     "soundness": soundness,
                     "reasoning": reasoning,
                     "cove": cove,
+                    "cross_check": cross_check,
                     "reference": reference,
                     "cove_reference": cove_reference,
                 },
