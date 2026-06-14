@@ -49,8 +49,7 @@ a panel member, so judge-scoring would be self-grading).
 4. measured marginal cost <= 4x baseline verify cost per document.
 
 Otherwise: **shelve with evidence** - the results table goes into ROADMAP P1-12
-(status SHELVED), the cross-check stays unmerged/unflipped, and commit 1 (cost.py)
-is kept regardless.
+(status SHELVED) and the cross-check stays unmerged/unflipped.
 
 Citation-class defects (confab + wrongprop) are reported separately from the rest
 so the retrieval-gap confound (un-fetchable cites starve both arms equally) stays

@@ -51,7 +51,12 @@ def _make_factory(arbiter_text=None, panel_text=_PANEL_REVIEW, store=None):
         text = arbiter_text if role == ARBITER_ROLE else panel_text
         client.complete.return_value = (
             text,
-            {"prompt_tokens": 100, "completion_tokens": 50, "total_tokens": 150},
+            {
+                "prompt_tokens": 100,
+                "completion_tokens": 50,
+                "total_tokens": 150,
+                "cost": 0.25,
+            },
         )
         if store is not None:
             store.append((role, client))
@@ -206,11 +211,13 @@ def test_reference_context_reaches_panel(mock_factory, _mock_save):
 def test_totals_and_cost_printed(mock_factory, _mock_save, capsys):
     mock_factory.for_command.side_effect = _make_factory()
     result = run_cross_check("doc", "doc.md", None, None)
-    # 4 calls * 150 tokens.
+    # 4 calls * 150 tokens; 4 calls * $0.25 actual cost = $1.00.
     assert result["total_usage"]["total_tokens"] == 600
+    assert result["total_cost_usd"] == 1.0
     out = capsys.readouterr().out
     assert "Cross-check total tokens used: 600" in out
-    assert "[COST]" in out
+    assert "Cross-check total: $1.0000" in out
+    assert "partial" not in out
 
 
 # --------------------------------------------------------------------------- #

@@ -19,7 +19,8 @@ from litassist.citation.exceptions import CitationVerificationError
 
 from .api_handlers import execute_api_call_with_retry
 from .verification import LLMVerificationMixin
-from .response_parser import extract_content_and_usage
+from .response_parser import extract_content_and_usage, extract_usage_data
+from .usage import merge_usage
 from .retry_handler import handle_citation_retry
 from .citation_handler import process_citation_verification, handle_retry_failure
 from .tools import get_tool_definitions, execute_tool, format_tool_response
@@ -247,6 +248,17 @@ class LLMClient(LLMVerificationMixin):
         # All calls route through OpenRouter, which requires provider/model slugs.
         model_name = self.model
 
+        # complete() can make several billed SDK calls internally (tool-fallback
+        # follow-up, empty-response fallback). Record each one's usage (incl.
+        # OpenRouter's actual cost + generation id) so the returned/logged figure
+        # is the SUM of every paid call, not just the final response.
+        billed_usages: List[Dict[str, Any]] = []
+
+        def _billed_call(call_messages, call_params):
+            resp = execute_api_call_with_retry(model_name, call_messages, call_params)
+            billed_usages.append(extract_usage_data(resp))
+            return resp
+
         try:
             # Filter parameters based on model capabilities
             filtered_params = get_model_parameters(self.model, params)
@@ -271,9 +283,7 @@ class LLMClient(LLMVerificationMixin):
                 )
 
                 # Call API without tools using prepared messages
-                response = execute_api_call_with_retry(
-                    model_name, messages, filtered_params
-                )
+                response = _billed_call(messages, filtered_params)
             else:
                 # Add tool definitions for date handling
                 tools = get_tool_definitions()
@@ -297,9 +307,7 @@ class LLMClient(LLMVerificationMixin):
 
                 # Use ChatCompletion API with retry logic - try with tools first
                 try:
-                    response = execute_api_call_with_retry(
-                        model_name, messages, filtered_params_with_tools
-                    )
+                    response = _billed_call(messages, filtered_params_with_tools)
 
                     # Check if response is empty (some models don't support forced tool calls)
                     if (
@@ -314,9 +322,7 @@ class LLMClient(LLMVerificationMixin):
                         logging.info(
                             f"Model {model_name} returned empty with forced tools, falling back"
                         )
-                        response = execute_api_call_with_retry(
-                            model_name, messages, filtered_params
-                        )
+                        response = _billed_call(messages, filtered_params)
                 except Exception as e:
                     # If tools aren't supported, fall back to regular call
                     if "tools" in str(e).lower() or "tool_choice" in str(e).lower():
@@ -365,9 +371,7 @@ class LLMClient(LLMVerificationMixin):
                                 "timestamp": time.strftime("%Y-%m-%d %H:%M:%S"),
                             },
                         )
-                        response = execute_api_call_with_retry(
-                            model_name, fallback_messages, filtered_params
-                        )
+                        response = _billed_call(fallback_messages, filtered_params)
                     else:
                         raise
 
@@ -467,17 +471,18 @@ class LLMClient(LLMVerificationMixin):
                     # Make a follow-up call with the tool results
                     # This time without forcing tool use
                     filtered_params_followup = filtered_params.copy()
-                    response = execute_api_call_with_retry(
-                        model_name, messages, filtered_params_followup
-                    )
+                    response = _billed_call(messages, filtered_params_followup)
                 except (TypeError, AttributeError):
                     # In tests or if tool_calls is not properly formed, skip tool handling
                     logging.debug(
                         "Tool calls not available or malformed, skipping tool handling"
                     )
 
-            # Extract content and usage from chat response
-            content, usage = extract_content_and_usage(response)
+            # Content comes from the final response; usage is the SUM across every
+            # billed SDK call this complete() made (initial + any fallback /
+            # tool-call follow-up), so the cost/tokens are not undercounted.
+            content, _final_usage = extract_content_and_usage(response)
+            usage = merge_usage(*billed_usages) or _final_usage
         finally:
             # No cleanup needed with client instances
             pass
@@ -492,7 +497,7 @@ class LLMClient(LLMVerificationMixin):
             except CitationVerificationError as e:
                 # Strict mode failed - attempt retry with enhanced prompt
                 try:
-                    content, usage, retry_issues = handle_citation_retry(
+                    content, retry_usage, retry_issues = handle_citation_retry(
                         error=e,
                         model=self.model,
                         model_name=model_name,
@@ -500,6 +505,9 @@ class LLMClient(LLMVerificationMixin):
                         params=params,
                         validate_func=self.validate_and_verify_citations,
                     )
+                    # The retry is another billed call - add it, don't discard
+                    # the usage/cost of the calls already made.
+                    usage = merge_usage(usage, retry_usage)
 
                     # Display success message for fully verified retries
                     if not retry_issues:

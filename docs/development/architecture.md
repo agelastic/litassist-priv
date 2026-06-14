@@ -1,6 +1,6 @@
 # LitAssist Architecture
 
-Last updated: 13/06/2026
+Last updated: 14/06/2026
 
 ## Overview
 LitAssist is a Python-based CLI tool for AI-powered litigation support in Australian law. It uses LLMs (via OpenRouter) and external search (Google CSE) to assist with legal research, document analysis, strategy generation, and drafting.
@@ -71,11 +71,11 @@ The 12 registered user-facing commands are: `lookup`, `digest`, `extractfacts`, 
     2. **Answer Questions**: LLM answers using fetched authoritative text.
     3. **Detect Inconsistencies**: LLM compares answers to original content.
     4. **Regenerate**: LLM corrects content if inconsistencies found.
-- **Multi-Model Cross-Check (`verify --cross-check`, ROADMAP P1-12)**: `litassist/commands/verify/ensemble.py` runs a read-only ensemble - a fixed three-model panel critiques the document independently, then a non-panel arbiter compares the critiques and emits a fail-closed `=== AGREEMENT/DISAGREEMENTS/FLAGGED FOR HUMAN REVIEW/CONFIDENCE ===` report with a machine-readable `DISAGREEMENT LEVEL` line. It never rewrites the document; HIGH disagreement warns (exit 0), a malformed report fails the stage. `litassist/llm/cost.py` powers a `[COST]` banner per call.
+- **Multi-Model Cross-Check (`verify --cross-check`, ROADMAP P1-12)**: `litassist/commands/verify/ensemble.py` runs a read-only ensemble - a fixed three-model panel critiques the document independently, then a non-panel arbiter compares the critiques and emits a fail-closed `=== AGREEMENT/DISAGREEMENTS/FLAGGED FOR HUMAN REVIEW/CONFIDENCE ===` report with a machine-readable `DISAGREEMENT LEVEL` line. It never rewrites the document; HIGH disagreement warns (exit 0), a malformed report fails the stage. Each call prints a `[COST]` banner using OpenRouter's actual billed cost (`usage.cost`, captured per call).
 
 ### 5. Logging
 - `litassist/logging/` package with `log_task_event()` as the primary API.
-- Every LLM call logged with timestamp, model, parameters, token counts, and costs.
+- Every LLM call logged with timestamp, model, parameters, token counts, OpenRouter's actual `cost`, and the generation `id`. Requests set `usage: {include: true}` so the response carries the real billed cost; `litassist/llm/usage.py:merge_usage` sums it across any internal fallback/retry calls. No local price-table estimation.
 - Command outputs saved to `outputs/`; audit logs saved to `logs/`.
 
 ## External Integrations

@@ -1,6 +1,6 @@
 # LitAssist Verification System - Comprehensive Documentation
 
-Last updated: 13/06/2026
+Last updated: 14/06/2026
 
 ## Table of Contents
 1. [Executive Summary](#executive-summary)
@@ -204,11 +204,10 @@ uncertainty signal.
   the other verify stages.
 
 ### Cost
-Each model call prints a `[COST]` banner computed by
-`litassist/llm/cost.py:estimate_call_cost()` from the per-mtok prices in
-`model_capabilities.yaml` (the first consumer of those fields), plus a stage
-total. The panel is three to four calls including the expensive o3-pro, so the
-stage is materially pricier than a standard verify. `--heavy` does not change the
+Each model call prints a `[COST]` banner showing OpenRouter's actual billed cost
+(`usage.cost`, captured per call - not a local estimate), plus a stage total. The
+panel is three to four calls including the expensive o3-pro, so the stage is
+materially pricier than a standard verify. `--heavy` does not change the
 panel. The stage is intentionally not surfaced to caseplan (`capabilities.yaml`)
 until the P1-12 measurement gate passes.
 

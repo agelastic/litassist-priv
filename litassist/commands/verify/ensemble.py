@@ -14,7 +14,6 @@ from typing import Optional
 import click
 
 from litassist.llm.factory import LLMClientFactory
-from litassist.llm.cost import estimate_call_cost
 from litassist.logging import save_command_output, log_task_event
 from litassist.prompts import PROMPTS
 from litassist.utils.formatting import (
@@ -94,14 +93,20 @@ def parse_arbiter_report(text: str) -> tuple[dict, str]:
 
 
 def _echo_cost(label: str, model: str, usage: dict) -> None:
-    """Print a [COST] banner for one LLM call."""
-    cost = estimate_call_cost(model, usage)
+    """Print a [COST] banner for one LLM call using OpenRouter's actual cost."""
+    cost = usage.get("cost")
     prompt_tokens = usage.get("prompt_tokens", 0)
     completion_tokens = usage.get("completion_tokens", 0)
+    if isinstance(cost, (int, float)):
+        cost_str = f"${cost:.4f}"
+        if usage.get("cost_missing"):
+            cost_str += " (partial)"
+    else:
+        cost_str = "cost unavailable"
     click.echo(
         cost_message(
             f"{label} ({model}): in {prompt_tokens:,} tok / "
-            f"out {completion_tokens:,} tok ~= ${cost:.4f}"
+            f"out {completion_tokens:,} tok = {cost_str}"
         )
     )
 
@@ -218,14 +223,28 @@ def run_cross_check(
         (arbiter_client.model, arbiter_usage)
     ]
     total_tokens = sum(u.get("total_tokens", 0) for _, u in all_calls)
-    total_cost = sum(estimate_call_cost(m, u) for m, u in all_calls)
+    # Sum every known cost; flag partial if any call lacked a cost or carried an
+    # internal billed call without one (cost_missing).
+    total_cost = 0.0
+    cost_complete = True
+    for _, u in all_calls:
+        c = u.get("cost")
+        if isinstance(c, (int, float)):
+            total_cost += c
+        else:
+            cost_complete = False
+        if u.get("cost_missing"):
+            cost_complete = False
 
     click.echo("\n[REVIEWED] Multi-model cross-check complete")
     click.echo(f"   - Disagreement level: {level}")
     click.echo(f"   - Details: {crosscheck_file}")
     click.echo(f"   - Arbiter confidence: {sections['confidence']}")
     click.echo(stats_message(f"Cross-check total tokens used: {total_tokens:,}"))
-    click.echo(cost_message(f"Cross-check total: ${total_cost:.4f} ({total_tokens:,} tokens)"))
+    cost_line = f"Cross-check total: ${total_cost:.4f} ({total_tokens:,} tokens)"
+    if not cost_complete:
+        cost_line += " (partial - some calls missing cost)"
+    click.echo(cost_message(cost_line))
     if level == "HIGH":
         click.echo(
             warning_message(

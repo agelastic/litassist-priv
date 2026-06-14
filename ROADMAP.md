@@ -1,6 +1,6 @@
 # LitAssist Feature Roadmap
 
-Last updated: 13/06/2026
+Last updated: 14/06/2026
 **Status:** Strategic planning; roadmap items are aspirational unless marked DONE, PARTIALLY SUPERSEDED, or already implemented elsewhere
 **Confidence:** 0.88
 
@@ -298,8 +298,8 @@ Detector; build before P2-19).
 three-model panel + non-panel arbiter, fail-closed `=== AGREEMENT/DISAGREEMENTS/
 FLAGGED FOR HUMAN REVIEW/CONFIDENCE ===` contract with a machine-readable
 `DISAGREEMENT LEVEL` line), four `crosscheck-*` roles, `verification.crosscheck.*`
-prompts, and `litassist/llm/cost.py` powering a `[COST]` banner. Now surfaced to
-caseplan (`capabilities.yaml`).
+prompts, and a `[COST]` banner showing OpenRouter's actual per-call cost. Now
+surfaced to caseplan (`capabilities.yaml`).
 **Gate result (14/06/2026): PASS - all four criteria.** The original "P-JUDGE
 before/after per-dimension delta" is zero by construction for a read-only stage,
 so it was replaced with a deterministic seeded-defect detection gate (no LLM

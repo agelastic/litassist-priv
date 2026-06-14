@@ -58,7 +58,12 @@ fact and contradiction detector that the single-pass soundness stage misses.
 0 HIGH flags. The two MEDIUMs are defensible (residual issues in the post-
 verification fixtures), not hallucinated alarm.
 
-## Cost (from `[COST]` banners and audit-log usage via `estimate_call_cost`)
+## Cost (from `[COST]` banners; gate-era figures were local estimates)
+
+> Note: the figures below were produced by the since-removed local estimator
+> (`estimate_call_cost`), which undercounted vs the OpenRouter invoice. Cost is now
+> read from OpenRouter's actual `usage.cost`; treat these as rough lower bounds.
+
 
 - baseline verify (reasoning + soundness LLM calls) ~ **$0.41 / document** (the
   citation stage is CSE, negligible LLM cost).
