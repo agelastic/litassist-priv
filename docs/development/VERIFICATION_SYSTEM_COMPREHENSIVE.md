@@ -1,19 +1,18 @@
 # LitAssist Verification System - Comprehensive Documentation
 
-Last updated: 13/06/2026
+Last updated: 17/06/2026
 
 ## Table of Contents
 1. [Executive Summary](#executive-summary)
 2. [System Architecture](#system-architecture)
 3. [Standard Verification Pipeline (Non-CoVe)](#standard-verification-pipeline-non-cove)
 4. [Chain of Verification (CoVe) System](#chain-of-verification-cove-system)
-5. [Multi-Model Cross-Check (`--cross-check`, ROADMAP P1-12)](#multi-model-cross-check---cross-check-roadmap-p1-12)
-6. [Citation Verification System](#citation-verification-system)
-7. [Command-Specific Verification Usage](#command-specific-verification-usage)
-8. [Model Configuration and Parameters](#model-configuration-and-parameters)
-9. [Verification Flow Diagrams](#verification-flow-diagrams)
-10. [Logging and Accountability](#logging-and-accountability)
-11. [AI Critique Capture System](#ai-critique-capture-system-added-2025-01-25)
+5. [Citation Verification System](#citation-verification-system)
+6. [Command-Specific Verification Usage](#command-specific-verification-usage)
+7. [Model Configuration and Parameters](#model-configuration-and-parameters)
+8. [Verification Flow Diagrams](#verification-flow-diagrams)
+9. [Logging and Accountability](#logging-and-accountability)
+10. [AI Critique Capture System](#ai-critique-capture-system-added-2025-01-25)
 
 ## Executive Summary
 
@@ -167,55 +166,26 @@ final_content = client_final.complete(regenerate_prompt)
 | **Processing Time** | ~5-10 seconds | ~15-30 seconds |
 | **Token Usage** | ~5-10K tokens | ~20-40K tokens |
 
-## Multi-Model Cross-Check (`--cross-check`, ROADMAP P1-12)
+## Fabrication Detection Requires a Source
 
-A read-only ensemble stage added to the `verify` command by the `--cross-check`
-flag, implemented in `litassist/commands/verify/ensemble.py`. Unlike CoVe, it
-never rewrites the document; it surfaces inter-model disagreement as an
-uncertainty signal.
+Fabricated-fact detection is a function of HAVING A SOURCE, not of any ensemble. A
+plausible, internally-consistent fabricated fact (an invented expert report, email
+admission, or finding) in a standalone document is undetectable - there is no ground
+truth to check it against. When the document's factual basis is supplied via
+`--reference` (or case_facts), the baseline soundness and reasoning stages - which
+receive `reference_context` - flag assertions that are unsupported by, or absent
+from, the source; `verify` then reports the unsupported assertion (and the soundness
+stage can emit a corrected document).
 
-### Flow
-1. **Panel (three independent critiques).** A fixed panel - roles
-   `crosscheck-claude` / `crosscheck-gpt5` / `crosscheck-o3`
-   (`anthropic/claude-sonnet-4.6`, `openai/gpt-5.5`, `openai/o3-pro`) - each
-   critiques the same document independently using the
-   `verification.crosscheck.panel_review` prompt. All three receive identical
-   input (the original as-read document plus any `--reference` context), so they
-   differ only by model. Every call uses `skip_citation_verification=True` and the
-   roles set `enforce_citations: false` / `disable_tools: true`, so the citations
-   the critiques quote are not themselves re-verified.
-2. **Arbiter (comparison).** A separate `crosscheck-arbiter` role
-   (`anthropic/claude-opus-4.7`, deliberately not a panel member, so it never
-   adjudicates its own critique) compares the three critiques via
-   `verification.crosscheck.arbiter_report` and emits exactly four sections:
-   `=== AGREEMENT ===`, `=== DISAGREEMENTS ===`, `=== FLAGGED FOR HUMAN REVIEW ===`,
-   `=== CONFIDENCE ===`. The DISAGREEMENTS section opens with a machine-readable
-   `DISAGREEMENT LEVEL: NONE|LOW|MEDIUM|HIGH` line.
-3. **Parse (fail-closed).** `parse_arbiter_report()` requires all four markers in
-   order and a valid level line; anything else raises `ValueError`. This mirrors
-   the CoVe `VERDICT: PASS|FAIL` fail-closed pattern - a broken contract is a
-   stage error, not a best-effort parse.
-
-### Error vs finding (exit codes)
-- A well-formed `DISAGREEMENT LEVEL: HIGH` is a *finding*: it prints a warning and
-  saves the report, but the command still exits 0 (project warn-not-fail).
-- An API failure or a malformed arbiter report is an *error*: it goes to the
-  standard `failed_stages` collection and the command exits non-zero, exactly like
-  the other verify stages.
-
-### Cost
-Each model call prints a `[COST]` banner computed by
-`litassist/llm/cost.py:estimate_call_cost()` from the per-mtok prices in
-`model_capabilities.yaml` (the first consumer of those fields), plus a stage
-total. The panel is three to four calls including the expensive o3-pro, so the
-stage is materially pricier than a standard verify. `--heavy` does not change the
-panel. The stage is intentionally not surfaced to caseplan (`capabilities.yaml`)
-until the P1-12 measurement gate passes.
-
-### Why no citations-only skip
-CoVe is skipped when only `--citations` is requested because it builds on the
-refined content of the other stages. The cross-check is independent of all prior
-stages by design, so `--cross-check --citations` runs both with no skip.
+A reference-grounding probe (17/06/2026) re-ran four fabricated-fact probes with the
+source supplied, across an explicit-negative and a harder absence-only round:
+baseline caught 4/4 in both rounds. WITHOUT a source, both baseline and the
+(now-removed) multi-model cross-check missed plausible fabrications. This is why the
+cross-check (`verify --cross-check`, ROADMAP P1-12) was removed - it added no unique
+detection value over a plain `verify --reference`, at 3-4x cost; the evaluation
+evidence is preserved on the `crosscheck-eval-evidence` branch and in git history.
+Practical rule: always supply `--reference` when verifying a document that asserts
+source-dependent facts.
 
 ## Citation Verification System
 

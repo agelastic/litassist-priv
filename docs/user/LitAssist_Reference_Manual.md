@@ -1,6 +1,6 @@
 # LitAssist Reference Manual
 
-Last updated: 13/06/2026
+Last updated: 17/06/2026
 
 ---
 
@@ -1500,8 +1500,7 @@ litassist verify <file> [OPTIONS]
 | `--soundness` | flag | Verify legal soundness only |
 | `--reasoning` | flag | Verify/generate reasoning trace only |
 | `--cove` | flag | Add Chain of Verification as final check |
-| `--cross-check` | flag | Add a read-only multi-model cross-check (panel + arbiter) |
-| `--reference` | glob | Reference files for context |
+| `--reference` | glob | Reference files for context (required to detect fabricated facts) |
 | `--cove-reference` | glob | Reference files for CoVe answer stage (requires `--cove`) |
 | `--heavy` | flag | Use GPT-5.5 for reasoning and soundness |
 | `--output` | text | Custom output filename prefix |
@@ -1512,24 +1511,16 @@ With no flags, all three verifications run: citations, soundness, and reasoning.
 Individual flags select specific checks. The `--cove` flag adds CoVe as an
 additional stage after the selected checks.
 
-**`--cross-check` (multi-model cross-check):**
+**Detecting fabricated facts (`--reference`):**
 
-Runs the document through a fixed three-model panel - Claude Sonnet 4.6, GPT-5.5,
-and o3-pro - each critiquing it independently. A separate arbiter (Claude Opus
-4.7, deliberately not one of the panel models) then compares the three critiques
-and produces a structured report with four sections: `=== AGREEMENT ===`,
-`=== DISAGREEMENTS ===` (carrying a `DISAGREEMENT LEVEL: NONE|LOW|MEDIUM|HIGH`
-line), `=== FLAGGED FOR HUMAN REVIEW ===`, and `=== CONFIDENCE ===`. The panel
-critiques are appended to the saved report for audit.
-
-The stage is read-only: it surfaces where independent models disagree as an
-uncertainty signal, and never rewrites the document. A HIGH disagreement prints a
-warning but the command still exits 0; only an API error or a malformed arbiter
-report fails the stage (non-zero exit). Each model call prints a `[COST]`
-estimate. The panel always reviews the original document text, is unaffected by
-`--heavy`, and runs on top of (not instead of) the selected core checks. Because
-it makes three to four model calls including o3-pro, it is materially more
-expensive than a standard verify - reserve it for high-stakes documents.
+A plain `verify` cannot detect a plausible, internally-consistent fabricated fact
+(an invented expert report, email admission, or finding) from the document alone -
+there is nothing to check it against. In testing, `verify <doc> --reference
+<source>` flagged every fabricated fact (4/4), while the same command without
+`--reference` caught none. Supply the document's factual basis via `--reference`
+(or rely on case_facts) whenever the document asserts source-dependent facts. The
+soundness and reasoning stages then flag assertions unsupported by, or absent from,
+the source, and the soundness stage can emit a corrected document.
 
 **Three verification types:**
 

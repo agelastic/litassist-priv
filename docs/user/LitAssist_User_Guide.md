@@ -1,6 +1,6 @@
 # LitAssist User Guide
 
-Last updated: 13/06/2026
+Last updated: 17/06/2026
 
 ## Overview
 
@@ -496,25 +496,24 @@ litassist verify <file> [OPTIONS]
 | `--soundness` | flag | Verify legal soundness only |
 | `--reasoning` | flag | Verify/generate reasoning trace only |
 | `--cove` | flag | Add Chain of Verification as final check |
-| `--cross-check` | flag | Add a read-only multi-model cross-check (see below) |
-| `--reference` | glob | Reference files for context |
+| `--reference` | glob | Reference files for context (required to detect fabricated facts - see below) |
 | `--cove-reference` | glob | Reference files for CoVe answer stage (requires `--cove`) |
 | `--heavy` | flag | Use GPT-5.5 for reasoning and soundness |
 | `--output` | text | Custom output filename prefix |
 
 With no flags, all three verifications run. Individual flags select specific
-checks. `--cross-check` and `--cove` are additive: they run on top of the
-selected checks, not instead of them.
+checks. `--cove` is additive: it runs on top of the selected checks, not instead of
+them.
 
-**`--cross-check` (multi-model cross-check):** runs the document through a fixed
-three-model panel (Claude Sonnet 4.6, GPT-5.5, o3-pro) that critiques it
-independently, then a separate arbiter model compares the critiques and reports
-where the models agree, where they disagree (with a disagreement level), and what
-a human should double-check. It is read-only - it never rewrites the document - so
-it is a confidence signal, not a correction. A HIGH disagreement prints a warning
-but does not fail the command. Each model call prints a `[COST]` estimate; the
-panel makes three to four model calls (including the expensive o3-pro), so it
-costs noticeably more than a standard verify. `--heavy` does not change the panel.
+**Detecting fabricated facts requires a source (`--reference`).** A plausible,
+internally-consistent fabricated fact - an invented expert report, email admission,
+or finding - cannot be detected from the document alone, because the verifier has
+nothing to check it against. In testing, a plain `litassist verify <doc>
+--reference <source>` flagged every such fabricated fact (4/4); the same command
+WITHOUT `--reference` caught none. So supply the document's factual basis via
+`--reference` (the brief, exhibits, instructions, or the decision under review)
+whenever the document asserts facts that depend on a source. `verify` reports the
+unsupported assertion and the soundness stage can emit a corrected document.
 
 ```bash
 # Full verification suite
