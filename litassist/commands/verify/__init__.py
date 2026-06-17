@@ -38,13 +38,8 @@ from .core import run_verification_workflow
     is_flag=True,
     help="Use verification-heavy mode (max thinking effort for reasoning and soundness stages)"
 )
-@click.option(
-    "--cross-check",
-    is_flag=True,
-    help="Add multi-model cross-check: a fixed three-model panel plus an arbiter flag disagreements between models (read-only; prints [COST] estimates; not affected by --heavy)"
-)
 @timed
-def verify(file, citations, soundness, reasoning, cove, output, reference, cove_reference, heavy, cross_check):
+def verify(file, citations, soundness, reasoning, cove, output, reference, cove_reference, heavy):
     """
     Verify legal text for citations, soundness, and reasoning.
 
@@ -66,5 +61,4 @@ def verify(file, citations, soundness, reasoning, cove, output, reference, cove_
         reference=reference,
         cove_reference=cove_reference,
         heavy=heavy,
-        cross_check=cross_check,
     )
