@@ -45,7 +45,9 @@ def extract_usage_data(response: Any) -> Dict[str, Any]:
     """
     usage = getattr(response, "usage", {})
 
-    # Handle various usage object formats
+    # Handle various usage object formats. model_dump()/dict() preserve
+    # OpenRouter's extra `cost` field (the actual billed USD for the call,
+    # present when usage accounting is enabled on the request).
     if hasattr(usage, "model_dump"):
         usage = usage.model_dump()
     elif hasattr(usage, "dict"):
@@ -56,11 +58,18 @@ def extract_usage_data(response: Any) -> Dict[str, Any]:
             "prompt_tokens": getattr(usage, "prompt_tokens", 0),
             "completion_tokens": getattr(usage, "completion_tokens", 0),
             "total_tokens": getattr(usage, "total_tokens", 0),
+            "cost": getattr(usage, "cost", None),
         }
 
     # Ensure all required keys exist
     usage.setdefault("prompt_tokens", 0)
     usage.setdefault("completion_tokens", 0)
     usage.setdefault("total_tokens", 0)
+
+    # Carry the OpenRouter generation id so each billed call is attributable
+    # (and can be reconciled post-hoc via /api/v1/generation if needed).
+    gen_id = getattr(response, "id", None)
+    if gen_id is not None:
+        usage["generation_id"] = gen_id
 
     return usage

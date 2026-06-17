@@ -319,18 +319,20 @@ def execute_api_call_with_retry(
                 if param in local_params:
                     extra_body[param] = local_params.pop(param)
 
-            # Create the request with extra_body for OpenRouter parameters
-            if extra_body:
-                resp = client.chat.completions.create(
-                    model=model_name,
-                    messages=messages,
-                    extra_body=extra_body,
-                    **local_params,
-                )
-            else:
-                resp = client.chat.completions.create(
-                    model=model_name, messages=messages, **local_params
-                )
+            # OpenRouter usage accounting: ask for the ACTUAL billed cost in the
+            # response usage object (usage.cost). This is the authoritative cost
+            # source - it replaces local price-table estimation - and it is a
+            # response field, so it adds no charge. Confirmed live (grok-4.3
+            # returned usage.cost); OpenRouter applies this at its layer and does
+            # not forward the extra key to the provider.
+            extra_body["usage"] = {"include": True}
+
+            resp = client.chat.completions.create(
+                model=model_name,
+                messages=messages,
+                extra_body=extra_body,
+                **local_params,
+            )
 
             # Check for error in the response object (OpenRouter v1.x pattern)
             if hasattr(resp, "error") and resp.error:

@@ -1,6 +1,6 @@
 # P-JUDGE offline eval harness
 
-Last updated: 14/06/2026
+Last updated: 17/06/2026
 
 Repeatable, real-API quality scoring of litassist outputs against a rubric,
 so prompt/model changes are measured rather than guessed. This is ROADMAP
@@ -178,38 +178,38 @@ recall limitation, distinct from the fixed defects). The judge baseline
 is unchanged: tags do not feed scoring, and the fixture SOURCES are
 frozen.
 
-## Gate for P1-12 / P2-19
+## Gate for P2-19 (P1-12 removed)
 
-The original idea was: run each benchmark case through the candidate pipeline,
-judge both sides, ship only if the mean per-dimension delta is positive and worth
-the added cost.
+P1-12 (the multi-model cross-check) was **REMOVED on 17/06/2026** after a
+reference-grounding probe showed its gate result did not generalise (below). The
+gating METHODOLOGY is retained here because P2-19 (divergence detector) would reuse
+it.
 
-**This does not work for a read-only stage.** The P1-12 cross-check never rewrites
-the document, so the before/after document is byte-identical and the judged delta
-is zero by construction. Two further problems: the judge model (`judge-eval` ->
-`openai/gpt-5.5`) is also a cross-check panel member, so judge-scoring the panel is
-self-grading; and what a read-only checker delivers is *detection*, not a quality
-lift the judge rubric measures.
+The original idea was: run each benchmark case through the candidate pipeline, judge
+both sides, ship only if the mean per-dimension delta is positive and worth the
+cost. **This does not work for a read-only stage** that never rewrites the document:
+the before/after is byte-identical, so the judged delta is zero by construction; the
+judge model (`judge-eval` -> `openai/gpt-5.5`) would also have been a panel member
+(self-grading); and what a read-only checker delivers is *detection*, not a quality
+lift the rubric measures.
 
-### Substituted gate (used for P1-12, 14/06/2026): deterministic seeded-defect detection
+### Substituted gate: deterministic seeded-defect detection
 
-Fixtures, protocol and pre-registered ship criteria live alongside the harness in
-`test-scripts/judge_eval/crosscheck_gate/` (`README.md` = protocol, `manifest.yaml`
-= frozen defect list, `RESULTS.md` = committed outcome, `variants/` = the 4 seeded
-Harper outputs). In outline: seed 5 documented defects into each of the 4 benchmark
-outputs (20 total) across five classes (confabulated cite, real-cite-wrong-
-proposition, jurisdiction error, internal contradiction, fabricated fact); run
-`verify --cross-check` on each; score detection deterministically against the
-manifest by inspection (no LLM judge); compare cross-check detections against the
-same run's baseline citation/soundness/reasoning reports; measure spurious HIGH
-flags on the 4 clean originals and the cost ratio from the `[COST]` banners.
+Seed documented defects into benchmark outputs across five classes (confabulated
+cite, real-cite-wrong-proposition, jurisdiction error, internal contradiction,
+fabricated fact); run the candidate stage on each; score detection deterministically
+against a frozen manifest (no LLM judge, since the judge is otherwise a panellist);
+compare against the same run's baseline citation/soundness/reasoning reports; measure
+spurious HIGH flags on the clean originals and the cost ratio.
 
-Ship iff: recall >= 14/20, >= 4 defects caught that baseline missed, <= 1 spurious
-HIGH on clean docs, marginal cost <= 4x baseline. **P1-12 result: PASS (20/20, 6
-treatment-only, 0 spurious HIGH, 2.6x marginal / 3.6x total cost).** The marginal value was entirely in
-the fabricated-fact (0/4 -> 4/4) and internal-contradiction (2/4 -> 4/4) classes;
-the existing citation/soundness stages already catch citation and jurisdiction
-defects, so the retrieval gap did not bias the comparison.
+P1-12 passed this gate (recall 20/20, 6 treatment-only catches, 0 spurious HIGH,
+2.6x marginal cost). **But a follow-up reference-grounding probe showed the
+fabricated-fact catches (0/4 -> 4/4) did NOT replicate** with plausible, standalone
+fabrications under independent scoring: without a source, both baseline and the
+cross-check miss them; with `--reference`, the baseline catches them alone. So the
+cross-check added no unique detection value and was removed. The gate fixtures and
+the reference-grounding evidence are preserved on the published-not-merged
+`crosscheck-eval-evidence` branch.
 
-P2-19 (divergence detector) reuses the same fixtures and the same deterministic
-approach when it is built.
+If P2-19 (divergence detector) is built, it can reuse this deterministic
+seeded-defect approach.
