@@ -526,6 +526,25 @@ def fetch_citation_context(
             if austlii_url:
                 click.echo("  -> Trying direct AustLII URL")
                 content = _try_fetch_and_validate(austlii_url, validate_cite)
+                if content and validate_cite != citation:
+                    # C2-resolved: confirm the fetched page is genuinely a PARALLEL of
+                    # the traditional cite by checking its bare report form appears
+                    # (AustLII prints "[1999] HCA 66; 201 CLR 1", so strip the leading
+                    # year to get "201 CLR 1"). Guards against pairing a same-year but
+                    # unrelated neutral cite - in particular a non-Australian cite (UK
+                    # "[2017] AC 467") must never resolve to an Australian judgment.
+                    report_form = re.sub(r"^[\(\[]\d{4}[\)\]]\s*", "", citation).strip()
+                    if report_form and report_form.lower() not in content[:2000].lower():
+                        save_log(
+                            "citation_parallel_report_form_absent",
+                            {
+                                "citation": citation,
+                                "neutral_cite": validate_cite,
+                                "report_form": report_form,
+                                "url": austlii_url,
+                            },
+                        )
+                        content = None
                 if content:
                     url = austlii_url
                     content_valid = True

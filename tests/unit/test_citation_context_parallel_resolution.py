@@ -78,6 +78,22 @@ def test_source_text_none_preserves_failure():
     assert failures[0][0] == citation
 
 
+def test_non_australian_traditional_cite_not_false_fetched():
+    """A non-Australian traditional cite (UK Appeal Cases) sitting near an unrelated
+    same-year Australian neutral cite must NOT be resolved to that Australian
+    judgment - the fetched page does not carry the UK cite, so it is not a parallel."""
+    citation = "[2017] AC 467"  # UK; no Australian medium-neutral parallel exists
+    source = "Discussed in Smith [2017] AC 467 and applied locally in Jones [2017] HCA 5."
+    # An HCA page that does NOT contain "AC 467" (it is a different, Australian case).
+    hca_page = (
+        "Jones v Roe [2017] HCA 5; 260 CLR 100; 91 ALJR 1 (1 February 2017)\n"
+        "High Court of Australia\nJudgment text...\n"
+    )
+    context, failures, _ = _run(citation, source, hca_page)
+    assert citation not in context
+    assert any(cit == citation for cit, _ in failures)
+
+
 def test_validation_targets_neutral_cite_not_parenthesised_report_cite():
     # The real AustLII header: the report cite is bare "201 CLR 1" and the neutral
     # cite carries the year, so the parenthesised traditional cite is absent.
