@@ -5,34 +5,33 @@ source document prints the parallel neutral cite ("[1999] HCA 66") nearby, the
 direct-AustLII fallback resolves the neutral cite, builds the AustLII URL and fetches
 the document. With no source_text the prior behaviour is preserved exactly.
 
-The validation-mechanism test pins WHY the fetched page validates against the
-original CLR cite: the `exact_primary_location` strategy (verbatim string in the page
-body), NOT `_check_header_parallel_citations`, which is dead for CLR/ALR forms. A
-refactor that reorders or drops `exact_primary_location` would silently break C2, so
-this guards it.
+These tests mock the network at the `_fetch_url_content` boundary and let the REAL
+`_validate_citation_match` run, so they exercise the actual validation path. The page
+body uses the real AustLII header form, where the report cite is printed BARE
+("[1999] HCA 66; 201 CLR 1"), so the parenthesised "(1999) 201 CLR 1" never appears
+verbatim. That is why a C2-resolved fetch validates against the resolved NEUTRAL cite
+(verbatim on its own page), not the original traditional cite. Confirmed against the
+live AustLII page for Mann v Carnell on 22/06/2026.
 """
 
 from unittest.mock import MagicMock, patch
 
-from litassist.citation_context import (
-    fetch_citation_context,
-    _validate_citation_match,
-    _check_header_parallel_citations,
-)
+from litassist.citation_context import fetch_citation_context, _validate_citation_match
 from litassist.citation.austlii import construct_austlii_url
 
 HCA_URL = construct_austlii_url("[1999] HCA 66")
 PARALLEL_SOURCE = "Mann v Carnell (1999) 201 CLR 1; [1999] HCA 66 at [12] is in point."
+# Real AustLII header form (report cite bare, neutral cite carries the year).
+AUSTLII_PAGE = (
+    "Mann v Carnell [1999] HCA 66; 201 CLR 1; 168 ALR 86; 74 ALJR 378 "
+    "(21 December 1999)\nHigh Court of Australia\nJudgment text...\n"
+)
 
 
-def _run(citation, source_text, fetch_returns):
-    """fetch_citation_context with the network mocked and every CSE search empty.
-
-    With no CSE items the search loops return without fetching, so the only
-    _try_fetch_and_validate call is the direct-AustLII fallback. construct_austlii_url
-    is NOT patched -- the real one returns "" for the CLR cite and the HCA URL for the
-    resolved neutral cite, which is exactly what C2 depends on.
-    """
+def _run(citation, source_text, page_body):
+    """fetch_citation_context with the network mocked at _fetch_url_content and every
+    CSE search empty, so the only fetch is the direct-AustLII fallback and the REAL
+    validator runs against whatever the fallback fetched."""
     mock_service = MagicMock()
     mock_service.cse.return_value.list.return_value.execute.return_value = {}
     mock_config = MagicMock(
@@ -42,7 +41,7 @@ def _run(citation, source_text, fetch_returns):
     with patch("googleapiclient.discovery.build", return_value=mock_service), patch(
         "litassist.citation_context.get_config", return_value=mock_config
     ), patch(
-        "litassist.citation_context._try_fetch_and_validate", return_value=fetch_returns
+        "litassist.commands.lookup.fetchers._fetch_url_content", return_value=page_body
     ) as mock_fetch, patch(
         "litassist.citation_context.save_log"
     ), patch(
@@ -52,25 +51,26 @@ def _run(citation, source_text, fetch_returns):
     return context, failures, mock_fetch
 
 
-def test_parallel_resolution_enables_austlii_fetch():
+def test_parallel_resolution_fetches_and_validates():
     citation = "(1999) 201 CLR 1"
-    body = f"{citation}; [1999] HCA 66\nHigh Court of Australia. Judgment text..."
 
-    context, failures, mock_fetch = _run(citation, PARALLEL_SOURCE, body)
+    context, failures, mock_fetch = _run(citation, PARALLEL_SOURCE, AUSTLII_PAGE)
 
-    # The neutral cite was resolved and the HCA URL fetched.
-    mock_fetch.assert_called_once_with(HCA_URL, citation)
+    # The neutral cite was resolved, the HCA URL fetched, and the real validator
+    # accepted the page (via the neutral cite verbatim in the body).
+    assert mock_fetch.call_count == 1
+    assert HCA_URL in mock_fetch.call_args[0][0]
     assert citation in context
     assert context[citation]
     assert failures == []
 
 
 def test_source_text_none_preserves_failure():
-    """Without source_text the CLR cite has no constructible URL and still fails -- the
-    default path is unchanged."""
+    """Without source_text the CLR cite has no constructible URL and is never fetched
+    -- the default path is unchanged."""
     citation = "(1999) 201 CLR 1"
 
-    context, failures, mock_fetch = _run(citation, None, "doc body")
+    context, failures, mock_fetch = _run(citation, None, AUSTLII_PAGE)
 
     mock_fetch.assert_not_called()
     assert context == {}
@@ -78,16 +78,10 @@ def test_source_text_none_preserves_failure():
     assert failures[0][0] == citation
 
 
-def test_validation_uses_exact_primary_location_not_parallel_header():
-    # A fetched AustLII page whose body prints the verbatim traditional cite.
-    citation = "(1998) 194 CLR 355"
-    header = (
-        "Project Blue Sky Inc v Australian Broadcasting Authority "
-        "[1998] HCA 28; (1998) 194 CLR 355"
-    )
-    body = header + "\n\nHigh Court of Australia\nJudgment...\n"
-
-    # Validation passes -- via the verbatim string in the body.
-    assert _validate_citation_match(body, citation) is True
-    # ...and NOT via the parallel-citation header strategy, which cannot see CLR forms.
-    assert _check_header_parallel_citations(header, citation) is False
+def test_validation_targets_neutral_cite_not_parenthesised_report_cite():
+    # The real AustLII header: the report cite is bare "201 CLR 1" and the neutral
+    # cite carries the year, so the parenthesised traditional cite is absent.
+    assert _validate_citation_match(AUSTLII_PAGE, "[1999] HCA 66") is True
+    # The parenthesised "(1999) 201 CLR 1" does NOT validate against this page, which
+    # is precisely why a C2-resolved fetch validates against the resolved neutral cite.
+    assert _validate_citation_match(AUSTLII_PAGE, "(1999) 201 CLR 1") is False

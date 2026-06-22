@@ -499,15 +499,22 @@ def fetch_citation_context(
         # If still no valid content, try direct AustLII URL construction as final fallback (case law only)
         if not content_valid and not is_legislation:
             austlii_url = construct_austlii_url(citation)
+            # The page we fetch is identified by whatever cite built the URL, so that
+            # is the cite we validate the fetched page against (default: the original).
+            validate_cite = citation
             # C2 option 1: an authorised-report cite (e.g. "(1999) 201 CLR 1") has no
             # neutral form to build a URL from. If the source document prints the
             # parallel medium-neutral cite nearby, recover it and build the URL from
-            # that; validation still runs against the original citation.
+            # that. The fetched page is the NEUTRAL cite's page (AustLII prints the
+            # report cite bare, e.g. "[1999] HCA 66; 201 CLR 1", so the parenthesised
+            # "(1999) 201 CLR 1" never appears verbatim) - so validate against the
+            # neutral cite, then map the document back to the original citation key.
             if not austlii_url and source_text and is_traditional_citation_format(citation):
                 neutral_cite = resolve_neutral_from_parallel(citation, source_text)
                 if neutral_cite:
                     austlii_url = construct_austlii_url(neutral_cite)
                     if austlii_url:
+                        validate_cite = neutral_cite
                         save_log(
                             "citation_neutral_resolved_from_parallel",
                             {
@@ -518,7 +525,7 @@ def fetch_citation_context(
                         )
             if austlii_url:
                 click.echo("  -> Trying direct AustLII URL")
-                content = _try_fetch_and_validate(austlii_url, citation)
+                content = _try_fetch_and_validate(austlii_url, validate_cite)
                 if content:
                     url = austlii_url
                     content_valid = True

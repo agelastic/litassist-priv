@@ -1,6 +1,6 @@
 # LitAssist Development TODO
 
-Last updated: 21/06/2026
+Last updated: 22/06/2026
 
 **Note:** Strategic feature planning (litigation support, advisory capabilities, new commands) is now in [ROADMAP.md](ROADMAP.md). This file focuses on bugs, technical debt, and code quality improvements.
 
@@ -58,20 +58,25 @@ deferred:
   case page is impossible from a CLR-only cite: `construct_austlii_url`
   (`litassist/citation/austlii.py`) requires medium-neutral `[YYYY] COURT N`,
   and `normalize_citation` leaves the CLR string unchanged, so the CSE query has
-  no name/neutral cite to hit. (Correction, 21/06/2026: once the page IS fetched,
-  validation passes via the `exact_primary_location` strategy - the verbatim CLR
-  string in the page body - NOT `_check_header_parallel_citations`, whose regex
-  matches only neutral `[YYYY] COURT N` forms and returns False for every CLR/ALR
-  cite. See `tests/unit/test_citation_context_parallel_resolution.py`.)
+  no name/neutral cite to hit. (Correction, 22/06/2026, from a live AustLII fetch:
+  the fetched HCA page prints the report cite BARE - "Mann v Carnell [1999] HCA 66;
+  201 CLR 1; 168 ALR 86" - so the parenthesised "(1999) 201 CLR 1" never appears
+  verbatim and does NOT validate via `exact_primary_location`;
+  `_check_header_parallel_citations` also returns False for CLR/ALR forms. So a
+  C2-resolved fetch validates the page against the resolved NEUTRAL cite
+  "[1999] HCA 66" - verbatim on its own page - then maps the document to the original
+  citation key. See `tests/unit/test_citation_context_parallel_resolution.py`.)
 - **C2 (the real lever) - `traditional cite -> medium-neutral cite` primitive.**
   - **Option 1 - draft co-occurrence: SHIPPED 21/06/2026.**
     `resolve_neutral_from_parallel` (`litassist/citation/austlii.py`) recovers a
     medium-neutral cite printed parallel to the traditional cite in the source
     document (e.g. `... (1999) 201 CLR 1; [1999] HCA 66`); `fetch_citation_context`
-    takes an optional `source_text` and uses it in the direct-AustLII fallback, so
-    the existing fetch + `exact_primary_location` validation run. Free, no fetch.
-    The four real callers (CoVe + the three `verify` handlers) pass the original
-    document. Branch `feat/c2-parallel-cite-resolver`.
+    takes an optional `source_text` and uses it in the direct-AustLII fallback,
+    validating the fetched page against the resolved neutral cite (see C1). Free, no
+    extra fetch. The four real callers (CoVe + the three `verify` handlers) pass the
+    original document. Verified end-to-end against the live Mann v Carnell page
+    (22/06/2026): `(1999) 201 CLR 1` resolved, fetched and mapped (122903 chars);
+    control without source_text still fails. Branch `feat/c2-parallel-cite-resolver`.
   - **Limitation:** option 1 only fires when the neutral cite is present in the
     source. It does NOT resolve a deliberately CLR-only document - including the
     P-JUDGE `authorised_report` benchmark fixture, which stays capped.
