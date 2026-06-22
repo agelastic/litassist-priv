@@ -8,10 +8,13 @@ both forms together (the common real-draft case, `... (1999) 201 CLR 1; [1999] H
 66`), this resolver recovers the adjacent neutral cite so the existing fetch path can
 run.
 
-Cases mirror the Codex review of the C2 plan: bidirectional window (neutral may
-precede or follow), no year-equality reject (split-year pairs must still resolve),
-nearest-wins on multiple pairs, out-of-window not paired, and non-AustLII neutral
-forms (UK/NZ etc.) excluded because they are not constructible.
+The resolver is purely positional: it returns the NEAREST AustLII-constructible
+neutral cite within the window, on either side. It does no jurisdiction or year
+filtering - whether the cite is genuinely the same case is confirmed downstream
+against the fetched page's own parallel-citation list (see
+test_citation_context_parallel_resolution.py). Cases here cover: bidirectional
+window, split-year pairs, nearest-wins on multiple pairs, out-of-window not paired,
+and non-AustLII neutral forms (UK/NZ etc.) excluded because they are not constructible.
 """
 
 from litassist.citation.austlii import resolve_neutral_from_parallel
@@ -32,8 +35,8 @@ class TestResolveNeutralFromParallel:
         )
 
     def test_split_year_pair_still_resolves(self):
-        # Codex check 4: judgment year and report year can differ; a year-equality
-        # reject would silently drop a real, constructible (HCA) resolution.
+        # Judgment year and report year can differ; the resolver does no year filtering,
+        # so the adjacent neutral cite resolves regardless of the one-year gap.
         source = "X v Y [1995] HCA 10; (1996) 185 CLR 1 at 7"
         assert (
             resolve_neutral_from_parallel("(1996) 185 CLR 1", source) == "[1995] HCA 10"
@@ -76,12 +79,21 @@ class TestResolveNeutralFromParallel:
         source = "totally unrelated text [1999] HCA 66 standing alone"
         assert resolve_neutral_from_parallel("(1999) 201 CLR 1", source) == ""
 
-    def test_false_pairing_different_case_rejected(self):
-        # A neutral cite belonging to a DIFFERENT case can sit nearest by character
-        # distance; the year gap (2001 vs 2005) marks it as not a parallel cite, so it
-        # must not be paired. Each traditional cite resolves only to its own neutral.
-        source = "A (2001) 207 CLR 1; [2005] HCA 5; B (2005) 223 CLR 1"
-        assert resolve_neutral_from_parallel("(2001) 207 CLR 1", source) == ""
+    def test_adjacent_parallel_preferred_over_farther(self):
+        # The adjacent neutral cite ([1995] HCA 10) wins over a farther same-year cite
+        # ([1996] HCA 99) - the resolver is nearest-first, nothing more.
+        source = "Cited [1995] HCA 10; (1996) 185 CLR 1 then later [1996] HCA 99 elsewhere"
         assert (
-            resolve_neutral_from_parallel("(2005) 223 CLR 1", source) == "[2005] HCA 5"
+            resolve_neutral_from_parallel("(1996) 185 CLR 1", source) == "[1995] HCA 10"
+        )
+
+    def test_resolver_does_no_jurisdiction_or_case_filtering(self):
+        # The resolver returns the nearest constructible neutral cite WITHOUT judging
+        # whether it is the same case or jurisdiction. Here a UK cite sits next to an
+        # unrelated AU neutral cite: the resolver returns that neutral cite; the cross-
+        # jurisdiction/false-pair REJECTION happens downstream at the page-parallel-group
+        # guard (see test_citation_context_parallel_resolution.py).
+        source = "A (2001) 207 CLR 1; [2005] HCA 5; B (2005) 223 CLR 1"
+        assert (
+            resolve_neutral_from_parallel("(2001) 207 CLR 1", source) == "[2005] HCA 5"
         )

@@ -77,15 +77,16 @@ deferred:
     original document. Verified end-to-end against the live Mann v Carnell page
     (22/06/2026): `(1999) 201 CLR 1` resolved, fetched and mapped (122903 chars);
     control without source_text still fails. Branch `feat/c2-parallel-cite-resolver`.
-    A C2-resolved fetch is accepted only if the fetched page also carries the
-    traditional cite's bare report form in its header (e.g. `201 CLR 1`), so an
-    unrelated same-year neutral cite in the window - in particular a non-Australian
-    traditional cite like `[2017] AC 467` - cannot false-fetch an Australian judgment.
+    The resolver is a plain nearest-neighbour finder (no jurisdiction or year
+    filtering of its own); correctness comes from ONE downstream check - a C2-resolved
+    fetch is accepted only if the fetched page lists the traditional cite's bare report
+    form (e.g. `201 CLR 1`) in its OWN parallel-citation group (between the neutral cite
+    and the judgment date in the header). That single page-truth check rejects a
+    wrong-case fetch, a non-Australian cite (`[2017] AC 467`), and abbreviation
+    collisions (`IR` = AU Industrial Reports vs Irish Reports) jurisdiction-agnostically.
   - **Limitation:** option 1 only fires when the neutral cite is present in the
     source. It does NOT resolve a deliberately CLR-only document - including the
-    P-JUDGE `authorised_report` benchmark fixture, which stays capped. Residual: the
-    parallelism guard matches the report form in the first 2000 chars, so a very short
-    token could in principle match an unrelated page's catchwords (low probability).
+    P-JUDGE `authorised_report` benchmark fixture, which stays capped.
   - **Option 2 - AustLII LawCite citator [DEFERRED, gated].** Build only if option 1
     coverage proves insufficient in production. Query
     `https://www.austlii.edu.au/cgi-bin/LawCite?cit=...` (one extra fetch + a new

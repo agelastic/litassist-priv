@@ -94,6 +94,56 @@ def test_non_australian_traditional_cite_not_false_fetched():
     assert any(cit == citation for cit, _ in failures)
 
 
+def test_cross_jurisdiction_rejected_by_page_parallel_group():
+    """A UK cite next to an unrelated AU neutral cite resolves (nearest), is fetched,
+    but is rejected because "AC 467" is not in the HCA page's own parallel-citation
+    group - even though the page mentions it later in the body, after the judgment
+    date that bounds the group."""
+    citation = "[2017] AC 467"
+    source = "Smith [2017] AC 467; [2017] HCA 5 considered it."
+    hca_page = (
+        "Jones v Roe [2017] HCA 5; 260 CLR 100 (1 February 2017)\n"
+        "High Court of Australia. The Court discussed Smith [2017] AC 467 at length.\n"
+    )
+    context, _failures, mock_fetch = _run(citation, source, hca_page)
+    assert citation not in context
+    assert mock_fetch.called  # fetch attempted, content dropped by the guard
+
+
+def test_false_pairing_rejected_by_page_parallel_group():
+    """A different same-year case's neutral cite is nearest, so the resolver returns it
+    and it is fetched, but the page's parallel group does not list the traditional
+    cite's report form, so it is rejected (no wrong case content served)."""
+    citation = "(2001) 207 CLR 1"
+    source = "A (2001) 207 CLR 1; [2005] HCA 5; B (2005) 223 CLR 1"
+    hca_page = "B v Anor [2005] HCA 5; 223 CLR 1 (1 March 2005)\nHigh Court...\n"
+    context, _failures, mock_fetch = _run(citation, source, hca_page)
+    assert citation not in context
+    assert mock_fetch.called
+
+
+def test_collision_series_rejected_when_not_in_page_parallel_group():
+    # "IR" is both Australian Industrial Reports and Irish Reports. The resolver returns
+    # the nearest neutral cite regardless; the header-group guard rejects it when the
+    # fetched AU page does not list the report form among the neutral cite's parallels.
+    citation = "[2010] 2 IR 1"  # Irish Reports, here
+    source = "Foo [2010] 2 IR 1; [2010] HCA 5 considered."
+    hca_page = "Roe v Doe [2010] HCA 5; 240 CLR 1 (1 January 2010)\nHigh Court...\n"
+    context, _failures, mock_fetch = _run(citation, source, hca_page)
+    assert citation not in context
+    assert mock_fetch.called  # fetch attempted, content dropped by the guard
+
+
+def test_australian_industrial_reports_resolves_when_parallel_on_page():
+    # Same "IR" abbreviation, but genuinely Australian: its report form IS one of the
+    # neutral cite's parallels on the page, so it resolves.
+    citation = "(2010) 200 IR 1"
+    source = "Bar (2010) 200 IR 1; [2010] FCA 5 applied."
+    fca_page = "Union v Employer [2010] FCA 5; 200 IR 1 (1 January 2010)\nFederal Court...\n"
+    context, _failures, _ = _run(citation, source, fca_page)
+    assert citation in context
+
+
 def test_validation_targets_neutral_cite_not_parenthesised_report_cite():
     # The real AustLII header: the report cite is bare "201 CLR 1" and the neutral
     # cite carries the year, so the parenthesised traditional cite is absent.

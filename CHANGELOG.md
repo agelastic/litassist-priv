@@ -18,11 +18,11 @@ Historical dated sections preserve the model names that were current when those 
   (`litassist/citation/austlii.py`) recovers a medium-neutral cite printed parallel to
   it in the document (e.g. `[1999] HCA 66`) and uses the existing direct-AustLII
   fallback, so `verify --soundness`/`--reasoning` and CoVe stop running context-starved
-  on those cites. Resolution is gated by a +/-1-year proximity check and, after fetch,
-  a parallelism guard that requires the page to carry the traditional cite's bare
-  report form - so an unrelated same-year neutral cite (including a non-Australian
-  traditional cite) cannot false-fetch the wrong judgment. Verified end-to-end against
-  the live Mann v Carnell page. The four callers (CoVe + the three `verify` handlers)
+  on those cites. The resolver returns the nearest co-occurring neutral cite; the
+  fetched page is then accepted only if it lists the traditional cite's bare report
+  form in its own parallel-citation group, so a wrong-case, non-Australian, or
+  abbreviation-collision pairing cannot false-fetch the wrong judgment. Verified
+  end-to-end against the live Mann v Carnell page. The four callers (CoVe + the three `verify` handlers)
   pass the original document; behaviour is unchanged when `source_text` is omitted.
   Option 2 (LawCite citator, for CLR-only sources with no parallel cite) stays
   deferred. ROADMAP Phase 2 / TODO C2.

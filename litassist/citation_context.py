@@ -527,14 +527,32 @@ def fetch_citation_context(
                 click.echo("  -> Trying direct AustLII URL")
                 content = _try_fetch_and_validate(austlii_url, validate_cite)
                 if content and validate_cite != citation:
-                    # C2-resolved: confirm the fetched page is genuinely a PARALLEL of
-                    # the traditional cite by checking its bare report form appears
-                    # (AustLII prints "[1999] HCA 66; 201 CLR 1", so strip the leading
-                    # year to get "201 CLR 1"). Guards against pairing a same-year but
-                    # unrelated neutral cite - in particular a non-Australian cite (UK
-                    # "[2017] AC 467") must never resolve to an Australian judgment.
+                    # C2-resolved: confirm the fetched page is genuinely the traditional
+                    # cite's PARALLEL. AustLII prints a case's parallel-citation list
+                    # right after its neutral cite in the header
+                    # ("[1999] HCA 66; 201 CLR 1; 168 ALR 86"), so require the
+                    # traditional cite's bare report form ("(1999) 201 CLR 1" -> the
+                    # leading year stripped -> "201 CLR 1") to sit in THAT group, not
+                    # merely anywhere on the page. This is jurisdiction-agnostic: a
+                    # different-jurisdiction report (e.g. Irish "IR" vs Australian
+                    # Industrial Reports "IR") cited deep in the body, or belonging to an
+                    # unrelated same-year case, is not in the page's own parallel list and
+                    # is rejected. Whitespace is collapsed so HTML spacing variants
+                    # (double spaces, newlines, NBSP) do not cause a miss.
                     report_form = re.sub(r"^[\(\[]\d{4}[\)\]]\s*", "", citation).strip()
-                    if report_form and report_form.lower() not in content[:2000].lower():
+                    report_form_norm = re.sub(r"\s+", " ", report_form).lower()
+                    head = re.sub(r"\s+", " ", content[:2000]).lower()
+                    neutral_norm = re.sub(r"\s+", " ", validate_cite).lower()
+                    neutral_pos = head.find(neutral_norm)
+                    # The header citation line ends at the judgment date "(DD Month YYYY)";
+                    # the parallel report cites sit between the neutral cite and that date.
+                    # Bounding the group at the date keeps the catchwords/body that follow
+                    # (which may cite OTHER cases) out of the check. Fall back to a 250-char
+                    # cap if no date marker is found.
+                    tail = head[neutral_pos:neutral_pos + 250] if neutral_pos != -1 else ""
+                    date_marker = re.search(r"\(\s*\d{1,2}\s+[a-z]+\s+\d{4}\s*\)", tail)
+                    parallel_group = tail[: date_marker.start()] if date_marker else tail
+                    if not (report_form_norm and report_form_norm in parallel_group):
                         save_log(
                             "citation_parallel_report_form_absent",
                             {

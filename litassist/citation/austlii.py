@@ -61,20 +61,6 @@ def construct_austlii_url(citation: str) -> str:
 # staying short enough to avoid pairing across unrelated sentences.
 _PARALLEL_CITE_WINDOW = 300
 
-# Max difference between the traditional cite's report year and a candidate neutral
-# cite's year for them to be treated as the SAME case. Parallel cites name one
-# judgment, so the years match or differ by at most one (a late-year judgment reported
-# the next year). A wider gap means a different case sitting nearby in the window
-# (e.g. "(2001) 207 CLR 1; [2005] HCA 5" - the neutral belongs to a 2005 case), so
-# rejecting it prevents a false pairing that character distance alone cannot catch.
-_PARALLEL_CITE_YEAR_TOLERANCE = 1
-
-
-def _citation_year(citation: str):
-    """Year from the leading (YYYY)/[YYYY] of a cite, or None if it carries no year."""
-    match = re.search(r"\d{4}", citation)
-    return int(match.group(0)) if match else None
-
 
 def resolve_neutral_from_parallel(traditional_cite: str, source_text: str) -> str:
     """
@@ -86,27 +72,28 @@ def resolve_neutral_from_parallel(traditional_cite: str, source_text: str) -> st
     the traditional one in source_text we can recover it and let the existing
     AustLII fetch path run.
 
+    This returns the NEAREST AustLII-constructible neutral cite to the traditional cite
+    - parallel cites are written adjacently. Whether that cite is genuinely the same
+    case is confirmed downstream by the caller, which validates the fetched page lists
+    the traditional cite among its own parallel citations; this function does no
+    jurisdiction or year filtering of its own.
+
     Args:
         traditional_cite: the already-extracted cite string (case name / pinpoint
             stripped by extract_citations), e.g. "(1999) 201 CLR 1"
         source_text: the raw document the cite came from (case names intact)
 
     Returns:
-        The best-matching AustLII-constructible neutral cite within the pairing window
-        on either side of the traditional cite, or "" if none. Candidates are validated
-        through construct_austlii_url (excludes the traditional cite itself - round
-        brackets do not match the neutral pattern - and non-AustLII courts). A candidate
-        whose year is more than _PARALLEL_CITE_YEAR_TOLERANCE from the traditional cite's
-        year is rejected as a different case; remaining candidates are ranked by year
-        proximity first, then character distance.
+        The nearest AustLII-constructible neutral cite within the pairing window on
+        either side of the traditional cite, or "" if none. construct_austlii_url
+        filters out the traditional cite itself (round brackets do not match the neutral
+        pattern) and non-AustLII courts.
     """
     if not traditional_cite or not source_text:
         return ""
 
-    traditional_year = _citation_year(traditional_cite)
-
     best = ""
-    best_key = None  # (year_difference, character_distance) - lower is better
+    best_distance = None
     search_from = 0
     while True:
         occ = source_text.find(traditional_cite, search_from)
@@ -121,22 +108,18 @@ def resolve_neutral_from_parallel(traditional_cite: str, source_text: str) -> st
             candidate = m.group(0)
             if not construct_austlii_url(candidate):
                 continue
-            year_difference = 0
-            if traditional_year is not None:
-                year_difference = abs(int(m.group(1)) - traditional_year)
-                if year_difference > _PARALLEL_CITE_YEAR_TOLERANCE:
-                    # Different case sitting in the window - not a parallel cite.
-                    continue
             candidate_pos = window_start + m.start()
-            # Distance from the nearest edge of the traditional occurrence.
-            distance = (
-                occ - candidate_pos
-                if candidate_pos < occ
-                else candidate_pos - occ_end
-            )
-            key = (year_difference, distance)
-            if best_key is None or key < best_key:
-                best_key = key
+            candidate_end = candidate_pos + len(candidate)
+            # Gap between the NEAREST edges of the two cites (symmetric: a left-side
+            # candidate is not penalised by its own length).
+            if candidate_end <= occ:
+                distance = occ - candidate_end
+            elif candidate_pos >= occ_end:
+                distance = candidate_pos - occ_end
+            else:
+                distance = 0
+            if best_distance is None or distance < best_distance:
+                best_distance = distance
                 best = candidate
 
         search_from = occ_end
