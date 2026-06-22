@@ -1,6 +1,6 @@
 # LitAssist Development TODO
 
-Last updated: 17/06/2026
+Last updated: 21/06/2026
 
 **Note:** Strategic feature planning (litigation support, advisory capabilities, new commands) is now in [ROADMAP.md](ROADMAP.md). This file focuses on bugs, technical debt, and code quality improvements.
 
@@ -55,30 +55,42 @@ reason reads "Document fetch or content validation failed" instead of "URL not
 found - CSE returned no results"). Making these citations actually retrievable is
 deferred:
 - **C1 (retrieval) - downgraded, not a standalone fix.** Landing on the AustLII
-  case page (whose header carries parallel cites for `_check_header_parallel_citations`
-  to validate) is impossible from a CLR-only cite: `construct_austlii_url`
-  (`litassist/citation/austlii.py:28`) requires medium-neutral `[YYYY] COURT N`,
+  case page is impossible from a CLR-only cite: `construct_austlii_url`
+  (`litassist/citation/austlii.py`) requires medium-neutral `[YYYY] COURT N`,
   and `normalize_citation` leaves the CLR string unchanged, so the CSE query has
-  no name/neutral cite to hit.
-- **C2 (the real lever) - add a `traditional cite -> medium-neutral cite`
-  primitive.** Source the neutral cite from, cheapest first: (1) draft
-  co-occurrence (drafts usually print both forms together, e.g.
-  `... (1999) 201 CLR 1; [1999] HCA 66`) - free, no fetch, prefer this; or
-  (2) AustLII LawCite citator via a constructible query URL
-  (`https://www.austlii.edu.au/cgi-bin/LawCite?cit=...`) - one extra fetch plus a
-  new HTML parser (AustLII is permitted; only jade.io is off-limits). Once the
-  neutral cite is known, the existing AustLII fetch + parallel-citation validation
-  already work. Decide C2 option 1 vs 2 deliberately before building.
+  no name/neutral cite to hit. (Correction, 21/06/2026: once the page IS fetched,
+  validation passes via the `exact_primary_location` strategy - the verbatim CLR
+  string in the page body - NOT `_check_header_parallel_citations`, whose regex
+  matches only neutral `[YYYY] COURT N` forms and returns False for every CLR/ALR
+  cite. See `tests/unit/test_citation_context_parallel_resolution.py`.)
+- **C2 (the real lever) - `traditional cite -> medium-neutral cite` primitive.**
+  - **Option 1 - draft co-occurrence: SHIPPED 21/06/2026.**
+    `resolve_neutral_from_parallel` (`litassist/citation/austlii.py`) recovers a
+    medium-neutral cite printed parallel to the traditional cite in the source
+    document (e.g. `... (1999) 201 CLR 1; [1999] HCA 66`); `fetch_citation_context`
+    takes an optional `source_text` and uses it in the direct-AustLII fallback, so
+    the existing fetch + `exact_primary_location` validation run. Free, no fetch.
+    The four real callers (CoVe + the three `verify` handlers) pass the original
+    document. Branch `feat/c2-parallel-cite-resolver`.
+  - **Limitation:** option 1 only fires when the neutral cite is present in the
+    source. It does NOT resolve a deliberately CLR-only document - including the
+    P-JUDGE `authorised_report` benchmark fixture, which stays capped.
+  - **Option 2 - AustLII LawCite citator [DEFERRED, gated].** Build only if option 1
+    coverage proves insufficient in production. Query
+    `https://www.austlii.edu.au/cgi-bin/LawCite?cit=...` (one extra fetch + a new
+    HTML parser; AustLII permitted, jade.io off-limits) to resolve a neutral cite
+    when the source has none. This is the path that would flip the CLR-only fixture.
 
-**Now measured (09/06/2026):** this gap - plus the jade.io cookie-reuse [SOON]
-item and the AustLII PDF block above - is the **binding constraint** for the
-trustworthy-output thrust: better verification cannot help citations the pipeline
-cannot fetch. The P-JUDGE eval benchmark deliberately tags these classes
-`fetchable:false` and **caps `citation_grounding`** on un-fetchable cites, so the
-gap is a quantified line item (`=== RETRIEVAL GAP ===` in the report) rather than
-an invisible assumption. Closing C2 (and Jade cookie-reuse) flips the tags to
-`fetchable:true` and lifts the eval's score ceiling - which is how the win becomes
-visible. See ROADMAP P-JUDGE.
+**Now measured (09/06/2026; updated 21/06/2026):** this gap - plus the jade.io
+cookie-reuse [SOON] item and the AustLII PDF block above - is the **binding
+constraint** for the trustworthy-output thrust: better verification cannot help
+citations the pipeline cannot fetch. The P-JUDGE eval benchmark deliberately tags
+these classes `fetchable:false` and **caps `citation_grounding`** on un-fetchable
+cites, so the gap is a quantified line item (`=== RETRIEVAL GAP ===` in the report)
+rather than an invisible assumption. C2 option 1 closes the gap for real drafts that
+co-occur both cite forms (visible in production fetch-success logs); the synthetic
+`authorised_report` fixture stays `fetchable:false` until option 2 or Jade
+cookie-reuse lands. See ROADMAP P-JUDGE.
 
 ## Next Steps
 1. Review and prioritize remaining TODO items for next sprint
