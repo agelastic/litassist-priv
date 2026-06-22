@@ -144,6 +144,17 @@ def test_australian_industrial_reports_resolves_when_parallel_on_page():
     assert citation in context
 
 
+def test_report_form_matched_as_token_not_substring():
+    """The report form must match as a whole token: "20 CLR 1" must not be accepted by
+    a different cite "120 CLR 1" in the page's parallel group (digit concatenation)."""
+    citation = "(1999) 20 CLR 1"
+    source = "Foo (1999) 20 CLR 1; [1999] HCA 66 considered."
+    hca_page = "Bar v Baz [1999] HCA 66; 120 CLR 1 (1 January 1999)\nHigh Court...\n"
+    context, _failures, mock_fetch = _run(citation, source, hca_page)
+    assert citation not in context
+    assert mock_fetch.called
+
+
 def test_validation_targets_neutral_cite_not_parenthesised_report_cite():
     # The real AustLII header: the report cite is bare "201 CLR 1" and the neutral
     # cite carries the year, so the parenthesised traditional cite is absent.

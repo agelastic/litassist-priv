@@ -552,7 +552,14 @@ def fetch_citation_context(
                     tail = head[neutral_pos:neutral_pos + 250] if neutral_pos != -1 else ""
                     date_marker = re.search(r"\(\s*\d{1,2}\s+[a-z]+\s+\d{4}\s*\)", tail)
                     parallel_group = tail[: date_marker.start()] if date_marker else tail
-                    if not (report_form_norm and report_form_norm in parallel_group):
+                    # Match the report form as a whole token, not a raw substring: the
+                    # volume and page are digits, so "20 CLR 1" must not match inside
+                    # "120 CLR 1" or "20 CLR 11" (a different cite). Digit boundaries on
+                    # each end prevent that concatenation.
+                    report_found = bool(report_form_norm) and re.search(
+                        r"(?<!\d)" + re.escape(report_form_norm) + r"(?!\d)", parallel_group
+                    )
+                    if not report_found:
                         save_log(
                             "citation_parallel_report_form_absent",
                             {
