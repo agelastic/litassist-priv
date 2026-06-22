@@ -14,7 +14,11 @@ from litassist.citation.cache import (
     _cache_lock,
 )
 from litassist.citation.legislation import normalize_citation
-from litassist.citation.austlii import construct_austlii_url
+from litassist.citation.austlii import (
+    construct_austlii_url,
+    is_traditional_citation_format,
+    resolve_neutral_from_parallel,
+)
 from litassist.citation.trust import is_trusted_legal_host
 import time
 import re
@@ -307,7 +311,9 @@ def _search_and_validate(
         return None, False, None
 
 
-def fetch_citation_context(citations: List[str]) -> tuple[Dict[str, str], List[tuple[str, str]]]:
+def fetch_citation_context(
+    citations: List[str], source_text: Optional[str] = None
+) -> tuple[Dict[str, str], List[tuple[str, str]]]:
     """
     Fetch COMPLETE legal documents for citations with smart source prioritization.
 
@@ -319,6 +325,11 @@ def fetch_citation_context(citations: List[str]) -> tuple[Dict[str, str], List[t
 
     Args:
         citations: List of citations to fetch
+        source_text: optional raw document the citations were extracted from. When
+            given, an authorised-report cite (e.g. "(1999) 201 CLR 1") that has no
+            constructible AustLII URL is resolved to a medium-neutral cite printed
+            parallel to it in source_text (C2 option 1), enabling the direct-AustLII
+            fallback. Omitted/None preserves the prior behaviour exactly.
 
     Returns:
         Tuple of (successful_fetches, failed_citations):
@@ -488,6 +499,23 @@ def fetch_citation_context(citations: List[str]) -> tuple[Dict[str, str], List[t
         # If still no valid content, try direct AustLII URL construction as final fallback (case law only)
         if not content_valid and not is_legislation:
             austlii_url = construct_austlii_url(citation)
+            # C2 option 1: an authorised-report cite (e.g. "(1999) 201 CLR 1") has no
+            # neutral form to build a URL from. If the source document prints the
+            # parallel medium-neutral cite nearby, recover it and build the URL from
+            # that; validation still runs against the original citation.
+            if not austlii_url and source_text and is_traditional_citation_format(citation):
+                neutral_cite = resolve_neutral_from_parallel(citation, source_text)
+                if neutral_cite:
+                    austlii_url = construct_austlii_url(neutral_cite)
+                    if austlii_url:
+                        save_log(
+                            "citation_neutral_resolved_from_parallel",
+                            {
+                                "citation": citation,
+                                "neutral_cite": neutral_cite,
+                                "url": austlii_url,
+                            },
+                        )
             if austlii_url:
                 click.echo("  -> Trying direct AustLII URL")
                 content = _try_fetch_and_validate(austlii_url, citation)

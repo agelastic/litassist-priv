@@ -238,8 +238,10 @@ def run_cove_verification(
         )
 
         if citations:
-            # Fetch FULL documents for all citations found
-            legal_context, failed_citations = fetch_citation_context(citations)
+            # Fetch FULL documents for all citations found. Pass the original
+            # document `content` (NOT `questions`, which is LLM-generated and may not
+            # print the parallel neutral cite) so C2 parallel-cite resolution works.
+            legal_context, failed_citations = fetch_citation_context(citations, content)
 
             if legal_context:
                 total_context_size = sum(len(v) for v in legal_context.values())

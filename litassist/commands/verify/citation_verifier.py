@@ -62,7 +62,7 @@ def verify_citations(content: str, file: str, output: Optional[str] = None) -> t
         except Exception:
             pass
 
-        case_content, failed_citations = fetch_citation_context(verified_citations)
+        case_content, failed_citations = fetch_citation_context(verified_citations, content)
 
         if case_content:
             click.echo(success_message(f"Fetched content for {len(case_content)} cases"))
