@@ -1,6 +1,6 @@
 # Changelog
 
-Last updated: 17/06/2026
+Last updated: 22/06/2026
 
 All notable changes to LitAssist will be documented in this file.
 
@@ -12,6 +12,20 @@ Historical dated sections preserve the model names that were current when those 
 ## [Unreleased]
 
 ### Added
+- Authorised-report citation retrieval (C2 option 1). `fetch_citation_context` now
+  takes an optional `source_text`; when an authorised-report cite like
+  `(1999) 201 CLR 1` has no constructible AustLII URL, `resolve_neutral_from_parallel`
+  (`litassist/citation/austlii.py`) recovers a medium-neutral cite printed parallel to
+  it in the document (e.g. `[1999] HCA 66`) and uses the existing direct-AustLII
+  fallback, so `verify --soundness`/`--reasoning` and CoVe stop running context-starved
+  on those cites. Resolution is gated by a +/-1-year proximity check and, after fetch,
+  a parallelism guard that requires the page to carry the traditional cite's bare
+  report form - so an unrelated same-year neutral cite (including a non-Australian
+  traditional cite) cannot false-fetch the wrong judgment. Verified end-to-end against
+  the live Mann v Carnell page. The four callers (CoVe + the three `verify` handlers)
+  pass the original document; behaviour is unchanged when `source_text` is omitted.
+  Option 2 (LawCite citator, for CLR-only sources with no parallel cite) stays
+  deferred. ROADMAP Phase 2 / TODO C2.
 - Actual per-call cost from OpenRouter. Every LLM request now sets
   `usage: {include: true}`, so the response carries OpenRouter's real billed `cost`
   and a generation `id`; both are captured in `response_parser` and summed across
