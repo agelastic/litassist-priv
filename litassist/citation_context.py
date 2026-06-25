@@ -14,7 +14,11 @@ from litassist.citation.cache import (
     _cache_lock,
 )
 from litassist.citation.legislation import normalize_citation
-from litassist.citation.austlii import construct_austlii_url
+from litassist.citation.austlii import (
+    construct_austlii_url,
+    is_traditional_citation_format,
+    resolve_neutral_from_parallel,
+)
 from litassist.citation.trust import is_trusted_legal_host
 import time
 import re
@@ -307,7 +311,9 @@ def _search_and_validate(
         return None, False, None
 
 
-def fetch_citation_context(citations: List[str]) -> tuple[Dict[str, str], List[tuple[str, str]]]:
+def fetch_citation_context(
+    citations: List[str], source_text: Optional[str] = None
+) -> tuple[Dict[str, str], List[tuple[str, str]]]:
     """
     Fetch COMPLETE legal documents for citations with smart source prioritization.
 
@@ -319,6 +325,11 @@ def fetch_citation_context(citations: List[str]) -> tuple[Dict[str, str], List[t
 
     Args:
         citations: List of citations to fetch
+        source_text: optional raw document the citations were extracted from. When
+            given, an authorised-report cite (e.g. "(1999) 201 CLR 1") that has no
+            constructible AustLII URL is resolved to a medium-neutral cite printed
+            parallel to it in source_text (C2 option 1), enabling the direct-AustLII
+            fallback. Omitted/None preserves the prior behaviour exactly.
 
     Returns:
         Tuple of (successful_fetches, failed_citations):
@@ -488,9 +499,77 @@ def fetch_citation_context(citations: List[str]) -> tuple[Dict[str, str], List[t
         # If still no valid content, try direct AustLII URL construction as final fallback (case law only)
         if not content_valid and not is_legislation:
             austlii_url = construct_austlii_url(citation)
+            # The page we fetch is identified by whatever cite built the URL, so that
+            # is the cite we validate the fetched page against (default: the original).
+            validate_cite = citation
+            # C2 option 1: an authorised-report cite (e.g. "(1999) 201 CLR 1") has no
+            # neutral form to build a URL from. If the source document prints the
+            # parallel medium-neutral cite nearby, recover it and build the URL from
+            # that. The fetched page is the NEUTRAL cite's page (AustLII prints the
+            # report cite bare, e.g. "[1999] HCA 66; 201 CLR 1", so the parenthesised
+            # "(1999) 201 CLR 1" never appears verbatim) - so validate against the
+            # neutral cite, then map the document back to the original citation key.
+            if not austlii_url and source_text and is_traditional_citation_format(citation):
+                neutral_cite = resolve_neutral_from_parallel(citation, source_text)
+                if neutral_cite:
+                    austlii_url = construct_austlii_url(neutral_cite)
+                    if austlii_url:
+                        validate_cite = neutral_cite
+                        save_log(
+                            "citation_neutral_resolved_from_parallel",
+                            {
+                                "citation": citation,
+                                "neutral_cite": neutral_cite,
+                                "url": austlii_url,
+                            },
+                        )
             if austlii_url:
                 click.echo("  -> Trying direct AustLII URL")
-                content = _try_fetch_and_validate(austlii_url, citation)
+                content = _try_fetch_and_validate(austlii_url, validate_cite)
+                if content and validate_cite != citation:
+                    # C2-resolved: confirm the fetched page is genuinely the traditional
+                    # cite's PARALLEL. AustLII prints a case's parallel-citation list
+                    # right after its neutral cite in the header
+                    # ("[1999] HCA 66; 201 CLR 1; 168 ALR 86"), so require the
+                    # traditional cite's bare report form ("(1999) 201 CLR 1" -> the
+                    # leading year stripped -> "201 CLR 1") to sit in THAT group, not
+                    # merely anywhere on the page. This is jurisdiction-agnostic: a
+                    # different-jurisdiction report (e.g. Irish "IR" vs Australian
+                    # Industrial Reports "IR") cited deep in the body, or belonging to an
+                    # unrelated same-year case, is not in the page's own parallel list and
+                    # is rejected. Whitespace is collapsed so HTML spacing variants
+                    # (double spaces, newlines, NBSP) do not cause a miss.
+                    report_form = re.sub(r"^[\(\[]\d{4}[\)\]]\s*", "", citation).strip()
+                    report_form_norm = re.sub(r"\s+", " ", report_form).lower()
+                    head = re.sub(r"\s+", " ", content[:2000]).lower()
+                    neutral_norm = re.sub(r"\s+", " ", validate_cite).lower()
+                    neutral_pos = head.find(neutral_norm)
+                    # The header citation line ends at the judgment date "(DD Month YYYY)";
+                    # the parallel report cites sit between the neutral cite and that date.
+                    # Bounding the group at the date keeps the catchwords/body that follow
+                    # (which may cite OTHER cases) out of the check. Fall back to a 250-char
+                    # cap if no date marker is found.
+                    tail = head[neutral_pos:neutral_pos + 250] if neutral_pos != -1 else ""
+                    date_marker = re.search(r"\(\s*\d{1,2}\s+[a-z]+\s+\d{4}\s*\)", tail)
+                    parallel_group = tail[: date_marker.start()] if date_marker else tail
+                    # Match the report form as a whole token, not a raw substring: the
+                    # volume and page are digits, so "20 CLR 1" must not match inside
+                    # "120 CLR 1" or "20 CLR 11" (a different cite). Digit boundaries on
+                    # each end prevent that concatenation.
+                    report_found = bool(report_form_norm) and re.search(
+                        r"(?<!\d)" + re.escape(report_form_norm) + r"(?!\d)", parallel_group
+                    )
+                    if not report_found:
+                        save_log(
+                            "citation_parallel_report_form_absent",
+                            {
+                                "citation": citation,
+                                "neutral_cite": validate_cite,
+                                "report_form": report_form,
+                                "url": austlii_url,
+                            },
+                        )
+                        content = None
                 if content:
                     url = austlii_url
                     content_valid = True

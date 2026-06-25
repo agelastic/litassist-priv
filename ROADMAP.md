@@ -1,6 +1,6 @@
 # LitAssist Feature Roadmap
 
-Last updated: 17/06/2026
+Last updated: 21/06/2026
 **Status:** Strategic planning; roadmap items are aspirational unless marked DONE, PARTIALLY SUPERSEDED, or already implemented elsewhere
 **Confidence:** 0.88
 
@@ -282,6 +282,16 @@ for those classes today. P-JUDGE must **surface and cap** on this (see its updat
 spec) rather than let a judge launder un-fetchable citations into a green score;
 otherwise ensemble verification polishes the output end of a pipe starved at the
 input.
+
+**First retrieval-gap closure shipped (C2 option 1, 21/06/2026):** the
+authorised-report class is now partly addressed. `resolve_neutral_from_parallel`
+(`litassist/citation/austlii.py`) recovers a medium-neutral cite printed parallel to
+the traditional cite in the source document (e.g. `(1999) 201 CLR 1; [1999] HCA 66`)
+and feeds the existing direct-AustLII fallback via a new optional `source_text` arg
+to `fetch_citation_context`. This closes the gap for real drafts that co-occur both
+cite forms; a deliberately CLR-only source (including the P-JUDGE `authorised_report`
+fixture) still needs option 2 (AustLII LawCite citator, deferred/gated) or Jade
+cookie-reuse. Jade.io and AustLII-PDF classes remain open. See TODO.md C1/C2.
 
 **Theme - ensemble divergence / uncertainty:** P1-12 and P2-19 together
 establish the principle that where independent models disagree, confidence is

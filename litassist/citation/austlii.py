@@ -13,6 +13,12 @@ from typing import Tuple
 from litassist.logging import save_log
 from .constants import COURT_MAPPINGS
 
+# Single source of truth for the medium-neutral cite shape "[YYYY] COURT N".
+# re.search (not match) so it also finds the neutral cite inside a longer string
+# (named cite, or a parallel-citation group); reused by both construct_austlii_url
+# and resolve_neutral_from_parallel so the two never drift.
+_NEUTRAL_CITE_RE = re.compile(r"\[(\d{4})\]\s+([A-Z]+[A-Za-z]*)\s+(\d+)")
+
 
 def construct_austlii_url(citation: str) -> str:
     """
@@ -32,7 +38,7 @@ def construct_austlii_url(citation: str) -> str:
     # Parse medium neutral citation format [YYYY] COURT NUMBER; re.search,
     # not re.match - an anchored match silently failed for every citation
     # prefixed with its case name (P-JUDGE finding, 11/06/2026)
-    match = re.search(r"\[(\d{4})\]\s+([A-Z]+[A-Za-z]*)\s+(\d+)", citation)
+    match = _NEUTRAL_CITE_RE.search(citation)
     if not match:
         return ""
 
@@ -47,6 +53,78 @@ def construct_austlii_url(citation: str) -> str:
 
     # Build AustLII URL
     return f"https://www.austlii.edu.au/cgi-bin/viewdoc/au/cases/{court_path}/{year}/{number}.html"
+
+
+# Max characters between a traditional cite and its parallel medium-neutral cite for
+# the two to count as the same pairing. ~300 spans a typical
+# "(1999) 201 CLR 1; [1999] HCA 66" pair plus an intervening clause/pinpoint, while
+# staying short enough to avoid pairing across unrelated sentences.
+_PARALLEL_CITE_WINDOW = 300
+
+
+def resolve_neutral_from_parallel(traditional_cite: str, source_text: str) -> str:
+    """
+    Recover a medium-neutral cite printed parallel to a traditional cite (C2 opt 1).
+
+    Authorised-report cites like "(1999) 201 CLR 1" carry no "[YYYY] COURT N" form for
+    construct_austlii_url to build from. Drafts and judgments usually print both forms
+    together ("(1999) 201 CLR 1; [1999] HCA 66"), so when that neutral cite sits near
+    the traditional one in source_text we can recover it and let the existing
+    AustLII fetch path run.
+
+    This returns the NEAREST AustLII-constructible neutral cite to the traditional cite
+    - parallel cites are written adjacently. Whether that cite is genuinely the same
+    case is confirmed downstream by the caller, which validates the fetched page lists
+    the traditional cite among its own parallel citations; this function does no
+    jurisdiction or year filtering of its own.
+
+    Args:
+        traditional_cite: the already-extracted cite string (case name / pinpoint
+            stripped by extract_citations), e.g. "(1999) 201 CLR 1"
+        source_text: the raw document the cite came from (case names intact)
+
+    Returns:
+        The nearest AustLII-constructible neutral cite within the pairing window on
+        either side of the traditional cite, or "" if none. construct_austlii_url
+        filters out the traditional cite itself (round brackets do not match the neutral
+        pattern) and non-AustLII courts.
+    """
+    if not traditional_cite or not source_text:
+        return ""
+
+    best = ""
+    best_distance = None
+    search_from = 0
+    while True:
+        occ = source_text.find(traditional_cite, search_from)
+        if occ == -1:
+            break
+        occ_end = occ + len(traditional_cite)
+        window_start = max(0, occ - _PARALLEL_CITE_WINDOW)
+        window_end = min(len(source_text), occ_end + _PARALLEL_CITE_WINDOW)
+        window = source_text[window_start:window_end]
+
+        for m in _NEUTRAL_CITE_RE.finditer(window):
+            candidate = m.group(0)
+            if not construct_austlii_url(candidate):
+                continue
+            candidate_pos = window_start + m.start()
+            candidate_end = candidate_pos + len(candidate)
+            # Gap between the NEAREST edges of the two cites (symmetric: a left-side
+            # candidate is not penalised by its own length).
+            if candidate_end <= occ:
+                distance = occ - candidate_end
+            elif candidate_pos >= occ_end:
+                distance = candidate_pos - occ_end
+            else:
+                distance = 0
+            if best_distance is None or distance < best_distance:
+                best_distance = distance
+                best = candidate
+
+        search_from = occ_end
+
+    return best
 
 
 def verify_via_austlii_direct(citation: str, timeout: int = 5) -> Tuple[bool, str, str]:

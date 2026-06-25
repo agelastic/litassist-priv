@@ -1,6 +1,6 @@
 # P-JUDGE offline eval harness
 
-Last updated: 17/06/2026
+Last updated: 21/06/2026
 
 Repeatable, real-API quality scoring of litassist outputs against a rubric,
 so prompt/model changes are measured rather than guessed. This is ROADMAP
@@ -69,7 +69,10 @@ expected_citations:
 ```
 
 `retrieval_class` values: `fetchable`, `authorised_report` (no
-medium-neutral cite, so no AustLII URL is constructible - see TODO C1/C2),
+medium-neutral cite, so no AustLII URL is constructible - see TODO C1/C2;
+C2 option 1 (shipped 21/06/2026) resolves these ONLY when the source
+document co-occurs the neutral form, which these deliberately CLR-only
+fixtures do not, so they stay `fetchable: false` until option 2/Jade),
 `jade_spa` (Jade.io is SPA/auth-gated and skipped by the fetcher),
 `austlii_pdf_blocked` (Cloudflare-blocked PDF paths), `not_found` (the
 citation does not correspond to a retrievable real authority, e.g. a
