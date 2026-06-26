@@ -618,3 +618,50 @@ def format_cove_report(cove_results: Dict) -> str:
     ]
 
     return "\n".join(lines)
+
+
+# --- P-FAITH: faithfulness scoring -----------------------------------------
+
+# The four labels the alignment stage may assign to a claim. Kept as a set so the
+# pure scorer can validate its input and fail loud on anything else.
+_FAITHFULNESS_LABELS = ("SUPPORTED", "UNSUPPORTED", "CONTRADICTED", "PLACEHOLDER")
+
+
+def score_faithfulness(classifications) -> Dict:
+    """Aggregate per-claim faithfulness labels into a deterministic score.
+
+    Each entry in ``classifications`` is one of SUPPORTED / UNSUPPORTED /
+    CONTRADICTED / PLACEHOLDER (case-insensitive). Pure -- no I/O -- so it is directly
+    unit-testable offline.
+
+    PLACEHOLDER claims use the project's sanctioned ``[... TO BE PROVIDED]`` convention
+    for missing data, so they are NEUTRAL and excluded from the denominator. The score
+    is the fraction of *substantive* claims (supported + unsupported + contradicted)
+    that are grounded in the sources; with no substantive claims the score is 100.
+    """
+    counts = {label: 0 for label in _FAITHFULNESS_LABELS}
+    for label in classifications:
+        key = label.strip().upper()
+        if key not in counts:
+            raise ValueError(f"Unknown faithfulness label: {label!r}")
+        counts[key] += 1
+
+    supported = counts["SUPPORTED"]
+    unsupported = counts["UNSUPPORTED"]
+    contradicted = counts["CONTRADICTED"]
+    placeholder = counts["PLACEHOLDER"]
+
+    # Denominator excludes placeholders (correctly-marked missing data, not a grounding
+    # failure); 100 when nothing substantive needs grounding.
+    substantive = supported + unsupported + contradicted
+    score = round(100 * supported / substantive) if substantive else 100
+
+    return {
+        "score": score,
+        "supported": supported,
+        "unsupported": unsupported,
+        "contradicted": contradicted,
+        "placeholder": placeholder,
+        "flagged_count": unsupported + contradicted,
+        "total": len(classifications),
+    }
