@@ -626,6 +626,14 @@ def format_cove_report(cove_results: Dict) -> str:
 # pure scorer can validate its input and fail loud on anything else.
 _FAITHFULNESS_LABELS = ("SUPPORTED", "UNSUPPORTED", "CONTRADICTED", "PLACEHOLDER")
 
+# Matches the alignment stage's per-claim classification line. One match per claim is
+# the authoritative count for scoring; a malformed response yields zero matches and is
+# failed closed by the orchestrator (no silent score-100).
+_CLASSIFICATION_RE = re.compile(
+    r"^CLASSIFICATION:\s*(SUPPORTED|UNSUPPORTED|CONTRADICTED|PLACEHOLDER)\s*$",
+    re.IGNORECASE | re.MULTILINE,
+)
+
 
 def score_faithfulness(classifications) -> Dict:
     """Aggregate per-claim faithfulness labels into a deterministic score.
@@ -665,3 +673,193 @@ def score_faithfulness(classifications) -> Dict:
         "flagged_count": unsupported + contradicted,
         "total": len(classifications),
     }
+
+
+def _flagged_blocks(alignment: str) -> str:
+    """Return the alignment blocks classified UNSUPPORTED or CONTRADICTED, joined.
+
+    Splits on each ``CLAIM:`` line so blocks stay intact; used only to feed the addendum
+    prompt. The authoritative score comes from ``_CLASSIFICATION_RE`` counts, not this.
+    """
+    flagged = []
+    for block in re.split(r"(?im)^(?=CLAIM:)", alignment):
+        match = _CLASSIFICATION_RE.search(block)
+        if match and match.group(1).upper() in ("UNSUPPORTED", "CONTRADICTED"):
+            flagged.append(block.strip())
+    return "\n\n".join(flagged)
+
+
+def run_faithfulness_verification(
+    content: str, sources_context: str, command: str
+) -> Tuple[str, Dict]:
+    """Check whether the document's factual claims are grounded in the source documents.
+
+    Three stages mirroring run_cove_verification: extract atomic claims, classify each
+    against the sources, and -- only when claims are flagged -- draft a standalone
+    corrective addendum. The original ``content`` is NEVER modified; it is returned
+    unchanged. Returns (content, results) where ``results["faithfulness"]`` carries the
+    score, per-claim classifications, the flagged blocks, and the addendum (or None).
+    """
+    client_claims = LLMClientFactory.for_command("faithfulness-claims")
+    client_align = LLMClientFactory.for_command("faithfulness-align")
+    stages = {}
+
+    # Stage 1: extract atomic claims from the document under test.
+    claims_prompt = PROMPTS.get("verification.faithfulness.claim_extraction").format(
+        content=content
+    )
+    log_task_event(command, "faithfulness-claims", "start", "Extracting atomic claims")
+    client_claims.command_context = f"faithfulness_stage1_claims_{command}"
+    claims, usage1 = client_claims.complete(
+        [{"role": "user", "content": claims_prompt}]
+    )
+    log_task_event(
+        command,
+        "faithfulness-claims",
+        "llm_response",
+        "Received atomic claims",
+        {"model": client_claims.model, "response_length": len(claims), "usage": usage1},
+    )
+    stages["claims"] = {
+        "prompt": claims_prompt,
+        "response": claims,
+        "usage": usage1,
+        "model": client_claims.model,
+    }
+
+    # No substantive claims -> nothing to ground; faithful by definition.
+    if not claims.strip():
+        score_data = score_faithfulness([])
+        results = {
+            "faithfulness": {
+                **score_data,
+                "claims": claims,
+                "alignment": "",
+                "flagged_text": "",
+                "addendum": None,
+            }
+        }
+        save_log(
+            f"faithfulness_{command}_summary",
+            {
+                "command": command,
+                "stages": stages,
+                "result": score_data,
+                "addendum_generated": False,
+                "timestamp": time.strftime("%Y-%m-%d %H:%M:%S"),
+            },
+        )
+        return content, results
+
+    # Stage 2: classify each claim against the sources.
+    align_prompt = PROMPTS.get("verification.faithfulness.alignment").format(
+        sources=sources_context, claims=claims
+    )
+    log_task_event(
+        command, "faithfulness-align", "start", "Classifying claims against sources"
+    )
+    client_align.command_context = f"faithfulness_stage2_align_{command}"
+    alignment, usage2 = client_align.complete(
+        [{"role": "user", "content": align_prompt}]
+    )
+    log_task_event(
+        command,
+        "faithfulness-align",
+        "llm_response",
+        "Received claim classifications",
+        {"model": client_align.model, "response_length": len(alignment), "usage": usage2},
+    )
+    stages["alignment"] = {
+        "prompt": align_prompt,
+        "response": alignment,
+        "usage": usage2,
+        "model": client_align.model,
+    }
+
+    labels = [m.group(1).upper() for m in _CLASSIFICATION_RE.finditer(alignment)]
+    # Fail closed: claims were extracted but the alignment stage produced no parseable
+    # classification line, so the contract was not met. Do not silently score 100.
+    if not labels:
+        raise ValueError(
+            "Faithfulness alignment returned no parseable CLASSIFICATION lines"
+        )
+
+    score_data = score_faithfulness(labels)
+    flagged_text = _flagged_blocks(alignment)
+
+    # Stage 3: corrective addendum, only when claims are flagged. The original document
+    # is left untouched -- the addendum is a separate artifact.
+    addendum = None
+    if score_data["flagged_count"] > 0:
+        client_addendum = LLMClientFactory.for_command("faithfulness-addendum")
+        addendum_prompt = PROMPTS.get("verification.faithfulness.addendum").format(
+            flagged=flagged_text, sources=sources_context, content=content
+        )
+        log_task_event(
+            command, "faithfulness-addendum", "start", "Drafting corrective addendum"
+        )
+        client_addendum.command_context = f"faithfulness_stage3_addendum_{command}"
+        addendum, usage3 = client_addendum.complete(
+            [{"role": "user", "content": addendum_prompt}]
+        )
+        log_task_event(
+            command,
+            "faithfulness-addendum",
+            "llm_response",
+            "Received corrective addendum",
+            {
+                "model": client_addendum.model,
+                "response_length": len(addendum),
+                "usage": usage3,
+            },
+        )
+        stages["addendum"] = {
+            "prompt": addendum_prompt,
+            "response": addendum,
+            "usage": usage3,
+            "model": client_addendum.model,
+        }
+
+    results = {
+        "faithfulness": {
+            **score_data,
+            "claims": claims,
+            "alignment": alignment,
+            "flagged_text": flagged_text,
+            "addendum": addendum,
+        }
+    }
+
+    save_log(
+        f"faithfulness_{command}_summary",
+        {
+            "command": command,
+            "stages": stages,
+            "result": score_data,
+            "addendum_generated": addendum is not None,
+            "timestamp": time.strftime("%Y-%m-%d %H:%M:%S"),
+        },
+    )
+
+    return content, results
+
+
+def format_faithfulness_report(results: Dict) -> str:
+    """Format faithfulness results into a readable report."""
+    data = results.get("faithfulness", {})
+    lines = [
+        "## Faithfulness Report\n",
+        f"**Score**: {data.get('score', 0)}/100",
+        "",
+        f"- Supported: {data.get('supported', 0)}",
+        f"- Unsupported: {data.get('unsupported', 0)}",
+        f"- Contradicted: {data.get('contradicted', 0)}",
+        f"- Placeholder (neutral): {data.get('placeholder', 0)}",
+        "",
+        "### Per-claim classification",
+        data.get("alignment") or "No claims extracted.",
+        "",
+        "### Flagged claims (unsupported or contradicted)",
+        data.get("flagged_text") or "None",
+    ]
+    return "\n".join(lines)
