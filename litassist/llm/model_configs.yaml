@@ -294,3 +294,34 @@ cove-final:
   thinking_effort: "medium"
   enforce_citations: false
   disable_tools: true
+
+# --- P-FAITH faithfulness check (run_faithfulness_verification) ---
+faithfulness-claims:
+  # Stage 1: extracting atomic claims must be literal, not creative -> low temperature;
+  # shallow enumeration task -> low reasoning effort.
+  model: "anthropic/claude-sonnet-4.6"
+  temperature: 0.2
+  top_p: 0.3
+  thinking_effort: "low"
+  enforce_citations: false
+  disable_tools: true
+
+faithfulness-align:
+  # Stage 2: grounding each claim against the sources must be deterministic -> low
+  # temperature; careful span-level cross-checking -> high reasoning effort.
+  model: "openai/gpt-5.5"
+  temperature: 0.2
+  top_p: 0.3
+  thinking_effort: "high"
+  enforce_citations: false
+  disable_tools: true
+
+faithfulness-addendum:
+  # Stage 3: corrective drafting grounded in the sources -> low temperature, moderate
+  # effort (mirrors cove-final).
+  model: "anthropic/claude-sonnet-4.6"
+  temperature: 0.2
+  top_p: 0.4
+  thinking_effort: "medium"
+  enforce_citations: false
+  disable_tools: true
