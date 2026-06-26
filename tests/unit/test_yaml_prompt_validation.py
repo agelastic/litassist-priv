@@ -82,6 +82,9 @@ class TestYAMLPromptValidation:
             "command",
             "timestamp",
             "sources",
+            # P-FAITH faithfulness check (verification.faithfulness.*)
+            "claims",
+            "flagged",
             "option_num",
             "strategy_content",
             "option_number",

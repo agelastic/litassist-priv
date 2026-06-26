@@ -308,6 +308,91 @@ verification:
 
       Generate the complete corrected version of the ORIGINAL DOCUMENT:
 
+  faithfulness:
+    # USED BY: verification_chain.py run_faithfulness_verification() - Stage 1: extract atomic claims
+    claim_extraction: |
+      Extract the atomic factual claims made in the DOCUMENT below. An atomic claim is a
+      single self-contained factual assertion - a date, amount, party name, event,
+      obligation, or characterisation of fact - that could be checked against source
+      material.
+
+      Rules:
+      - Extract only assertions of FACT made by the document. Do not extract legal
+        argument, submissions, rhetorical framing, or boilerplate.
+      - Split compound sentences into separate atomic claims.
+      - Preserve specifics verbatim (numbers, dates, names) so they can be checked.
+      - Treat an explicit placeholder (e.g. [DATE TO BE CONFIRMED], [AMOUNT TO BE
+        PROVIDED]) as its own claim - it marks deliberately missing data.
+
+      === DOCUMENT ===
+      {content}
+      === END DOCUMENT ===
+
+      Output one claim per line, numbered (1. ..., 2. ..., etc.). Output nothing else.
+
+    # USED BY: verification_chain.py run_faithfulness_verification() - Stage 2: classify each claim against the sources
+    alignment: |
+      Check whether each CLAIM below is grounded in the SOURCE DOCUMENTS. The source
+      documents are the ground truth.
+
+      Classify every claim as exactly one of:
+      - SUPPORTED: directly supported by a span in the source documents.
+      - UNSUPPORTED: a specific factual assertion that is NOT found in the source
+        documents (neither supported nor contradicted).
+      - CONTRADICTED: the source documents state something inconsistent with the claim.
+      - PLACEHOLDER: an explicit placeholder for missing data (e.g. [DATE TO BE
+        CONFIRMED]); not a factual assertion to ground.
+
+      === SOURCE DOCUMENTS ===
+      {sources}
+      === END SOURCE DOCUMENTS ===
+
+      === CLAIMS ===
+      {claims}
+      === END CLAIMS ===
+
+      Output one block per claim, in the same order, using exactly these three lines per
+      block and nothing else:
+      CLAIM: <the claim text>
+      CLASSIFICATION: <one of SUPPORTED, UNSUPPORTED, CONTRADICTED, PLACEHOLDER>
+      SOURCE: <quote the supporting or contradicting span from the source documents, or "none">
+
+      The CLASSIFICATION line must contain exactly one of those four words and nothing
+      else - not the list, not a slash-separated set. Emit exactly one CLASSIFICATION
+      line per claim. Do not add any commentary before or after the blocks.
+
+    # USED BY: verification_chain.py run_faithfulness_verification() - Stage 3: corrective addendum (only when claims are flagged)
+    addendum: |
+      The faithfulness check found claims in the ORIGINAL DOCUMENT that are not grounded
+      in the source documents. Write a standalone CORRECTIVE ADDENDUM that addresses ONLY
+      the flagged claims.
+
+      CRITICAL:
+      - Do NOT reproduce, rewrite, or restate the original document. Output the addendum
+        only.
+      - For each flagged claim, state the problem (unsupported by, or contradicted by, the
+        sources) and the correction: either the correct fact drawn from the sources, or an
+        explicit placeholder (e.g. [DATE TO BE CONFIRMED], [AMOUNT TO BE PROVIDED]) when
+        the sources do not supply it.
+      - Never invent specifics. If the sources do not establish a fact, use a placeholder;
+        do not guess.
+      - Use Australian English spelling.
+
+      === FLAGGED CLAIMS ===
+      {flagged}
+      === END FLAGGED CLAIMS ===
+
+      === SOURCE DOCUMENTS ===
+      {sources}
+      === END SOURCE DOCUMENTS ===
+
+      === ORIGINAL DOCUMENT (for reference only - do not reproduce) ===
+      {content}
+      === END ORIGINAL DOCUMENT ===
+
+      Output a titled addendum: a short heading, then one entry per flagged claim (the
+      claim, the issue, and the correction).
+
   # Base Australian law prompt
   # USED BY: llm.py LLMClient.verify() method - base prompt
   # LOCATION: llm.py:1302 (previously fallback, now required)
