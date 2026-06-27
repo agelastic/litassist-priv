@@ -589,6 +589,13 @@ test_verify_command() {
         "litassist verify test_inputs/mock_case_facts.txt --citations --soundness --reasoning --cove --reference 'test_inputs/*.txt' --cove-reference 'test_inputs/*.txt' --heavy --output test_output" \
         "Citation verification complete|Legal soundness check complete" \
         "yes"
+
+    # --faithfulness is opt-in and requires --reference (the source documents the
+    # document's claims are checked against). Runs only the faithfulness stage.
+    run_test "Verify - Faithfulness (claims grounded in --reference sources)" \
+        "litassist verify test_inputs/mock_case_facts.txt --faithfulness --reference 'test_inputs/*.txt' --output test_output" \
+        "Faithfulness check complete" \
+        "yes"
 }
 
 test_counselnotes_command() {
