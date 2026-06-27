@@ -22,11 +22,16 @@ from .core import run_verification_workflow
 @click.option("--soundness", is_flag=True, help="Verify legal soundness only")
 @click.option("--reasoning", is_flag=True, help="Verify/generate reasoning trace only")
 @click.option("--cove", is_flag=True, help="Add Chain of Verification as final check")
+@click.option(
+    "--faithfulness",
+    is_flag=True,
+    help="Check the document's factual claims are grounded in the --reference source documents (requires --reference)."
+)
 @click.option("--output", type=str, help="Custom output filename prefix")
 @click.option(
     "--reference",
     type=str,
-    help="Glob pattern for reference files to include as context (e.g., '*.txt', 'docs/*.pdf'). Supports PDF and text files."
+    help="Glob pattern for the source documents (the ground truth), used as context across stages and, with --faithfulness, the documents the claims are checked against (e.g., '*.txt', 'docs/*.pdf'). Supports PDF and text files."
 )
 @click.option(
     "--cove-reference",
@@ -39,16 +44,25 @@ from .core import run_verification_workflow
     help="Use verification-heavy mode (max thinking effort for reasoning and soundness stages)"
 )
 @timed
-def verify(file, citations, soundness, reasoning, cove, output, reference, cove_reference, heavy):
+def verify(file, citations, soundness, reasoning, cove, faithfulness, output, reference, cove_reference, heavy):
     """
     Verify legal text for citations, soundness, and reasoning.
 
-    By default, performs all three verification types.
-    Use flags to run specific verifications only.
+    By default, performs citations, soundness, and reasoning.
+    Use flags to run specific verifications only. --faithfulness is opt-in and
+    requires --reference source documents.
     """
-    # If no specific verification flags are set, enable all
-    if not any([citations, soundness, reasoning]):
+    # If no specific verification flags are set, enable the default three. --faithfulness
+    # counts as a selection so that "verify FILE --faithfulness" runs ONLY faithfulness.
+    if not any([citations, soundness, reasoning, faithfulness]):
         citations = soundness = reasoning = True
+
+    # Faithfulness checks the document against supplied sources; without them there is
+    # nothing to check against, so fail fast rather than silently degrade.
+    if faithfulness and not reference:
+        raise click.ClickException(
+            "--faithfulness requires --reference source documents to check the document against."
+        )
 
     # Run the verification workflow
     run_verification_workflow(
@@ -57,6 +71,7 @@ def verify(file, citations, soundness, reasoning, cove, output, reference, cove_
         soundness=soundness,
         reasoning=reasoning,
         cove=cove,
+        faithfulness=faithfulness,
         output=output,
         reference=reference,
         cove_reference=cove_reference,

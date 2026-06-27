@@ -21,6 +21,7 @@ from litassist.verification_chain import run_cove_verification, format_cove_repo
 from .citation_verifier import verify_citations
 from .reasoning_handler import verify_reasoning
 from .soundness_checker import verify_soundness
+from .faithfulness_handler import verify_faithfulness
 
 
 def handle_verification_error(step_name: str, exception: Exception) -> None:
@@ -36,6 +37,7 @@ def run_verification_workflow(
     soundness: bool,
     reasoning: bool,
     cove: bool,
+    faithfulness: bool = False,
     output: Optional[str] = None,
     reference: Optional[str] = None,
     cove_reference: Optional[str] = None,
@@ -50,6 +52,7 @@ def run_verification_workflow(
         soundness: Whether to verify soundness
         reasoning: Whether to verify reasoning
         cove: Whether to run Chain of Verification
+        faithfulness: Whether to check claims are grounded in the --reference sources
         output: Optional custom output filename prefix
         reference: Optional reference file glob pattern
         cove_reference: Optional CoVe reference file glob pattern
@@ -65,7 +68,7 @@ def run_verification_workflow(
             "init",
             "start",
             "Starting verification command",
-            {"stages": f"citations={citations}, soundness={soundness}, reasoning={reasoning}, cove={cove}"}
+            {"stages": f"citations={citations}, soundness={soundness}, reasoning={reasoning}, cove={cove}, faithfulness={faithfulness}"}
         )
     except Exception:
         pass
@@ -192,6 +195,21 @@ def run_verification_workflow(
         except Exception as e:
             handle_verification_error("Legal soundness check", e)
             failed_stages.append(("Legal soundness check", str(e)))
+
+    # 3b. Faithfulness check (claims grounded in the --reference sources)
+    if faithfulness:
+        try:
+            (_, _, faithfulness_file,
+             faithfulness_addendum_file) = verify_faithfulness(
+                content, file, reference_context, output
+            )
+            extra_files["Faithfulness report"] = faithfulness_file
+            if faithfulness_addendum_file:
+                extra_files["Faithfulness addendum"] = faithfulness_addendum_file
+            reports_generated += 1
+        except Exception as e:
+            handle_verification_error("Faithfulness check", e)
+            failed_stages.append(("Faithfulness check", str(e)))
 
     # 4. Chain of Verification (Final Stage)
     if cove:
@@ -321,6 +339,7 @@ def run_verification_workflow(
                         "soundness": soundness,
                         "reasoning": reasoning,
                         "cove": cove,
+                        "faithfulness": faithfulness,
                         "reference": reference,
                         "cove_reference": cove_reference,
                     },

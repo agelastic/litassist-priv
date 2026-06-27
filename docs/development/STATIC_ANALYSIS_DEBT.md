@@ -20,6 +20,13 @@ it is logged HERE, not just mentioned in passing.
 | 433-435 | `answers_prompt` possibly unbound | In `run_cove_verification`, `answers_prompt` is assigned inside the `while answers is None and attempts < 5:` loop (line 324) and read after the loop in `cove_stages["answers"]`. | None at runtime: the loop always executes at least once (`attempts` starts at 0). Static analysis cannot prove it. Initialise `answers_prompt = ""` before the loop to satisfy the checker. |
 | 576 | `usage4` possibly unbound | In `run_cove_verification`'s summary `total_tokens`, `usage4` is assigned only inside the `if not passed:` regeneration block and read in the summary. | None at runtime: guarded by `if not passed and "usage4" in locals()`. The `locals()` guard is what trips the checker. Hoist `usage4 = {}` before the branch and drop the `in locals()` check. |
 
+## `litassist/commands/verify/core.py`
+
+| Line | Diagnostic | Detail | Runtime risk |
+|------|------------|--------|--------------|
+| ~165 | `verified`, `unverified` not accessed | The citation stage unpacks `(..., verified, unverified) = verify_citations(...)` but neither is used downstream. | None. Unused unpack targets; replace with `_`. |
+| ~175 | `existing_trace` not accessed | The reasoning stage unpacks `existing_trace` from `verify_reasoning(...)` and never uses it. | None. Unused unpack target; replace with `_`. |
+
 ## `tests/unit/test_yaml_prompt_validation.py`
 
 | Line | Diagnostic | Detail | Runtime risk |

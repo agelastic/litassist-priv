@@ -261,6 +261,40 @@ class TestVerifyCommand:
                 mock_wf.assert_called_once()
                 assert mock_wf.call_args.kwargs["file"] == newer
 
+    def test_verify_faithfulness_requires_reference(self, runner):
+        """--faithfulness without --reference fails fast before any workflow runs."""
+        with runner.isolated_filesystem():
+            with open("doc.txt", "w") as fh:
+                fh.write("some content")
+            with patch(
+                "litassist.commands.verify.run_verification_workflow"
+            ) as mock_wf:
+                result = runner.invoke(verify, ["doc.txt", "--faithfulness"])
+                assert result.exit_code != 0
+                assert "--faithfulness requires --reference" in result.output
+                mock_wf.assert_not_called()
+
+    def test_verify_faithfulness_only_does_not_enable_default_stages(self, runner):
+        """verify FILE --faithfulness --reference runs ONLY faithfulness, leaving the
+        default three (citations/soundness/reasoning) off."""
+        with runner.isolated_filesystem():
+            with open("doc.txt", "w") as fh:
+                fh.write("some content")
+            with open("sources.txt", "w") as fh:
+                fh.write("ground truth")
+            with patch(
+                "litassist.commands.verify.run_verification_workflow"
+            ) as mock_wf:
+                result = runner.invoke(
+                    verify, ["doc.txt", "--faithfulness", "--reference", "sources.txt"]
+                )
+                assert result.exit_code == 0, result.output
+                kwargs = mock_wf.call_args.kwargs
+                assert kwargs["faithfulness"] is True
+                assert kwargs["citations"] is False
+                assert kwargs["soundness"] is False
+                assert kwargs["reasoning"] is False
+
     def testformat_citation_report(self):
         """Test citation report formatting."""
         verified = ["Case1 [2020] HCA 1", "Case2 [2021] FCA 2"]
