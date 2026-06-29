@@ -776,12 +776,16 @@ def run_faithfulness_verification(
         "model": client_align.model,
     }
 
+    # Count the claims stage 1 extracted (the prompt numbers them "1. ", "2. ", ...).
+    claim_count = len(re.findall(r"(?m)^\s*\d+\.", claims))
     labels = [m.group(1).upper() for m in _CLASSIFICATION_RE.finditer(alignment)]
-    # Fail closed: claims were extracted but the alignment stage produced no parseable
-    # classification line, so the contract was not met. Do not silently score 100.
-    if not labels:
+    # Fail closed unless EVERY extracted claim was classified. A partial alignment
+    # (fewer classifications than claims) must not score as fully faithful: an ungraded
+    # claim could be unsupported or contradicted, so a missing grade is silent risk.
+    if not labels or len(labels) < claim_count:
         raise ValueError(
-            "Faithfulness alignment returned no parseable CLASSIFICATION lines"
+            f"Faithfulness alignment classified {len(labels)} of {claim_count} claims; "
+            "expected one classification per extracted claim"
         )
 
     score_data = score_faithfulness(labels)

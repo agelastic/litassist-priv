@@ -122,6 +122,17 @@ def test_malformed_alignment_fails_closed():
         _run(mapping)
 
 
+def test_partial_alignment_fails_closed():
+    # Stage 1 extracts three claims but the alignment classifies only one. The two
+    # ungraded claims could be unsupported/contradicted, so a partial alignment must
+    # NOT score as fully faithful -- it fails closed.
+    claims = "1. claim one\n2. claim two\n3. claim three"
+    alignment = "CLAIM: claim one\nCLASSIFICATION: SUPPORTED\nSOURCE: none\n"
+    mapping = _clients(claims, alignment)
+    with pytest.raises(ValueError):
+        _run(mapping)
+
+
 def test_no_claims_skips_alignment_and_is_faithful():
     mapping = _clients("   ", "unused")
     content, results = _run(mapping)
