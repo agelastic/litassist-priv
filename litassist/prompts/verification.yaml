@@ -336,12 +336,26 @@ verification:
       documents are the ground truth.
 
       Classify every claim as exactly one of:
-      - SUPPORTED: directly supported by a span in the source documents.
-      - UNSUPPORTED: a specific factual assertion that is NOT found in the source
-        documents (neither supported nor contradicted).
+      - SUPPORTED: the source documents establish the same fact, whether in the same
+        words or as a faithful restatement. A paraphrase, a change of voice
+        (active/passive), a synonym, or a reordering does NOT make a claim
+        unsupported. The test is whether the source establishes the fact, not whether
+        the wording matches. Where the source states a fact passively (an event that
+        was to happen) and the claim attributes it to the party the source plainly
+        identifies by role or context, that is still SUPPORTED.
+      - UNSUPPORTED: the claim introduces a specific - a date, figure, name, or event -
+        that the source documents do not establish, directly or by faithful
+        restatement. Do not flag a claim merely because its wording differs from the
+        source.
       - CONTRADICTED: the source documents state something inconsistent with the claim.
       - PLACEHOLDER: an explicit placeholder for missing data (e.g. [DATE TO BE
         CONFIRMED]); not a factual assertion to ground.
+
+      A faithful restatement is SUPPORTED, not unsupported. For example, if a source
+      span reads "The goods were to be delivered by 15 March 2020" and the claim reads
+      "The defendant was required to deliver the goods by 15 March 2020", classify it
+      SUPPORTED and quote that span - the delivery obligation and date are the same
+      fact stated in different words.
 
       === SOURCE DOCUMENTS ===
       {sources}
