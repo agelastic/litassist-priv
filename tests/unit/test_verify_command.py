@@ -295,6 +295,31 @@ class TestVerifyCommand:
                 assert kwargs["soundness"] is False
                 assert kwargs["reasoning"] is False
 
+    def test_faithfulness_fails_fast_when_reference_matches_no_files(self, tmp_path):
+        """--reference glob that matches nothing must fail before any LLM stage runs,
+        not classify every claim UNSUPPORTED against an empty source set."""
+        import click
+        from litassist.commands.verify.core import run_verification_workflow
+
+        doc = tmp_path / "doc.txt"
+        doc.write_text("The contract was signed on 1 March 2020.")
+        with patch(
+            "litassist.commands.verify.core.verify_faithfulness"
+        ) as mock_faith, patch("litassist.commands.verify.core.save_log"), patch(
+            "litassist.commands.verify.core.log_task_event"
+        ):
+            with pytest.raises(click.ClickException, match="matched no"):
+                run_verification_workflow(
+                    file=str(doc),
+                    citations=False,
+                    soundness=False,
+                    reasoning=False,
+                    cove=False,
+                    faithfulness=True,
+                    reference=str(tmp_path / "nomatch*.txt"),
+                )
+            mock_faith.assert_not_called()
+
     def testformat_citation_report(self):
         """Test citation report formatting."""
         verified = ["Case1 [2020] HCA 1", "Case2 [2021] FCA 2"]

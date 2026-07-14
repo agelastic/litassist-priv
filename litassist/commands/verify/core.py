@@ -124,6 +124,15 @@ def run_verification_workflow(
         except Exception:
             pass
 
+    # The CLI guarantees --faithfulness came with --reference, but the glob can still
+    # match no readable files. Checking claims against empty sources would spend LLM
+    # calls to grade everything UNSUPPORTED, so fail fast instead.
+    if faithfulness and not reference_context.strip():
+        raise click.ClickException(
+            "--faithfulness: the --reference pattern matched no readable source "
+            "documents to check the document against."
+        )
+
     # Process CoVe reference files if provided
     cove_reference_context, cove_reference_files = process_reference_files(
         cove_reference,

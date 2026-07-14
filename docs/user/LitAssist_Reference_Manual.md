@@ -1,6 +1,6 @@
 # LitAssist Reference Manual
 
-Last updated: 26/06/2026
+Last updated: 14/07/2026
 
 ---
 
@@ -1556,7 +1556,8 @@ unsupported, contradicted, or placeholder, and writes a per-claim report with a
 faithfulness score. Placeholders (the `[... TO BE PROVIDED]` convention) are neutral
 and do not lower the score. When claims are unsupported or contradicted, a separate
 corrective **addendum** is written (`verify_faithfulness_addendum`); the original
-document is never rewritten. Requires `--reference`; fails fast without it.
+document is never rewritten. Requires `--reference`; fails fast without it, and when
+the `--reference` pattern matches no readable files.
 
 **Reference files:**
 
