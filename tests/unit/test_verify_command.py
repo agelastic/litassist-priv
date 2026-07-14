@@ -261,6 +261,107 @@ class TestVerifyCommand:
                 mock_wf.assert_called_once()
                 assert mock_wf.call_args.kwargs["file"] == newer
 
+    def test_verify_faithfulness_requires_reference(self, runner):
+        """--faithfulness without --reference fails fast before any workflow runs."""
+        with runner.isolated_filesystem():
+            with open("doc.txt", "w") as fh:
+                fh.write("some content")
+            with patch(
+                "litassist.commands.verify.run_verification_workflow"
+            ) as mock_wf:
+                result = runner.invoke(verify, ["doc.txt", "--faithfulness"])
+                assert result.exit_code != 0
+                assert "--faithfulness requires --reference" in result.output
+                mock_wf.assert_not_called()
+
+    def test_verify_faithfulness_only_does_not_enable_default_stages(self, runner):
+        """verify FILE --faithfulness --reference runs ONLY faithfulness, leaving the
+        default three (citations/soundness/reasoning) off."""
+        with runner.isolated_filesystem():
+            with open("doc.txt", "w") as fh:
+                fh.write("some content")
+            with open("sources.txt", "w") as fh:
+                fh.write("ground truth")
+            with patch(
+                "litassist.commands.verify.run_verification_workflow"
+            ) as mock_wf:
+                result = runner.invoke(
+                    verify, ["doc.txt", "--faithfulness", "--reference", "sources.txt"]
+                )
+                assert result.exit_code == 0, result.output
+                kwargs = mock_wf.call_args.kwargs
+                assert kwargs["faithfulness"] is True
+                assert kwargs["citations"] is False
+                assert kwargs["soundness"] is False
+                assert kwargs["reasoning"] is False
+
+    def test_faithfulness_fails_fast_when_reference_matches_no_files(self, tmp_path):
+        """--reference glob that matches nothing must fail before any LLM stage runs,
+        not classify every claim UNSUPPORTED against an empty source set."""
+        import click
+        from litassist.commands.verify.core import run_verification_workflow
+
+        doc = tmp_path / "doc.txt"
+        doc.write_text("The contract was signed on 1 March 2020.")
+        with patch(
+            "litassist.commands.verify.core.verify_faithfulness"
+        ) as mock_faith, patch("litassist.commands.verify.core.save_log"), patch(
+            "litassist.commands.verify.core.log_task_event"
+        ):
+            with pytest.raises(click.ClickException, match="matched no"):
+                run_verification_workflow(
+                    file=str(doc),
+                    citations=False,
+                    soundness=False,
+                    reasoning=False,
+                    cove=False,
+                    faithfulness=True,
+                    reference=str(tmp_path / "nomatch*.txt"),
+                )
+            mock_faith.assert_not_called()
+
+    def test_cove_runs_when_citations_paired_with_faithfulness(self, tmp_path):
+        """--citations --faithfulness --cove is not a citations-only run: the
+        requested CoVe stage must execute, not be skipped."""
+        from litassist.commands.verify.core import run_verification_workflow
+
+        doc = tmp_path / "doc.txt"
+        doc.write_text("The contract was signed on 1 March 2020.")
+        src = tmp_path / "src.txt"
+        src.write_text("Deed dated 1 March 2020.")
+        with patch(
+            "litassist.commands.verify.core.verify_citations"
+        ) as mock_cit, patch(
+            "litassist.commands.verify.core.verify_faithfulness"
+        ) as mock_faith, patch(
+            "litassist.commands.verify.core.run_cove_verification"
+        ) as mock_cove, patch(
+            "litassist.commands.verify.core.format_cove_report"
+        ), patch(
+            "litassist.commands.verify.core.save_command_output"
+        ) as mock_save, patch(
+            "litassist.commands.verify.core.save_log"
+        ), patch(
+            "litassist.commands.verify.core.log_task_event"
+        ):
+            mock_cit.return_value = ("report", {}, "cit.txt", [], [])
+            mock_faith.return_value = ({}, 100, "faith.txt", None)
+            mock_cove.return_value = (
+                "content",
+                {"cove": {"regenerated": False, "issues": None}},
+            )
+            mock_save.return_value = "cove_report.txt"
+            run_verification_workflow(
+                file=str(doc),
+                citations=True,
+                soundness=False,
+                reasoning=False,
+                cove=True,
+                faithfulness=True,
+                reference=str(src),
+            )
+            mock_cove.assert_called_once()
+
     def testformat_citation_report(self):
         """Test citation report formatting."""
         verified = ["Case1 [2020] HCA 1", "Case2 [2021] FCA 2"]

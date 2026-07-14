@@ -1,6 +1,6 @@
 # LitAssist Feature Roadmap
 
-Last updated: 21/06/2026
+Last updated: 28/06/2026
 **Status:** Strategic planning; roadmap items are aspirational unless marked DONE, PARTIALLY SUPERSEDED, or already implemented elsewhere
 **Confidence:** 0.88
 
@@ -268,8 +268,8 @@ P-JUDGE is built **first** as the measurement keystone. Without a repeatable
 offline eval, every other "quality" change here is judged by vibes (this
 roadmap's own framing: "measured vs guessed at"). P1-12 then ships **only if**
 P-JUDGE shows its 2-4x-cost cross-check actually improves output over the existing
-three-stage verify; P2-19 reuses P1-12's plumbing. P-FAITH is a sibling,
-sequenced as capacity allows. Rationale: P2-19 depends on P1-12, and neither is
+three-stage verify; P2-19 reuses P1-12's plumbing. P-FAITH was a sibling, now
+SHIPPED (28/06/2026). Rationale: P2-19 depends on P1-12, and neither is
 falsifiable without P-JUDGE - so committing the ensemble spend before the
 measurement that justifies it is the inversion this re-sequence corrects.
 
@@ -413,7 +413,13 @@ The historical design intent follows, retained for context.
 
 ---
 
-### P-FAITH: Long-Context Faithfulness Checker [NEW - 04/06/2026]
+### P-FAITH: Long-Context Faithfulness Checker [SHIPPED 28/06/2026]
+**Status:** Shipped on branch `feat/p-faith-faithfulness`. `verify FILE
+--faithfulness --reference <sources>` extracts the document's atomic claims,
+classifies each against the source documents, scores faithfulness, and writes a
+per-claim report plus a separate corrective addendum when claims are flagged. The
+original document is never rewritten. Pure scoring core is offline-unit-tested;
+the staged orchestrator and CLI wiring have mocked integration tests.
 **Effort:** 10-14 hours
 **Priority:** HIGH
 
@@ -436,20 +442,20 @@ facts - no drift, no silent omission, no invented specifics beyond the existing
 - Aggregate a document faithfulness score
 - Flag unsupported specifics (ties into the anti-hallucination placeholder rule)
 
-**Implementation:**
-- Extend `litassist/verification_chain.py`, reusing the multi-stage pipeline
-  pattern of `run_cove_verification()`
-- Load the `--sources` files through the existing supplied-file path
-  (`litassist/utils/file_ops.py:read_document()` plus an `expand_glob_*` callback, as
-  `draft` already does via `litassist/commands/draft/document_processor.py`) - these are
-  the documents claims are checked against. Optionally pull cited-authority
-  context via `citation_context.py:fetch_citation_context()` as a secondary
-  source, but it is not the primary `--sources` loader
-- New flag: `la verify --input draft.md --faithfulness --sources case_facts.md`
-- New prompt keys under `litassist/prompts/verification.yaml` (e.g. `claim_extraction`,
-  `faithfulness_alignment`)
-- LLM: Claude Sonnet 4.6 (claim extraction) + GPT-5.5 (cross-check)
-- Output: Per-claim table + faithfulness score + flagged sections
+**Implementation (as shipped):**
+- `run_faithfulness_verification()` in `litassist/verification_chain.py`, reusing the
+  multi-stage pattern of `run_cove_verification()`; plus a pure, offline-tested
+  `score_faithfulness()` scoring core
+- Sources are the existing `--reference` files (no new `--sources` flag - the flag was
+  reused and its meaning tightened to "source documents"), loaded via the verify
+  command's existing `process_reference_files()` path
+- Flag: `verify FILE --faithfulness --reference case_facts.md` (positional `FILE`, not
+  `--input`); opt-in and fails fast without `--reference`
+- New prompt keys `verification.faithfulness.{claim_extraction,alignment,addendum}`;
+  model roles `faithfulness-claims` (Sonnet 4.6), `faithfulness-align` (GPT-5.5),
+  `faithfulness-addendum` (Sonnet 4.6)
+- Output: per-claim report + faithfulness score (placeholders neutral) + a SEPARATE
+  corrective addendum when claims are flagged; the original document is never rewritten
 
 ---
 
@@ -1404,7 +1410,7 @@ la profile --create "Agency A" --type government
    **P-JUDGE Eval Harness FIRST** (keystone; calibrate baseline) -> P1-12
    Multi-Model Cross-Checks, shipped **only if** P-JUDGE shows lift > cost ->
    P2-19 Bias Divergence Detector (thin add on P1-12) -> P-FAITH Long-Context
-   Faithfulness as capacity allows.
+   Faithfulness [SHIPPED 28/06/2026].
 4. Phase 3 Citation & Compliance as capacity allows
    (Phase 4 Professional Complaints stays dormant unless step 0 says otherwise.)
 

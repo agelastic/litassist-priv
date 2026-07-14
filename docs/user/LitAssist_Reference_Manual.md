@@ -1,6 +1,6 @@
 # LitAssist Reference Manual
 
-Last updated: 17/06/2026
+Last updated: 14/07/2026
 
 ---
 
@@ -1500,16 +1500,19 @@ litassist verify <file> [OPTIONS]
 | `--soundness` | flag | Verify legal soundness only |
 | `--reasoning` | flag | Verify/generate reasoning trace only |
 | `--cove` | flag | Add Chain of Verification as final check |
-| `--reference` | glob | Reference files for context (required to detect fabricated facts) |
+| `--faithfulness` | flag | Check the document's claims are grounded in the `--reference` sources (requires `--reference`) |
+| `--reference` | glob | Source documents (the ground truth) used as context across stages and, with `--faithfulness`, the documents the claims are checked against |
 | `--cove-reference` | glob | Reference files for CoVe answer stage (requires `--cove`) |
 | `--heavy` | flag | Use GPT-5.5 for reasoning and soundness |
 | `--output` | text | Custom output filename prefix |
 
 **Default behaviour:**
 
-With no flags, all three verifications run: citations, soundness, and reasoning.
+With no flags, three verifications run: citations, soundness, and reasoning.
 Individual flags select specific checks. The `--cove` flag adds CoVe as an
-additional stage after the selected checks.
+additional stage after the selected checks. `--faithfulness` is opt-in: it requires
+`--reference` and, when passed on its own, runs only the faithfulness check (it does
+not enable the default three).
 
 **Detecting fabricated facts (`--reference`):**
 
@@ -1543,14 +1546,29 @@ The `--heavy` flag substitutes GPT-5.5 (with maximum reasoning effort) for the
 reasoning and soundness stages. This provides the highest quality verification at
 higher cost.
 
+**Faithfulness check (`--faithfulness`):**
+
+`--faithfulness` checks whether the document's factual claims are grounded in the
+`--reference` source documents - a failure mode distinct from citation validity (a
+real, verified citation can still be misapplied to the facts). It extracts the
+document's atomic claims, classifies each against the sources as supported,
+unsupported, contradicted, or placeholder, and writes a per-claim report with a
+faithfulness score. Placeholders (the `[... TO BE PROVIDED]` convention) are neutral
+and do not lower the score. When claims are unsupported or contradicted, a separate
+corrective **addendum** is written (`verify_faithfulness_addendum`); the original
+document is never rewritten. Requires `--reference`; fails fast without it, and when
+the `--reference` pattern matches no readable files.
+
 **Reference files:**
 
-The `--reference` option provides additional documents as context during
-verification. This is useful when the document being verified references exhibits,
-affidavits, or other materials that the verifier needs to see.
+The `--reference` option provides the source documents (the ground truth) as context
+during verification. This is useful when the document being verified references
+exhibits, affidavits, or other materials that the verifier needs to see, and it is
+the documents `--faithfulness` checks the claims against.
 
 **Models:** GPT-5.5 (citations), Claude Opus 4.7 (soundness), Claude Sonnet 4.6
-(reasoning), GPT-5.5 (heavy mode)
+(reasoning), GPT-5.5 (heavy mode), Claude Sonnet 4.6 + GPT-5.5 (faithfulness:
+claim extraction + grounding classification)
 
 **Smith v Jones example:**
 

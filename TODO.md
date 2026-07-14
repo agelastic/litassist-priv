@@ -1,6 +1,6 @@
 # LitAssist Development TODO
 
-Last updated: 22/06/2026
+Last updated: 28/06/2026
 
 **Note:** Strategic feature planning (litigation support, advisory capabilities, new commands) is now in [ROADMAP.md](ROADMAP.md). This file focuses on bugs, technical debt, and code quality improvements.
 
@@ -11,6 +11,10 @@ Model Quality & Research, **re-sequenced measurement-first**. **P-JUDGE SHIPPED
 baseline; see `docs/development/JUDGE_EVAL.md`). P1-12 cross-checks were built and
 then **REMOVED 17/06/2026** (evaluated, no unique value over plain
 `verify --reference`); P2-19 divergence is parked. P-JUDGE stays as the keystone.
+**P-FAITH SHIPPED 28/06/2026** on branch `feat/p-faith-faithfulness`
+(`verify FILE --faithfulness --reference <sources>`: per-claim grounding check +
+separate corrective addendum; `run_faithfulness_verification` +
+`score_faithfulness` in `litassist/verification_chain.py`).
 De-risk track done: CSE->Vertex scoping validated 10/06/2026 (below) and licensing
 resolved as MIT 10/06/2026. P-JUDGE's benchmark seeds the un-fetchable citation
 classes (authorised-report CLR-only cites, a confabulated citation, overseas
@@ -110,7 +114,7 @@ cookie-reuse lands. See ROADMAP P-JUDGE.
 3. Review ongoing prompt optimization opportunities (October 2025 model strategy implemented)
 4. **Pricing-aware features:** `litassist/llm/model_capabilities.yaml` already carries `input_price_per_mtok` and `output_price_per_mtok` per model (refreshable via `litassist refresh`). Consume them for per-call cost logging, a `--budget` flag, cost-aware model selection, and a cost field in the audit log. **Actual per-call cost now captured (17/06/2026):** the local price-table estimator `cost.py:estimate_call_cost` was removed; `litassist/llm/usage.py` records OpenRouter's real billed `usage.cost` per call (summed across internal billed SDK calls) into the audit log. Still to add: a `--budget` flag and cost-aware model selection built on those captured costs.
 5. See ROADMAP.md for strategic feature implementation planning
-6. **Roadmap restructure (04/06/2026 - no active litigation):** ROADMAP.md is research-led, with professional complaints demoted to the dormant backlog pending the [URGENT] tool-assessment above. Phase order: (1) Matter Foundation, (2) Model Quality & Research [LEAD], (3) Citation & Compliance, (4) Professional Complaints (DEFERRED/dormant), (5) Litigation Tooling (DORMANT), (6) FOI (deprioritised) + Infrastructure. P-IDs are now stable handles (not phase indicators). Code-touching items relevant to this file: **P1-12 Multi-Model Cross-Checks shipped behind `verify --cross-check` (13/06/2026) as a NEW read-only module `litassist/commands/verify/ensemble.py`, NOT an extension of `verification_chain.py`** (the ensemble compares, it does not rewrite); P2-19 Bias Divergence Detector will reuse that module; the new **P-FAITH** Long-Context Faithfulness Checker extends `litassist/verification_chain.py` (reusing `run_cove_verification()` + `citation_context.py:fetch_citation_context()`); the new **P-JUDGE** LLM-as-Judge eval harness lands as a real-API `test-scripts/test_judge_eval.py` building on `test_quality.py`. Deprioritised: P0A-2 (-> P3, dormant), P2-16 FOI (-> LOW). Dropped: P1-14 Evidence Chain Tracker. Full detail and dependency notes in ROADMAP.md.
+6. **Roadmap restructure (04/06/2026 - no active litigation):** ROADMAP.md is research-led, with professional complaints demoted to the dormant backlog pending the [URGENT] tool-assessment above. Phase order: (1) Matter Foundation, (2) Model Quality & Research [LEAD], (3) Citation & Compliance, (4) Professional Complaints (DEFERRED/dormant), (5) Litigation Tooling (DORMANT), (6) FOI (deprioritised) + Infrastructure. P-IDs are now stable handles (not phase indicators). Code-touching items relevant to this file: **P1-12 Multi-Model Cross-Checks shipped behind `verify --cross-check` (13/06/2026) as a NEW read-only module `litassist/commands/verify/ensemble.py`, NOT an extension of `verification_chain.py`** (the ensemble compares, it does not rewrite); P2-19 Bias Divergence Detector will reuse that module; **P-FAITH** Long-Context Faithfulness Checker SHIPPED 28/06/2026, extending `litassist/verification_chain.py` (`run_faithfulness_verification()` reusing the `run_cove_verification()` staged pattern; sources are the reused `--reference` files, not a new `--sources` flag); the new **P-JUDGE** LLM-as-Judge eval harness lands as a real-API `test-scripts/test_judge_eval.py` building on `test_quality.py`. Deprioritised: P0A-2 (-> P3, dormant), P2-16 FOI (-> LOW). Dropped: P1-14 Evidence Chain Tracker. Full detail and dependency notes in ROADMAP.md.
 7. **Phase 2 re-sequence (09/06/2026 - approved plan, measurement-first):** within the Model Quality & Research thrust, **P-JUDGE is built first** as the measurement keystone; P1-12 cross-checks ship **only if** P-JUDGE shows lift > cost; P2-19 divergence is a thin add reusing P1-12's `litassist/commands/verify/ensemble.py`. Corrects the prior ordering (which committed the ensemble spend before the eval that justifies it). The two new `verify` flags (`--cross-check`, `--divergence-check`/`--models`) attach to the **positional FILE** arg (not `--input`) and must be added to `test-scripts/test_cli_comprehensive.sh`. See ROADMAP Phase 2 + Next Steps.
 
 ## Future Plans

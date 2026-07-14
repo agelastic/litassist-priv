@@ -1,0 +1,41 @@
+# Static Analysis Debt
+
+Last updated: 26/06/2026
+
+Pyright diagnostics that exist in the codebase and are recorded here to address
+later. They were surfaced (not introduced) during the P-FAITH work on branch
+`feat/p-faith-faithfulness` when files were edited and the linter re-ran over them.
+None is a known runtime defect today, but each is real and ours to clean up.
+Priority: LOW (no observed misbehaviour); fix in a dedicated pass, not bundled into
+feature commits.
+
+Standing rule: any diagnostic surfaced but not actioned in the commit that surfaced
+it is logged HERE, not just mentioned in passing.
+
+## `litassist/verification_chain.py`
+
+| Line | Diagnostic | Detail | Runtime risk |
+|------|------------|--------|--------------|
+| 88 | `model_name` is not accessed | In `run_verification_chain` stage 3, `corrected_content, model_name = client.verify(...)` binds `model_name` but it is never used. | None. Dead variable; the soundness/cove handlers capture and log their model name, this stage does not. Either log it or discard with `_`. |
+| 433-435 | `answers_prompt` possibly unbound | In `run_cove_verification`, `answers_prompt` is assigned inside the `while answers is None and attempts < 5:` loop (line 324) and read after the loop in `cove_stages["answers"]`. | None at runtime: the loop always executes at least once (`attempts` starts at 0). Static analysis cannot prove it. Initialise `answers_prompt = ""` before the loop to satisfy the checker. |
+| 576 | `usage4` possibly unbound | In `run_cove_verification`'s summary `total_tokens`, `usage4` is assigned only inside the `if not passed:` regeneration block and read in the summary. | None at runtime: guarded by `if not passed and "usage4" in locals()`. The `locals()` guard is what trips the checker. Hoist `usage4 = {}` before the branch and drop the `in locals()` check. |
+
+## `litassist/commands/verify/core.py`
+
+| Line | Diagnostic | Detail | Runtime risk |
+|------|------------|--------|--------------|
+| ~165 | `verified`, `unverified` not accessed | The citation stage unpacks `(..., verified, unverified) = verify_citations(...)` but neither is used downstream. | None. Unused unpack targets; replace with `_`. |
+| ~175 | `existing_trace` not accessed | The reasoning stage unpacks `existing_trace` from `verify_reasoning(...)` and never uses it. | None. Unused unpack target; replace with `_`. |
+
+## `tests/unit/test_yaml_prompt_validation.py`
+
+| Line | Diagnostic | Detail | Runtime risk |
+|------|------------|--------|--------------|
+| 253 | `prompts_dir` is not accessed | A local bound in the validation loop is never read. | None. Test-only unused local; discard with `_` or remove the binding. |
+
+## How to clear
+
+A single focused commit that initialises the loop/branch variables and removes or
+uses `model_name` -- no behavioural change, just making the static checker agree with
+the runtime invariants. Verify with `pytest` (the CoVe tests already cover these
+paths) and a clean Pyright pass on the file.

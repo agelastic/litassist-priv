@@ -1,6 +1,6 @@
 # Changelog
 
-Last updated: 22/06/2026
+Last updated: 14/07/2026
 
 All notable changes to LitAssist will be documented in this file.
 
@@ -12,6 +12,21 @@ Historical dated sections preserve the model names that were current when those 
 ## [Unreleased]
 
 ### Added
+- Long-context faithfulness check (P-FAITH). `verify FILE --faithfulness --reference
+  <sources>` checks whether the document's factual claims are grounded in the supplied
+  source documents - a failure mode distinct from citation validity.
+  `run_faithfulness_verification` (`litassist/verification_chain.py`) runs staged calls
+  (extract atomic claims, classify each against the sources as
+  supported/unsupported/contradicted/placeholder, and - only when claims are flagged -
+  draft a corrective addendum) and
+  a pure, offline-tested `score_faithfulness` aggregates the score (placeholders are
+  neutral). When claims are unsupported or contradicted, a SEPARATE addendum file is
+  written (`verify_faithfulness_addendum`); the original document is never rewritten.
+  `--faithfulness` is opt-in and fails fast without `--reference` or when the
+  `--reference` pattern matches no readable files; the `--reference` flag's meaning is
+  tightened to "source documents". New prompt keys
+  `verification.faithfulness.*` and model roles `faithfulness-claims` (Sonnet 4.6),
+  `faithfulness-align` (GPT-5.5), `faithfulness-addendum` (Sonnet 4.6). ROADMAP P-FAITH.
 - Authorised-report citation retrieval (C2 option 1). `fetch_citation_context` now
   takes an optional `source_text`; when an authorised-report cite like
   `(1999) 201 CLR 1` has no constructible AustLII URL, `resolve_neutral_from_parallel`
