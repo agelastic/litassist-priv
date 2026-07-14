@@ -223,7 +223,7 @@ def run_verification_workflow(
     # 4. Chain of Verification (Final Stage)
     if cove:
         # Skip CoVe if only citations are being verified
-        if citations and not soundness and not reasoning:
+        if citations and not soundness and not reasoning and not faithfulness:
             click.echo(
                 warning_message(
                     "CoVe skipped: --cove flag is ignored when only verifying citations"

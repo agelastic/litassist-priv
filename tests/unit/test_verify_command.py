@@ -320,6 +320,48 @@ class TestVerifyCommand:
                 )
             mock_faith.assert_not_called()
 
+    def test_cove_runs_when_citations_paired_with_faithfulness(self, tmp_path):
+        """--citations --faithfulness --cove is not a citations-only run: the
+        requested CoVe stage must execute, not be skipped."""
+        from litassist.commands.verify.core import run_verification_workflow
+
+        doc = tmp_path / "doc.txt"
+        doc.write_text("The contract was signed on 1 March 2020.")
+        src = tmp_path / "src.txt"
+        src.write_text("Deed dated 1 March 2020.")
+        with patch(
+            "litassist.commands.verify.core.verify_citations"
+        ) as mock_cit, patch(
+            "litassist.commands.verify.core.verify_faithfulness"
+        ) as mock_faith, patch(
+            "litassist.commands.verify.core.run_cove_verification"
+        ) as mock_cove, patch(
+            "litassist.commands.verify.core.format_cove_report"
+        ), patch(
+            "litassist.commands.verify.core.save_command_output"
+        ) as mock_save, patch(
+            "litassist.commands.verify.core.save_log"
+        ), patch(
+            "litassist.commands.verify.core.log_task_event"
+        ):
+            mock_cit.return_value = ("report", {}, "cit.txt", [], [])
+            mock_faith.return_value = ({}, 100, "faith.txt", None)
+            mock_cove.return_value = (
+                "content",
+                {"cove": {"regenerated": False, "issues": None}},
+            )
+            mock_save.return_value = "cove_report.txt"
+            run_verification_workflow(
+                file=str(doc),
+                citations=True,
+                soundness=False,
+                reasoning=False,
+                cove=True,
+                faithfulness=True,
+                reference=str(src),
+            )
+            mock_cove.assert_called_once()
+
     def testformat_citation_report(self):
         """Test citation report formatting."""
         verified = ["Case1 [2020] HCA 1", "Case2 [2021] FCA 2"]
