@@ -133,6 +133,20 @@ def test_partial_alignment_fails_closed():
         _run(mapping)
 
 
+def test_surplus_alignment_fails_closed():
+    # Stage 1 extracts one claim but the alignment returns two classifications: the
+    # grader graded something that was not an extracted claim, so the counts cannot
+    # be trusted and the run must fail closed, not score the phantom label.
+    claims = "1. claim one"
+    alignment = (
+        "CLAIM: claim one\nCLASSIFICATION: SUPPORTED\nSOURCE: none\n\n"
+        "CLAIM: phantom claim\nCLASSIFICATION: SUPPORTED\nSOURCE: none\n"
+    )
+    mapping = _clients(claims, alignment)
+    with pytest.raises(ValueError):
+        _run(mapping)
+
+
 def test_no_claims_skips_alignment_and_is_faithful():
     mapping = _clients("   ", "unused")
     content, results = _run(mapping)

@@ -779,10 +779,11 @@ def run_faithfulness_verification(
     # Count the claims stage 1 extracted (the prompt numbers them "1. ", "2. ", ...).
     claim_count = len(re.findall(r"(?m)^\s*\d+\.", claims))
     labels = [m.group(1).upper() for m in _CLASSIFICATION_RE.finditer(alignment)]
-    # Fail closed unless EVERY extracted claim was classified. A partial alignment
-    # (fewer classifications than claims) must not score as fully faithful: an ungraded
-    # claim could be unsupported or contradicted, so a missing grade is silent risk.
-    if not labels or len(labels) < claim_count:
+    # Fail closed unless the classifications match the extracted claims one-to-one.
+    # Fewer labels means an ungraded claim (which could be unsupported or contradicted);
+    # more labels means the grader classified something that was never extracted. Either
+    # way the counts cannot be trusted, so a mismatch is an error, not a score.
+    if not labels or len(labels) != claim_count:
         raise ValueError(
             f"Faithfulness alignment classified {len(labels)} of {claim_count} claims; "
             "expected one classification per extracted claim"
